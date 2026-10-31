@@ -105,7 +105,7 @@ index 000000000..56484c6a9
 +  return value as T;
 +}
 diff --git a/src/pages/Entregas.tsx b/src/pages/Entregas.tsx
-index ffec4cdce..721307863 100644
+index ffec4cdce..61b0c7214 100644
 --- a/src/pages/Entregas.tsx
 +++ b/src/pages/Entregas.tsx
 @@ -62,6 +62,7 @@ import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidad
@@ -148,7 +148,37 @@ index ffec4cdce..721307863 100644
    const [operationNotice, setOperationNotice] = useState("");
    // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.
    const [pending, setPending] = useState<RetrySnapshot | "corrupt" | null>(null);
-@@ -628,17 +654,31 @@ export default function Entregas() {
+@@ -145,6 +171,20 @@ export default function Entregas() {
+     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");
+     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");
+     if (target !== "replay" && target !== "send" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
++    // Durable send attempts (current actor+tenant only) keep blocking other writers after reload, until exact reconciliation.
++    const sendBarrier = () => {
++      if (target === "send" || target === "replay") return;
++      if (!actorId || !orgId) throw new Error("Contexto de entrega indisponível.");
++      let loaded;
++      try { const store = pendingStore(); if (!store) throw new Error("x"); loaded = loadSends(store, actorId, orgId); }
++      catch { throw new Error("Registro local de envio ilegível. Nenhuma alteração foi enviada."); }
++      if (loaded.corrupt.length) throw new Error("Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas.");
++      if (loaded.attempts.length) throw new Error("Há um envio de entrega com resultado incerto. Reconcilie esse envio antes de qualquer nova operação. Nenhuma alteração foi enviada.");
++    };
++    try { sendBarrier(); } catch (error) {
++      const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
++      setOperationNotice(message); toast.error(message); throw error;
++    }
+     const ticket = Symbol(target);
+     operation.current = ticket;
+     let expired = false;
+@@ -153,7 +193,7 @@ export default function Entregas() {
+     const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };
+     let timer: ReturnType<typeof setTimeout> | undefined;
+     let settled = false;
+-    const pending = work(check, () => { check(); dispatched = true; }, current).finally(() => {
++    const pending = work(check, () => { check(); sendBarrier(); dispatched = true; }, current).finally(() => {
+       settled = true;
+       if (expired && operation.current === ticket) operation.current = null;
+     });
+@@ -628,17 +668,31 @@ export default function Entregas() {
        const row = (entregas as any[]).find(e => e.id === id);
        if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");
        const key = `${deliveryScope.scope}:${id}`;
@@ -190,7 +220,7 @@ index ffec4cdce..721307863 100644
      }),
  
      onSuccess: ({ current }) => {
-@@ -818,7 +858,8 @@ export default function Entregas() {
+@@ -818,7 +872,8 @@ export default function Entregas() {
          {pending && pending !== "corrupt" && !pending.replayRejected && (
            <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>
          )}
@@ -216,10 +246,10 @@ index 55086c5dc..dcfa8b45a 100644
  describe("Entregas page with atomic adapter (mounted)", () => {
 diff --git a/src/test/entregas/deliverySendPersistMount.test.tsx b/src/test/entregas/deliverySendPersistMount.test.tsx
 new file mode 100644
-index 000000000..2f179473a
+index 000000000..c2ad932cd
 --- /dev/null
 +++ b/src/test/entregas/deliverySendPersistMount.test.tsx
-@@ -0,0 +1,243 @@
+@@ -0,0 +1,295 @@
 +import React, { type PropsWithChildren } from "react";
 +import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 +import { MemoryRouter } from "react-router-dom";
@@ -461,6 +491,58 @@ index 000000000..2f179473a
 +    expect(screen.queryByRole("button", { name: "Reconciliar envio" })).toBeNull();
 +    fireEvent.click(row("Outro").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalledWith("Reconcilie somente o mesmo envio pendente."));
 +    expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
++  });
++
++  describe("durable send barrier for group/cancel after reload", () => {
++    const groupCancel = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC || c[0] === CANCEL_RPC);
++    const baseRpc = (fn: string, args: any) => {
++      if (fn === SCAP) { const r = t.rows.find(x => x.id === args.p_entrega); return { data: { capability: "delivery_send_manual_v1", available: true, actor_id: ACTOR, organization_id: args && t.auth.profile.organization_id, entrega_id: args.p_entrega, os_id: OS, status: r?.status, updated_at: r?.updated_at }, error: null }; }
++      if (fn === SEND) return okAck(args.p_entrega);
++      if (fn === GROUP_RPC) return { data: groupAck, error: null };
++      if (fn === CANCEL_RPC) return { data: cancelAck, error: null };
++      return { data: cap, error: null };
++    };
++    const tryCancel = async (id = "Outro") => {
++      fireEvent.click(row(id).getByRole("button", { name: "Cancelar" }));
++      fireEvent.change(screen.getByLabelText(/Motivo/), { target: { value: "Cliente recusou" } });
++      fireEvent.click(screen.getByRole("button", { name: "Confirmar cancelamento" }));
++    };
++    beforeEach(() => { t.current.entrega = { id: E2, status: "separado", updated_at: T1 }; t.rpc.mockImplementation(async (fn: string, args: any) => baseRpc(fn, args)); });
++
++    it.each(["retained", "corrupt", "unreadable"])("%s send record after reload blocks create and cancel writers; exact send reconciliation stays available", async (mode) => {
++      commit(E1);
++      localStorage.setItem(`${SPFX}${E1}`, mode === "corrupt" ? "{bad" : rec());
++      const restore = mode === "unreadable" ? faulty({ get: true }) : () => {};
++      const h = mount(); await screen.findByText("Outro");
++      await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
++      await tryCancel(); await waitFor(() => expect(t.error).toHaveBeenCalled());
++      expect(groupCancel()).toHaveLength(0); restore();
++      expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(mode === "corrupt" ? "{bad" : rec());
++      if (mode === "retained") {
++        fireEvent.keyDown(document.activeElement || document.body, { key: "Escape" });
++        await waitFor(() => expect(screen.queryByRole("button", { name: "Confirmar cancelamento" })).toBeNull());
++        fireEvent.click(screen.getByRole("button", { name: "Consultar entregas" }));
++        fireEvent.click(await screen.findByRole("button", { name: "Reconciliar envio" })); await waitFor(() => expect(t.success).toHaveBeenCalledWith("Status atualizado"));
++        expect(sends()).toHaveLength(1); expect(sends()[0][1].p_request_key).toBe(KEY); expect(sendKeys()).toEqual([]);
++        await act(async () => { await t.submit(payload()); }); expect(t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC)).toHaveLength(1);
++      }
++      h.qc.clear();
++    });
++
++    it("record appearing before dispatch (late storage event) is revalidated at the cancel dispatch point", async () => {
++      const h = mount(); await screen.findByText("Outro");
++      t.rpc.mockImplementation(async (fn: string, args: any) => { if (fn === CAPABILITY_RPC) localStorage.setItem(`${SPFX}${E1}`, rec()); return baseRpc(fn, args); });
++      await tryCancel(); await waitFor(() => expect(t.error).toHaveBeenCalledWith(expect.stringContaining("envio de entrega com resultado incerto")));
++      expect(t.rpc.mock.calls.filter((c: any[]) => c[0] === CANCEL_RPC)).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
++    });
++
++    it("another tenant's retained send does not block this tenant", async () => {
++      localStorage.setItem(`cf:delivery-send:v1:${ACTOR}:${ORG_B}:${E1}`, rec({ org: ORG_B }));
++      const h = mount(); await screen.findByText("Outro");
++      await act(async () => { await t.submit(payload()); });
++      expect(t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC)).toHaveLength(1);
++      expect(localStorage.getItem(`cf:delivery-send:v1:${ACTOR}:${ORG_B}:${E1}`)).toBe(rec({ org: ORG_B })); h.qc.clear();
++    });
 +  });
 +});
 diff --git a/src/test/entregas/deliverySendPersistence.test.ts b/src/test/entregas/deliverySendPersistence.test.ts

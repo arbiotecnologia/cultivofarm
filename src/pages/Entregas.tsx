@@ -171,6 +171,20 @@ export default function Entregas() {
     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");
     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");
     if (target !== "replay" && target !== "send" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
+    // Durable send attempts (current actor+tenant only) keep blocking other writers after reload, until exact reconciliation.
+    const sendBarrier = () => {
+      if (target === "send" || target === "replay") return;
+      if (!actorId || !orgId) throw new Error("Contexto de entrega indisponível.");
+      let loaded;
+      try { const store = pendingStore(); if (!store) throw new Error("x"); loaded = loadSends(store, actorId, orgId); }
+      catch { throw new Error("Registro local de envio ilegível. Nenhuma alteração foi enviada."); }
+      if (loaded.corrupt.length) throw new Error("Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas.");
+      if (loaded.attempts.length) throw new Error("Há um envio de entrega com resultado incerto. Reconcilie esse envio antes de qualquer nova operação. Nenhuma alteração foi enviada.");
+    };
+    try { sendBarrier(); } catch (error) {
+      const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
+      setOperationNotice(message); toast.error(message); throw error;
+    }
     const ticket = Symbol(target);
     operation.current = ticket;
     let expired = false;
@@ -179,7 +193,7 @@ export default function Entregas() {
     const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };
     let timer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
-    const pending = work(check, () => { check(); dispatched = true; }, current).finally(() => {
+    const pending = work(check, () => { check(); sendBarrier(); dispatched = true; }, current).finally(() => {
       settled = true;
       if (expired && operation.current === ticket) operation.current = null;
     });

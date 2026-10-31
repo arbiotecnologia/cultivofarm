@@ -240,4 +240,56 @@ describe("Enviar durable retention (mounted, real QueryClient)", () => {
     fireEvent.click(row("Outro").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalledWith("Reconcilie somente o mesmo envio pendente."));
     expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
   });
+
+  describe("durable send barrier for group/cancel after reload", () => {
+    const groupCancel = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC || c[0] === CANCEL_RPC);
+    const baseRpc = (fn: string, args: any) => {
+      if (fn === SCAP) { const r = t.rows.find(x => x.id === args.p_entrega); return { data: { capability: "delivery_send_manual_v1", available: true, actor_id: ACTOR, organization_id: args && t.auth.profile.organization_id, entrega_id: args.p_entrega, os_id: OS, status: r?.status, updated_at: r?.updated_at }, error: null }; }
+      if (fn === SEND) return okAck(args.p_entrega);
+      if (fn === GROUP_RPC) return { data: groupAck, error: null };
+      if (fn === CANCEL_RPC) return { data: cancelAck, error: null };
+      return { data: cap, error: null };
+    };
+    const tryCancel = async (id = "Outro") => {
+      fireEvent.click(row(id).getByRole("button", { name: "Cancelar" }));
+      fireEvent.change(screen.getByLabelText(/Motivo/), { target: { value: "Cliente recusou" } });
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar cancelamento" }));
+    };
+    beforeEach(() => { t.current.entrega = { id: E2, status: "separado", updated_at: T1 }; t.rpc.mockImplementation(async (fn: string, args: any) => baseRpc(fn, args)); });
+
+    it.each(["retained", "corrupt", "unreadable"])("%s send record after reload blocks create and cancel writers; exact send reconciliation stays available", async (mode) => {
+      commit(E1);
+      localStorage.setItem(`${SPFX}${E1}`, mode === "corrupt" ? "{bad" : rec());
+      const restore = mode === "unreadable" ? faulty({ get: true }) : () => {};
+      const h = mount(); await screen.findByText("Outro");
+      await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+      await tryCancel(); await waitFor(() => expect(t.error).toHaveBeenCalled());
+      expect(groupCancel()).toHaveLength(0); restore();
+      expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(mode === "corrupt" ? "{bad" : rec());
+      if (mode === "retained") {
+        fireEvent.keyDown(document.activeElement || document.body, { key: "Escape" });
+        await waitFor(() => expect(screen.queryByRole("button", { name: "Confirmar cancelamento" })).toBeNull());
+        fireEvent.click(screen.getByRole("button", { name: "Consultar entregas" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Reconciliar envio" })); await waitFor(() => expect(t.success).toHaveBeenCalledWith("Status atualizado"));
+        expect(sends()).toHaveLength(1); expect(sends()[0][1].p_request_key).toBe(KEY); expect(sendKeys()).toEqual([]);
+        await act(async () => { await t.submit(payload()); }); expect(t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC)).toHaveLength(1);
+      }
+      h.qc.clear();
+    });
+
+    it("record appearing before dispatch (late storage event) is revalidated at the cancel dispatch point", async () => {
+      const h = mount(); await screen.findByText("Outro");
+      t.rpc.mockImplementation(async (fn: string, args: any) => { if (fn === CAPABILITY_RPC) localStorage.setItem(`${SPFX}${E1}`, rec()); return baseRpc(fn, args); });
+      await tryCancel(); await waitFor(() => expect(t.error).toHaveBeenCalledWith(expect.stringContaining("envio de entrega com resultado incerto")));
+      expect(t.rpc.mock.calls.filter((c: any[]) => c[0] === CANCEL_RPC)).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
+    });
+
+    it("another tenant's retained send does not block this tenant", async () => {
+      localStorage.setItem(`cf:delivery-send:v1:${ACTOR}:${ORG_B}:${E1}`, rec({ org: ORG_B }));
+      const h = mount(); await screen.findByText("Outro");
+      await act(async () => { await t.submit(payload()); });
+      expect(t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC)).toHaveLength(1);
+      expect(localStorage.getItem(`cf:delivery-send:v1:${ACTOR}:${ORG_B}:${E1}`)).toBe(rec({ org: ORG_B })); h.qc.clear();
+    });
+  });
 });

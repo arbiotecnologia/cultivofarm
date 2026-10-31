@@ -1,14 +1,54 @@
 
  RUN  v3.2.4 /dev-server
 
- ✓ src/test/estoque/motor-estoque-fase28c.test.ts (39 tests) 69ms
+ ❯ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests | 1 failed) 92ms
+   ✓ FASE 28B — certificação da Fase 28A > artefatos da 28A existem 2ms
+   ✓ FASE 28B — certificação da Fase 28A > 28A registra 27E CERTIFICADA e recomenda Estoque/Volumes 1ms
+   ✓ FASE 28B — certificação da Fase 28A > 28A contém os prompts 28B, 28C e 28D 1ms
+   ✓ FASE 28B — certificação da Fase 28A > o baseline segue presente e migrations mantêm versões únicas e rastreáveis 3ms
+   ✓ FASE 28B — certificação da Fase 28A > relatório 28B registra 28A CERTIFICADA 11ms
+   ✓ FASE 28B — contrato do motor de estoque > motorEstoque.ts existe e usa a RPC canônica 1ms
+   ✓ FASE 28B — contrato do motor de estoque > ações canônicas de estoque preservadas 1ms
+   ✓ FASE 28B — contrato do motor de estoque > tipos de referência canônicos preservados 6ms
+   ✓ FASE 28B — contrato do motor de estoque > motor expõe idempotência e mapeamento de erros ESTQ_* 6ms
+   ✓ FASE 28B — contrato do motor de estoque > helpers puros de reserva permanecem exportados 5ms
+   ✓ FASE 28B — componentes e integrações mapeados > todos os arquivos auditados existem 1ms
+   × FASE 28B — componentes e integrações mapeados > Entregas.tsx usa o motor canônico com chaves de idempotência 36ms
+     → expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
+   ✓ FASE 28B — componentes e integrações mapeados > nenhum componente de estoque escreve direto em estoque_produto 10ms
+   ✓ FASE 28B — componentes e integrações mapeados > diálogo de reserva do cockpit protege contra clique duplo 0ms
+   ✓ FASE 28B — contratos preservados (catálogo/portais/carrinho) > rotas e RPCs de catálogo/parceiro intactas 2ms
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts (4 tests | 3 failed) 84ms
+   × compatibilidade dos callers de estoque — sem API real > mantém nome, parâmetros e resultado da RPC tipada 33ms
+     → Operação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.
+   × compatibilidade dos callers de estoque — sem API real > preserva quantidade NULL do estorno e payload default 5ms
+     → Cancelamento e estorno indisponíveis: a recomposição integral do estoque ainda não tem contrato comprovado para esta operação. Nenhuma alteração foi enviada.
+   ✓ compatibilidade dos callers de estoque — sem API real > continua propagando o erro de negócio sem repetir escrita 6ms
+   × compatibilidade dos callers de estoque — sem API real > expedição automática envia o tipo junto ao ID da OS 7ms
+     → expected -1 to be greater than -1
+ ❯ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests | 1 failed) 76ms
+   ✓ FASE 28C — escrita de estoque somente server-side > nenhum componente faz update/insert/delete/upsert direto em estoque_produto 27ms
+   ✓ FASE 28C — escrita de estoque somente server-side > nenhum componente faz escrita direta em estoque_movimentacoes 12ms
+   ✓ FASE 28C — contrato do motor e das entregas > motorEstoque continua chamando rpc_estoque_operar_v1 com idempotência 1ms
+   × FASE 28C — contrato do motor e das entregas > Entregas.tsx mantém operarEstoque e as chaves canônicas 15ms
+     → expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
+   ✓ FASE 28C — proteções de interface > ReservarEstoqueDialog previne clique duplo 1ms
+   ✓ FASE 28C — proteções de interface > MotivoEmbalagemDialog mantém validação de motivo curto 1ms
+   ✓ FASE 28C — proteções de interface > helpers puros de reserva continuam isolados de I/O 2ms
+   ✓ FASE 28C — risco A1 documentado e congelado > useEsteiraLaboratorio continua usando reservar_estoque_item (sem alteração nesta fase) 4ms
+   ✓ FASE 28C — risco A1 documentado e congelado > relatório 28B documenta os riscos A1 e A2 2ms
+   ✓ FASE 28C — risco A1 documentado e congelado > relatório 28C existe e registra 28B CERTIFICADA 1ms
+   ✓ FASE 28C — risco A1 documentado e congelado > o baseline segue presente e migrations mantêm versões únicas e rastreáveis 5ms
+   ✓ FASE 28C — contratos preservados fora do escopo > carrinho, pedido B2B e catálogo intactos 1ms
 stderr | src/test/entregas/comprovanteDownloadAutenticado.test.tsx > EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
- ✓ src/test/entregas/termoPdfEdge.test.ts (36 tests) 2389ms
-   ✓ entrega-termo-pdf candidata: download binário autenticado > serve os bytes verificados por hash, sem assinar URL nem publicar evento  313ms
 stderr | src/test/envase/envasePageScope.test.tsx > Envase mounted current-query fences > inverted filter responses never overwrite current history
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
@@ -20,321 +60,293 @@ stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
-stderr | src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
-
+ ✓ src/test/entregas/painelChecklistOcorrencias.test.tsx (12 tests) 2013ms
+   ✓ EntregaChecklistPanel > erro de consulta não vira lista vazia e oferece nova tentativa  302ms
+   ✓ EntregaOcorrenciasPanel > não salva descrição em branco  586ms
+ ✓ src/test/envase/envasePageScope.test.tsx (5 tests) 2730ms
+   ✓ Envase mounted current-query fences > inverted filter responses never overwrite current history  447ms
+   ✓ Envase mounted current-query fences > FSF clears immediately and refuses old history/products  540ms
+   ✓ Envase mounted current-query fences > unmount retires pending promises and realtime timers  1286ms
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 4336ms
+   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  452ms
+   ✓ Mounted canonical physical confirmation > invalid ACK updated_at stays uncertain with same key and no success  413ms
+   ✓ Mounted canonical physical confirmation > invalid ACK foreign-os stays uncertain with same key and no success  367ms
+   ✓ Mounted canonical physical confirmation > invalid ACK foreign-proof stays uncertain with same key and no success  337ms
+   ✓ Mounted canonical physical confirmation > unavailable foreign capability never dispatches writer  340ms
+   ✓ Mounted canonical physical confirmation > scope changes during immediate preflight stop first mutation  382ms
+   ✓ Mounted canonical physical confirmation > uncertain ACK retains exact key and payload for explicit reconciliation  371ms
+ ✓ src/test/entregas/entregaCanceladaSomenteConsulta.test.tsx (9 tests) 3447ms
+   ✓ Comprovante — entrega cancelada é somente consulta > estado permitido: dispensa de assinatura aparece só como indisponível e nunca chama o servidor  572ms
+   ✓ Comprovante — entrega cancelada é somente consulta > cancelada no servidor (prop antiga 'separado'): nenhuma mutação, consulta/impressão/download preservados  428ms
+   ✓ Comprovante — entrega cancelada é somente consulta > cancelamento observado com diálogo aberto fecha o diálogo e não grava  1110ms
+   ✓ Comprovante — entrega cancelada é somente consulta > estados permitidos preservam gerar, assinar e anexar  677ms
+ ✓ src/test/envase/registrarEnvaseDialog.test.tsx (14 tests) 4481ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after target change  440ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after ABA change  449ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > failed lotes read blocks even programmatic submit  358ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > failed estoque_produto read blocks even programmatic submit  324ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > invalidates ready data immediately and waits for all four new reads  496ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > uses partial ACK rather than remaining lot balance  380ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > uses completed ACK rather than remaining lot balance  399ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > late ACK after closing does not announce or close another opening  370ms
+ ✓ src/test/entregas/anexoComprovanteConcorrencia.test.tsx (5 tests) 4985ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante o upload: não inicia a RPC nem afeta a nova entrega  1141ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante a RPC com rejeição tardia: não mostra erro na nova entrega  702ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > A→B→A: resultado da operação antiga não é aplicado ao voltar para A  949ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > falha da operação antiga não destrava o envio em andamento da nova entrega  1441ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > nova tentativa com o mesmo arquivo apenas revincula, sem reenviar  749ms
+ ✓ src/test/entregas/consumidorEntrega.test.tsx (13 tests) 3859ms
+   ✓ Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna  306ms
+   ✓ Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna  1469ms
+   ✓ Contenção real antes do primeiro dispatch da página > cancelamento em_rota não altera status nem estorna  691ms
+   ✓ Contenção real antes do primeiro dispatch da página > envio em rota não faz UPDATE  457ms
+ ✓ src/test/entregas/anexoComprovante.test.tsx (11 tests) 5178ms
+   ✓ EntregaComprovantePanel — anexo > selecionar arquivo não envia nada automaticamente  730ms
+   ✓ EntregaComprovantePanel — anexo > arquivo de tipo não aceito é rejeitado antes do envio  604ms
+   ✓ EntregaComprovantePanel — anexo > arquivo acima de 10 MB é rejeitado antes do envio  522ms
+   ✓ EntregaComprovantePanel — anexo > envia com upsert:false e UUID no caminho, apenas ao clicar no botão  907ms
+   ✓ EntregaComprovantePanel — anexo > clique duplo não envia o arquivo duas vezes  533ms
+   ✓ EntregaComprovantePanel — anexo > falha na vinculação mantém o arquivo e a nova tentativa não reenvia o arquivo  768ms
+   ✓ EntregaComprovantePanel — anexo > falha no envio do arquivo não chama a vinculação e mantém a seleção  574ms
+   ✓ EntregaComprovantePanel — anexo > trocar de entrega descarta o arquivo selecionado  514ms
+ ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 5785ms
+   ✓ EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  1214ms
+   ✓ EntregaComprovantePanel > erro de download: aviso neutro, sem blob nem URL  576ms
+   ✓ EntregaComprovantePanel > caminho fora do contrato: nenhuma requisição e aviso neutro  607ms
+   ✓ EntregaComprovantePanel > tenant alterado após preparo revoga o blob e bloqueia o clique antigo  465ms
+   ✓ EntregaComprovantePanel > roles alterado após preparo revoga o blob e bloqueia o clique antigo  341ms
+   ✓ EntregaComprovantePanel > lease alterado após preparo revoga o blob e bloqueia o clique antigo  400ms
+ ✓ src/test/entregas/assinaturaComprovante.test.tsx (14 tests) 6975ms
+   ✓ AssinaturaDigitalCanvas > duplo clique não dispara duas coletas e aguarda o callback  402ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > envia PNG com UUID e upsert false e registra a assinatura  947ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > retry após falha da RPC reaproveita o PNG sem reenviar  1156ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > troca de entrega durante o upload impede a chamada da RPC  735ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > A→B→A: resposta antiga não altera o modal da entrega atual  925ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > retry usa o hash e o payload ORIGINAIS e faz um único upload  637ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload  492ms
+   ✓ EntregaComprovantePanel — ações de comprovação isoladas por entrega > confirmar recebimento não envia RPC e preserva ressalvas  519ms
 stderr | src/test/entregas/registrarEntregaMetadataSubmit.test.tsx > RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 2035ms
-   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  2029ms
- ✓ src/test/entregas/painelChecklistOcorrencias.test.tsx (12 tests) 2745ms
-   ✓ EntregaOcorrenciasPanel > não salva descrição em branco  627ms
-   ✓ EntregaOcorrenciasPanel > clique duplo em Registrar envia uma única vez e envia a descrição sem espaços  464ms
-   ✓ EntregaOcorrenciasPanel > falha mantém o formulário aberto com os dados preenchidos  563ms
-   ✓ EntregaOcorrenciasPanel > trocar de entrega fecha o formulário e limpa a descrição  333ms
- ✓ src/test/envase/envasePageScope.test.tsx (5 tests) 2589ms
-   ✓ Envase mounted current-query fences > inverted page responses preserve the latest page  497ms
-   ✓ Envase mounted current-query fences > FSF clears immediately and refuses old history/products  436ms
-   ✓ Envase mounted current-query fences > unmount retires pending promises and realtime timers  1303ms
- ✓ src/test/entregas/entregaCanceladaSomenteConsulta.test.tsx (9 tests) 3219ms
-   ✓ Comprovante — entrega cancelada é somente consulta > estado permitido: dispensa de assinatura aparece só como indisponível e nunca chama o servidor  1054ms
-   ✓ Comprovante — entrega cancelada é somente consulta > cancelada no servidor (prop antiga 'separado'): nenhuma mutação, consulta/impressão/download preservados  593ms
-   ✓ Comprovante — entrega cancelada é somente consulta > cancelamento observado com diálogo aberto fecha o diálogo e não grava  719ms
-   ✓ Comprovante — entrega cancelada é somente consulta > estados permitidos preservam gerar, assinar e anexar  395ms
- ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 4635ms
-   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  441ms
-   ✓ Mounted canonical physical confirmation > invalid ACK foreign-proof stays uncertain with same key and no success  449ms
-   ✓ Mounted canonical physical confirmation > changed proof during preflight never dispatches  349ms
-   ✓ Mounted canonical physical confirmation > unavailable false capability never dispatches writer  375ms
-   ✓ Mounted canonical physical confirmation > fresh capability dispatches once, exact ACK succeeds without billing or upload  303ms
- ✓ src/test/envase/registrarEnvaseDialog.test.tsx (14 tests) 4474ms
-   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after target change  540ms
-   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after ABA change  307ms
-   ✓ RegistrarEnvaseDialog current reads and ACK > failed lotes read blocks even programmatic submit  331ms
-   ✓ RegistrarEnvaseDialog current reads and ACK > failed envase read blocks even programmatic submit  572ms
-   ✓ RegistrarEnvaseDialog current reads and ACK > invalidates ready data immediately and waits for all four new reads  509ms
-   ✓ RegistrarEnvaseDialog current reads and ACK > uses partial ACK rather than remaining lot balance  438ms
-   ✓ RegistrarEnvaseDialog current reads and ACK > uses completed ACK rather than remaining lot balance  387ms
- ✓ src/test/entregas/consumidorEntrega.test.tsx (13 tests) 3566ms
-   ✓ Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna  578ms
-   ✓ Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna  1177ms
-   ✓ Contenção real antes do primeiro dispatch da página > cancelamento em_rota não altera status nem estorna  616ms
-   ✓ Contenção real antes do primeiro dispatch da página > envio em rota não faz UPDATE  346ms
- ✓ src/test/entregas/anexoComprovanteConcorrencia.test.tsx (5 tests) 5237ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante o upload: não inicia a RPC nem afeta a nova entrega  1208ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante a RPC com rejeição tardia: não mostra erro na nova entrega  816ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > A→B→A: resultado da operação antiga não é aplicado ao voltar para A  689ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > falha da operação antiga não destrava o envio em andamento da nova entrega  1920ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > nova tentativa com o mesmo arquivo apenas revincula, sem reenviar  600ms
- ✓ src/test/entregas/anexoComprovante.test.tsx (11 tests) 4776ms
-   ✓ EntregaComprovantePanel — anexo > selecionar arquivo não envia nada automaticamente  1147ms
-   ✓ EntregaComprovantePanel — anexo > arquivo de tipo não aceito é rejeitado antes do envio  884ms
-   ✓ EntregaComprovantePanel — anexo > arquivo acima de 10 MB é rejeitado antes do envio  334ms
-   ✓ EntregaComprovantePanel — anexo > envia com upsert:false e UUID no caminho, apenas ao clicar no botão  575ms
-   ✓ EntregaComprovantePanel — anexo > clique duplo não envia o arquivo duas vezes  397ms
-   ✓ EntregaComprovantePanel — anexo > falha na vinculação mantém o arquivo e a nova tentativa não reenvia o arquivo  690ms
-   ✓ EntregaComprovantePanel — anexo > falha no envio do arquivo não chama a vinculação e mantém a seleção  517ms
- ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 5791ms
-   ✓ EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  991ms
-   ✓ EntregaComprovantePanel > erro de download: aviso neutro, sem blob nem URL  693ms
-   ✓ EntregaComprovantePanel > caminho fora do contrato: nenhuma requisição e aviso neutro  316ms
-   ✓ EntregaComprovantePanel > tenant alterado durante o download descarta bytes tardios  381ms
-   ✓ EntregaComprovantePanel > tenant alterado após preparo revoga o blob e bloqueia o clique antigo  372ms
-   ✓ EntregaComprovantePanel > roles alterado durante o download descarta bytes tardios  321ms
-   ✓ EntregaComprovantePanel > roles alterado após preparo revoga o blob e bloqueia o clique antigo  698ms
-   ✓ EntregaComprovantePanel > epoch alterado durante o download descarta bytes tardios  346ms
-   ✓ EntregaComprovantePanel > lease alterado após preparo revoga o blob e bloqueia o clique antigo  319ms
- ✓ src/test/entregas/assinaturaComprovante.test.tsx (14 tests) 6107ms
-   ✓ EntregaComprovantePanel — assinatura do comprovante > envia PNG com UUID e upsert false e registra a assinatura  930ms
-   ✓ EntregaComprovantePanel — assinatura do comprovante > retry após falha da RPC reaproveita o PNG sem reenviar  767ms
-   ✓ EntregaComprovantePanel — assinatura do comprovante > troca de entrega durante o upload impede a chamada da RPC  850ms
-   ✓ EntregaComprovantePanel — assinatura do comprovante > A→B→A: resposta antiga não altera o modal da entrega atual  1030ms
-   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > retry usa o hash e o payload ORIGINAIS e faz um único upload  854ms
-   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload  460ms
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 1147ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  1132ms
+ ✓ src/test/entregas/termoPdfEdge.test.ts (36 tests) 2809ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > serve os bytes verificados por hash, sem assinar URL nem publicar evento  306ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > cliente antigo signed_url recebe 410 sem tocar Storage  327ms
+ ✓ src/test/entregas/termoPdfDownload.test.tsx (18 tests) 1262ms
+   ✓ TermoEntregaPanel: PDF binário autenticado em duas etapas > happy path: prepara pela Edge download e só baixa após novo clique  427ms
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 9338ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  1432ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  1376ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  1681ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  1029ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  1044ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  466ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  443ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  426ms
+ ✓ src/test/entregas/deliverySendPersistMount.test.tsx (24 tests) 10247ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed  2366ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > preflight refusal before dispatch persists nothing and calls no writer  556ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > retained attempt survives refused reconciliation preflight and role change  1134ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > setItem failure before dispatch: no writer, no record  327ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > removeItem failure after valid ACK keeps record and warns, without new key  301ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record malformed blocks sends and is never deleted  303ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record schema blocks sends and is never deleted  549ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record extra blocks sends and is never deleted  351ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > late ACK after reload (unmount) is not adopted; lock owned until settle; then same key reconciles  566ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > retained send record after reload blocks create and cancel writers; exact send reconciliation stays available  856ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > corrupt send record after reload blocks create and cancel writers; exact send reconciliation stays available  335ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > unreadable send record after reload blocks create and cancel writers; exact send reconciliation stays available  302ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > record appearing before dispatch (late storage event) is revalidated at the cancel dispatch point  302ms
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — token > token ausente não consulta e não fica carregando
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/conferenciaQrTermo.test.tsx (16 tests) 941ms
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+ ✓ src/test/entregas/validarEntrega.test.tsx (16 tests) 616ms
 stderr | src/test/entregas/registrarEntregaObservedSnapshot.test.tsx > RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 888ms
-   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  885ms
- ✓ src/test/entregas/deliverySendPersistMount.test.tsx (19 tests) 7679ms
-   ✓ Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed  2310ms
-   ✓ Enviar durable retention (mounted, real QueryClient) > preflight refusal before dispatch persists nothing and calls no writer  588ms
-   ✓ Enviar durable retention (mounted, real QueryClient) > retained attempt survives refused reconciliation preflight and role change  1138ms
-   ✓ Enviar durable retention (mounted, real QueryClient) > late ACK after reload (unmount) is not adopted; lock owned until settle; then same key reconciles  746ms
- ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 9044ms
-   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  1485ms
-   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  1132ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  1420ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  610ms
-   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  852ms
-   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  519ms
-   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  524ms
-   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  408ms
-   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  489ms
- ❯ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests | 1 failed) 75ms
-   ✓ FASE 28B — certificação da Fase 28A > artefatos da 28A existem 3ms
-   ✓ FASE 28B — certificação da Fase 28A > 28A registra 27E CERTIFICADA e recomenda Estoque/Volumes 2ms
-   ✓ FASE 28B — certificação da Fase 28A > 28A contém os prompts 28B, 28C e 28D 2ms
-   ✓ FASE 28B — certificação da Fase 28A > o baseline segue presente e migrations mantêm versões únicas e rastreáveis 3ms
-   ✓ FASE 28B — certificação da Fase 28A > relatório 28B registra 28A CERTIFICADA 1ms
-   ✓ FASE 28B — contrato do motor de estoque > motorEstoque.ts existe e usa a RPC canônica 1ms
-   ✓ FASE 28B — contrato do motor de estoque > ações canônicas de estoque preservadas 1ms
-   ✓ FASE 28B — contrato do motor de estoque > tipos de referência canônicos preservados 1ms
-   ✓ FASE 28B — contrato do motor de estoque > motor expõe idempotência e mapeamento de erros ESTQ_* 3ms
-   ✓ FASE 28B — contrato do motor de estoque > helpers puros de reserva permanecem exportados 1ms
-   ✓ FASE 28B — componentes e integrações mapeados > todos os arquivos auditados existem 2ms
-   × FASE 28B — componentes e integrações mapeados > Entregas.tsx usa o motor canônico com chaves de idempotência 23ms
-     → expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
-   ✓ FASE 28B — componentes e integrações mapeados > nenhum componente de estoque escreve direto em estoque_produto 25ms
-   ✓ FASE 28B — componentes e integrações mapeados > diálogo de reserva do cockpit protege contra clique duplo 1ms
-   ✓ FASE 28B — contratos preservados (catálogo/portais/carrinho) > rotas e RPCs de catálogo/parceiro intactas 1ms
- ❯ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests | 1 failed) 99ms
-   ✓ FASE 28C — escrita de estoque somente server-side > nenhum componente faz update/insert/delete/upsert direto em estoque_produto 29ms
-   ✓ FASE 28C — escrita de estoque somente server-side > nenhum componente faz escrita direta em estoque_movimentacoes 9ms
-   ✓ FASE 28C — contrato do motor e das entregas > motorEstoque continua chamando rpc_estoque_operar_v1 com idempotência 1ms
-   × FASE 28C — contrato do motor e das entregas > Entregas.tsx mantém operarEstoque e as chaves canônicas 33ms
-     → expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
-   ✓ FASE 28C — proteções de interface > ReservarEstoqueDialog previne clique duplo 2ms
-   ✓ FASE 28C — proteções de interface > MotivoEmbalagemDialog mantém validação de motivo curto 1ms
-   ✓ FASE 28C — proteções de interface > helpers puros de reserva continuam isolados de I/O 3ms
-   ✓ FASE 28C — risco A1 documentado e congelado > useEsteiraLaboratorio continua usando reservar_estoque_item (sem alteração nesta fase) 4ms
-   ✓ FASE 28C — risco A1 documentado e congelado > relatório 28B documenta os riscos A1 e A2 2ms
-   ✓ FASE 28C — risco A1 documentado e congelado > relatório 28C existe e registra 28B CERTIFICADA 2ms
-   ✓ FASE 28C — risco A1 documentado e congelado > o baseline segue presente e migrations mantêm versões únicas e rastreáveis 3ms
-   ✓ FASE 28C — contratos preservados fora do escopo > carrinho, pedido B2B e catálogo intactos 6ms
- ✓ src/test/entregas/copiarLinkIsolamento.test.tsx (2 tests) 879ms
-   ✓ copiar link de validação — isolado das gravações > copiar durante uma assinatura pendente não invalida a gravação  757ms
-stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — token > token ausente não consulta e não fica carregando
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
-
-stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-
-stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-
-stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-
-stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-
-stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
-    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
-    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
-    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
-    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
-
- ✓ src/test/entregas/validarEntrega.test.tsx (16 tests) 681ms
- ✓ src/test/entregas/conferenciaQrTermo.test.tsx (16 tests) 930ms
- ✓ src/test/entregas/termoPdfDownload.test.tsx (18 tests) 1281ms
- ✓ src/test/estoque/catalogo-volumes-fase28c.test.ts (12 tests) 29ms
 stderr | src/test/envase/envasePageReadOnly.test.tsx > EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
- ✓ src/test/entregas/painelEvidencias.test.tsx (8 tests) 678ms
+ ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 813ms
+   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  810ms
+ ✓ src/test/entregas/copiarLinkIsolamento.test.tsx (2 tests) 889ms
+   ✓ copiar link de validação — isolado das gravações > copiar durante uma assinatura pendente não invalida a gravação  748ms
+ ✓ src/test/envase/envasePageReadOnly.test.tsx (2 tests) 894ms
+   ✓ EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history  503ms
+   ✓ EnvasePage contained independent contracts > keeps existing label view and print available without calling a writer  384ms
+ ✓ src/test/estoque/motor-estoque-fase28c.test.ts (39 tests) 83ms
+stderr | src/test/entregas/deliveryContainmentStock.test.tsx > reserva de embalagem com destino selecionado não envia nem anuncia sucesso
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 606ms
+   ✓ reserva de embalagem com destino selecionado não envia nem anuncia sucesso  313ms
+ ✓ src/test/etiquetas/cancelamentoContido.test.tsx (3 tests) 579ms
+   ✓ Cancelamento de etiqueta contido independentemente da página > não disponibiliza writer com readOnly=false, preserva consulta/impressão  337ms
+ ✓ src/test/entregas/painelEvidencias.test.tsx (8 tests) 780ms
+   ✓ EntregaComprovantePanel — estado fresco do servidor > usa o status atual do servidor mesmo com prop antiga (pendente)  369ms
+ ✓ src/test/entregas/comprovanteEntregaPdf.test.ts (46 tests) 62ms
+ ✓ src/test/envase/envaseFlow.test.tsx (31 tests) 120ms
 stderr | src/test/entregas/formularioEntregaPrint.test.tsx > FormularioEntregaPrint > renderiza o documento com colunas reais do banco
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
- ✓ src/test/envase/envasePageReadOnly.test.tsx (2 tests) 792ms
-   ✓ EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history  418ms
-   ✓ EnvasePage contained independent contracts > keeps existing label view and print available without calling a writer  372ms
- ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 445ms
- ✓ src/test/etiquetas/cancelamentoContido.test.tsx (3 tests) 507ms
-   ✓ Cancelamento de etiqueta contido independentemente da página > não disponibiliza writer com readOnly=false, preserva consulta/impressão  303ms
- ✓ src/test/entregas/deliveryProofFlow.test.ts (34 tests) 39ms
-stderr | src/test/entregas/deliveryContainmentStock.test.tsx > reserva de embalagem com destino selecionado não envia nem anuncia sucesso
-Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-
- ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 564ms
-   ✓ reserva de embalagem com destino selecionado não envia nem anuncia sucesso  301ms
- ✓ src/test/envase/envaseFlow.test.tsx (31 tests) 124ms
- ✓ src/test/envase/consulta.test.ts (32 tests) 39ms
- ✓ src/test/entregas/comprovanteEntregaPdf.test.ts (46 tests) 54ms
- ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 54ms
- ✓ src/test/estoque/stock-p1-containment.test.ts (9 tests) 12ms
+ ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 566ms
+ ✓ src/test/entregas/reservaDeferredRuntimeGate.test.tsx (6 tests) 61ms
+ ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 70ms
+ ✓ src/test/entregas/deliveryProofFlow.test.ts (34 tests) 78ms
+ ✓ src/test/entregas/deliverySendPersistence.test.ts (11 tests) 18ms
+ ✓ src/test/envase/consulta.test.ts (32 tests) 49ms
+ ✓ src/test/entregas/deliverySendFlow.test.ts (7 tests) 16ms
+ ✓ src/test/entregas/deliveryConfirmationEnvelope.test.ts (14 tests) 9ms
+ ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 14ms
+ ✓ src/test/entregas/creationContracts.offline.test.ts (5 tests) 11ms
+ ✓ src/test/estoque/stock-batch-hardening.test.ts (5 tests) 9ms
+ ✓ src/test/estoque/stock-p1-containment.test.ts (9 tests) 10ms
  ✓ src/test/estoque/reserva-calc-fase28c.test.ts (17 tests) 12ms
+ ✓ src/test/estoque/catalogo-volumes-fase28c.test.ts (12 tests) 41ms
+ ✓ src/test/envase/envaseAvailability.test.ts (3 tests) 18ms
+ ✓ src/test/estoque/stock-context-hardening.test.ts (5 tests) 8ms
  ✓ src/test/estoque/stock-motor-hardening.test.ts (5 tests) 8ms
- ✓ src/test/estoque/stock-context-hardening.test.ts (5 tests) 11ms
- ✓ src/test/estoque/stock-numeric-hardening.test.ts (6 tests) 7ms
- ❯ src/test/estoque/stock-caller-compatibility.test.ts (4 tests | 3 failed) 23ms
-   × compatibilidade dos callers de estoque — sem API real > mantém nome, parâmetros e resultado da RPC tipada 11ms
-     → Operação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.
-   × compatibilidade dos callers de estoque — sem API real > preserva quantidade NULL do estorno e payload default 1ms
-     → Cancelamento e estorno indisponíveis: a recomposição integral do estoque ainda não tem contrato comprovado para esta operação. Nenhuma alteração foi enviada.
-   ✓ compatibilidade dos callers de estoque — sem API real > continua propagando o erro de negócio sem repetir escrita 4ms
-   × compatibilidade dos callers de estoque — sem API real > expedição automática envia o tipo junto ao ID da OS 5ms
-     → expected -1 to be greater than -1
- ✓ src/test/entregas/reservaDeferredRuntimeGate.test.tsx (6 tests) 55ms
- ✓ src/test/entregas/creationContracts.offline.test.ts (5 tests) 14ms
- ✓ src/test/entregas/deliverySendPersistence.test.ts (11 tests) 33ms
- ✓ src/test/entregas/deliveryConfirmationEnvelope.test.ts (14 tests) 22ms
- ✓ src/test/estoque/stock-batch-hardening.test.ts (5 tests) 12ms
- ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 26ms
- ✓ src/test/entregas/deliverySendFlow.test.ts (7 tests) 29ms
- ✓ src/test/envase/envaseAvailability.test.ts (3 tests) 12ms
- ✓ src/test/etiquetas/gerar-etiquetas-lote.test.ts (7 tests) 6ms
+ ✓ src/test/estoque/stock-numeric-hardening.test.ts (6 tests) 8ms
+ ✓ src/test/etiquetas/gerar-etiquetas-lote.test.ts (7 tests) 4ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -518,6 +530,20 @@ AssertionError: expected 'import { useEffect, useMemo, useRef, …' to contain '
 [31m+     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");[39m
 [31m+     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");[39m
 [31m+     if (target !== "replay" && target !== "send" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");[39m
+[31m+     // Durable send attempts (current actor+tenant only) keep blocking other writers after reload, until exact reconciliation.[39m
+[31m+     const sendBarrier = () => {[39m
+[31m+       if (target === "send" || target === "replay") return;[39m
+[31m+       if (!actorId || !orgId) throw new Error("Contexto de entrega indisponível.");[39m
+[31m+       let loaded;[39m
+[31m+       try { const store = pendingStore(); if (!store) throw new Error("x"); loaded = loadSends(store, actorId, orgId); }[39m
+[31m+       catch { throw new Error("Registro local de envio ilegível. Nenhuma alteração foi enviada."); }[39m
+[31m+       if (loaded.corrupt.length) throw new Error("Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas.");[39m
+[31m+       if (loaded.attempts.length) throw new Error("Há um envio de entrega com resultado incerto. Reconcilie esse envio antes de qualquer nova operação. Nenhuma alteração foi enviada.");[39m
+[31m+     };[39m
+[31m+     try { sendBarrier(); } catch (error) {[39m
+[31m+       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;[39m
+[31m+       setOperationNotice(message); toast.error(message); throw error;[39m
+[31m+     }[39m
 [31m+     const ticket = Symbol(target);[39m
 [31m+     operation.current = ticket;[39m
 [31m+     let expired = false;[39m
@@ -526,7 +552,7 @@ AssertionError: expected 'import { useEffect, useMemo, useRef, …' to contain '
 [31m+     const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };[39m
 [31m+     let timer: ReturnType<typeof setTimeout> | undefined;[39m
 [31m+     let settled = false;[39m
-[31m+     const pending = work(check, () => { check(); dispatched = true; }, current).finally(() => {[39m
+[31m+     const pending = work(check, () => { check(); sendBarrier(); dispatched = true; }, current).finally(() => {[39m
 [31m+       settled = true;[39m
 [31m+       if (expired && operation.current === ticket) operation.current = null;[39m
 [31m+     });[39m
@@ -1720,6 +1746,20 @@ AssertionError: expected 'import { useEffect, useMemo, useRef, …' to contain '
 [31m+     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");[39m
 [31m+     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");[39m
 [31m+     if (target !== "replay" && target !== "send" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");[39m
+[31m+     // Durable send attempts (current actor+tenant only) keep blocking other writers after reload, until exact reconciliation.[39m
+[31m+     const sendBarrier = () => {[39m
+[31m+       if (target === "send" || target === "replay") return;[39m
+[31m+       if (!actorId || !orgId) throw new Error("Contexto de entrega indisponível.");[39m
+[31m+       let loaded;[39m
+[31m+       try { const store = pendingStore(); if (!store) throw new Error("x"); loaded = loadSends(store, actorId, orgId); }[39m
+[31m+       catch { throw new Error("Registro local de envio ilegível. Nenhuma alteração foi enviada."); }[39m
+[31m+       if (loaded.corrupt.length) throw new Error("Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas.");[39m
+[31m+       if (loaded.attempts.length) throw new Error("Há um envio de entrega com resultado incerto. Reconcilie esse envio antes de qualquer nova operação. Nenhuma alteração foi enviada.");[39m
+[31m+     };[39m
+[31m+     try { sendBarrier(); } catch (error) {[39m
+[31m+       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;[39m
+[31m+       setOperationNotice(message); toast.error(message); throw error;[39m
+[31m+     }[39m
 [31m+     const ticket = Symbol(target);[39m
 [31m+     operation.current = ticket;[39m
 [31m+     let expired = false;[39m
@@ -1728,7 +1768,7 @@ AssertionError: expected 'import { useEffect, useMemo, useRef, …' to contain '
 [31m+     const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };[39m
 [31m+     let timer: ReturnType<typeof setTimeout> | undefined;[39m
 [31m+     let settled = false;[39m
-[31m+     const pending = work(check, () => { check(); dispatched = true; }, current).finally(() => {[39m
+[31m+     const pending = work(check, () => { check(); sendBarrier(); dispatched = true; }, current).finally(() => {[39m
 [31m+       settled = true;[39m
 [31m+       if (expired && operation.current === ticket) operation.current = null;[39m
 [31m+     });[39m
@@ -2782,7 +2822,7 @@ AssertionError: expected -1 to be greater than -1
 
 
  Test Files  3 failed | 45 passed (48)
-      Tests  5 failed | 700 passed (705)
-   Start at  14:48:21
-   Duration  38.58s (transform 7.94s, setup 38.32s, collect 96.20s, tests 72.79s, environment 232.32s, prepare 35.51s)
+      Tests  5 failed | 705 passed (710)
+   Start at  14:55:33
+   Duration  36.63s (transform 7.06s, setup 37.69s, collect 90.55s, tests 76.23s, environment 216.18s, prepare 35.74s)
 
