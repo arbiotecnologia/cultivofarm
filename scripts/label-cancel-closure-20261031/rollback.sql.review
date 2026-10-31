@@ -1,0 +1,2 @@
+-- No regrant or restoration of the vulnerable writer, no history mutation.
+SELECT 'label cancellation closure rollback: deny-only no-op';

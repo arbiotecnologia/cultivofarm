@@ -1,0 +1,7 @@
+{
+  "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+  "signature": "public.rpc_substituir_etiqueta_produto(p_etiqueta_id uuid, p_motivo text)",
+  "acl": "{postgres=X/postgres,service_role=X/postgres}",
+  "owner": "postgres",
+  "status": "captured client EXECUTE already closed; owner/service indirect paths not certified by direct closure"
+}

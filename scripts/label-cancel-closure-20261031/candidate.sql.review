@@ -1,0 +1,2 @@
+-- Independent deny-only closure; body and service grants remain unchanged.
+REVOKE EXECUTE ON FUNCTION public.rpc_cancelar_etiqueta_produto(uuid,text) FROM PUBLIC, anon, authenticated;

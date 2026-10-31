@@ -1,0 +1,4 @@
+- Preparation only: no hosted connections, production credentials/fixtures, deployment or publication; the auditor runs exact PRE/POST independently.
+- Closure is ACL-only for rpc_cancelar_etiqueta_produto(uuid,text); preserve bodies, owner, service grants and table/policy/trigger metadata, and never regrant on rollback.
+- Denial applies to own and foreign labels alike until a separately reviewed canonical cancellation contract exists; query/print/history remain available.
+- Direct closure is not certification of indirect DEFINER entrypoints; report their captured ACLs separately without widening scope.
