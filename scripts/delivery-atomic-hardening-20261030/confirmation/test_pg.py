@@ -227,7 +227,7 @@ def proof_race_matrix():
   waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='confirm_proof_race';"+proof)
   wait_lock('confirm_proof_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
   b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':'confirm wins against '+action,'stdout':out,'stderr':err})
-  assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_PROOF_CLOSED' in err,(out,err);assert snapshot()==b;ok('confirmation wins observed lock; '+action+' denied PT409 with exact snapshots')
+  assert re.search(r'ERROR:\s+42501:',err) and 'DELIVERY_PROOF_SCOPE_DENIED' in err,(out,err);assert snapshot()==b;ok('confirmation wins observed lock; '+action+' denied 42501 scope with exact snapshots')
 
 if __name__=='__main__':
  status=1;start=time.monotonic()
