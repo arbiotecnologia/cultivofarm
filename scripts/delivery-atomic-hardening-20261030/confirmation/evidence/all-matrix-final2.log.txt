@@ -1,0 +1,84 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.9s
+PASS exact local captured composition checkpoint restored; disposable socket verified
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS review release stays NO-GO without remaining matrix
+PASS disposable harness-only activation exact state; review release remains closed
+PASS capability binds observed OS canonical proof and CAS revision
+PASS foreign FSF denies without mutations
+PASS canonical attach then physical confirmation advances transactionally
+PASS first physical success preserves existing financial fiscal outbox stock and ledger full content
+PASS exact replay preserves all snapshots
+PASS same key changed receiver conflicts
+PASS inactive actor cannot replay
+PASS repeatable read explicitly unsupported
+PASS serializable explicitly unsupported
+PASS reused form digital token/hash synchronized atomically
+PASS singleton absent explicitly PT503
+PASS missing CAS denied before writes
+PASS stale CAS denied
+PASS tampered canonical hash denied
+PASS missing storage object denied
+PASS financial payload rejected
+PASS foreign object owner rejects canonical digital proof
+PASS profile revoked DURING observed lock denies confirmation
+PASS role revoked DURING observed lock denies confirmation
+PASS tenant changed DURING observed lock denies confirmation
+PASS SaaS revoked DURING observed gate lock denies confirmation
+PASS canonical digital signature then physical confirmation positive
+CHECKPOINT sql_calls=100 elapsed=11.7s
+PASS digital confirmation replay no duplicate ledger event receipt
+PASS actual corrupted ledger os_id rejects replay
+PASS actual corrupted ledger lote_id rejects replay
+PASS actual corrupted ledger os_tipo rejects replay
+PASS actual corrupted ledger referencia_tipo rejects replay
+PASS restored ledger lineage exact replay no writes
+PASS multiple lots same programming forbidden by canonical unique index
+PASS proof coverage-0 exact replay
+PASS proof coverage-1 exact replay
+PASS proof coverage-2 exact replay
+PASS multi-item coverage leaves 6000ml demand open 0
+PASS multi-item coverage leaves 6000ml demand open 1
+PASS cancelled delivery cannot cover remaining demand
+PASS canonical cancellation and reversed reservation leave 2000ml demand uncovered
+PASS same OS second product programming forbidden by canonical unique constraint
+PASS different product never covers programming or replay
+PASS cancellation and reversed reservation preserve financial fiscal outbox sentinels
+CHECKPOINT sql_calls=200 elapsed=20.4s
+PASS second product separate OS finalizes 2000ml without covering first OS missing 2000ml
+PASS sign wins observed lock; stale confirmation PT409 with exact snapshots
+PASS confirmation wins observed lock; sign denied 42501 scope with exact snapshots
+PASS attach wins observed lock; stale confirmation PT409 with exact snapshots
+PASS confirmation wins observed lock; attach denied 42501 scope with exact snapshots
+PASS partial envase demand remains open
+PASS proof multi-new-digital exact replay
+PASS proof multi-attach exact replay
+PASS first item cannot finalize with pending independent stock delivery
+PASS second item after OS entregue completes 5000ml demand independently
+PASS first partial ACK replay remains exact after second item finalization
+PASS multi-item physical confirmation no finance fiscal outbox changes
+CHECKPOINT sql_calls=300 elapsed=27.8s
+PASS canonical cancellation wins observed race and confirmation rolls back
+PASS confirmed physical delivery cannot ordinary cancel
+PASS all fourteen existing financial fiscal outbox sentinels full content unchanged
+PASS deny rollback keeps canonical writer closed
+PASS rollback preserves physical proof stock ledger and receipts history
+PASS independent send install exact PRE POST closed
+PASS send writer initially closed
+PASS foreign tenant send denied
+PASS send absent CAS denied
+PASS send stale CAS denied
+PASS exact send capability available only after disposable grant
+PASS send changes only delivery status revision receipt; no stock ledger proof downstream effects
+PASS send exact replay no writes
+PASS send same key changed CAS conflicts
+PASS send inactive actor after lock denied
+PASS send role revoked after lock denied
+PASS send tenant changed after lock denied
+PASS send SaaS revoked after gate lock denied
+PASS canonical Enviar then Confirmar without second stock ledger dispatch
+PASS observed send winner send loser PT409 snapshot unchanged
+CHECKPOINT sql_calls=400 elapsed=35.8s
+PASS observed cancel winner send loser PT409 snapshot unchanged
+PASS send deny-only rollback no regrant

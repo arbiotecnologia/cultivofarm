@@ -1,0 +1,56 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.6s
+PASS exact local captured composition checkpoint restored; disposable socket verified
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS review release stays NO-GO without remaining matrix
+PASS disposable harness-only activation exact state; review release remains closed
+PASS capability binds observed OS canonical proof and CAS revision
+PASS foreign FSF denies without mutations
+PASS canonical attach then physical confirmation advances transactionally
+PASS first physical success preserves existing financial fiscal outbox stock and ledger full content
+PASS exact replay preserves all snapshots
+PASS same key changed receiver conflicts
+PASS inactive actor cannot replay
+PASS repeatable read explicitly unsupported
+PASS serializable explicitly unsupported
+PASS reused form digital token/hash synchronized atomically
+PASS singleton absent explicitly PT503
+PASS missing CAS denied before writes
+PASS stale CAS denied
+PASS tampered canonical hash denied
+PASS missing storage object denied
+PASS financial payload rejected
+PASS foreign object owner rejects canonical digital proof
+PASS profile revoked DURING observed lock denies confirmation
+PASS role revoked DURING observed lock denies confirmation
+PASS tenant changed DURING observed lock denies confirmation
+PASS SaaS revoked DURING observed gate lock denies confirmation
+PASS canonical digital signature then physical confirmation positive
+CHECKPOINT sql_calls=100 elapsed=14.4s
+PASS digital confirmation replay no duplicate ledger event receipt
+PASS actual corrupted ledger os_id rejects replay
+PASS actual corrupted ledger lote_id rejects replay
+PASS actual corrupted ledger os_tipo rejects replay
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 227, in <module>
+    try:run();status=0
+        ~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 71, in run
+    run_matrix()
+    ~~~~~~~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 119, in run_matrix
+    ledger_lineage_matrix(e2,stmt2)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 165, in ledger_lineage_matrix
+    sql(f"SET session_replication_role=replica;UPDATE public.estoque_movimentacoes SET {field}='{value}' WHERE id='{mid}';SET session_replication_role=origin;")
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 11, in sql
+    def sql(s):return pg.sql(s)
+                      ~~~~~~^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  new row for relation "estoque_movimentacoes" violates check constraint "estoque_mov_referencia_tipo_valida"
+DETAIL:  Failing row contains (90f78548-40d4-474d-82a3-97a7f2d5b396, 23f0b48e-bc15-4018-87c3-5547c10a60b0, expedicao, 2, reservado, expedido, 10000000-0000-4000-8000-000000000047, manual, 10000000-0000-4000-8000-000000000005, 10000000-0000-4000-8000-000000000003, null, 2026-10-31 13:53:30.705625+00, 10000000-0000-4000-8000-000000000049, 2, 2, 2, 2, 2.0000000000000000, 2.0000000000000000, un, saida, rpc_estoque_operar_v1, os, 643275a5-6445-4c48-9ddd-ed97fe0d1846, null, delivery-exp:28db69e0d517a54a948c541d6adfc97f, a3cdd1c44db46b14b516c4a2144093198c5c905c085eb879551df5c39aac16ce, null, {"motor": "v1", "stock_request_item": "23f0b48e-bc15-4018-87c3-5...).
+

@@ -1,0 +1,137 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=3.4s
+CHECKPOINT sql_calls=100 elapsed=5.2s
+CHECKPOINT sql_calls=200 elapsed=7.2s
+CHECKPOINT sql_calls=300 elapsed=9.0s
+CHECKPOINT sql_calls=400 elapsed=11.0s
+CHECKPOINT sql_calls=500 elapsed=13.3s
+CHECKPOINT sql_calls=600 elapsed=15.6s
+CHECKPOINT sql_calls=700 elapsed=18.5s
+CHECKPOINT sql_calls=800 elapsed=21.3s
+CHECKPOINT sql_calls=900 elapsed=24.1s
+CHECKPOINT sql_calls=1000 elapsed=26.7s
+CHECKPOINT sql_calls=1100 elapsed=29.2s
+CHECKPOINT sql_calls=1200 elapsed=31.4s
+CHECKPOINT sql_calls=1300 elapsed=33.6s
+CHECKPOINT sql_calls=1400 elapsed=35.9s
+CHECKPOINT sql_calls=1500 elapsed=38.1s
+CHECKPOINT sql_calls=1600 elapsed=40.5s
+CHECKPOINT sql_calls=1700 elapsed=42.7s
+CHECKPOINT sql_calls=1800 elapsed=44.9s
+CHECKPOINT sql_calls=1900 elapsed=46.9s
+CHECKPOINT sql_calls=2000 elapsed=50.0s
+CHECKPOINT sql_calls=2100 elapsed=52.4s
+CHECKPOINT sql_calls=2200 elapsed=54.4s
+CHECKPOINT sql_calls=2300 elapsed=56.1s
+CHECKPOINT sql_calls=2400 elapsed=57.6s
+CHECKPOINT sql_calls=2500 elapsed=59.4s
+CHECKPOINT sql_calls=2600 elapsed=61.1s
+CHECKPOINT sql_calls=2700 elapsed=62.7s
+CHECKPOINT sql_calls=2800 elapsed=64.5s
+CHECKPOINT sql_calls=2900 elapsed=66.5s
+CHECKPOINT sql_calls=3000 elapsed=69.0s
+CHECKPOINT sql_calls=3100 elapsed=71.2s
+CHECKPOINT sql_calls=3200 elapsed=73.5s
+CHECKPOINT sql_calls=3300 elapsed=75.7s
+CHECKPOINT sql_calls=3400 elapsed=77.9s
+CHECKPOINT sql_calls=3500 elapsed=80.1s
+CHECKPOINT sql_calls=3600 elapsed=82.4s
+CHECKPOINT sql_calls=3700 elapsed=84.7s
+CHECKPOINT sql_calls=3800 elapsed=87.1s
+CHECKPOINT sql_calls=3900 elapsed=89.6s
+CHECKPOINT sql_calls=4000 elapsed=92.1s
+CHECKPOINT sql_calls=4100 elapsed=94.5s
+CHECKPOINT sql_calls=4200 elapsed=96.8s
+CHECKPOINT sql_calls=4300 elapsed=100.2s
+CHECKPOINT sql_calls=4400 elapsed=102.6s
+CHECKPOINT sql_calls=4500 elapsed=104.9s
+CHECKPOINT sql_calls=4600 elapsed=107.0s
+CHECKPOINT sql_calls=4700 elapsed=109.0s
+CHECKPOINT sql_calls=4800 elapsed=111.1s
+CHECKPOINT sql_calls=4900 elapsed=113.4s
+CHECKPOINT sql_calls=5000 elapsed=115.5s
+CHECKPOINT sql_calls=5100 elapsed=117.7s
+CHECKPOINT sql_calls=5200 elapsed=120.1s
+CHECKPOINT sql_calls=5300 elapsed=122.4s
+CHECKPOINT sql_calls=5400 elapsed=124.9s
+CHECKPOINT sql_calls=5500 elapsed=127.3s
+CHECKPOINT sql_calls=5600 elapsed=130.7s
+CHECKPOINT sql_calls=5700 elapsed=133.4s
+CHECKPOINT sql_calls=5800 elapsed=136.0s
+CHECKPOINT sql_calls=5900 elapsed=138.6s
+CHECKPOINT sql_calls=6000 elapsed=140.9s
+CHECKPOINT sql_calls=6100 elapsed=143.3s
+CHECKPOINT sql_calls=6200 elapsed=145.5s
+CHECKPOINT sql_calls=6300 elapsed=147.6s
+CHECKPOINT sql_calls=6400 elapsed=150.0s
+CHECKPOINT sql_calls=6500 elapsed=151.9s
+CHECKPOINT sql_calls=6600 elapsed=153.9s
+CHECKPOINT sql_calls=6700 elapsed=156.3s
+CHECKPOINT sql_calls=6800 elapsed=158.9s
+CHECKPOINT sql_calls=6900 elapsed=162.0s
+CHECKPOINT sql_calls=7000 elapsed=165.8s
+CHECKPOINT sql_calls=7100 elapsed=168.6s
+CHECKPOINT sql_calls=7200 elapsed=170.9s
+CHECKPOINT sql_calls=7300 elapsed=173.1s
+CHECKPOINT sql_calls=7400 elapsed=175.2s
+CHECKPOINT sql_calls=7500 elapsed=177.4s
+CHECKPOINT sql_calls=7600 elapsed=179.7s
+CHECKPOINT sql_calls=7700 elapsed=181.7s
+CHECKPOINT sql_calls=7800 elapsed=183.6s
+CHECKPOINT sql_calls=7900 elapsed=185.3s
+CHECKPOINT sql_calls=8000 elapsed=187.6s
+CHECKPOINT sql_calls=8100 elapsed=189.8s
+CHECKPOINT sql_calls=8200 elapsed=191.8s
+CHECKPOINT sql_calls=8300 elapsed=194.1s
+CHECKPOINT sql_calls=8400 elapsed=196.4s
+CHECKPOINT sql_calls=8500 elapsed=198.5s
+CHECKPOINT sql_calls=8600 elapsed=201.0s
+CHECKPOINT sql_calls=8700 elapsed=203.3s
+CHECKPOINT sql_calls=8800 elapsed=205.5s
+CHECKPOINT sql_calls=8900 elapsed=207.5s
+CHECKPOINT sql_calls=9000 elapsed=209.8s
+CHECKPOINT sql_calls=9100 elapsed=212.0s
+CHECKPOINT sql_calls=9200 elapsed=214.1s
+CHECKPOINT sql_calls=9300 elapsed=216.6s
+CHECKPOINT sql_calls=9400 elapsed=219.1s
+CHECKPOINT sql_calls=9500 elapsed=221.7s
+CHECKPOINT sql_calls=9600 elapsed=223.6s
+CHECKPOINT sql_calls=9700 elapsed=225.4s
+CHECKPOINT sql_calls=9800 elapsed=227.6s
+CHECKPOINT sql_calls=9900 elapsed=229.8s
+CHECKPOINT sql_calls=10000 elapsed=232.1s
+CHECKPOINT sql_calls=10100 elapsed=234.3s
+CHECKPOINT sql_calls=10200 elapsed=236.3s
+CHECKPOINT sql_calls=10300 elapsed=238.5s
+CHECKPOINT sql_calls=10400 elapsed=240.8s
+CHECKPOINT sql_calls=10500 elapsed=243.1s
+CHECKPOINT sql_calls=10600 elapsed=245.8s
+PASS full captured restore without unresolved objects; disposable socket verified
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS separate minimum release exact PRE POST
+PASS foreign FSF denies without mutations
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 102, in <module>
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 67, in run
+    first_before=json.loads(before);result=json.loads(last(stmt));assert result['success'] is True and result['status']=='entregue',result
+                      ^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 12, in last
+    def last(s):return sql(s).splitlines()[-1]
+                       ~~~^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 11, in sql
+    def sql(s):return pg.sql(s)
+                      ~~~~~~^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  relation "platform_private.delivery_confirm_permits_v1" does not exist
+LINE 1: INSERT INTO platform_private.delivery_confirm_permits_v1(txi...
+                    ^
+QUERY:  INSERT INTO platform_private.delivery_confirm_permits_v1(txid,actor,organization_id,target,proof,old_delivery,new_delivery,old_proof,new_proof) VALUES(txid_current(),v_actor,org,e.id,c.id,to_jsonb(e),image,to_jsonb(c),proof_image)
+CONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 70 at SQL statement
+SQL function "rpc_entrega_confirmar_manual_v1" statement 1
+

@@ -1,0 +1,639 @@
+diff --git a/src/components/entregas/ConfirmarEntregaDialog.tsx b/src/components/entregas/ConfirmarEntregaDialog.tsx
+index 9c312e8c7..7f3fb2510 100644
+--- a/src/components/entregas/ConfirmarEntregaDialog.tsx
++++ b/src/components/entregas/ConfirmarEntregaDialog.tsx
+@@ -1,5 +1,4 @@
+ import { useEffect, useRef, useState } from "react";
+-import { useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+@@ -16,8 +15,7 @@ interface Props { open: boolean; onClose: () => void; entrega: any | null; onCon
+ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: Props) {
+  const { user, profile } = useAuth();
+  const fence = useStorageAccessScope(`physical-confirm:${open}:${entrega?.id}`);
+- const qc = useQueryClient();
+- const [read, setRead] = useState<{ scope: string; observed: string; status: string } | null>(null);
++ const [read, setRead] = useState<{ scope: string; observed: string; status: string; os: string; proof: string } | null>(null);
+  const [error, setError] = useState(""); const [busy,setBusy]=useState(false); const [uncertain,setUncertain]=useState(false);
+  const [form,setForm]=useState({nome:"",cargo:"",documento:"",observacoes:""});
+  const lock=useRef(false); const generation=useRef(0);
+@@ -36,7 +34,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+     if(gen!==generation.current||!current())return;
+     const cap=!error&&confirmationCapability(data,scope);
+     if(!cap){setError("Confirmação física indisponível. Nenhuma alteração foi enviada.");return;}
+-    setRead({scope:context,observed:String(cap.updated_at),status:String(cap.status)});
++    setRead({scope:context,observed:cap.updated_at,status:cap.status,os:cap.os_id,proof:cap.comprovante_id});
+    } catch {if(gen===generation.current&&current())setError("Não foi possível consultar a disponibilidade. Nenhuma alteração foi enviada.");}
+   })();
+  },[context,open,entrega?.id]);
+@@ -44,9 +42,9 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+   if(lock.current||!available||!read||!form.nome.trim())return;
+   const current=fence.capture(); if(!current())return;
+   if(read.status==='entregue' && attempt.current?.context!==context){setError("Entrega já confirmada. Consulte o histórico.");return;}
+-  const target=scope.entrega; const capturedScope=context;
++  const target=scope.entrega;
+   const retained=attempt.current?.context===context?attempt.current.value:null;
+-  const pending=retained??{scope:{...scope},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
++  const pending=retained??{scope:{...scope},roots:{os:read.os,proof:read.proof},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
+   attempt.current={context,value:pending}; lock.current=true;setBusy(true);setError("");let sent=false;
+   let timedOut=false; let settled=false; let timer: ReturnType<typeof setTimeout> | undefined;
+   const alive=()=>current()&&!timedOut;
+@@ -57,7 +55,6 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+    if(!current())return;
+    attempt.current=null;setUncertain(false);
+    toast({title:"Recebimento físico confirmado"});
+-   void qc.invalidateQueries({predicate:q=>q.queryKey[0]==='entregas'&&q.queryKey.some(k=>String(k)===capturedScope)});
+    onConfirmed?.("physical",target);onClose();
+   } catch(e:unknown){
+    if(current()){setError(e instanceof Error?e.message:"Não foi possível confirmar.");setUncertain(sent);}
+diff --git a/src/lib/entregas/deliveryConfirmationFlow.ts b/src/lib/entregas/deliveryConfirmationFlow.ts
+index e64c6037d..e289f0a05 100644
+--- a/src/lib/entregas/deliveryConfirmationFlow.ts
++++ b/src/lib/entregas/deliveryConfirmationFlow.ts
+@@ -5,21 +5,35 @@ export type ConfirmationScope = { actor: string; org: string; entrega: string };
+ type Obj = Record<string, unknown>;
+ const object = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.isArray(v);
+ const exact = (v: Obj, keys: string[]) => Object.keys(v).length === keys.length && keys.every(k => k in v);
+-export function confirmationCapability(data: unknown, scope: ConfirmationScope): Obj | null {
+-  if (!object(data) || !exact(data, ["capability", "available", "actor_id", "organization_id", "entrega_id", "updated_at", "status"]) ||
++const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(v);
++export function confirmationTimestamp(v: unknown): v is string {
++  if (typeof v !== "string") return false;
++  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/.exec(v);
++  if (!m) return false;
++  const [year, month, day, hour, minute, second] = m.slice(1, 7).map(Number);
++  const zone = m[7];
++  return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate() &&
++    hour <= 23 && minute <= 59 && second <= 59 && (zone === "Z" || (Number(zone.slice(1, 3)) <= 23 && Number(zone.slice(4)) <= 59)) && Number.isFinite(Date.parse(v));
++}
++export type ConfirmationRoots = { os: string; proof: string };
++type Capability = Obj & { os_id: string; comprovante_id: string; updated_at: string; status: string };
++export function confirmationCapability(data: unknown, scope: ConfirmationScope): Capability | null {
++  if (!object(data) || !exact(data, ["capability", "available", "actor_id", "organization_id", "entrega_id", "os_id", "comprovante_id", "updated_at", "status"]) ||
+     data.capability !== "delivery_confirmation_manual_v1" || data.available !== true || data.actor_id !== scope.actor ||
+-    data.organization_id !== scope.org || data.entrega_id !== scope.entrega || typeof data.updated_at !== "string" ||
++    data.organization_id !== scope.org || data.entrega_id !== scope.entrega || !confirmationTimestamp(data.updated_at) ||
++    ![data.actor_id, data.organization_id, data.entrega_id, data.os_id, data.comprovante_id].every(uuid) ||
+     !["separado", "em_rota", "entregue"].includes(String(data.status))) return null;
+-  return data;
++  return data as Capability;
+ }
+-export function confirmationAck(data: unknown, scope: ConfirmationScope): boolean {
++export function confirmationAck(data: unknown, scope: ConfirmationScope, roots?: ConfirmationRoots): boolean {
+   return object(data) && exact(data, ["success", "action", "replay", "actor_id", "organization_id", "entrega_id", "os_id", "comprovante_id", "status", "os_status", "finalizada", "updated_at"]) &&
+     data.success === true && data.action === "confirm" && typeof data.replay === "boolean" && data.actor_id === scope.actor &&
+     data.organization_id === scope.org && data.entrega_id === scope.entrega && data.status === "entregue" &&
+-    typeof data.os_id === "string" && typeof data.comprovante_id === "string" && typeof data.updated_at === "string" &&
++    [data.actor_id, data.organization_id, data.entrega_id, data.os_id, data.comprovante_id].every(uuid) && confirmationTimestamp(data.updated_at) &&
++    (!roots || (data.os_id === roots.os && data.comprovante_id === roots.proof)) &&
+     ((data.finalizada === true && data.os_status === "finalizada") || (data.finalizada === false && data.os_status === "entregue"));
+ }
+-export type ConfirmationAttempt = { scope: ConfirmationScope; args: Record<string, unknown> };
++export type ConfirmationAttempt = { scope: ConfirmationScope; roots: ConfirmationRoots; args: Record<string, unknown> };
+ export async function dispatchConfirmation(rpc: Rpc, attempt: ConfirmationAttempt, current: () => boolean, dispatched: () => void): Promise<unknown> {
+   const check = () => { if (!current()) throw new Error("Contexto alterado. Nenhuma nova confirmação foi enviada."); };
+   check();
+@@ -27,12 +41,14 @@ export async function dispatchConfirmation(rpc: Rpc, attempt: ConfirmationAttemp
+   check();
+   const cap = !pre.error && confirmationCapability(pre.data, attempt.scope);
+   if (!cap) throw new Error("Confirmação física indisponível para esta entrega.");
++  if (!confirmationTimestamp(attempt.args.p_observed) || !uuid(attempt.roots.os) || !uuid(attempt.roots.proof) || cap.os_id !== attempt.roots.os || cap.comprovante_id !== attempt.roots.proof)
++    throw new Error("OS ou comprovante alterado. Nenhuma nova confirmação foi enviada.");
+   // A retained exact request may reconcile a committed result after status/updated_at changed.
+   if (cap.status !== "entregue" && cap.updated_at !== attempt.args.p_observed) throw new Error("Entrega alterada. Consulte os dados antes de confirmar.");
+   check(); dispatched();
+   const res = await rpc(CONFIRM_RPC, attempt.args);
+   check();
+   if (res.error) throw new Error(res.error.message || "Não foi possível confirmar a entrega.");
+-  if (!confirmationAck(res.data, attempt.scope)) throw new Error("Resultado incerto. Consulte a entrega ou reconcilie a mesma tentativa.");
++  if (!confirmationAck(res.data, attempt.scope, attempt.roots) || Date.parse(String((res.data as Obj).updated_at)) < Date.parse(String(attempt.args.p_observed))) throw new Error("Resultado incerto. Consulte a entrega ou reconcilie a mesma tentativa.");
+   return res.data;
+ }
+\ No newline at end of file
+diff --git a/src/lib/entregas/deliverySendFlow.ts b/src/lib/entregas/deliverySendFlow.ts
+new file mode 100644
+index 000000000..36bc97bb2
+--- /dev/null
++++ b/src/lib/entregas/deliverySendFlow.ts
+@@ -0,0 +1,19 @@
++import { confirmationTimestamp, type ConfirmationScope } from './deliveryConfirmationFlow';
++import type { Rpc } from './deliveryOperationsFlow';
++export const SEND_RPC = 'rpc_entrega_enviar_manual_v1';
++export const SEND_CAP_RPC = 'rpc_entrega_envio_capability_v1';
++export type SendAttempt = { scope: ConfirmationScope; os: string; observed: string; key: string };
++export async function dispatchSend(rpc: Rpc, attempt: SendAttempt, current: () => boolean, sent: () => void) {
++ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++ if (![attempt.scope.actor, attempt.scope.org, attempt.scope.entrega, attempt.os, attempt.key].every(v => uuid.test(v) && v !== '00000000-0000-0000-0000-000000000000')) throw new Error('Identificação do envio inválida.');
++ const check = () => { if (!current()) throw new Error('Sessão alterada. Resultado não adotado.'); };
++ check(); const pre = await rpc(SEND_CAP_RPC, { p_entrega: attempt.scope.entrega }); check();
++ const cap = pre.data as Record<string, unknown> | null;
++ if (pre.error || !cap || Object.keys(cap).sort().join() !== ['capability','available','actor_id','organization_id','entrega_id','os_id','status','updated_at'].sort().join() || cap.capability !== 'delivery_send_manual_v1' || cap.available !== true || cap.actor_id !== attempt.scope.actor || cap.organization_id !== attempt.scope.org || cap.entrega_id !== attempt.scope.entrega || cap.os_id !== attempt.os || !confirmationTimestamp(cap.updated_at) || !confirmationTimestamp(attempt.observed) || !['separado','em_rota'].includes(String(cap.status))) throw new Error('Envio manual indisponível. Nenhuma alteração foi enviada.');
++ if (cap.status !== 'em_rota' && cap.updated_at !== attempt.observed) throw new Error('Entrega alterada. Revise antes de enviar.');
++ check();sent();const result = await rpc(SEND_RPC, { p_entrega: attempt.scope.entrega, p_observed: attempt.observed, p_request_key: attempt.key });check();
++ if (result.error) throw new Error(result.error.message || 'Envio não confirmado.');
++ const ack = result.data as Record<string, unknown> | null;
++ if (!ack || Object.keys(ack).sort().join() !== ['success','action','replay','actor_id','organization_id','entrega_id','os_id','status','updated_at'].sort().join() || ack.success !== true || ack.action !== 'send' || typeof ack.replay !== 'boolean' || ack.actor_id !== attempt.scope.actor || ack.organization_id !== attempt.scope.org || ack.entrega_id !== attempt.scope.entrega || ack.os_id !== attempt.os || ack.status !== 'em_rota' || !confirmationTimestamp(ack.updated_at)) throw new Error('Resultado incerto. Reconcilie o mesmo envio.');
++ return ack;
++}
+\ No newline at end of file
+diff --git a/src/pages/Entregas.tsx b/src/pages/Entregas.tsx
+index 018c48e0b..c14a3a7bc 100644
+--- a/src/pages/Entregas.tsx
++++ b/src/pages/Entregas.tsx
+@@ -61,6 +61,7 @@ import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoE
+ import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
+ import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
++import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";
+ 
+ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+   separado: { label: "Separado", variant: "secondary" },
+@@ -80,6 +81,7 @@ export default function Entregas() {
+   const pendingStore = (): Storage | null => { try { return window.localStorage; } catch { return null; } };
+   const deliveryScope = useStorageAccessScope("entregas-operations");
+   const operation = useRef<symbol | null>(null);
++  const sendAttempts = useRef(new Map<string, SendAttempt>());
+   const unresolved = useRef(new Set<string>());
+   const [operationNotice, setOperationNotice] = useState("");
+   // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.
+@@ -130,7 +132,7 @@ export default function Entregas() {
+   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
+     try {
+       // create/cancel probe the server capability inside the work, before any dispatch.
+-      if (target !== "create" && target !== "cancel" && target !== "replay") requireDeliveryOperationContract("delivery");
++      if (target !== "create" && target !== "cancel" && target !== "replay" && target !== "send") requireDeliveryOperationContract("delivery");
+     } catch (error) {
+       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
+       setOperationNotice(message);
+@@ -142,7 +144,7 @@ export default function Entregas() {
+     if (!captured()) throw new Error("Contexto de entrega indisponível.");
+     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");
+     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");
+-    if (target !== "replay" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
++    if (target !== "replay" && target !== "send" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
+     const ticket = Symbol(target);
+     operation.current = ticket;
+     let expired = false;
+@@ -198,9 +200,11 @@ export default function Entregas() {
+   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
+   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
+   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
++  const confirmationList = useRef<{ target: string; scope: string; current: () => boolean } | null>(null);
+   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
+   const [motivoCancel, setMotivoCancel] = useState("");
+   useEffect(() => {
++    confirmationList.current = null;
+     setCancelTarget(null); setSelectedEntrega(null); setComprovanteEntrega(null);
+     setConfirmEntregaOpen(false); setFinancialConfirmOpen(false); setPreviewOpen(false);
+     setPreviewPayload(null); setOperationNotice("");
+@@ -610,7 +614,7 @@ export default function Entregas() {
+ 
+   const updateStatus = useMutation({
+     retry: false,
+-    mutationFn: ({ id, status }: { id: string; status: string }) => runDeliveryOperation(id, async (check, dispatch) => {
++    mutationFn: ({ id, status }: { id: string; status: string }) => runDeliveryOperation("send", async (check, dispatch, current) => {
+       // A confirmação física ("entregue") NÃO passa por aqui: ela exige
+       // recebedor identificado e é feita exclusivamente pelo
+       // ConfirmarEntregaDialog. Nenhum caminho pode confirmar em silêncio.
+@@ -621,11 +625,14 @@ export default function Entregas() {
+       }
+ 
+       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || status !== "em_rota") throw new Error("Transição de entrega inválida.");
+-      dispatch();
+-      const { data, error } = await supabase.from("entregas").update({ status: status as Tables<"entregas">["status"] }).eq("id", id).eq("status", "separado").select("id, status");
+-      check();
+-      if (data?.length !== 1 || data[0].id !== id || data[0].status !== status) throw new Error("Status não confirmado; consulte as entregas.");
+-      if (error) throw error;
++      const row = (entregas as any[]).find(e => e.id === id);
++      if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");
++      const key = `${deliveryScope.scope}:${id}`;
++      if (unresolved.current.has(deliveryScope.scope) && !sendAttempts.current.has(key)) throw new Error("Reconcilie somente o mesmo envio pendente.");
++      const attempt = sendAttempts.current.get(key) ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
++      sendAttempts.current.set(key, attempt);
++      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, dispatch);
++      check(); sendAttempts.current.delete(key); unresolved.current.delete(deliveryScope.scope);
+       return true;
+     }),
+ 
+@@ -695,8 +702,11 @@ export default function Entregas() {
+    * paralelo nem fallback do nome do operador como recebedor.
+    */
+   const handleConfirmarEntrega = (id: string) => {
++    const current = deliveryScope.capture();
++    if (!current()) return;
+     const entrega: any = (entregas as any[]).find((e) => e.id === id);
+     if (!entrega) return;
++    confirmationList.current = { target: id, scope: deliveryScope.scope, current };
+     setSelectedEntrega(entrega);
+     setConfirmEntregaOpen(true);
+   };
+@@ -931,7 +941,7 @@ export default function Entregas() {
+                         {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
+                         {e.status === "em_rota" && (
+                           <div className="flex gap-1 w-full">
+-                            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Apenas Confirmar</Button>
++                            <Button size="sm" variant="outline" className="flex-1" onClick={() => handleConfirmarEntrega(e.id)}>Apenas Confirmar</Button>
+                             <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
+                             </Button>
+@@ -1006,7 +1016,7 @@ export default function Entregas() {
+                         {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
+                         {e.status === "em_rota" && (
+                           <>
+-                            <Button size="sm" variant="outline" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Confirmar</Button>
++                            <Button size="sm" variant="outline" onClick={() => handleConfirmarEntrega(e.id)}>Confirmar</Button>
+                             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
+                             </Button>
+@@ -1078,15 +1088,14 @@ export default function Entregas() {
+ 
+       <ConfirmarEntregaDialog
+         open={confirmEntregaOpen}
+-        onClose={() => { setConfirmEntregaOpen(false); }}
++        onClose={() => { confirmationList.current = null; setConfirmEntregaOpen(false); }}
+         entrega={selectedEntrega}
+-        onConfirmed={(mode) => {
+-          if (mode === "bill_now") {
+-            // Recarrega entrega e abre o passo financeiro
+-            setFinancialConfirmOpen(true);
+-          } else {
+-            setSelectedEntrega(null);
+-          }
++        onConfirmed={(mode, target) => {
++          const captured = confirmationList.current;
++          if (mode !== "physical" || !captured || captured.scope !== deliveryScope.scope || captured.target !== target || !captured.current()) return;
++          void queryClient.invalidateQueries({ queryKey: ["entregas", captured.scope, captured.scope], exact: true });
++          confirmationList.current = null;
++          setSelectedEntrega(null);
+         }}
+       />
+ 
+diff --git a/src/pages/EnvasePage.tsx b/src/pages/EnvasePage.tsx
+index a82994d0a..50c685a73 100644
+--- a/src/pages/EnvasePage.tsx
++++ b/src/pages/EnvasePage.tsx
+@@ -1,4 +1,4 @@
+-import { useCallback, useEffect, useState, type ChangeEvent } from "react";
++import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+ import { supabase } from "@/integrations/supabase/client";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+@@ -20,6 +20,7 @@ import {
+   carregarTudo,
+ } from "@/lib/envase/consulta";
+ import { useDebounce } from "@/hooks/useDebounce";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ 
+ interface Envase {
+   id: string;
+@@ -38,6 +39,12 @@ const SELECT_ENVASE =
+   "id, lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, etiqueta_id, created_at, lotes!inner(codigo_lote, produto_id, produtos(nome)), produto_etiquetas:etiqueta_id(id, status, trace_token, codigo_etiqueta)";
+ 
+ export default function EnvasePage() {
++  const session = useStorageAccessScope("envase-consulta");
++  // Remount clears rows, products, filters and pending debounce on every identity generation.
++  return session.ready ? <EnvaseConsulta key={session.scope} /> : <p role="status">Consulta indisponível nesta sessão.</p>;
++}
++
++function EnvaseConsulta() {
+   const [searchParams] = useSearchParams();
+   const [envases, setEnvases] = useState<Envase[]>([]);
+   const [total, setTotal] = useState(0);
+@@ -56,10 +63,19 @@ export default function EnvasePage() {
+   /** Uma consulta por pausa de digitação, não por tecla. */
+   const buscaDebounced = useDebounce(search.trim(), 400);
+   const periodo = validarPeriodo(dateFrom, dateTo);
++  const fence = useStorageAccessScope(JSON.stringify([search, buscaDebounced, produtoFilter, dateFrom, dateTo, pagina]));
++  const productsFence = useStorageAccessScope("envase-produtos");
++  const historyGeneration = useRef(0);
++  const productsGeneration = useRef(0);
++  const [adoptedScope, setAdoptedScope] = useState("");
++  const historyCurrent = adoptedScope === fence.scope;
+ 
+   /** Histórico: paginação server-side com contagem exata e filtros no banco. */
+   const carregarHistorico = useCallback(async () => {
+-    if (!periodo.valido) return;
++    const generation = ++historyGeneration.current;
++    const captured = fence.capture();
++    const current = () => captured() && generation === historyGeneration.current;
++    if (!current() || !periodo.valido || search.trim() !== buscaDebounced) return;
+     setLoading(true);
+     setErro(null);
+     try {
+@@ -67,6 +83,7 @@ export default function EnvasePage() {
+       let loteIds: string[] = [];
+       if (termo) {
+         const encontrados = await carregarTudo<{ id: string }>(async (from, to) => {
++          if (!current()) throw new Error("Consulta substituída");
+           const { data, error } = await supabase
+             .from("lotes")
+             .select("id")
+@@ -74,10 +91,12 @@ export default function EnvasePage() {
+             .order("id")
+             .range(from, to);
+           if (error) throw error;
++          if (!current()) throw new Error("Consulta substituída");
+           return (data ?? []) as { id: string }[];
+         });
+         loteIds = encontrados.map((l) => l.id);
+       }
++      if (!current()) return;
+ 
+       let query = supabase
+         .from("envase")
+@@ -96,42 +115,56 @@ export default function EnvasePage() {
+ 
+       const { from, to } = faixaDaPagina(pagina);
+       const { data, count, error } = await query.range(from, to);
++      if (!current()) return;
+       if (error) throw error;
++      setAdoptedScope(fence.scope);
+       setEnvases((data ?? []) as unknown as Envase[]);
+       setTotal(count ?? 0);
+     } catch (e: any) {
++      if (!current()) return;
++      setAdoptedScope(fence.scope);
+       setEnvases([]);
+       setTotal(0);
+       setErro(e?.message || "Não foi possível carregar o histórico de envases.");
+     } finally {
+-      setLoading(false);
++      if (current()) setLoading(false);
+     }
+-  }, [buscaDebounced, produtoFilter, dateFrom, dateTo, pagina, periodo.valido]);
++  }, [fence.scope, buscaDebounced, search, produtoFilter, dateFrom, dateTo, pagina, periodo.valido]);
+ 
+   const carregarProdutos = useCallback(async () => {
++    const generation = ++productsGeneration.current;
++    const captured = productsFence.capture();
++    const current = () => captured() && generation === productsGeneration.current;
++    if (!current()) return;
+     setCarregandoAuxiliares(true);
+     setErroAuxiliares(null);
+     try {
+       const rows = await carregarTudo<{ id: string; nome: string }>(async (from, to) => {
++        if (!current()) throw new Error("Consulta substituída");
+         const { data, error } = await supabase.from("produtos").select("id, nome").order("nome").order("id").range(from, to);
++        if (!current()) throw new Error("Consulta substituída");
+         if (error) throw error;
+         return data ?? [];
+       });
+-      setProdutos(rows);
++      if (current()) setProdutos(rows);
+     } catch (e: unknown) {
++      if (!current()) return;
+       setProdutos([]);
+       setErroAuxiliares(e instanceof Error ? e.message : "Não foi possível carregar produtos.");
+-    } finally { setCarregandoAuxiliares(false); }
+-  }, []);
++    } finally { if (current()) setCarregandoAuxiliares(false); }
++  }, [productsFence.scope]);
+ 
+-  useEffect(() => { carregarHistorico(); }, [carregarHistorico]);
+-  useEffect(() => { carregarProdutos(); }, [carregarProdutos]);
++  useEffect(() => { void carregarHistorico(); return () => { ++historyGeneration.current; }; }, [carregarHistorico]);
++  useEffect(() => { void carregarProdutos(); return () => { ++productsGeneration.current; }; }, [carregarProdutos]);
+ 
+   useEffect(() => {
++    const captured = fence.capture();
++    let active = true;
+     let timer: ReturnType<typeof setTimeout> | null = null;
+     const debounced = () => {
++      if (!active || !captured()) return;
+       if (timer) clearTimeout(timer);
+-      timer = setTimeout(() => { carregarHistorico(); carregarProdutos(); }, 1200);
++      timer = setTimeout(() => { if (active && captured()) { void carregarHistorico(); void carregarProdutos(); } }, 1200);
+     };
+     const channel = supabase
+       .channel("envase-lotes-realtime")
+@@ -139,6 +172,7 @@ export default function EnvasePage() {
+       .on("postgres_changes", { event: "*", schema: "public", table: "lotes" }, debounced)
+       .subscribe();
+     return () => {
++      active = false;
+       if (timer) clearTimeout(timer);
+       supabase.removeChannel(channel);
+     };
+@@ -222,12 +256,12 @@ export default function EnvasePage() {
+             <div className="p-6 text-sm text-muted-foreground">
+               Corrija o período para consultar o histórico.
+             </div>
+-          ) : erro ? (
++          ) : historyCurrent && erro ? (
+             <div className="p-6 space-y-3" role="alert">
+               <p className="text-sm text-destructive">Falha ao carregar o histórico de envases. {erro}</p>
+               <Button variant="outline" onClick={() => carregarHistorico()}>Tentar novamente</Button>
+             </div>
+-          ) : loading ? (
++          ) : loading || !historyCurrent ? (
+             <div className="p-6 text-sm text-muted-foreground" role="status">Carregando envases…</div>
+           ) : (
+             <>
+diff --git a/src/test/entregas/confirmacaoEntregaAck.test.tsx b/src/test/entregas/confirmacaoEntregaAck.test.tsx
+index cae4a4325..579ff3771 100644
+--- a/src/test/entregas/confirmacaoEntregaAck.test.tsx
++++ b/src/test/entregas/confirmacaoEntregaAck.test.tsx
+@@ -5,13 +5,18 @@ const t=vi.hoisted(()=>({auth:{} as any,rpc:vi.fn(),toast:vi.fn(),close:vi.fn(),
+ vi.mock('@/hooks/useAuth',()=>({useAuth:()=>t.auth}));vi.mock('@/hooks/use-toast',()=>({toast:t.toast}));vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:t.rpc}}));
+ import {ConfirmarEntregaDialog} from '@/components/entregas/ConfirmarEntregaDialog';
+ const id='11111111-1111-4111-8111-111111111111',obs='2026-10-31T12:00:00Z';
+-const cap=(target=id)=>({capability:'delivery_confirmation_manual_v1',available:true,actor_id:id,organization_id:id,entrega_id:target,updated_at:obs,status:'em_rota'});
++const cap=(target=id)=>({capability:'delivery_confirmation_manual_v1',available:true,actor_id:id,organization_id:id,entrega_id:target,os_id:id,comprovante_id:id,updated_at:obs,status:'em_rota'});
+ const ack=()=>({success:true,action:'confirm',replay:false,actor_id:id,organization_id:id,entrega_id:id,os_id:id,comprovante_id:id,status:'entregue',os_status:'finalizada',finalizada:true,updated_at:obs});
+ function mount(){const qc=new QueryClient();const element=(target=id,open=true)=><QueryClientProvider client={qc}><ConfirmarEntregaDialog open={open} entrega={{id:target,status:'em_rota'}} onClose={t.close} onConfirmed={t.confirmed}/></QueryClientProvider>;return {...render(element()),element};}
+ const button=()=>screen.getByRole('button',{name:'Confirmar entrega'});
+ const fill=()=>fireEvent.change(screen.getByLabelText('Recebido por *'),{target:{value:'LOCAL'}});
+ beforeEach(()=>{vi.clearAllMocks();t.auth={user:{id},profile:{user_id:id,organization_id:id,ativo:true},roles:['gestor'],loading:false,authzReady:true,authzEpoch:0};t.rpc.mockImplementation((name:string)=>Promise.resolve({data:name==='rpc_entrega_confirmacao_capability_v1'?cap():ack(),error:null}));});
+ describe('Mounted canonical physical confirmation',()=>{
++ it.each(['os_id','comprovante_id','updated_at','foreign-os','foreign-proof'])('invalid ACK %s stays uncertain with same key and no success',async field=>{
++ const bad={...ack(),[field==='foreign-os'?'os_id':field==='foreign-proof'?'comprovante_id':field]:field.startsWith('foreign')?'22222222-2222-4222-8222-222222222222':''};
++ t.rpc.mockImplementation((n:string)=>Promise.resolve({data:n==='rpc_entrega_confirmacao_capability_v1'?cap():bad,error:null}));mount();fill();await waitFor(()=>expect(button()).toBeEnabled());fireEvent.click(button());const retry=await screen.findByRole('button',{name:'Reconciliar mesma tentativa'});expect(t.toast).not.toHaveBeenCalled();expect(t.confirmed).not.toHaveBeenCalled();expect(t.close).not.toHaveBeenCalled();const first=t.rpc.mock.calls.find(([n])=>n==='rpc_entrega_confirmar_manual_v1')?.[1];fireEvent.click(retry);await waitFor(()=>expect(t.rpc.mock.calls.filter(([n])=>n==='rpc_entrega_confirmar_manual_v1')).toHaveLength(2));expect(t.rpc.mock.calls.filter(([n])=>n==='rpc_entrega_confirmar_manual_v1')[1][1]).toEqual(first);expect(t.toast).not.toHaveBeenCalled();
++ });
++ it('changed proof during preflight never dispatches',async()=>{mount();fill();await waitFor(()=>expect(button()).toBeEnabled());t.rpc.mockResolvedValue({data:{...cap(),comprovante_id:'22222222-2222-4222-8222-222222222222'},error:null});fireEvent.click(button());await screen.findByRole('alert');expect(t.rpc.mock.calls.filter(([n])=>n==='rpc_entrega_confirmar_manual_v1')).toHaveLength(0);});
+  it.each(['missing','false','extra','foreign'])('unavailable %s capability never dispatches writer',async kind=>{
+  const data=kind==='missing'?null:{...cap(),...(kind==='false'?{available:false}:kind==='extra'?{extra:true}:{organization_id:'foreign'})};t.rpc.mockResolvedValue({data,error:null});mount();fill();await screen.findByRole('alert');fireEvent.submit(button().closest('form') as HTMLFormElement);expect(button()).toBeDisabled();expect(t.rpc.mock.calls.every(([name])=>name==='rpc_entrega_confirmacao_capability_v1')).toBe(true);expect(t.confirmed).not.toHaveBeenCalled();
+  });
+diff --git a/src/test/entregas/deliveryAtomicPageMount.test.tsx b/src/test/entregas/deliveryAtomicPageMount.test.tsx
+index 91b4c78fc..ab1a06080 100644
+--- a/src/test/entregas/deliveryAtomicPageMount.test.tsx
++++ b/src/test/entregas/deliveryAtomicPageMount.test.tsx
+@@ -1,10 +1,10 @@
+ import React, { type PropsWithChildren } from "react";
+ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+ import { MemoryRouter } from "react-router-dom";
+-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ 
+-const t = vi.hoisted(() => ({ auth: {} as any, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
++const t = vi.hoisted(() => ({ auth: {} as any, confirm: {} as any, financial: false, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
+ vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
+ vi.mock("@/hooks/useSystemConfig", () => ({ useSystemConfig: () => ({ config: {}, defaults: {} }) }));
+@@ -12,8 +12,8 @@ vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+ vi.mock("sonner", () => ({ toast: { success: t.success, error: t.error, info: vi.fn() } }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: t.rpc, from: t.from, channel: () => { const c: any = { on: () => c, subscribe: () => c }; return c; }, removeChannel: vi.fn() } }));
+ vi.mock("@/components/entregas/RegistrarEntregaDialog", () => ({ RegistrarEntregaDialog: (p: any) => { t.submit = p.onSubmit; return null; } }));
+-vi.mock("@/components/entregas/ConfirmarEntregaDialog", () => ({ ConfirmarEntregaDialog: () => null }));
+-vi.mock("@/components/financeiro/ConfirmarEntregaFinanceiroDialog", () => ({ ConfirmarEntregaFinanceiroDialog: () => null }));
++vi.mock("@/components/entregas/ConfirmarEntregaDialog", () => ({ ConfirmarEntregaDialog: (p: any) => { t.confirm = p; return null; } }));
++vi.mock("@/components/financeiro/ConfirmarEntregaFinanceiroDialog", () => ({ ConfirmarEntregaFinanceiroDialog: (p: any) => { t.financial = p.open; return null; } }));
+ vi.mock("@/components/entregas/EntregaComprovantePanel", () => ({ EntregaComprovantePanel: () => null }));
+ vi.mock("@/components/entregas/TermoEntregaPanel", () => ({ TermoEntregaPanel: () => null }));
+ vi.mock("@/components/estoque/EmbalagensEntregaPanel", () => ({ EmbalagensEntregaPanel: () => null }));
+@@ -80,6 +80,47 @@ beforeEach(() => {
+ afterEach(() => { cleanup(); });
+ 
+ describe("Entregas page with atomic adapter (mounted)", () => {
++  it("Enviar replaces direct UPDATE and makes physical confirmation reachable", async () => {
++    t.rows = [{ id: E1, status: "separado", ordem_servico_id: OS, updated_at: T1, clientes: { nome: "Cliente" } }];
++    t.rpc.mockImplementation(async (fn: string) => {
++      if (fn === 'rpc_entrega_envio_capability_v1') return { data: { capability: 'delivery_send_manual_v1', available: true, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'separado', updated_at: T1 }, error: null };
++      t.rows = [{ ...t.rows[0], status: 'em_rota', updated_at: T2 }];
++      return { data: { success: true, action: 'send', replay: false, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'em_rota', updated_at: T2 }, error: null };
++    });
++    const h = mount(); fireEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
++    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar' }));
++    expect(t.confirm.open).toBe(true); expect(t.confirm.entrega.status).toBe('em_rota');
++    t.rows = [{ ...t.rows[0], status: 'entregue' }]; await act(async () => t.confirm.onConfirmed('physical', E1));
++    expect(await screen.findByText('Entregue')).toBeInTheDocument(); expect(t.financial).toBe(false); expect(t.writes).toEqual([]); h.qc.clear();
++  });
++  it("physical ACK refreshes exact real list cache only and never opens finance", async () => {
++    t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];
++    const h = mount();
++    fireEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
++    const own = h.qc.getQueryCache().findAll().find(q => q.queryKey[0] === "entregas");
++    expect(own).toBeDefined();
++    const foreignKey = ["entregas", "foreign-actor", "foreign-request"];
++    h.qc.setQueryData(foreignKey, [{ id: "foreign", status: "separado" }]);
++    const foreignRead = vi.fn(async () => [{ id: "foreign", status: "separado" }]);
++    const observer = new QueryObserver(h.qc, { queryKey: foreignKey, queryFn: foreignRead, staleTime: Infinity });
++    const unsubscribe = observer.subscribe(() => {});
++    const foreignBefore = h.qc.getQueryState(foreignKey);
++    t.rows = [{ ...t.rows[0], status: "entregue" }];
++    await act(async () => t.confirm.onConfirmed("physical", E1));
++    await waitFor(() => expect(h.qc.getQueryData(own?.queryKey ?? [] )).toEqual(t.rows));
++    expect(await screen.findByText("Entregue")).toBeInTheDocument();
++    expect(h.qc.getQueryState(foreignKey)).toEqual(foreignBefore);
++    expect(foreignRead).not.toHaveBeenCalled();
++    expect(t.financial).toBe(false); unsubscribe(); h.qc.clear();
++  });
++  it("late physical callback after tenant change does not invalidate either cache", async () => {
++    t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];
++    const h = mount(); fireEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
++    const callback = t.confirm.onConfirmed;
++    t.auth = { ...t.auth, profile: { ...t.auth.profile, organization_id: ORG_B } }; h.rerender(<Entregas />);
++    const invalidation = vi.spyOn(h.qc, "invalidateQueries");
++    await act(async () => callback("physical", E1)); expect(invalidation).not.toHaveBeenCalled(); expect(t.financial).toBe(false); h.qc.clear();
++  });
+   it("dispatches exactly the observed revisions when unchanged", async () => {
+     const h = mount();
+     await act(async () => { await t.submit(payload()); });
+diff --git a/src/test/entregas/deliveryConfirmationEnvelope.test.ts b/src/test/entregas/deliveryConfirmationEnvelope.test.ts
+new file mode 100644
+index 000000000..0941878b0
+--- /dev/null
++++ b/src/test/entregas/deliveryConfirmationEnvelope.test.ts
+@@ -0,0 +1,19 @@
++import { describe, expect, it } from "vitest";
++import { confirmationAck, confirmationCapability, confirmationTimestamp } from "@/lib/entregas/deliveryConfirmationFlow";
++const id = "11111111-1111-4111-8111-111111111111";
++const scope = { actor: id, org: id, entrega: id };
++const roots = { os: id, proof: id };
++const cap = { capability: "delivery_confirmation_manual_v1", available: true, actor_id: id, organization_id: id, entrega_id: id, os_id: id, comprovante_id: id, updated_at: "2026-10-31T13:32:00.123456+00:00", status: "em_rota" };
++const ack = { success: true, action: "confirm", replay: false, actor_id: id, organization_id: id, entrega_id: id, os_id: id, comprovante_id: id, updated_at: cap.updated_at, status: "entregue", os_status: "entregue", finalizada: false };
++describe("Runtime confirmation envelopes", () => {
++  it("accepts exact valid envelopes", () => { expect(confirmationAck(ack, scope, roots)).toBe(true); expect(confirmationCapability(cap, scope)).not.toBeNull(); });
++  it.each(["os_id", "comprovante_id", "updated_at"])("rejects empty ACK %s", field => expect(confirmationAck({ ...ack, [field]: "" }, scope)).toBe(false));
++  it("rejects empty capability timestamp", () => expect(confirmationCapability({ ...cap, updated_at: "" }, scope)).toBeNull());
++  it.each(["", "bad", "2026-02-30T00:00:00Z", "2026-10-31", "2026-10-31T25:00:00Z", "infinity"])("rejects timestamp %s", value => expect(confirmationTimestamp(value)).toBe(false));
++  it.each(["os_id", "comprovante_id"])("rejects malformed and different root %s", field => {
++    expect(confirmationAck({ ...ack, [field]: "arbitrary" }, scope, roots)).toBe(false);
++    expect(confirmationAck({ ...ack, [field]: "22222222-2222-4222-8222-222222222222" }, scope, roots)).toBe(false);
++    expect(confirmationCapability({ ...cap, [field]: "" }, scope)).toBeNull();
++  });
++  it("rejects foreign organization", () => expect(confirmationAck({ ...ack, organization_id: "22222222-2222-4222-8222-222222222222" }, scope, roots)).toBe(false));
++});
+\ No newline at end of file
+diff --git a/src/test/entregas/deliverySendFlow.test.ts b/src/test/entregas/deliverySendFlow.test.ts
+new file mode 100644
+index 000000000..fd5ba093e
+--- /dev/null
++++ b/src/test/entregas/deliverySendFlow.test.ts
+@@ -0,0 +1,11 @@
++import { describe, expect, it, vi } from 'vitest';
++import { dispatchSend, SEND_CAP_RPC } from '@/lib/entregas/deliverySendFlow';
++const id='11111111-1111-4111-8111-111111111111', observed='2026-10-31T13:00:00Z';
++const attempt={scope:{actor:id,org:id,entrega:id},os:id,observed,key:id};
++const cap={capability:'delivery_send_manual_v1',available:true,actor_id:id,organization_id:id,entrega_id:id,os_id:id,status:'separado',updated_at:observed};
++const ack={success:true,action:'send',replay:false,actor_id:id,organization_id:id,entrega_id:id,os_id:id,status:'em_rota',updated_at:observed};
++describe('Enviar scoped canonical runtime',()=>{
++ it('valid send one canonical dispatch',async()=>{const rpc=vi.fn(async n=>({data:n===SEND_CAP_RPC?cap:ack,error:null}));await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).resolves.toEqual(ack);expect(rpc).toHaveBeenCalledTimes(2);});
++ it.each([{available:false},{organization_id:'foreign'},{updated_at:''},{os_id:'different'}])('bad capability no mutation %j',async bad=>{const rpc=vi.fn(async()=>({data:{...cap,...bad},error:null}));await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).rejects.toThrow();expect(rpc).toHaveBeenCalledTimes(1);});
++ it('bad ACK uncertain exact key retained on explicit retry',async()=>{const rpc=vi.fn(async n=>({data:n===SEND_CAP_RPC?cap:{...ack,updated_at:''},error:null}));await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).rejects.toThrow('incerto');await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).rejects.toThrow();expect(rpc.mock.calls[1]).toEqual(rpc.mock.calls[3]);});
++});
+\ No newline at end of file
+diff --git a/src/test/envase/envasePageReadOnly.test.tsx b/src/test/envase/envasePageReadOnly.test.tsx
+index 9b286b7bf..6b2f0151d 100644
+--- a/src/test/envase/envasePageReadOnly.test.tsx
++++ b/src/test/envase/envasePageReadOnly.test.tsx
+@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+ import { MemoryRouter } from "react-router-dom";
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+ const t = vi.hoisted(() => ({ rows: [] as any[], rpc: vi.fn(), open: vi.fn() }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "actor" }, profile: { user_id: "actor", organization_id: "ARB", ativo: true }, roles: ["gestor"], loading: false, authzReady: true }) }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+   rpc: t.rpc,
+   from: (table: string) => {
+diff --git a/src/test/envase/envasePageScope.test.tsx b/src/test/envase/envasePageScope.test.tsx
+new file mode 100644
+index 000000000..d2e1f769e
+--- /dev/null
++++ b/src/test/envase/envasePageScope.test.tsx
+@@ -0,0 +1,44 @@
++import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { MemoryRouter } from "react-router-dom";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++const t = vi.hoisted(() => ({ auth: {} as any, pending: [] as { table: string; from: number; resolve: (v: any) => void }[], events: [] as (() => void)[], removed: vi.fn() }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: {
++  from: (table: string) => { const q: any = { select: () => q, order: () => q, eq: () => q, gte: () => q, lte: () => q, or: () => q, ilike: () => q, range: (from: number) => new Promise(resolve => t.pending.push({ table, from, resolve })) }; return q; },
++  channel: () => { const c: any = { on: (_: any, __: any, fn: () => void) => { t.events.push(fn); return c; }, subscribe: () => c }; return c; }, removeChannel: t.removed,
++} }));
++vi.mock("@/components/etiquetas/EtiquetaProdutoActions", () => ({ EtiquetaProdutoActions: () => null }));
++import EnvasePage from "@/pages/EnvasePage";
++const view = () => <MemoryRouter><EnvasePage /></MemoryRouter>;
++const rows = (name: string) => [{ id: name, tipo_embalagem: "frasco_1L", data_envase: "2026-10-31", lotes: { codigo_lote: name } }];
++async function finish(index: number, name: string, count = 100) { await act(async () => t.pending[index].resolve({ data: t.pending[index].table === "produtos" ? [{ id: name, nome: name }] : rows(name), count, error: null })); }
++beforeEach(() => { vi.clearAllMocks(); t.pending = []; t.events = []; t.auth = { user: { id: "actor" }, profile: { user_id: "actor", organization_id: "ARB", ativo: true }, roles: ["gestor"], loading: false, authzReady: true, authzEpoch: 0 }; });
++describe("Envase mounted current-query fences", () => {
++  it("inverted filter responses never overwrite current history", async () => {
++    render(view()); const old = t.pending.findIndex(p => p.table === "envase");
++    fireEvent.change(screen.getByLabelText("Data inicial"), { target: { value: "2026-10-01" } });
++    const fresh = t.pending.map(p => p.table).lastIndexOf("envase"); await finish(fresh, "CURRENT"); await finish(old, "STALE");
++    expect(screen.getByText("CURRENT")).toBeInTheDocument(); expect(screen.queryByText("STALE")).toBeNull();
++  });
++  it("inverted page responses preserve the latest page", async () => {
++    render(view()); await finish(0, "FIRST"); fireEvent.click(screen.getByRole("button", { name: "Próxima página" }));
++    const second = t.pending.length - 1; fireEvent.change(screen.getByLabelText("Data final"), { target: { value: "2026-10-31" } });
++    const latest = t.pending.length - 1; await finish(latest, "FILTER-PAGE-1"); await finish(second, "OLD-PAGE-2");
++    expect(screen.getByText("FILTER-PAGE-1")).toBeInTheDocument(); expect(screen.queryByText("OLD-PAGE-2")).toBeNull();
++  });
++  it.each(["FSF", "inactive"])("%s clears immediately and refuses old history/products", async kind => {
++    const h = render(view()); const old = [...t.pending]; await finish(0, "ARB-ROW");
++    t.auth = { ...t.auth, profile: { ...t.auth.profile, organization_id: kind === "FSF" ? "FSF" : "ARB", ativo: kind !== "inactive" } }; h.rerender(view());
++    expect(screen.queryByText("ARB-ROW")).toBeNull();
++    await act(async () => old.forEach(p => p.resolve({ data: p.table === "produtos" ? [{ id: "ARB", nome: "ARB-PRODUCT" }] : rows("ARB-LATE"), count: 1, error: null })));
++    expect(screen.queryByText("ARB-LATE")).toBeNull();
++    if (kind === "FSF") { const p = t.pending.map(x => x.table).lastIndexOf("produtos"); await finish(p, "FSF-PRODUCT"); fireEvent.click(screen.getByRole("combobox")); expect(await screen.findByText("FSF-PRODUCT")).toBeInTheDocument(); expect(screen.queryByText("ARB-PRODUCT")).toBeNull(); }
++    else expect(t.pending).toHaveLength(2);
++    expect(t.removed).toHaveBeenCalled();
++  });
++  it("unmount retires pending promises and realtime timers", async () => {
++    const h = render(view()); const events = [...t.events]; const pending = [...t.pending]; events[0](); h.unmount(); const count = t.pending.length;
++    events.forEach(fn => fn()); await act(async () => pending.forEach(p => p.resolve({ data: [], count: 0, error: null })));
++    await new Promise(resolve => setTimeout(resolve, 1250)); expect(t.pending).toHaveLength(count); expect(t.removed).toHaveBeenCalledTimes(1);
++  });
++});
+\ No newline at end of file
