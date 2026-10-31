@@ -1,6 +1,6 @@
 """Captured disposable PostgreSQL only; real triggers, synthetic local actors."""
 from pathlib import Path
-import sys,json,subprocess,re,time,traceback,hashlib,importlib.util
+import sys,json,subprocess,re,time,traceback,hashlib,importlib.util,os
 H=Path(__file__).resolve().parent; ROOT=H.parents[2]; S=ROOT/'scripts'; ISO=S/'stock-envase-recovery-20261027/isolated'
 sys.path.insert(0,str(S/'delivery-atomic-hardening-20261030'))
 import restore
@@ -51,12 +51,23 @@ def run():
  assert pg.root.is_relative_to(Path('/tmp')) and pg.psql()[3]==str(pg.root)
  # Ref comes from immutable canonical local capture; no credentials or hosted transport.
  assert 'swzpzcwiasxmjutrmvkm' in (S/'os-delivery-reopening-20261027/live/public.fn_entrega_confirmar_engine_v1.sql.review').read_text()
- r=restore.restore();assert not any(r.values()),r;ok('full captured restore without unresolved objects; disposable socket verified')
+ cached=Path('/tmp/delivery-confirmation/applied-fixture.sql')
+ if os.environ.get('CONFIRM_LOCAL_REUSE')=='1':
+  assert cached.is_file() and cached.is_relative_to(Path('/tmp'))
+  pg.start();sql(cached.read_text());ok('exact local captured composition checkpoint restored; disposable socket verified')
+ else:
+  r=restore.restore();assert not any(r.values()),r;ok('full captured restore without unresolved objects; disposable socket verified')
+  prepare_checkpoint(cached)
+ run_matrix()
+def prepare_checkpoint(cached):
  for p in [S/'delivery-proof-authz-20261030/release-combined.sql.review',S/'stock-envase-recovery-20261027/install-v2.sql.review',S/'proof-select-tenant-20261030/install.sql.review',S/'delivery-evidence-tenant-20261030/install.sql.review',S/'produto-etiquetas-tenant-20261030/install.sql.review',S/'delivery-checklist-occurrence-authz-20261030/install.sql.review',S/'delivery-waiver-closure-20261030/install.sql.review',S/'delivery-group-capability-20261030/install.sql.review',ISO/'install.sql.review',ISO/'legacy-closure-install.sql.review',ISO/'release.sql.review']:load(p)
  ok('reported applied composition including isolated install closure release restored without regeneration')
  T.setup_v2();sys.path.insert(0,str(ISO));import sentinels
  sentinels.seed(sys.modules[__name__]);ok('existing full-row downstream sentinels seeded in disposable fixture only')
  sql("INSERT INTO storage.buckets(id,name,public) VALUES('entrega-documentos','entrega-documentos',false) ON CONFLICT DO NOTHING;")
+ cmd=pg.psql();cmd[0]='pg_dump';cmd=[cmd[0],'-h',str(pg.root),'-p',str(pg.PORT),'-U','postgres','--clean','--if-exists','postgres']
+ cached.write_text(subprocess.run(cmd,capture_output=True,text=True,check=True,timeout=40).stdout)
+def run_matrix():
  pre=state();delta=G.candidate();measured=sql('BEGIN;'+delta+G.STATE+'::text;ROLLBACK;');post=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]);assert state()==pre
  released=json.loads([x for x in sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;'+G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1]);G.write(pre,post,released)
  load(H/'install.sql.review');assert state()==post;ok('exact install PRE POST commits writer closed')
