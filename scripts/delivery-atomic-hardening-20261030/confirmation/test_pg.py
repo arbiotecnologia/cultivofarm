@@ -203,6 +203,11 @@ def coverage_matrix():
  ok('multi-product cancellation replacement preserves financial fiscal outbox sentinels')
 
 def proof_race_matrix():
+ def held(name):
+  for _ in range(100):
+   if last(f"SELECT count(*) FROM pg_stat_activity WHERE application_name='{name}' AND state='idle in transaction';")=='1':return
+   time.sleep(.025)
+  raise AssertionError('HOLDER_NOT_READY '+name)
  for n,action in enumerate(['sign','attach']):
   os,pp,l=T.u(730+n*3),T.u(731+n*3),T.u(732+n*3)
   sql('SET session_replication_role=replica;'+T.manufactured(os,pp,l)+'SET session_replication_role=origin;')
@@ -213,12 +218,12 @@ def proof_race_matrix():
   if action=='sign':payload.update(assinatura_digital_png_path=newpath,assinatura_hash='c'*64);rpc='rpc_entrega_assinatura_coletar_v1'
   else:payload.update(arquivo_path=newpath,arquivo_nome='local.pdf',arquivo_mime='application/pdf');rpc='rpc_entrega_comprovante_anexar_v1'
   proof=T.actor()+f"SELECT public.{rpc}('{e}','race-proof-{action}','{json.dumps(payload)}');"
-  holder=T.T.session('BEGIN;'+proof)
+  holder=T.T.session("SET application_name='proof_race_holder';BEGIN;"+proof);held('proof_race_holder')
   waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='proof_confirm_race';"+call(e,'race-confirm-'+action,obs))
   wait_lock('proof_confirm_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
   b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':action+' wins against confirm','stdout':out,'stderr':err})
   assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok(action+' wins observed lock; stale confirmation PT409 with exact snapshots')
-  confirmation=call(e,'race-confirm-fresh-'+action);holder=T.T.session('BEGIN;'+confirmation)
+  confirmation=call(e,'race-confirm-fresh-'+action);holder=T.T.session("SET application_name='confirm_race_holder';BEGIN;"+confirmation);held('confirm_race_holder')
   waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='confirm_proof_race';"+proof)
   wait_lock('confirm_proof_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
   b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':'confirm wins against '+action,'stdout':out,'stderr':err})
