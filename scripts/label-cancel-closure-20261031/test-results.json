@@ -1,6 +1,6 @@
 {
-  "exit_code": 1,
-  "elapsed": 320.66811847300005,
+  "exit_code": 0,
+  "elapsed": 282.9213151880001,
   "checks": [
     {
       "test": "full captured restore no unresolved objects, local socket only",
@@ -27,15 +27,92 @@
       "status": "PASS"
     },
     {
-      "test": "execution",
-      "status": "FAIL",
-      "error": "ERROR:  Sem permiss\u00e3o para cancelar etiqueta\nCONTEXT:  PL/pgSQL function rpc_cancelar_etiqueta_produto(uuid,text) line 14 at RAISE\n"
+      "test": "inactive BEFORE existing role helper denies P0001",
+      "status": "PASS"
+    },
+    {
+      "test": "only client EXECUTE ACL changed; body owner policies triggers service unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "AFTER exact 42501 foreign FSF",
+      "status": "PASS"
+    },
+    {
+      "test": "AFTER exact 42501 own ARBio",
+      "status": "PASS"
+    },
+    {
+      "test": "AFTER exact 42501 anon",
+      "status": "PASS"
+    },
+    {
+      "test": "AFTER inactive exact 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "rollback never reopens client",
+      "status": "PASS"
+    },
+    {
+      "test": "installer rerun exact PRE rejects",
+      "status": "PASS"
+    },
+    {
+      "test": "own read/print source and foreign read isolation preserved",
+      "status": "PASS"
+    },
+    {
+      "test": "exact PRE delta POST composition transaction tested, no persistent regrant",
+      "status": "PASS"
     }
   ],
   "raw": [
     {
       "test": "foreign BEFORE vulnerability rollback",
       "stdout": "{\"success\": true}\ncancelada"
+    },
+    {
+      "test": "inactive BEFORE existing role helper denies P0001",
+      "code": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: Sem permiss\u00e3o para cancelar etiqueta\nCONTEXT:  PL/pgSQL function rpc_cancelar_etiqueta_produto(uuid,text) line 14 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "AFTER exact 42501 foreign FSF",
+      "code": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_cancelar_etiqueta_produto\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "AFTER exact 42501 own ARBio",
+      "code": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_cancelar_etiqueta_produto\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "AFTER exact 42501 anon",
+      "code": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_cancelar_etiqueta_produto\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "AFTER inactive exact 42501",
+      "code": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_cancelar_etiqueta_produto\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "rollback never reopens client",
+      "code": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_cancelar_etiqueta_produto\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "installer rerun exact PRE rejects",
+      "code": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: LABEL_CANCEL_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
   "sources": [
@@ -82,6 +159,10 @@
     {
       "path": "scripts/stock-envase-recovery-20261027/isolated/release.sql.review",
       "sha256": "ea8083ea5a1f31e29b8ef289021b6c3fedad104bd6044b2cf0b25aef799ba93b"
+    },
+    {
+      "capture": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+      "sha256": "e1ac1e925f0f10f072910e66ffa183fd1fb3f2f1863061270188df64ad2dab88"
     }
   ]
 }
