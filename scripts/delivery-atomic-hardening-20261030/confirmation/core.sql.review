@@ -81,6 +81,7 @@ BEGIN
  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
  PERFORM 1 FROM public.entregas WHERE id=p_entrega AND organization_id=org FOR UPDATE;
  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF e.status::text='cancelada' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
  IF e.ordem_servico_id IS DISTINCT FROM initial.ordem_servico_id OR e.estoque_produto_id IS DISTINCT FROM initial.estoque_produto_id OR e.cliente_id IS DISTINCT FROM initial.cliente_id OR e.lote_id IS DISTINCT FROM initial.lote_id THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ROOT_CHANGED' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;
  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
@@ -106,7 +107,7 @@ BEGIN
  IF FOUND THEN
   SELECT status::text INTO os_status FROM public.ordens_servico WHERE id=e.ordem_servico_id;
   IF os_status NOT IN ('entregue','finalizada') OR s.status::text<>'expedido' OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
-   OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue)<>1
+   OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue AND os_id=e.ordem_servico_id AND os_tipo='manual' AND lote_id=l.id)<>1
    OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('entrega','estorno_expedicao','devolucao')) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_STATE_DENIED' USING ERRCODE='42501'; END IF;
   IF prev.fingerprint IS DISTINCT FROM fp OR e.status::text<>'entregue' OR c.status<>'confirmado' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
   RETURN prev.result||jsonb_build_object('replay',true);
@@ -135,9 +136,21 @@ BEGIN
  ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);
  IF ack->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id) IS DISTINCT FROM 'entregue' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ADVANCE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
- SELECT count(*) FILTER(WHERE status::text NOT IN ('entregue','cancelada')),coalesce(sum(quantidade_entregue) FILTER(WHERE status::text='entregue'),0) INTO pend,total FROM public.entregas WHERE ordem_servico_id=e.ordem_servico_id;
- SELECT coalesce(sum(quantidade_reservada),0) INTO reserved FROM public.estoque_produto WHERE reservado_para_os_id=e.ordem_servico_id AND reservado_para_os_tipo='manual' AND status::text<>'estornado';
- IF pend=0 AND reserved>0 AND total>=reserved THEN
+ -- Coverage is independently measured per programming/product in canonical millilitres.
+ -- Cancelled deliveries and reversed reservations never cover outstanding demand.
+ PERFORM 1 FROM public.programacao_producao WHERE ordem_servico_id=e.ordem_servico_id ORDER BY id FOR SHARE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT count(*) INTO pend FROM public.entregas WHERE ordem_servico_id=e.ordem_servico_id AND status::text NOT IN ('entregue','cancelada');
+ IF pend=0 AND EXISTS(SELECT 1 FROM public.programacao_producao WHERE ordem_servico_id=e.ordem_servico_id)
+ AND NOT EXISTS(
+  SELECT 1 FROM public.programacao_producao demand WHERE demand.ordem_servico_id=e.ordem_servico_id AND (
+   demand.organization_id IS DISTINCT FROM org OR demand.produto_id IS NULL OR demand.volume_necessario IS NULL OR demand.volume_necessario<=0 OR demand.volume_necessario::text IN ('NaN','Infinity','-Infinity')
+   OR coalesce((SELECT sum(st.volume_total*1000) FROM public.entregas delivered JOIN public.estoque_produto st ON st.id=delivered.estoque_produto_id JOIN public.lotes lot ON lot.id=st.lote_id
+    WHERE delivered.ordem_servico_id=e.ordem_servico_id AND delivered.organization_id=org AND delivered.status::text='entregue' AND lot.programacao_id=demand.id AND lot.organization_id=org
+    AND lot.produto_id=demand.produto_id AND st.produto_id=demand.produto_id AND delivered.produto_id=demand.produto_id AND delivered.lote_id=lot.id
+    AND st.status::text='expedido' AND st.reservado_para_os_id=e.ordem_servico_id AND st.reservado_para_os_tipo='manual'
+    AND st.quantidade=delivered.quantidade_entregue AND st.quantidade_reservada=delivered.quantidade_entregue AND st.volume_total>0 AND st.volume_total::text NOT IN ('NaN','Infinity','-Infinity')
+    AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes m WHERE m.estoque_produto_id=st.id AND m.referencia_id=delivered.id AND m.acao IN ('estorno_expedicao','devolucao','entrega'))),0)<demand.volume_necessario)) THEN
   ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','finalizar_os',NULL);
   IF ack->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id) IS DISTINCT FROM 'finalizada' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_FINALIZE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
   finalizada:=true;
