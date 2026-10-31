@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const t = vi.hoisted(() => ({ auth: {} as any, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
+const t = vi.hoisted(() => ({ auth: {} as any, confirm: {} as any, financial: false, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
 vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
 vi.mock("@/hooks/useSystemConfig", () => ({ useSystemConfig: () => ({ config: {}, defaults: {} }) }));
@@ -12,8 +12,8 @@ vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 vi.mock("sonner", () => ({ toast: { success: t.success, error: t.error, info: vi.fn() } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: t.rpc, from: t.from, channel: () => { const c: any = { on: () => c, subscribe: () => c }; return c; }, removeChannel: vi.fn() } }));
 vi.mock("@/components/entregas/RegistrarEntregaDialog", () => ({ RegistrarEntregaDialog: (p: any) => { t.submit = p.onSubmit; return null; } }));
-vi.mock("@/components/entregas/ConfirmarEntregaDialog", () => ({ ConfirmarEntregaDialog: () => null }));
-vi.mock("@/components/financeiro/ConfirmarEntregaFinanceiroDialog", () => ({ ConfirmarEntregaFinanceiroDialog: () => null }));
+vi.mock("@/components/entregas/ConfirmarEntregaDialog", () => ({ ConfirmarEntregaDialog: (p: any) => { t.confirm = p; return null; } }));
+vi.mock("@/components/financeiro/ConfirmarEntregaFinanceiroDialog", () => ({ ConfirmarEntregaFinanceiroDialog: (p: any) => { t.financial = p.open; return null; } }));
 vi.mock("@/components/entregas/EntregaComprovantePanel", () => ({ EntregaComprovantePanel: () => null }));
 vi.mock("@/components/entregas/TermoEntregaPanel", () => ({ TermoEntregaPanel: () => null }));
 vi.mock("@/components/estoque/EmbalagensEntregaPanel", () => ({ EmbalagensEntregaPanel: () => null }));
@@ -80,6 +80,30 @@ beforeEach(() => {
 afterEach(() => { cleanup(); });
 
 describe("Entregas page with atomic adapter (mounted)", () => {
+  it("physical ACK refreshes exact real list cache only and never opens finance", async () => {
+    t.rows = [{ id: E1, status: "separado", updated_at: T1, clientes: { nome: "Cliente" } }];
+    const h = mount();
+    fireEvent.click(await screen.findByRole("button", { name: /Confirmar recebimento/i }));
+    const own = h.qc.getQueryCache().findAll().find(q => q.queryKey[0] === "entregas");
+    expect(own).toBeDefined();
+    const foreignKey = ["entregas", "foreign-actor", "foreign-request"];
+    h.qc.setQueryData(foreignKey, [{ id: "foreign", status: "separado" }]);
+    const foreignBefore = h.qc.getQueryState(foreignKey);
+    t.rows = [{ ...t.rows[0], status: "entregue" }];
+    await act(async () => t.confirm.onConfirmed("physical", E1));
+    await waitFor(() => expect(h.qc.getQueryData(own?.queryKey ?? [] )).toEqual(t.rows));
+    expect(await screen.findByText("Entregue")).toBeInTheDocument();
+    expect(h.qc.getQueryState(foreignKey)).toEqual(foreignBefore);
+    expect(t.financial).toBe(false); h.qc.clear();
+  });
+  it("late physical callback after tenant change does not invalidate either cache", async () => {
+    t.rows = [{ id: E1, status: "separado", updated_at: T1, clientes: { nome: "Cliente" } }];
+    const h = mount(); fireEvent.click(await screen.findByRole("button", { name: /Confirmar recebimento/i }));
+    const callback = t.confirm.onConfirmed;
+    t.auth = { ...t.auth, profile: { ...t.auth.profile, organization_id: ORG_B } }; h.rerender(<Entregas />);
+    const invalidation = vi.spyOn(h.qc, "invalidateQueries");
+    await act(async () => callback("physical", E1)); expect(invalidation).not.toHaveBeenCalled(); expect(t.financial).toBe(false); h.qc.clear();
+  });
   it("dispatches exactly the observed revisions when unchanged", async () => {
     const h = mount();
     await act(async () => { await t.submit(payload()); });

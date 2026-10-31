@@ -198,9 +198,11 @@ export default function Entregas() {
   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
+  const confirmationList = useRef<{ target: string; scope: string; current: () => boolean } | null>(null);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [motivoCancel, setMotivoCancel] = useState("");
   useEffect(() => {
+    confirmationList.current = null;
     setCancelTarget(null); setSelectedEntrega(null); setComprovanteEntrega(null);
     setConfirmEntregaOpen(false); setFinancialConfirmOpen(false); setPreviewOpen(false);
     setPreviewPayload(null); setOperationNotice("");
@@ -695,8 +697,11 @@ export default function Entregas() {
    * paralelo nem fallback do nome do operador como recebedor.
    */
   const handleConfirmarEntrega = (id: string) => {
+    const current = deliveryScope.capture();
+    if (!current()) return;
     const entrega: any = (entregas as any[]).find((e) => e.id === id);
     if (!entrega) return;
+    confirmationList.current = { target: id, scope: deliveryScope.scope, current };
     setSelectedEntrega(entrega);
     setConfirmEntregaOpen(true);
   };
@@ -1078,15 +1083,14 @@ export default function Entregas() {
 
       <ConfirmarEntregaDialog
         open={confirmEntregaOpen}
-        onClose={() => { setConfirmEntregaOpen(false); }}
+        onClose={() => { confirmationList.current = null; setConfirmEntregaOpen(false); }}
         entrega={selectedEntrega}
-        onConfirmed={(mode) => {
-          if (mode === "bill_now") {
-            // Recarrega entrega e abre o passo financeiro
-            setFinancialConfirmOpen(true);
-          } else {
-            setSelectedEntrega(null);
-          }
+        onConfirmed={(mode, target) => {
+          const captured = confirmationList.current;
+          if (mode !== "physical" || !captured || captured.target !== target || !captured.current()) return;
+          void queryClient.invalidateQueries({ queryKey: ["entregas", captured.scope, captured.scope], exact: true });
+          confirmationList.current = null;
+          setSelectedEntrega(null);
         }}
       />
 
