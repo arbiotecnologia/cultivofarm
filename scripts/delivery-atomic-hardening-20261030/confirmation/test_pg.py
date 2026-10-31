@@ -172,11 +172,10 @@ def coverage_matrix():
  os,pp,l=T.u(701),T.u(702),T.u(703);p2,pp2,l2,l3=T.u(704),T.u(705),T.u(706),T.u(707)
  sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=6000,status='pronto_entrega')+f"""
  INSERT INTO public.produtos SELECT (jsonb_populate_record(NULL::public.produtos,to_jsonb(p)||jsonb_build_object('id','{p2}','nome','LOCAL MATRIX PRODUCT 2'))).* FROM public.produtos p WHERE id='{T.PROD}';
- INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l2}','codigo_lote','LOCAL-MATRIX-2'))).* FROM public.lotes p WHERE id='{l}';
- INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l3}','codigo_lote','LOCAL-MATRIX-3'))).* FROM public.lotes p WHERE id='{l}';
  SET session_replication_role=origin;""")
  stocks=[]
- for n,lot,prod in [(711,l,T.PROD),(712,l3,T.PROD),(713,l2,T.PROD)]:
+ b=snapshot();reject('multiple lots same programming forbidden by canonical unique index','BEGIN;'+f"INSERT INTO public.lotes(id,organization_id,produto_id,programacao_id,status,codigo_lote,volume_produzido) VALUES('{l2}','{T.A}','{T.PROD}','{pp}','aprovado','LOCAL-MATRIX-2',100000);",'23505','idx_lotes_programacao_id_unique');assert snapshot()==b
+ for n,lot,prod in [(711,l,T.PROD),(712,l,T.PROD),(713,l,T.PROD)]:
   sid=T.u(n);stocks.append(sid)
   sql(f"SET session_replication_role=replica;INSERT INTO public.estoque_produto SELECT (jsonb_populate_record(NULL::public.estoque_produto,to_jsonb(s)||jsonb_build_object('id','{sid}','lote_id','{lot}','produto_id','{prod}','reservado_para_os_id','{os}','quantidade',2,'quantidade_reservada',2,'volume_total',2))).* FROM public.estoque_produto s WHERE id='{T.RX}';SET session_replication_role=origin;")
  group=json.loads(last(T.actor()+T.group(os,[{'item_id':s,'quantidade':2} for s in stocks],'coverage-group-001')))
