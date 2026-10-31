@@ -45,10 +45,10 @@
   },
   {
     "file": "scripts/delivery-atomic-hardening-20261030/confirmation/install.sql.review",
-    "sha256": "b58183b98ce174563e0c575c0ee403b92d288a2c7f2a85b4f5e39ac8af73f654"
+    "sha256": "865d88039c07b264215038b1ace777bdf10de2d740d4e919d2132bd19e6c28d2"
   },
   {
     "file": "scripts/delivery-atomic-hardening-20261030/confirmation/release.sql.review",
-    "sha256": "fdfc9cefc17ad720b1d99a82a81fadf5cba7fbd07f5e573416cbf04581a57561"
+    "sha256": "286ef12c4602f20e622287fbf37beaf77dd175049fd60d45963cf5307adcb2f1"
   }
 ]

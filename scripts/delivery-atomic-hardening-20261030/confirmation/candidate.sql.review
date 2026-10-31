@@ -1,3 +1,29 @@
+CREATE TABLE platform_private.delivery_confirm_permits_v1 (
+ txid bigint PRIMARY KEY, actor uuid NOT NULL, organization_id uuid NOT NULL,target uuid NOT NULL,proof uuid NOT NULL,
+ old_delivery jsonb NOT NULL,new_delivery jsonb NOT NULL,old_proof jsonb NOT NULL,new_proof jsonb NOT NULL,
+ delivery_consumed boolean NOT NULL DEFAULT false,proof_consumed boolean NOT NULL DEFAULT false
+);
+REVOKE ALL ON platform_private.delivery_confirm_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.delivery_confirm_permits_v1 ENABLE ROW LEVEL SECURITY;
+CREATE FUNCTION platform_private.delivery_confirm_exact_guard_v1()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE p platform_private.delivery_confirm_permits_v1; org uuid; BEGIN
+ -- Leave unrelated reviewed proof writers unchanged. A confirmation context always needs its exact permit.
+ IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND action='confirm') THEN RETURN NEW; END IF;
+ org:=platform_private.delivery_confirm_actor_v1();
+ SELECT * INTO p FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND organization_id=org;
+ IF NOT FOUND OR TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_EXACT_PERMIT_DENIED' USING ERRCODE='42501'; END IF;
+ IF TG_TABLE_NAME='entregas' AND NEW.id=p.target AND NOT p.delivery_consumed AND to_jsonb(OLD)=p.old_delivery AND to_jsonb(NEW)=p.new_delivery THEN
+  UPDATE platform_private.delivery_confirm_permits_v1 SET delivery_consumed=true WHERE txid=p.txid;
+ ELSIF TG_TABLE_NAME='entrega_comprovantes' AND NEW.id=p.proof AND NOT p.proof_consumed AND to_jsonb(OLD)=p.old_proof AND to_jsonb(NEW)=p.new_proof THEN
+  UPDATE platform_private.delivery_confirm_permits_v1 SET proof_consumed=true WHERE txid=p.txid;
+ ELSE RAISE EXCEPTION 'DELIVERY_CONFIRM_EXACT_IMAGE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_confirm_exact_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER zzzz_confirm_exact AFTER INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_confirm_exact_guard_v1();
+CREATE TRIGGER zzzz_confirm_exact AFTER INSERT OR UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_confirm_exact_guard_v1();
+
 -- Review-only manual physical confirmation. Never dispatches stock or billing.
 CREATE FUNCTION platform_private.delivery_confirm_actor_v1()
 RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$

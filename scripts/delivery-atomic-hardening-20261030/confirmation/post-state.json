@@ -5374,6 +5374,12 @@
       "CREATE TRIGGER trg_entrega_comprovantes_updated_at BEFORE UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
     ],
     [
+      "entrega_comprovantes",
+      "zzzz_confirm_exact",
+      "O",
+      "CREATE TRIGGER zzzz_confirm_exact AFTER INSERT OR UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_confirm_exact_guard_v1()"
+    ],
+    [
       "entrega_conferencia_itens",
       "trg_entrega_conf_lock",
       "O",
@@ -5450,6 +5456,12 @@
       "zz_delivery_mutation_closed",
       "O",
       "CREATE TRIGGER zz_delivery_mutation_closed BEFORE INSERT OR DELETE OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_mutation_guard_20261030()"
+    ],
+    [
+      "entregas",
+      "zzzz_confirm_exact",
+      "O",
+      "CREATE TRIGGER zzzz_confirm_exact AFTER INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_confirm_exact_guard_v1()"
     ],
     [
       "envase",
@@ -7581,6 +7593,18 @@
       [
         "search_path=\"\"",
         "lock_timeout=3s"
+      ],
+      true
+    ],
+    [
+      "platform_private",
+      "delivery_confirm_exact_guard_v1",
+      "",
+      "26f613802a5f2187ed27b42d2e67c2d4",
+      "{postgres=X/postgres}",
+      "postgres",
+      [
+        "search_path=\"\""
       ],
       true
     ],
@@ -21914,6 +21938,13 @@
       "postgres"
     ],
     [
+      "platform_private.delivery_confirm_permits_v1",
+      "{postgres=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
       "platform_private.envase_insert_permits_v1",
       "{postgres=arwdDxtm/postgres}",
       false,
@@ -23288,6 +23319,94 @@
       null
     ],
     [
+      "platform_private.delivery_confirm_permits_v1",
+      "actor",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "delivery_consumed",
+      "boolean",
+      true,
+      null,
+      "false"
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "new_delivery",
+      "jsonb",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "new_proof",
+      "jsonb",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "old_delivery",
+      "jsonb",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "old_proof",
+      "jsonb",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "organization_id",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "proof",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "proof_consumed",
+      "boolean",
+      true,
+      null,
+      "false"
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "target",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "txid",
+      "bigint",
+      true,
+      null,
+      null
+    ],
+    [
       "platform_private.envase_insert_permits_v1",
       "action",
       "text",
@@ -23379,6 +23498,12 @@
       "cf_user_guards_v1.state",
       "state_singleton_check",
       "CHECK (singleton)",
+      true
+    ],
+    [
+      "platform_private.delivery_confirm_permits_v1",
+      "delivery_confirm_permits_v1_pkey",
+      "PRIMARY KEY (txid)",
       true
     ],
     [
