@@ -1,0 +1,2493 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ❯ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests | 1 failed) 46ms
+   ✓ FASE 28B — certificação da Fase 28A > artefatos da 28A existem 2ms
+   ✓ FASE 28B — certificação da Fase 28A > 28A registra 27E CERTIFICADA e recomenda Estoque/Volumes 1ms
+   ✓ FASE 28B — certificação da Fase 28A > 28A contém os prompts 28B, 28C e 28D 1ms
+   ✓ FASE 28B — certificação da Fase 28A > o baseline segue presente e migrations mantêm versões únicas e rastreáveis 5ms
+   ✓ FASE 28B — certificação da Fase 28A > relatório 28B registra 28A CERTIFICADA 2ms
+   ✓ FASE 28B — contrato do motor de estoque > motorEstoque.ts existe e usa a RPC canônica 3ms
+   ✓ FASE 28B — contrato do motor de estoque > ações canônicas de estoque preservadas 3ms
+   ✓ FASE 28B — contrato do motor de estoque > tipos de referência canônicos preservados 1ms
+   ✓ FASE 28B — contrato do motor de estoque > motor expõe idempotência e mapeamento de erros ESTQ_* 1ms
+   ✓ FASE 28B — contrato do motor de estoque > helpers puros de reserva permanecem exportados 0ms
+   ✓ FASE 28B — componentes e integrações mapeados > todos os arquivos auditados existem 1ms
+   × FASE 28B — componentes e integrações mapeados > Entregas.tsx usa o motor canônico com chaves de idempotência 16ms
+     → expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
+   ✓ FASE 28B — componentes e integrações mapeados > nenhum componente de estoque escreve direto em estoque_produto 4ms
+   ✓ FASE 28B — componentes e integrações mapeados > diálogo de reserva do cockpit protege contra clique duplo 0ms
+   ✓ FASE 28B — contratos preservados (catálogo/portais/carrinho) > rotas e RPCs de catálogo/parceiro intactas 1ms
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts (4 tests | 3 failed) 25ms
+   × compatibilidade dos callers de estoque — sem API real > mantém nome, parâmetros e resultado da RPC tipada 15ms
+     → Operação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.
+   × compatibilidade dos callers de estoque — sem API real > preserva quantidade NULL do estorno e payload default 1ms
+     → Cancelamento e estorno indisponíveis: a recomposição integral do estoque ainda não tem contrato comprovado para esta operação. Nenhuma alteração foi enviada.
+   ✓ compatibilidade dos callers de estoque — sem API real > continua propagando o erro de negócio sem repetir escrita 3ms
+   × compatibilidade dos callers de estoque — sem API real > expedição automática envia o tipo junto ao ID da OS 4ms
+     → expected -1 to be greater than -1
+ ❯ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests | 1 failed) 42ms
+   ✓ FASE 28C — escrita de estoque somente server-side > nenhum componente faz update/insert/delete/upsert direto em estoque_produto 9ms
+   ✓ FASE 28C — escrita de estoque somente server-side > nenhum componente faz escrita direta em estoque_movimentacoes 4ms
+   ✓ FASE 28C — contrato do motor e das entregas > motorEstoque continua chamando rpc_estoque_operar_v1 com idempotência 1ms
+   × FASE 28C — contrato do motor e das entregas > Entregas.tsx mantém operarEstoque e as chaves canônicas 20ms
+     → expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
+   ✓ FASE 28C — proteções de interface > ReservarEstoqueDialog previne clique duplo 1ms
+   ✓ FASE 28C — proteções de interface > MotivoEmbalagemDialog mantém validação de motivo curto 0ms
+   ✓ FASE 28C — proteções de interface > helpers puros de reserva continuam isolados de I/O 0ms
+   ✓ FASE 28C — risco A1 documentado e congelado > useEsteiraLaboratorio continua usando reservar_estoque_item (sem alteração nesta fase) 1ms
+   ✓ FASE 28C — risco A1 documentado e congelado > relatório 28B documenta os riscos A1 e A2 1ms
+   ✓ FASE 28C — risco A1 documentado e congelado > relatório 28C existe e registra 28B CERTIFICADA 1ms
+   ✓ FASE 28C — risco A1 documentado e congelado > o baseline segue presente e migrations mantêm versões únicas e rastreáveis 2ms
+   ✓ FASE 28C — contratos preservados fora do escopo > carrinho, pedido B2B e catálogo intactos 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/estoque/estoque-contratos-fase28c.test.ts > FASE 28C — contrato do motor e das entregas > Entregas.tsx mantém operarEstoque e as chaves canônicas
+AssertionError: expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- operarEstoque[39m
+[31m+ import { useEffect, useMemo, useRef, useState } from "react";[39m
+[31m+ import { useSearchParams } from "react-router-dom";[39m
+[31m+ import { useMutation, useQueryClient } from "@tanstack/react-query";[39m
+[31m+ import { supabase } from "@/integrations/supabase/client";[39m
+[31m+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";[39m
+[31m+ import { Button } from "@/components/ui/button";[39m
+[31m+ import { Input } from "@/components/ui/input";[39m
+[31m+ import { Label } from "@/components/ui/label";[39m
+[31m+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";[39m
+[31m+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";[39m
+[31m+ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";[39m
+[31m+ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";[39m
+[31m+ import { Badge } from "@/components/ui/badge";[39m
+[31m+ import { toast } from "sonner";[39m
+[31m+ import { Plus, Truck, X, FileDown, CheckCircle } from "lucide-react";[39m
+[31m+ import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";[39m
+[31m+ import { useIsMobile } from "@/hooks/use-mobile";[39m
+[31m+ import { formatDateDisplay } from "@/lib/date-utils";[39m
+[31m+ import type { Tables } from "@/integrations/supabase/cultivofarm.types";[39m
+[31m+ import { useSystemConfig } from "@/hooks/useSystemConfig";[39m
+[31m+ import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo, deveReemitirNoDownload, REEMISSAO_NA_ABERTURA_DO_PREVIEW } from "@/lib/comprovanteEntregaPdf";[39m
+[31m+[39m
+[31m+ const ERROS_COMPROVANTE: Record<string, string> = {[39m
+[31m+   COMPROVANTE_UNAUTHENTICATED: "Sessão expirada. Entre novamente para emitir o documento.",[39m
+[31m+   COMPROVANTE_FORBIDDEN: "Seu perfil não tem permissão para emitir documentos de entrega.",[39m
+[31m+   COMPROVANTE_PARAMS_INVALIDOS: "Não foi possível identificar a entrega. Recarregue a lista e tente novamente.",[39m
+[31m+   COMPROVANTE_ENTREGA_NAO_ENCONTRADA: "Entrega não encontrada.",[39m
+[31m+   COMPROVANTE_ENTREGA_CANCELADA: "Entrega cancelada não gera documento.",[39m
+[31m+   COMPROVANTE_SEM_ITENS: "A entrega não possui itens vinculados.",[39m
+[31m+   COMPROVANTE_PRODUTO_OBRIGATORIO: "Vincule o produto à entrega antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_LOTE_OBRIGATORIO: "Vincule o lote à entrega antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_QUANTIDADE_OBRIGATORIA: "Informe a quantidade entregue antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_CLIENTE_OBRIGATORIO: "Vincule o cliente à entrega antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_CONFIRMACAO_SEM_DATA: "Confirme o recebimento antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_OS_OBRIGATORIA:[39m
+[31m+     "Vincule a entrega a uma OS, OS de Produção ou pedido de parceiro legítimo antes de emitir o comprovante definitivo.",[39m
+[31m+   COMPROVANTE_VOLUME_OBRIGATORIO:[39m
+[31m+     "O volume total da entrega precisa estar preenchido e ser maior que zero para emitir o comprovante.",[39m
+[31m+ };[39m
+[31m+[39m
+[31m+ function traduzErroComprovante(msg: string): string {[39m
+[31m+   const chave = Object.keys(ERROS_COMPROVANTE).find((k) => msg.includes(k));[39m
+[31m+   return chave ? ERROS_COMPROVANTE[chave] : msg;[39m
+[31m+ }[39m
+[31m+ import { useAuth } from "@/hooks/useAuth";[39m
+[31m+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";[39m
+[31m+ import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";[39m
+[31m+ import { Textarea } from "@/components/ui/textarea";[39m
+[31m+ import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";[39m
+[31m+ import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDialog";[39m
+[31m+ import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";[39m
+[31m+ import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";[39m
+[31m+ import { EmbalagensEntregaPanel } from "@/components/estoque/EmbalagensEntregaPanel";[39m
+[31m+ import { FileText } from "lucide-react";[39m
+[31m+ import { formatOS, formatOSFromId } from "@/lib/osLabel";[39m
+[31m+ import { getClienteLabel, getClienteFullLabel } from "@/lib/clienteLabel";[39m
+[31m+ import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";[39m
+[31m+ import { SeletorLoteEnvasado } from "@/components/entregas/SeletorLoteEnvasado";[39m
+[31m+ import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/components/entregas/RegistrarEntregaDialog";[39m
+[31m+ import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";[39m
+[31m+ import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";[39m
+[31m+ import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";[39m
+[31m+ import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";[39m
+[31m+ import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";[39m
+[31m+ import { loadSends, persistBeforeDispatch, removeExactSend, SEND_PERSIST_PREFIX, toAttempt, withSendLock, type LockManagerLike } from "@/lib/entregas/deliverySendPersistence";[39m
+[31m+[39m
+[31m+ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {[39m
+[31m+   separado: { label: "Separado", variant: "secondary" },[39m
+[31m+   em_rota: { label: "Em Rota", variant: "default" },[39m
+[31m+   entregue: { label: "Entregue", variant: "outline" },[39m
+[31m+   cancelada: { label: "Cancelada", variant: "destructive" },[39m
+[31m+ };[39m
+[31m+[39m
+[31m+[39m
+[31m+ export default function Entregas() {[39m
+[31m+   const isMobile = useIsMobile();[39m
+[31m+   const queryClient = useQueryClient();[39m
+[31m+   const { config: brandingConfig, defaults: brandingDefaults } = useSystemConfig();[39m
+[31m+   const { role, user, profile } = useAuth();[39m
+[31m+   const actorId: string | null = user?.id ?? null;[39m
+[31m+   const orgId: string | null = profile?.organization_id ?? null;[39m
+[31m+   const pendingStore = (): Storage | null => { try { return window.localStorage; } catch { return null; } };[39m
+[31m+   const deliveryScope = useStorageAccessScope("entregas-operations");[39m
+[31m+   const operation = useRef<symbol | null>(null);[39m
+[31m+   const sendAttempts = useRef(new Map<string, SendAttempt>());[39m
+[31m+   const unresolved = useRef(new Set<string>());[39m
+[31m+   // Durable Enviar retention: rebuilt from storage for the CURRENT actor+tenant only; "blocked" fails closed.[39m
+[31m+   const [sendBlocked, setSendBlocked] = useState<"" | "corrupt" | "unavailable">("");[39m
+[31m+   const sendBlockedRef = useRef<"" | "corrupt" | "unavailable">("");[39m
+[31m+   const [, setSendTick] = useState(0);[39m
+[31m+   const reloadSends = () => {[39m
+[31m+     const map = new Map<string, SendAttempt>();[39m
+[31m+     let blocked: "" | "corrupt" | "unavailable" = "";[39m
+[31m+     if (actorId && orgId) {[39m
+[31m+       try {[39m
+[31m+         const store = pendingStore();[39m
+[31m+         if (!store) throw new Error("unavailable");[39m
+[31m+         const loaded = loadSends(store, actorId, orgId);[39m
+[31m+         for (const s of loaded.attempts) map.set(`${deliveryScope.scope}:${s.entrega}`, toAttempt(s, deliveryScope.scope));[39m
+[31m+         if (loaded.corrupt.length) blocked = "corrupt";[39m
+[31m+       } catch { blocked = "unavailable"; }[39m
+[31m+     }[39m
+[31m+     sendAttempts.current = map; sendBlockedRef.current = blocked; setSendBlocked(blocked); setSendTick(n => n + 1);[39m
+[31m+   };[39m
+[31m+   useEffect(() => {[39m
+[31m+     reloadSends();[39m
+[31m+     const onStorage = (e: StorageEvent) => { if (!e.key || e.key.startsWith(SEND_PERSIST_PREFIX)) reloadSends(); };[39m
+[31m+     window.addEventListener("storage", onStorage);[39m
+[31m+     return () => window.removeEventListener("storage", onStorage);[39m
+[31m+     // eslint-disable-next-line react-hooks/exhaustive-deps[39m
+[31m+   }, [actorId, orgId, deliveryScope.scope]);[39m
+[31m+   const [operationNotice, setOperationNotice] = useState("");[39m
+[31m+   // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.[39m
+[31m+   const [pending, setPending] = useState<RetrySnapshot | "corrupt" | null>(null);[39m
+[31m+   const pendingRef = useRef<RetrySnapshot | "corrupt" | null>(null);[39m
+[31m+   pendingRef.current = pending;[39m
+[31m+   const reloadPending = () => {[39m
+[31m+     const store = pendingStore();[39m
+[31m+     const value = actorId && orgId ? (store ? loadPending(store, actorId, orgId) : "corrupt") : null;[39m
+[31m+     pendingRef.current = value;[39m
+[31m+     setPending(value);[39m
+[31m+   };[39m
+[31m+   useEffect(() => {[39m
+[31m+     reloadPending();[39m
+[31m+     // Other tabs share the store: re-read on their writes (never adopt their outcomes, only their blocking state).[39m
+[31m+     const onStorage = (e: StorageEvent) => { if (!e.key || e.key.startsWith("cf:delivery-uncertain:")) reloadPending(); };[39m
+[31m+     window.addEventListener("storage", onStorage);[39m
+[31m+     return () => window.removeEventListener("storage", onStorage);[39m
+[31m+     // eslint-disable-next-line react-hooks/exhaustive-deps[39m
+[31m+   }, [actorId, orgId]);[39m
+[31m+   const reservePending = (r: RetrySnapshot) => {[39m
+[31m+     const store = pendingStore();[39m
+[31m+     if (!store || !actorId || !orgId || r.expectedOrg !== orgId) throw new Error("Recuperação local indisponível. Nenhuma alteração foi enviada.");[39m
+[31m+     // Another tab may have registered its own attempt meanwhile: refuse a new key, never overwrite it.[39m
+[31m+     const existing = loadPending(store, actorId, orgId);[39m
+[31m+     if (existing === "corrupt" || (existing && JSON.stringify(existing) !== JSON.stringify(r))) {[39m
+[31m+       reloadPending();[39m
+[31m+       throw new Error("Há outra tentativa com resultado incerto nesta sessão (outra aba). Nenhuma alteração foi enviada.");[39m
+[31m+     }[39m
+[31m+     savePending(store, actorId, orgId, r);[39m
+[31m+     pendingRef.current = r;[39m
+[31m+     setPending(r);[39m
+[31m+   };[39m
+[31m+   /** Clears only the exact attempt this consumer dispatched; first-dispatch definitive refusal or exact confirmation. */[39m
+[31m+   const settlePending = (outcome: Outcome<unknown>, attempt: RetrySnapshot | null) => {[39m
+[31m+     if (outcome.status !== "confirmed" && outcome.status !== "rejected") return;[39m
+[31m+     const store = pendingStore();[39m
+[31m+     if (store && actorId && orgId && attempt) clearPending(store, actorId, orgId, attempt);[39m
+[31m+     reloadPending();[39m
+[31m+   };[39m
+[31m+   const invalidateDelivery = (current: () => boolean) => {[39m
+[31m+     if (!current()) return;[39m
+[31m+     for (const prefix of ["entregas", "estoque-prontos-entrega"]) {[39m
+[31m+       void queryClient.invalidateQueries({ predicate: q => q.queryKey[0] === prefix && q.queryKey.at(-2) === deliveryScope.scope });[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+   // Per-mount containment, not a server receipt or cross-tab idempotency.[39m
+[31m+   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {[39m
+[31m+     try {[39m
+[31m+       // create/cancel probe the server capability inside the work, before any dispatch.[39m
+[31m+       if (target !== "create" && target !== "cancel" && target !== "replay" && target !== "send") requireDeliveryOperationContract("delivery");[39m
+[31m+     } catch (error) {[39m
+[31m+       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;[39m
+[31m+       setOperationNotice(message);[39m
+[31m+       toast.error(message);[39m
+[31m+       throw error;[39m
+[31m+     }[39m
+[31m+     const captured = deliveryScope.capture();[39m
+[31m+     const key = deliveryScope.scope;[39m
+[31m+     if (!captured()) throw new Error("Contexto de entrega indisponível.");[39m
+[31m+     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");[39m
+[31m+     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");[39m
+[31m+     if (target !== "replay" && target !== "send" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");[39m
+[31m+     const ticket = Symbol(target);[39m
+[31m+     operation.current = ticket;[39m
+[31m+     let expired = false;[39m
+[31m+     let dispatched = false;[39m
+[31m+     const current = () => captured() && !expired;[39m
+[31m+     const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };[39m
+[31m+     let timer: ReturnType<typeof setTimeout> | undefined;[39m
+[31m+     let settled = false;[39m
+[31m+     const pending = work(check, () => { check(); dispatched = true; }, current).finally(() => {[39m
+[31m+       settled = true;[39m
+[31m+       if (expired && operation.current === ticket) operation.current = null;[39m
+[31m+     });[39m
+[31m+     try {[39m
+[31m+       const value = await Promise.race([[39m
+[31m+         pending,[39m
+[31m+         new Promise<never>((_, reject) => { timer = setTimeout(() => { expired = true; reject(new Error("Tempo de resposta excedido. Resultado incerto; consulte as entregas, sem reenviar.")); }, 30000); }),[39m
+[31m+       ]);[39m
+[31m+       check();[39m
+[31m+       return { value, current };[39m
+[31m+     } catch (error) {[39m
+[31m+       if (dispatched) unresolved.current.add(key);[39m
+[31m+       if (captured()) {[39m
+[31m+         toast.error(error instanceof Error ? error.message : "Operação de entrega não confirmada.");[39m
+[31m+         setOperationNotice(dispatched ? "Operação não concluída ou resposta incerta. Pode haver etapas já registradas. Consulte as entregas; nenhum estorno automático foi realizado e o reenvio permanece bloqueado nesta tela." : "Não foi possível iniciar a operação de entrega.");[39m
+[31m+       }[39m
+[31m+       throw error;[39m
+[31m+     } finally {[39m
+[31m+       if (timer) clearTimeout(timer);[39m
+[31m+       if (settled && operation.current === ticket) operation.current = null;[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+   const canCancel = role === "administrador" || role === "gestor" || role === "administrativo";[39m
+[31m+   const [open, setOpen] = useState(false);[39m
+[31m+   const [osInicial, setOsInicial] = useState<string | undefined>(undefined);[39m
+[31m+   const [searchParams, setSearchParams] = useSearchParams();[39m
+[31m+[39m
+[31m+   // Ao chegar via cockpit (/entregas?os=<id>), abre o dialog já pré-selecionando a OS.[39m
+[31m+   // Só limpa o parâmetro quando o dialog é fechado (evita perder contexto se o usuário fechar por engano).[39m
+[31m+   useEffect(() => {[39m
+[31m+     const osParam = searchParams.get("os");[39m
+[31m+     if (!osParam) return;[39m
+[31m+     setOsInicial(osParam);[39m
+[31m+     setOpen(true);[39m
+[31m+   }, [searchParams]);[39m
+[31m+   const [confirmOpen, setConfirmOpen] = useState(false);[39m
+[31m+   const [comprovanteEntrega, setComprovanteEntrega] = useState<any>(null);[39m
+[31m+   const [previewPayload, setPreviewPayload] = useState<any>(null);[39m
+[31m+   const [previewOpen, setPreviewOpen] = useState(false);[39m
+[31m+   const [previewSnapshotAntes, setPreviewSnapshotAntes] = useState(false);[39m
+[31m+   const [previewEntregaId, setPreviewEntregaId] = useState<string | null>(null);[39m
+[31m+   // Guarda contra duplo clique no download: impede contabilizar duas reemissões.[39m
+[31m+   const [downloadingPreview, setDownloadingPreview] = useState(false);[39m
+[31m+   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);[39m
+[31m+   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);[39m
+[31m+   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);[39m
+[31m+   const confirmationList = useRef<{ target: string; scope: string; current: () => boolean } | null>(null);[39m
+[31m+   const [cancelTarget, setCancelTarget] = useState<any | null>(null);[39m
+[31m+   const [motivoCancel, setMotivoCancel] = useState("");[39m
+[31m+   useEffect(() => {[39m
+[31m+     confirmationList.current = null;[39m
+[31m+     setCancelTarget(null); setSelectedEntrega(null); setComprovanteEntrega(null);[39m
+[31m+     setConfirmEntregaOpen(false); setFinancialConfirmOpen(false); setPreviewOpen(false);[39m
+[31m+     setPreviewPayload(null); setOperationNotice("");[39m
+[31m+   }, [deliveryScope.scope]);[39m
+[31m+   const { criarEntrega, reservarEstoque: hookReservarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();[39m
+[31m+   const [form, setForm] = useState({[39m
+[31m+     estoque_produto_id: "",[39m
+[31m+     ordem_servico_id: "",[39m
+[31m+     motorista: "",[39m
+[31m+     veiculo: "",[39m
+[31m+     data_saida: "",[39m
+[31m+     quantidade_entregue: "",[39m
+[31m+   });[39m
+[31m+[39m
+[31m+[39m
+[31m+   // Filtros BI[39m
+[31m+   const [filtroInicio, setFiltroInicio] = useState("");[39m
+[31m+   const [filtroFim, setFiltroFim] = useState("");[39m
+[31m+   const [filtroProduto, setFiltroProduto] = useState("todos");[39m
+[31m+[39m
+[31m+   const {[39m
+[31m+     data: entregas = [],[39m
+[31m+     isLoading: entregasLoading,[39m
+[31m+     isError: entregasErro,[39m
+[31m+     refetch: recarregarEntregas,[39m
+[31m+     isFetching: entregasFetching,[39m
+[31m+   } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["entregas"],[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const { data, error } = await supabase[39m
+[31m+         .from("entregas")[39m
+[31m+         .select(`[39m
+[31m+           *,[39m
+[31m+           clientes(nome, codigo_cliente),[39m
+[31m+           ordens_servico(id, numero_os),[39m
+[31m+           ordens_servico_onfarm(id, numero_os),[39m
+[31m+           produtos(id, nome),[39m
+[31m+           lotes([39m
+[31m+             id,[39m
+[31m+             codigo_lote,[39m
+[31m+             envase(volume_por_unidade, data_envase)[39m
+[31m+           ),[39m
+[31m+           entrega_comprovantes!entrega_comprovantes_entrega_id_fkey([39m
+[31m+             id,[39m
+[31m+             tipo,[39m
+[31m+             numero_formulario,[39m
+[31m+             metadata,[39m
+[31m+             gerado_em[39m
+[31m+           )[39m
+[31m+         `)[39m
+[31m+         .order("created_at", { ascending: false })[39m
+[31m+         .limit(200);[39m
+[31m+       if (error) throw error;[39m
+[31m+       return data;[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+   // Catálogo de produtos para filtro (com entregas existentes)[39m
+[31m+   const produtosFiltro = useMemo(() => {[39m
+[31m+     const map = new Map<string, string>();[39m
+[31m+     (entregas as any[]).forEach((e) => {[39m
+[31m+       if (e.produto_id && e.produtos?.nome) map.set(e.produto_id, e.produtos.nome);[39m
+[31m+     });[39m
+[31m+     return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }));[39m
+[31m+   }, [entregas]);[39m
+[31m+[39m
+[31m+   // Aplica filtros[39m
+[31m+   const entregasFiltradas = useMemo(() => {[39m
+[31m+     return (entregas as any[]).filter((e) => {[39m
+[31m+       const ref = e.data_saida || e.created_at?.split("T")[0];[39m
+[31m+       if (filtroInicio && ref < filtroInicio) return false;[39m
+[31m+       if (filtroFim && ref > filtroFim) return false;[39m
+[31m+       if (filtroProduto !== "todos" && e.produto_id !== filtroProduto) return false;[39m
+[31m+       return true;[39m
+[31m+     });[39m
+[31m+   }, [entregas, filtroInicio, filtroFim, filtroProduto]);[39m
+[31m+[39m
+[31m+   // Mapa de grupos de entrega (qtde de itens por grupo)[39m
+[31m+   const gruposMap = useMemo(() => {[39m
+[31m+     const m = new Map<string, number>();[39m
+[31m+     (entregas as any[]).forEach((e) => {[39m
+[31m+       if (e.grupo_entrega_id) m.set(e.grupo_entrega_id, (m.get(e.grupo_entrega_id) || 0) + 1);[39m
+[31m+     });[39m
+[31m+     return m;[39m
+[31m+   }, [entregas]);[39m
+[31m+[39m
+[31m+   // KPIs (apenas entregas concluídas para volume realizado)[39m
+[31m+   const kpis = useMemo(() => {[39m
+[31m+     const total = entregasFiltradas.length;[39m
+[31m+     const concluidas = entregasFiltradas.filter((e) => e.status === "entregue");[39m
+[31m+     const volumeL =[39m
+[31m+       concluidas.reduce((acc, e) => acc + (Number(e.volume_entregue_ml) || 0), 0) / 1000;[39m
+[31m+     const osDistintas = new Set(concluidas.map((e) => e.ordem_servico_id)).size;[39m
+[31m+     return { total, volumeL, osDistintas };[39m
+[31m+   }, [entregasFiltradas]);[39m
+[31m+[39m
+[31m+   // Itens de estoque já envasados, prontos para entrega[39m
+[31m+   const {[39m
+[31m+     data: itensProntos = [],[39m
+[31m+     isLoading: estoqueLoading,[39m
+[31m+     isError: estoqueErro,[39m
+[31m+     refetch: recarregarEstoque,[39m
+[31m+     isFetching: estoqueFetching,[39m
+[31m+   } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["estoque-prontos-entrega"],[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const { data, error } = await supabase[39m
+[31m+         .from("estoque_produto")[39m
+[31m+         .select(`[39m
+[31m+           id, status, updated_at, quantidade, quantidade_reservada, volume_total, validade,[39m
+[31m+           reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id,[39m
+[31m+           produto_id, microrganismo_id, lote_id,[39m
+[31m+           produtos(id, nome),[39m
+[31m+           microrganismos(id, nome, nome_cientifico),[39m
+[31m+           lotes(id, codigo_lote, programacao_id, programacao_producao:programacao_id(ordem_servico_id, ordem_servico_onfarm_id), envase(id, data_envase, quantidade, tipo_embalagem)),[39m
+[31m+           cliente_reservado:clientes!estoque_produto_reservado_para_cliente_id_fkey(id, nome)[39m
+[31m+         `)[39m
+[31m+         .in("status", ["disponivel", "reservado"])[39m
+[31m+         .order("created_at", { ascending: false });[39m
+[31m+[39m
+[31m+       if (error) {[39m
+[31m+         // Tentativa sem o vínculo de cliente reservado (relação opcional).[39m
+[31m+         // Se também falhar, o erro sobe: lista vazia jamais mascara falha.[39m
+[31m+         const { data: d2, error: e2 } = await supabase[39m
+[31m+           .from("estoque_produto")[39m
+[31m+           .select(`[39m
+[31m+             id, status, updated_at, quantidade, quantidade_reservada, volume_total, validade,[39m
+[31m+             reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id,[39m
+[31m+             produto_id, microrganismo_id, lote_id,[39m
+[31m+             produtos(id, nome),[39m
+[31m+             microrganismos(id, nome, nome_cientifico),[39m
+[31m+             lotes(id, codigo_lote, programacao_id, programacao_producao:programacao_id(ordem_servico_id, ordem_servico_onfarm_id), envase(id, data_envase, quantidade, tipo_embalagem))[39m
+[31m+           `)[39m
+[31m+           .in("status", ["disponivel", "reservado"])[39m
+[31m+           .order("created_at", { ascending: false });[39m
+[31m+         if (e2) throw e2;[39m
+[31m+         return d2 || [];[39m
+[31m+       }[39m
+[31m+       return data || [];[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+[39m
+[31m+   const { data: todasOS = [] } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["todas-os-disponiveis"],[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const [osPadrone, osOnFarm] = await Promise.all([[39m
+[31m+         supabase.from("ordens_servico").select("id, numero_os, status, updated_at, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), data_programada, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))"),[39m
+[31m+         supabase.from("ordens_servico_onfarm").select("id, numero_os, status, cliente_id, clientes(nome, codigo_cliente), produtos(nome), data_recomendada"),[39m
+[31m+       ]);[39m
+[31m+       const p = (osPadrone.data || []).map((o) => ({ ...o, type: "padrao", data: o.data_programada }));[39m
+[31m+       const f = (osOnFarm.data || []).map((o) => ({ ...o, type: "onfarm", data: o.data_recomendada }));[39m
+[31m+       return [...p, ...f];[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+   const clienteIdsExtra = useMemo(() => {[39m
+[31m+     const ids = new Set<string>();[39m
+[31m+     (itensProntos as any[]).forEach((it) => {[39m
+[31m+       if (it.reservado_para_cliente_id && !it.cliente_reservado) ids.add(it.reservado_para_cliente_id);[39m
+[31m+     });[39m
+[31m+     return Array.from(ids);[39m
+[31m+   }, [itensProntos]);[39m
+[31m+[39m
+[31m+   const { data: clientesExtra = [] } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["entregas-clientes-extra", clienteIdsExtra],[39m
+[31m+     enabled: clienteIdsExtra.length > 0,[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const { data } = await supabase.from("clientes").select("id, nome, codigo_cliente").in("id", clienteIdsExtra);[39m
+[31m+       return data || [];[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+   // Busca dados amigáveis das OS reservadas (numero_os, cliente, produto)[39m
+[31m+   const osReservadasIds = useMemo(() => {[39m
+[31m+     const padrao = new Set<string>();[39m
+[31m+     const onfarm = new Set<string>();[39m
+[31m+     (itensProntos as any[]).forEach((it) => {[39m
+[31m+       if (!it.reservado_para_os_id) return;[39m
+[31m+       if (it.reservado_para_os_tipo === "onfarm") onfarm.add(it.reservado_para_os_id);[39m
+[31m+       else padrao.add(it.reservado_para_os_id);[39m
+[31m+     });[39m
+[31m+     return { padrao: Array.from(padrao), onfarm: Array.from(onfarm) };[39m
+[31m+   }, [itensProntos]);[39m
+[31m+[39m
+[31m+   const { data: osReservadasMap = {} } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["entregas-os-reservadas", osReservadasIds],[39m
+[31m+     enabled: osReservadasIds.padrao.length + osReservadasIds.onfarm.length > 0,[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const map: Record<string, { numero_os?: string | null; cliente?: any; produto?: any; partner_orders?: any; type: string }> = {};[39m
+[31m+       if (osReservadasIds.padrao.length) {[39m
+[31m+         const { data } = await supabase[39m
+[31m+           .from("ordens_servico")[39m
+[31m+           .select("id, numero_os, clientes(id, nome, codigo_cliente), produtos(id, nome), partner_order_id, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))")[39m
+[31m+           .in("id", osReservadasIds.padrao);[39m
+[31m+         (data || []).forEach((o: any) => { map[o.id] = { numero_os: o.numero_os, cliente: o.clientes, produto: o.produtos, partner_orders: o.partner_orders, type: "padrao" }; });[39m
+[31m+       }[39m
+[31m+       if (osReservadasIds.onfarm.length) {[39m
+[31m+         const { data } = await supabase[39m
+[31m+           .from("ordens_servico_onfarm")[39m
+[31m+           .select("id, numero_os, clientes(id, nome, codigo_cliente), produtos(id, nome)")[39m
+[31m+           .in("id", osReservadasIds.onfarm);[39m
+[31m+         (data || []).forEach((o: any) => { map[o.id] = { numero_os: o.numero_os, cliente: o.clientes, produto: o.produtos, type: "onfarm" }; });[39m
+[31m+       }[39m
+[31m+       return map;[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+[39m
+[31m+   // Soma de quantidade já entregue/em entrega por item de estoque[39m
+[31m+   // Agrupamento de entregas por item para calcular saldos[39m
+[31m+   const entregasResumo = useMemo(() => {[39m
+[31m+     const pendentes = new Map<string, number>();[39m
+[31m+     const total = new Map<string, number>();[39m
+[31m+     [39m
+[31m+     (entregas as any[]).forEach((e) => {[39m
+[31m+       if (!e.estoque_produto_id || e.status === "cancelada") return;[39m
+[31m+       [39m
+[31m+       const qtd = Number(e.quantidade_entregue) || 0;[39m
+[31m+       total.set(e.estoque_produto_id, (total.get(e.estoque_produto_id) || 0) + qtd);[39m
+[31m+       [39m
+[31m+       if (e.status !== "entregue") {[39m
+[31m+         pendentes.set(e.estoque_produto_id, (pendentes.get(e.estoque_produto_id) || 0) + qtd);[39m
+[31m+       }[39m
+[31m+     });[39m
+[31m+     [39m
+[31m+     return { pendentes, total };[39m
+[31m+   }, [entregas]);[39m
+[31m+[39m
+[31m+   const itensSelecionaveis = useMemo(() => {[39m
+[31m+     return (itensProntos as any[])[39m
+[31m+       .map((it) => {[39m
+[31m+         const env = it.lotes?.envase;[39m
+[31m+         const hasEnvase = Array.isArray(env) ? env.length > 0 : !!env;[39m
+[31m+         if (!hasEnvase) return null;[39m
+[31m+         const envase = Array.isArray(env)[39m
+[31m+           ? env.sort((a: any, b: any) => (b.data_envase || "").localeCompare(a.data_envase || ""))[0][39m
+[31m+           : env;[39m
+[31m+         const qtdTotal = Number(it.quantidade ?? envase?.quantidade ?? 0);[39m
+[31m+         const jaEntreguePendente = entregasResumo.pendentes.get(it.id) || 0;[39m
+[31m+         const jaEntregueTotal = entregasResumo.total.get(it.id) || 0;[39m
+[31m+         [39m
+[31m+         // Saldo físico: quantidade atual no banco - o que já está em entregas pendentes[39m
+[31m+         const saldoFisico = Math.max(0, qtdTotal - jaEntreguePendente);[39m
+[31m+         if (saldoFisico <= 0) return null;[39m
+[31m+         [39m
+[31m+         // Saldo da reserva: quantidade_reservada original - o que já foi/está sendo entregue[39m
+[31m+         const qtdReservada = Number(it.quantidade_reservada || 0);[39m
+[31m+         const saldoReserva = it.status === "reservado" && qtdReservada > 0 [39m
+[31m+           ? Math.max(0, qtdReservada - jaEntregueTotal) [39m
+[31m+           : saldoFisico;[39m
+[31m+[39m
+[31m+         const osInfo = it.reservado_para_os_id ? (osReservadasMap as any)[it.reservado_para_os_id] : null;[39m
+[31m+         const microNome = it.microrganismos[39m
+[31m+           ? (it.microrganismos.nome_cientifico[39m
+[31m+               ? `${it.microrganismos.nome_cientifico}${it.microrganismos.nome ? ` — ${it.microrganismos.nome}` : ""}`[39m
+[31m+               : it.microrganismos.nome)[39m
+[31m+           : null;[39m
+[31m+         const produtoLabel = it.produtos?.nome || osInfo?.produto?.nome || microNome || "—";[39m
+[31m+[39m
+[31m+         const clienteNome =[39m
+[31m+           getClienteLabel(it.cliente_reservado) ||[39m
+[31m+           getClienteLabel((clientesExtra as any[]).find((c) => c.id === it.reservado_para_cliente_id)) ||[39m
+[31m+           getClienteLabel(osInfo?.cliente) ||[39m
+[31m+           null;[39m
+[31m+[39m
+[31m+         const osLabel = it.reservado_para_os_id[39m
+[31m+           ? formatOS({ numero_os: osInfo?.numero_os, id: it.reservado_para_os_id })[39m
+[31m+           : null;[39m
+[31m+[39m
+[31m+         const prog = it.lotes?.programacao_producao;[39m
+[31m+         const osOrigemId = prog?.ordem_servico_id ?? prog?.ordem_servico_onfarm_id ?? null;[39m
+[31m+         const osOrigemTipo = prog?.ordem_servico_id[39m
+[31m+           ? "padrao"[39m
+[31m+           : prog?.ordem_servico_onfarm_id[39m
+[31m+           ? "onfarm"[39m
+[31m+           : null;[39m
+[31m+[39m
+[31m+         return {[39m
+[31m+           ...it,[39m
+[31m+           _envase: envase,[39m
+[31m+           _cliente_nome: clienteNome,[39m
+[31m+           _produto_label: produtoLabel,[39m
+[31m+           _os_label: osLabel,[39m
+[31m+           _os_origem_id: osOrigemId,[39m
+[31m+           _os_origem_tipo: osOrigemTipo,[39m
+[31m+           _saldo: saldoFisico,[39m
+[31m+           _saldo_reserva: saldoReserva,[39m
+[31m+           _ja_entregue: jaEntregueTotal,[39m
+[31m+           _qtd_total: qtdTotal[39m
+[31m+         };[39m
+[31m+       })[39m
+[31m+       .filter(Boolean);[39m
+[31m+   }, [itensProntos, clientesExtra, entregasResumo, osReservadasMap]);[39m
+[31m+[39m
+[31m+[39m
+[31m+   const itemSelecionado: any = itensSelecionaveis.find((i: any) => i.id === form.estoque_produto_id);[39m
+[31m+   const qtdParaEntregar = Number(form.quantidade_entregue) || 0;[39m
+[31m+   const volumePorUnidade = itemSelecionado?._envase?.volume_por_unidade ?? null;[39m
+[31m+[39m
+[31m+   // Realtime: invalida lista de itens ao receber updates do estoque (reservas concorrentes refletem na hora)[39m
+[31m+   useEffect(() => {[39m
+[31m+     if (!deliveryScope.ready) return;[39m
+[31m+     const current = deliveryScope.capture();[39m
+[31m+     let timerEstoque: ReturnType<typeof setTimeout> | null = null;[39m
+[31m+     let timerEntregas: ReturnType<typeof setTimeout> | null = null;[39m
+[31m+     const invalidateEstoque = () => {[39m
+[31m+       if (timerEstoque) clearTimeout(timerEstoque);[39m
+[31m+       timerEstoque = setTimeout(() => {[39m
+[31m+         invalidateDelivery(current);[39m
+[31m+       }, 1200);[39m
+[31m+     };[39m
+[31m+     const invalidateEntregas = () => {[39m
+[31m+       if (timerEntregas) clearTimeout(timerEntregas);[39m
+[31m+       timerEntregas = setTimeout(() => {[39m
+[31m+         invalidateDelivery(current);[39m
+[31m+       }, 1200);[39m
+[31m+     };[39m
+[31m+     const channel = supabase[39m
+[31m+       .channel("entregas-estoque-realtime")[39m
+[31m+       .on("postgres_changes", { event: "*", schema: "public", table: "estoque_produto" }, invalidateEstoque)[39m
+[31m+       .on("postgres_changes", { event: "*", schema: "public", table: "entregas" }, invalidateEntregas)[39m
+[31m+       .subscribe();[39m
+[31m+     return () => {[39m
+[31m+       if (timerEstoque) clearTimeout(timerEstoque);[39m
+[31m+       if (timerEntregas) clearTimeout(timerEntregas);[39m
+[31m+       supabase.removeChannel(channel);[39m
+[31m+     };[39m
+[31m+   }, [queryClient, deliveryScope.scope]);[39m
+[31m+[39m
+[31m+[39m
+[31m+   // Helper: registra tentativa de reserva em auditoria (best-effort, nunca bloqueia o fluxo)[39m
+[31m+   const auditarReserva = async (payload: {[39m
+[31m+     item: any;[39m
+[31m+     osId: string | null;[39m
+[31m+     osTipo: string | null;[39m
+[31m+     clienteId: string | null;[39m
+[31m+     resultado: "sucesso" | "conflito_concorrencia" | "saldo_insuficiente" | "erro";[39m
+[31m+     motivo: string;[39m
+[31m+     entregaId?: string | null;[39m
+[31m+     snapshot?: { status?: string; reservado_para_os_id?: string | null; reservado_por?: string | null };[39m
+[31m+   }) => {[39m
+[31m+     try {[39m
+[31m+       await supabase.from("reservas_auditoria" as any).insert({[39m
+[31m+         estoque_produto_id: payload.item?.id ?? null,[39m
+[31m+         lote_id: payload.item?.lote_id ?? null,[39m
+[31m+         envase_id: payload.item?._envase?.id ?? null,[39m
+[31m+         ordem_servico_id: payload.osId,[39m
+[31m+         os_tipo: payload.osTipo,[39m
+[31m+         cliente_id: payload.clienteId,[39m
+[31m+         entrega_id: payload.entregaId ?? null,[39m
+[31m+         quantidade_solicitada: qtdParaEntregar || null,[39m
+[31m+         resultado: payload.resultado,[39m
+[31m+         motivo: payload.motivo,[39m
+[31m+         status_estoque_no_momento: payload.snapshot?.status ?? payload.item?.status ?? null,[39m
+[31m+         reservado_para_os_id_existente: payload.snapshot?.reservado_para_os_id ?? null,[39m
+[31m+         reservado_por_existente: payload.snapshot?.reservado_por ?? null,[39m
+[31m+       });[39m
+[31m+     } catch (err) {[39m
+[31m+       console.warn("[auditarReserva] falha ao gravar auditoria:", err);[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   const createMutation = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: (payload: RegistrarEntregaSubmit) => runDeliveryOperation("create", async (check, dispatch) => {[39m
+[31m+       // Single atomic server contract; opens only with an exact server capability (probed before dispatch).[39m
+[31m+       const { grupoId, itens, osId, osTipo, observed, ...dados } = payload;[39m
+[31m+       const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;[39m
+[31m+       if (!uuid.test(grupoId) || !uuid.test(osId) || itens.length === 0 || itens.some(({ item, quantidade }) => !uuid.test(item.id) || !Number.isFinite(quantidade) || quantidade <= 0 || quantidade > item._saldo)) throw new Error("Identificação ou quantidade de entrega inválida.");[39m
+[31m+       if (!orgId || !observed?.os || observed.os.id !== osId || !observed.os.updated_at || itens.some(({ item }) => !observed.itens?.[item.id]?.updated_at)) throw new Error("Revisão observada da OS/lotes ausente. Reabra a seleção. Nenhuma alteração foi enviada.");[39m
+[31m+       const ids = itens.map(({ item }) => item.id);[39m
+[31m+       // Read-only comparison with the snapshot taken at selection: divergence requires user review, never a silent rebase.[39m
+[31m+       const [{ data: os, error: osError }, { data: estoque, error: estoqueError }] = await Promise.all([[39m
+[31m+         supabase.from("ordens_servico").select("id, updated_at, origem, partner_order_id").eq("id", osId).maybeSingle(),[39m
+[31m+         supabase.from("estoque_produto").select("id, updated_at, status").in("id", ids),[39m
+[31m+       ]);[39m
+[31m+       check();[39m
+[31m+       if (osError || estoqueError) throw new Error("Não foi possível confirmar o estado atual da OS e do estoque. Nenhuma alteração foi enviada.");[39m
+[31m+       const rows = new Map((estoque ?? []).map((r: any) => [r.id, r]));[39m
+[31m+       if (!os || rows.size !== ids.length) throw new Error("OS ou lote fora do escopo atual. Nenhuma alteração foi enviada.");[39m
+[31m+       const changed = (os as any).updated_at !== observed.os.updated_at || (os as any).origem !== observed.os.origem || ((os as any).partner_order_id ?? null) !== observed.os.partner_order_id[39m
+[31m+         || ids.some(id => (rows.get(id) as any).updated_at !== observed.itens[id].updated_at || (rows.get(id) as any).status !== observed.itens[id].status);[39m
+[31m+       if (changed) throw new Error("A OS ou um lote mudou desde a seleção. Feche, revise os dados atualizados e confirme novamente. Nenhuma alteração foi enviada.");[39m
+[31m+       let attempt: RetrySnapshot | null = null;[39m
+[31m+       const outcome = await runAtomicGroup(supabase.rpc.bind(supabase) as unknown as Rpc, {[39m
+[31m+         requestKey: grupoId, expectedOrg: orgId, osId, osTipo, osOrigem: observed.os.origem, osPartnerOrderId: observed.os.partner_order_id,[39m
+[31m+         osObservedUpdatedAt: observed.os.updated_at,[39m
+[31m+         itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: observed.itens[item.id].updated_at as string, status: observed.itens[item.id].status as string, reservadoParaOsId: item.reservado_para_os_id ?? null, quantidadeReservada: item.quantidade_reservada ?? null, quantidadeTotal: item.quantidade ?? null })),[39m
+[31m+         dados,[39m
+[31m+       }, check, (r) => { dispatch(); reservePending(r); attempt = r; });[39m
+[31m+       settlePending(outcome, attempt);[39m
+[31m+       if (outcome.status === "confirmed") return { grupoId, total: outcome.ack.itens.length };[39m
+[31m+       if (outcome.status === "closed") throw new Error(outcome.message);[39m
+[31m+       if (outcome.status === "rejected") throw new Error(`Entrega recusada pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);[39m
+[31m+       if (outcome.status === "stale") throw new Error("Sessão ou empresa alterada durante o envio. O resultado não foi adotado; o envio pendente continua vinculado à sessão original.");[39m
+[31m+       throw new Error("Resposta incerta da entrega: pode ter sido gravada. Consulte as entregas; somente a repetição exata do mesmo envio está disponível.");[39m
+[31m+     }),[39m
+[31m+     onSuccess: ({ value: { total }, current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success(`${total} entrega(s) registradas em grupo`);[39m
+[31m+       setOpen(false);[39m
+[31m+     },[39m
+[31m+[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const updateStatus = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: ({ id, status }: { id: string; status: string }) => runDeliveryOperation("send", async (check, dispatch, current) => {[39m
+[31m+       // A confirmação física ("entregue") NÃO passa por aqui: ela exige[39m
+[31m+       // recebedor identificado e é feita exclusivamente pelo[39m
+[31m+       // ConfirmarEntregaDialog. Nenhum caminho pode confirmar em silêncio.[39m
+[31m+       if (status === "entregue") {[39m
+[31m+         throw new Error([39m
+[31m+           "Use o diálogo de confirmação de entrega para registrar o recebedor.",[39m
+[31m+         );[39m
+[31m+       }[39m
+[31m+[39m
+[31m+       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || status !== "em_rota") throw new Error("Transição de entrega inválida.");[39m
+[31m+       const row = (entregas as any[]).find(e => e.id === id);[39m
+[31m+       if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");[39m
+[31m+       const key = `${deliveryScope.scope}:${id}`;[39m
+[31m+       const store = pendingStore();[39m
+[31m+       const locks = (typeof navigator !== "undefined" ? (navigator as unknown as { locks?: LockManagerLike }).locks : undefined);[39m
+[31m+       // Cross-tab exclusive lock held from the storage re-read until the transport settles (even after a UI timeout).[39m
+[31m+       return withSendLock(locks, actorId, orgId, async () => {[39m
+[31m+         reloadSends();[39m
+[31m+         if (!store || sendBlockedRef.current) throw new Error(sendBlockedRef.current === "corrupt" ? "Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas." : "Registro local de envio indisponível. Nenhuma alteração foi enviada.");[39m
+[31m+         const retained = sendAttempts.current.get(key);[39m
+[31m+         const otherRetained = Array.from(sendAttempts.current.keys()).some(k => k !== key);[39m
+[31m+         if ((unresolved.current.has(deliveryScope.scope) || otherRetained) && !retained) throw new Error("Reconcilie somente o mesmo envio pendente.");[39m
+[31m+         if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");[39m
+[31m+         if (row.status === 'em_rota' && !retained) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");[39m
+[31m+         const attempt = retained ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };[39m
+[31m+         // Only dispatch creates an uncertain attempt; it is persisted and verified BEFORE the writer call.[39m
+[31m+         await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {[39m
+[31m+           persistBeforeDispatch(store, attempt);[39m
+[31m+           dispatch();[39m
+[31m+           sendAttempts.current.set(key, attempt);[39m
+[31m+         });[39m
+[31m+         check();[39m
+[31m+         const removed = removeExactSend(store, attempt);[39m
+[31m+         reloadSends();[39m
+[31m+         if (!removed) setOperationNotice("Envio confirmado, mas o registro local não pôde ser removido; a próxima consulta reconcilia a mesma chave.");[39m
+[31m+         else unresolved.current.delete(deliveryScope.scope);[39m
+[31m+         return true;[39m
+[31m+       });[39m
+[31m+     }),[39m
+[31m+[39m
+[31m+     onSuccess: ({ current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success("Status atualizado");[39m
+[31m+     },[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const cancelarEntrega = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: ({ id, motivo, observedUpdatedAt, observedStatus }: { id: string; motivo: string; observedUpdatedAt: string | null; observedStatus: string | null }) => runDeliveryOperation("cancel", async (check, dispatch) => {[39m
+[31m+       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || !orgId) throw new Error("Entrega inválida.");[39m
+[31m+       if (!observedUpdatedAt) throw new Error("Revisão observada da entrega ausente. Reabra o cancelamento. Nenhuma alteração foi enviada.");[39m
+[31m+       const { data: entrega, error: fetchErr } = await supabase.from("entregas").select("id, status, updated_at").eq("id", id).maybeSingle();[39m
+[31m+       check();[39m
+[31m+       if (fetchErr || !entrega || entrega.id !== id) throw new Error("Não foi possível confirmar a entrega atual. Nenhuma alteração foi enviada.");[39m
+[31m+       if ((entrega as any).updated_at !== observedUpdatedAt || entrega.status !== observedStatus) throw new Error("A entrega mudou desde a abertura do cancelamento. Feche, revise o estado atual e confirme novamente. Nenhuma alteração foi enviada.");[39m
+[31m+       if (!["separado", "em_rota"].includes(entrega.status)) throw new Error("Cancelamento indisponível para este estado. Retorno de entregue exige contrato próprio.");[39m
+[31m+       // One server transaction: expedition reversal, reservation release and status; no client compensation.[39m
+[31m+       let attempt: RetrySnapshot | null = null;[39m
+[31m+       const outcome = await runAtomicCancel(supabase.rpc.bind(supabase) as unknown as Rpc, id, motivo, observedUpdatedAt, orgId, check, (r) => { dispatch(); reservePending(r); attempt = r; });[39m
+[31m+       settlePending(outcome, attempt);[39m
+[31m+       if (outcome.status === "confirmed") return { id };[39m
+[31m+       if (outcome.status === "closed") throw new Error(outcome.message);[39m
+[31m+       if (outcome.status === "rejected") throw new Error(`Cancelamento recusado pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);[39m
+[31m+       if (outcome.status === "stale") throw new Error("Sessão ou empresa alterada durante o cancelamento. O resultado não foi adotado.");[39m
+[31m+       throw new Error("Resposta incerta do cancelamento: pode ter sido gravado. Consulte a entrega; somente a repetição exata está disponível.");[39m
+[31m+     }),[39m
+[31m+     onSuccess: ({ current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success("Entrega cancelada");[39m
+[31m+       setCancelTarget(null);[39m
+[31m+       setMotivoCancel("");[39m
+[31m+     },[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const replayPending = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: () => runDeliveryOperation("replay", async (check, dispatch) => {[39m
+[31m+       const p = pendingRef.current;[39m
+[31m+       if (!p || p === "corrupt" || p.expectedOrg !== orgId) throw new Error("Nenhum envio pendente válido para esta sessão. Nada foi enviado.");[39m
+[31m+       // Exact frozen args: same request key and same observed revisions; never a new CAS or new key.[39m
+[31m+       if (p.replayRejected) throw new Error(`A repetição já foi recusada (${p.replayRejected}). Isso não prova que o envio original não foi gravado: é necessária consulta/reconciliação autorizada. Novos envios continuam bloqueados.`);[39m
+[31m+       const outcome = await replayUncertain(supabase.rpc.bind(supabase) as unknown as Rpc, p, parserFor(p), check, () => dispatch());[39m
+[31m+       if (outcome.status === "confirmed") { settlePending(outcome, p); unresolved.current.delete(deliveryScope.scope); return true; }[39m
+[31m+       if (outcome.status === "rejected") {[39m
+[31m+         const store = pendingStore();[39m
+[31m+         if (store && actorId && orgId) markReplayRejected(store, actorId, orgId, p, outcome.code);[39m
+[31m+         reloadPending();[39m
+[31m+         throw new Error(`Repetição recusada pelo servidor (${outcome.code}). Isso não prova que o envio original não foi gravado (ex.: permissão revogada ou revisão alterada depois). O envio pendente foi mantido e exige consulta/reconciliação autorizada; novos envios continuam bloqueados. ${outcome.message}`);[39m
+[31m+       }[39m
+[31m+       throw new Error("Repetição ainda sem resultado confirmado. O envio pendente permanece bloqueando novos envios.");[39m
+[31m+     }),[39m
+[31m+     onSuccess: ({ current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success("Envio pendente confirmado pelo servidor.");[39m
+[31m+     },[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   /**[39m
+[31m+    * Ponto único de confirmação de entrega: abre o ConfirmarEntregaDialog,[39m
+[31m+    * que coleta o recebedor físico (nome obrigatório). Não existe fluxo[39m
+[31m+    * paralelo nem fallback do nome do operador como recebedor.[39m
+[31m+    */[39m
+[31m+   const handleConfirmarEntrega = (id: string) => {[39m
+[31m+     const current = deliveryScope.capture();[39m
+[31m+     if (!current()) return;[39m
+[31m+     const entrega: any = (entregas as any[]).find((e) => e.id === id);[39m
+[31m+     if (!entrega) return;[39m
+[31m+     confirmationList.current = { target: id, scope: deliveryScope.scope, current };[39m
+[31m+     setSelectedEntrega(entrega);[39m
+[31m+     setConfirmEntregaOpen(true);[39m
+[31m+   };[39m
+[31m+[39m
+[31m+[39m
+[31m+[39m
+[31m+[39m
+[31m+   const brandingDocumento = () => ({[39m
+[31m+     nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,[39m
+[31m+     logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,[39m
+[31m+     cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const buscarPayloadDocumento = async (entregaId: string, reemissao: boolean) => {[39m
+[31m+     const { data, error } = await supabase.rpc("rpc_get_comprovante_entrega_data" as any, {[39m
+[31m+       p_entrega_id: entregaId,[39m
+[31m+       p_reemissao: reemissao,[39m
+[31m+     });[39m
+[31m+     if (error) throw error;[39m
+[31m+     return data as any;[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   /**[39m
+[31m+    * Abertura do preview: SEMPRE `p_reemissao=false`, inclusive quando ja existe[39m
+[31m+    * snapshot. Nenhum contador de reemissao e incrementado por visualizar,[39m
+[31m+    * fechar/cancelar o dialog, refresh ou mount.[39m
+[31m+    */[39m
+[31m+   const handleGerarDocumento = async (e: any, preview = true) => {[39m
+[31m+     try {[39m
+[31m+       const possuiSnapshotAntes = possuiComprovanteDefinitivo(e);[39m
+[31m+       const payload = await buscarPayloadDocumento(e.id, REEMISSAO_NA_ABERTURA_DO_PREVIEW);[39m
+[31m+[39m
+[31m+       // Primeira emissão definitiva congela o snapshot no servidor: refaz o fetch[39m
+[31m+       // para que a próxima ação passe corretamente a "Reemitir comprovante".[39m
+[31m+       if (!possuiSnapshotAntes && payload?.doc_tipo === "comprovante") {[39m
+[31m+         queryClient.invalidateQueries({ queryKey: ["entregas"] });[39m
+[31m+       }[39m
+[31m+[39m
+[31m+       if (preview) {[39m
+[31m+         setPreviewPayload(payload);[39m
+[31m+         setPreviewSnapshotAntes(possuiSnapshotAntes);[39m
+[31m+         setPreviewEntregaId(e.id);[39m
+[31m+         setPreviewOpen(true);[39m
+[31m+       } else {[39m
+[31m+         await gerarDocumentoEntregaPDF(payload, brandingDocumento());[39m
+[31m+       }[39m
+[31m+     } catch (err: any) {[39m
+[31m+       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   /**[39m
+[31m+    * Download a partir do preview. Só aqui uma reemissão pode ser contabilizada,[39m
+[31m+    * e apenas quando já existia snapshot definitivo antes da abertura do preview.[39m
+[31m+    */[39m
+[31m+   const handleDownloadPreview = async () => {[39m
+[31m+     if (!previewPayload || !previewEntregaId) return;[39m
+[31m+     if (downloadingPreview) return;[39m
+[31m+     setDownloadingPreview(true);[39m
+[31m+     try {[39m
+[31m+       const reemitir = deveReemitirNoDownload({[39m
+[31m+         docTipo: previewPayload?.doc_tipo,[39m
+[31m+         eraComprovanteExistente: previewSnapshotAntes,[39m
+[31m+       });[39m
+[31m+       const payload = reemitir ? await buscarPayloadDocumento(previewEntregaId, true) : previewPayload;[39m
+[31m+       await gerarDocumentoEntregaPDF(payload, brandingDocumento());[39m
+[31m+       queryClient.invalidateQueries({ queryKey: ["entregas"] });[39m
+[31m+       setPreviewOpen(false);[39m
+[31m+       setPreviewPayload(null);[39m
+[31m+       setPreviewEntregaId(null);[39m
+[31m+       setPreviewSnapshotAntes(false);[39m
+[31m+     } catch (err: any) {[39m
+[31m+       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);[39m
+[31m+     } finally {[39m
+[31m+       setDownloadingPreview(false);[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   const handleBaixarRecibo = (e: any) => handleGerarDocumento(e, true);[39m
+[31m+[39m
+[31m+   return ([39m
+[31m+     <div className="space-y-4 sm:space-y-6">[39m
+[31m+       <PageHeader[39m
+[31m+         title="Entregas"[39m
+[31m+         description="Expedição e logística de entrega"[39m
+[31m+         action={[39m
+[31m+           <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>[39m
+[31m+             <Plus className="h-4 w-4 mr-2" />Nova Entrega[39m
+[31m+           </Button>[39m
+[31m+         }[39m
+[31m+       />[39m
+[31m+[39m
+[31m+       <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">[39m
+[31m+         <p>{operationNotice || DELIVERY_OPERATION_BLOCK}</p>[39m
+[31m+         {pending && ([39m
+[31m+           <p>[39m
+[31m+             {pending === "corrupt"[39m
+[31m+               ? "Registro local de envio pendente ilegível ou armazenamento indisponível: novos envios ficam bloqueados nesta sessão. Consulte as entregas."[39m
+[31m+               : pending.replayRejected[39m
+[31m+                 ? `A repetição do envio incerto foi recusada (${pending.replayRejected}); isso não prova que o envio original não foi gravado. É necessária consulta/reconciliação autorizada; novos envios continuam bloqueados.`[39m
+[31m+                 : "Há um envio com resultado incerto. Novos envios ficam bloqueados até a repetição exata confirmar."}[39m
+[31m+           </p>[39m
+[31m+         )}[39m
+[31m+         {pending && pending !== "corrupt" && !pending.replayRejected && ([39m
+[31m+           <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>[39m
+[31m+         )}[39m
+[31m+         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { reloadSends(); void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>[39m
+[31m+         {sendBlocked && <p role="alert">{sendBlocked === "corrupt" ? "Registro local de envio inválido ou adulterado: envios bloqueados, nada foi apagado. Consulte as entregas." : "Armazenamento local indisponível: envios bloqueados para não perder tentativas incertas."}</p>}[39m
+[31m+         {Array.from(sendAttempts.current.entries()).filter(([key]) => key.startsWith(`${deliveryScope.scope}:`)).map(([key, attempt]) => {[39m
+[31m+           const row = (entregas as any[]).find(e => e.id === attempt.scope.entrega);[39m
+[31m+           if (row && ['separado', 'em_rota'].includes(row.status)) return null;[39m
+[31m+           return <p key={key}>Envio incerto {attempt.scope.entrega}: {row ? 'entrega encerrada; reconciliação por escrita indisponível.' : 'entrega fora da consulta atual; consulte antes de reconciliar.'} A tentativa permanece retida, sem nova chave.</p>;[39m
+[31m+         })}[39m
+[31m+       </div>[39m
+[31m+       <RegistrarEntregaDialog[39m
+[31m+         key={deliveryScope.scope}[39m
+[31m+         open={open}[39m
+[31m+         onOpenChange={(o) => {[39m
+[31m+           setOpen(o);[39m
+[31m+           if (!o) {[39m
+[31m+             setOsInicial(undefined);[39m
+[31m+             if (searchParams.get("os")) {[39m
+[31m+               const next = new URLSearchParams(searchParams);[39m
+[31m+               next.delete("os");[39m
+[31m+               setSearchParams(next, { replace: true });[39m
+[31m+             }[39m
+[31m+           }[39m
+[31m+         }}[39m
+[31m+         itensSelecionaveis={itensSelecionaveis as any[]}[39m
+[31m+         todasOS={todasOS as any[]}[39m
+[31m+         osInicial={osInicial}[39m
+[31m+         onSubmit={async (payload) => { await createMutation.mutateAsync(payload); }}[39m
+[31m+         submitting={createMutation.isPending}[39m
+[31m+       />[39m
+[31m+[39m
+[31m+[39m
+[31m+       {/* Filtros BI */}[39m
+[31m+       <Card>[39m
+[31m+         <CardContent className="p-4">[39m
+[31m+           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">[39m
+[31m+             <div>[39m
+[31m+               <Label className="text-xs">Data início</Label>[39m
+[31m+               <Input type="date" value={filtroInicio} onChange={(e) => setFiltroInicio(e.target.value)} />[39m
+[31m+             </div>[39m
+[31m+             <div>[39m
+[31m+               <Label className="text-xs">Data fim</Label>[39m
+[31m+               <Input type="date" value={filtroFim} onChange={(e) => setFiltroFim(e.target.value)} />[39m
+[31m+             </div>[39m
+[31m+             <div>[39m
+[31m+               <Label className="text-xs">Produto</Label>[39m
+[31m+               <Select value={filtroProduto} onValueChange={setFiltroProduto}>[39m
+[31m+                 <SelectTrigger><SelectValue /></SelectTrigger>[39m
+[31m+                 <SelectContent>[39m
+[31m+                   <SelectItem value="todos">Todos os produtos</SelectItem>[39m
+[31m+                   {produtosFiltro.map((p) => ([39m
+[31m+                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>[39m
+[31m+                   ))}[39m
+[31m+                 </SelectContent>[39m
+[31m+               </Select>[39m
+[31m+             </div>[39m
+[31m+             <Button[39m
+[31m+               variant="outline"[39m
+[31m+               onClick={() => { setFiltroInicio(""); setFiltroFim(""); setFiltroProduto("todos"); }}[39m
+[31m+             >[39m
+[31m+               <X className="h-4 w-4 mr-2" />Limpar filtros[39m
+[31m+             </Button>[39m
+[31m+           </div>[39m
+[31m+         </CardContent>[39m
+[31m+       </Card>[39m
+[31m+[39m
+[31m+       {estoqueErro && ([39m
+[31m+         <Card>[39m
+[31m+           <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">[39m
+[31m+             <span className="text-sm text-destructive">[39m
+[31m+               Não foi possível carregar os lotes disponíveis para entrega.[39m
+[31m+             </span>[39m
+[31m+             <Button variant="outline" size="sm" disabled={estoqueFetching} onClick={() => recarregarEstoque()}>[39m
+[31m+               Tentar novamente[39m
+[31m+             </Button>[39m
+[31m+           </CardContent>[39m
+[31m+         </Card>[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       {/* KPIs */}[39m
+[31m+       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">[39m
+[31m+         <Card><CardContent className="p-4">[39m
+[31m+           <div className="text-xs text-muted-foreground">Entregas no período</div>[39m
+[31m+           <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.total}</div>[39m
+[31m+         </CardContent></Card>[39m
+[31m+         <Card><CardContent className="p-4">[39m
+[31m+           <div className="text-xs text-muted-foreground">Volume entregue (L)</div>[39m
+[31m+           <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.volumeL.toFixed(1)}</div>[39m
+[31m+         </CardContent></Card>[39m
+[31m+         <Card><CardContent className="p-4">[39m
+[31m+           <div className="text-xs text-muted-foreground">OS atendidas</div>[39m
+[31m+           <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.osDistintas}</div>[39m
+[31m+         </CardContent></Card>[39m
+[31m+       </div>[39m
+[31m+[39m
+[31m+       <Card>[39m
+[31m+         <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" />Entregas</CardTitle></CardHeader>[39m
+[31m+         <CardContent className={isMobile ? "p-4" : "p-0 sm:p-6 sm:pt-0"}>[39m
+[31m+           {entregasErro ? ([39m
+[31m+             <div className="py-10 text-center space-y-3" data-testid="entregas-erro">[39m
+[31m+               <p className="text-sm text-destructive">[39m
+[31m+                 Não foi possível carregar as entregas.[39m
+[31m+               </p>[39m
+[31m+               <Button variant="outline" size="sm" disabled={entregasFetching} onClick={() => recarregarEntregas()}>[39m
+[31m+                 Tentar novamente[39m
+[31m+               </Button>[39m
+[31m+             </div>[39m
+[31m+           ) : entregasLoading ? ([39m
+[31m+             <div className="py-10 text-center text-sm text-muted-foreground" data-testid="entregas-carregando">[39m
+[31m+               Carregando entregas...[39m
+[31m+             </div>[39m
+[31m+           ) : ([39m
+[31m+           <ResponsiveTable[39m
+[31m+             mobileCards={[39m
+[31m+               entregasFiltradas.length === 0 ? ([39m
+[31m+                 <div className="text-center text-muted-foreground py-8">Nenhuma entrega no período</div>[39m
+[31m+               ) : ([39m
+[31m+                 entregasFiltradas.map((e: any) => ([39m
+[31m+                   <MobileCard[39m
+[31m+                     key={e.id}[39m
+[31m+                     title={getClienteLabel(e.clientes)}[39m
+[31m+                     subtitle={`${e.produtos?.nome || "—"} · Lote ${e.lotes?.codigo_lote || "—"}`}[39m
+[31m+                     status={<Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge>}[39m
+[31m+                     content={[[39m
+[31m+                       { label: "Qtd entregue", value: e.quantidade_entregue ? `${e.quantidade_entregue} un` : "—" },[39m
+[31m+                       { label: "Volume", value: e.volume_entregue_ml ? `${(e.volume_entregue_ml / 1000).toFixed(1)} L` : "—" },[39m
+[31m+                       { label: "Modalidade", value: labelModalidade(e.tipo_entrega) },[39m
+[31m+                       { label: labelResponsavelCurto(e.tipo_entrega), value: e.motorista || "—" },[39m
+[31m+                       { label: "Saída", value: e.data_saida ? formatDateDisplay(e.data_saida) : "—" },[39m
+[31m+                       { label: "OS", value: (e.ordem_servico_id || e.ordem_servico_onfarm_id) ? formatOSFromId(e.ordem_servico_id || e.ordem_servico_onfarm_id) : "—" },[39m
+[31m+                     ]}[39m
+[31m+                     actions={[39m
+[31m+                       <>[39m
+[31m+                         {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}[39m
+[31m+                         {e.status === "em_rota" && sendAttempts.current.has(`${deliveryScope.scope}:${e.id}`) && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Reconciliar envio</Button>}[39m
+[31m+                         {e.status === "em_rota" && ([39m
+[31m+                           <div className="flex gap-1 w-full">[39m
+[31m+                             <Button size="sm" variant="outline" className="flex-1" onClick={() => handleConfirmarEntrega(e.id)}>Apenas Confirmar</Button>[39m
+[31m+                             <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>[39m
+[31m+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar[39m
+[31m+                             </Button>[39m
+[31m+                           </div>[39m
+[31m+                         )}[39m
+[31m+                         {canCancel && e.status !== "entregue" && e.status !== "cancelada" && ([39m
+[31m+                           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCancelTarget(e); setMotivoCancel(""); }}>Cancelar</Button>[39m
+[31m+                         )}[39m
+[31m+                         {(() => {[39m
+[31m+                           const confirmada = e.status === "entregue";[39m
+[31m+                           const definitivo = possuiComprovanteDefinitivo(e);[39m
+[31m+                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });[39m
+[31m+                           return ([39m
+[31m+                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>[39m
+[31m+                               <FileDown className="h-4 w-4 mr-1" /> {label}[39m
+[31m+                             </Button>[39m
+[31m+                           );[39m
+[31m+                         })()}[39m
+[31m+                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">[39m
+[31m+[39m
+[31m+                           <FileText className="h-4 w-4 mr-1" /> Evidências[39m
+[31m+                         </Button>[39m
+[31m+                       </>[39m
+[31m+                     }[39m
+[31m+                   />[39m
+[31m+                 ))[39m
+[31m+               )[39m
+[31m+             }[39m
+[31m+           >[39m
+[31m+             <Table>[39m
+[31m+               <TableHeader>[39m
+[31m+                 <TableRow>[39m
+[31m+                   <TableHead className="w-16">Cód.</TableHead>[39m
+[31m+                   <TableHead>Cliente</TableHead>[39m
+[31m+                   <TableHead>Produto</TableHead>[39m
+[31m+                   <TableHead>Lote</TableHead>[39m
+[31m+                   <TableHead>Qtd</TableHead>[39m
+[31m+                   <TableHead>Volume (L)</TableHead>[39m
+[31m+                   <TableHead>Modalidade</TableHead>[39m
+[31m+                   <TableHead>Motorista / Retirado por</TableHead>[39m
+[31m+                   <TableHead>Saída</TableHead>[39m
+[31m+                   <TableHead>Status</TableHead>[39m
+[31m+                   <TableHead>Ações</TableHead>[39m
+[31m+                 </TableRow>[39m
+[31m+               </TableHeader>[39m
+[31m+               <TableBody>[39m
+[31m+                 {entregasFiltradas.length === 0 ? ([39m
+[31m+                   <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Nenhuma entrega no período</TableCell></TableRow>[39m
+[31m+                 ) : entregasFiltradas.map((e: any) => ([39m
+[31m+                   <TableRow key={e.id}>[39m
+[31m+                     <TableCell className="font-mono text-xs">{e.clientes?.codigo_cliente || "—"}</TableCell>[39m
+[31m+                     <TableCell className="font-medium">{e.clientes?.nome}</TableCell>[39m
+[31m+                     <TableCell>{e.produtos?.nome || "—"}</TableCell>[39m
+[31m+                     <TableCell className="font-mono-data text-xs">[39m
+[31m+                       <div className="flex items-center gap-1 flex-wrap">[39m
+[31m+                         <span>{e.lotes?.codigo_lote || "—"}</span>[39m
+[31m+                         {e.grupo_entrega_id && (gruposMap.get(e.grupo_entrega_id) ?? 0) > 1 && ([39m
+[31m+                           <Badge variant="secondary" className="text-[9px] h-4 px-1" title="Entrega em grupo">[39m
+[31m+                             Grupo · {gruposMap.get(e.grupo_entrega_id)}[39m
+[31m+                           </Badge>[39m
+[31m+                         )}[39m
+[31m+                       </div>[39m
+[31m+                     </TableCell>[39m
+[31m+                     <TableCell>{e.quantidade_entregue ?? "—"}</TableCell>[39m
+[31m+                     <TableCell>{e.volume_entregue_ml ? (e.volume_entregue_ml / 1000).toFixed(1) : "—"}</TableCell>[39m
+[31m+                     <TableCell>{labelModalidade(e.tipo_entrega)}</TableCell>[39m
+[31m+                     <TableCell>{e.motorista || "—"}</TableCell>[39m
+[31m+                     <TableCell>{e.data_saida ? formatDateDisplay(e.data_saida) : "—"}</TableCell>[39m
+[31m+                     <TableCell><Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge></TableCell>[39m
+[31m+                     <TableCell>[39m
+[31m+                       <div className="flex items-center gap-1">[39m
+[31m+                         {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}[39m
+[31m+                         {e.status === "em_rota" && sendAttempts.current.has(`${deliveryScope.scope}:${e.id}`) && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Reconciliar envio</Button>}[39m
+[31m+                         {e.status === "em_rota" && ([39m
+[31m+                           <>[39m
+[31m+                             <Button size="sm" variant="outline" onClick={() => handleConfirmarEntrega(e.id)}>Confirmar</Button>[39m
+[31m+                             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>[39m
+[31m+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar[39m
+[31m+                             </Button>[39m
+[31m+                           </>[39m
+[31m+                         )}[39m
+[31m+                         {canCancel && e.status !== "entregue" && e.status !== "cancelada" && ([39m
+[31m+                           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCancelTarget(e); setMotivoCancel(""); }}>Cancelar</Button>[39m
+[31m+                         )}[39m
+[31m+                         {(() => {[39m
+[31m+                           const confirmada = e.status === "entregue";[39m
+[31m+                           const definitivo = possuiComprovanteDefinitivo(e);[39m
+[31m+                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });[39m
+[31m+                           return ([39m
+[31m+                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>[39m
+[31m+                               <FileDown className="h-4 w-4 mr-1" /> {label}[39m
+[31m+                             </Button>[39m
+[31m+                           );[39m
+[31m+                         })()}[39m
+[31m+                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">[39m
+[31m+                           <FileText className="h-4 w-4 mr-1" /> Evidências[39m
+[31m+                         </Button>[39m
+[31m+                       </div>[39m
+[31m+                     </TableCell>[39m
+[31m+                   </TableRow>[39m
+[31m+                 ))}[39m
+[31m+               </TableBody>[39m
+[31m+             </Table>[39m
+[31m+           </ResponsiveTable>[39m
+[31m+           )}[39m
+[31m+         </CardContent>[39m
+[31m+       </Card>[39m
+[31m+[39m
+[31m+       <AlertDialog open={!!cancelTarget} onOpenChange={(o) => { if (!o) { setCancelTarget(null); setMotivoCancel(""); } }}>[39m
+[31m+         <AlertDialogContent>[39m
+[31m+           <AlertDialogHeader>[39m
+[31m+             <AlertDialogTitle>Cancelar entrega?</AlertDialogTitle>[39m
+[31m+             <AlertDialogDescription>[39m
+[31m+               A entrega permanecerá no histórico. O cancelamento e o eventual estorno de estoque são etapas distintas; uma falha exige consulta antes de novo envio.[39m
+[31m+             </AlertDialogDescription>[39m
+[31m+           </AlertDialogHeader>[39m
+[31m+           <div className="space-y-2">[39m
+[31m+             <Label htmlFor="motivo-cancel">Motivo (opcional)</Label>[39m
+[31m+             <Textarea[39m
+[31m+               id="motivo-cancel"[39m
+[31m+               value={motivoCancel}[39m
+[31m+               onChange={(e) => setMotivoCancel(e.target.value)}[39m
+[31m+               placeholder="Ex.: Cliente recusou no recebimento"[39m
+[31m+               rows={3}[39m
+[31m+             />[39m
+[31m+           </div>[39m
+[31m+           <AlertDialogFooter>[39m
+[31m+             <AlertDialogCancel>Voltar</AlertDialogCancel>[39m
+[31m+             <AlertDialogAction[39m
+[31m+               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"[39m
+[31m+               disabled={cancelarEntrega.isPending}[39m
+[31m+               onClick={(event) => { event.preventDefault(); if (cancelTarget) cancelarEntrega.mutate({ id: cancelTarget.id, motivo: motivoCancel.trim(), observedUpdatedAt: cancelTarget.updated_at ?? null, observedStatus: cancelTarget.status ?? null }); }}[39m
+[31m+             >[39m
+[31m+               Confirmar cancelamento[39m
+[31m+             </AlertDialogAction>[39m
+[31m+           </AlertDialogFooter>[39m
+[31m+         </AlertDialogContent>[39m
+[31m+       </AlertDialog>[39m
+[31m+[39m
+[31m+       <ConfirmarEntregaFinanceiroDialog[39m
+[31m+         open={financialConfirmOpen}[39m
+[31m+         onClose={() => { setFinancialConfirmOpen(false); setSelectedEntrega(null); }}[39m
+[31m+         entrega={selectedEntrega}[39m
+[31m+       />[39m
+[31m+[39m
+[31m+       <ConfirmarEntregaDialog[39m
+[31m+         open={confirmEntregaOpen}[39m
+[31m+         onClose={() => { confirmationList.current = null; setConfirmEntregaOpen(false); }}[39m
+[31m+         entrega={selectedEntrega}[39m
+[31m+         onConfirmed={(mode, target) => {[39m
+[31m+           const captured = confirmationList.current;[39m
+[31m+           if (mode !== "physical" || !captured || captured.scope !== deliveryScope.scope || captured.target !== target || !captured.current()) return;[39m
+[31m+           void queryClient.invalidateQueries({ queryKey: ["entregas", captured.scope, captured.scope], exact: true });[39m
+[31m+           confirmationList.current = null;[39m
+[31m+           setSelectedEntrega(null);[39m
+[31m+         }}[39m
+[31m+       />[39m
+[31m+[39m
+[31m+       <Dialog open={!!comprovanteEntrega} onOpenChange={(o) => !o && setComprovanteEntrega(null)}>[39m
+[31m+         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">[39m
+[31m+           <DialogHeader><DialogTitle>Evidências e termos da entrega</DialogTitle></DialogHeader>[39m
+[31m+           {comprovanteEntrega && <EntregaComprovantePanel entrega={comprovanteEntrega} />}[39m
+[31m+           {comprovanteEntrega && <div className="mt-4"><EmbalagensEntregaPanel entregaId={comprovanteEntrega.id} /></div>}[39m
+[31m+           {comprovanteEntrega && <div className="mt-4"><TermoEntregaPanel entregaId={comprovanteEntrega.id} /></div>}[39m
+[31m+         </DialogContent>[39m
+[31m+       </Dialog>[39m
+[31m+[39m
+[31m+       <PreviewDocumentoEntrega[39m
+[31m+         open={previewOpen}[39m
+[31m+         onOpenChange={(o) => {[39m
+[31m+           if (!o && downloadingPreview) return;[39m
+[31m+           setPreviewOpen(o);[39m
+[31m+           if (!o) {[39m
+[31m+             // Fechar/cancelar o preview nunca contabiliza reemissao.[39m
+[31m+             setPreviewPayload(null);[39m
+[31m+             setPreviewEntregaId(null);[39m
+[31m+             setPreviewSnapshotAntes(false);[39m
+[31m+           }[39m
+[31m+         }}[39m
+[31m+         payload={previewPayload}[39m
+[31m+         branding={brandingDocumento()}[39m
+[31m+         onDownload={handleDownloadPreview}[39m
+[31m+         downloading={downloadingPreview}[39m
+[31m+       />[39m
+[31m+     </div>[39m
+[31m+   );[39m
+[31m+ }[39m
+[31m+[39m
+
+ ❯ src/test/estoque/estoque-contratos-fase28c.test.ts:68:15
+     66|   it("Entregas.tsx mantém operarEstoque e as chaves canônicas", () => {
+     67|     const c = read(ENTREGAS);
+     68|     expect(c).toContain("operarEstoque");
+       |               ^
+     69|     expect(c).toContain("entrega-expedicao");
+     70|     expect(c).toContain("entrega-estorno");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/test/estoque/estoque-fase28b-auditoria.test.ts > FASE 28B — componentes e integrações mapeados > Entregas.tsx usa o motor canônico com chaves de idempotência
+AssertionError: expected 'import { useEffect, useMemo, useRef, …' to contain 'operarEstoque'
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- operarEstoque[39m
+[31m+ import { useEffect, useMemo, useRef, useState } from "react";[39m
+[31m+ import { useSearchParams } from "react-router-dom";[39m
+[31m+ import { useMutation, useQueryClient } from "@tanstack/react-query";[39m
+[31m+ import { supabase } from "@/integrations/supabase/client";[39m
+[31m+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";[39m
+[31m+ import { Button } from "@/components/ui/button";[39m
+[31m+ import { Input } from "@/components/ui/input";[39m
+[31m+ import { Label } from "@/components/ui/label";[39m
+[31m+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";[39m
+[31m+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";[39m
+[31m+ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";[39m
+[31m+ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";[39m
+[31m+ import { Badge } from "@/components/ui/badge";[39m
+[31m+ import { toast } from "sonner";[39m
+[31m+ import { Plus, Truck, X, FileDown, CheckCircle } from "lucide-react";[39m
+[31m+ import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";[39m
+[31m+ import { useIsMobile } from "@/hooks/use-mobile";[39m
+[31m+ import { formatDateDisplay } from "@/lib/date-utils";[39m
+[31m+ import type { Tables } from "@/integrations/supabase/cultivofarm.types";[39m
+[31m+ import { useSystemConfig } from "@/hooks/useSystemConfig";[39m
+[31m+ import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo, deveReemitirNoDownload, REEMISSAO_NA_ABERTURA_DO_PREVIEW } from "@/lib/comprovanteEntregaPdf";[39m
+[31m+[39m
+[31m+ const ERROS_COMPROVANTE: Record<string, string> = {[39m
+[31m+   COMPROVANTE_UNAUTHENTICATED: "Sessão expirada. Entre novamente para emitir o documento.",[39m
+[31m+   COMPROVANTE_FORBIDDEN: "Seu perfil não tem permissão para emitir documentos de entrega.",[39m
+[31m+   COMPROVANTE_PARAMS_INVALIDOS: "Não foi possível identificar a entrega. Recarregue a lista e tente novamente.",[39m
+[31m+   COMPROVANTE_ENTREGA_NAO_ENCONTRADA: "Entrega não encontrada.",[39m
+[31m+   COMPROVANTE_ENTREGA_CANCELADA: "Entrega cancelada não gera documento.",[39m
+[31m+   COMPROVANTE_SEM_ITENS: "A entrega não possui itens vinculados.",[39m
+[31m+   COMPROVANTE_PRODUTO_OBRIGATORIO: "Vincule o produto à entrega antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_LOTE_OBRIGATORIO: "Vincule o lote à entrega antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_QUANTIDADE_OBRIGATORIA: "Informe a quantidade entregue antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_CLIENTE_OBRIGATORIO: "Vincule o cliente à entrega antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_CONFIRMACAO_SEM_DATA: "Confirme o recebimento antes de emitir o comprovante.",[39m
+[31m+   COMPROVANTE_OS_OBRIGATORIA:[39m
+[31m+     "Vincule a entrega a uma OS, OS de Produção ou pedido de parceiro legítimo antes de emitir o comprovante definitivo.",[39m
+[31m+   COMPROVANTE_VOLUME_OBRIGATORIO:[39m
+[31m+     "O volume total da entrega precisa estar preenchido e ser maior que zero para emitir o comprovante.",[39m
+[31m+ };[39m
+[31m+[39m
+[31m+ function traduzErroComprovante(msg: string): string {[39m
+[31m+   const chave = Object.keys(ERROS_COMPROVANTE).find((k) => msg.includes(k));[39m
+[31m+   return chave ? ERROS_COMPROVANTE[chave] : msg;[39m
+[31m+ }[39m
+[31m+ import { useAuth } from "@/hooks/useAuth";[39m
+[31m+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";[39m
+[31m+ import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";[39m
+[31m+ import { Textarea } from "@/components/ui/textarea";[39m
+[31m+ import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";[39m
+[31m+ import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDialog";[39m
+[31m+ import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";[39m
+[31m+ import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";[39m
+[31m+ import { EmbalagensEntregaPanel } from "@/components/estoque/EmbalagensEntregaPanel";[39m
+[31m+ import { FileText } from "lucide-react";[39m
+[31m+ import { formatOS, formatOSFromId } from "@/lib/osLabel";[39m
+[31m+ import { getClienteLabel, getClienteFullLabel } from "@/lib/clienteLabel";[39m
+[31m+ import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";[39m
+[31m+ import { SeletorLoteEnvasado } from "@/components/entregas/SeletorLoteEnvasado";[39m
+[31m+ import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/components/entregas/RegistrarEntregaDialog";[39m
+[31m+ import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";[39m
+[31m+ import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";[39m
+[31m+ import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";[39m
+[31m+ import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";[39m
+[31m+ import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";[39m
+[31m+ import { loadSends, persistBeforeDispatch, removeExactSend, SEND_PERSIST_PREFIX, toAttempt, withSendLock, type LockManagerLike } from "@/lib/entregas/deliverySendPersistence";[39m
+[31m+[39m
+[31m+ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {[39m
+[31m+   separado: { label: "Separado", variant: "secondary" },[39m
+[31m+   em_rota: { label: "Em Rota", variant: "default" },[39m
+[31m+   entregue: { label: "Entregue", variant: "outline" },[39m
+[31m+   cancelada: { label: "Cancelada", variant: "destructive" },[39m
+[31m+ };[39m
+[31m+[39m
+[31m+[39m
+[31m+ export default function Entregas() {[39m
+[31m+   const isMobile = useIsMobile();[39m
+[31m+   const queryClient = useQueryClient();[39m
+[31m+   const { config: brandingConfig, defaults: brandingDefaults } = useSystemConfig();[39m
+[31m+   const { role, user, profile } = useAuth();[39m
+[31m+   const actorId: string | null = user?.id ?? null;[39m
+[31m+   const orgId: string | null = profile?.organization_id ?? null;[39m
+[31m+   const pendingStore = (): Storage | null => { try { return window.localStorage; } catch { return null; } };[39m
+[31m+   const deliveryScope = useStorageAccessScope("entregas-operations");[39m
+[31m+   const operation = useRef<symbol | null>(null);[39m
+[31m+   const sendAttempts = useRef(new Map<string, SendAttempt>());[39m
+[31m+   const unresolved = useRef(new Set<string>());[39m
+[31m+   // Durable Enviar retention: rebuilt from storage for the CURRENT actor+tenant only; "blocked" fails closed.[39m
+[31m+   const [sendBlocked, setSendBlocked] = useState<"" | "corrupt" | "unavailable">("");[39m
+[31m+   const sendBlockedRef = useRef<"" | "corrupt" | "unavailable">("");[39m
+[31m+   const [, setSendTick] = useState(0);[39m
+[31m+   const reloadSends = () => {[39m
+[31m+     const map = new Map<string, SendAttempt>();[39m
+[31m+     let blocked: "" | "corrupt" | "unavailable" = "";[39m
+[31m+     if (actorId && orgId) {[39m
+[31m+       try {[39m
+[31m+         const store = pendingStore();[39m
+[31m+         if (!store) throw new Error("unavailable");[39m
+[31m+         const loaded = loadSends(store, actorId, orgId);[39m
+[31m+         for (const s of loaded.attempts) map.set(`${deliveryScope.scope}:${s.entrega}`, toAttempt(s, deliveryScope.scope));[39m
+[31m+         if (loaded.corrupt.length) blocked = "corrupt";[39m
+[31m+       } catch { blocked = "unavailable"; }[39m
+[31m+     }[39m
+[31m+     sendAttempts.current = map; sendBlockedRef.current = blocked; setSendBlocked(blocked); setSendTick(n => n + 1);[39m
+[31m+   };[39m
+[31m+   useEffect(() => {[39m
+[31m+     reloadSends();[39m
+[31m+     const onStorage = (e: StorageEvent) => { if (!e.key || e.key.startsWith(SEND_PERSIST_PREFIX)) reloadSends(); };[39m
+[31m+     window.addEventListener("storage", onStorage);[39m
+[31m+     return () => window.removeEventListener("storage", onStorage);[39m
+[31m+     // eslint-disable-next-line react-hooks/exhaustive-deps[39m
+[31m+   }, [actorId, orgId, deliveryScope.scope]);[39m
+[31m+   const [operationNotice, setOperationNotice] = useState("");[39m
+[31m+   // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.[39m
+[31m+   const [pending, setPending] = useState<RetrySnapshot | "corrupt" | null>(null);[39m
+[31m+   const pendingRef = useRef<RetrySnapshot | "corrupt" | null>(null);[39m
+[31m+   pendingRef.current = pending;[39m
+[31m+   const reloadPending = () => {[39m
+[31m+     const store = pendingStore();[39m
+[31m+     const value = actorId && orgId ? (store ? loadPending(store, actorId, orgId) : "corrupt") : null;[39m
+[31m+     pendingRef.current = value;[39m
+[31m+     setPending(value);[39m
+[31m+   };[39m
+[31m+   useEffect(() => {[39m
+[31m+     reloadPending();[39m
+[31m+     // Other tabs share the store: re-read on their writes (never adopt their outcomes, only their blocking state).[39m
+[31m+     const onStorage = (e: StorageEvent) => { if (!e.key || e.key.startsWith("cf:delivery-uncertain:")) reloadPending(); };[39m
+[31m+     window.addEventListener("storage", onStorage);[39m
+[31m+     return () => window.removeEventListener("storage", onStorage);[39m
+[31m+     // eslint-disable-next-line react-hooks/exhaustive-deps[39m
+[31m+   }, [actorId, orgId]);[39m
+[31m+   const reservePending = (r: RetrySnapshot) => {[39m
+[31m+     const store = pendingStore();[39m
+[31m+     if (!store || !actorId || !orgId || r.expectedOrg !== orgId) throw new Error("Recuperação local indisponível. Nenhuma alteração foi enviada.");[39m
+[31m+     // Another tab may have registered its own attempt meanwhile: refuse a new key, never overwrite it.[39m
+[31m+     const existing = loadPending(store, actorId, orgId);[39m
+[31m+     if (existing === "corrupt" || (existing && JSON.stringify(existing) !== JSON.stringify(r))) {[39m
+[31m+       reloadPending();[39m
+[31m+       throw new Error("Há outra tentativa com resultado incerto nesta sessão (outra aba). Nenhuma alteração foi enviada.");[39m
+[31m+     }[39m
+[31m+     savePending(store, actorId, orgId, r);[39m
+[31m+     pendingRef.current = r;[39m
+[31m+     setPending(r);[39m
+[31m+   };[39m
+[31m+   /** Clears only the exact attempt this consumer dispatched; first-dispatch definitive refusal or exact confirmation. */[39m
+[31m+   const settlePending = (outcome: Outcome<unknown>, attempt: RetrySnapshot | null) => {[39m
+[31m+     if (outcome.status !== "confirmed" && outcome.status !== "rejected") return;[39m
+[31m+     const store = pendingStore();[39m
+[31m+     if (store && actorId && orgId && attempt) clearPending(store, actorId, orgId, attempt);[39m
+[31m+     reloadPending();[39m
+[31m+   };[39m
+[31m+   const invalidateDelivery = (current: () => boolean) => {[39m
+[31m+     if (!current()) return;[39m
+[31m+     for (const prefix of ["entregas", "estoque-prontos-entrega"]) {[39m
+[31m+       void queryClient.invalidateQueries({ predicate: q => q.queryKey[0] === prefix && q.queryKey.at(-2) === deliveryScope.scope });[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+   // Per-mount containment, not a server receipt or cross-tab idempotency.[39m
+[31m+   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {[39m
+[31m+     try {[39m
+[31m+       // create/cancel probe the server capability inside the work, before any dispatch.[39m
+[31m+       if (target !== "create" && target !== "cancel" && target !== "replay" && target !== "send") requireDeliveryOperationContract("delivery");[39m
+[31m+     } catch (error) {[39m
+[31m+       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;[39m
+[31m+       setOperationNotice(message);[39m
+[31m+       toast.error(message);[39m
+[31m+       throw error;[39m
+[31m+     }[39m
+[31m+     const captured = deliveryScope.capture();[39m
+[31m+     const key = deliveryScope.scope;[39m
+[31m+     if (!captured()) throw new Error("Contexto de entrega indisponível.");[39m
+[31m+     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");[39m
+[31m+     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");[39m
+[31m+     if (target !== "replay" && target !== "send" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");[39m
+[31m+     const ticket = Symbol(target);[39m
+[31m+     operation.current = ticket;[39m
+[31m+     let expired = false;[39m
+[31m+     let dispatched = false;[39m
+[31m+     const current = () => captured() && !expired;[39m
+[31m+     const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };[39m
+[31m+     let timer: ReturnType<typeof setTimeout> | undefined;[39m
+[31m+     let settled = false;[39m
+[31m+     const pending = work(check, () => { check(); dispatched = true; }, current).finally(() => {[39m
+[31m+       settled = true;[39m
+[31m+       if (expired && operation.current === ticket) operation.current = null;[39m
+[31m+     });[39m
+[31m+     try {[39m
+[31m+       const value = await Promise.race([[39m
+[31m+         pending,[39m
+[31m+         new Promise<never>((_, reject) => { timer = setTimeout(() => { expired = true; reject(new Error("Tempo de resposta excedido. Resultado incerto; consulte as entregas, sem reenviar.")); }, 30000); }),[39m
+[31m+       ]);[39m
+[31m+       check();[39m
+[31m+       return { value, current };[39m
+[31m+     } catch (error) {[39m
+[31m+       if (dispatched) unresolved.current.add(key);[39m
+[31m+       if (captured()) {[39m
+[31m+         toast.error(error instanceof Error ? error.message : "Operação de entrega não confirmada.");[39m
+[31m+         setOperationNotice(dispatched ? "Operação não concluída ou resposta incerta. Pode haver etapas já registradas. Consulte as entregas; nenhum estorno automático foi realizado e o reenvio permanece bloqueado nesta tela." : "Não foi possível iniciar a operação de entrega.");[39m
+[31m+       }[39m
+[31m+       throw error;[39m
+[31m+     } finally {[39m
+[31m+       if (timer) clearTimeout(timer);[39m
+[31m+       if (settled && operation.current === ticket) operation.current = null;[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+   const canCancel = role === "administrador" || role === "gestor" || role === "administrativo";[39m
+[31m+   const [open, setOpen] = useState(false);[39m
+[31m+   const [osInicial, setOsInicial] = useState<string | undefined>(undefined);[39m
+[31m+   const [searchParams, setSearchParams] = useSearchParams();[39m
+[31m+[39m
+[31m+   // Ao chegar via cockpit (/entregas?os=<id>), abre o dialog já pré-selecionando a OS.[39m
+[31m+   // Só limpa o parâmetro quando o dialog é fechado (evita perder contexto se o usuário fechar por engano).[39m
+[31m+   useEffect(() => {[39m
+[31m+     const osParam = searchParams.get("os");[39m
+[31m+     if (!osParam) return;[39m
+[31m+     setOsInicial(osParam);[39m
+[31m+     setOpen(true);[39m
+[31m+   }, [searchParams]);[39m
+[31m+   const [confirmOpen, setConfirmOpen] = useState(false);[39m
+[31m+   const [comprovanteEntrega, setComprovanteEntrega] = useState<any>(null);[39m
+[31m+   const [previewPayload, setPreviewPayload] = useState<any>(null);[39m
+[31m+   const [previewOpen, setPreviewOpen] = useState(false);[39m
+[31m+   const [previewSnapshotAntes, setPreviewSnapshotAntes] = useState(false);[39m
+[31m+   const [previewEntregaId, setPreviewEntregaId] = useState<string | null>(null);[39m
+[31m+   // Guarda contra duplo clique no download: impede contabilizar duas reemissões.[39m
+[31m+   const [downloadingPreview, setDownloadingPreview] = useState(false);[39m
+[31m+   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);[39m
+[31m+   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);[39m
+[31m+   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);[39m
+[31m+   const confirmationList = useRef<{ target: string; scope: string; current: () => boolean } | null>(null);[39m
+[31m+   const [cancelTarget, setCancelTarget] = useState<any | null>(null);[39m
+[31m+   const [motivoCancel, setMotivoCancel] = useState("");[39m
+[31m+   useEffect(() => {[39m
+[31m+     confirmationList.current = null;[39m
+[31m+     setCancelTarget(null); setSelectedEntrega(null); setComprovanteEntrega(null);[39m
+[31m+     setConfirmEntregaOpen(false); setFinancialConfirmOpen(false); setPreviewOpen(false);[39m
+[31m+     setPreviewPayload(null); setOperationNotice("");[39m
+[31m+   }, [deliveryScope.scope]);[39m
+[31m+   const { criarEntrega, reservarEstoque: hookReservarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();[39m
+[31m+   const [form, setForm] = useState({[39m
+[31m+     estoque_produto_id: "",[39m
+[31m+     ordem_servico_id: "",[39m
+[31m+     motorista: "",[39m
+[31m+     veiculo: "",[39m
+[31m+     data_saida: "",[39m
+[31m+     quantidade_entregue: "",[39m
+[31m+   });[39m
+[31m+[39m
+[31m+[39m
+[31m+   // Filtros BI[39m
+[31m+   const [filtroInicio, setFiltroInicio] = useState("");[39m
+[31m+   const [filtroFim, setFiltroFim] = useState("");[39m
+[31m+   const [filtroProduto, setFiltroProduto] = useState("todos");[39m
+[31m+[39m
+[31m+   const {[39m
+[31m+     data: entregas = [],[39m
+[31m+     isLoading: entregasLoading,[39m
+[31m+     isError: entregasErro,[39m
+[31m+     refetch: recarregarEntregas,[39m
+[31m+     isFetching: entregasFetching,[39m
+[31m+   } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["entregas"],[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const { data, error } = await supabase[39m
+[31m+         .from("entregas")[39m
+[31m+         .select(`[39m
+[31m+           *,[39m
+[31m+           clientes(nome, codigo_cliente),[39m
+[31m+           ordens_servico(id, numero_os),[39m
+[31m+           ordens_servico_onfarm(id, numero_os),[39m
+[31m+           produtos(id, nome),[39m
+[31m+           lotes([39m
+[31m+             id,[39m
+[31m+             codigo_lote,[39m
+[31m+             envase(volume_por_unidade, data_envase)[39m
+[31m+           ),[39m
+[31m+           entrega_comprovantes!entrega_comprovantes_entrega_id_fkey([39m
+[31m+             id,[39m
+[31m+             tipo,[39m
+[31m+             numero_formulario,[39m
+[31m+             metadata,[39m
+[31m+             gerado_em[39m
+[31m+           )[39m
+[31m+         `)[39m
+[31m+         .order("created_at", { ascending: false })[39m
+[31m+         .limit(200);[39m
+[31m+       if (error) throw error;[39m
+[31m+       return data;[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+   // Catálogo de produtos para filtro (com entregas existentes)[39m
+[31m+   const produtosFiltro = useMemo(() => {[39m
+[31m+     const map = new Map<string, string>();[39m
+[31m+     (entregas as any[]).forEach((e) => {[39m
+[31m+       if (e.produto_id && e.produtos?.nome) map.set(e.produto_id, e.produtos.nome);[39m
+[31m+     });[39m
+[31m+     return Array.from(map.entries()).map(([id, nome]) => ({ id, nome }));[39m
+[31m+   }, [entregas]);[39m
+[31m+[39m
+[31m+   // Aplica filtros[39m
+[31m+   const entregasFiltradas = useMemo(() => {[39m
+[31m+     return (entregas as any[]).filter((e) => {[39m
+[31m+       const ref = e.data_saida || e.created_at?.split("T")[0];[39m
+[31m+       if (filtroInicio && ref < filtroInicio) return false;[39m
+[31m+       if (filtroFim && ref > filtroFim) return false;[39m
+[31m+       if (filtroProduto !== "todos" && e.produto_id !== filtroProduto) return false;[39m
+[31m+       return true;[39m
+[31m+     });[39m
+[31m+   }, [entregas, filtroInicio, filtroFim, filtroProduto]);[39m
+[31m+[39m
+[31m+   // Mapa de grupos de entrega (qtde de itens por grupo)[39m
+[31m+   const gruposMap = useMemo(() => {[39m
+[31m+     const m = new Map<string, number>();[39m
+[31m+     (entregas as any[]).forEach((e) => {[39m
+[31m+       if (e.grupo_entrega_id) m.set(e.grupo_entrega_id, (m.get(e.grupo_entrega_id) || 0) + 1);[39m
+[31m+     });[39m
+[31m+     return m;[39m
+[31m+   }, [entregas]);[39m
+[31m+[39m
+[31m+   // KPIs (apenas entregas concluídas para volume realizado)[39m
+[31m+   const kpis = useMemo(() => {[39m
+[31m+     const total = entregasFiltradas.length;[39m
+[31m+     const concluidas = entregasFiltradas.filter((e) => e.status === "entregue");[39m
+[31m+     const volumeL =[39m
+[31m+       concluidas.reduce((acc, e) => acc + (Number(e.volume_entregue_ml) || 0), 0) / 1000;[39m
+[31m+     const osDistintas = new Set(concluidas.map((e) => e.ordem_servico_id)).size;[39m
+[31m+     return { total, volumeL, osDistintas };[39m
+[31m+   }, [entregasFiltradas]);[39m
+[31m+[39m
+[31m+   // Itens de estoque já envasados, prontos para entrega[39m
+[31m+   const {[39m
+[31m+     data: itensProntos = [],[39m
+[31m+     isLoading: estoqueLoading,[39m
+[31m+     isError: estoqueErro,[39m
+[31m+     refetch: recarregarEstoque,[39m
+[31m+     isFetching: estoqueFetching,[39m
+[31m+   } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["estoque-prontos-entrega"],[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const { data, error } = await supabase[39m
+[31m+         .from("estoque_produto")[39m
+[31m+         .select(`[39m
+[31m+           id, status, updated_at, quantidade, quantidade_reservada, volume_total, validade,[39m
+[31m+           reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id,[39m
+[31m+           produto_id, microrganismo_id, lote_id,[39m
+[31m+           produtos(id, nome),[39m
+[31m+           microrganismos(id, nome, nome_cientifico),[39m
+[31m+           lotes(id, codigo_lote, programacao_id, programacao_producao:programacao_id(ordem_servico_id, ordem_servico_onfarm_id), envase(id, data_envase, quantidade, tipo_embalagem)),[39m
+[31m+           cliente_reservado:clientes!estoque_produto_reservado_para_cliente_id_fkey(id, nome)[39m
+[31m+         `)[39m
+[31m+         .in("status", ["disponivel", "reservado"])[39m
+[31m+         .order("created_at", { ascending: false });[39m
+[31m+[39m
+[31m+       if (error) {[39m
+[31m+         // Tentativa sem o vínculo de cliente reservado (relação opcional).[39m
+[31m+         // Se também falhar, o erro sobe: lista vazia jamais mascara falha.[39m
+[31m+         const { data: d2, error: e2 } = await supabase[39m
+[31m+           .from("estoque_produto")[39m
+[31m+           .select(`[39m
+[31m+             id, status, updated_at, quantidade, quantidade_reservada, volume_total, validade,[39m
+[31m+             reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id,[39m
+[31m+             produto_id, microrganismo_id, lote_id,[39m
+[31m+             produtos(id, nome),[39m
+[31m+             microrganismos(id, nome, nome_cientifico),[39m
+[31m+             lotes(id, codigo_lote, programacao_id, programacao_producao:programacao_id(ordem_servico_id, ordem_servico_onfarm_id), envase(id, data_envase, quantidade, tipo_embalagem))[39m
+[31m+           `)[39m
+[31m+           .in("status", ["disponivel", "reservado"])[39m
+[31m+           .order("created_at", { ascending: false });[39m
+[31m+         if (e2) throw e2;[39m
+[31m+         return d2 || [];[39m
+[31m+       }[39m
+[31m+       return data || [];[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+[39m
+[31m+   const { data: todasOS = [] } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["todas-os-disponiveis"],[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const [osPadrone, osOnFarm] = await Promise.all([[39m
+[31m+         supabase.from("ordens_servico").select("id, numero_os, status, updated_at, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), data_programada, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))"),[39m
+[31m+         supabase.from("ordens_servico_onfarm").select("id, numero_os, status, cliente_id, clientes(nome, codigo_cliente), produtos(nome), data_recomendada"),[39m
+[31m+       ]);[39m
+[31m+       const p = (osPadrone.data || []).map((o) => ({ ...o, type: "padrao", data: o.data_programada }));[39m
+[31m+       const f = (osOnFarm.data || []).map((o) => ({ ...o, type: "onfarm", data: o.data_recomendada }));[39m
+[31m+       return [...p, ...f];[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+   const clienteIdsExtra = useMemo(() => {[39m
+[31m+     const ids = new Set<string>();[39m
+[31m+     (itensProntos as any[]).forEach((it) => {[39m
+[31m+       if (it.reservado_para_cliente_id && !it.cliente_reservado) ids.add(it.reservado_para_cliente_id);[39m
+[31m+     });[39m
+[31m+     return Array.from(ids);[39m
+[31m+   }, [itensProntos]);[39m
+[31m+[39m
+[31m+   const { data: clientesExtra = [] } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["entregas-clientes-extra", clienteIdsExtra],[39m
+[31m+     enabled: clienteIdsExtra.length > 0,[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const { data } = await supabase.from("clientes").select("id, nome, codigo_cliente").in("id", clienteIdsExtra);[39m
+[31m+       return data || [];[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+   // Busca dados amigáveis das OS reservadas (numero_os, cliente, produto)[39m
+[31m+   const osReservadasIds = useMemo(() => {[39m
+[31m+     const padrao = new Set<string>();[39m
+[31m+     const onfarm = new Set<string>();[39m
+[31m+     (itensProntos as any[]).forEach((it) => {[39m
+[31m+       if (!it.reservado_para_os_id) return;[39m
+[31m+       if (it.reservado_para_os_tipo === "onfarm") onfarm.add(it.reservado_para_os_id);[39m
+[31m+       else padrao.add(it.reservado_para_os_id);[39m
+[31m+     });[39m
+[31m+     return { padrao: Array.from(padrao), onfarm: Array.from(onfarm) };[39m
+[31m+   }, [itensProntos]);[39m
+[31m+[39m
+[31m+   const { data: osReservadasMap = {} } = useScopedPortalQuery({[39m
+[31m+     queryKey: ["entregas-os-reservadas", osReservadasIds],[39m
+[31m+     enabled: osReservadasIds.padrao.length + osReservadasIds.onfarm.length > 0,[39m
+[31m+     queryFn: async () => {[39m
+[31m+       const map: Record<string, { numero_os?: string | null; cliente?: any; produto?: any; partner_orders?: any; type: string }> = {};[39m
+[31m+       if (osReservadasIds.padrao.length) {[39m
+[31m+         const { data } = await supabase[39m
+[31m+           .from("ordens_servico")[39m
+[31m+           .select("id, numero_os, clientes(id, nome, codigo_cliente), produtos(id, nome), partner_order_id, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))")[39m
+[31m+           .in("id", osReservadasIds.padrao);[39m
+[31m+         (data || []).forEach((o: any) => { map[o.id] = { numero_os: o.numero_os, cliente: o.clientes, produto: o.produtos, partner_orders: o.partner_orders, type: "padrao" }; });[39m
+[31m+       }[39m
+[31m+       if (osReservadasIds.onfarm.length) {[39m
+[31m+         const { data } = await supabase[39m
+[31m+           .from("ordens_servico_onfarm")[39m
+[31m+           .select("id, numero_os, clientes(id, nome, codigo_cliente), produtos(id, nome)")[39m
+[31m+           .in("id", osReservadasIds.onfarm);[39m
+[31m+         (data || []).forEach((o: any) => { map[o.id] = { numero_os: o.numero_os, cliente: o.clientes, produto: o.produtos, type: "onfarm" }; });[39m
+[31m+       }[39m
+[31m+       return map;[39m
+[31m+     },[39m
+[31m+   }, { actor: deliveryScope, request: deliveryScope });[39m
+[31m+[39m
+[31m+[39m
+[31m+   // Soma de quantidade já entregue/em entrega por item de estoque[39m
+[31m+   // Agrupamento de entregas por item para calcular saldos[39m
+[31m+   const entregasResumo = useMemo(() => {[39m
+[31m+     const pendentes = new Map<string, number>();[39m
+[31m+     const total = new Map<string, number>();[39m
+[31m+     [39m
+[31m+     (entregas as any[]).forEach((e) => {[39m
+[31m+       if (!e.estoque_produto_id || e.status === "cancelada") return;[39m
+[31m+       [39m
+[31m+       const qtd = Number(e.quantidade_entregue) || 0;[39m
+[31m+       total.set(e.estoque_produto_id, (total.get(e.estoque_produto_id) || 0) + qtd);[39m
+[31m+       [39m
+[31m+       if (e.status !== "entregue") {[39m
+[31m+         pendentes.set(e.estoque_produto_id, (pendentes.get(e.estoque_produto_id) || 0) + qtd);[39m
+[31m+       }[39m
+[31m+     });[39m
+[31m+     [39m
+[31m+     return { pendentes, total };[39m
+[31m+   }, [entregas]);[39m
+[31m+[39m
+[31m+   const itensSelecionaveis = useMemo(() => {[39m
+[31m+     return (itensProntos as any[])[39m
+[31m+       .map((it) => {[39m
+[31m+         const env = it.lotes?.envase;[39m
+[31m+         const hasEnvase = Array.isArray(env) ? env.length > 0 : !!env;[39m
+[31m+         if (!hasEnvase) return null;[39m
+[31m+         const envase = Array.isArray(env)[39m
+[31m+           ? env.sort((a: any, b: any) => (b.data_envase || "").localeCompare(a.data_envase || ""))[0][39m
+[31m+           : env;[39m
+[31m+         const qtdTotal = Number(it.quantidade ?? envase?.quantidade ?? 0);[39m
+[31m+         const jaEntreguePendente = entregasResumo.pendentes.get(it.id) || 0;[39m
+[31m+         const jaEntregueTotal = entregasResumo.total.get(it.id) || 0;[39m
+[31m+         [39m
+[31m+         // Saldo físico: quantidade atual no banco - o que já está em entregas pendentes[39m
+[31m+         const saldoFisico = Math.max(0, qtdTotal - jaEntreguePendente);[39m
+[31m+         if (saldoFisico <= 0) return null;[39m
+[31m+         [39m
+[31m+         // Saldo da reserva: quantidade_reservada original - o que já foi/está sendo entregue[39m
+[31m+         const qtdReservada = Number(it.quantidade_reservada || 0);[39m
+[31m+         const saldoReserva = it.status === "reservado" && qtdReservada > 0 [39m
+[31m+           ? Math.max(0, qtdReservada - jaEntregueTotal) [39m
+[31m+           : saldoFisico;[39m
+[31m+[39m
+[31m+         const osInfo = it.reservado_para_os_id ? (osReservadasMap as any)[it.reservado_para_os_id] : null;[39m
+[31m+         const microNome = it.microrganismos[39m
+[31m+           ? (it.microrganismos.nome_cientifico[39m
+[31m+               ? `${it.microrganismos.nome_cientifico}${it.microrganismos.nome ? ` — ${it.microrganismos.nome}` : ""}`[39m
+[31m+               : it.microrganismos.nome)[39m
+[31m+           : null;[39m
+[31m+         const produtoLabel = it.produtos?.nome || osInfo?.produto?.nome || microNome || "—";[39m
+[31m+[39m
+[31m+         const clienteNome =[39m
+[31m+           getClienteLabel(it.cliente_reservado) ||[39m
+[31m+           getClienteLabel((clientesExtra as any[]).find((c) => c.id === it.reservado_para_cliente_id)) ||[39m
+[31m+           getClienteLabel(osInfo?.cliente) ||[39m
+[31m+           null;[39m
+[31m+[39m
+[31m+         const osLabel = it.reservado_para_os_id[39m
+[31m+           ? formatOS({ numero_os: osInfo?.numero_os, id: it.reservado_para_os_id })[39m
+[31m+           : null;[39m
+[31m+[39m
+[31m+         const prog = it.lotes?.programacao_producao;[39m
+[31m+         const osOrigemId = prog?.ordem_servico_id ?? prog?.ordem_servico_onfarm_id ?? null;[39m
+[31m+         const osOrigemTipo = prog?.ordem_servico_id[39m
+[31m+           ? "padrao"[39m
+[31m+           : prog?.ordem_servico_onfarm_id[39m
+[31m+           ? "onfarm"[39m
+[31m+           : null;[39m
+[31m+[39m
+[31m+         return {[39m
+[31m+           ...it,[39m
+[31m+           _envase: envase,[39m
+[31m+           _cliente_nome: clienteNome,[39m
+[31m+           _produto_label: produtoLabel,[39m
+[31m+           _os_label: osLabel,[39m
+[31m+           _os_origem_id: osOrigemId,[39m
+[31m+           _os_origem_tipo: osOrigemTipo,[39m
+[31m+           _saldo: saldoFisico,[39m
+[31m+           _saldo_reserva: saldoReserva,[39m
+[31m+           _ja_entregue: jaEntregueTotal,[39m
+[31m+           _qtd_total: qtdTotal[39m
+[31m+         };[39m
+[31m+       })[39m
+[31m+       .filter(Boolean);[39m
+[31m+   }, [itensProntos, clientesExtra, entregasResumo, osReservadasMap]);[39m
+[31m+[39m
+[31m+[39m
+[31m+   const itemSelecionado: any = itensSelecionaveis.find((i: any) => i.id === form.estoque_produto_id);[39m
+[31m+   const qtdParaEntregar = Number(form.quantidade_entregue) || 0;[39m
+[31m+   const volumePorUnidade = itemSelecionado?._envase?.volume_por_unidade ?? null;[39m
+[31m+[39m
+[31m+   // Realtime: invalida lista de itens ao receber updates do estoque (reservas concorrentes refletem na hora)[39m
+[31m+   useEffect(() => {[39m
+[31m+     if (!deliveryScope.ready) return;[39m
+[31m+     const current = deliveryScope.capture();[39m
+[31m+     let timerEstoque: ReturnType<typeof setTimeout> | null = null;[39m
+[31m+     let timerEntregas: ReturnType<typeof setTimeout> | null = null;[39m
+[31m+     const invalidateEstoque = () => {[39m
+[31m+       if (timerEstoque) clearTimeout(timerEstoque);[39m
+[31m+       timerEstoque = setTimeout(() => {[39m
+[31m+         invalidateDelivery(current);[39m
+[31m+       }, 1200);[39m
+[31m+     };[39m
+[31m+     const invalidateEntregas = () => {[39m
+[31m+       if (timerEntregas) clearTimeout(timerEntregas);[39m
+[31m+       timerEntregas = setTimeout(() => {[39m
+[31m+         invalidateDelivery(current);[39m
+[31m+       }, 1200);[39m
+[31m+     };[39m
+[31m+     const channel = supabase[39m
+[31m+       .channel("entregas-estoque-realtime")[39m
+[31m+       .on("postgres_changes", { event: "*", schema: "public", table: "estoque_produto" }, invalidateEstoque)[39m
+[31m+       .on("postgres_changes", { event: "*", schema: "public", table: "entregas" }, invalidateEntregas)[39m
+[31m+       .subscribe();[39m
+[31m+     return () => {[39m
+[31m+       if (timerEstoque) clearTimeout(timerEstoque);[39m
+[31m+       if (timerEntregas) clearTimeout(timerEntregas);[39m
+[31m+       supabase.removeChannel(channel);[39m
+[31m+     };[39m
+[31m+   }, [queryClient, deliveryScope.scope]);[39m
+[31m+[39m
+[31m+[39m
+[31m+   // Helper: registra tentativa de reserva em auditoria (best-effort, nunca bloqueia o fluxo)[39m
+[31m+   const auditarReserva = async (payload: {[39m
+[31m+     item: any;[39m
+[31m+     osId: string | null;[39m
+[31m+     osTipo: string | null;[39m
+[31m+     clienteId: string | null;[39m
+[31m+     resultado: "sucesso" | "conflito_concorrencia" | "saldo_insuficiente" | "erro";[39m
+[31m+     motivo: string;[39m
+[31m+     entregaId?: string | null;[39m
+[31m+     snapshot?: { status?: string; reservado_para_os_id?: string | null; reservado_por?: string | null };[39m
+[31m+   }) => {[39m
+[31m+     try {[39m
+[31m+       await supabase.from("reservas_auditoria" as any).insert({[39m
+[31m+         estoque_produto_id: payload.item?.id ?? null,[39m
+[31m+         lote_id: payload.item?.lote_id ?? null,[39m
+[31m+         envase_id: payload.item?._envase?.id ?? null,[39m
+[31m+         ordem_servico_id: payload.osId,[39m
+[31m+         os_tipo: payload.osTipo,[39m
+[31m+         cliente_id: payload.clienteId,[39m
+[31m+         entrega_id: payload.entregaId ?? null,[39m
+[31m+         quantidade_solicitada: qtdParaEntregar || null,[39m
+[31m+         resultado: payload.resultado,[39m
+[31m+         motivo: payload.motivo,[39m
+[31m+         status_estoque_no_momento: payload.snapshot?.status ?? payload.item?.status ?? null,[39m
+[31m+         reservado_para_os_id_existente: payload.snapshot?.reservado_para_os_id ?? null,[39m
+[31m+         reservado_por_existente: payload.snapshot?.reservado_por ?? null,[39m
+[31m+       });[39m
+[31m+     } catch (err) {[39m
+[31m+       console.warn("[auditarReserva] falha ao gravar auditoria:", err);[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   const createMutation = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: (payload: RegistrarEntregaSubmit) => runDeliveryOperation("create", async (check, dispatch) => {[39m
+[31m+       // Single atomic server contract; opens only with an exact server capability (probed before dispatch).[39m
+[31m+       const { grupoId, itens, osId, osTipo, observed, ...dados } = payload;[39m
+[31m+       const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;[39m
+[31m+       if (!uuid.test(grupoId) || !uuid.test(osId) || itens.length === 0 || itens.some(({ item, quantidade }) => !uuid.test(item.id) || !Number.isFinite(quantidade) || quantidade <= 0 || quantidade > item._saldo)) throw new Error("Identificação ou quantidade de entrega inválida.");[39m
+[31m+       if (!orgId || !observed?.os || observed.os.id !== osId || !observed.os.updated_at || itens.some(({ item }) => !observed.itens?.[item.id]?.updated_at)) throw new Error("Revisão observada da OS/lotes ausente. Reabra a seleção. Nenhuma alteração foi enviada.");[39m
+[31m+       const ids = itens.map(({ item }) => item.id);[39m
+[31m+       // Read-only comparison with the snapshot taken at selection: divergence requires user review, never a silent rebase.[39m
+[31m+       const [{ data: os, error: osError }, { data: estoque, error: estoqueError }] = await Promise.all([[39m
+[31m+         supabase.from("ordens_servico").select("id, updated_at, origem, partner_order_id").eq("id", osId).maybeSingle(),[39m
+[31m+         supabase.from("estoque_produto").select("id, updated_at, status").in("id", ids),[39m
+[31m+       ]);[39m
+[31m+       check();[39m
+[31m+       if (osError || estoqueError) throw new Error("Não foi possível confirmar o estado atual da OS e do estoque. Nenhuma alteração foi enviada.");[39m
+[31m+       const rows = new Map((estoque ?? []).map((r: any) => [r.id, r]));[39m
+[31m+       if (!os || rows.size !== ids.length) throw new Error("OS ou lote fora do escopo atual. Nenhuma alteração foi enviada.");[39m
+[31m+       const changed = (os as any).updated_at !== observed.os.updated_at || (os as any).origem !== observed.os.origem || ((os as any).partner_order_id ?? null) !== observed.os.partner_order_id[39m
+[31m+         || ids.some(id => (rows.get(id) as any).updated_at !== observed.itens[id].updated_at || (rows.get(id) as any).status !== observed.itens[id].status);[39m
+[31m+       if (changed) throw new Error("A OS ou um lote mudou desde a seleção. Feche, revise os dados atualizados e confirme novamente. Nenhuma alteração foi enviada.");[39m
+[31m+       let attempt: RetrySnapshot | null = null;[39m
+[31m+       const outcome = await runAtomicGroup(supabase.rpc.bind(supabase) as unknown as Rpc, {[39m
+[31m+         requestKey: grupoId, expectedOrg: orgId, osId, osTipo, osOrigem: observed.os.origem, osPartnerOrderId: observed.os.partner_order_id,[39m
+[31m+         osObservedUpdatedAt: observed.os.updated_at,[39m
+[31m+         itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: observed.itens[item.id].updated_at as string, status: observed.itens[item.id].status as string, reservadoParaOsId: item.reservado_para_os_id ?? null, quantidadeReservada: item.quantidade_reservada ?? null, quantidadeTotal: item.quantidade ?? null })),[39m
+[31m+         dados,[39m
+[31m+       }, check, (r) => { dispatch(); reservePending(r); attempt = r; });[39m
+[31m+       settlePending(outcome, attempt);[39m
+[31m+       if (outcome.status === "confirmed") return { grupoId, total: outcome.ack.itens.length };[39m
+[31m+       if (outcome.status === "closed") throw new Error(outcome.message);[39m
+[31m+       if (outcome.status === "rejected") throw new Error(`Entrega recusada pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);[39m
+[31m+       if (outcome.status === "stale") throw new Error("Sessão ou empresa alterada durante o envio. O resultado não foi adotado; o envio pendente continua vinculado à sessão original.");[39m
+[31m+       throw new Error("Resposta incerta da entrega: pode ter sido gravada. Consulte as entregas; somente a repetição exata do mesmo envio está disponível.");[39m
+[31m+     }),[39m
+[31m+     onSuccess: ({ value: { total }, current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success(`${total} entrega(s) registradas em grupo`);[39m
+[31m+       setOpen(false);[39m
+[31m+     },[39m
+[31m+[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const updateStatus = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: ({ id, status }: { id: string; status: string }) => runDeliveryOperation("send", async (check, dispatch, current) => {[39m
+[31m+       // A confirmação física ("entregue") NÃO passa por aqui: ela exige[39m
+[31m+       // recebedor identificado e é feita exclusivamente pelo[39m
+[31m+       // ConfirmarEntregaDialog. Nenhum caminho pode confirmar em silêncio.[39m
+[31m+       if (status === "entregue") {[39m
+[31m+         throw new Error([39m
+[31m+           "Use o diálogo de confirmação de entrega para registrar o recebedor.",[39m
+[31m+         );[39m
+[31m+       }[39m
+[31m+[39m
+[31m+       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || status !== "em_rota") throw new Error("Transição de entrega inválida.");[39m
+[31m+       const row = (entregas as any[]).find(e => e.id === id);[39m
+[31m+       if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");[39m
+[31m+       const key = `${deliveryScope.scope}:${id}`;[39m
+[31m+       const store = pendingStore();[39m
+[31m+       const locks = (typeof navigator !== "undefined" ? (navigator as unknown as { locks?: LockManagerLike }).locks : undefined);[39m
+[31m+       // Cross-tab exclusive lock held from the storage re-read until the transport settles (even after a UI timeout).[39m
+[31m+       return withSendLock(locks, actorId, orgId, async () => {[39m
+[31m+         reloadSends();[39m
+[31m+         if (!store || sendBlockedRef.current) throw new Error(sendBlockedRef.current === "corrupt" ? "Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas." : "Registro local de envio indisponível. Nenhuma alteração foi enviada.");[39m
+[31m+         const retained = sendAttempts.current.get(key);[39m
+[31m+         const otherRetained = Array.from(sendAttempts.current.keys()).some(k => k !== key);[39m
+[31m+         if ((unresolved.current.has(deliveryScope.scope) || otherRetained) && !retained) throw new Error("Reconcilie somente o mesmo envio pendente.");[39m
+[31m+         if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");[39m
+[31m+         if (row.status === 'em_rota' && !retained) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");[39m
+[31m+         const attempt = retained ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };[39m
+[31m+         // Only dispatch creates an uncertain attempt; it is persisted and verified BEFORE the writer call.[39m
+[31m+         await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {[39m
+[31m+           persistBeforeDispatch(store, attempt);[39m
+[31m+           dispatch();[39m
+[31m+           sendAttempts.current.set(key, attempt);[39m
+[31m+         });[39m
+[31m+         check();[39m
+[31m+         const removed = removeExactSend(store, attempt);[39m
+[31m+         reloadSends();[39m
+[31m+         if (!removed) setOperationNotice("Envio confirmado, mas o registro local não pôde ser removido; a próxima consulta reconcilia a mesma chave.");[39m
+[31m+         else unresolved.current.delete(deliveryScope.scope);[39m
+[31m+         return true;[39m
+[31m+       });[39m
+[31m+     }),[39m
+[31m+[39m
+[31m+     onSuccess: ({ current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success("Status atualizado");[39m
+[31m+     },[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const cancelarEntrega = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: ({ id, motivo, observedUpdatedAt, observedStatus }: { id: string; motivo: string; observedUpdatedAt: string | null; observedStatus: string | null }) => runDeliveryOperation("cancel", async (check, dispatch) => {[39m
+[31m+       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || !orgId) throw new Error("Entrega inválida.");[39m
+[31m+       if (!observedUpdatedAt) throw new Error("Revisão observada da entrega ausente. Reabra o cancelamento. Nenhuma alteração foi enviada.");[39m
+[31m+       const { data: entrega, error: fetchErr } = await supabase.from("entregas").select("id, status, updated_at").eq("id", id).maybeSingle();[39m
+[31m+       check();[39m
+[31m+       if (fetchErr || !entrega || entrega.id !== id) throw new Error("Não foi possível confirmar a entrega atual. Nenhuma alteração foi enviada.");[39m
+[31m+       if ((entrega as any).updated_at !== observedUpdatedAt || entrega.status !== observedStatus) throw new Error("A entrega mudou desde a abertura do cancelamento. Feche, revise o estado atual e confirme novamente. Nenhuma alteração foi enviada.");[39m
+[31m+       if (!["separado", "em_rota"].includes(entrega.status)) throw new Error("Cancelamento indisponível para este estado. Retorno de entregue exige contrato próprio.");[39m
+[31m+       // One server transaction: expedition reversal, reservation release and status; no client compensation.[39m
+[31m+       let attempt: RetrySnapshot | null = null;[39m
+[31m+       const outcome = await runAtomicCancel(supabase.rpc.bind(supabase) as unknown as Rpc, id, motivo, observedUpdatedAt, orgId, check, (r) => { dispatch(); reservePending(r); attempt = r; });[39m
+[31m+       settlePending(outcome, attempt);[39m
+[31m+       if (outcome.status === "confirmed") return { id };[39m
+[31m+       if (outcome.status === "closed") throw new Error(outcome.message);[39m
+[31m+       if (outcome.status === "rejected") throw new Error(`Cancelamento recusado pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);[39m
+[31m+       if (outcome.status === "stale") throw new Error("Sessão ou empresa alterada durante o cancelamento. O resultado não foi adotado.");[39m
+[31m+       throw new Error("Resposta incerta do cancelamento: pode ter sido gravado. Consulte a entrega; somente a repetição exata está disponível.");[39m
+[31m+     }),[39m
+[31m+     onSuccess: ({ current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success("Entrega cancelada");[39m
+[31m+       setCancelTarget(null);[39m
+[31m+       setMotivoCancel("");[39m
+[31m+     },[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const replayPending = useMutation({[39m
+[31m+     retry: false,[39m
+[31m+     mutationFn: () => runDeliveryOperation("replay", async (check, dispatch) => {[39m
+[31m+       const p = pendingRef.current;[39m
+[31m+       if (!p || p === "corrupt" || p.expectedOrg !== orgId) throw new Error("Nenhum envio pendente válido para esta sessão. Nada foi enviado.");[39m
+[31m+       // Exact frozen args: same request key and same observed revisions; never a new CAS or new key.[39m
+[31m+       if (p.replayRejected) throw new Error(`A repetição já foi recusada (${p.replayRejected}). Isso não prova que o envio original não foi gravado: é necessária consulta/reconciliação autorizada. Novos envios continuam bloqueados.`);[39m
+[31m+       const outcome = await replayUncertain(supabase.rpc.bind(supabase) as unknown as Rpc, p, parserFor(p), check, () => dispatch());[39m
+[31m+       if (outcome.status === "confirmed") { settlePending(outcome, p); unresolved.current.delete(deliveryScope.scope); return true; }[39m
+[31m+       if (outcome.status === "rejected") {[39m
+[31m+         const store = pendingStore();[39m
+[31m+         if (store && actorId && orgId) markReplayRejected(store, actorId, orgId, p, outcome.code);[39m
+[31m+         reloadPending();[39m
+[31m+         throw new Error(`Repetição recusada pelo servidor (${outcome.code}). Isso não prova que o envio original não foi gravado (ex.: permissão revogada ou revisão alterada depois). O envio pendente foi mantido e exige consulta/reconciliação autorizada; novos envios continuam bloqueados. ${outcome.message}`);[39m
+[31m+       }[39m
+[31m+       throw new Error("Repetição ainda sem resultado confirmado. O envio pendente permanece bloqueando novos envios.");[39m
+[31m+     }),[39m
+[31m+     onSuccess: ({ current }) => {[39m
+[31m+       if (!current()) return;[39m
+[31m+       invalidateDelivery(current);[39m
+[31m+       toast.success("Envio pendente confirmado pelo servidor.");[39m
+[31m+     },[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   /**[39m
+[31m+    * Ponto único de confirmação de entrega: abre o ConfirmarEntregaDialog,[39m
+[31m+    * que coleta o recebedor físico (nome obrigatório). Não existe fluxo[39m
+[31m+    * paralelo nem fallback do nome do operador como recebedor.[39m
+[31m+    */[39m
+[31m+   const handleConfirmarEntrega = (id: string) => {[39m
+[31m+     const current = deliveryScope.capture();[39m
+[31m+     if (!current()) return;[39m
+[31m+     const entrega: any = (entregas as any[]).find((e) => e.id === id);[39m
+[31m+     if (!entrega) return;[39m
+[31m+     confirmationList.current = { target: id, scope: deliveryScope.scope, current };[39m
+[31m+     setSelectedEntrega(entrega);[39m
+[31m+     setConfirmEntregaOpen(true);[39m
+[31m+   };[39m
+[31m+[39m
+[31m+[39m
+[31m+[39m
+[31m+[39m
+[31m+   const brandingDocumento = () => ({[39m
+[31m+     nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,[39m
+[31m+     logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,[39m
+[31m+     cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,[39m
+[31m+   });[39m
+[31m+[39m
+[31m+   const buscarPayloadDocumento = async (entregaId: string, reemissao: boolean) => {[39m
+[31m+     const { data, error } = await supabase.rpc("rpc_get_comprovante_entrega_data" as any, {[39m
+[31m+       p_entrega_id: entregaId,[39m
+[31m+       p_reemissao: reemissao,[39m
+[31m+     });[39m
+[31m+     if (error) throw error;[39m
+[31m+     return data as any;[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   /**[39m
+[31m+    * Abertura do preview: SEMPRE `p_reemissao=false`, inclusive quando ja existe[39m
+[31m+    * snapshot. Nenhum contador de reemissao e incrementado por visualizar,[39m
+[31m+    * fechar/cancelar o dialog, refresh ou mount.[39m
+[31m+    */[39m
+[31m+   const handleGerarDocumento = async (e: any, preview = true) => {[39m
+[31m+     try {[39m
+[31m+       const possuiSnapshotAntes = possuiComprovanteDefinitivo(e);[39m
+[31m+       const payload = await buscarPayloadDocumento(e.id, REEMISSAO_NA_ABERTURA_DO_PREVIEW);[39m
+[31m+[39m
+[31m+       // Primeira emissão definitiva congela o snapshot no servidor: refaz o fetch[39m
+[31m+       // para que a próxima ação passe corretamente a "Reemitir comprovante".[39m
+[31m+       if (!possuiSnapshotAntes && payload?.doc_tipo === "comprovante") {[39m
+[31m+         queryClient.invalidateQueries({ queryKey: ["entregas"] });[39m
+[31m+       }[39m
+[31m+[39m
+[31m+       if (preview) {[39m
+[31m+         setPreviewPayload(payload);[39m
+[31m+         setPreviewSnapshotAntes(possuiSnapshotAntes);[39m
+[31m+         setPreviewEntregaId(e.id);[39m
+[31m+         setPreviewOpen(true);[39m
+[31m+       } else {[39m
+[31m+         await gerarDocumentoEntregaPDF(payload, brandingDocumento());[39m
+[31m+       }[39m
+[31m+     } catch (err: any) {[39m
+[31m+       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   /**[39m
+[31m+    * Download a partir do preview. Só aqui uma reemissão pode ser contabilizada,[39m
+[31m+    * e apenas quando já existia snapshot definitivo antes da abertura do preview.[39m
+[31m+    */[39m
+[31m+   const handleDownloadPreview = async () => {[39m
+[31m+     if (!previewPayload || !previewEntregaId) return;[39m
+[31m+     if (downloadingPreview) return;[39m
+[31m+     setDownloadingPreview(true);[39m
+[31m+     try {[39m
+[31m+       const reemitir = deveReemitirNoDownload({[39m
+[31m+         docTipo: previewPayload?.doc_tipo,[39m
+[31m+         eraComprovanteExistente: previewSnapshotAntes,[39m
+[31m+       });[39m
+[31m+       const payload = reemitir ? await buscarPayloadDocumento(previewEntregaId, true) : previewPayload;[39m
+[31m+       await gerarDocumentoEntregaPDF(payload, brandingDocumento());[39m
+[31m+       queryClient.invalidateQueries({ queryKey: ["entregas"] });[39m
+[31m+       setPreviewOpen(false);[39m
+[31m+       setPreviewPayload(null);[39m
+[31m+       setPreviewEntregaId(null);[39m
+[31m+       setPreviewSnapshotAntes(false);[39m
+[31m+     } catch (err: any) {[39m
+[31m+       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);[39m
+[31m+     } finally {[39m
+[31m+       setDownloadingPreview(false);[39m
+[31m+     }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   const handleBaixarRecibo = (e: any) => handleGerarDocumento(e, true);[39m
+[31m+[39m
+[31m+   return ([39m
+[31m+     <div className="space-y-4 sm:space-y-6">[39m
+[31m+       <PageHeader[39m
+[31m+         title="Entregas"[39m
+[31m+         description="Expedição e logística de entrega"[39m
+[31m+         action={[39m
+[31m+           <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>[39m
+[31m+             <Plus className="h-4 w-4 mr-2" />Nova Entrega[39m
+[31m+           </Button>[39m
+[31m+         }[39m
+[31m+       />[39m
+[31m+[39m
+[31m+       <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">[39m
+[31m+         <p>{operationNotice || DELIVERY_OPERATION_BLOCK}</p>[39m
+[31m+         {pending && ([39m
+[31m+           <p>[39m
+[31m+             {pending === "corrupt"[39m
+[31m+               ? "Registro local de envio pendente ilegível ou armazenamento indisponível: novos envios ficam bloqueados nesta sessão. Consulte as entregas."[39m
+[31m+               : pending.replayRejected[39m
+[31m+                 ? `A repetição do envio incerto foi recusada (${pending.replayRejected}); isso não prova que o envio original não foi gravado. É necessária consulta/reconciliação autorizada; novos envios continuam bloqueados.`[39m
+[31m+                 : "Há um envio com resultado incerto. Novos envios ficam bloqueados até a repetição exata confirmar."}[39m
+[31m+           </p>[39m
+[31m+         )}[39m
+[31m+         {pending && pending !== "corrupt" && !pending.replayRejected && ([39m
+[31m+           <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>[39m
+[31m+         )}[39m
+[31m+         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { reloadSends(); void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>[39m
+[31m+         {sendBlocked && <p role="alert">{sendBlocked === "corrupt" ? "Registro local de envio inválido ou adulterado: envios bloqueados, nada foi apagado. Consulte as entregas." : "Armazenamento local indisponível: envios bloqueados para não perder tentativas incertas."}</p>}[39m
+[31m+         {Array.from(sendAttempts.current.entries()).filter(([key]) => key.startsWith(`${deliveryScope.scope}:`)).map(([key, attempt]) => {[39m
+[31m+           const row = (entregas as any[]).find(e => e.id === attempt.scope.entrega);[39m
+[31m+           if (row && ['separado', 'em_rota'].includes(row.status)) return null;[39m
+[31m+           return <p key={key}>Envio incerto {attempt.scope.entrega}: {row ? 'entrega encerrada; reconciliação por escrita indisponível.' : 'entrega fora da consulta atual; consulte antes de reconciliar.'} A tentativa permanece retida, sem nova chave.</p>;[39m
+[31m+         })}[39m
+[31m+       </div>[39m
+[31m+       <RegistrarEntregaDialog[39m
+[31m+         key={deliveryScope.scope}[39m
+[31m+         open={open}[39m
+[31m+         onOpenChange={(o) => {[39m
+[31m+           setOpen(o);[39m
+[31m+           if (!o) {[39m
+[31m+             setOsInicial(undefined);[39m
+[31m+             if (searchParams.get("os")) {[39m
+[31m+               const next = new URLSearchParams(searchParams);[39m
+[31m+               next.delete("os");[39m
+[31m+               setSearchParams(next, { replace: true });[39m
+[31m+             }[39m
+[31m+           }[39m
+[31m+         }}[39m
+[31m+         itensSelecionaveis={itensSelecionaveis as any[]}[39m
+[31m+         todasOS={todasOS as any[]}[39m
+[31m+         osInicial={osInicial}[39m
+[31m+         onSubmit={async (payload) => { await createMutation.mutateAsync(payload); }}[39m
+[31m+         submitting={createMutation.isPending}[39m
+[31m+       />[39m
+[31m+[39m
+[31m+[39m
+[31m+       {/* Filtros BI */}[39m
+[31m+       <Card>[39m
+[31m+         <CardContent className="p-4">[39m
+[31m+           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">[39m
+[31m+             <div>[39m
+[31m+               <Label className="text-xs">Data início</Label>[39m
+[31m+               <Input type="date" value={filtroInicio} onChange={(e) => setFiltroInicio(e.target.value)} />[39m
+[31m+             </div>[39m
+[31m+             <div>[39m
+[31m+               <Label className="text-xs">Data fim</Label>[39m
+[31m+               <Input type="date" value={filtroFim} onChange={(e) => setFiltroFim(e.target.value)} />[39m
+[31m+             </div>[39m
+[31m+             <div>[39m
+[31m+               <Label className="text-xs">Produto</Label>[39m
+[31m+               <Select value={filtroProduto} onValueChange={setFiltroProduto}>[39m
+[31m+                 <SelectTrigger><SelectValue /></SelectTrigger>[39m
+[31m+                 <SelectContent>[39m
+[31m+                   <SelectItem value="todos">Todos os produtos</SelectItem>[39m
+[31m+                   {produtosFiltro.map((p) => ([39m
+[31m+                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>[39m
+[31m+                   ))}[39m
+[31m+                 </SelectContent>[39m
+[31m+               </Select>[39m
+[31m+             </div>[39m
+[31m+             <Button[39m
+[31m+               variant="outline"[39m
+[31m+               onClick={() => { setFiltroInicio(""); setFiltroFim(""); setFiltroProduto("todos"); }}[39m
+[31m+             >[39m
+[31m+               <X className="h-4 w-4 mr-2" />Limpar filtros[39m
+[31m+             </Button>[39m
+[31m+           </div>[39m
+[31m+         </CardContent>[39m
+[31m+       </Card>[39m
+[31m+[39m
+[31m+       {estoqueErro && ([39m
+[31m+         <Card>[39m
+[31m+           <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">[39m
+[31m+             <span className="text-sm text-destructive">[39m
+[31m+               Não foi possível carregar os lotes disponíveis para entrega.[39m
+[31m+             </span>[39m
+[31m+             <Button variant="outline" size="sm" disabled={estoqueFetching} onClick={() => recarregarEstoque()}>[39m
+[31m+               Tentar novamente[39m
+[31m+             </Button>[39m
+[31m+           </CardContent>[39m
+[31m+         </Card>[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       {/* KPIs */}[39m
+[31m+       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">[39m
+[31m+         <Card><CardContent className="p-4">[39m
+[31m+           <div className="text-xs text-muted-foreground">Entregas no período</div>[39m
+[31m+           <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.total}</div>[39m
+[31m+         </CardContent></Card>[39m
+[31m+         <Card><CardContent className="p-4">[39m
+[31m+           <div className="text-xs text-muted-foreground">Volume entregue (L)</div>[39m
+[31m+           <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.volumeL.toFixed(1)}</div>[39m
+[31m+         </CardContent></Card>[39m
+[31m+         <Card><CardContent className="p-4">[39m
+[31m+           <div className="text-xs text-muted-foreground">OS atendidas</div>[39m
+[31m+           <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.osDistintas}</div>[39m
+[31m+         </CardContent></Card>[39m
+[31m+       </div>[39m
+[31m+[39m
+[31m+       <Card>[39m
+[31m+         <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" />Entregas</CardTitle></CardHeader>[39m
+[31m+         <CardContent className={isMobile ? "p-4" : "p-0 sm:p-6 sm:pt-0"}>[39m
+[31m+           {entregasErro ? ([39m
+[31m+             <div className="py-10 text-center space-y-3" data-testid="entregas-erro">[39m
+[31m+               <p className="text-sm text-destructive">[39m
+[31m+                 Não foi possível carregar as entregas.[39m
+[31m+               </p>[39m
+[31m+               <Button variant="outline" size="sm" disabled={entregasFetching} onClick={() => recarregarEntregas()}>[39m
+[31m+                 Tentar novamente[39m
+[31m+               </Button>[39m
+[31m+             </div>[39m
+[31m+           ) : entregasLoading ? ([39m
+[31m+             <div className="py-10 text-center text-sm text-muted-foreground" data-testid="entregas-carregando">[39m
+[31m+               Carregando entregas...[39m
+[31m+             </div>[39m
+[31m+           ) : ([39m
+[31m+           <ResponsiveTable[39m
+[31m+             mobileCards={[39m
+[31m+               entregasFiltradas.length === 0 ? ([39m
+[31m+                 <div className="text-center text-muted-foreground py-8">Nenhuma entrega no período</div>[39m
+[31m+               ) : ([39m
+[31m+                 entregasFiltradas.map((e: any) => ([39m
+[31m+                   <MobileCard[39m
+[31m+                     key={e.id}[39m
+[31m+                     title={getClienteLabel(e.clientes)}[39m
+[31m+                     subtitle={`${e.produtos?.nome || "—"} · Lote ${e.lotes?.codigo_lote || "—"}`}[39m
+[31m+                     status={<Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge>}[39m
+[31m+                     content={[[39m
+[31m+                       { label: "Qtd entregue", value: e.quantidade_entregue ? `${e.quantidade_entregue} un` : "—" },[39m
+[31m+                       { label: "Volume", value: e.volume_entregue_ml ? `${(e.volume_entregue_ml / 1000).toFixed(1)} L` : "—" },[39m
+[31m+                       { label: "Modalidade", value: labelModalidade(e.tipo_entrega) },[39m
+[31m+                       { label: labelResponsavelCurto(e.tipo_entrega), value: e.motorista || "—" },[39m
+[31m+                       { label: "Saída", value: e.data_saida ? formatDateDisplay(e.data_saida) : "—" },[39m
+[31m+                       { label: "OS", value: (e.ordem_servico_id || e.ordem_servico_onfarm_id) ? formatOSFromId(e.ordem_servico_id || e.ordem_servico_onfarm_id) : "—" },[39m
+[31m+                     ]}[39m
+[31m+                     actions={[39m
+[31m+                       <>[39m
+[31m+                         {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}[39m
+[31m+                         {e.status === "em_rota" && sendAttempts.current.has(`${deliveryScope.scope}:${e.id}`) && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Reconciliar envio</Button>}[39m
+[31m+                         {e.status === "em_rota" && ([39m
+[31m+                           <div className="flex gap-1 w-full">[39m
+[31m+                             <Button size="sm" variant="outline" className="flex-1" onClick={() => handleConfirmarEntrega(e.id)}>Apenas Confirmar</Button>[39m
+[31m+                             <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>[39m
+[31m+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar[39m
+[31m+                             </Button>[39m
+[31m+                           </div>[39m
+[31m+                         )}[39m
+[31m+                         {canCancel && e.status !== "entregue" && e.status !== "cancelada" && ([39m
+[31m+                           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCancelTarget(e); setMotivoCancel(""); }}>Cancelar</Button>[39m
+[31m+                         )}[39m
+[31m+                         {(() => {[39m
+[31m+                           const confirmada = e.status === "entregue";[39m
+[31m+                           const definitivo = possuiComprovanteDefinitivo(e);[39m
+[31m+                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });[39m
+[31m+                           return ([39m
+[31m+                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>[39m
+[31m+                               <FileDown className="h-4 w-4 mr-1" /> {label}[39m
+[31m+                             </Button>[39m
+[31m+                           );[39m
+[31m+                         })()}[39m
+[31m+                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">[39m
+[31m+[39m
+[31m+                           <FileText className="h-4 w-4 mr-1" /> Evidências[39m
+[31m+                         </Button>[39m
+[31m+                       </>[39m
+[31m+                     }[39m
+[31m+                   />[39m
+[31m+                 ))[39m
+[31m+               )[39m
+[31m+             }[39m
+[31m+           >[39m
+[31m+             <Table>[39m
+[31m+               <TableHeader>[39m
+[31m+                 <TableRow>[39m
+[31m+                   <TableHead className="w-16">Cód.</TableHead>[39m
+[31m+                   <TableHead>Cliente</TableHead>[39m
+[31m+                   <TableHead>Produto</TableHead>[39m
+[31m+                   <TableHead>Lote</TableHead>[39m
+[31m+                   <TableHead>Qtd</TableHead>[39m
+[31m+                   <TableHead>Volume (L)</TableHead>[39m
+[31m+                   <TableHead>Modalidade</TableHead>[39m
+[31m+                   <TableHead>Motorista / Retirado por</TableHead>[39m
+[31m+                   <TableHead>Saída</TableHead>[39m
+[31m+                   <TableHead>Status</TableHead>[39m
+[31m+                   <TableHead>Ações</TableHead>[39m
+[31m+                 </TableRow>[39m
+[31m+               </TableHeader>[39m
+[31m+               <TableBody>[39m
+[31m+                 {entregasFiltradas.length === 0 ? ([39m
+[31m+                   <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Nenhuma entrega no período</TableCell></TableRow>[39m
+[31m+                 ) : entregasFiltradas.map((e: any) => ([39m
+[31m+                   <TableRow key={e.id}>[39m
+[31m+                     <TableCell className="font-mono text-xs">{e.clientes?.codigo_cliente || "—"}</TableCell>[39m
+[31m+                     <TableCell className="font-medium">{e.clientes?.nome}</TableCell>[39m
+[31m+                     <TableCell>{e.produtos?.nome || "—"}</TableCell>[39m
+[31m+                     <TableCell className="font-mono-data text-xs">[39m
+[31m+                       <div className="flex items-center gap-1 flex-wrap">[39m
+[31m+                         <span>{e.lotes?.codigo_lote || "—"}</span>[39m
+[31m+                         {e.grupo_entrega_id && (gruposMap.get(e.grupo_entrega_id) ?? 0) > 1 && ([39m
+[31m+                           <Badge variant="secondary" className="text-[9px] h-4 px-1" title="Entrega em grupo">[39m
+[31m+                             Grupo · {gruposMap.get(e.grupo_entrega_id)}[39m
+[31m+                           </Badge>[39m
+[31m+                         )}[39m
+[31m+                       </div>[39m
+[31m+                     </TableCell>[39m
+[31m+                     <TableCell>{e.quantidade_entregue ?? "—"}</TableCell>[39m
+[31m+                     <TableCell>{e.volume_entregue_ml ? (e.volume_entregue_ml / 1000).toFixed(1) : "—"}</TableCell>[39m
+[31m+                     <TableCell>{labelModalidade(e.tipo_entrega)}</TableCell>[39m
+[31m+                     <TableCell>{e.motorista || "—"}</TableCell>[39m
+[31m+                     <TableCell>{e.data_saida ? formatDateDisplay(e.data_saida) : "—"}</TableCell>[39m
+[31m+                     <TableCell><Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge></TableCell>[39m
+[31m+                     <TableCell>[39m
+[31m+                       <div className="flex items-center gap-1">[39m
+[31m+                         {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}[39m
+[31m+                         {e.status === "em_rota" && sendAttempts.current.has(`${deliveryScope.scope}:${e.id}`) && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Reconciliar envio</Button>}[39m
+[31m+                         {e.status === "em_rota" && ([39m
+[31m+                           <>[39m
+[31m+                             <Button size="sm" variant="outline" onClick={() => handleConfirmarEntrega(e.id)}>Confirmar</Button>[39m
+[31m+                             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>[39m
+[31m+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar[39m
+[31m+                             </Button>[39m
+[31m+                           </>[39m
+[31m+                         )}[39m
+[31m+                         {canCancel && e.status !== "entregue" && e.status !== "cancelada" && ([39m
+[31m+                           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCancelTarget(e); setMotivoCancel(""); }}>Cancelar</Button>[39m
+[31m+                         )}[39m
+[31m+                         {(() => {[39m
+[31m+                           const confirmada = e.status === "entregue";[39m
+[31m+                           const definitivo = possuiComprovanteDefinitivo(e);[39m
+[31m+                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });[39m
+[31m+                           return ([39m
+[31m+                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>[39m
+[31m+                               <FileDown className="h-4 w-4 mr-1" /> {label}[39m
+[31m+                             </Button>[39m
+[31m+                           );[39m
+[31m+                         })()}[39m
+[31m+                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">[39m
+[31m+                           <FileText className="h-4 w-4 mr-1" /> Evidências[39m
+[31m+                         </Button>[39m
+[31m+                       </div>[39m
+[31m+                     </TableCell>[39m
+[31m+                   </TableRow>[39m
+[31m+                 ))}[39m
+[31m+               </TableBody>[39m
+[31m+             </Table>[39m
+[31m+           </ResponsiveTable>[39m
+[31m+           )}[39m
+[31m+         </CardContent>[39m
+[31m+       </Card>[39m
+[31m+[39m
+[31m+       <AlertDialog open={!!cancelTarget} onOpenChange={(o) => { if (!o) { setCancelTarget(null); setMotivoCancel(""); } }}>[39m
+[31m+         <AlertDialogContent>[39m
+[31m+           <AlertDialogHeader>[39m
+[31m+             <AlertDialogTitle>Cancelar entrega?</AlertDialogTitle>[39m
+[31m+             <AlertDialogDescription>[39m
+[31m+               A entrega permanecerá no histórico. O cancelamento e o eventual estorno de estoque são etapas distintas; uma falha exige consulta antes de novo envio.[39m
+[31m+             </AlertDialogDescription>[39m
+[31m+           </AlertDialogHeader>[39m
+[31m+           <div className="space-y-2">[39m
+[31m+             <Label htmlFor="motivo-cancel">Motivo (opcional)</Label>[39m
+[31m+             <Textarea[39m
+[31m+               id="motivo-cancel"[39m
+[31m+               value={motivoCancel}[39m
+[31m+               onChange={(e) => setMotivoCancel(e.target.value)}[39m
+[31m+               placeholder="Ex.: Cliente recusou no recebimento"[39m
+[31m+               rows={3}[39m
+[31m+             />[39m
+[31m+           </div>[39m
+[31m+           <AlertDialogFooter>[39m
+[31m+             <AlertDialogCancel>Voltar</AlertDialogCancel>[39m
+[31m+             <AlertDialogAction[39m
+[31m+               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"[39m
+[31m+               disabled={cancelarEntrega.isPending}[39m
+[31m+               onClick={(event) => { event.preventDefault(); if (cancelTarget) cancelarEntrega.mutate({ id: cancelTarget.id, motivo: motivoCancel.trim(), observedUpdatedAt: cancelTarget.updated_at ?? null, observedStatus: cancelTarget.status ?? null }); }}[39m
+[31m+             >[39m
+[31m+               Confirmar cancelamento[39m
+[31m+             </AlertDialogAction>[39m
+[31m+           </AlertDialogFooter>[39m
+[31m+         </AlertDialogContent>[39m
+[31m+       </AlertDialog>[39m
+[31m+[39m
+[31m+       <ConfirmarEntregaFinanceiroDialog[39m
+[31m+         open={financialConfirmOpen}[39m
+[31m+         onClose={() => { setFinancialConfirmOpen(false); setSelectedEntrega(null); }}[39m
+[31m+         entrega={selectedEntrega}[39m
+[31m+       />[39m
+[31m+[39m
+[31m+       <ConfirmarEntregaDialog[39m
+[31m+         open={confirmEntregaOpen}[39m
+[31m+         onClose={() => { confirmationList.current = null; setConfirmEntregaOpen(false); }}[39m
+[31m+         entrega={selectedEntrega}[39m
+[31m+         onConfirmed={(mode, target) => {[39m
+[31m+           const captured = confirmationList.current;[39m
+[31m+           if (mode !== "physical" || !captured || captured.scope !== deliveryScope.scope || captured.target !== target || !captured.current()) return;[39m
+[31m+           void queryClient.invalidateQueries({ queryKey: ["entregas", captured.scope, captured.scope], exact: true });[39m
+[31m+           confirmationList.current = null;[39m
+[31m+           setSelectedEntrega(null);[39m
+[31m+         }}[39m
+[31m+       />[39m
+[31m+[39m
+[31m+       <Dialog open={!!comprovanteEntrega} onOpenChange={(o) => !o && setComprovanteEntrega(null)}>[39m
+[31m+         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">[39m
+[31m+           <DialogHeader><DialogTitle>Evidências e termos da entrega</DialogTitle></DialogHeader>[39m
+[31m+           {comprovanteEntrega && <EntregaComprovantePanel entrega={comprovanteEntrega} />}[39m
+[31m+           {comprovanteEntrega && <div className="mt-4"><EmbalagensEntregaPanel entregaId={comprovanteEntrega.id} /></div>}[39m
+[31m+           {comprovanteEntrega && <div className="mt-4"><TermoEntregaPanel entregaId={comprovanteEntrega.id} /></div>}[39m
+[31m+         </DialogContent>[39m
+[31m+       </Dialog>[39m
+[31m+[39m
+[31m+       <PreviewDocumentoEntrega[39m
+[31m+         open={previewOpen}[39m
+[31m+         onOpenChange={(o) => {[39m
+[31m+           if (!o && downloadingPreview) return;[39m
+[31m+           setPreviewOpen(o);[39m
+[31m+           if (!o) {[39m
+[31m+             // Fechar/cancelar o preview nunca contabiliza reemissao.[39m
+[31m+             setPreviewPayload(null);[39m
+[31m+             setPreviewEntregaId(null);[39m
+[31m+             setPreviewSnapshotAntes(false);[39m
+[31m+           }[39m
+[31m+         }}[39m
+[31m+         payload={previewPayload}[39m
+[31m+         branding={brandingDocumento()}[39m
+[31m+         onDownload={handleDownloadPreview}[39m
+[31m+         downloading={downloadingPreview}[39m
+[31m+       />[39m
+[31m+     </div>[39m
+[31m+   );[39m
+[31m+ }[39m
+[31m+[39m
+
+ ❯ src/test/estoque/estoque-fase28b-auditoria.test.ts:133:15
+    131|   it("Entregas.tsx usa o motor canônico com chaves de idempotência", (…
+    132|     const c = read(ENTREGAS);
+    133|     expect(c).toContain("operarEstoque");
+       |               ^
+    134|     expect(c).toContain("entrega-expedicao");
+    135|     expect(c).toContain("entrega-estorno");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/test/estoque/stock-caller-compatibility.test.ts > compatibilidade dos callers de estoque — sem API real > mantém nome, parâmetros e resultado da RPC tipada
+Error: Operação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.
+ ❯ Module.requireDeliveryOperationContract src/lib/entregas/operationalContainment.ts:7:9
+      5| 
+      6| export function requireDeliveryOperationContract(action: "delivery" | …
+      7|   throw new Error(action === "cancel" ? DELIVERY_CANCELLATION_BLOCK : …
+       |         ^
+      8| }
+ ❯ Module.operarEstoque src/lib/estoque/motorEstoque.ts:96:5
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts:15:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  src/test/estoque/stock-caller-compatibility.test.ts > compatibilidade dos callers de estoque — sem API real > preserva quantidade NULL do estorno e payload default
+Error: Cancelamento e estorno indisponíveis: a recomposição integral do estoque ainda não tem contrato comprovado para esta operação. Nenhuma alteração foi enviada.
+ ❯ Module.requireDeliveryOperationContract src/lib/entregas/operationalContainment.ts:7:9
+      5| 
+      6| export function requireDeliveryOperationContract(action: "delivery" | …
+      7|   throw new Error(action === "cancel" ? DELIVERY_CANCELLATION_BLOCK : …
+       |         ^
+      8| }
+ ❯ Module.operarEstoque src/lib/estoque/motorEstoque.ts:96:5
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts:24:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  src/test/estoque/stock-caller-compatibility.test.ts > compatibilidade dos callers de estoque — sem API real > expedição automática envia o tipo junto ao ID da OS
+AssertionError: expected -1 to be greater than -1
+ ❯ src/test/estoque/stock-caller-compatibility.test.ts:39:19
+     37|     const caller = readFileSync("src/pages/Entregas.tsx", "utf8");
+     38|     const start = caller.indexOf('origem: "entregas.registrarEntrega"'…
+     39|     expect(start).toBeGreaterThan(-1);
+       |                   ^
+     40|     const payload = caller.slice(start, caller.indexOf("},", start));
+     41|     expect(payload).toContain("os_id: itemOsId");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  5 failed | 26 passed (31)
+   Start at  14:49:10
+   Duration  3.70s (transform 214ms, setup 776ms, collect 264ms, tests 114ms, environment 4.67s, prepare 2.38s)
+

@@ -62,6 +62,7 @@ import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidad
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
 import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";
+import { loadSends, persistBeforeDispatch, removeExactSend, SEND_PERSIST_PREFIX, toAttempt, withSendLock, type LockManagerLike } from "@/lib/entregas/deliverySendPersistence";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -83,6 +84,31 @@ export default function Entregas() {
   const operation = useRef<symbol | null>(null);
   const sendAttempts = useRef(new Map<string, SendAttempt>());
   const unresolved = useRef(new Set<string>());
+  // Durable Enviar retention: rebuilt from storage for the CURRENT actor+tenant only; "blocked" fails closed.
+  const [sendBlocked, setSendBlocked] = useState<"" | "corrupt" | "unavailable">("");
+  const sendBlockedRef = useRef<"" | "corrupt" | "unavailable">("");
+  const [, setSendTick] = useState(0);
+  const reloadSends = () => {
+    const map = new Map<string, SendAttempt>();
+    let blocked: "" | "corrupt" | "unavailable" = "";
+    if (actorId && orgId) {
+      try {
+        const store = pendingStore();
+        if (!store) throw new Error("unavailable");
+        const loaded = loadSends(store, actorId, orgId);
+        for (const s of loaded.attempts) map.set(`${deliveryScope.scope}:${s.entrega}`, toAttempt(s, deliveryScope.scope));
+        if (loaded.corrupt.length) blocked = "corrupt";
+      } catch { blocked = "unavailable"; }
+    }
+    sendAttempts.current = map; sendBlockedRef.current = blocked; setSendBlocked(blocked); setSendTick(n => n + 1);
+  };
+  useEffect(() => {
+    reloadSends();
+    const onStorage = (e: StorageEvent) => { if (!e.key || e.key.startsWith(SEND_PERSIST_PREFIX)) reloadSends(); };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actorId, orgId, deliveryScope.scope]);
   const [operationNotice, setOperationNotice] = useState("");
   // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.
   const [pending, setPending] = useState<RetrySnapshot | "corrupt" | null>(null);
@@ -628,17 +654,31 @@ export default function Entregas() {
       const row = (entregas as any[]).find(e => e.id === id);
       if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");
       const key = `${deliveryScope.scope}:${id}`;
-      if (unresolved.current.has(deliveryScope.scope) && !sendAttempts.current.has(key)) throw new Error("Reconcilie somente o mesmo envio pendente.");
-      if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");
-      if (row.status === 'em_rota' && !sendAttempts.current.has(key)) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");
-      const attempt = sendAttempts.current.get(key) ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
-      // Only dispatch creates an uncertain attempt. A failed capability/CAS read cannot strand a fresh key.
-      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {
-        dispatch();
-        sendAttempts.current.set(key, attempt);
+      const store = pendingStore();
+      const locks = (typeof navigator !== "undefined" ? (navigator as unknown as { locks?: LockManagerLike }).locks : undefined);
+      // Cross-tab exclusive lock held from the storage re-read until the transport settles (even after a UI timeout).
+      return withSendLock(locks, actorId, orgId, async () => {
+        reloadSends();
+        if (!store || sendBlockedRef.current) throw new Error(sendBlockedRef.current === "corrupt" ? "Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas." : "Registro local de envio indisponível. Nenhuma alteração foi enviada.");
+        const retained = sendAttempts.current.get(key);
+        const otherRetained = Array.from(sendAttempts.current.keys()).some(k => k !== key);
+        if ((unresolved.current.has(deliveryScope.scope) || otherRetained) && !retained) throw new Error("Reconcilie somente o mesmo envio pendente.");
+        if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");
+        if (row.status === 'em_rota' && !retained) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");
+        const attempt = retained ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
+        // Only dispatch creates an uncertain attempt; it is persisted and verified BEFORE the writer call.
+        await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {
+          persistBeforeDispatch(store, attempt);
+          dispatch();
+          sendAttempts.current.set(key, attempt);
+        });
+        check();
+        const removed = removeExactSend(store, attempt);
+        reloadSends();
+        if (!removed) setOperationNotice("Envio confirmado, mas o registro local não pôde ser removido; a próxima consulta reconcilia a mesma chave.");
+        else unresolved.current.delete(deliveryScope.scope);
+        return true;
       });
-      check(); sendAttempts.current.delete(key); unresolved.current.delete(deliveryScope.scope);
-      return true;
     }),
 
     onSuccess: ({ current }) => {
@@ -818,7 +858,8 @@ export default function Entregas() {
         {pending && pending !== "corrupt" && !pending.replayRejected && (
           <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>
         )}
-        <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
+        <Button variant="outline" onClick={() => { if (deliveryScope.ready) { reloadSends(); void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
+        {sendBlocked && <p role="alert">{sendBlocked === "corrupt" ? "Registro local de envio inválido ou adulterado: envios bloqueados, nada foi apagado. Consulte as entregas." : "Armazenamento local indisponível: envios bloqueados para não perder tentativas incertas."}</p>}
         {Array.from(sendAttempts.current.entries()).filter(([key]) => key.startsWith(`${deliveryScope.scope}:`)).map(([key, attempt]) => {
           const row = (entregas as any[]).find(e => e.id === attempt.scope.entrega);
           if (row && ['separado', 'em_rota'].includes(row.status)) return null;

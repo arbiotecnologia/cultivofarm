@@ -77,6 +77,9 @@ beforeEach(() => {
   t.from.mockImplementation(chain);
   t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : fn === GROUP_RPC ? { data: groupAck, error: null } : { data: cancelAck, error: null });
 });
+const heldLocks = new Set<string>();
+const fakeLocks = { request: async (name: string, _o: any, cb: (l: unknown) => Promise<unknown>) => { if (heldLocks.has(name)) return cb(null); heldLocks.add(name); try { return await cb({ name }); } finally { heldLocks.delete(name); } } };
+beforeEach(() => { heldLocks.clear(); Object.defineProperty(navigator, "locks", { value: fakeLocks, configurable: true }); });
 afterEach(() => { cleanup(); });
 
 describe("Entregas page with atomic adapter (mounted)", () => {
