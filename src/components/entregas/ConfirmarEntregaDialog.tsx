@@ -17,7 +17,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
  const { user, profile } = useAuth();
  const fence = useStorageAccessScope(`physical-confirm:${open}:${entrega?.id}`);
  const qc = useQueryClient();
- const [read, setRead] = useState<{ scope: string; observed: string; status: string } | null>(null);
+ const [read, setRead] = useState<{ scope: string; observed: string; status: string; os: string; proof: string } | null>(null);
  const [error, setError] = useState(""); const [busy,setBusy]=useState(false); const [uncertain,setUncertain]=useState(false);
  const [form,setForm]=useState({nome:"",cargo:"",documento:"",observacoes:""});
  const lock=useRef(false); const generation=useRef(0);
@@ -36,7 +36,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
     if(gen!==generation.current||!current())return;
     const cap=!error&&confirmationCapability(data,scope);
     if(!cap){setError("Confirmação física indisponível. Nenhuma alteração foi enviada.");return;}
-    setRead({scope:context,observed:String(cap.updated_at),status:String(cap.status)});
+    setRead({scope:context,observed:cap.updated_at,status:cap.status,os:cap.os_id,proof:cap.comprovante_id});
    } catch {if(gen===generation.current&&current())setError("Não foi possível consultar a disponibilidade. Nenhuma alteração foi enviada.");}
   })();
  },[context,open,entrega?.id]);
@@ -46,7 +46,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
   if(read.status==='entregue' && attempt.current?.context!==context){setError("Entrega já confirmada. Consulte o histórico.");return;}
   const target=scope.entrega; const capturedScope=context;
   const retained=attempt.current?.context===context?attempt.current.value:null;
-  const pending=retained??{scope:{...scope},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
+  const pending=retained??{scope:{...scope},roots:{os:read.os,proof:read.proof},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
   attempt.current={context,value:pending}; lock.current=true;setBusy(true);setError("");let sent=false;
   let timedOut=false; let settled=false; let timer: ReturnType<typeof setTimeout> | undefined;
   const alive=()=>current()&&!timedOut;
