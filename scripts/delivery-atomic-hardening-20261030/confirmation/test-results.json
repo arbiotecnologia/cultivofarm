@@ -65,6 +65,14 @@
       "status": "PASS"
     },
     {
+      "test": "tampered canonical hash denied",
+      "status": "PASS"
+    },
+    {
+      "test": "missing storage object denied",
+      "status": "PASS"
+    },
+    {
       "test": "financial payload rejected",
       "status": "PASS"
     },
@@ -201,6 +209,18 @@
       "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 59 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
+      "test": "tampered canonical hash denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_PROOF_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 6 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 43 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "missing storage object denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 22 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 43 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
       "test": "financial payload rejected",
       "returncode": 3,
       "stdout": "",
@@ -239,7 +259,7 @@
     {
       "test": "cancel wins",
       "stdout": "",
-      "stderr": "ERROR:  DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 27 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\n"
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 27 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "confirmed physical delivery cannot ordinary cancel",
@@ -255,5 +275,5 @@
     }
   ],
   "exit_code": 0,
-  "elapsed_seconds": 24.049496823000027
+  "elapsed_seconds": 23.052319500000067
 }
