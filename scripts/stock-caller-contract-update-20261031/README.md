@@ -26,3 +26,20 @@ Nenhum skip, nenhuma constante alterada, nenhuma contenção simulada fora, nenh
 - Regressão em paralelo: r2 teve 1 falha (`consumidorEntrega`: botão "Cancelar" não encontrado), r3 teve 1 falha (`registrarEntregaMetadataSubmit`: tempo limite de 5000 ms). Em cada rodada falhou um teste diferente, e os dois arquivos passaram 3/3 isoladamente (logs `*-isolated-*`). Instabilidade de tempo sob carga, sem relação com esta mudança, que alterou só os testes de estoque. Não foi corrigida e fica registrada como pendência.
 - Regressão serial r4 (`--no-file-parallelism`): 50 arquivos, 720/720.
 - Os logs da rodada 1 foram preservados sem alteração.
+
+## Rodada 3: instabilidade de consumidorEntrega e registrarEntregaMetadataSubmit
+**Evidência da causa** (logs r2/r3 preservados):
+- No r2, o DOM da falha mostra a página carregada e o aviso de contenção, mas nenhuma linha da lista: o teste procurava "Cancelar" antes de a consulta da lista ser renderizada. A busca usa o limite padrão de 1000 ms do findBy, e o teste levou 625 a 730 ms isolado.
+- Tempo somado dos testes: 200 s em paralelo (16 workers, r2/r3), 60 s em serial (r4) e 53 s com 2 workers (r7). Isso dá cerca de 3,3x de lentidão por teste com paralelismo máximo, o suficiente para estourar 1000 ms (busca) e 5000 ms (teste do autofill, 560 a 860 ms isolado). Essa estimativa não foi medida teste a teste.
+
+**Correções de race nos testes** (sem sleep, skip, mock de autorização ou timeout global):
+- consumidorEntrega: a linha usa um nome de cliente único e o teste espera essa linha da consulta antes de localizar "Cancelar". Também verifica `from('entregas')`. O afterEach limpa todos os QueryClients montados, localStorage e sessionStorage, mesmo quando o teste falha. As verificações de zero RPC, zero UPDATE e zero chamada ao motor continuam iguais.
+- registrarEntregaMetadataSubmit: o findBy saiu de dentro do `act` (poll dentro de act) e o afterEach passou a limpar mocks.
+
+**Perfil validado** (comando reproduzível; a lista de arquivos está em evidence/regression-files.txt):
+`npx vitest run --maxWorkers=2 --minWorkers=1 $(cat scripts/stock-caller-contract-update-20261031/evidence/regression-files.txt)`
+- r7: 50 arquivos, 720/720, 90,7 s.
+- focused-r6 (as duas suítes corrigidas): 14/14.
+- typecheck-r3: exit 0.
+
+**Paralelismo máximo NÃO certificado:** r8 passou 720/720 uma vez, mas uma rodada não prova estabilidade sob saturação. A primeira tentativa de correção (r5) falhou porque havia vários textos "Cliente" na tela, e o log foi preservado.

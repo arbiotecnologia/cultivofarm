@@ -1,0 +1,1 @@
+src/test/estoque src/test/entregas src/test/envase src/test/etiquetas src/test/saas/entrega2-helpers-postgres.test.ts src/test/saas/entrega1-client-access-postgres.test.ts 
