@@ -51,6 +51,7 @@
 - OS programming/lot candidates replace only the canonical RPC with a fixed self-contained rollback, revalidate actor/tenant/SaaS after locks, reuse existing dialogs with pre/post-await session fences — avoids autoapproval, stale writes and parallel flows.
 - CQ review artifacts follow their directory AGENTS.md; reference lookup and parent fences remain candidate-only until approved — prevents runtime release.
 - Review directories have AGENTS.md; HTTP candidates use atomic INVOKER actor proofs before/after server-only bytes and ZIP final fences; old URLs need independent CDN containment — avoids fanout and bucket-only authority.
+- Envase consultation remounts by canonical session scope; history uses filter/page fences and independent latest-request generations, products use session fences, and realtime callbacks retire on cleanup — prevents stale row adoption without replacing RLS or reopening writers.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
   carregarTudo,
 } from "@/lib/envase/consulta";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 interface Envase {
   id: string;
@@ -38,6 +39,12 @@ const SELECT_ENVASE =
   "id, lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, etiqueta_id, created_at, lotes!inner(codigo_lote, produto_id, produtos(nome)), produto_etiquetas:etiqueta_id(id, status, trace_token, codigo_etiqueta)";
 
 export default function EnvasePage() {
+  const session = useStorageAccessScope("envase-consulta");
+  // Remount clears rows, products, filters and pending debounce on every identity generation.
+  return session.ready ? <EnvaseConsulta key={session.scope} /> : <p role="status">Consulta indisponível nesta sessão.</p>;
+}
+
+function EnvaseConsulta() {
   const [searchParams] = useSearchParams();
   const [envases, setEnvases] = useState<Envase[]>([]);
   const [total, setTotal] = useState(0);
@@ -56,10 +63,19 @@ export default function EnvasePage() {
   /** Uma consulta por pausa de digitação, não por tecla. */
   const buscaDebounced = useDebounce(search.trim(), 400);
   const periodo = validarPeriodo(dateFrom, dateTo);
+  const fence = useStorageAccessScope(JSON.stringify([search, buscaDebounced, produtoFilter, dateFrom, dateTo, pagina]));
+  const productsFence = useStorageAccessScope("envase-produtos");
+  const historyGeneration = useRef(0);
+  const productsGeneration = useRef(0);
+  const [adoptedScope, setAdoptedScope] = useState("");
+  const historyCurrent = adoptedScope === fence.scope;
 
   /** Histórico: paginação server-side com contagem exata e filtros no banco. */
   const carregarHistorico = useCallback(async () => {
-    if (!periodo.valido) return;
+    const generation = ++historyGeneration.current;
+    const captured = fence.capture();
+    const current = () => captured() && generation === historyGeneration.current;
+    if (!current() || !periodo.valido || search.trim() !== buscaDebounced) return;
     setLoading(true);
     setErro(null);
     try {
@@ -67,6 +83,7 @@ export default function EnvasePage() {
       let loteIds: string[] = [];
       if (termo) {
         const encontrados = await carregarTudo<{ id: string }>(async (from, to) => {
+          if (!current()) throw new Error("Consulta substituída");
           const { data, error } = await supabase
             .from("lotes")
             .select("id")
@@ -74,10 +91,12 @@ export default function EnvasePage() {
             .order("id")
             .range(from, to);
           if (error) throw error;
+          if (!current()) throw new Error("Consulta substituída");
           return (data ?? []) as { id: string }[];
         });
         loteIds = encontrados.map((l) => l.id);
       }
+      if (!current()) return;
 
       let query = supabase
         .from("envase")
@@ -96,42 +115,56 @@ export default function EnvasePage() {
 
       const { from, to } = faixaDaPagina(pagina);
       const { data, count, error } = await query.range(from, to);
+      if (!current()) return;
       if (error) throw error;
+      setAdoptedScope(fence.scope);
       setEnvases((data ?? []) as unknown as Envase[]);
       setTotal(count ?? 0);
     } catch (e: any) {
+      if (!current()) return;
+      setAdoptedScope(fence.scope);
       setEnvases([]);
       setTotal(0);
       setErro(e?.message || "Não foi possível carregar o histórico de envases.");
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [buscaDebounced, produtoFilter, dateFrom, dateTo, pagina, periodo.valido]);
+  }, [fence.scope, buscaDebounced, search, produtoFilter, dateFrom, dateTo, pagina, periodo.valido]);
 
   const carregarProdutos = useCallback(async () => {
+    const generation = ++productsGeneration.current;
+    const captured = productsFence.capture();
+    const current = () => captured() && generation === productsGeneration.current;
+    if (!current()) return;
     setCarregandoAuxiliares(true);
     setErroAuxiliares(null);
     try {
       const rows = await carregarTudo<{ id: string; nome: string }>(async (from, to) => {
+        if (!current()) throw new Error("Consulta substituída");
         const { data, error } = await supabase.from("produtos").select("id, nome").order("nome").order("id").range(from, to);
+        if (!current()) throw new Error("Consulta substituída");
         if (error) throw error;
         return data ?? [];
       });
-      setProdutos(rows);
+      if (current()) setProdutos(rows);
     } catch (e: unknown) {
+      if (!current()) return;
       setProdutos([]);
       setErroAuxiliares(e instanceof Error ? e.message : "Não foi possível carregar produtos.");
-    } finally { setCarregandoAuxiliares(false); }
-  }, []);
+    } finally { if (current()) setCarregandoAuxiliares(false); }
+  }, [productsFence.scope]);
 
-  useEffect(() => { carregarHistorico(); }, [carregarHistorico]);
-  useEffect(() => { carregarProdutos(); }, [carregarProdutos]);
+  useEffect(() => { void carregarHistorico(); return () => { ++historyGeneration.current; }; }, [carregarHistorico]);
+  useEffect(() => { void carregarProdutos(); return () => { ++productsGeneration.current; }; }, [carregarProdutos]);
 
   useEffect(() => {
+    const captured = fence.capture();
+    let active = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const debounced = () => {
+      if (!active || !captured()) return;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => { carregarHistorico(); carregarProdutos(); }, 1200);
+      timer = setTimeout(() => { if (active && captured()) { void carregarHistorico(); void carregarProdutos(); } }, 1200);
     };
     const channel = supabase
       .channel("envase-lotes-realtime")
@@ -139,6 +172,7 @@ export default function EnvasePage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "lotes" }, debounced)
       .subscribe();
     return () => {
+      active = false;
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
@@ -222,12 +256,12 @@ export default function EnvasePage() {
             <div className="p-6 text-sm text-muted-foreground">
               Corrija o período para consultar o histórico.
             </div>
-          ) : erro ? (
+          ) : historyCurrent && erro ? (
             <div className="p-6 space-y-3" role="alert">
               <p className="text-sm text-destructive">Falha ao carregar o histórico de envases. {erro}</p>
               <Button variant="outline" onClick={() => carregarHistorico()}>Tentar novamente</Button>
             </div>
-          ) : loading ? (
+          ) : loading || !historyCurrent ? (
             <div className="p-6 text-sm text-muted-foreground" role="status">Carregando envases…</div>
           ) : (
             <>
