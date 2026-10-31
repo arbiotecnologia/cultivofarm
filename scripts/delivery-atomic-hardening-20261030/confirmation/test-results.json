@@ -149,15 +149,15 @@
       "status": "PASS"
     },
     {
-      "test": "multi-lot coverage leaves 6000ml demand open 0",
+      "test": "multi-item coverage leaves 6000ml demand open 0",
       "status": "PASS"
     },
     {
-      "test": "multi-lot coverage leaves 6000ml demand open 1",
+      "test": "multi-item coverage leaves 6000ml demand open 1",
       "status": "PASS"
     },
     {
-      "test": "cancelled delivery cannot cover remaining product",
+      "test": "cancelled delivery cannot cover remaining demand",
       "status": "PASS"
     },
     {
@@ -173,7 +173,11 @@
       "status": "PASS"
     },
     {
-      "test": "multi-product cancellation replacement preserves financial fiscal outbox sentinels",
+      "test": "cancellation and reversed reservation preserve financial fiscal outbox sentinels",
+      "status": "PASS"
+    },
+    {
+      "test": "second product separate OS finalizes 2000ml without covering first OS missing 2000ml",
       "status": "PASS"
     },
     {
@@ -381,7 +385,7 @@
       "stderr": "ERROR:  23505: duplicate key value violates unique constraint \"idx_lotes_programacao_id_unique\"\nDETAIL:  Key (programacao_id)=(10000000-0000-4000-8000-000000000702) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  lotes\nCONSTRAINT NAME:  idx_lotes_programacao_id_unique\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n"
     },
     {
-      "test": "cancelled delivery cannot cover remaining product",
+      "test": "cancelled delivery cannot cover remaining demand",
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 27 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
@@ -437,5 +441,5 @@
     }
   ],
   "exit_code": 0,
-  "elapsed_seconds": 27.690280566000183
+  "elapsed_seconds": 27.61773653900036
 }
