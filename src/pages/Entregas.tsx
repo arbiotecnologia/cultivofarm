@@ -198,9 +198,11 @@ export default function Entregas() {
   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
+  const confirmationList = useRef<{ target: string; scope: string; current: () => boolean } | null>(null);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [motivoCancel, setMotivoCancel] = useState("");
   useEffect(() => {
+    confirmationList.current = null;
     setCancelTarget(null); setSelectedEntrega(null); setComprovanteEntrega(null);
     setConfirmEntregaOpen(false); setFinancialConfirmOpen(false); setPreviewOpen(false);
     setPreviewPayload(null); setOperationNotice("");
@@ -695,8 +697,11 @@ export default function Entregas() {
    * paralelo nem fallback do nome do operador como recebedor.
    */
   const handleConfirmarEntrega = (id: string) => {
+    const current = deliveryScope.capture();
+    if (!current()) return;
     const entrega: any = (entregas as any[]).find((e) => e.id === id);
     if (!entrega) return;
+    confirmationList.current = { target: id, scope: deliveryScope.scope, current };
     setSelectedEntrega(entrega);
     setConfirmEntregaOpen(true);
   };
@@ -931,7 +936,7 @@ export default function Entregas() {
                         {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
                         {e.status === "em_rota" && (
                           <div className="flex gap-1 w-full">
-                            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Apenas Confirmar</Button>
+                            <Button size="sm" variant="outline" className="flex-1" onClick={() => handleConfirmarEntrega(e.id)}>Apenas Confirmar</Button>
                             <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
                             </Button>
@@ -1006,7 +1011,7 @@ export default function Entregas() {
                         {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
                         {e.status === "em_rota" && (
                           <>
-                            <Button size="sm" variant="outline" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Confirmar</Button>
+                            <Button size="sm" variant="outline" onClick={() => handleConfirmarEntrega(e.id)}>Confirmar</Button>
                             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
                             </Button>
@@ -1078,15 +1083,14 @@ export default function Entregas() {
 
       <ConfirmarEntregaDialog
         open={confirmEntregaOpen}
-        onClose={() => { setConfirmEntregaOpen(false); }}
+        onClose={() => { confirmationList.current = null; setConfirmEntregaOpen(false); }}
         entrega={selectedEntrega}
-        onConfirmed={(mode) => {
-          if (mode === "bill_now") {
-            // Recarrega entrega e abre o passo financeiro
-            setFinancialConfirmOpen(true);
-          } else {
-            setSelectedEntrega(null);
-          }
+        onConfirmed={(mode, target) => {
+          const captured = confirmationList.current;
+          if (mode !== "physical" || !captured || captured.scope !== deliveryScope.scope || captured.target !== target || !captured.current()) return;
+          void queryClient.invalidateQueries({ queryKey: ["entregas", captured.scope, captured.scope], exact: true });
+          confirmationList.current = null;
+          setSelectedEntrega(null);
         }}
       />
 

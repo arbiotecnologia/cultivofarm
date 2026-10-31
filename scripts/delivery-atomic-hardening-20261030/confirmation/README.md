@@ -37,6 +37,12 @@ EnvasePage agora remonta apenas a consulta por escopo canônico de sessão (ator
 
 Testes mounted: 7/7 em duas suítes, promises invertidas filtro/página, ARBio→FSF, inativo, unmount/timer e Ver/Imprimir preservados. Evidência local versionável em evidence/envase-scope-tests.txt; não é prova hosted/JWT/browser real.
 
+## Atualização da lista após confirmação — 31/10 13:39
+
+O diálogo deixou de invalidar um escopo de recurso incompatível. O pai captura a sessão da lista e o target ao abrir pelos botões desktop/mobile; após ACK físico válido, invalida exclusivamente `["entregas", captured.scope, captured.scope]` com `exact:true`. Mudança de sessão/target ou callback de modo financeiro não produz efeitos; confirmação física nunca abre financeiro. O leitor existente continua recusando respostas tardias pelo fence canônico.
+
+Teste integrado com Entregas montada, QueryClient/cache reais e diálogo simulado: linha passa de em_rota para entregue por nova leitura; cache estrangeiro com observador ativo não é invalidado nem relido, callback tardio após troca de empresa não invalida consultas e financeiro permanece fechado. Regressão integrada: 531/531 em 34 arquivos. Primeira falha de seletor do teste preservada em evidence/list-cache-first-failed.txt; não foi falha do contrato. Evidências sintéticas não certificam sessão real, JWT/RLS ou execução hosted.
+
 ## Evidência
 
 logs/ contém saídas brutas finais, inclusive a falha PG e a rodada anterior que demonstrou ausência da tabela durante edição concorrente. sources.json e test-results.json preservam origem e resultado sem mascaramento. frontend.diff.txt é o diff real contra 5557f9ba, não um relato de publicação. SHA256SUMS cobre os artefatos desta preparação.

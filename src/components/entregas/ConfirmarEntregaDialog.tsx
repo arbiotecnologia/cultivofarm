@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
@@ -16,7 +15,6 @@ interface Props { open: boolean; onClose: () => void; entrega: any | null; onCon
 export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: Props) {
  const { user, profile } = useAuth();
  const fence = useStorageAccessScope(`physical-confirm:${open}:${entrega?.id}`);
- const qc = useQueryClient();
  const [read, setRead] = useState<{ scope: string; observed: string; status: string; os: string; proof: string } | null>(null);
  const [error, setError] = useState(""); const [busy,setBusy]=useState(false); const [uncertain,setUncertain]=useState(false);
  const [form,setForm]=useState({nome:"",cargo:"",documento:"",observacoes:""});
@@ -44,7 +42,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
   if(lock.current||!available||!read||!form.nome.trim())return;
   const current=fence.capture(); if(!current())return;
   if(read.status==='entregue' && attempt.current?.context!==context){setError("Entrega já confirmada. Consulte o histórico.");return;}
-  const target=scope.entrega; const capturedScope=context;
+  const target=scope.entrega;
   const retained=attempt.current?.context===context?attempt.current.value:null;
   const pending=retained??{scope:{...scope},roots:{os:read.os,proof:read.proof},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
   attempt.current={context,value:pending}; lock.current=true;setBusy(true);setError("");let sent=false;
@@ -57,7 +55,6 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
    if(!current())return;
    attempt.current=null;setUncertain(false);
    toast({title:"Recebimento físico confirmado"});
-   void qc.invalidateQueries({predicate:q=>q.queryKey[0]==='entregas'&&q.queryKey.some(k=>String(k)===capturedScope)});
    onConfirmed?.("physical",target);onClose();
   } catch(e:unknown){
    if(current()){setError(e instanceof Error?e.message:"Não foi possível confirmar.");setUncertain(sent);}

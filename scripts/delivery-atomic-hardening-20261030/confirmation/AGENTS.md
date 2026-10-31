@@ -4,3 +4,4 @@
 - Preserve existing receiver/proof requirements and physical workflow, server authority after waits, exact CAS/receipt replay and deny-only rollback; financial/fiscal/outbox effects and B2B/OnFarm remain closed.
 - Generate deterministic full catalog pins from the disposable composition, with explicit column COLLATE C ordering; client UI capability never grants authority and uncertain dispatch preserves exact arguments.
 - Confirmation runtime validates UUIDs and timezone-bearing calendar timestamps; attempts retain capability OS/proof roots through preflight and ACK validation, keeping uncertain keys unchanged — prevents incomplete or substituted success without replacing server authorization.
+- Physical confirmation cache refresh belongs to the parent list and uses its captured exact actor/request key plus session/target fence; the dialog never invalidates a different resource scope or requests finance — prevents stale lists and cross-context refresh.
