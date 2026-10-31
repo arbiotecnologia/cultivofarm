@@ -117,7 +117,6 @@ def run_matrix():
  b=snapshot();r=json.loads(last(stmt2));assert r['success'] and r['comprovante_id'];ok('canonical digital signature then physical confirmation positive')
  after=snapshot();rep=json.loads(last(stmt2));assert rep['replay'] and snapshot()==after;ok('digital confirmation replay no duplicate ledger event receipt')
  ledger_lineage_matrix(e2,stmt2)
- send_matrix()
  coverage_matrix()
  proof_race_matrix()
  multi_item_matrix()
@@ -133,6 +132,7 @@ def run_matrix():
   assert json.loads(snapshot())[table]==json.loads(before)[table],table
  ok('all fourteen existing financial fiscal outbox sentinels full content unchanged')
  hist=snapshot();sql((H/'rollback.sql.review').read_text());reject('deny rollback keeps canonical writer closed',stmt2,'42501');assert snapshot()==hist;ok('rollback preserves physical proof stock ledger and receipts history')
+ sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;');send_matrix()
 
 def prove(e,key,sign=False,generate=True):
  if generate:assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_formulario_gerar_v1('{e}','generate-{key}');"))['success']
