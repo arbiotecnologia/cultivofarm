@@ -27,7 +27,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
  const scope = { actor: user?.id ?? "", org: profile?.organization_id ?? "", entrega: entrega?.id ?? "" };
  useEffect(()=>{
   const gen=++generation.current; const current=fence.capture();
-  setRead(null);setError("");setUncertain(false);
+  setRead(null);setError("");setUncertain(attempt.current?.context===context);
   setForm({nome:entrega?.recebido_por_nome||entrega?.recebedor_nome||"",cargo:entrega?.recebido_por_cargo||"",documento:entrega?.recebido_por_documento||"",observacoes:entrega?.observacoes_confirmacao||""});
   if(!open||!entrega?.id||!fence.ready)return;
   void (async()=>{
@@ -48,8 +48,12 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
   const retained=attempt.current?.context===context?attempt.current.value:null;
   const pending=retained??{scope:{...scope},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
   attempt.current={context,value:pending}; lock.current=true;setBusy(true);setError("");let sent=false;
+  let timedOut=false; let settled=false; let timer: ReturnType<typeof setTimeout> | undefined;
+  const alive=()=>current()&&!timedOut;
+  const work=dispatchConfirmation((name,args)=>supabase.rpc(name as any,args as any) as any,pending,alive,()=>{sent=true;})
+   .finally(()=>{settled=true;if(timedOut)lock.current=false;});
   try {
-   await dispatchConfirmation((name,args)=>supabase.rpc(name as any,args as any) as any,pending,current,()=>{sent=true;});
+   await Promise.race([work,new Promise<never>((_,reject)=>{timer=setTimeout(()=>{timedOut=true;reject(new Error("Tempo de resposta excedido. Resultado incerto; aguarde a conclusão antes de reconciliar."));},30000);})]);
    if(!current())return;
    attempt.current=null;setUncertain(false);
    toast({title:"Recebimento físico confirmado"});
@@ -58,7 +62,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
   } catch(e:unknown){
    if(current()){setError(e instanceof Error?e.message:"Não foi possível confirmar.");setUncertain(sent);}
    if(!sent && !retained)attempt.current=null;
-  } finally {lock.current=false;setBusy(false);}
+  } finally {if(timer)clearTimeout(timer);if(settled)lock.current=false;setBusy(false);}
  };
  if(!entrega)return null;
  return <Dialog open={open} onOpenChange={v=>{if(!v&&!busy)onClose();}}><DialogContent className="max-w-xl">
