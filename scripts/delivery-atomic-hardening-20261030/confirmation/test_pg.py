@@ -100,6 +100,7 @@ def run_matrix():
  wait_revoke('SaaS revoked DURING observed gate lock denies confirmation',f"UPDATE public.saas_plan_versions SET features_snapshot='[]' WHERE id='{T.T.VER}';",stmt2,f"UPDATE public.saas_plan_versions SET features_snapshot='[\"estoque_embalagens\",\"envase\",\"ordens_producao\",\"lotes_qualidade\"]' WHERE id='{T.T.VER}';",gate=True)
  b=snapshot();r=json.loads(last(stmt2));assert r['success'] and r['comprovante_id'];ok('canonical digital signature then physical confirmation positive')
  after=snapshot();rep=json.loads(last(stmt2));assert rep['replay'] and snapshot()==after;ok('digital confirmation replay no duplicate ledger event receipt')
+ multi_item_matrix()
  # A new manual chain from unused fixture, then observed cancel wins against waiting confirm.
  e3,path3=create(T.O7,T.PP7,T.L7,'3');obs3=last(f"SELECT updated_at FROM public.entregas WHERE id='{e3}';");stmt3=call(e3,'confirm-0003',obs3)
  cancel=T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{e3}','LOCAL CANCEL','{obs3}');"
@@ -112,6 +113,30 @@ def run_matrix():
   assert json.loads(snapshot())[table]==json.loads(before)[table],table
  ok('all fourteen existing financial fiscal outbox sentinels full content unchanged')
  hist=snapshot();sql((H/'rollback.sql.review').read_text());reject('deny rollback keeps canonical writer closed',stmt2,'42501');assert snapshot()==hist;ok('rollback preserves physical proof stock ledger and receipts history')
+
+def prove(e,key,sign=False,generate=True):
+ if generate:assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_formulario_gerar_v1('{e}','generate-{key}');"))['success']
+ path=f'entregas/{e}/'+('assinaturas/' if sign else 'comprovantes/')+str(__import__('uuid').uuid4())+('.png' if sign else '.pdf')
+ sql(f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{path}','{T.U}','{T.U}');")
+ payload={'recebedor_nome':'LOCAL'}
+ if sign:payload.update(assinatura_digital_png_path=path,assinatura_hash='b'*64);rpc='rpc_entrega_assinatura_coletar_v1'
+ else:payload.update(arquivo_path=path,arquivo_nome='local.pdf',arquivo_mime='application/pdf');rpc='rpc_entrega_comprovante_anexar_v1'
+ stmt=T.actor()+f"SELECT public.{rpc}('{e}','proof-{key}','{json.dumps(payload)}');"
+ assert json.loads(last(stmt))['success'];assert json.loads(last(stmt))['replay'];ok('proof '+key+' exact replay')
+ assert last(f"SELECT e.validation_hash=c.validation_hash AND e.validation_token=c.validation_token FROM public.entregas e JOIN public.entrega_comprovantes c ON c.id=e.comprovante_id WHERE e.id='{e}';")=='t'
+ return path
+def multi_item_matrix():
+ # Existing demand is 5000 ml; partial envase then remainder, two independent stock rows.
+ a=json.loads(last(T.actor()+T.envase(T.O6,T.PP6,T.L6,[{'tipo_embalagem':'frasco_1L','quantidade':2}],'matrix-partial-01')));assert a['estado']=='partial';ok('partial envase demand remains open')
+ a=json.loads(last(T.actor()+T.envase(T.O6,T.PP6,T.L6,[{'tipo_embalagem':'frasco_1L','quantidade':3}],'matrix-complete-01')));assert a['estado']=='completed'
+ stocks=last(f"SELECT jsonb_agg(jsonb_build_object('item_id',id,'quantidade',quantidade) ORDER BY id) FROM public.estoque_produto WHERE lote_id='{T.L6}' AND status='reservado';")
+ res=json.loads(last(T.actor()+T.group(T.O6,json.loads(stocks),'matrix-group-01')));assert len(res['itens'])==2
+ e1,e2=[i['entrega_id'] for i in res['itens']];prove(e1,'multi-new-digital',True,False);prove(e2,'multi-attach')
+ stmt1=call(e1,'multi-confirm-01');stmt2=call(e2,'multi-confirm-02');b=snapshot();r1=json.loads(last(stmt1));assert r1['finalizada'] is False and r1['os_status']=='entregue';ok('first item cannot finalize with pending independent stock delivery')
+ r2=json.loads(last(stmt2));assert r2['finalizada'] is True;ok('second item after OS entregue completes 5000ml demand independently')
+ rep=json.loads(last(stmt1));assert rep['replay'];ok('first partial ACK replay remains exact after second item finalization')
+ for t in T.TABLES:assert json.loads(b)[t]==json.loads(snapshot())[t],t
+ ok('multi-item physical confirmation no finance fiscal outbox changes')
 
 if __name__=='__main__':
  status=1;start=time.monotonic()
