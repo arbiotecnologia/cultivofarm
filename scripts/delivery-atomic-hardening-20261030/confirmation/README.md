@@ -4,10 +4,10 @@ Preparação local; nenhum acesso hosted, sessão, segredo, publicação ou fixt
 
 ## Resultado efetivamente executado
 
-- Vitest entrega/envase/etiquetas: 538/538, 35 arquivos (evidence/all-vitest-final.log.txt).
+- Vitest entrega/envase/etiquetas: 540/540, 35 arquivos (evidence/seq-send-vitest-final.log.txt).
 - Envelopes e diálogo montado: 33/33; quatro negativos independentes corrigidos, raiz/prova divergentes negadas e tentativa incerta mantém chave/payload sem toast/onConfirmed/close (envelope-tests.log).
 - Build automático observado OK; sem log de typecheck separado.
-- PostgreSQL: 98 checks PASS, exit_code 0 (evidence/legacy-recovery-final.log.txt); test-results.json contém contagem e SQLSTATEs exatos. Rodadas históricas falhadas permanecem nas evidências, não compõem a aprovação atual.
+- PostgreSQL: 120 checks PASS, exit_code 0 (evidence/seq-send-complete-pg.log.txt); test-results.json contém contagem e SQLSTATEs exatos. Rodadas históricas falhadas permanecem nas evidências, não compõem a aprovação atual.
 - Composição local restaurada, sentinelas existentes, instalação fechada, release NO-GO verificado com P0001, ativação exclusivamente no harness descartável, attach/confirmação física, replay e isolamento estrangeiro passaram na rodada atual.
 - Primeiro sucesso preservou conteúdo financeiro/fiscal/outbox e estoque/ledger; não houve segunda expedição.
 - Executados: digital com formulário reutilizado e novo, hash adulterado/objeto ausente/foreign owner, CAS válido e stale, singleton ausente, replay, revogação de perfil/papel/tenant/SaaS DURANTE lock observado, cancelamento canônico vence confirmação PT409, confirmação impede cancelamento ordinário, parcial envase + dois itens, segundo item com OS entregue, invariantes integrais de 14 tabelas downstream.
