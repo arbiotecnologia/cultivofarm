@@ -184,6 +184,10 @@ def send_matrix():
  ok('send changes only delivery status revision receipt; no stock ledger proof downstream effects')
  b=snapshot();assert json.loads(last(stmt))['replay'] and snapshot()==b;ok('send exact replay no writes')
  reject('send same key changed CAS conflicts',stmt.replace(obs,'2020-01-01'),'PT409','DELIVERY_SEND_REPLAY_CONFLICT');assert snapshot()==b
+ wait_revoke('send inactive actor after lock denied',f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.U}';")
+ wait_revoke('send role revoked after lock denied',f"DELETE FROM public.user_roles WHERE user_id='{T.U}';",stmt,f"INSERT INTO public.user_roles(user_id,role) VALUES('{T.U}','administrador');")
+ wait_revoke('send tenant changed after lock denied',f"UPDATE public.profiles SET organization_id='{T.B}' WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET organization_id='{T.A}' WHERE user_id='{T.U}';")
+ wait_revoke('send SaaS revoked after gate lock denied',f"UPDATE public.organization_subscriptions SET status='SUSPENDED',suspended_at=now() WHERE organization_id='{T.A}';",stmt,f"UPDATE public.organization_subscriptions SET status='ACTIVE',suspended_at=NULL WHERE organization_id='{T.A}';",gate=True)
  r=json.loads(last(call(e,'send-then-confirm')));assert r['success'] and r['status']=='entregue';ok('canonical Enviar then Confirmar without second stock ledger dispatch')
  hist=snapshot();sql((H/'send/rollback.sql.review').read_text());reject('send deny-only rollback no regrant',stmt,'42501');assert snapshot()==hist
 

@@ -4,6 +4,8 @@ export const SEND_RPC = 'rpc_entrega_enviar_manual_v1';
 export const SEND_CAP_RPC = 'rpc_entrega_envio_capability_v1';
 export type SendAttempt = { scope: ConfirmationScope; os: string; observed: string; key: string };
 export async function dispatchSend(rpc: Rpc, attempt: SendAttempt, current: () => boolean, sent: () => void) {
+ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+ if (![attempt.scope.actor, attempt.scope.org, attempt.scope.entrega, attempt.os, attempt.key].every(v => uuid.test(v) && v !== '00000000-0000-0000-0000-000000000000')) throw new Error('Identificação do envio inválida.');
  const check = () => { if (!current()) throw new Error('Sessão alterada. Resultado não adotado.'); };
  check(); const pre = await rpc(SEND_CAP_RPC, { p_entrega: attempt.scope.entrega }); check();
  const cap = pre.data as Record<string, unknown> | null;
