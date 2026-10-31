@@ -1104,3 +1104,8 @@
 - [ ] Entrega em grupo: grant/capability fechados até a cadeia produto→OS→aprovação→programação→lote→CQ→envase existir na AR Bio. Próximo pacote: rebase de `stock-envase-recovery` sobre o motor pós-atômico (pin `rpc_estoque_operar_v1` 44b150bf…), transição envase→pronto_entrega e entrada reservado-para-OS ↔ entrega (ver `scripts/delivery-group-capability-20261030/PREREQUISITES.md`).
 - [ ] Estoque/envase v2 (`scripts/stock-envase-recovery-20261027/*-v2*`, 37 PASS PG) aguardando revisão; depois recapturar pins da capability. Bloqueio material: abrir envase/capability a clientes é liberação global não autorizada; troca do caller de UI `enviar_envase/concluir_envase` acompanha esse grant.
 - [ ] Envase UI migrado ao contrato revisado (recusa por allowlist, incerteza = repetição exata congelada, fence); o RPC LIVE continua só para service_role: nada funciona até a liberação revisada + prova real JWT/Storage.
+
+## Confirmação física manual — rodada atual
+- [x] EnvasePage somente consulta; 494 Vitest passaram.
+- [ ] NO-GO: sincronizar hash de prova digital canônica antes da confirmação; PG reproduziu 42501, sem relaxar checks.
+- [ ] Repetir concorrência/revogação e revisar avanço de OS após corrigir prova; release permanece deny-only.
