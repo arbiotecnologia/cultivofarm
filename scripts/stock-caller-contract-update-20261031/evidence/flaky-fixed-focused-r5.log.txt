@@ -1,0 +1,1009 @@
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/registrarEntregaMetadataSubmit.test.tsx > RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 1221ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  1216ms
+ ❯ src/test/entregas/consumidorEntrega.test.tsx (13 tests | 2 failed) 3809ms
+   ✓ Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna 262ms
+   ✓ Contenção real antes do primeiro dispatch da página > grupo com 2 itens não reserva/cria/expede/estorna 85ms
+   ✓ Contenção real antes do primeiro dispatch da página > lote disponível não recebe reserva nem auditoria 147ms
+   × Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna 1155ms
+     → Found multiple elements with the text: Cliente
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<th[39m
+  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</th>[39m
+
+Ignored nodes: comments, script, style
+[36m<td[39m
+  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</td>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+   × Contenção real antes do primeiro dispatch da página > cancelamento em_rota não altera status nem estorna 1142ms
+     → Found multiple elements with the text: Cliente
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<th[39m
+  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</th>[39m
+
+Ignored nodes: comments, script, style
+[36m<td[39m
+  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</td>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:r10:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:r10:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:...
+   ✓ Contenção real antes do primeiro dispatch da página > envio em rota não faz UPDATE  478ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel gestor não abre o contrato 150ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel administrador não abre o contrato 45ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel financeiro não abre o contrato 40ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel parceiro_b2b não abre o contrato 47ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel cliente_produtor não abre o contrato 60ms
+   ✓ Contenção real antes do primeiro dispatch da página > remount, tenant e dupla ação nunca abrem dispatch 124ms
+   ✓ Contenção real antes do primeiro dispatch da página > consulta existente conserva linhas sem operações 71ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna
+TestingLibraryElementError: Found multiple elements with the text: Cliente
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<th[39m
+  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</th>[39m
+
+Ignored nodes: comments, script, style
+[36m<td[39m
+  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</td>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ findByText node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:42:16
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > cancelamento em_rota não altera status nem estorna
+TestingLibraryElementError: Found multiple elements with the text: Cliente
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<th[39m
+  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</th>[39m
+
+Ignored nodes: comments, script, style
+[36m<td[39m
+  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+[36m>[39m
+  [0mCliente[0m
+[36m</td>[39m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:r10:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:r10:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:...
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ findByText node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:42:16
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 12 passed (14)
+   Start at  17:12:12
+   Duration  13.17s (transform 1.55s, setup 626ms, collect 5.01s, tests 5.03s, environment 3.32s, prepare 754ms)
+

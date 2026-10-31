@@ -24,7 +24,7 @@ const M1 = "10000000-0000-4000-8000-000000000201";
 const T1 = "2026-10-30T10:00:00Z";
 const item = { id: S, status: "reservado", updated_at: T1, reservado_para_os_id: OS, _saldo: 5, _saldo_reserva: 5, quantidade: 5, quantidade_reservada: 5, volume_total: 5, _os_origem_id: OS, lotes: { codigo_lote: "L1" } };
 const os = { id: OS, numero_os: 1, type: "padrao", updated_at: T1, origem: "agronomica", partner_order_id: null, clientes: { nome: "C" } };
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe("RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog)", () => {
   it("submits successfully with every auto-filled field preserved, no clearing", async () => {
@@ -32,7 +32,8 @@ describe("RegistrarEntregaDialog -> atomic group with auto-filled recipient/addr
     render(<MemoryRouter><RegistrarEntregaDialog open onOpenChange={() => {}} osInicial={OS} onSubmit={onSubmit} itensSelecionaveis={[item]} todasOS={[os]} /></MemoryRouter>);
     await waitFor(() => expect(screen.getByDisplayValue("Fazenda Boa Vista")).toBeTruthy());
     fireEvent.click(await screen.findByRole("button", { name: /Registrar entrega \(1 item\)/ }));
-    await act(async () => { fireEvent.click(await screen.findByRole("button", { name: "Confirmar e gravar" })); });
+    const confirm = await screen.findByRole("button", { name: "Confirmar e gravar" });
+    await act(async () => { fireEvent.click(confirm); });
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     const { grupoId, itens, osId, osTipo, observed, ...dados } = onSubmit.mock.calls[0][0];
     // Same destructuring as Entregas.tsx: every remaining key must be in the server allowlist.
