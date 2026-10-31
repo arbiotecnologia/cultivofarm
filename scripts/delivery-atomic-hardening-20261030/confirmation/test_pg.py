@@ -187,8 +187,8 @@ def coverage_matrix():
  observed=last(f"SELECT updated_at FROM public.entregas WHERE id='{other}';")
  assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{other}','LOCAL COVERAGE CANCEL','{observed}');"))['success']
  for n,e in enumerate(same):
-  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-lot coverage leaves 6000ml demand open '+str(n))
- b=snapshot();reject('cancelled delivery cannot cover remaining product',call(other,'coverage-cancel-deny'),'PT409','DELIVERY_CONFIRM_OBSERVED_CONFLICT');assert snapshot()==b
+  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-item coverage leaves 6000ml demand open '+str(n))
+ b=snapshot();reject('cancelled delivery cannot cover remaining demand',call(other,'coverage-cancel-deny'),'PT409','DELIVERY_CONFIRM_OBSERVED_CONFLICT');assert snapshot()==b
  assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('canonical cancellation and reversed reservation leave 2000ml demand uncovered')
  # Re-deliver the canonically returned stock, with original programming/product roots.
  sid=last(f"SELECT estoque_produto_id FROM public.entregas WHERE id='{other}';")
@@ -200,7 +200,13 @@ def coverage_matrix():
  b=snapshot();reject('different product never covers programming or replay',call(same[0],'coverage-confirm-0'),'42501','DELIVERY_CONFIRM_LINEAGE_DENIED');assert snapshot()==b
  sql(f"SET session_replication_role=replica;UPDATE public.entregas SET produto_id='{original}' WHERE id='{same[0]}';SET session_replication_role=origin;")
  for table in T.TABLES:assert before[table]==json.loads(snapshot())[table],table
- ok('multi-product cancellation replacement preserves financial fiscal outbox sentinels')
+ ok('cancellation and reversed reservation preserve financial fiscal outbox sentinels')
+ # Positive second product in its own OS/program/lote, as the real schema requires.
+ os2,prog2,lot2=T.u(721),T.u(722),T.u(723)
+ seed=T.manufactured(os2,prog2,lot2).replace(T.PROD,p2)
+ sql('SET session_replication_role=replica;'+seed+'SET session_replication_role=origin;')
+ e2,_=create(os2,prog2,lot2,'79');r=json.loads(last(call(e2,'second-product-confirm')));assert r['finalizada'] is True
+ assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('second product separate OS finalizes 2000ml without covering first OS missing 2000ml')
 
 def proof_race_matrix():
  def held(name):
