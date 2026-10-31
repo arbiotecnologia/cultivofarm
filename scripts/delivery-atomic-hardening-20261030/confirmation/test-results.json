@@ -1,12 +1,203 @@
 {
   "checks": [
     {
+      "test": "exact local captured composition checkpoint restored; disposable socket verified",
+      "status": "PASS"
+    },
+    {
+      "test": "exact install PRE POST commits writer closed",
+      "status": "PASS"
+    },
+    {
+      "test": "closed writer refuses authenticated",
+      "status": "PASS"
+    },
+    {
+      "test": "separate minimum release exact PRE POST",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign FSF denies without mutations",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical attach then physical confirmation advances transactionally",
+      "status": "PASS"
+    },
+    {
+      "test": "first physical success preserves existing financial fiscal outbox stock and ledger full content",
+      "status": "PASS"
+    },
+    {
+      "test": "exact replay preserves all snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "same key changed receiver conflicts",
+      "status": "PASS"
+    },
+    {
+      "test": "inactive actor cannot replay",
+      "status": "PASS"
+    },
+    {
+      "test": "repeatable read explicitly unsupported",
+      "status": "PASS"
+    },
+    {
+      "test": "serializable explicitly unsupported",
+      "status": "PASS"
+    },
+    {
+      "test": "reused form digital token/hash synchronized atomically",
+      "status": "PASS"
+    },
+    {
+      "test": "singleton absent explicitly PT503",
+      "status": "PASS"
+    },
+    {
+      "test": "missing CAS denied before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "stale CAS denied",
+      "status": "PASS"
+    },
+    {
+      "test": "financial payload rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign object owner rejects canonical digital proof",
+      "status": "PASS"
+    },
+    {
+      "test": "profile revoked DURING observed lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked DURING observed lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant changed DURING observed lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked DURING observed gate lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical digital signature then physical confirmation positive",
+      "status": "PASS"
+    },
+    {
+      "test": "digital confirmation replay no duplicate ledger event receipt",
+      "status": "PASS"
+    },
+    {
+      "test": "partial envase demand remains open",
+      "status": "PASS"
+    },
+    {
       "test": "execution",
       "status": "FAIL",
-      "error": "ERROR:  role \"supabase_admin\" does not exist\n"
+      "error": "'replay'"
     }
   ],
-  "raw": [],
+  "raw": [
+    {
+      "test": "closed writer refuses authenticated",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_entrega_confirmar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "foreign FSF denies without mutations",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 8 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 14 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "same key changed receiver conflicts",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "inactive actor cannot replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 6 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "repeatable read explicitly unsupported",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: DELIVERY_CONFIRM_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 5 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "serializable explicitly unsupported",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: DELIVERY_CONFIRM_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 5 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "singleton absent explicitly PT503",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT503: DELIVERY_CONFIRM_GATE_UNAVAILABLE\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 19 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "missing CAS denied before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  22023: DELIVERY_CONFIRM_INVALID\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 7 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "stale CAS denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 58 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "financial payload rejected",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  22023: DELIVERY_CONFIRM_INVALID\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 10 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "foreign object owner rejects canonical digital proof",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 22 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 42 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "profile revoked DURING observed lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "role revoked DURING observed lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "tenant changed DURING observed lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at RAISE\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "SaaS revoked DURING observed gate lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    }
+  ],
   "exit_code": 1,
-  "elapsed_seconds": 3.072101970999938
+  "elapsed_seconds": 17.5201863530001
 }

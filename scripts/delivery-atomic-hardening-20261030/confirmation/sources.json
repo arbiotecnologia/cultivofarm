@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "file": "scripts/delivery-atomic-hardening-20261030/confirmation/install.sql.review",
+    "sha256": "53b0f8c844ef5142a9e27a80c9252773e39b5cbcbd24c458bf5f998ca474801c"
+  },
+  {
+    "file": "scripts/delivery-atomic-hardening-20261030/confirmation/release.sql.review",
+    "sha256": "0d90887470a03646e0c40d1bd092252de27329abd0f4b902015726d530fdcd2c"
+  }
+]
