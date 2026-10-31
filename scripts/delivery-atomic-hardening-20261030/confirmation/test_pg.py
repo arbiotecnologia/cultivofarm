@@ -132,7 +132,7 @@ def prove(e,key,sign=False,generate=True):
  if sign:payload.update(assinatura_digital_png_path=path,assinatura_hash='b'*64);rpc='rpc_entrega_assinatura_coletar_v1'
  else:payload.update(arquivo_path=path,arquivo_nome='local.pdf',arquivo_mime='application/pdf');rpc='rpc_entrega_comprovante_anexar_v1'
  stmt=T.actor()+f"SELECT public.{rpc}('{e}','proof-{key}','{json.dumps(payload)}');"
- assert json.loads(last(stmt))['success'];assert json.loads(last(stmt))['replay'];ok('proof '+key+' exact replay')
+ assert json.loads(last(stmt))['success'];b=snapshot();assert json.loads(last(stmt))['replayed'] and snapshot()==b;ok('proof '+key+' exact replay')
  assert last(f"SELECT e.validation_hash=c.validation_hash AND e.validation_token=c.validation_token FROM public.entregas e JOIN public.entrega_comprovantes c ON c.id=e.comprovante_id WHERE e.id='{e}';")=='t'
  return path
 def multi_item_matrix():
