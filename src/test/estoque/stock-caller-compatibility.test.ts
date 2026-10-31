@@ -5,7 +5,7 @@ const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc } }));
 import { EstoqueMotorError, operarEstoque } from "@/lib/estoque/motorEstoque";
 import { DELIVERY_CANCELLATION_BLOCK, DELIVERY_OPERATION_BLOCK } from "@/lib/entregas/operationalContainment";
-import { buildGroupArgs, GROUP_RPC, runAtomicGroup, type GroupInput } from "@/lib/entregas/deliveryOperationsFlow";
+import { buildGroupArgs, CAPABILITY_RPC, GROUP_RPC, runAtomicGroup, type GroupInput } from "@/lib/entregas/deliveryOperationsFlow";
 
 const OS = "11111111-1111-4111-8111-111111111111";
 const ORG = "22222222-2222-4222-8222-222222222222";
@@ -60,9 +60,27 @@ describe("compatibilidade dos callers de estoque — sem API real", () => {
       await expect(runAtomicGroup(rpc, group(o), () => {})).rejects.toThrow(/OnFarm e B2B/);
     }
     expect(rpc).not.toHaveBeenCalled();
-    rpc.mockResolvedValueOnce({ data: { capability: 1, group: false, cancel: false }, error: null });
+  });
+
+  it.each([
+    ["envelope malformado (recusa por schema)", { capability: 1, group: true, cancel: true }],
+    ["envelope válido com group:false", { capability: "delivery_operations_v1", group: false, cancel: false }],
+  ])("capability %s: só CAPABILITY_RPC, nenhum GROUP_RPC", async (_n, cap) => {
+    rpc.mockResolvedValueOnce({ data: cap, error: null });
     expect(await runAtomicGroup(rpc, group(), () => {})).toEqual({ status: "closed", message: DELIVERY_OPERATION_BLOCK });
-    expect(rpc.mock.calls.some(([fn]) => fn === GROUP_RPC)).toBe(false);
+    expect(rpc.mock.calls).toEqual([[CAPABILITY_RPC]]);
+  });
+
+  it("controle positivo: capability válida group:true despacha mesma chave/CAS e ACK canônico confirma", async () => {
+    const E = "44444444-4444-4444-8444-444444444444", M = "55555555-5555-4555-8555-555555555555";
+    rpc.mockResolvedValueOnce({ data: { capability: "delivery_operations_v1", group: true, cancel: false }, error: null })
+      .mockResolvedValueOnce({ data: { success: true, replay: false, organization_id: ORG, os_id: OS, itens: [{ entrega_id: E, estoque_produto_id: ITEM, movimentacao_id: M }] }, error: null });
+    const dispatched: unknown[] = [];
+    const out = await runAtomicGroup(rpc, group(), () => {}, (r) => dispatched.push(r));
+    expect(out).toEqual({ status: "confirmed", ack: { replay: false, osId: OS, itens: [{ entregaId: E, estoqueProdutoId: ITEM, movimentacaoId: M }] } });
+    expect(rpc.mock.calls).toEqual([[CAPABILITY_RPC], [GROUP_RPC, buildGroupArgs(group())]]);
+    expect(rpc.mock.calls[1][1]).toMatchObject({ p_request_key: "grupo-key-0001", p_os_observed: "2026-10-31T10:00:00.000Z" });
+    expect(dispatched).toHaveLength(1);
   });
 
   it("Entregas passa o tipo da OS e a revisão observada ao contrato atômico", () => {

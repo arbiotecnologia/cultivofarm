@@ -1,0 +1,832 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/termoPdfEdge.test.ts (36 tests) 3598ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > serve os bytes verificados por hash, sem assinar URL nem publicar evento  311ms
+stderr | src/test/envase/envasePageScope.test.tsx > Envase mounted current-query fences > inverted filter responses never overwrite current history
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/comprovanteDownloadAutenticado.test.tsx > EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/termoPdfDownload.test.tsx (18 tests) 2476ms
+   ✓ TermoEntregaPanel: PDF binário autenticado em duas etapas > happy path: prepara pela Edge download e só baixa após novo clique  405ms
+   ✓ TermoEntregaPanel: PDF binário autenticado em duas etapas > mudança de tenant durante o preparo descarta a resposta tardia  324ms
+stderr | src/test/entregas/deliverySendPersistMount.test.tsx > Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/envase/envasePageScope.test.tsx (5 tests) 4073ms
+   ✓ Envase mounted current-query fences > inverted filter responses never overwrite current history  629ms
+   ✓ Envase mounted current-query fences > inverted page responses preserve the latest page  617ms
+   ✓ Envase mounted current-query fences > FSF clears immediately and refuses old history/products  1342ms
+   ✓ Envase mounted current-query fences > unmount retires pending promises and realtime timers  1321ms
+ ✓ src/test/entregas/entregaCanceladaSomenteConsulta.test.tsx (9 tests) 5463ms
+   ✓ Comprovante — entrega cancelada é somente consulta > estado permitido: dispensa de assinatura aparece só como indisponível e nunca chama o servidor  848ms
+   ✓ Comprovante — entrega cancelada é somente consulta > cancelada no servidor (prop antiga 'separado'): nenhuma mutação, consulta/impressão/download preservados  710ms
+   ✓ Comprovante — entrega cancelada é somente consulta > cancelamento observado com diálogo aberto fecha o diálogo e não grava  968ms
+   ✓ Comprovante — entrega cancelada é somente consulta > estados permitidos preservam gerar, assinar e anexar  1224ms
+   ✓ Termo — entrega cancelada é somente consulta > cancelada com termo em rascunho: assinatura não é oferecida  363ms
+   ✓ Termo — entrega cancelada é somente consulta > falha ao ler a situação da entrega bloqueia gravações (fail-closed)  354ms
+   ✓ Termo — entrega cancelada é somente consulta > entrega ativa mantém conferência e geração do termo  597ms
+ ❯ src/test/entregas/consumidorEntrega.test.tsx (13 tests | 1 failed) 5837ms
+   ✓ Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna  527ms
+   ✓ Contenção real antes do primeiro dispatch da página > grupo com 2 itens não reserva/cria/expede/estorna  313ms
+   ✓ Contenção real antes do primeiro dispatch da página > lote disponível não recebe reserva nem auditoria 146ms
+   × Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna 1543ms
+     → Unable to find role="button" and name "Cancelar"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+   ✓ Contenção real antes do primeiro dispatch da página > cancelamento em_rota não altera status nem estorna  1549ms
+   ✓ Contenção real antes do primeiro dispatch da página > envio em rota não faz UPDATE  1049ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel gestor não abre o contrato 65ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel administrador não abre o contrato 57ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel financeiro não abre o contrato 68ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel parceiro_b2b não abre o contrato 109ms
+   ✓ Contenção real antes do primeiro dispatch da página > papel cliente_produtor não abre o contrato 129ms
+   ✓ Contenção real antes do primeiro dispatch da página > remount, tenant e dupla ação nunca abrem dispatch 117ms
+   ✓ Contenção real antes do primeiro dispatch da página > consulta existente conserva linhas sem operações 128ms
+ ✓ src/test/entregas/anexoComprovanteConcorrencia.test.tsx (5 tests) 8737ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante o upload: não inicia a RPC nem afeta a nova entrega  1987ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante a RPC com rejeição tardia: não mostra erro na nova entrega  1052ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > A→B→A: resultado da operação antiga não é aplicado ao voltar para A  2184ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > falha da operação antiga não destrava o envio em andamento da nova entrega  2056ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > nova tentativa com o mesmo arquivo apenas revincula, sem reenviar  1451ms
+ ✓ src/test/entregas/anexoComprovante.test.tsx (11 tests) 9164ms
+   ✓ EntregaComprovantePanel — anexo > selecionar arquivo não envia nada automaticamente  1323ms
+   ✓ EntregaComprovantePanel — anexo > arquivo de tipo não aceito é rejeitado antes do envio  1139ms
+   ✓ EntregaComprovantePanel — anexo > arquivo acima de 10 MB é rejeitado antes do envio  907ms
+   ✓ EntregaComprovantePanel — anexo > envia com upsert:false e UUID no caminho, apenas ao clicar no botão  2522ms
+   ✓ EntregaComprovantePanel — anexo > clique duplo não envia o arquivo duas vezes  1192ms
+   ✓ EntregaComprovantePanel — anexo > falha na vinculação mantém o arquivo e a nova tentativa não reenvia o arquivo  976ms
+   ✓ EntregaComprovantePanel — anexo > falha no envio do arquivo não chama a vinculação e mantém a seleção  707ms
+   ✓ EntregaComprovantePanel — anexo > trocar de entrega descarta o arquivo selecionado  348ms
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 10051ms
+   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  1092ms
+   ✓ Mounted canonical physical confirmation > invalid ACK comprovante_id stays uncertain with same key and no success  684ms
+   ✓ Mounted canonical physical confirmation > invalid ACK updated_at stays uncertain with same key and no success  723ms
+   ✓ Mounted canonical physical confirmation > invalid ACK foreign-os stays uncertain with same key and no success  1342ms
+   ✓ Mounted canonical physical confirmation > invalid ACK foreign-proof stays uncertain with same key and no success  866ms
+   ✓ Mounted canonical physical confirmation > changed proof during preflight never dispatches  477ms
+   ✓ Mounted canonical physical confirmation > unavailable missing capability never dispatches writer  613ms
+   ✓ Mounted canonical physical confirmation > unavailable false capability never dispatches writer  851ms
+   ✓ Mounted canonical physical confirmation > unavailable extra capability never dispatches writer  427ms
+   ✓ Mounted canonical physical confirmation > unavailable foreign capability never dispatches writer  447ms
+   ✓ Mounted canonical physical confirmation > scope changes during immediate preflight stop first mutation  560ms
+   ✓ Mounted canonical physical confirmation > uncertain ACK retains exact key and payload for explicit reconciliation  933ms
+ ✓ src/test/envase/registrarEnvaseDialog.test.tsx (14 tests) 10792ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after target change  945ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after actor change  697ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after tenant change  560ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after epoch change  667ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after ABA change  1168ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > failed lotes read blocks even programmatic submit  1821ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > failed envase read blocks even programmatic submit  1011ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > failed programacao_producao read blocks even programmatic submit  722ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > failed estoque_produto read blocks even programmatic submit  552ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > invalidates ready data immediately and waits for all four new reads  760ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > uses partial ACK rather than remaining lot balance  661ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > uses completed ACK rather than remaining lot balance  468ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > late ACK after closing does not announce or close another opening  425ms
+ ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 12456ms
+   ✓ EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  1690ms
+   ✓ EntregaComprovantePanel > erro de download: aviso neutro, sem blob nem URL  603ms
+   ✓ EntregaComprovantePanel > caminho fora do contrato: nenhuma requisição e aviso neutro  764ms
+   ✓ EntregaComprovantePanel > tenant alterado durante o download descarta bytes tardios  1168ms
+   ✓ EntregaComprovantePanel > tenant alterado após preparo revoga o blob e bloqueia o clique antigo  441ms
+   ✓ EntregaComprovantePanel > roles alterado durante o download descarta bytes tardios  517ms
+   ✓ EntregaComprovantePanel > roles alterado após preparo revoga o blob e bloqueia o clique antigo  1170ms
+   ✓ EntregaComprovantePanel > epoch alterado após preparo revoga o blob e bloqueia o clique antigo  819ms
+   ✓ EntregaComprovantePanel > lease alterado durante o download descarta bytes tardios  601ms
+   ✓ EntregaComprovantePanel > lease alterado após preparo revoga o blob e bloqueia o clique antigo  1088ms
+   ✓ EntregaComprovantePanel > sem arquivo: nenhum botão de preparo nem requisição  305ms
+   ✓ ConfirmacaoEntregaPanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  368ms
+   ✓ ConfirmacaoEntregaPanel > caminho fora do contrato: nenhuma requisição e aviso neutro  358ms
+   ✓ ConfirmacaoEntregaPanel > roles alterado após preparo revoga o blob e bloqueia o clique antigo  352ms
+   ✓ ConfirmacaoEntregaPanel > lease alterado após preparo revoga o blob e bloqueia o clique antigo  449ms
+ ✓ src/test/entregas/assinaturaComprovante.test.tsx (14 tests) 13326ms
+   ✓ AssinaturaDigitalCanvas > recusa traço curto com mensagem amigável e não chama o callback  565ms
+   ✓ AssinaturaDigitalCanvas > avisa quando a imagem não pode ser gerada (toBlob nulo)  513ms
+   ✓ AssinaturaDigitalCanvas > duplo clique não dispara duas coletas e aguarda o callback  503ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > envia PNG com UUID e upsert false e registra a assinatura  1370ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > retry após falha da RPC reaproveita o PNG sem reenviar  2764ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > troca de entrega durante o upload impede a chamada da RPC  1331ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > A→B→A: resposta antiga não altera o modal da entrega atual  1220ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > retry usa o hash e o payload ORIGINAIS e faz um único upload  1138ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload  1727ms
+   ✓ EntregaComprovantePanel — ações de comprovação isoladas por entrega > gerar: conclusão tardia após A→B→A não emite toast nem destrava o contexto novo  593ms
+   ✓ EntregaComprovantePanel — ações de comprovação isoladas por entrega > confirmar recebimento não envia RPC e preserva ressalvas  1099ms
+ ✓ src/test/saas/entrega1-client-access-postgres.test.ts (1 test) 23315ms
+   ✓ Entrega 1 sintético: brecha revogação reproduzida no baseline e fechada pela candidata; não JWT/RLS real  23308ms
+ ✓ src/test/saas/entrega2-helpers-postgres.test.ts (1 test) 25619ms
+   ✓ Entrega 2 rev 2.3: candidata/rollback inteiros e matriz sobre corpos reais em PostgreSQL descartável; não JWT/RLS real  25612ms
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 17125ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  1572ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  1976ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  2209ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  1475ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  2545ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  1190ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  1419ms
+   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  816ms
+   ✓ Entregas page with atomic adapter (mounted) > late physical callback after tenant change does not invalidate either cache  329ms
+   ✓ Entregas page with atomic adapter (mounted) > ACK of another tenant is uncertain, persisted, and blocks new submissions after remount  344ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  793ms
+ ✓ src/test/entregas/deliverySendPersistMount.test.tsx (24 tests) 20044ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed  4013ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > preflight refusal before dispatch persists nothing and calls no writer  725ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > retained attempt survives refused reconciliation preflight and role change  2804ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > setItem failure before dispatch: no writer, no record  378ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > getItem failure fails closed on mount and on click  514ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > removeItem failure after valid ACK keeps record and warns, without new key  413ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record malformed blocks sends and is never deleted  957ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record version blocks sends and is never deleted  814ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record schema blocks sends and is never deleted  394ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record extra blocks sends and is never deleted  714ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record nil blocks sends and is never deleted  358ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > corrupt record bad-ts blocks sends and is never deleted  362ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > records of another actor/tenant are ignored and preserved  436ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > lock held by another tab refuses before any call; missing Web Locks refuses too  488ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > late ACK after reload (unmount) is not adopted; lock owned until settle; then same key reconciles  1580ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > terminal row keeps retained record in consultation/refusal only  304ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > retained send record after reload blocks create and cancel writers; exact send reconciliation stays available  1400ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > corrupt send record after reload blocks create and cancel writers; exact send reconciliation stays available  666ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > unreadable send record after reload blocks create and cancel writers; exact send reconciliation stays available  1239ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > record appearing before dispatch (late storage event) is revalidated at the cancel dispatch point  632ms
+ ✓ src/test/entregas/conferenciaQrTermo.test.tsx (16 tests) 2336ms
+   ✓ TermoEntregaPanel > falha tardia da entrega antiga não destrava nem avisa na entrega nova  374ms
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — token > token ausente não consulta e não fica carregando
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+ ✓ src/test/entregas/validarEntrega.test.tsx (16 tests) 1165ms
+   ✓ ValidarEntrega — falhas e limites > erro da RPC é tratado como falha de rede, com nova tentativa manual  310ms
+ ✓ src/test/entregas/painelChecklistOcorrencias.test.tsx (12 tests) 3150ms
+   ✓ EntregaChecklistPanel > erro de consulta não vira lista vazia e oferece nova tentativa  376ms
+   ✓ EntregaOcorrenciasPanel > não salva descrição em branco  553ms
+   ✓ EntregaOcorrenciasPanel > clique duplo em Registrar envia uma única vez e envia a descrição sem espaços  673ms
+   ✓ EntregaOcorrenciasPanel > falha mantém o formulário aberto com os dados preenchidos  527ms
+   ✓ EntregaOcorrenciasPanel > trocar de entrega fecha o formulário e limpa a descrição  411ms
+ ✓ src/test/entregas/copiarLinkIsolamento.test.tsx (2 tests) 2729ms
+   ✓ copiar link de validação — isolado das gravações > copiar durante uma assinatura pendente não invalida a gravação  2201ms
+   ✓ copiar link de validação — isolado das gravações > A→B→A: cópia antiga concluída não escreve na tela atual  509ms
+stderr | src/test/envase/envasePageReadOnly.test.tsx > EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/registrarEntregaMetadataSubmit.test.tsx > RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/entregas/registrarEntregaObservedSnapshot.test.tsx > RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 2212ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  2209ms
+ ✓ src/test/entregas/deliveryProofFlow.test.ts (34 tests) 163ms
+ ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 3185ms
+   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  3165ms
+ ✓ src/test/entregas/painelEvidencias.test.tsx (8 tests) 3397ms
+   ✓ EntregaComprovantePanel — estado fresco do servidor > usa o status atual do servidor mesmo com prop antiga (pendente)  1129ms
+   ✓ EntregaComprovantePanel — estado fresco do servidor > ao trocar de entrega busca o estado da nova entrega  696ms
+   ✓ EntregaComprovantePanel — estado fresco do servidor > caminho fora do contrato falha fechado com aviso neutro, sem baixar nem abrir janela  843ms
+stderr | src/test/entregas/formularioEntregaPrint.test.tsx > FormularioEntregaPrint > renderiza o documento com colunas reais do banco
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/envase/envasePageReadOnly.test.tsx (2 tests) 3642ms
+   ✓ EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history  1570ms
+   ✓ EnvasePage contained independent contracts > keeps existing label view and print available without calling a writer  2069ms
+stderr | src/test/entregas/deliveryContainmentStock.test.tsx > reserva de embalagem com destino selecionado não envia nem anuncia sucesso
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 1471ms
+   ✓ separar e confirmar embalagens não enviam alterações  745ms
+   ✓ reserva de embalagem com destino selecionado não envia nem anuncia sucesso  653ms
+ ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 1166ms
+   ✓ FormularioEntregaPrint > renderiza o documento com colunas reais do banco  544ms
+ ✓ src/test/etiquetas/cancelamentoContido.test.tsx (3 tests) 1180ms
+   ✓ Cancelamento de etiqueta contido independentemente da página > não disponibiliza writer com readOnly=false, preserva consulta/impressão  689ms
+   ✓ Cancelamento de etiqueta contido independentemente da página > não disponibiliza writer com readOnly=true, preserva consulta/impressão  425ms
+ ✓ src/test/envase/envaseFlow.test.tsx (31 tests) 300ms
+ ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 443ms
+ ✓ src/test/entregas/reservaDeferredRuntimeGate.test.tsx (6 tests) 200ms
+ ✓ src/test/entregas/comprovanteEntregaPdf.test.ts (46 tests) 135ms
+ ✓ src/test/envase/consulta.test.ts (32 tests) 132ms
+ ✓ src/test/estoque/catalogo-volumes-fase28c.test.ts (12 tests) 176ms
+ ✓ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests) 232ms
+ ✓ src/test/estoque/stock-caller-compatibility.test.ts (12 tests) 41ms
+ ✓ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests) 318ms
+ ✓ src/test/entregas/deliverySendFlow.test.ts (7 tests) 113ms
+ ✓ src/test/entregas/deliverySendPersistence.test.ts (11 tests) 93ms
+ ✓ src/test/estoque/motor-estoque-fase28c.test.ts (39 tests) 63ms
+ ✓ src/test/estoque/stock-p1-containment.test.ts (9 tests) 70ms
+ ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 27ms
+ ✓ src/test/entregas/creationContracts.offline.test.ts (5 tests) 60ms
+ ✓ src/test/estoque/reserva-calc-fase28c.test.ts (17 tests) 42ms
+ ✓ src/test/estoque/stock-batch-hardening.test.ts (5 tests) 53ms
+ ✓ src/test/envase/envaseAvailability.test.ts (3 tests) 18ms
+ ✓ src/test/estoque/stock-motor-hardening.test.ts (5 tests) 17ms
+ ✓ src/test/entregas/deliveryConfirmationEnvelope.test.ts (14 tests) 17ms
+ ✓ src/test/estoque/stock-context-hardening.test.ts (5 tests) 9ms
+ ✓ src/test/estoque/stock-numeric-hardening.test.ts (6 tests) 18ms
+ ✓ src/test/etiquetas/gerar-etiquetas-lote.test.ts (7 tests) 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna
+TestingLibraryElementError: Unable to find role="button" and name "Cancelar"
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-w-0 flex-1"[39m
+        [36m>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+          [36m>[39m
+            [0mEntregas[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+          [36m>[39m
+            [0mExpedição e logística de entrega[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNova Entrega[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"border border-destructive rounded-md p-3 space-y-2"[39m
+        [33mrole[39m=[32m"alert"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+        [36m>[39m
+          [0mConsultar entregas[0m
+        [36m</button>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData início[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mData fim[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                [33mtype[39m=[32m"date"[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<div>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+              [36m>[39m
+                [0mProduto[0m
+              [36m</label>[39m
+              [36m<button[39m
+                [33maria-autocomplete[39m=[32m"none"[39m
+                [33maria-controls[39m=[32m"radix-:ro:"[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:c...
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ findAllByRole node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:40:33
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 49 passed (50)
+      Tests  1 failed | 719 passed (720)
+   Start at  17:00:51
+   Duration  77.94s (transform 16.85s, setup 76.59s, collect 186.13s, tests 200.45s, environment 435.47s, prepare 73.58s)
+

@@ -1,0 +1,48 @@
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/entregas/registrarEntregaMetadataSubmit.test.tsx > RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 861ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  857ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:05:31
+   Duration  6.61s (transform 769ms, setup 260ms, collect 1.80s, tests 861ms, environment 934ms, prepare 183ms)
+
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/entregas/registrarEntregaMetadataSubmit.test.tsx > RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 856ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  854ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:05:41
+   Duration  6.44s (transform 652ms, setup 179ms, collect 1.42s, tests 856ms, environment 1.03s, prepare 872ms)
+
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/entregas/registrarEntregaMetadataSubmit.test.tsx > RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 1143ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  1140ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:05:50
+   Duration  7.43s (transform 763ms, setup 232ms, collect 1.78s, tests 1.14s, environment 1.10s, prepare 1.30s)
+
