@@ -2,3 +2,4 @@
 - Generate the send core from the reviewed confirmation lock/lineage prefix, preserve rechecks and shared locks, and permit only an exact delivery image changing separado to em_rota plus updated_at — prevents parallel authorization and stock effects.
 - Use private actor/tenant/action receipts and mandatory observed CAS/key; replay reauthorizes current lineage, cancelled/confirmed states deny, and rollback revokes without restoring legacy DML.
 - Capability/ACK and client retained attempts stay scoped; no generic operational gate opening, no billing/fiscal/outbox, no B2B/waiver/package release.
+- Send and replay allow only ready or partially delivered OS states under the shared OS lock; finalizada and other states remain denied, with unchanged stock/ledger lineage checks — supports sequential items without reopening terminal orders.

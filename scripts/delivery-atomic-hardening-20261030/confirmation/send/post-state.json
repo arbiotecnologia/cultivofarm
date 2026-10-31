@@ -7775,7 +7775,7 @@
       "platform_private",
       "delivery_send_apply_v1",
       "p_entrega uuid, p_observed timestamp with time zone, p_key text",
-      "26917ec9f25ef1fd51e95f686dbc5718",
+      "3a4a13bd87a0d6050fcec38847c6196c",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -17663,7 +17663,7 @@
       "public",
       "rpc_entrega_envio_capability_v1",
       "p_entrega uuid",
-      "8bd99841ad96c652c4fee1d0cf80db48",
+      "fb92b80c3ce793c7955064e6221616e1",
       "{postgres=X/postgres,authenticated=X/postgres}",
       "postgres",
       [
@@ -23361,7 +23361,7 @@
       "platform_private",
       "delivery_send_apply_v1",
       "p_entrega uuid, p_observed timestamp with time zone, p_key text",
-      "26917ec9f25ef1fd51e95f686dbc5718",
+      "3a4a13bd87a0d6050fcec38847c6196c",
       "{postgres=X/postgres}",
       "postgres"
     ],
@@ -23385,7 +23385,7 @@
       "public",
       "rpc_entrega_envio_capability_v1",
       "p_entrega uuid",
-      "8bd99841ad96c652c4fee1d0cf80db48",
+      "fb92b80c3ce793c7955064e6221616e1",
       "{postgres=X/postgres,authenticated=X/postgres}",
       "postgres"
     ]

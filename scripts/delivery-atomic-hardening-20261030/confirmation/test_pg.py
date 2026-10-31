@@ -250,7 +250,40 @@ def send_matrix():
   loser=send.replace('send-race-'+str(n),'send-other-'+str(n))
   waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='send_waiter';"+loser);wait_lock('send_waiter');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
   b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':mode+' vs send','stdout':out,'stderr':err});assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_SEND_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok('observed '+mode+' winner send loser PT409 snapshot unchanged')
+ sequential_send_matrix()
  hist=snapshot();sql((H/'send/rollback.sql.review').read_text());reject('send deny-only rollback no regrant',stmt,'42501');assert snapshot()==hist
+
+def sequential_send_matrix():
+ for n,early in enumerate([False,True]):
+  osn,pp,lot=T.u(861+n*3),T.u(862+n*3),T.u(863+n*3)
+  sql('SET session_replication_role=replica;'+T.manufactured(osn,pp,lot,vol=4000)+'SET session_replication_role=origin;')
+  for i in range(2):assert json.loads(last(T.actor()+T.envase(osn,pp,lot,[{'tipo_embalagem':'frasco_1L','quantidade':2}],f'seq-env-{n}-{i}')))['success']
+  stocks=json.loads(last(f"SELECT jsonb_agg(jsonb_build_object('item_id',id,'quantidade',quantidade) ORDER BY id) FROM public.estoque_produto WHERE lote_id='{lot}' AND status='reservado';"))
+  group=json.loads(last(T.actor()+T.group(osn,stocks,f'seq-group-{n}')));a,b=[i['entrega_id'] for i in group['itens']]
+  for i,e in enumerate([a,b]):prove(e,f'seq-proof-{n}-{i}')
+  def send(e,key):return T.actor()+f"SELECT public.rpc_entrega_enviar_manual_v1('{e}','{last(f'SELECT updated_at FROM public.entregas WHERE id=\'{e}\';')}','{key}');"
+  sa,sb=send(a,f'seq-send-a-{n}'),send(b,f'seq-send-b-{n}')
+  baseline=json.loads(snapshot());assert json.loads(last(sa))['success']
+  if early:assert json.loads(last(sb))['success']
+  r=json.loads(last(call(a,f'seq-confirm-a-{n}')));assert not r['finalizada'] and r['os_status']=='entregue'
+  ok('first of two sent items confirms partial OS entregue mode '+str(n))
+  before=json.loads(snapshot());out=json.loads(last(sb));assert out['success'] and out['replay']==early
+  after=json.loads(snapshot())
+  for prior,now in zip(before['entregas'],after['entregas']):
+   assert {k:v for k,v in prior.items() if k not in ('status','updated_at')}=={k:v for k,v in now.items() if k not in ('status','updated_at')}
+  for table in before:
+   if early or table not in ('entregas','requests'):assert before[table]==after[table],table
+  ok(('in-route B replay' if early else 'separated B send')+' after A confirmation preserves stock proof OS downstream')
+  snap=snapshot();assert json.loads(last(sb))['replay'] and snapshot()==snap
+  for terminal in ['finalizada','aberta']:
+   reject('send replay denies OS '+terminal,'BEGIN;SET LOCAL session_replication_role=replica;'+f"UPDATE public.ordens_servico SET status='{terminal}' WHERE id='{osn}';"+'SET LOCAL session_replication_role=origin;'+sb,'42501','DELIVERY_SEND_STATE_DENIED');assert snapshot()==snap
+   cap=json.loads(last('BEGIN;SET LOCAL session_replication_role=replica;'+f"UPDATE public.ordens_servico SET status='{terminal}' WHERE id='{osn}';"+'SET LOCAL session_replication_role=origin;'+T.actor()+f"SELECT public.rpc_entrega_envio_capability_v1('{b}');ROLLBACK;"));assert not cap['available'];assert snapshot()==snap;ok('send capability closed for OS '+terminal)
+  reject('send replay denies invalid lineage in partial OS','BEGIN;SET LOCAL session_replication_role=replica;'+f"UPDATE public.estoque_produto SET reservado_para_os_tipo='onfarm' WHERE id=(SELECT estoque_produto_id FROM public.entregas WHERE id='{b}');"+'SET LOCAL session_replication_role=origin;'+sb,'42501','DELIVERY_SEND_LINEAGE_DENIED');assert snapshot()==snap
+  final=json.loads(last(call(b,f'seq-confirm-b-{n}')));assert final['finalizada'] and final['os_status']=='finalizada'
+  after=json.loads(snapshot())
+  for table in ['estoque_produto','estoque_movimentacoes']+T.TABLES:assert baseline[table]==after[table],table
+  ok('sequential two sends two confirmations finalize 4000ml without second ledger stock mutation mode '+str(n))
+  snap=snapshot();reject('terminal confirmed item send replay denied',sb,'42501','DELIVERY_SEND_STATE_DENIED');assert snapshot()==snap
 
 def coverage_matrix():
  # Seed otherwise-contained upstream manufacture locally; tested group/proof/confirm run origin triggers.
