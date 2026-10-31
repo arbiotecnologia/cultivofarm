@@ -81,6 +81,7 @@ BEGIN
  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
  PERFORM 1 FROM public.entregas WHERE id=p_entrega AND organization_id=org FOR UPDATE;
  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF e.status::text='cancelada' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
  IF e.ordem_servico_id IS DISTINCT FROM initial.ordem_servico_id OR e.estoque_produto_id IS DISTINCT FROM initial.estoque_produto_id OR e.cliente_id IS DISTINCT FROM initial.cliente_id OR e.lote_id IS DISTINCT FROM initial.lote_id THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ROOT_CHANGED' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;
  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
