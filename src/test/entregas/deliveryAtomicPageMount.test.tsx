@@ -80,6 +80,23 @@ beforeEach(() => {
 afterEach(() => { cleanup(); });
 
 describe("Entregas page with atomic adapter (mounted)", () => {
+  it('send timeout retains ownership until transport settles and never parallel-dispatches', async () => {
+    t.rows=[{id:E1,status:'separado',ordem_servico_id:OS,updated_at:T1,clientes:{nome:'Timeout alvo'}}];
+    let release: ((value:any)=>void) | undefined;
+    t.rpc.mockImplementation((fn:string)=>fn==='rpc_entrega_envio_capability_v1'
+      ? Promise.resolve({data:{capability:'delivery_send_manual_v1',available:true,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'separado',updated_at:T1},error:null})
+      : new Promise(resolve=>{release=resolve;}));
+    const h=mount(); await screen.findByText('Timeout alvo'); vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button',{name:'Enviar'}));await act(async()=>{await Promise.resolve();await Promise.resolve();});
+      expect(t.rpc).toHaveBeenCalledTimes(2);
+      await act(async()=>{await vi.advanceTimersByTimeAsync(30001);});
+      fireEvent.click(screen.getByRole('button',{name:'Enviar'}));await act(async()=>{await Promise.resolve();});
+      expect(t.rpc).toHaveBeenCalledTimes(2);expect(t.error).toHaveBeenCalledWith('Uma operação de entrega já está em andamento.');
+      await act(async()=>{release?.({data:{success:true,action:'send',replay:false,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'em_rota',updated_at:T2},error:null});await Promise.resolve();});
+      expect(t.success).not.toHaveBeenCalled();expect(t.writes).toEqual([]);expect(t.financial).toBe(false);
+    } finally {vi.useRealTimers();h.qc.clear();}
+  });
   it('preflight rejection then refresh uses a fresh observed revision and dispatches once', async () => {
     t.rows = [{ id: E1, status: 'separado', ordem_servico_id: OS, updated_at: T1, clientes: { nome: 'Cliente' } }];
     const uuid = vi.spyOn(crypto, 'randomUUID');
