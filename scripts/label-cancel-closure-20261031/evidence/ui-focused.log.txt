@@ -1,0 +1,19 @@
+$ vitest run src/test/etiquetas/cancelamentoContido.test.tsx src/test/envase/envasePageReadOnly.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/envase/envasePageReadOnly.test.tsx > EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/etiquetas/cancelamentoContido.test.tsx (3 tests) 905ms
+   ✓ Cancelamento de etiqueta contido independentemente da página > não disponibiliza writer com readOnly=false, preserva consulta/impressão  623ms
+ ✓ src/test/envase/envasePageReadOnly.test.tsx (2 tests) 1199ms
+   ✓ EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history  726ms
+   ✓ EnvasePage contained independent contracts > keeps existing label view and print available without calling a writer  466ms
+
+ Test Files  2 passed (2)
+      Tests  5 passed (5)
+   Start at  13:02:07
+   Duration  7.43s (transform 574ms, setup 747ms, collect 2.95s, tests 2.10s, environment 3.32s, prepare 496ms)
+
