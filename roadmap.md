@@ -1,3 +1,5 @@
+- [x] 31/10 14:55 — Retenção durável Enviar (storage estrito + Web Locks, fail-closed, sem replay automático) e roteiro autenticado preparado/NÃO executado; 30 focados, regressão 700/705 (5 falhas estoque preexistentes em 8d276bea), typecheck 0 erros; sem hosted/publicação.
+- [ ] Validação autenticada Enviar/Confirmar — bloqueada: aplicação SQL pelo auditor, contas ARBio/FSF/B2B reais e ambiente isolado.
 - [x] 31/10 14:25 — Consumidor Enviar retém somente dispatch, ACK antigo incerto; mounted preflight→refresh/nova revisão, ACK perdido→consulta→mesma tentativa, alvo/tenant/terminal/timeout PASS;546Vitest, sem hosted/publicação.
 - [x] 31/10 14:20 — Dois itens sequenciais e replay em_rota após outra confirmação corrigidos/testados;120PG/540Vitest, lineage/terminais/capability negados, stock/ledger preservados e legado reensaiado; releases fechados, sem hosted/publicação.
 - [x] 31/10 14:13 — Writer antigo→delta→replay reproduziu hash legado/42501; recuperação estrita reconstrói ambos hashes sob locks/permit exato, sem alterar prova/recibo/terminal;98PG/538Vitest PASS, Enviar regressão/pins regenerados, release NO-GO sem hosted/publicação.
