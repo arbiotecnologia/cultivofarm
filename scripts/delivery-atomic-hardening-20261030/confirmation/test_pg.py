@@ -100,6 +100,8 @@ def run_matrix():
  reject('singleton absent explicitly PT503','BEGIN;DELETE FROM cf_user_guards_v1.state;'+stmt2,'PT503');assert snapshot()==b
  reject('missing CAS denied before writes',stmt2.replace("'"+last(f"SELECT updated_at FROM public.entregas WHERE id='{e2}';")+"'",'NULL'),'22023');assert snapshot()==b
  reject('stale CAS denied',call(e2,'cas-stale-0001',obs='2020-01-01'),'PT409');assert snapshot()==b
+ reject('tampered canonical hash denied','BEGIN;'+f"UPDATE public.entrega_comprovantes SET validation_hash=repeat('0',64) WHERE entrega_id='{e2}';"+stmt2,'42501','PROOF_DENIED');assert snapshot()==b
+ reject('missing storage object denied','BEGIN;'+f"DELETE FROM storage.objects WHERE name='{path2}';"+stmt2,'42501','OBJECT_DENIED');assert snapshot()==b
  reject('financial payload rejected',stmt2.replace('{"nome": "LOCAL"}','{"nome":"LOCAL","faturamento":"bill_now"}'),'22023');assert snapshot()==b
  # Object owner changed locally through actual DML: orphan or foreign owner is not proof.
  sql(f"UPDATE storage.objects SET owner_id='{T.V}' WHERE name='{path2}';");b=snapshot();reject('foreign object owner rejects canonical digital proof',stmt2,'42501','OBJECT_DENIED');assert snapshot()==b;sql(f"UPDATE storage.objects SET owner_id='{T.U}' WHERE name='{path2}';")
@@ -114,9 +116,9 @@ def run_matrix():
  # A new manual chain from unused fixture, then observed cancel wins against waiting confirm.
  e3,path3=create(T.O7,T.PP7,T.L7,'3');obs3=last(f"SELECT updated_at FROM public.entregas WHERE id='{e3}';");stmt3=call(e3,'confirm-0003',obs3)
  cancel=T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{e3}','LOCAL CANCEL','{obs3}');"
- holder=T.T.session('BEGIN;'+cancel);w=T.T.session("BEGIN;SET application_name='confirm_cancel_loser';"+stmt3);wait_lock('confirm_cancel_loser')
+ holder=T.T.session('BEGIN;'+cancel);w=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='confirm_cancel_loser';"+stmt3);wait_lock('confirm_cancel_loser')
  T.T.finish(holder,'COMMIT;');out,err=T.T.finish(w,'COMMIT;');raw.append({'test':'cancel wins','stdout':out,'stderr':err})
- assert 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err and last(f"SELECT status::text FROM public.entregas WHERE id='{e3}';")=='cancelada';ok('canonical cancellation wins observed race and confirmation rolls back')
+ assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err and last(f"SELECT status::text FROM public.entregas WHERE id='{e3}';")=='cancelada';ok('canonical cancellation wins observed race and confirmation rolls back')
  cancel2=T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{e2}','LOCAL CANCEL','{r['updated_at']}');";b=snapshot();reject('confirmed physical delivery cannot ordinary cancel',cancel2,'42501');assert snapshot()==b
  # Full content sentinels before/after, not merely counts.
  for table in T.TABLES+['financial_categories','payment_methods','receivable_payments','company_fiscal_settings']:
