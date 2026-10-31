@@ -1,0 +1,46 @@
+[
+  {
+    "file": "scripts/delivery-proof-authz-20261030/release-combined.sql.review",
+    "sha256": "a566faa4f6f460d8b9195abf93d97717013af815537f00eb28b34cc98d314971"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/install-v2.sql.review",
+    "sha256": "4390ef16cd763292e76847b0d3b7ff113a81bd4e3ea0920a5b00cf2d09175cd2"
+  },
+  {
+    "file": "scripts/proof-select-tenant-20261030/install.sql.review",
+    "sha256": "b9812bf5672f2153c67438103fb6851bef3857103e6390401918667d756aee9d"
+  },
+  {
+    "file": "scripts/delivery-evidence-tenant-20261030/install.sql.review",
+    "sha256": "36b238e965d14207c3b11c046e1b07b4bdc94393cd0a20d310e0267bb4526d6b"
+  },
+  {
+    "file": "scripts/produto-etiquetas-tenant-20261030/install.sql.review",
+    "sha256": "554dbf75f8a2967d90d8857f7a119dafa36c27c4af2a1699987581a4ad688e89"
+  },
+  {
+    "file": "scripts/delivery-checklist-occurrence-authz-20261030/install.sql.review",
+    "sha256": "495eabc2d95b0bf156db505134bf66122b5ac9c0ea37d763dbe5d7c7b7e207d5"
+  },
+  {
+    "file": "scripts/delivery-waiver-closure-20261030/install.sql.review",
+    "sha256": "7faa942ff8e9a2f3467a235ca97aedd18db8bb415a46312f78aaa70ca0bf898d"
+  },
+  {
+    "file": "scripts/delivery-group-capability-20261030/install.sql.review",
+    "sha256": "ee32207281419ee081af2a05c1c8068a3dc1a64369f4e868f21e5d92a474cf7c"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/install.sql.review",
+    "sha256": "16fb57a541110c285d8678f6716d7e3f39732429b721239d4388655e591f4ea6"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/legacy-closure-install.sql.review",
+    "sha256": "f92d0105ebac9879d796a1aaed9693e3afab1597ca1071255c2ae001bfd3852c"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/release.sql.review",
+    "sha256": "ea8083ea5a1f31e29b8ef289021b6c3fedad104bd6044b2cf0b25aef799ba93b"
+  }
+]

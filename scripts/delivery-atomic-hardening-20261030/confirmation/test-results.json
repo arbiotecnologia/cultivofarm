@@ -1,0 +1,28 @@
+{
+  "checks": [
+    {
+      "test": "full captured restore without unresolved objects; disposable socket verified",
+      "status": "PASS"
+    },
+    {
+      "test": "reported applied composition including isolated install closure release restored without regeneration",
+      "status": "PASS"
+    },
+    {
+      "test": "all ten real downstream tables have EXISTING nonempty sentinels before envase",
+      "status": "PASS"
+    },
+    {
+      "test": "existing full-row downstream sentinels seeded in disposable fixture only",
+      "status": "PASS"
+    },
+    {
+      "test": "execution",
+      "status": "FAIL",
+      "error": "ERROR:  syntax error at end of input\nLINE 11: ...h(coalesce(v#>>'{}',''))>CASE WHEN k='observacoes' THEN 1000...\n                                                              ^\n"
+    }
+  ],
+  "raw": [],
+  "exit_code": 1,
+  "elapsed_seconds": 195.83598073599998
+}
