@@ -133,9 +133,33 @@
       "status": "PASS"
     },
     {
+      "test": "multiple lots same programming forbidden by canonical unique index",
+      "status": "PASS"
+    },
+    {
+      "test": "proof coverage-0 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "proof coverage-1 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "proof coverage-2 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "multi-lot coverage leaves 6000ml demand open 0",
+      "status": "PASS"
+    },
+    {
+      "test": "multi-lot coverage leaves 6000ml demand open 1",
+      "status": "PASS"
+    },
+    {
       "test": "execution",
       "status": "FAIL",
-      "error": "('multiple lots same programming forbidden by canonical unique index', '', 'ERROR:  42501: MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC\\nCONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 53 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n')"
+      "error": "ERROR:  ENVASE_RESERVATION_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_reservation_root_v1() line 12 at RAISE\nSQL statement \"UPDATE public.estoque_produto\n       SET quantidade = COALESCE(quantidade,0) + COALESCE(v_mov.saldo_anterior,0) - COALESCE(v_mov.saldo_posterior,0),\n           quantidade_reservada = COALESCE(v_mov.reservado_anterior, quantidade_reservada),\n           status = COALESCE(v_mov.status_anterior, status::text)::status_estoque,\n           expedido_em = NULL, expedido_por = NULL\n     WHERE id = p_item_id\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 201 at SQL statement\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 38 at assignment\n"
     }
   ],
   "raw": [
@@ -275,9 +299,9 @@
       "test": "multiple lots same programming forbidden by canonical unique index",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC\nCONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 53 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  23505: duplicate key value violates unique constraint \"idx_lotes_programacao_id_unique\"\nDETAIL:  Key (programacao_id)=(10000000-0000-4000-8000-000000000702) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  lotes\nCONSTRAINT NAME:  idx_lotes_programacao_id_unique\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n"
     }
   ],
   "exit_code": 1,
-  "elapsed_seconds": 19.088206653999805
+  "elapsed_seconds": 19.79785759599963
 }
