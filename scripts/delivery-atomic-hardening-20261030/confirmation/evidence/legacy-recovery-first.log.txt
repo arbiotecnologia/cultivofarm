@@ -1,0 +1,28 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.4s
+PASS exact local captured composition checkpoint restored; disposable socket verified
+PASS captured old writer signs reused form and exact replay preserves divergent delivery hash
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS review release stays NO-GO without remaining matrix
+PASS disposable harness-only activation exact state; review release remains closed
+PASS foreign actor cannot recover legacy sign hash
+PASS legacy recovery denies arbitrary old delivery hash
+PASS legacy recovery denies arbitrary signed proof hash
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 318, in <module>
+    try:run();status=0
+        ~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 71, in run
+    run_matrix()
+    ~~~~~~~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 89, in run_matrix
+    legacy_replay_matrix(*legacy)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 162, in legacy_replay_matrix
+    reject('legacy recovery denies '+label,'BEGIN;SET LOCAL session_replication_role=replica;'+mutation+'SET LOCAL session_replication_role=origin;'+stmt,'42501',msg);assert snapshot()==b
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 16, in reject
+    assert r.returncode!=0 and re.search(r'ERROR:\s+'+code+':',r.stderr) and (message is None or message in r.stderr),(n,r.stdout,r.stderr);ok(n)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('legacy recovery denies different proof path', '', 'ERROR:  23514: new row for relation "entrega_comprovantes" violates check constraint "entrega_comprovantes_assinatura_path_canonico_chk"\nDETAIL:  Failing row contains (0e229fd1-4859-40b4-a702-8ef70f67308d, 906f9fee-aed1-44ca-81a9-31593c5c46d1, AR-ENT-000001, formulario_entrega, assinatura_digital_coletada, null, null, null, null, t, digital_tela, null, invalid, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, 2026-10-31 14:11:19.603706+00, LOCAL, null, null, null, 2026-10-31 14:11:19.603706+00, 2f017a40-5ac2-421b-8aec-f0b61fd446a0, 732f7a9c4f5e1aa79e0ce44016f07f45fd14c6c62ca42da0a28d5784d270b2dd, null, 2f017a40-5ac2-421b-8aec-f0b61fd446a0, null, null, t, null, null, null, f, 10000000-0000-4000-8000-000000000003, null, null, 2026-10-31 14:11:19.448758+00, null, null, {}, 2026-10-31 14:11:19.448758+00, 2026-10-31 14:11:19.603706+00).\nSCHEMA NAME:  public\nTABLE NAME:  entrega_comprovantes\nCONSTRAINT NAME:  entrega_comprovantes_assinatura_path_canonico_chk\nLOCATION:  ExecConstraints, execMain.c:2079\n')
