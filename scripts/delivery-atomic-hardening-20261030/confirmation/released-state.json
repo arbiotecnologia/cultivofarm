@@ -7708,7 +7708,7 @@
       "platform_private",
       "delivery_proof_apply_20261030",
       "p_action text, p_entrega uuid, p_request_key text, p_payload jsonb",
-      "18783db60e81608a31f182630d8d54ee",
+      "2d38e1f75f2ce38cc2a25c862848542b",
       "{postgres=X/postgres}",
       "postgres",
       [

@@ -37,6 +37,7 @@ IF p_action='sign' THEN
    OR v_prev.result->>'entrega_id' IS DISTINCT FROM v_e.id::text OR v_prev.result->>'comprovante_id' IS DISTINCT FROM v_c.id::text
    OR v_prev.result->>'object_path' IS DISTINCT FROM v_path OR v_prev.result->>'validation_token' IS DISTINCT FROM v_c.validation_token::text
    OR v_prev.result->>'numero_formulario' IS DISTINCT FROM v_c.numero_formulario
+   OR v_e.comprovante_id IS DISTINCT FROM v_c.id OR v_c.entrega_id IS DISTINCT FROM v_e.id
    OR v_e.status::text NOT IN ('separado','em_rota') OR v_c.status IS DISTINCT FROM 'assinatura_digital_coletada'
    OR v_e.comprovante_status IS DISTINCT FROM 'assinatura_digital_coletada' OR v_c.tipo IS DISTINCT FROM 'formulario_entrega'
    OR v_c.assinatura_coletada IS NOT TRUE OR v_c.assinatura_tipo IS DISTINCT FROM 'digital_tela' OR v_e.assinatura_tipo IS DISTINCT FROM 'digital_tela'
