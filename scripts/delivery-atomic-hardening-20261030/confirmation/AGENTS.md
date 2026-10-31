@@ -1,0 +1,5 @@
+- Preparation only: never use hosted connections, production sessions/secrets/fixtures, apply or publish; the auditor reviews exact artifacts and live PRE/POST independently.
+- Compose only a manual physical confirmation delta over the reported applied stack including isolated envase; never reinstall or change grants/bodies of stock/group/cancel/envase/proof.
+- Confirmation validates original expedition and immutable lot/OS/stock/proof lineage under the existing singleton; it never expedites stock twice or writes ledger directly.
+- Preserve existing receiver/proof requirements and physical workflow, server authority after waits, exact CAS/receipt replay and deny-only rollback; financial/fiscal/outbox effects and B2B/OnFarm remain closed.
+- Generate deterministic full catalog pins from the disposable composition, with explicit column COLLATE C ordering; client UI capability never grants authority and uncertain dispatch preserves exact arguments.
