@@ -250,6 +250,9 @@ def proof_race_matrix():
   b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':action+' wins against confirm','stdout':out,'stderr':err})
   assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok(action+' wins observed lock; stale confirmation PT409 with exact snapshots')
   confirmation=call(e,'race-confirm-fresh-'+action);holder=T.T.session("SET application_name='confirm_race_holder';BEGIN;"+confirmation);held('confirm_race_holder')
+  # Force observation at the first canonical proof advisory lock, held by this same confirmation transaction.
+  holder.stdin.write(f"SELECT pg_advisory_xact_lock(hashtext('entrega_proof:{e}'));\n");holder.stdin.flush()
+  held('confirm_race_holder')
   waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='confirm_proof_race';"+proof.replace('race-proof-'+action,'race-proof-after-'+action))
   wait_lock('confirm_proof_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
   b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':'confirm wins against '+action,'stdout':out,'stderr':err})
