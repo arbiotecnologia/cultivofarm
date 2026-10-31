@@ -39,8 +39,8 @@ def wait_lock(name):
   if last(f"SELECT count(*) FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock';")=='1':return
   time.sleep(.025)
  raise AssertionError('LOCK_WAIT_NOT_OBSERVED '+name)
-def wait_revoke(label,change,stmt,restore_sql):
- holder=T.T.session('BEGIN;'+change)
+def wait_revoke(label,change,stmt,restore_sql,gate=False):
+ holder=T.T.session('BEGIN;'+('SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;' if gate else '')+change)
  w=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
  w.stdin.write("\\set VERBOSITY verbose\nSET application_name='confirm_revocation';"+stmt+'\n');w.stdin.flush()
  wait_lock('confirm_revocation');T.T.finish(holder,'COMMIT;');before=snapshot()
@@ -97,7 +97,7 @@ def run_matrix():
  wait_revoke('role revoked DURING observed lock denies confirmation',f"DELETE FROM public.user_roles WHERE user_id='{T.U}';",stmt2,f"INSERT INTO public.user_roles(user_id,role) VALUES('{T.U}','administrador');")
  wait_revoke('tenant changed DURING observed lock denies confirmation',f"UPDATE public.profiles SET organization_id='{T.B}' WHERE user_id='{T.U}';",stmt2,f"UPDATE public.profiles SET organization_id='{T.A}' WHERE user_id='{T.U}';")
  # Existing feature writers use NOWAIT gates: gate wait before acquisition permits committed revocation.
- wait_revoke('SaaS revoked DURING observed gate lock denies confirmation',f"UPDATE public.saas_plan_versions SET features_snapshot='[]' WHERE id='{T.T.VER}';",stmt2,f"UPDATE public.saas_plan_versions SET features_snapshot='[\"estoque_embalagens\",\"envase\",\"ordens_producao\",\"lotes_qualidade\"]' WHERE id='{T.T.VER}';")
+ wait_revoke('SaaS revoked DURING observed gate lock denies confirmation',f"UPDATE public.saas_plan_versions SET features_snapshot='[]' WHERE id='{T.T.VER}';",stmt2,f"UPDATE public.saas_plan_versions SET features_snapshot='[\"estoque_embalagens\",\"envase\",\"ordens_producao\",\"lotes_qualidade\"]' WHERE id='{T.T.VER}';",gate=True)
  b=snapshot();r=json.loads(last(stmt2));assert r['success'] and r['comprovante_id'];ok('canonical digital signature then physical confirmation positive')
  after=snapshot();rep=json.loads(last(stmt2));assert rep['replay'] and snapshot()==after;ok('digital confirmation replay no duplicate ledger event receipt')
  # A new manual chain from unused fixture, then observed cancel wins against waiting confirm.
