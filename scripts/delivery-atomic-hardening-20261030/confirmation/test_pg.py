@@ -160,7 +160,7 @@ def multi_item_matrix():
 def ledger_lineage_matrix(e,stmt):
  # Deliberate corrupt-fixture injection as local postgres, never an actor or deployable seam.
  mid=last(f"SELECT id FROM public.estoque_movimentacoes WHERE referencia_id='{e}' AND acao='expedicao';")
- for field,value in [('os_id',T.O7),('lote_id',T.L7),('os_tipo','onfarm'),('referencia_tipo','os')]:
+ for field,value in [('os_id',T.O7),('lote_id',T.L7),('os_tipo','onfarm'),('referencia_tipo','ordem_servico')]:
   original=last(f"SELECT {field} FROM public.estoque_movimentacoes WHERE id='{mid}';")
   sql(f"SET session_replication_role=replica;UPDATE public.estoque_movimentacoes SET {field}='{value}' WHERE id='{mid}';SET session_replication_role=origin;")
   before=snapshot();reject('actual corrupted ledger '+field+' rejects replay',stmt,'42501','DELIVERY_CONFIRM_REPLAY_STATE_DENIED');assert snapshot()==before
