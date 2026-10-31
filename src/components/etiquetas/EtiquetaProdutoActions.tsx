@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Tag, Printer, Link as LinkIcon, Ban, Eye } from "lucide-react";
+import { Tag, Printer, Link as LinkIcon, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { buildRastreioUrl } from "./QRCodeRastreioProduto";
 
@@ -24,12 +24,10 @@ interface Props {
 
 export function EtiquetaProdutoActions({ readOnly = false, envaseId, loteId, etiquetaId, traceToken, status, onChanged }: Props) {
   const [openGerar, setOpenGerar] = useState(false);
-  const [openCancelar, setOpenCancelar] = useState(false);
   const [tipo, setTipo] = useState("principal");
   const [conservacao, setConservacao] = useState("");
   const [uso, setUso] = useState("");
   const [obs, setObs] = useState("");
-  const [motivo, setMotivo] = useState("");
   const [loading, setLoading] = useState(false);
 
   const gerar = async () => {
@@ -67,28 +65,6 @@ export function EtiquetaProdutoActions({ readOnly = false, envaseId, loteId, eti
     if (!traceToken) return;
     await navigator.clipboard.writeText(buildRastreioUrl(traceToken));
     toast.success("Link de rastreio copiado");
-  };
-
-  const cancelar = async () => {
-    if (readOnly) return;
-    if (!etiquetaId || motivo.trim().length < 3) {
-      toast.error("Motivo obrigatório (min 3 caracteres)");
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.rpc("rpc_cancelar_etiqueta_produto", {
-      p_etiqueta_id: etiquetaId,
-      p_motivo: motivo,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Etiqueta cancelada");
-    setOpenCancelar(false);
-    setMotivo("");
-    onChanged?.();
   };
 
   const isCancelada = status === "cancelada";
@@ -154,27 +130,6 @@ export function EtiquetaProdutoActions({ readOnly = false, envaseId, loteId, eti
       <Button size="sm" variant="outline" onClick={copiarLink}>
         <LinkIcon className="h-3 w-3 mr-1" /> Link
       </Button>
-      {!readOnly && !isCancelada && (
-        <Dialog open={openCancelar} onOpenChange={setOpenCancelar}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline">
-              <Ban className="h-3 w-3 mr-1" /> Cancelar
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Cancelar etiqueta</DialogTitle></DialogHeader>
-            <div className="space-y-2">
-              <Label>Motivo (obrigatório)</Label>
-              <Textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3} />
-            </div>
-            <DialogFooter>
-              <Button variant="destructive" onClick={cancelar} disabled={loading}>
-                Confirmar cancelamento
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }
