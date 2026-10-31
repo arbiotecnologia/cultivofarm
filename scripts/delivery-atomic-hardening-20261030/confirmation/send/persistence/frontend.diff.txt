@@ -1,0 +1,515 @@
+diff --git a/src/lib/entregas/deliverySendPersistence.ts b/src/lib/entregas/deliverySendPersistence.ts
+new file mode 100644
+index 000000000..56484c6a9
+--- /dev/null
++++ b/src/lib/entregas/deliverySendPersistence.ts
+@@ -0,0 +1,100 @@
++import { confirmationTimestamp } from './deliveryConfirmationFlow';
++import type { SendAttempt } from './deliverySendFlow';
++
++/**
++ * Minimal durable retention of an uncertain Enviar attempt (client-side only).
++ * Stores ONLY actor/tenant/entrega/OS UUIDs, the observed CAS revision and the request key.
++ * Never stores JWT, password, files or PII. Persisted data never authorizes anything:
++ * every reconciliation re-reads the fresh server capability and the server re-authorizes.
++ */
++export const SEND_PERSIST_PREFIX = 'cf:delivery-send:v1:';
++export const SEND_PERSIST_SCHEMA = 'delivery_send_attempt';
++export const SEND_PERSIST_VERSION = 1;
++const FIELDS = ['v', 'schema', 'actor', 'org', 'entrega', 'os', 'observed', 'key'].sort().join();
++const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++const NIL = '00000000-0000-0000-0000-000000000000';
++const isId = (v: unknown): v is string => typeof v === 'string' && UUID.test(v) && v !== NIL;
++
++export type SendStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
++export type StoredSend = { actor: string; org: string; entrega: string; os: string; observed: string; key: string };
++export type LoadedSends = { attempts: StoredSend[]; corrupt: string[] };
++
++export const scopePrefix = (actor: string, org: string) => `${SEND_PERSIST_PREFIX}${actor}:${org}:`;
++export const sendSlot = (actor: string, org: string, entrega: string) => `${scopePrefix(actor, org)}${entrega}`;
++
++export function serializeSend(a: StoredSend): string {
++  return JSON.stringify({ v: SEND_PERSIST_VERSION, schema: SEND_PERSIST_SCHEMA, actor: a.actor, org: a.org, entrega: a.entrega, os: a.os, observed: a.observed, key: a.key });
++}
++
++/** Strict parse: exact field set, version, schema, UUIDs, timezone-bearing timestamp and slot binding. */
++export function parseSend(raw: string | null, slot: string): StoredSend | null {
++  if (raw === null) return null;
++  let o: unknown;
++  try { o = JSON.parse(raw); } catch { return null; }
++  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
++  const r = o as Record<string, unknown>;
++  if (Object.keys(r).sort().join() !== FIELDS || r.v !== SEND_PERSIST_VERSION || r.schema !== SEND_PERSIST_SCHEMA) return null;
++  if (![r.actor, r.org, r.entrega, r.os, r.key].every(isId) || !confirmationTimestamp(r.observed)) return null;
++  const s = { actor: r.actor, org: r.org, entrega: r.entrega, os: r.os, observed: r.observed, key: r.key } as StoredSend;
++  if (sendSlot(s.actor, s.org, s.entrega) !== slot || serializeSend(s) !== raw) return null;
++  return s;
++}
++
++/** Loads only the current actor+tenant records; foreign records are neither read nor removed. Throws if storage is unreadable. */
++export function loadSends(store: SendStore, actor: string, org: string): LoadedSends {
++  const prefix = scopePrefix(actor, org);
++  const attempts: StoredSend[] = []; const corrupt: string[] = [];
++  const keys: string[] = [];
++  for (let i = 0; i < store.length; i++) { const k = store.key(i); if (k && k.startsWith(prefix)) keys.push(k); }
++  for (const k of keys.sort()) {
++    const s = parseSend(store.getItem(k), k);
++    if (s && s.actor === actor && s.org === org) attempts.push(s); else corrupt.push(k);
++  }
++  return { attempts, corrupt };
++}
++
++export const toAttempt = (s: StoredSend, scope: string): SendAttempt & { slotScope: string } => ({ scope: { actor: s.actor, org: s.org, entrega: s.entrega }, os: s.os, observed: s.observed, key: s.key, slotScope: scope });
++export const fromAttempt = (a: SendAttempt): StoredSend => ({ actor: a.scope.actor, org: a.scope.org, entrega: a.scope.entrega, os: a.os, observed: a.observed, key: a.key });
++
++/**
++ * Called synchronously immediately before the writer dispatch, while the cross-tab Web Lock is held.
++ * Never overwrites a different stored attempt; verifies by read-back. Throws (no dispatch) on any failure.
++ */
++export function persistBeforeDispatch(store: SendStore, a: SendAttempt): void {
++  const s = fromAttempt(a); const slot = sendSlot(s.actor, s.org, s.entrega); const raw = serializeSend(s);
++  const existing = store.getItem(slot);
++  if (existing !== null) {
++    if (existing !== raw) throw new Error('Outra tentativa de envio está retida para esta entrega. Nenhuma alteração foi enviada.');
++    return;
++  }
++  store.setItem(slot, raw);
++  if (store.getItem(slot) !== raw) throw new Error('Registro local do envio não confirmado. Nenhuma alteração foi enviada.');
++}
++
++/** Removes only the exact record; returns false if absent/different (another tab) or removal failed. */
++export function removeExactSend(store: SendStore, a: SendAttempt): boolean {
++  const s = fromAttempt(a); const slot = sendSlot(s.actor, s.org, s.entrega);
++  try {
++    if (store.getItem(slot) !== serializeSend(s)) return false;
++    store.removeItem(slot);
++    return store.getItem(slot) === null;
++  } catch { return false; }
++}
++
++export type LockManagerLike = { request: (name: string, options: { mode: 'exclusive'; ifAvailable: true }, cb: (lock: unknown) => Promise<unknown>) => Promise<unknown> };
++
++/**
++ * Real cross-tab mutual exclusion via the Web Locks API, held from preflight until the transport settles
++ * (also past a UI timeout). Without Web Locks the send is refused before any call: localStorage check/set
++ * is not atomic across tabs and is never treated as a lock.
++ */
++export async function withSendLock<T>(locks: LockManagerLike | undefined | null, actor: string, org: string, work: () => Promise<T>): Promise<T> {
++  if (!locks || typeof locks.request !== 'function') throw new Error('Bloqueio entre abas indisponível neste navegador. Nenhuma alteração foi enviada.');
++  let ran = false; let value: T | undefined;
++  await locks.request(`cf:delivery-send-lock:${actor}:${org}`, { mode: 'exclusive', ifAvailable: true }, async (lock) => {
++    if (!lock) return;
++    ran = true; value = await work();
++  });
++  if (!ran) throw new Error('Envio de entrega em andamento em outra aba. Nenhuma alteração foi enviada.');
++  return value as T;
++}
+diff --git a/src/pages/Entregas.tsx b/src/pages/Entregas.tsx
+index ffec4cdce..721307863 100644
+--- a/src/pages/Entregas.tsx
++++ b/src/pages/Entregas.tsx
+@@ -62,6 +62,7 @@ import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidad
+ import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
+ import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";
++import { loadSends, persistBeforeDispatch, removeExactSend, SEND_PERSIST_PREFIX, toAttempt, withSendLock, type LockManagerLike } from "@/lib/entregas/deliverySendPersistence";
+ 
+ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+   separado: { label: "Separado", variant: "secondary" },
+@@ -83,6 +84,31 @@ export default function Entregas() {
+   const operation = useRef<symbol | null>(null);
+   const sendAttempts = useRef(new Map<string, SendAttempt>());
+   const unresolved = useRef(new Set<string>());
++  // Durable Enviar retention: rebuilt from storage for the CURRENT actor+tenant only; "blocked" fails closed.
++  const [sendBlocked, setSendBlocked] = useState<"" | "corrupt" | "unavailable">("");
++  const sendBlockedRef = useRef<"" | "corrupt" | "unavailable">("");
++  const [, setSendTick] = useState(0);
++  const reloadSends = () => {
++    const map = new Map<string, SendAttempt>();
++    let blocked: "" | "corrupt" | "unavailable" = "";
++    if (actorId && orgId) {
++      try {
++        const store = pendingStore();
++        if (!store) throw new Error("unavailable");
++        const loaded = loadSends(store, actorId, orgId);
++        for (const s of loaded.attempts) map.set(`${deliveryScope.scope}:${s.entrega}`, toAttempt(s, deliveryScope.scope));
++        if (loaded.corrupt.length) blocked = "corrupt";
++      } catch { blocked = "unavailable"; }
++    }
++    sendAttempts.current = map; sendBlockedRef.current = blocked; setSendBlocked(blocked); setSendTick(n => n + 1);
++  };
++  useEffect(() => {
++    reloadSends();
++    const onStorage = (e: StorageEvent) => { if (!e.key || e.key.startsWith(SEND_PERSIST_PREFIX)) reloadSends(); };
++    window.addEventListener("storage", onStorage);
++    return () => window.removeEventListener("storage", onStorage);
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [actorId, orgId, deliveryScope.scope]);
+   const [operationNotice, setOperationNotice] = useState("");
+   // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.
+   const [pending, setPending] = useState<RetrySnapshot | "corrupt" | null>(null);
+@@ -628,17 +654,31 @@ export default function Entregas() {
+       const row = (entregas as any[]).find(e => e.id === id);
+       if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");
+       const key = `${deliveryScope.scope}:${id}`;
+-      if (unresolved.current.has(deliveryScope.scope) && !sendAttempts.current.has(key)) throw new Error("Reconcilie somente o mesmo envio pendente.");
+-      if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");
+-      if (row.status === 'em_rota' && !sendAttempts.current.has(key)) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");
+-      const attempt = sendAttempts.current.get(key) ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
+-      // Only dispatch creates an uncertain attempt. A failed capability/CAS read cannot strand a fresh key.
+-      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {
+-        dispatch();
+-        sendAttempts.current.set(key, attempt);
++      const store = pendingStore();
++      const locks = (typeof navigator !== "undefined" ? (navigator as unknown as { locks?: LockManagerLike }).locks : undefined);
++      // Cross-tab exclusive lock held from the storage re-read until the transport settles (even after a UI timeout).
++      return withSendLock(locks, actorId, orgId, async () => {
++        reloadSends();
++        if (!store || sendBlockedRef.current) throw new Error(sendBlockedRef.current === "corrupt" ? "Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas." : "Registro local de envio indisponível. Nenhuma alteração foi enviada.");
++        const retained = sendAttempts.current.get(key);
++        const otherRetained = Array.from(sendAttempts.current.keys()).some(k => k !== key);
++        if ((unresolved.current.has(deliveryScope.scope) || otherRetained) && !retained) throw new Error("Reconcilie somente o mesmo envio pendente.");
++        if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");
++        if (row.status === 'em_rota' && !retained) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");
++        const attempt = retained ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
++        // Only dispatch creates an uncertain attempt; it is persisted and verified BEFORE the writer call.
++        await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {
++          persistBeforeDispatch(store, attempt);
++          dispatch();
++          sendAttempts.current.set(key, attempt);
++        });
++        check();
++        const removed = removeExactSend(store, attempt);
++        reloadSends();
++        if (!removed) setOperationNotice("Envio confirmado, mas o registro local não pôde ser removido; a próxima consulta reconcilia a mesma chave.");
++        else unresolved.current.delete(deliveryScope.scope);
++        return true;
+       });
+-      check(); sendAttempts.current.delete(key); unresolved.current.delete(deliveryScope.scope);
+-      return true;
+     }),
+ 
+     onSuccess: ({ current }) => {
+@@ -818,7 +858,8 @@ export default function Entregas() {
+         {pending && pending !== "corrupt" && !pending.replayRejected && (
+           <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>
+         )}
+-        <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
++        <Button variant="outline" onClick={() => { if (deliveryScope.ready) { reloadSends(); void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
++        {sendBlocked && <p role="alert">{sendBlocked === "corrupt" ? "Registro local de envio inválido ou adulterado: envios bloqueados, nada foi apagado. Consulte as entregas." : "Armazenamento local indisponível: envios bloqueados para não perder tentativas incertas."}</p>}
+         {Array.from(sendAttempts.current.entries()).filter(([key]) => key.startsWith(`${deliveryScope.scope}:`)).map(([key, attempt]) => {
+           const row = (entregas as any[]).find(e => e.id === attempt.scope.entrega);
+           if (row && ['separado', 'em_rota'].includes(row.status)) return null;
+diff --git a/src/test/entregas/deliveryAtomicPageMount.test.tsx b/src/test/entregas/deliveryAtomicPageMount.test.tsx
+index 55086c5dc..dcfa8b45a 100644
+--- a/src/test/entregas/deliveryAtomicPageMount.test.tsx
++++ b/src/test/entregas/deliveryAtomicPageMount.test.tsx
+@@ -77,6 +77,9 @@ beforeEach(() => {
+   t.from.mockImplementation(chain);
+   t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : fn === GROUP_RPC ? { data: groupAck, error: null } : { data: cancelAck, error: null });
+ });
++const heldLocks = new Set<string>();
++const fakeLocks = { request: async (name: string, _o: any, cb: (l: unknown) => Promise<unknown>) => { if (heldLocks.has(name)) return cb(null); heldLocks.add(name); try { return await cb({ name }); } finally { heldLocks.delete(name); } } };
++beforeEach(() => { heldLocks.clear(); Object.defineProperty(navigator, "locks", { value: fakeLocks, configurable: true }); });
+ afterEach(() => { cleanup(); });
+ 
+ describe("Entregas page with atomic adapter (mounted)", () => {
+diff --git a/src/test/entregas/deliverySendPersistMount.test.tsx b/src/test/entregas/deliverySendPersistMount.test.tsx
+new file mode 100644
+index 000000000..2f179473a
+--- /dev/null
++++ b/src/test/entregas/deliverySendPersistMount.test.tsx
+@@ -0,0 +1,243 @@
++import React, { type PropsWithChildren } from "react";
++import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
++import { MemoryRouter } from "react-router-dom";
++import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++
++const t = vi.hoisted(() => ({ auth: {} as any, confirm: {} as any, financial: false, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
++vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
++vi.mock("@/hooks/useSystemConfig", () => ({ useSystemConfig: () => ({ config: {}, defaults: {} }) }));
++vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
++vi.mock("sonner", () => ({ toast: { success: t.success, error: t.error, info: vi.fn() } }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: t.rpc, from: t.from, channel: () => { const c: any = { on: () => c, subscribe: () => c }; return c; }, removeChannel: vi.fn() } }));
++vi.mock("@/components/entregas/RegistrarEntregaDialog", () => ({ RegistrarEntregaDialog: (p: any) => { t.submit = p.onSubmit; return null; } }));
++vi.mock("@/components/entregas/ConfirmarEntregaDialog", () => ({ ConfirmarEntregaDialog: (p: any) => { t.confirm = p; return null; } }));
++vi.mock("@/components/financeiro/ConfirmarEntregaFinanceiroDialog", () => ({ ConfirmarEntregaFinanceiroDialog: (p: any) => { t.financial = p.open; return null; } }));
++vi.mock("@/components/entregas/EntregaComprovantePanel", () => ({ EntregaComprovantePanel: () => null }));
++vi.mock("@/components/entregas/TermoEntregaPanel", () => ({ TermoEntregaPanel: () => null }));
++vi.mock("@/components/estoque/EmbalagensEntregaPanel", () => ({ EmbalagensEntregaPanel: () => null }));
++vi.mock("@/components/entregas/PreviewDocumentoEntrega", () => ({ PreviewDocumentoEntrega: () => null }));
++import Entregas from "@/pages/Entregas";
++import { CANCEL_RPC, CAPABILITY_RPC, GROUP_RPC } from "@/lib/entregas/deliveryOperationsFlow";
++
++const ORG = "10000000-0000-4000-8000-000000000001";
++const ORG_B = "20000000-0000-4000-8000-000000000002";
++const ACTOR = "10000000-0000-4000-8000-000000000003";
++const OS = "10000000-0000-4000-8000-000000000007";
++const S = "10000000-0000-4000-8000-000000000013";
++const E1 = "10000000-0000-4000-8000-000000000101";
++const M1 = "10000000-0000-4000-8000-000000000201";
++const T1 = "2026-10-30T10:00:00Z";
++const T2 = "2026-10-30T11:00:00Z";
++const cap = { capability: "delivery_operations_v1", group: true, cancel: true };
++const groupAck = { success: true, replay: false, organization_id: ORG, os_id: OS, itens: [{ entrega_id: E1, estoque_produto_id: S, movimentacao_id: M1 }] };
++const cancelAck = { success: true, replay: false, organization_id: ORG, entrega_id: E1, estoque_estornado: true, reserva_liberada: true };
++
++function payload(over: any = {}) {
++  return {
++    grupoId: "30000000-0000-4000-8000-000000000999", osId: OS, osTipo: "padrao",
++    itens: [{ item: { id: S, status: "disponivel", _saldo: 10 }, quantidade: 1 }],
++    tipo_entrega: "motorista", motorista: "", veiculo: "", data_saida: "", endereco_origem: "cadastro",
++    observed: { os: { id: OS, type: "padrao", updated_at: T1, origem: "agronomica", partner_order_id: null }, itens: { [S]: { updated_at: T1, status: "disponivel" } } },
++    ...over,
++  };
++}
++function chain(table: string) {
++  let sel = ""; let single = false;
++  const c: any = {
++    select: (s: string) => { sel = s; return c; }, update: (v: any) => { t.writes.push([table, "update", v]); return c; }, insert: (v: any) => { t.writes.push([table, "insert", v]); return c; },
++    delete: () => { t.writes.push([table, "delete"]); return c; }, eq: () => c, neq: () => c, in: () => c, order: () => c, limit: () => c, abortSignal: () => c, single: () => c,
++    maybeSingle: () => { single = true; return c; },
++    then: (yes: any, no: any) => {
++      let data: any = [];
++      if (table === "ordens_servico" && single) data = t.current.os;
++      else if (table === "estoque_produto" && sel.startsWith("id, updated_at, status")) data = t.current.estoque;
++      else if (table === "entregas" && single) data = t.current.entrega;
++      else if (table === "entregas") data = t.rows;
++      return Promise.resolve({ data, error: null }).then(yes, no);
++    },
++  };
++  return c;
++}
++function mount() {
++  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
++  const wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={qc}><MemoryRouter>{children}</MemoryRouter></QueryClientProvider>;
++  return { ...render(<Entregas />, { wrapper }), qc };
++}
++const writerCalls = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC || c[0] === CANCEL_RPC);
++const PFX = `cf:delivery-uncertain:v2:${ACTOR}:${ORG}:`;
++const pendingKeys = () => Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) as string).filter(k => k.startsWith(PFX)).sort();
++const pendingRaw = () => { const k = pendingKeys()[0]; return k ? localStorage.getItem(k) : null; };
++
++beforeEach(() => {
++  vi.clearAllMocks(); localStorage.clear(); t.writes = []; t.rows = [];
++  t.auth = { user: { id: ACTOR }, profile: { user_id: ACTOR, organization_id: ORG, ativo: true }, role: "gestor", roles: ["gestor"], loading: false, authzReady: true, authzEpoch: 0 };
++  t.current = { os: { id: OS, updated_at: T1, origem: "agronomica", partner_order_id: null }, estoque: [{ id: S, updated_at: T1, status: "disponivel" }], entrega: null };
++  t.from.mockImplementation(chain);
++  t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : fn === GROUP_RPC ? { data: groupAck, error: null } : { data: cancelAck, error: null });
++});
++const heldLocks = new Set<string>();
++const fakeLocks = { request: async (name: string, _o: any, cb: (l: unknown) => Promise<unknown>) => { if (heldLocks.has(name)) return cb(null); heldLocks.add(name); try { return await cb({ name }); } finally { heldLocks.delete(name); } } };
++beforeEach(() => { heldLocks.clear(); Object.defineProperty(navigator, "locks", { value: fakeLocks, configurable: true }); });
++afterEach(() => { cleanup(); });
++
++
++const E2 = "10000000-0000-4000-8000-000000000102";
++const SEND = "rpc_entrega_enviar_manual_v1", SCAP = "rpc_entrega_envio_capability_v1";
++const KEY = "40000000-0000-4000-8000-000000000001";
++const SPFX = `cf:delivery-send:v1:${ACTOR}:${ORG}:`;
++const sendKeys = () => Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) as string).filter(k => k.startsWith("cf:delivery-send:")).sort();
++const rec = (o: any = {}) => JSON.stringify({ v: 1, schema: "delivery_send_attempt", actor: ACTOR, org: ORG, entrega: E1, os: OS, observed: T1, key: KEY, ...o });
++const row = (name: string) => { const el = screen.getByText(name).closest("tr"); if (!el) throw new Error("row"); return within(el); };
++const sends = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === SEND);
++let writer: (args: any) => Promise<any>;
++function serve() {
++  t.rows = [E1, E2].map((id, i) => ({ id, status: "separado", ordem_servico_id: OS, updated_at: T1, clientes: { nome: i ? "Outro" : "Cliente A" } }));
++  t.rpc.mockImplementation(async (fn: string, args: any) => {
++    if (fn === SCAP) { const r = t.rows.find(x => x.id === args.p_entrega); return { data: { capability: "delivery_send_manual_v1", available: true, actor_id: ACTOR, organization_id: ORG, entrega_id: args.p_entrega, os_id: OS, status: r?.status, updated_at: r?.updated_at }, error: null }; }
++    if (fn === SEND) return writer(args);
++    return { data: cap, error: null };
++  });
++}
++const commit = (id: string) => { t.rows = t.rows.map(r => r.id === id ? { ...r, status: "em_rota", updated_at: T2 } : r); };
++const okAck = (id: string, replay = true) => ({ data: { success: true, action: "send", replay, actor_id: ACTOR, organization_id: ORG, entrega_id: id, os_id: OS, status: "em_rota", updated_at: T2 }, error: null });
++const realStorage = window.localStorage;
++function faulty(fail: { get?: boolean; set?: boolean; remove?: boolean }) {
++  const isSend = (k: string) => k.startsWith("cf:delivery-send:");
++  const proxy = { get length() { return realStorage.length; }, key: (i: number) => realStorage.key(i), clear: () => realStorage.clear(),
++    getItem: (k: string) => { if (fail.get && isSend(k)) throw new Error("denied"); return realStorage.getItem(k); },
++    setItem: (k: string, v: string) => { if (fail.set && isSend(k)) throw new Error("quota"); realStorage.setItem(k, v); },
++    removeItem: (k: string) => { if (fail.remove && isSend(k)) throw new Error("denied"); realStorage.removeItem(k); } };
++  Object.defineProperty(window, "localStorage", { value: proxy, configurable: true });
++  return () => Object.defineProperty(window, "localStorage", { value: realStorage, configurable: true });
++}
++afterEach(() => { Object.defineProperty(window, "localStorage", { value: realStorage, configurable: true }); });
++const lost = () => ({ data: null, error: { code: "57014", message: "timeout" } });
++
++describe("Enviar durable retention (mounted, real QueryClient)", () => {
++  beforeEach(() => serve());
++
++  it("reload after lost ACK: same key/payload, no automatic replay, exact record removed", async () => {
++    writer = async (a) => { commit(a.p_entrega); return sends().length === 1 ? lost() : okAck(a.p_entrega); };
++    const h = mount(); await screen.findByText("Cliente A");
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
++    const first = sends()[0][1]; expect(sendKeys()).toEqual([`${SPFX}${E1}`]);
++    const stored = JSON.parse(localStorage.getItem(`${SPFX}${E1}`) as string);
++    expect(Object.keys(stored).sort()).toEqual(["actor", "entrega", "key", "observed", "org", "os", "schema", "v"]); expect(stored.key).toBe(first.p_request_key);
++    h.unmount(); h.qc.clear();
++    const h2 = mount(); await screen.findByRole("button", { name: "Reconciliar envio" });
++    await act(async () => { await new Promise(r => setTimeout(r, 30)); }); expect(sends()).toHaveLength(1);
++    const uuid = vi.spyOn(crypto, "randomUUID");
++    fireEvent.click(screen.getByRole("button", { name: "Reconciliar envio" })); await waitFor(() => expect(t.success).toHaveBeenCalledWith("Status atualizado"));
++    expect(sends()).toHaveLength(2); expect(sends()[1][1]).toEqual(first); expect(uuid).not.toHaveBeenCalled(); expect(sendKeys()).toEqual([]);
++    uuid.mockRestore(); expect(t.writes).toEqual([]); h2.qc.clear();
++  });
++
++  it("preflight refusal before dispatch persists nothing and calls no writer", async () => {
++    writer = async () => { throw new Error("must not dispatch"); };
++    t.rpc.mockImplementation(async (fn: string) => fn === SCAP ? { data: null, error: { code: "42501", message: "denied" } } : { data: cap, error: null });
++    const h = mount(); await screen.findByText("Cliente A");
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
++    expect(sends()).toHaveLength(0); expect(sendKeys()).toEqual([]); h.qc.clear();
++  });
++
++  it("retained attempt survives refused reconciliation preflight and role change", async () => {
++    localStorage.setItem(`${SPFX}${E1}`, rec()); commit(E1);
++    writer = async () => { throw new Error("must not dispatch"); };
++    const h = mount(); await screen.findByRole("button", { name: "Reconciliar envio" });
++    t.rpc.mockImplementation(async (fn: string) => fn === SCAP ? { data: null, error: { code: "42501", message: "denied" } } : { data: cap, error: null });
++    fireEvent.click(screen.getByRole("button", { name: "Reconciliar envio" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
++    expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec());
++    t.auth = { ...t.auth, role: "administrativo", roles: ["administrativo"], authzEpoch: 2 }; h.rerender(<Entregas />);
++    await screen.findByRole("button", { name: "Reconciliar envio" }); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); expect(sends()).toHaveLength(0); h.qc.clear();
++  });
++
++  it("setItem failure before dispatch: no writer, no record", async () => {
++    writer = async () => { throw new Error("must not dispatch"); };
++    const restore = faulty({ set: true });
++    const h = mount(); await screen.findByText("Cliente A");
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
++    restore(); expect(sends()).toHaveLength(0); expect(sendKeys()).toEqual([]); h.qc.clear();
++  });
++
++  it("getItem failure fails closed on mount and on click", async () => {
++    writer = async () => { throw new Error("must not dispatch"); };
++    localStorage.setItem(`${SPFX}${E1}`, rec());
++    const restore = faulty({ get: true });
++    const h = mount(); await screen.findByText("Outro"); await screen.findByText(/Armazenamento local indisponível/);
++    fireEvent.click(row("Outro").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
++    restore(); expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
++  });
++
++  it("removeItem failure after valid ACK keeps record and warns, without new key", async () => {
++    writer = async (a) => { commit(a.p_entrega); return okAck(a.p_entrega, false); };
++    const restore = faulty({ remove: true });
++    const h = mount(); await screen.findByText("Cliente A");
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.success).toHaveBeenCalled());
++    restore(); expect(sendKeys()).toEqual([`${SPFX}${E1}`]); expect(JSON.parse(localStorage.getItem(`${SPFX}${E1}`) as string).key).toBe(sends()[0][1].p_request_key);
++    await screen.findByText(/registro local não pôde ser removido/); h.qc.clear();
++  });
++
++  it.each([["malformed", "{not json"], ["version", rec({ v: 2 })], ["schema", rec({ schema: "x" })], ["extra", rec({ jwt: "x" })], ["tampered-key", rec({ key: "not-a-uuid" })], ["slot-mismatch", rec({ entrega: E2 })], ["nil", rec({ os: "00000000-0000-0000-0000-000000000000" })], ["bad-ts", rec({ observed: "2026-10-30" })]])("corrupt record %s blocks sends and is never deleted", async (_n, raw) => {
++    writer = async () => { throw new Error("must not dispatch"); };
++    localStorage.setItem(`${SPFX}${E1}`, raw);
++    const h = mount(); await screen.findByText("Outro"); await screen.findByText(/Registro local de envio inválido/);
++    fireEvent.click(row("Outro").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
++    expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(raw); h.qc.clear();
++  });
++
++  it("records of another actor/tenant are ignored and preserved", async () => {
++    const foreignOrg = `cf:delivery-send:v1:${ACTOR}:${ORG_B}:${E1}`, foreignActor = `cf:delivery-send:v1:${ORG_B}:${ORG}:${E1}`;
++    localStorage.setItem(foreignOrg, rec({ org: ORG_B })); localStorage.setItem(foreignActor, rec({ actor: ORG_B }));
++    writer = async (a) => { commit(a.p_entrega); return okAck(a.p_entrega, false); };
++    const h = mount(); await screen.findByText("Cliente A");
++    expect(screen.queryByRole("button", { name: "Reconciliar envio" })).toBeNull();
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.success).toHaveBeenCalled());
++    expect(sends()[0][1].p_request_key).not.toBe(KEY); expect(localStorage.getItem(foreignOrg)).toBe(rec({ org: ORG_B })); expect(localStorage.getItem(foreignActor)).toBe(rec({ actor: ORG_B })); h.qc.clear();
++  });
++
++  it("two tabs interleaved: other tab's retained attempt blocks a new key and is never overwritten/removed", async () => {
++    writer = async (a) => { commit(a.p_entrega); return okAck(a.p_entrega, false); };
++    const h = mount(); await screen.findByText("Cliente A");
++    const yRaw = rec({ entrega: E2 });
++    localStorage.setItem(`${SPFX}${E2}`, yRaw); // tab Y persisted after this tab rendered (no storage event in same document)
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" }));
++    await waitFor(() => expect(t.error).toHaveBeenCalledWith("Reconcilie somente o mesmo envio pendente."));
++    expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E2}`)).toBe(yRaw); expect(sendKeys()).toEqual([`${SPFX}${E2}`]); h.qc.clear();
++  });
++
++  it("lock held by another tab refuses before any call; missing Web Locks refuses too", async () => {
++    writer = async () => { throw new Error("must not dispatch"); };
++    heldLocks.add(`cf:delivery-send-lock:${ACTOR}:${ORG}`);
++    const h = mount(); await screen.findByText("Cliente A");
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalledWith(expect.stringContaining("outra aba")));
++    heldLocks.clear(); Object.defineProperty(navigator, "locks", { value: undefined, configurable: true });
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalledWith(expect.stringContaining("Bloqueio entre abas indisponível")));
++    expect(t.rpc.mock.calls.filter((c: any[]) => c[0] === SCAP || c[0] === SEND)).toHaveLength(0); expect(sendKeys()).toEqual([]); h.qc.clear();
++  });
++
++  it("late ACK after reload (unmount) is not adopted; lock owned until settle; then same key reconciles", async () => {
++    let release: (v: any) => void = () => {};
++    writer = (a) => sends().length === 1 ? new Promise(r => { release = r; }) : Promise.resolve(okAck(a.p_entrega));
++    const h = mount(); await screen.findByText("Cliente A");
++    fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(sends()).toHaveLength(1));
++    const first = sends()[0][1]; h.unmount(); h.qc.clear(); commit(E1);
++    const h2 = mount(); await screen.findByRole("button", { name: "Reconciliar envio" });
++    fireEvent.click(screen.getByRole("button", { name: "Reconciliar envio" })); await waitFor(() => expect(t.error).toHaveBeenCalledWith(expect.stringContaining("outra aba")));
++    expect(sends()).toHaveLength(1);
++    await act(async () => { release(okAck(E1, false)); await new Promise(r => setTimeout(r, 10)); });
++    expect(t.success).not.toHaveBeenCalled(); expect(JSON.parse(localStorage.getItem(`${SPFX}${E1}`) as string).key).toBe(first.p_request_key);
++    fireEvent.click(screen.getByRole("button", { name: "Reconciliar envio" })); await waitFor(() => expect(t.success).toHaveBeenCalledWith("Status atualizado"));
++    expect(sends()[1][1]).toEqual(first); expect(sendKeys()).toEqual([]); h2.qc.clear();
++  });
++
++  it("terminal row keeps retained record in consultation/refusal only", async () => {
++    localStorage.setItem(`${SPFX}${E1}`, rec()); t.rows = t.rows.map(r => r.id === E1 ? { ...r, status: "entregue" } : r);
++    writer = async () => { throw new Error("must not dispatch"); };
++    const h = mount(); await screen.findByText(/entrega encerrada; reconciliação por escrita indisponível/);
++    expect(screen.queryByRole("button", { name: "Reconciliar envio" })).toBeNull();
++    fireEvent.click(row("Outro").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalledWith("Reconcilie somente o mesmo envio pendente."));
++    expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
++  });
++});
+diff --git a/src/test/entregas/deliverySendPersistence.test.ts b/src/test/entregas/deliverySendPersistence.test.ts
+new file mode 100644
+index 000000000..1606c9759
+--- /dev/null
++++ b/src/test/entregas/deliverySendPersistence.test.ts
+@@ -0,0 +1,44 @@
++import { describe, expect, it, vi } from 'vitest';
++import { loadSends, parseSend, persistBeforeDispatch, removeExactSend, sendSlot, serializeSend, withSendLock } from '@/lib/entregas/deliverySendPersistence';
++
++const A = '10000000-0000-4000-8000-000000000003', O = '10000000-0000-4000-8000-000000000001', E = '10000000-0000-4000-8000-000000000101', OS = '10000000-0000-4000-8000-000000000007', K = '40000000-0000-4000-8000-000000000001', B = '20000000-0000-4000-8000-000000000002';
++const attempt = { scope: { actor: A, org: O, entrega: E }, os: OS, observed: '2026-10-30T10:00:00Z', key: K };
++const mem = () => { const m = new Map<string, string>(); return { m, get length() { return m.size; }, key: (i: number) => Array.from(m.keys())[i] ?? null, getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, removeItem: (k: string) => { m.delete(k); } }; };
++
++describe('Enviar persisted attempt (strict, never authority)', () => {
++  it('stores only ids/CAS/key and round-trips strictly', () => {
++    const s = mem(); persistBeforeDispatch(s, attempt); const raw = s.getItem(sendSlot(A, O, E))!;
++    expect(Object.keys(JSON.parse(raw)).sort()).toEqual(['actor', 'entrega', 'key', 'observed', 'org', 'os', 'schema', 'v']);
++    expect(loadSends(s, A, O)).toEqual({ attempts: [{ actor: A, org: O, entrega: E, os: OS, observed: attempt.observed, key: K }], corrupt: [] });
++  });
++  it('never overwrites a different attempt in the same slot', () => {
++    const s = mem(); persistBeforeDispatch(s, { ...attempt, key: B });
++    expect(() => persistBeforeDispatch(s, attempt)).toThrow('Outra tentativa'); expect(JSON.parse(s.getItem(sendSlot(A, O, E))!).key).toBe(B);
++  });
++  it('read-back mismatch and setItem failure throw before dispatch', () => {
++    const s = mem(); const bad = { ...s, setItem: () => {} };
++    expect(() => persistBeforeDispatch(bad as any, attempt)).toThrow('não confirmado');
++    expect(() => persistBeforeDispatch({ ...s, setItem: () => { throw new Error('quota'); } } as any, attempt)).toThrow('quota');
++  });
++  it.each([['{', 'malformed'], [serializeSend({ actor: A, org: O, entrega: E, os: OS, observed: attempt.observed, key: K }).replace('"v":1', '"v":2'), 'version'], [serializeSend({ actor: A, org: O, entrega: B, os: OS, observed: attempt.observed, key: K }), 'slot'], [serializeSend({ actor: A, org: O, entrega: E, os: OS, observed: '2026-10-30', key: K }), 'ts'], [JSON.stringify({ v: 1, schema: 'delivery_send_attempt', actor: A, org: O, entrega: E, os: OS, observed: attempt.observed, key: K, token: 'x' }), 'extra']])('rejects %s (%s)', (raw) => {
++    expect(parseSend(raw, sendSlot(A, O, E))).toBeNull();
++    const s = mem(); s.setItem(sendSlot(A, O, E), raw); expect(loadSends(s, A, O).corrupt).toEqual([sendSlot(A, O, E)]); expect(s.getItem(sendSlot(A, O, E))).toBe(raw);
++  });
++  it('foreign actor/tenant records are invisible and untouched', () => {
++    const s = mem(); persistBeforeDispatch(s, { ...attempt, scope: { ...attempt.scope, org: B } });
++    expect(loadSends(s, A, O)).toEqual({ attempts: [], corrupt: [] }); expect(s.m.size).toBe(1);
++  });
++  it('removes only the exact record', () => {
++    const s = mem(); persistBeforeDispatch(s, { ...attempt, key: B });
++    expect(removeExactSend(s, attempt)).toBe(false); expect(s.m.size).toBe(1);
++    expect(removeExactSend(s, { ...attempt, key: B })).toBe(true); expect(s.m.size).toBe(0);
++    expect(removeExactSend({ ...s, getItem: () => { throw new Error('x'); } } as any, attempt)).toBe(false);
++  });
++  it('lock: unavailable API or held lock refuses without running work', async () => {
++    const work = vi.fn(async () => 1);
++    await expect(withSendLock(undefined, A, O, work)).rejects.toThrow('indisponível');
++    await expect(withSendLock({ request: async (_n, _o, cb) => cb(null) }, A, O, work)).rejects.toThrow('outra aba');
++    expect(work).not.toHaveBeenCalled();
++    await expect(withSendLock({ request: async (_n, _o, cb) => cb({}) }, A, O, work)).resolves.toBe(1);
++  });
++});
