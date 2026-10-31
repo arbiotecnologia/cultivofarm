@@ -1,7 +1,7 @@
 182323776bce139b1e484f7581140e2059a48887971e63e4a96f67153159762d  ./AUTHENTICATED-VALIDATION.md
-2920d9c57c6ecad87c634b90caac01cc51b7cfbf0860babc1803340aa7f46372  ./README.md
+7b4e85d7139dcbcca860fa9ed61c69ed78991852211cc4be676e379822ba9db3  ./README.md
 43abb632a8fbbfeaa64868d756a9dc6262869506a1b89589f32cb98434d24147  ./evidence/estoque-baseline-8d276bea.log.txt
-07d251b51f91a0822deabac84102f3c3c71b16da5b9794843ce4add5c4ed63ab  ./evidence/send-persistence-focused.log.txt
+e474d16206c75c4b671bf46e5946813ac67ed32a16c04d75607ccdad33545597  ./evidence/send-persistence-focused.log.txt
 19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061  ./evidence/typecheck.log.txt
-0922276ecb5723235977cfe5eb1877b95bcd5fff453329d1f4e753e740250535  ./evidence/vitest-regression.log.txt
-464db056db10cb11ff00548ef4d79639255aa6337402c179a9d8dce40af75ada  ./frontend.diff.txt
+597968d2cd19284f4ad71f8c2722383cf13ee349bb8bbaf5ee301eb2e4e839d9  ./evidence/vitest-regression.log.txt
+a7649dddfd19c294b6641d2696269fc4b30439041c438d1c7fbc6baebda5e70f  ./frontend.diff.txt
