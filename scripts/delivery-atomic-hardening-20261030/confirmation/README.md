@@ -4,10 +4,10 @@ Preparação local; nenhum acesso hosted, sessão, segredo, publicação ou fixt
 
 ## Resultado efetivamente executado
 
-- Vitest entrega/envase/etiquetas: 524/524, 33 arquivos (envelope-regression.log).
+- Vitest entrega/envase/etiquetas: 538/538, 35 arquivos (evidence/all-vitest-final.log.txt).
 - Envelopes e diálogo montado: 33/33; quatro negativos independentes corrigidos, raiz/prova divergentes negadas e tentativa incerta mantém chave/payload sem toast/onConfirmed/close (envelope-tests.log).
 - Build automático observado OK; sem log de typecheck separado.
-- PostgreSQL: pg-current.log PASS, exit_code 0; test-results.json contém contagem e SQLSTATEs exatos. Rodadas históricas falhadas permanecem nos logs, não compõem a aprovação atual.
+- PostgreSQL: 78 checks PASS, exit_code 0 (evidence/all-matrix-final2.log.txt); test-results.json contém contagem e SQLSTATEs exatos. Rodadas históricas falhadas permanecem nas evidências, não compõem a aprovação atual.
 - Composição local restaurada, sentinelas existentes, instalação fechada, release NO-GO verificado com P0001, ativação exclusivamente no harness descartável, attach/confirmação física, replay e isolamento estrangeiro passaram na rodada atual.
 - Primeiro sucesso preservou conteúdo financeiro/fiscal/outbox e estoque/ledger; não houve segunda expedição.
 - Executados: digital com formulário reutilizado e novo, hash adulterado/objeto ausente/foreign owner, CAS válido e stale, singleton ausente, replay, revogação de perfil/papel/tenant/SaaS DURANTE lock observado, cancelamento canônico vence confirmação PT409, confirmação impede cancelamento ordinário, parcial envase + dois itens, segundo item com OS entregue, invariantes integrais de 14 tabelas downstream.
@@ -19,11 +19,13 @@ O comprovante digital canônico instalado recalcula entrega_comprovantes.validat
 
 Corrigido por delta mínimo gerado do corpo canônico: token/hash do comprovante atualizado são adotados atomicamente pela entrega, inclusive no formulário reutilizado; demais guards/ACL/recibos e writers preservados. Igualdade não foi removida. Ledger de replay agora exige os mesmos campos referencia_tipo/os_id/os_tipo/lote_id do primeiro sucesso.
 
-Finalização agora mede volume por programação/produto em mililitros, não soma contagens incompatíveis; canceladas/estornadas não cobrem demanda. Primeiro de dois itens não finaliza; segundo completa 5000ml. Ainda faltam provas específicas de múltiplos lotes/produtos, canceladas/reserva estornada como cobertura, corridas assinatura/anexo versus confirmação e alteração de lineage no replay. Não há decisão humana identificada: são lacunas de teste locais, não motivo para relaxar regras. Release permanece NO-GO até concluir essas matrizes.
+Finalização mede volume por programação/produto em mililitros. Matrizes concluídas no esquema real: um programa por OS (`programacao_producao_os_uniq`) e um lote por programa (`idx_lotes_programacao_id_unique`) rejeitam múltiplos produtos/lotes na mesma OS com 23505 exato e snapshots. Nenhum índice foi removido para fabricar positivo. Produto distinto foi confirmado positivamente em outra OS/programa/lote sem cobrir os 2000ml descobertos da primeira OS. Três itens canônicos do mesmo lote, cancelamento e estorno antes do avanço: somente 4000/6000ml cobertos, OS permanece entregue, nunca finalizada. Primeiro de dois itens de outra OS não finaliza; segundo completa 5000ml.
+
+Corridas nas duas direções sign/attach × confirm: proof vence → confirmação stale PT409 OBSERVED_CONFLICT; confirmação vence → proof 42501 SCOPE_DENIED. Holders são aguardados em idle-in-transaction e espera de lock observada; na direção inversa o holder também prende o advisory canônico da prova, instrumentação exclusivamente do harness. Alteração real os_id/lote_id/os_tipo/referencia_tipo do ledger (injetada somente por postgres local em replica) → replay 42501 REPLAY_STATE_DENIED, snapshots preservados; linhagem restaurada → replay sem escrita. Produto divergente → 42501 LINEAGE_DENIED. Falhas de montagem/expectativas/coordenação anteriores preservadas, não contadas como PASS.
 
 ## Artefatos
 
-install.sql.review mantém writer fechado; release.sql.review recusa ativação enquanto as matrizes acima estiverem pendentes. PRE/POST medidos incluem delta proof mínimo; não certificam hosted. Rollback revoga confirmação e mantém sincronização segura/história. Nenhum candidato desta pasta está liberável agora.
+install.sql.review mantém writer fechado; release.sql.review continua recusando ativação para revisão independente, embora o nome histórico do erro mencione remaining matrix. PRE/POST medidos incluem delta proof mínimo; não certificam hosted. Rollback revoga confirmação e mantém sincronização segura/história. Nenhum candidato desta pasta está liberado.
 
 EnvasePage não oferece complemento, criar embalagens ou mutações de etiquetas; consulta e impressão existentes preservadas. Confirmação frontend exige capability exata imediatamente antes do dispatch, ACK exato, ator/empresa/época atual e mesma tentativa em incerteza. Demais contratos permanecem contidos.
 
@@ -45,4 +47,8 @@ Teste integrado com Entregas montada, QueryClient/cache reais e diálogo simulad
 
 ## Evidência
 
-logs/ contém saídas brutas finais, inclusive a falha PG e a rodada anterior que demonstrou ausência da tabela durante edição concorrente. sources.json e test-results.json preservam origem e resultado sem mascaramento. frontend.diff.txt é o diff real contra 5557f9ba, não um relato de publicação. SHA256SUMS cobre os artefatos desta preparação.
+evidence/ contém saídas brutas .log.txt, incluindo falhas históricas preservadas sem alteração de bytes e todas as rodadas atuais. sources.json e test-results.json preservam origem e resultado sem mascaramento. frontend.diff.txt é o diff real contra b3088b47, não um relato de publicação. SHA256SUMS cobre somente arquivos versionáveis desta preparação.
+
+## Enviar independente
+
+send/ contém gerador extraído do prefixo de locks/linhagem revisado da confirmação, permit de imagem exata e recibo send privado. Install fechado com PRE/POST medidos; release NO-GO, rollback deny-only. Apenas separado→em_rota/status+updated_at, nenhum estoque/ledger/prova/OS/efeito financeiro/fiscal/outbox extra. Negativos foreign/CAS ausente/stale/replay divergente, revogação perfil/papel/tenant/SaaS sob espera, corrida envio-envio e cancelamento-envio PT409 e snapshots passaram. Integração PG Enviar→Confirmar e página montada/cache real passaram sem UPDATE direto. Consumidor faz capability específica, ACK estrito, guarda mesma chave em incerteza e só permite reconciliar tentativa retida; contenções genéricas continuam fechadas para demais writers. Sem browser autenticado/typecheck separado/JWT hosted; revisão, autorização e provas reais independentes ainda necessárias.
