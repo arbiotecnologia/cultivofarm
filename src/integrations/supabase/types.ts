@@ -24736,6 +24736,10 @@ export type Database = {
         Args: { p_pdf_hash: string; p_pdf_path: string; p_termo_id: string }
         Returns: Json
       }
+      rpc_envase_capability_v1: {
+        Args: { p_lote: string; p_origem: string; p_os: string; p_prog: string }
+        Returns: Json
+      }
       rpc_enviar_visita_aprovacao: {
         Args: { p_expected_version: number; p_registro_id: string }
         Returns: Json
