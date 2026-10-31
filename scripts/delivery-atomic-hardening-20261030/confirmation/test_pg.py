@@ -116,6 +116,9 @@ def run_matrix():
  wait_revoke('SaaS revoked DURING observed gate lock denies confirmation',f"UPDATE public.organization_subscriptions SET status='SUSPENDED',suspended_at=now() WHERE organization_id='{T.A}';",stmt2,f"UPDATE public.organization_subscriptions SET status='ACTIVE',suspended_at=NULL WHERE organization_id='{T.A}';",gate=True)
  b=snapshot();r=json.loads(last(stmt2));assert r['success'] and r['comprovante_id'];ok('canonical digital signature then physical confirmation positive')
  after=snapshot();rep=json.loads(last(stmt2));assert rep['replay'] and snapshot()==after;ok('digital confirmation replay no duplicate ledger event receipt')
+ ledger_lineage_matrix(e2,stmt2)
+ coverage_matrix()
+ proof_race_matrix()
  multi_item_matrix()
  # A new manual chain from unused fixture, then observed cancel wins against waiting confirm.
  e3,path3=create(T.O7,T.PP7,T.L7,'3');obs3=last(f"SELECT updated_at FROM public.entregas WHERE id='{e3}';");stmt3=call(e3,'confirm-0003',obs3)
@@ -153,6 +156,71 @@ def multi_item_matrix():
  rep=json.loads(last(stmt1));assert rep['replay'];ok('first partial ACK replay remains exact after second item finalization')
  for t in T.TABLES:assert json.loads(b)[t]==json.loads(snapshot())[t],t
  ok('multi-item physical confirmation no finance fiscal outbox changes')
+
+def ledger_lineage_matrix(e,stmt):
+ # Deliberate corrupt-fixture injection as local postgres, never an actor or deployable seam.
+ mid=last(f"SELECT id FROM public.estoque_movimentacoes WHERE referencia_id='{e}' AND acao='expedicao';")
+ for field,value in [('os_id',T.O7),('lote_id',T.L7),('os_tipo','onfarm'),('referencia_tipo','os')]:
+  original=last(f"SELECT {field} FROM public.estoque_movimentacoes WHERE id='{mid}';")
+  sql(f"SET session_replication_role=replica;UPDATE public.estoque_movimentacoes SET {field}='{value}' WHERE id='{mid}';SET session_replication_role=origin;")
+  before=snapshot();reject('actual corrupted ledger '+field+' rejects replay',stmt,'42501','DELIVERY_CONFIRM_REPLAY_STATE_DENIED');assert snapshot()==before
+  sql(f"SET session_replication_role=replica;UPDATE public.estoque_movimentacoes SET {field}='{original}' WHERE id='{mid}';SET session_replication_role=origin;")
+ before=snapshot();assert json.loads(last(stmt))['replay'] and snapshot()==before;ok('restored ledger lineage exact replay no writes')
+
+def coverage_matrix():
+ # Seed otherwise-contained upstream manufacture locally; tested group/proof/confirm run origin triggers.
+ os,pp,l=T.u(701),T.u(702),T.u(703);p2,pp2,l2,l3=T.u(704),T.u(705),T.u(706),T.u(707)
+ sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=4000,status='pronto_entrega')+f"""
+ INSERT INTO public.produtos SELECT (jsonb_populate_record(NULL::public.produtos,to_jsonb(p)||jsonb_build_object('id','{p2}','nome','LOCAL MATRIX PRODUCT 2'))).* FROM public.produtos p WHERE id='{T.PROD}';
+ INSERT INTO public.programacao_producao SELECT (jsonb_populate_record(NULL::public.programacao_producao,to_jsonb(p)||jsonb_build_object('id','{pp2}','produto_id','{p2}','volume_necessario',2000))).* FROM public.programacao_producao p WHERE id='{pp}';
+ INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l2}','produto_id','{p2}','programacao_id','{pp2}','codigo_lote','LOCAL-MATRIX-2'))).* FROM public.lotes p WHERE id='{l}';
+ INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l3}','codigo_lote','LOCAL-MATRIX-3'))).* FROM public.lotes p WHERE id='{l}';
+ SET session_replication_role=origin;""")
+ stocks=[]
+ for n,lot,prod in [(711,l,T.PROD),(712,l3,T.PROD),(713,l2,p2)]:
+  sid=T.u(n);stocks.append(sid)
+  sql(f"SET session_replication_role=replica;INSERT INTO public.estoque_produto SELECT (jsonb_populate_record(NULL::public.estoque_produto,to_jsonb(s)||jsonb_build_object('id','{sid}','lote_id','{lot}','produto_id','{prod}','reservado_para_os_id','{os}','quantidade',2,'quantidade_reservada',2,'volume_total',2))).* FROM public.estoque_produto s WHERE id='{T.RX}';SET session_replication_role=origin;")
+ group=json.loads(last(T.actor()+T.group(os,[{'item_id':s,'quantidade':2} for s in stocks],'coverage-group-001')))
+ deliveries=[i['entrega_id'] for i in group['itens']]
+ for n,e in enumerate(deliveries):prove(e,'coverage-'+str(n))
+ before=json.loads(snapshot())
+ # Confirm both same-product lots; the other product still has uncovered demand.
+ same=[e for e in deliveries if last(f"SELECT produto_id FROM public.entregas WHERE id='{e}';")==T.PROD]
+ other=next(e for e in deliveries if e not in same)
+ for n,e in enumerate(same):
+  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-lot same-product coverage leaves other product demand open '+str(n))
+ observed=last(f"SELECT updated_at FROM public.entregas WHERE id='{other}';")
+ assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{other}','LOCAL COVERAGE CANCEL','{observed}');"))['success']
+ b=snapshot();reject('cancelled delivery cannot cover remaining product',call(other,'coverage-cancel-deny'),'PT409','DELIVERY_CONFIRM_OBSERVED_CONFLICT');assert snapshot()==b
+ assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('canonical cancellation and reversed reservation leave 2000ml product demand uncovered')
+ # Re-deliver the canonically returned stock, with original programming/product roots.
+ sid=last(f"SELECT estoque_produto_id FROM public.entregas WHERE id='{other}';")
+ replacement=json.loads(last(T.actor()+T.group(os,[{'item_id':sid,'quantidade':2}],'coverage-replacement-001')))['itens'][0]['entrega_id']
+ prove(replacement,'coverage-replacement');r=json.loads(last(call(replacement,'coverage-replacement-confirm')));assert r['finalizada'] is True;ok('replacement covers second product once; two programs three lots 6000ml finalize')
+ for table in T.TABLES:assert before[table]==json.loads(snapshot())[table],table
+ ok('multi-product cancellation replacement preserves financial fiscal outbox sentinels')
+
+def proof_race_matrix():
+ for n,action in enumerate(['sign','attach']):
+  os,pp,l=T.u(730+n*3),T.u(731+n*3),T.u(732+n*3)
+  sql('SET session_replication_role=replica;'+T.manufactured(os,pp,l)+'SET session_replication_role=origin;')
+  e,path=create(os,pp,l,str(80+n));obs=last(f"SELECT updated_at FROM public.entregas WHERE id='{e}';")
+  newpath=f"entregas/{e}/"+('assinaturas/' if action=='sign' else 'comprovantes/')+T.u(780+n)+('.png' if action=='sign' else '.pdf')
+  sql(f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{newpath}','{T.U}','{T.U}');")
+  payload={'recebedor_nome':'LOCAL'}
+  if action=='sign':payload.update(assinatura_digital_png_path=newpath,assinatura_hash='c'*64);rpc='rpc_entrega_assinatura_coletar_v1'
+  else:payload.update(arquivo_path=newpath,arquivo_nome='local.pdf',arquivo_mime='application/pdf');rpc='rpc_entrega_comprovante_anexar_v1'
+  proof=T.actor()+f"SELECT public.{rpc}('{e}','race-proof-{action}','{json.dumps(payload)}');"
+  holder=T.T.session('BEGIN;'+proof)
+  waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='proof_confirm_race';"+call(e,'race-confirm-'+action,obs))
+  wait_lock('proof_confirm_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+  b=snapshot();out,err=T.T.finish(waiter,'COMMIT;');raw.append({'test':action+' wins against confirm','stdout':out,'stderr':err})
+  assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok(action+' wins observed lock; stale confirmation PT409 with exact snapshots')
+  confirmation=call(e,'race-confirm-fresh-'+action);holder=T.T.session('BEGIN;'+confirmation)
+  waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='confirm_proof_race';"+proof)
+  wait_lock('confirm_proof_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+  b=snapshot();out,err=T.T.finish(waiter,'COMMIT;');raw.append({'test':'confirm wins against '+action,'stdout':out,'stderr':err})
+  assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_PROOF_CLOSED' in err,(out,err);assert snapshot()==b;ok('confirmation wins observed lock; '+action+' denied PT409 with exact snapshots')
 
 if __name__=='__main__':
  status=1;start=time.monotonic()
