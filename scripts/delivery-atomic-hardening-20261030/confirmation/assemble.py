@@ -9,6 +9,7 @@ spec=importlib.util.spec_from_file_location('envase_state',ROOT/'scripts/stock-e
 RPC='public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)'
 CAP='public.rpc_entrega_confirmacao_capability_v1(uuid)'
 STATE=E.STATE.replace(E.TABLES,E.TABLES+",'entrega_comprovantes','entrega_documentos','entrega_checklist','entrega_termos','entrega_conferencia_itens','production_order_link'")
+STATE=STATE.replace("relname='envase_insert_permits_v1'", "relname IN ('envase_insert_permits_v1','delivery_confirm_permits_v1')")
 STATE=STATE[:-1]+", 'storage_objects_schema',(SELECT jsonb_agg(jsonb_build_array(attname,format_type(atttypid,atttypmod),attnotnull) ORDER BY attname COLLATE \"C\") FROM pg_attribute WHERE attrelid='storage.objects'::regclass AND attnum>0 AND NOT attisdropped))"
 def candidate():
  proof=ROOT/'scripts/delivery-proof-authz-20261030/candidate.sql.review'
@@ -40,7 +41,7 @@ END $$;
 REVOKE ALL ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) TO authenticated;
 """
- return (H/'core.sql.review').read_text()+'\n'+barrier+'\n'+validator+';\n'+cap
+ return (H/'permits.sql.review').read_text()+'\n'+(H/'core.sql.review').read_text()+'\n'+barrier+'\n'+validator+';\n'+cap
 
 def guard(x,name):return "DO $guard$ BEGIN IF ("+STATE+") IS DISTINCT FROM '"+json.dumps(x).replace("'","''")+"'::jsonb THEN RAISE EXCEPTION '"+name+"'; END IF; END $guard$;\n"
 def write(pre,post,released):
