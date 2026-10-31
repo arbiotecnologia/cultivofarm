@@ -1,6 +1,13 @@
-7b1f4b509617d9d67883c825ca8b8e4419a8b9db43368e4b58a88e01c436a565  ./README.md
+ef5f4b109bb830f3f552ddd4c79216ff8e58fa6bc9e11c71768c98090014affc  ./README.md
+d762aa7ef9d13be09a761c28167aaaacffd0b3d6ee79069794a2d7f9ea2b03bf  ./evidence/autofill-isolated-r3.log.txt
+3a32a5a8affcbcb180d010a11946c4c626454c158bb9da4e8bd044c4ad6f4481  ./evidence/consumidorEntrega-isolated-r2.log.txt
 f0f88a8879b17b3d59738d1b6f5416887b5fb0c0c6c47c45ed0f556975378eca  ./evidence/first-failed.log.txt
+5846782057c9a2adf0e2f31a869379d50363b0ab12e6d2a4ca5c509616e5f20c  ./evidence/focused-r2.log.txt
 a506946000ee0d99e89eea2927e1bb9b4d1452c853cecfd3a54f751aad167fa9  ./evidence/focused.log.txt
+492636029bc8a213ff63b260638f3eaa8ed9365d5ed8d559783c11c3eb0d49c0  ./evidence/regression-r2.log.txt
+b3f7a9a3e7204670c056727d78eebafea44bd533554aa86290d6bf7eb91941b1  ./evidence/regression-r3.log.txt
+11958bb36a9feeba1b5e8ce561198e1ad42ceca396cdb692c9b0e8df7c290f80  ./evidence/regression-r4-serial.log.txt
 21533168ab4a55945c8d5bbb00823b80b3c23a52e30d7a3f48f9f55cbea3da03  ./evidence/regression.log.txt
+19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061  ./evidence/typecheck-r2.log.txt
 19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061  ./evidence/typecheck.log.txt
-a0a96332adca56131ffbceeed6136d2c27337458c4e8d6687e1ed9fc0d33129b  ./frontend.diff.txt
+98bcda8e57375a7c566a18445afa29641dc6415255da50e9befd147d6949e35f  ./frontend.diff.txt
