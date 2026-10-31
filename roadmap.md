@@ -1,3 +1,4 @@
+- [ ] 31/10 13:36 — Etiquetas: recuperar cinco logs ignorados sem refazer testes, mover para evidence/*.log.txt, diff real contra b3088b47 e manifesto final; verificar rastreamento no commit terminal antes de afirmar acesso pelo conector.
 - [x] 31/10 — Cancelamento de etiqueta: closure ACL-only independente; 16PG/504Vitest PASS, reprodução estrangeira revertida, 42501 own/foreign/anon/inativo, rollback sem regrant e UI sem cancelamento; auditor fará PRE/aplicação, sem hosted/publicação nesta execução.
 - [ ] 31/10 — Confirmação física: hash digital/envelopes runtime/raízes/mounted incerto corrigidos, PG/pins reensaiados, 33 focados/524 regressão; faltam multi-lote/produto/cobertura cancelada-estornada e corridas proof/confirm; release NO-GO, sem hosted/publicação.
 - [ ] 31/10 — EnvasePage: retirar promessas de complemento e ofertas de etiqueta/embalagens fechadas; preservar histórico/consulta/impressão e testar montado.

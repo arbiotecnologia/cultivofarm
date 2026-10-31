@@ -12,7 +12,7 @@ O corpo capturado coincide com MD5 LIVE informado `c640896710b8eb8a00eb230bbf9e1
 
 - FSF não lê etiqueta ARBio pela política restritiva, mas ANTES o DEFINER a cancela: exposição reproduzida, transação revertida e conteúdo etiqueta/eventos/audit restaurado.
 - Cancelamento próprio ANTES funciona e foi revertido.
-- Perfil inativo ANTES já é negado pelo helper de papel com P0001. A primeira rodada esperava indevidamente sucesso e FALHOU; preservada em logs/first-failed.log. Corrigida expectativa com SQLSTATE exato, sem relaxar teste.
+- Perfil inativo ANTES já é negado pelo helper de papel com P0001. A primeira rodada esperava indevidamente sucesso e FALHOU; preservada em evidence/first-failed.log.txt. Corrigida expectativa com SQLSTATE exato, sem relaxar teste.
 - DEPOIS foreign FSF, own ARBio, anon e inativo recebem exatamente 42501; snapshots integrais de etiqueta/eventos/audit permanecem iguais.
 - Apenas ACL cliente mudou; corpo/owner/políticas/triggers/service permanecem iguais. Rollback não reabre, rerun rejeita, leituras próprias e isolamento estrangeiro preservados.
 - PRE→delta→POST foi exercitado em transação local; reconstrução de ACL somente dentro de rollback descartável, não há regrant no instalador/rollback entregues.
@@ -29,4 +29,10 @@ Confirmação física continua NO-GO separado; embalagens/vínculos/dispensa, fi
 
 ## Arquivos
 
-`install.sql.review`, `preflight.sql.review`, `postflight.sql.review`, `state.sql.review`, `rollback.sql.review`, `candidate.sql.review`; JSON PRE/POST/resultados/fontes, logs brutos, frontend.diff.txt e SHA256SUMS. Nenhum release com GRANT é necessário: trata-se de fechamento somente.
+`install.sql.review`, `preflight.sql.review`, `postflight.sql.review`, `state.sql.review`, `rollback.sql.review`, `candidate.sql.review`; JSON PRE/POST/resultados, evidências brutas em `evidence/*.log.txt`, frontend.diff.txt e SHA256SUMS. Nenhum release com GRANT é necessário: trata-se de fechamento somente.
+
+## Reconciliação de evidências — 31/10 13:36
+
+Os cinco arquivos originais em `logs/*.log` existiam localmente, mas eram ignorados pelas regras globais `logs` e `*.log`; portanto não estavam nos commits anteriores e o conector retornava 404. Foram movidos, sem alteração de bytes, para `evidence/{build-automatic,first-failed,postgres-final,ui-focused,vitest-regression}.log.txt`. Não houve repetição de testes nem substituição das falhas históricas. SHA256SUMS passa a manifestar somente os novos caminhos acessíveis ao versionamento.
+
+`frontend.diff.txt` é o diff real das duas fontes de etiquetas contra `b3088b47`, não o diff vazio do working tree. O manifesto final deve ser conferido junto ao rastreamento dos cinco novos arquivos no commit terminal; a existência local ou a ausência de ignore não prova disponibilidade pelo conector.
