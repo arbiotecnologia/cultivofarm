@@ -106,7 +106,7 @@ BEGIN
  IF FOUND THEN
   SELECT status::text INTO os_status FROM public.ordens_servico WHERE id=e.ordem_servico_id;
   IF os_status NOT IN ('entregue','finalizada') OR s.status::text<>'expedido' OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
-   OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue)<>1
+   OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue AND os_id=e.ordem_servico_id AND os_tipo='manual' AND lote_id=l.id)<>1
    OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('entrega','estorno_expedicao','devolucao')) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_STATE_DENIED' USING ERRCODE='42501'; END IF;
   IF prev.fingerprint IS DISTINCT FROM fp OR e.status::text<>'entregue' OR c.status<>'confirmado' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
   RETURN prev.result||jsonb_build_object('replay',true);
