@@ -78,6 +78,7 @@ def prepare_checkpoint(cached):
  cmd=pg.psql();cmd[0]='pg_dump';cmd=[cmd[0],'-h',str(pg.root),'-p',str(pg.PORT),'-U','postgres','--clean','--if-exists','postgres']
  cached.write_text(subprocess.run(cmd,capture_output=True,text=True,check=True,timeout=40).stdout)
 def run_matrix():
+ legacy=legacy_signed_fixture()
  pre=state();delta=G.candidate();measured=sql('BEGIN;'+delta+G.STATE+'::text;ROLLBACK;');post=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]);assert state()==pre
  released=json.loads([x for x in sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;'+G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1]);G.write(pre,post,released)
  load(H/'install.sql.review');assert state()==post;ok('exact install PRE POST commits writer closed')
@@ -85,6 +86,7 @@ def run_matrix():
  reject('review release stays NO-GO without remaining matrix', (H/'release.sql.review').read_text(), 'P0001', 'CONFIRM_RELEASE_NO_GO_REMAINING_MATRIX');assert state()==post
  # Disposable harness activation only; never alter the closed review release artifact.
  sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;');assert state()==released;ok('disposable harness-only activation exact state; review release remains closed')
+ legacy_replay_matrix(*legacy)
  e,path=create(T.O2,T.PP2,T.L2,'1');stmt=call(e,'confirm-0001');before=snapshot()
  cap=json.loads(last(T.actor()+f"SELECT public.rpc_entrega_confirmacao_capability_v1('{e}');"))
  assert cap['os_id']==T.O2 and cap['comprovante_id']==last(f"SELECT comprovante_id FROM public.entregas WHERE id='{e}';") and cap['updated_at'];ok('capability binds observed OS canonical proof and CAS revision')
@@ -133,6 +135,21 @@ def run_matrix():
  ok('all fourteen existing financial fiscal outbox sentinels full content unchanged')
  hist=snapshot();sql((H/'rollback.sql.review').read_text());reject('deny rollback keeps canonical writer closed',stmt2,'42501');assert snapshot()==hist;ok('rollback preserves physical proof stock ledger and receipts history')
  sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;');send_matrix()
+
+def legacy_signed_fixture():
+ osn,pp,lot=T.u(841),T.u(842),T.u(843)
+ sql('SET session_replication_role=replica;'+T.manufactured(osn,pp,lot)+'SET session_replication_role=origin;')
+ e,path=create(osn,pp,lot,'93',True)
+ assert last(f"SELECT e.validation_hash<>c.validation_hash AND e.validation_token=c.validation_token FROM public.entregas e JOIN public.entrega_comprovantes c ON c.id=e.comprovante_id WHERE e.id='{e}';")=='t'
+ payload={'recebedor_nome':'LOCAL','assinatura_digital_png_path':path,'assinatura_hash':'a'*64}
+ stmt=T.actor()+f"SELECT public.rpc_entrega_assinatura_coletar_v1('{e}','proof-test-93','{json.dumps(payload)}');"
+ b=snapshot();assert json.loads(last(stmt))['replayed'] and snapshot()==b
+ ok('captured old writer signs reused form and exact replay preserves divergent delivery hash')
+ return e,path,stmt
+
+def legacy_replay_matrix(e,path,stmt):
+ b=snapshot();assert json.loads(last(stmt))['replayed'] and snapshot()==b
+ reject('legacy signature replay after synchronization delta still blocks confirmation',call(e,'legacy-confirm-93'),'42501','DELIVERY_CONFIRM_PROOF_DENIED');assert snapshot()==b
 
 def prove(e,key,sign=False,generate=True):
  if generate:assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_formulario_gerar_v1('{e}','generate-{key}');"))['success']
