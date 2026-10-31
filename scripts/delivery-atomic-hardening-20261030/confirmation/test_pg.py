@@ -19,16 +19,16 @@ def state():return json.loads(last(G.STATE+'::text;'))
 def load(p):sources.append({'file':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()});sql(p.read_text())
 def env(os,pp,l,key):return T.envase(os,pp,l,[{'tipo_embalagem':'frasco_1L','quantidade':2}],key)
 def create(os,pp,l,key,sign=False):
- assert json.loads(last(T.actor()+env(os,pp,l,'env-'+key)))['estado']=='completed'
+ assert json.loads(last(T.actor()+env(os,pp,l,'envase-test-'+key)))['estado']=='completed'
  stock=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{l}' AND status='reservado';")
- group=json.loads(last(T.actor()+T.group(os,[{'item_id':stock,'quantidade':2}],'group-'+key)))
+ group=json.loads(last(T.actor()+T.group(os,[{'item_id':stock,'quantidade':2}],'group-test-'+key)))
  e=group['itens'][0]['entrega_id'];gen=json.loads(last(T.actor()+f"SELECT public.rpc_entrega_formulario_gerar_v1('{e}','generate-{key}');"));assert gen['success'] is True
  path=f'entregas/{e}/'+('assinaturas/' if sign else 'comprovantes/')+T.u(900+int(key))+('.png' if sign else '.pdf')
  sql(f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{path}','{T.U}','{T.U}');")
  payload={'recebedor_nome':'LOCAL'}
  if sign:payload.update(assinatura_digital_png_path=path,assinatura_hash='a'*64);rpc='rpc_entrega_assinatura_coletar_v1'
  else:payload.update(arquivo_path=path,arquivo_nome='local.pdf',arquivo_mime='application/pdf');rpc='rpc_entrega_comprovante_anexar_v1'
- assert json.loads(last(T.actor()+f"SELECT public.{rpc}('{e}','proof-{key}','{json.dumps(payload)}');"))['success'] is True
+ assert json.loads(last(T.actor()+f"SELECT public.{rpc}('{e}','proof-test-{key}','{json.dumps(payload)}');"))['success'] is True
  return e,path
 
 def call(e,key,obs=None,actor=None,name='LOCAL'):

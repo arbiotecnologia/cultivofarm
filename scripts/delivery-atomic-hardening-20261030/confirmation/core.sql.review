@@ -64,7 +64,7 @@ BEGIN
  IF p_entrega IS NULL OR p_observed IS NULL OR p_key IS NULL OR p_key !~ '^[A-Za-z0-9:_-]{8,128}$' OR p_recebedor IS NULL OR jsonb_typeof(p_recebedor)<>'object' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_INVALID' USING ERRCODE='22023'; END IF;
  p:='{}';
  FOR k,v IN SELECT * FROM jsonb_each(p_recebedor) LOOP
-  IF k NOT IN ('nome','cargo','documento','observacoes') OR jsonb_typeof(v) NOT IN ('string','null') OR length(coalesce(v#>>'{}',''))>CASE WHEN k='observacoes' THEN 1000 ELSE 255 END THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_INVALID' USING ERRCODE='22023'; END IF;
+  IF k NOT IN ('nome','cargo','documento','observacoes') OR jsonb_typeof(v) NOT IN ('string','null') OR length(coalesce(v#>>'{}',''))>(CASE WHEN k='observacoes' THEN 1000 ELSE 255 END) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_INVALID' USING ERRCODE='22023'; END IF;
   p:=p||jsonb_build_object(k,nullif(btrim(v#>>'{}'),''));
  END LOOP;
  IF nullif(p->>'nome','') IS NULL THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_RECEIVER_REQUIRED' USING ERRCODE='22023'; END IF;
