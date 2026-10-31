@@ -37,9 +37,348 @@
       "status": "PASS"
     },
     {
-      "test": "execution",
-      "status": "FAIL",
-      "error": "('legacy recovery denies different proof path', '', 'ERROR:  23514: new row for relation \"entrega_comprovantes\" violates check constraint \"entrega_comprovantes_assinatura_path_canonico_chk\"\\nDETAIL:  Failing row contains (0e229fd1-4859-40b4-a702-8ef70f67308d, 906f9fee-aed1-44ca-81a9-31593c5c46d1, AR-ENT-000001, formulario_entrega, assinatura_digital_coletada, null, null, null, null, t, digital_tela, null, invalid, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, 2026-10-31 14:11:19.603706+00, LOCAL, null, null, null, 2026-10-31 14:11:19.603706+00, 2f017a40-5ac2-421b-8aec-f0b61fd446a0, 732f7a9c4f5e1aa79e0ce44016f07f45fd14c6c62ca42da0a28d5784d270b2dd, null, 2f017a40-5ac2-421b-8aec-f0b61fd446a0, null, null, t, null, null, null, f, 10000000-0000-4000-8000-000000000003, null, null, 2026-10-31 14:11:19.448758+00, null, null, {}, 2026-10-31 14:11:19.448758+00, 2026-10-31 14:11:19.603706+00).\\nSCHEMA NAME:  public\\nTABLE NAME:  entrega_comprovantes\\nCONSTRAINT NAME:  entrega_comprovantes_assinatura_path_canonico_chk\\nLOCATION:  ExecConstraints, execMain.c:2079\\n')"
+      "test": "legacy recovery denies different proof path",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery denies foreign storage owner",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery denies missing object",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery denies confirmed proof",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery denies cancelled delivery",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery denies confirmed delivery",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery inactive actor during lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery tenant change during lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy recovery role revoked during lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "validated legacy replay recovers only delivery hash revision preserving proof receipts stock downstream",
+      "status": "PASS"
+    },
+    {
+      "test": "second recovered legacy replay immutable no writes",
+      "status": "PASS"
+    },
+    {
+      "test": "old writer then delta then validated replay then physical confirmation succeeds",
+      "status": "PASS"
+    },
+    {
+      "test": "terminal delivery cannot be recovered by legacy replay",
+      "status": "PASS"
+    },
+    {
+      "test": "capability binds observed OS canonical proof and CAS revision",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign FSF denies without mutations",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical attach then physical confirmation advances transactionally",
+      "status": "PASS"
+    },
+    {
+      "test": "first physical success preserves existing financial fiscal outbox stock and ledger full content",
+      "status": "PASS"
+    },
+    {
+      "test": "exact replay preserves all snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "same key changed receiver conflicts",
+      "status": "PASS"
+    },
+    {
+      "test": "inactive actor cannot replay",
+      "status": "PASS"
+    },
+    {
+      "test": "repeatable read explicitly unsupported",
+      "status": "PASS"
+    },
+    {
+      "test": "serializable explicitly unsupported",
+      "status": "PASS"
+    },
+    {
+      "test": "reused form digital token/hash synchronized atomically",
+      "status": "PASS"
+    },
+    {
+      "test": "singleton absent explicitly PT503",
+      "status": "PASS"
+    },
+    {
+      "test": "missing CAS denied before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "stale CAS denied",
+      "status": "PASS"
+    },
+    {
+      "test": "tampered canonical hash denied",
+      "status": "PASS"
+    },
+    {
+      "test": "missing storage object denied",
+      "status": "PASS"
+    },
+    {
+      "test": "financial payload rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign object owner rejects canonical digital proof",
+      "status": "PASS"
+    },
+    {
+      "test": "profile revoked DURING observed lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked DURING observed lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant changed DURING observed lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked DURING observed gate lock denies confirmation",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical digital signature then physical confirmation positive",
+      "status": "PASS"
+    },
+    {
+      "test": "digital confirmation replay no duplicate ledger event receipt",
+      "status": "PASS"
+    },
+    {
+      "test": "actual corrupted ledger os_id rejects replay",
+      "status": "PASS"
+    },
+    {
+      "test": "actual corrupted ledger lote_id rejects replay",
+      "status": "PASS"
+    },
+    {
+      "test": "actual corrupted ledger os_tipo rejects replay",
+      "status": "PASS"
+    },
+    {
+      "test": "actual corrupted ledger referencia_tipo rejects replay",
+      "status": "PASS"
+    },
+    {
+      "test": "restored ledger lineage exact replay no writes",
+      "status": "PASS"
+    },
+    {
+      "test": "multiple lots same programming forbidden by canonical unique index",
+      "status": "PASS"
+    },
+    {
+      "test": "proof coverage-0 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "proof coverage-1 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "proof coverage-2 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "multi-item coverage leaves 6000ml demand open 0",
+      "status": "PASS"
+    },
+    {
+      "test": "multi-item coverage leaves 6000ml demand open 1",
+      "status": "PASS"
+    },
+    {
+      "test": "cancelled delivery cannot cover remaining demand",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical cancellation and reversed reservation leave 2000ml demand uncovered",
+      "status": "PASS"
+    },
+    {
+      "test": "same OS second product programming forbidden by canonical unique constraint",
+      "status": "PASS"
+    },
+    {
+      "test": "different product never covers programming or replay",
+      "status": "PASS"
+    },
+    {
+      "test": "cancellation and reversed reservation preserve financial fiscal outbox sentinels",
+      "status": "PASS"
+    },
+    {
+      "test": "second product separate OS finalizes 2000ml without covering first OS missing 2000ml",
+      "status": "PASS"
+    },
+    {
+      "test": "sign wins observed lock; stale confirmation PT409 with exact snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "confirmation wins observed lock; sign denied 42501 scope with exact snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "attach wins observed lock; stale confirmation PT409 with exact snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "confirmation wins observed lock; attach denied 42501 scope with exact snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "partial envase demand remains open",
+      "status": "PASS"
+    },
+    {
+      "test": "proof multi-new-digital exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "proof multi-attach exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "first item cannot finalize with pending independent stock delivery",
+      "status": "PASS"
+    },
+    {
+      "test": "second item after OS entregue completes 5000ml demand independently",
+      "status": "PASS"
+    },
+    {
+      "test": "first partial ACK replay remains exact after second item finalization",
+      "status": "PASS"
+    },
+    {
+      "test": "multi-item physical confirmation no finance fiscal outbox changes",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical cancellation wins observed race and confirmation rolls back",
+      "status": "PASS"
+    },
+    {
+      "test": "confirmed physical delivery cannot ordinary cancel",
+      "status": "PASS"
+    },
+    {
+      "test": "all fourteen existing financial fiscal outbox sentinels full content unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "deny rollback keeps canonical writer closed",
+      "status": "PASS"
+    },
+    {
+      "test": "rollback preserves physical proof stock ledger and receipts history",
+      "status": "PASS"
+    },
+    {
+      "test": "independent send install exact PRE POST closed",
+      "status": "PASS"
+    },
+    {
+      "test": "send writer initially closed",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign tenant send denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send absent CAS denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send stale CAS denied",
+      "status": "PASS"
+    },
+    {
+      "test": "exact send capability available only after disposable grant",
+      "status": "PASS"
+    },
+    {
+      "test": "send changes only delivery status revision receipt; no stock ledger proof downstream effects",
+      "status": "PASS"
+    },
+    {
+      "test": "send exact replay no writes",
+      "status": "PASS"
+    },
+    {
+      "test": "send same key changed CAS conflicts",
+      "status": "PASS"
+    },
+    {
+      "test": "send inactive actor after lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send role revoked after lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send tenant changed after lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send SaaS revoked after gate lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical Enviar then Confirmar without second stock ledger dispatch",
+      "status": "PASS"
+    },
+    {
+      "test": "observed send winner send loser PT409 snapshot unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "observed cancel winner send loser PT409 snapshot unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "send deny-only rollback no regrant",
+      "status": "PASS"
     }
   ],
   "raw": [
@@ -77,9 +416,314 @@
       "test": "legacy recovery denies different proof path",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  23514: new row for relation \"entrega_comprovantes\" violates check constraint \"entrega_comprovantes_assinatura_path_canonico_chk\"\nDETAIL:  Failing row contains (0e229fd1-4859-40b4-a702-8ef70f67308d, 906f9fee-aed1-44ca-81a9-31593c5c46d1, AR-ENT-000001, formulario_entrega, assinatura_digital_coletada, null, null, null, null, t, digital_tela, null, invalid, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, null, null, 2026-10-31 14:11:19.603706+00, LOCAL, null, null, null, 2026-10-31 14:11:19.603706+00, 2f017a40-5ac2-421b-8aec-f0b61fd446a0, 732f7a9c4f5e1aa79e0ce44016f07f45fd14c6c62ca42da0a28d5784d270b2dd, null, 2f017a40-5ac2-421b-8aec-f0b61fd446a0, null, null, t, null, null, null, f, 10000000-0000-4000-8000-000000000003, null, null, 2026-10-31 14:11:19.448758+00, null, null, {}, 2026-10-31 14:11:19.448758+00, 2026-10-31 14:11:19.603706+00).\nSCHEMA NAME:  public\nTABLE NAME:  entrega_comprovantes\nCONSTRAINT NAME:  entrega_comprovantes_assinatura_path_canonico_chk\nLOCATION:  ExecConstraints, execMain.c:2079\n"
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_LEGACY_RECOVERY_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 59 at RAISE\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy recovery denies foreign storage owner",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 32 at RAISE\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy recovery denies missing object",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 32 at RAISE\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy recovery denies confirmed proof",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_LEGACY_RECOVERY_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 59 at RAISE\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy recovery denies cancelled delivery",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_recheck_20261030(uuid,uuid,text) line 5 at RAISE\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 18 at assignment\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy recovery denies confirmed delivery",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_recheck_20261030(uuid,uuid,text) line 5 at RAISE\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 18 at assignment\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy recovery inactive actor during lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_actor_20261030() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_proof_gate_20261030(uuid) line 5 at IF\nSQL statement \"SELECT platform_private.delivery_proof_gate_20261030(v_org)\"\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 14 at PERFORM\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "legacy recovery tenant change during lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_gate_20261030(uuid) line 5 at RAISE\nSQL statement \"SELECT platform_private.delivery_proof_gate_20261030(v_org)\"\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 14 at PERFORM\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "legacy recovery role revoked during lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_actor_20261030() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_proof_gate_20261030(uuid) line 5 at IF\nSQL statement \"SELECT platform_private.delivery_proof_gate_20261030(v_org)\"\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 14 at PERFORM\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "terminal delivery cannot be recovered by legacy replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_recheck_20261030(uuid,uuid,text) line 5 at RAISE\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 18 at assignment\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "foreign FSF denies without mutations",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 8 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 14 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "same key changed receiver conflicts",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 55 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "inactive actor cannot replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 6 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "repeatable read explicitly unsupported",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: DELIVERY_CONFIRM_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 5 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "serializable explicitly unsupported",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: DELIVERY_CONFIRM_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 5 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "singleton absent explicitly PT503",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT503: DELIVERY_CONFIRM_GATE_UNAVAILABLE\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 19 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "missing CAS denied before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  22023: DELIVERY_CONFIRM_INVALID\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 7 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "stale CAS denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 59 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "tampered canonical hash denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_PROOF_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 6 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 43 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "missing storage object denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 22 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 43 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "financial payload rejected",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  22023: DELIVERY_CONFIRM_INVALID\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 10 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "foreign object owner rejects canonical digital proof",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 22 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 43 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "profile revoked DURING observed lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "role revoked DURING observed lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "tenant changed DURING observed lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at RAISE\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "SaaS revoked DURING observed gate lock denies confirmation",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "actual corrupted ledger os_id rejects replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_REPLAY_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "actual corrupted ledger lote_id rejects replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_REPLAY_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "actual corrupted ledger os_tipo rejects replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_REPLAY_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "actual corrupted ledger referencia_tipo rejects replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_REPLAY_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "multiple lots same programming forbidden by canonical unique index",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23505: duplicate key value violates unique constraint \"idx_lotes_programacao_id_unique\"\nDETAIL:  Key (programacao_id)=(10000000-0000-4000-8000-000000000702) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  lotes\nCONSTRAINT NAME:  idx_lotes_programacao_id_unique\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n"
+    },
+    {
+      "test": "cancelled delivery cannot cover remaining demand",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 27 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "same OS second product programming forbidden by canonical unique constraint",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23505: duplicate key value violates unique constraint \"programacao_producao_os_uniq\"\nDETAIL:  Key (ordem_servico_id)=(10000000-0000-4000-8000-000000000701) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  programacao_producao\nCONSTRAINT NAME:  programacao_producao_os_uniq\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n"
+    },
+    {
+      "test": "different product never covers programming or replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 40 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "sign wins against confirm",
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 59 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "confirm wins against sign",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_recheck_20261030(uuid,uuid,text) line 5 at RAISE\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 18 at assignment\nSQL function \"rpc_entrega_assinatura_coletar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "attach wins against confirm",
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 59 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "confirm wins against attach",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_recheck_20261030(uuid,uuid,text) line 5 at RAISE\nPL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 18 at assignment\nSQL function \"rpc_entrega_comprovante_anexar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "cancel wins",
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 27 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "confirmed physical delivery cannot ordinary cancel",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CANCEL_ORIGIN_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 17 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "deny rollback keeps canonical writer closed",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_entrega_confirmar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "send writer initially closed",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_entrega_enviar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "foreign tenant send denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 8 at RAISE\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 9 at assignment\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send absent CAS denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  22023: DELIVERY_SEND_INVALID\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 7 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send stale CAS denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_SEND_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 48 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send same key changed CAS conflicts",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_SEND_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 45 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send inactive actor after lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "send role revoked after lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "send tenant changed after lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at RAISE\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "send SaaS revoked after gate lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "send vs send",
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_SEND_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 48 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "cancel vs send",
+      "stdout": "",
+      "stderr": "ERROR:  PT409: DELIVERY_SEND_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 22 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send deny-only rollback no regrant",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_entrega_enviar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "exit_code": 1,
-  "elapsed_seconds": 10.499080210000102
+  "exit_code": 0,
+  "elapsed_seconds": 40.669333933000416
 }
