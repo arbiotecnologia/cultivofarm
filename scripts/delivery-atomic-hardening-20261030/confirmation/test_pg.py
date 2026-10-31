@@ -148,8 +148,31 @@ def legacy_signed_fixture():
  return e,path,stmt
 
 def legacy_replay_matrix(e,path,stmt):
- b=snapshot();assert json.loads(last(stmt))['replayed'] and snapshot()==b
- reject('legacy signature replay after synchronization delta still blocks confirmation',call(e,'legacy-confirm-93'),'42501','DELIVERY_CONFIRM_PROOF_DENIED');assert snapshot()==b
+ b=snapshot()
+ reject('foreign actor cannot recover legacy sign hash',stmt.replace(T.U,T.V),'42501','DELIVERY_PROOF_SCOPE_DENIED');assert snapshot()==b
+ cases=[('arbitrary old delivery hash',f"UPDATE public.entregas SET validation_hash=repeat('0',64) WHERE id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
+ ('arbitrary signed proof hash',f"UPDATE public.entrega_comprovantes SET validation_hash=repeat('1',64) WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
+ ('different proof path',f"UPDATE public.entrega_comprovantes SET assinatura_digital_png_path='invalid' WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
+ ('foreign storage owner',f"UPDATE storage.objects SET owner_id='{T.V}' WHERE name='{path}';",'DELIVERY_PROOF_OBJECT_DENIED'),
+ ('missing object',f"DELETE FROM storage.objects WHERE name='{path}';",'DELIVERY_PROOF_OBJECT_DENIED'),
+ ('confirmed proof',f"UPDATE public.entrega_comprovantes SET status='confirmado' WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
+ ('cancelled delivery',f"UPDATE public.entregas SET status='cancelada' WHERE id='{e}';",'DELIVERY_PROOF_SCOPE_DENIED'),
+ ('confirmed delivery',f"UPDATE public.entregas SET status='entregue' WHERE id='{e}';",'DELIVERY_PROOF_SCOPE_DENIED')]
+ for label,mutation,msg in cases:
+  reject('legacy recovery denies '+label,'BEGIN;SET LOCAL session_replication_role=replica;'+mutation+'SET LOCAL session_replication_role=origin;'+stmt,'42501',msg);assert snapshot()==b
+ wait_revoke('legacy recovery inactive actor during lock denied',f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.U}';")
+ wait_revoke('legacy recovery tenant change during lock denied',f"UPDATE public.profiles SET organization_id='{T.B}' WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET organization_id='{T.A}' WHERE user_id='{T.U}';")
+ wait_revoke('legacy recovery role revoked during lock denied',f"DELETE FROM public.user_roles WHERE user_id='{T.U}';",stmt,f"INSERT INTO public.user_roles(user_id,role) VALUES('{T.U}','administrador');")
+ old=json.loads(snapshot());r=json.loads(last(stmt));assert r['replayed'];after=json.loads(snapshot())
+ for table in old:
+  if table!='entregas':assert old[table]==after[table],table
+ for prior,now in zip(old['entregas'],after['entregas']):
+  assert {k:v for k,v in prior.items() if k not in ('validation_hash','updated_at')}=={k:v for k,v in now.items() if k not in ('validation_hash','updated_at')}
+ assert last(f"SELECT e.validation_hash=c.validation_hash FROM public.entregas e JOIN public.entrega_comprovantes c ON c.id=e.comprovante_id WHERE e.id='{e}';")=='t'
+ ok('validated legacy replay recovers only delivery hash revision preserving proof receipts stock downstream')
+ b=snapshot();assert json.loads(last(stmt))['replayed'] and snapshot()==b;ok('second recovered legacy replay immutable no writes')
+ assert json.loads(last(call(e,'legacy-confirm-93')))['success'];ok('old writer then delta then validated replay then physical confirmation succeeds')
+ b=snapshot();reject('terminal delivery cannot be recovered by legacy replay',stmt,'42501','DELIVERY_PROOF_SCOPE_DENIED');assert snapshot()==b
 
 def prove(e,key,sign=False,generate=True):
  if generate:assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_formulario_gerar_v1('{e}','generate-{key}');"))['success']
