@@ -81,9 +81,9 @@ afterEach(() => { cleanup(); });
 
 describe("Entregas page with atomic adapter (mounted)", () => {
   it("physical ACK refreshes exact real list cache only and never opens finance", async () => {
-    t.rows = [{ id: E1, status: "separado", updated_at: T1, clientes: { nome: "Cliente" } }];
+    t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];
     const h = mount();
-    fireEvent.click(await screen.findByRole("button", { name: /Confirmar recebimento/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar", exact: true }));
     const own = h.qc.getQueryCache().findAll().find(q => q.queryKey[0] === "entregas");
     expect(own).toBeDefined();
     const foreignKey = ["entregas", "foreign-actor", "foreign-request"];
@@ -97,8 +97,8 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     expect(t.financial).toBe(false); h.qc.clear();
   });
   it("late physical callback after tenant change does not invalidate either cache", async () => {
-    t.rows = [{ id: E1, status: "separado", updated_at: T1, clientes: { nome: "Cliente" } }];
-    const h = mount(); fireEvent.click(await screen.findByRole("button", { name: /Confirmar recebimento/i }));
+    t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];
+    const h = mount(); fireEvent.click(await screen.findByRole("button", { name: "Confirmar", exact: true }));
     const callback = t.confirm.onConfirmed;
     t.auth = { ...t.auth, profile: { ...t.auth.profile, organization_id: ORG_B } }; h.rerender(<Entregas />);
     const invalidation = vi.spyOn(h.qc, "invalidateQueries");

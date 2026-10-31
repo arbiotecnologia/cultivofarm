@@ -936,7 +936,7 @@ export default function Entregas() {
                         {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
                         {e.status === "em_rota" && (
                           <div className="flex gap-1 w-full">
-                            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Apenas Confirmar</Button>
+                            <Button size="sm" variant="outline" className="flex-1" onClick={() => handleConfirmarEntrega(e.id)}>Apenas Confirmar</Button>
                             <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
                             </Button>
@@ -1011,7 +1011,7 @@ export default function Entregas() {
                         {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
                         {e.status === "em_rota" && (
                           <>
-                            <Button size="sm" variant="outline" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Confirmar</Button>
+                            <Button size="sm" variant="outline" onClick={() => handleConfirmarEntrega(e.id)}>Confirmar</Button>
                             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
                             </Button>
