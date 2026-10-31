@@ -99,16 +99,16 @@ describe("Entregas page with atomic adapter (mounted)", () => {
   });
   it.each(['reconcile', 'terminal', 'tenant'])('lost ACK then Consultar retains exact send and fences other target: %s', async (mode) => {
     const E2 = '10000000-0000-4000-8000-000000000102';
-    t.rows = [E1,E2].map((id,i) => ({ id, status:'separado', ordem_servico_id:OS, updated_at:T1, clientes:{ nome:i ? 'Outro' : 'Cliente' } }));
+    t.rows = [E1,E2].map((id,i) => ({ id, status:'separado', ordem_servico_id:OS, updated_at:T1, clientes:{ nome:i ? 'Outro' : 'Cliente perdido' } }));
     let sent = 0;
     t.rpc.mockImplementation(async (fn:string,args:any) => {
       if (fn === 'rpc_entrega_envio_capability_v1') { const row=t.rows.find(r=>r.id===args.p_entrega); return { data:{capability:'delivery_send_manual_v1',available:true,actor_id:ACTOR,organization_id:ORG,entrega_id:args.p_entrega,os_id:OS,status:row?.status,updated_at:row?.updated_at},error:null }; }
       sent++; t.rows=t.rows.map(r=>r.id===E1 ? {...r,status:'em_rota',updated_at:T2}:r);
       return sent===1 ? {data:null,error:{code:'57014',message:'timeout'}} : {data:{success:true,action:'send',replay:true,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'em_rota',updated_at:T2},error:null};
     });
-    const h=mount(); await screen.findByText('Cliente');
+    const h=mount(); await screen.findByText('Cliente perdido');
     const row=(name:string)=>{const el=screen.getByText(name).closest('tr');if(!el)throw new Error('row');return within(el);};
-    fireEvent.click(row('Cliente').getByRole('button',{name:'Enviar'}));await waitFor(()=>expect(t.error).toHaveBeenCalled());
+    fireEvent.click(row('Cliente perdido').getByRole('button',{name:'Enviar'}));await waitFor(()=>expect(t.error).toHaveBeenCalled());
     const first=t.rpc.mock.calls.find(c=>c[0]==='rpc_entrega_enviar_manual_v1')?.[1];
     const calls=t.rpc.mock.calls.length;fireEvent.click(row('Outro').getByRole('button',{name:'Enviar'}));
     await waitFor(()=>expect(t.error).toHaveBeenCalledWith('Reconcilie somente o mesmo envio pendente.'));expect(t.rpc).toHaveBeenCalledTimes(calls);
