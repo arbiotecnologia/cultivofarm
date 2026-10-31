@@ -42,7 +42,7 @@ def run():
  assert 'cancelada' in out and snap()==before;raw.append({'test':'foreign BEFORE vulnerability rollback','stdout':out});ok('foreign DEFINER cancellation reproduced with valid ID, rollback preserves label/event/audit')
  out=sql('BEGIN;'+call(T.U,lb)+f"RESET ROLE;SELECT status FROM public.produto_etiquetas WHERE id='{lb}';ROLLBACK;");assert 'cancelada' in out;ok('own BEFORE positive cancellation rolled back')
  sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.V}';")
- out=sql('BEGIN;'+call(T.V,la)+f"RESET ROLE;SELECT status FROM public.produto_etiquetas WHERE id='{la}';ROLLBACK;");assert 'cancelada' in out;ok('inactive BEFORE vulnerability reproduced with actual enabled triggers')
+ inactive_before=snap();reject('inactive BEFORE existing role helper denies P0001',call(T.V,la),'P0001');assert snap()==inactive_before
  sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.V}';")
  delta=(H/'candidate.sql.review').read_text();sql(delta);post=state()
  x=json.loads(json.dumps(pre));x['fn']['acl']=post['fn']['acl'];assert x==post;assert pre['fn']['acl']!=post['fn']['acl']
