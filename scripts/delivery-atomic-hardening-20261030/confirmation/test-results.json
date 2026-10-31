@@ -401,9 +401,68 @@
       "status": "PASS"
     },
     {
-      "test": "execution",
-      "status": "FAIL",
-      "error": "ERROR:  DELIVERY_SEND_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 40 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\n"
+      "test": "separated B send after A confirmation preserves stock proof OS downstream",
+      "status": "PASS"
+    },
+    {
+      "test": "send replay denies OS finalizada",
+      "status": "PASS"
+    },
+    {
+      "test": "send replay denies OS aberta",
+      "status": "PASS"
+    },
+    {
+      "test": "send replay denies invalid lineage in partial OS",
+      "status": "PASS"
+    },
+    {
+      "test": "sequential two sends two confirmations finalize 4000ml without second ledger stock mutation mode 0",
+      "status": "PASS"
+    },
+    {
+      "test": "terminal confirmed item send replay denied",
+      "status": "PASS"
+    },
+    {
+      "test": "proof seq-proof-1-0 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "proof seq-proof-1-1 exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "first of two sent items confirms partial OS entregue mode 1",
+      "status": "PASS"
+    },
+    {
+      "test": "in-route B replay after A confirmation preserves stock proof OS downstream",
+      "status": "PASS"
+    },
+    {
+      "test": "send replay denies OS finalizada",
+      "status": "PASS"
+    },
+    {
+      "test": "send replay denies OS aberta",
+      "status": "PASS"
+    },
+    {
+      "test": "send replay denies invalid lineage in partial OS",
+      "status": "PASS"
+    },
+    {
+      "test": "sequential two sends two confirmations finalize 4000ml without second ledger stock mutation mode 1",
+      "status": "PASS"
+    },
+    {
+      "test": "terminal confirmed item send replay denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send deny-only rollback no regrant",
+      "status": "PASS"
     }
   ],
   "raw": [
@@ -758,8 +817,62 @@
       "test": "cancel vs send",
       "stdout": "",
       "stderr": "ERROR:  PT409: DELIVERY_SEND_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 22 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send replay denies OS finalizada",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 40 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send replay denies OS aberta",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 40 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send replay denies invalid lineage in partial OS",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 35 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "terminal confirmed item send replay denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 40 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send replay denies OS finalizada",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 40 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send replay denies OS aberta",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 40 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send replay denies invalid lineage in partial OS",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 35 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "terminal confirmed item send replay denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_SEND_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 40 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "send deny-only rollback no regrant",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_entrega_enviar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "exit_code": 1,
-  "elapsed_seconds": 49.17224106499998
+  "exit_code": 0,
+  "elapsed_seconds": 60.18932253599996
 }
