@@ -82,8 +82,6 @@ const fakeLocks = { request: async (name: string, _o: any, cb: (l: unknown) => P
 beforeEach(() => { heldLocks.clear(); Object.defineProperty(navigator, "locks", { value: fakeLocks, configurable: true }); });
 afterEach(() => { cleanup(); });
 
-describe("Entregas page with atomic adapter (mounted)", () => {
-  it('send timeout retains ownership until transport settles and never parallel-dispatches', async () => {
 
 const E2 = "10000000-0000-4000-8000-000000000102";
 const SEND = "rpc_entrega_enviar_manual_v1", SCAP = "rpc_entrega_envio_capability_v1";
@@ -146,7 +144,8 @@ describe("Enviar durable retention (mounted, real QueryClient)", () => {
 
   it("setItem failure before dispatch: no writer, no record", async () => {
     writer = async () => { throw new Error("must not dispatch"); };
-    const set = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, k: string, v: string) { if (k.startsWith("cf:delivery-send:")) throw new Error("quota"); return Object.getPrototypeOf(Storage.prototype).constructor; } as any);
+    const orig = Storage.prototype.setItem;
+    const set = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, k: string, v: string) { if (k.startsWith("cf:delivery-send:")) throw new Error("quota"); return orig.call(this, k, v); });
     const h = mount(); await screen.findByText("Cliente A");
     fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
     set.mockRestore(); expect(sends()).toHaveLength(0); expect(sendKeys()).toEqual([]); h.qc.clear();
@@ -170,7 +169,7 @@ describe("Enviar durable retention (mounted, real QueryClient)", () => {
     await screen.findByText(/registro local não pôde ser removido/); h.qc.clear();
   });
 
-  it.each([["malformed", "{not json"], ["version", rec({ v: 2 })], ["schema", rec({ schema: "x" })], ["extra", rec({ jwt: "x" }).replace("}", "}")], ["tampered-key", rec({ key: "not-a-uuid" })], ["slot-mismatch", rec({ entrega: E2 })], ["nil", rec({ os: "00000000-0000-0000-0000-000000000000" })], ["bad-ts", rec({ observed: "2026-10-30" })]])("corrupt record %s blocks sends and is never deleted", async (_n, raw) => {
+  it.each([["malformed", "{not json"], ["version", rec({ v: 2 })], ["schema", rec({ schema: "x" })], ["extra", rec({ jwt: "x" })], ["tampered-key", rec({ key: "not-a-uuid" })], ["slot-mismatch", rec({ entrega: E2 })], ["nil", rec({ os: "00000000-0000-0000-0000-000000000000" })], ["bad-ts", rec({ observed: "2026-10-30" })]])("corrupt record %s blocks sends and is never deleted", async (_n, raw) => {
     writer = async () => { throw new Error("must not dispatch"); };
     localStorage.setItem(`${SPFX}${E1}`, raw);
     const h = mount(); await screen.findByText(/Registro local de envio inválido/);
