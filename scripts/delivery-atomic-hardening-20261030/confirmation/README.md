@@ -4,11 +4,11 @@ Preparação local; nenhum acesso hosted, sessão, segredo, publicação ou fixt
 
 ## Resultado efetivamente executado
 
-- Vitest entrega/envase/etiquetas: 504/504, 32 arquivos (vitest-current.log).
-- Diálogo montado após proteção de timeout: 13/13 (confirm-timeout.log).
+- Vitest entrega/envase/etiquetas: 524/524, 33 arquivos (envelope-regression.log).
+- Envelopes e diálogo montado: 33/33; quatro negativos independentes corrigidos, raiz/prova divergentes negadas e tentativa incerta mantém chave/payload sem toast/onConfirmed/close (envelope-tests.log).
 - Build automático observado OK; sem log de typecheck separado.
 - PostgreSQL: pg-current.log PASS, exit_code 0; test-results.json contém contagem e SQLSTATEs exatos. Rodadas históricas falhadas permanecem nos logs, não compõem a aprovação atual.
-- Restore integral, composição aplicada, sentinelas existentes, instalação fechada, ensaio de grant exclusivamente descartável, attach/confirmação física, replay e isolamento estrangeiro passaram antes da falha.
+- Composição local restaurada, sentinelas existentes, instalação fechada, release NO-GO verificado com P0001, ativação exclusivamente no harness descartável, attach/confirmação física, replay e isolamento estrangeiro passaram na rodada atual.
 - Primeiro sucesso preservou conteúdo financeiro/fiscal/outbox e estoque/ledger; não houve segunda expedição.
 - Executados: digital com formulário reutilizado e novo, hash adulterado/objeto ausente/foreign owner, CAS válido e stale, singleton ausente, replay, revogação de perfil/papel/tenant/SaaS DURANTE lock observado, cancelamento canônico vence confirmação PT409, confirmação impede cancelamento ordinário, parcial envase + dois itens, segundo item com OS entregue, invariantes integrais de 14 tabelas downstream.
 - Restore integral original passou; reruns finais usam pg_dump local dessa composição aplicada e fixtures, papéis capturados restaurados. Nenhum transporte hosted. O checkpoint está em /tmp e não é artefato deployável.
@@ -26,6 +26,10 @@ Finalização agora mede volume por programação/produto em mililitros, não so
 install.sql.review mantém writer fechado; release.sql.review recusa ativação enquanto as matrizes acima estiverem pendentes. PRE/POST medidos incluem delta proof mínimo; não certificam hosted. Rollback revoga confirmação e mantém sincronização segura/história. Nenhum candidato desta pasta está liberável agora.
 
 EnvasePage não oferece complemento, criar embalagens ou mutações de etiquetas; consulta e impressão existentes preservadas. Confirmação frontend exige capability exata imediatamente antes do dispatch, ACK exato, ator/empresa/época atual e mesma tentativa em incerteza. Demais contratos permanecem contidos.
+
+## Delta runtime 31/10 13:32
+
+IDs devem ser UUIDs não nulos; revisão deve ser timestamp com calendário/horário/fuso válidos, não string vazia ou data normalizada inválida. Capability candidata acrescenta os_id/comprovante_id canônicos. A tentativa captura essas raízes da leitura inicial, confronta o preflight e o ACK; resposta de OS/prova diferente não gera sucesso. Capability antiga sem raízes falha fechada. Revisão ACK anterior à observada é incerta. Não houve aplicação hosted nem alteração do pacote independente de cancelamento de etiquetas; sua UI continua sem writer.
 
 ## Evidência
 
