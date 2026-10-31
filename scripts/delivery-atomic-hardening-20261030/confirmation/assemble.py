@@ -3,7 +3,6 @@ from pathlib import Path
 import json,sys,hashlib
 H=Path(__file__).resolve().parent; ROOT=H.parents[2]
 sys.path.insert(0,str(ROOT/'scripts/stock-envase-recovery-20261027/isolated'))
-import assemble as envase_assemble
 # Import by path avoids same module name collision.
 import importlib.util
 spec=importlib.util.spec_from_file_location('envase_state',ROOT/'scripts/stock-envase-recovery-20261027/isolated/assemble.py'); E=importlib.util.module_from_spec(spec);spec.loader.exec_module(E)
