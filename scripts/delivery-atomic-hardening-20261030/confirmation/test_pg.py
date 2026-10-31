@@ -170,14 +170,13 @@ def ledger_lineage_matrix(e,stmt):
 def coverage_matrix():
  # Seed otherwise-contained upstream manufacture locally; tested group/proof/confirm run origin triggers.
  os,pp,l=T.u(701),T.u(702),T.u(703);p2,pp2,l2,l3=T.u(704),T.u(705),T.u(706),T.u(707)
- sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=4000,status='pronto_entrega')+f"""
+ sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=6000,status='pronto_entrega')+f"""
  INSERT INTO public.produtos SELECT (jsonb_populate_record(NULL::public.produtos,to_jsonb(p)||jsonb_build_object('id','{p2}','nome','LOCAL MATRIX PRODUCT 2'))).* FROM public.produtos p WHERE id='{T.PROD}';
- INSERT INTO public.programacao_producao SELECT (jsonb_populate_record(NULL::public.programacao_producao,to_jsonb(p)||jsonb_build_object('id','{pp2}','produto_id','{p2}','volume_necessario',2000))).* FROM public.programacao_producao p WHERE id='{pp}';
- INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l2}','produto_id','{p2}','programacao_id','{pp2}','codigo_lote','LOCAL-MATRIX-2'))).* FROM public.lotes p WHERE id='{l}';
+ INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l2}','codigo_lote','LOCAL-MATRIX-2'))).* FROM public.lotes p WHERE id='{l}';
  INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l3}','codigo_lote','LOCAL-MATRIX-3'))).* FROM public.lotes p WHERE id='{l}';
  SET session_replication_role=origin;""")
  stocks=[]
- for n,lot,prod in [(711,l,T.PROD),(712,l3,T.PROD),(713,l2,p2)]:
+ for n,lot,prod in [(711,l,T.PROD),(712,l3,T.PROD),(713,l2,T.PROD)]:
   sid=T.u(n);stocks.append(sid)
   sql(f"SET session_replication_role=replica;INSERT INTO public.estoque_produto SELECT (jsonb_populate_record(NULL::public.estoque_produto,to_jsonb(s)||jsonb_build_object('id','{sid}','lote_id','{lot}','produto_id','{prod}','reservado_para_os_id','{os}','quantidade',2,'quantidade_reservada',2,'volume_total',2))).* FROM public.estoque_produto s WHERE id='{T.RX}';SET session_replication_role=origin;")
  group=json.loads(last(T.actor()+T.group(os,[{'item_id':s,'quantidade':2} for s in stocks],'coverage-group-001')))
@@ -185,18 +184,23 @@ def coverage_matrix():
  for n,e in enumerate(deliveries):prove(e,'coverage-'+str(n))
  before=json.loads(snapshot())
  # Confirm both same-product lots; the other product still has uncovered demand.
- same=[e for e in deliveries if last(f"SELECT produto_id FROM public.entregas WHERE id='{e}';")==T.PROD]
- other=next(e for e in deliveries if e not in same)
+ same=deliveries[:2]
+ other=deliveries[2]
  for n,e in enumerate(same):
-  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-lot same-product coverage leaves other product demand open '+str(n))
+  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-lot coverage leaves 6000ml demand open '+str(n))
  observed=last(f"SELECT updated_at FROM public.entregas WHERE id='{other}';")
  assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{other}','LOCAL COVERAGE CANCEL','{observed}');"))['success']
  b=snapshot();reject('cancelled delivery cannot cover remaining product',call(other,'coverage-cancel-deny'),'PT409','DELIVERY_CONFIRM_OBSERVED_CONFLICT');assert snapshot()==b
- assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('canonical cancellation and reversed reservation leave 2000ml product demand uncovered')
+ assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('canonical cancellation and reversed reservation leave 2000ml demand uncovered')
  # Re-deliver the canonically returned stock, with original programming/product roots.
  sid=last(f"SELECT estoque_produto_id FROM public.entregas WHERE id='{other}';")
- replacement=json.loads(last(T.actor()+T.group(os,[{'item_id':sid,'quantidade':2}],'coverage-replacement-001')))['itens'][0]['entrega_id']
- prove(replacement,'coverage-replacement');r=json.loads(last(call(replacement,'coverage-replacement-confirm')));assert r['finalizada'] is True;ok('replacement covers second product once; two programs three lots 6000ml finalize')
+ # Keep the unique one-program-per-OS constraint: unsupported multi-product same OS is tested as an exact negative.
+ b=snapshot();reject('same OS second product programming forbidden by canonical unique constraint','BEGIN;'+f"INSERT INTO public.programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario,status,data_programada) VALUES('{pp2}','{T.A}','{os}','{p2}',2000,'aprovado',current_date);",'23505','programacao_producao_os_uniq');assert snapshot()==b
+ # Corrupt product lineage locally, replay must reject and preserve the injected snapshot.
+ original=last(f"SELECT produto_id FROM public.entregas WHERE id='{same[0]}';")
+ sql(f"SET session_replication_role=replica;UPDATE public.entregas SET produto_id='{p2}' WHERE id='{same[0]}';SET session_replication_role=origin;")
+ b=snapshot();reject('different product never covers programming or replay',call(same[0],'coverage-confirm-0'),'42501','DELIVERY_CONFIRM_LINEAGE_DENIED');assert snapshot()==b
+ sql(f"SET session_replication_role=replica;UPDATE public.entregas SET produto_id='{original}' WHERE id='{same[0]}';SET session_replication_role=origin;")
  for table in T.TABLES:assert before[table]==json.loads(snapshot())[table],table
  ok('multi-product cancellation replacement preserves financial fiscal outbox sentinels')
 
