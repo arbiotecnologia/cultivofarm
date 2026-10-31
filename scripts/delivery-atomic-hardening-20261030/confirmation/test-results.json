@@ -101,9 +101,33 @@
       "status": "PASS"
     },
     {
+      "test": "proof multi-new-digital exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "proof multi-attach exact replay",
+      "status": "PASS"
+    },
+    {
+      "test": "first item cannot finalize with pending independent stock delivery",
+      "status": "PASS"
+    },
+    {
+      "test": "second item after OS entregue completes 5000ml demand independently",
+      "status": "PASS"
+    },
+    {
+      "test": "first partial ACK replay remains exact after second item finalization",
+      "status": "PASS"
+    },
+    {
+      "test": "multi-item physical confirmation no finance fiscal outbox changes",
+      "status": "PASS"
+    },
+    {
       "test": "execution",
       "status": "FAIL",
-      "error": "'replay'"
+      "error": ""
     }
   ],
   "raw": [
@@ -196,8 +220,13 @@
       "stdout": "",
       "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 20 at PERFORM\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
       "returncode": 3
+    },
+    {
+      "test": "cancel wins",
+      "stdout": "",
+      "stderr": "ERROR:  DELIVERY_CONFIRM_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 39 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\n"
     }
   ],
   "exit_code": 1,
-  "elapsed_seconds": 17.5201863530001
+  "elapsed_seconds": 23.2754184180003
 }
