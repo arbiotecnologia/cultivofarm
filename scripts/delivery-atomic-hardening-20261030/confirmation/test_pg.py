@@ -117,6 +117,7 @@ def run_matrix():
  b=snapshot();r=json.loads(last(stmt2));assert r['success'] and r['comprovante_id'];ok('canonical digital signature then physical confirmation positive')
  after=snapshot();rep=json.loads(last(stmt2));assert rep['replay'] and snapshot()==after;ok('digital confirmation replay no duplicate ledger event receipt')
  ledger_lineage_matrix(e2,stmt2)
+ send_matrix()
  coverage_matrix()
  proof_race_matrix()
  multi_item_matrix()
@@ -166,6 +167,25 @@ def ledger_lineage_matrix(e,stmt):
   before=snapshot();reject('actual corrupted ledger '+field+' rejects replay',stmt,'42501','DELIVERY_CONFIRM_REPLAY_STATE_DENIED');assert snapshot()==before
   sql(f"SET session_replication_role=replica;UPDATE public.estoque_movimentacoes SET {field}='{original}' WHERE id='{mid}';SET session_replication_role=origin;")
  before=snapshot();assert json.loads(last(stmt))['replay'] and snapshot()==before;ok('restored ledger lineage exact replay no writes')
+
+def send_matrix():
+ spec=importlib.util.spec_from_file_location('send_generator',H/'send/assemble.py');SG=importlib.util.module_from_spec(spec);spec.loader.exec_module(SG)
+ pre=json.loads(last(SG.STATE+'::text;'));post=json.loads([x for x in sql('BEGIN;'+SG.candidate()+SG.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1]);SG.write(pre,post)
+ load(H/'send/install.sql.review');assert json.loads(last(SG.STATE+'::text;'))==post;ok('independent send install exact PRE POST closed')
+ os,pp,l=T.u(801),T.u(802),T.u(803);sql('SET session_replication_role=replica;'+T.manufactured(os,pp,l)+'SET session_replication_role=origin;');e,_=create(os,pp,l,'88');obs=last(f"SELECT updated_at FROM public.entregas WHERE id='{e}';")
+ stmt=T.actor()+f"SELECT public.rpc_entrega_enviar_manual_v1('{e}','{obs}','send-test-001');"
+ reject('send writer initially closed',stmt,'42501');sql(f'GRANT EXECUTE ON FUNCTION {SG.RPC} TO authenticated;')
+ b=snapshot();reject('foreign tenant send denied',stmt.replace(T.U,T.V),'42501');assert snapshot()==b
+ reject('send absent CAS denied',stmt.replace("'"+obs+"'",'NULL'),'22023','DELIVERY_SEND_INVALID');assert snapshot()==b
+ reject('send stale CAS denied',stmt.replace(obs,'2020-01-01'),'PT409','DELIVERY_SEND_OBSERVED_CONFLICT');assert snapshot()==b
+ cap=json.loads(last(T.actor()+f"SELECT public.rpc_entrega_envio_capability_v1('{e}');"));assert cap['available'] and cap['os_id']==os;ok('exact send capability available only after disposable grant')
+ r=json.loads(last(stmt));assert r['status']=='em_rota';after=json.loads(snapshot());before=json.loads(b)
+ for table in ['estoque_produto','estoque_movimentacoes','entrega_comprovantes','ordens_servico','laboratorio_esteira_eventos']+T.TABLES:assert before[table]==after[table],table
+ ok('send changes only delivery status revision receipt; no stock ledger proof downstream effects')
+ b=snapshot();assert json.loads(last(stmt))['replay'] and snapshot()==b;ok('send exact replay no writes')
+ reject('send same key changed CAS conflicts',stmt.replace(obs,'2020-01-01'),'PT409','DELIVERY_SEND_REPLAY_CONFLICT');assert snapshot()==b
+ r=json.loads(last(call(e,'send-then-confirm')));assert r['success'] and r['status']=='entregue';ok('canonical Enviar then Confirmar without second stock ledger dispatch')
+ hist=snapshot();sql((H/'send/rollback.sql.review').read_text());reject('send deny-only rollback no regrant',stmt,'42501');assert snapshot()==hist
 
 def coverage_matrix():
  # Seed otherwise-contained upstream manufacture locally; tested group/proof/confirm run origin triggers.
