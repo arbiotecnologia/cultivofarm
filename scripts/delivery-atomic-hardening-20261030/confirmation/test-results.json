@@ -281,6 +281,22 @@
       "status": "PASS"
     },
     {
+      "test": "send inactive actor after lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send role revoked after lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send tenant changed after lock denied",
+      "status": "PASS"
+    },
+    {
+      "test": "send SaaS revoked after gate lock denied",
+      "status": "PASS"
+    },
+    {
       "test": "canonical Enviar then Confirmar without second stock ledger dispatch",
       "status": "PASS"
     },
@@ -514,6 +530,30 @@
       "stderr": "ERROR:  PT409: DELIVERY_SEND_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 45 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
+      "test": "send inactive actor after lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "send role revoked after lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "send tenant changed after lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at RAISE\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
+      "test": "send SaaS revoked after gate lock denied",
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_actor_v1() line 9 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_recheck_v1(uuid,uuid) line 3 at IF\nSQL statement \"SELECT platform_private.delivery_confirm_recheck_v1(p_entrega,org)\"\nPL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 15 at PERFORM\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "returncode": 3
+    },
+    {
       "test": "send deny-only rollback no regrant",
       "returncode": 3,
       "stdout": "",
@@ -521,5 +561,5 @@
     }
   ],
   "exit_code": 0,
-  "elapsed_seconds": 34.2178023890001
+  "elapsed_seconds": 29.70275724899966
 }
