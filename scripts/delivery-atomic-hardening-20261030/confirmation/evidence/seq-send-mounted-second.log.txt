@@ -1,0 +1,633 @@
+$ vitest run src/test/entregas/deliveryAtomicPageMount.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ src/test/entregas/deliveryAtomicPageMount.test.tsx (27 tests | 1 failed) 3763ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  810ms
+   × Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true) 918ms
+     → Unable to find an accessible element with the role "button" and name `/Reconciliar/`
+
+Here are the accessible roles:
+
+  cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Cliente B":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono-data text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Entrega por motorista":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Em Rota":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Confirmar Entregue/Faturar Cancelar Gerar romaneio Evidências":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Confirmar":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+  [36m/>[39m
+
+  Name "Entregue/Faturar":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs bg-green-600 hover:bg-green-700"[39m
+  [36m/>[39m
+
+  Name "Cancelar":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs text-destructive"[39m
+  [36m/>[39m
+
+  Name "Gerar romaneio":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+    [33mtitle[39m=[32m"Gerar romaneio"[39m
+  [36m/>[39m
+
+  Name "Evidências":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+    [33mtitle[39m=[32m"Evidências e termos da entrega (assinatura, embalagens e checklist)"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<tr[39m
+  [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+[36m>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono text-xs"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+  [36m>[39m
+    [0mCliente B[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono-data text-xs"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"flex items-center gap-1 flex-wrap"[39m
+    [36m>[39m
+      [36m<span>[39m
+        [0m—[0m
+      [36m</span>[39m
+    [36m</div>[39m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0mEntrega por motorista[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground hover:bg-primary/80"[39m
+    [36m>[39m
+      [0mEm Rota[0m
+    [36m</div>[39m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"flex items-center gap-1"[39m
+    [36m>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+      [36m>[39m
+        [0mConfirmar[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs bg-green-600 hover:bg-green-700"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33mclass[39m=[32m"lucide lucide-circle-check-big h-4 w-4 mr-1"[39m
+          [33mfill[39m=[32m"none"[39m
+          [33mheight[39m=[32m"24"[39m
+          [33mstroke[39m=[32m"currentColor"[39m
+          [33mstroke-linecap[39m=[32m"round"[39m
+          [33mstroke-linejoin[39m=[32m"round"[39m
+          [33mstroke-width[39m=[32m"2"[39m
+          [33mviewBox[39m=[32m"0 0 24 24"[39m
+          [33mwidth[39m=[32m"24"[39m
+          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+        [36m>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M21.801 10A10 10 0 1 1 17 3.335"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"m9 11 3 3L22 4"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+        [0m Entregue/Faturar[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs text-destructive"[39m
+      [36m>[39m
+        [0mCancelar[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+        [33mtitle[39m=[32m"Gerar romaneio"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+          [33mfill[39m=[32m"none"[39m
+          [33mheight[39m=[32m"24"[39m
+          [33mstroke[39m=[32m"currentColor"[39m
+          [33mstroke-linecap[39m=[32m"round"[39m
+          [33mstroke-linejoin[39m=[32m"round"[39m
+          [33mstroke-width[39m=[32m"2"[39m
+          [33mviewBox[39m=[32m"0 0 24 24"[39m
+          [33mwidth[39m=[32m"24"[39m
+          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+        [36m>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M12 18v-6"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"m9 15 3 3 3-3"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+        [0m [0m
+        [0mGerar romaneio[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+        [33mtitle[39m=[32m"Evidências e termos da entrega (assinatura, embalagens e checklist)"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33mclass[39m=[32m"lucide lucide-file-text h-4 w-4 mr-1"[39m
+          [33mfill[39m=[32m"none"[39m
+          [33mheight[39m=[32m"24"[39m
+          [33mstroke[39m=[32m"currentColor"[39m
+          [33mstroke-linecap[39m=[32m"round"[39m
+          [33mstroke-linejoin[39m=[32m"round"[39m
+          [33mstroke-width[39m=[32m"2"[39m
+          [33mviewBox[39m=[32m"0 0 24 24"[39m
+          [33mwidth[39m=[32m"24"[39m
+          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+        [36m>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M10 9H8"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M16 13H8"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M16 17H8"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+        [0m Evidências[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</td>[39m
+[36m</tr>[39m
+   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  347ms
+   ✓ Entregas page with atomic adapter (mounted) > physical ACK refreshes exact real list cache only and never opens finance 187ms
+   ✓ Entregas page with atomic adapter (mounted) > late physical callback after tenant change does not invalidate either cache 167ms
+   ✓ Entregas page with atomic adapter (mounted) > dispatches exactly the observed revisions when unchanged 37ms
+   ✓ Entregas page with atomic adapter (mounted) > OS revision changed since selection: rejected for review, no rebase, no writer 26ms
+   ✓ Entregas page with atomic adapter (mounted) > lot revision changed since selection: rejected for review, no rebase, no writer 30ms
+   ✓ Entregas page with atomic adapter (mounted) > lot status changed since selection: rejected for review, no rebase, no writer 34ms
+   ✓ Entregas page with atomic adapter (mounted) > OS became B2B changed since selection: rejected for review, no rebase, no writer 25ms
+   ✓ Entregas page with atomic adapter (mounted) > missing observed snapshot is refused before any call 26ms
+   ✓ Entregas page with atomic adapter (mounted) > osTipo onfarm / origem padrao is denied without writer 36ms
+   ✓ Entregas page with atomic adapter (mounted) > osTipo padrao / origem b2b is denied without writer 36ms
+   ✓ Entregas page with atomic adapter (mounted) > recipient/address filled from cadastro is dispatched and confirmed (no clearing workaround) 28ms
+   ✓ Entregas page with atomic adapter (mounted) > unknown field from the dialog is refused explicitly, never dropped 26ms
+   ✓ Entregas page with atomic adapter (mounted) > ACK of another tenant is uncertain, persisted, and blocks new submissions after remount 158ms
+   ✓ Entregas page with atomic adapter (mounted) > ambiguous code 57014 keeps pending and never claims nothing was saved 27ms
+   ✓ Entregas page with atomic adapter (mounted) > ambiguous code PGRST001 keeps pending and never claims nothing was saved 33ms
+   ✓ Entregas page with atomic adapter (mounted) > ambiguous code 504 keeps pending and never claims nothing was saved 24ms
+   ✓ Entregas page with atomic adapter (mounted) > same-mount uncertain result can be settled by the exact replay button 61ms
+   ✓ Entregas page with atomic adapter (mounted) > definitive PT409 clears the reservation 26ms
+   ✓ Entregas page with atomic adapter (mounted) > late ACK after tenant switch is not adopted (no success, pending stays for original session) 32ms
+   ✓ Entregas page with atomic adapter (mounted) > replay refused (42501 after revocation) keeps the original pending, marks reconciliation and blocks new keys 98ms
+   ✓ Entregas page with atomic adapter (mounted) > PT409 on replay (CAS changed) is not proof of no-commit: pending kept 62ms
+   ✓ Entregas page with atomic adapter (mounted) > two mounted consumers sharing storage, interleaved: Y's attempt is never overwritten nor cleared by X's ACK 68ms
+   ✓ Entregas page with atomic adapter (mounted) > double submit dispatches a single writer 25ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  413ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/Reconciliar/`
+
+Here are the accessible roles:
+
+  cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Cliente B":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono-data text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Entrega por motorista":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "—":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Em Rota":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------cell:
+
+  Name "Confirmar Entregue/Faturar Cancelar Gerar romaneio Evidências":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Confirmar":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+  [36m/>[39m
+
+  Name "Entregue/Faturar":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs bg-green-600 hover:bg-green-700"[39m
+  [36m/>[39m
+
+  Name "Cancelar":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs text-destructive"[39m
+  [36m/>[39m
+
+  Name "Gerar romaneio":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+    [33mtitle[39m=[32m"Gerar romaneio"[39m
+  [36m/>[39m
+
+  Name "Evidências":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+    [33mtitle[39m=[32m"Evidências e termos da entrega (assinatura, embalagens e checklist)"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<tr[39m
+  [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+[36m>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono text-xs"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium"[39m
+  [36m>[39m
+    [0mCliente B[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 font-mono-data text-xs"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"flex items-center gap-1 flex-wrap"[39m
+    [36m>[39m
+      [36m<span>[39m
+        [0m—[0m
+      [36m</span>[39m
+    [36m</div>[39m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0mEntrega por motorista[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [0m—[0m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground hover:bg-primary/80"[39m
+    [36m>[39m
+      [0mEm Rota[0m
+    [36m</div>[39m
+  [36m</td>[39m
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"flex items-center gap-1"[39m
+    [36m>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+      [36m>[39m
+        [0mConfirmar[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs bg-green-600 hover:bg-green-700"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33mclass[39m=[32m"lucide lucide-circle-check-big h-4 w-4 mr-1"[39m
+          [33mfill[39m=[32m"none"[39m
+          [33mheight[39m=[32m"24"[39m
+          [33mstroke[39m=[32m"currentColor"[39m
+          [33mstroke-linecap[39m=[32m"round"[39m
+          [33mstroke-linejoin[39m=[32m"round"[39m
+          [33mstroke-width[39m=[32m"2"[39m
+          [33mviewBox[39m=[32m"0 0 24 24"[39m
+          [33mwidth[39m=[32m"24"[39m
+          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+        [36m>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M21.801 10A10 10 0 1 1 17 3.335"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"m9 11 3 3L22 4"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+        [0m Entregue/Faturar[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs text-destructive"[39m
+      [36m>[39m
+        [0mCancelar[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+        [33mtitle[39m=[32m"Gerar romaneio"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+          [33mfill[39m=[32m"none"[39m
+          [33mheight[39m=[32m"24"[39m
+          [33mstroke[39m=[32m"currentColor"[39m
+          [33mstroke-linecap[39m=[32m"round"[39m
+          [33mstroke-linejoin[39m=[32m"round"[39m
+          [33mstroke-width[39m=[32m"2"[39m
+          [33mviewBox[39m=[32m"0 0 24 24"[39m
+          [33mwidth[39m=[32m"24"[39m
+          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+        [36m>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M12 18v-6"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"m9 15 3 3 3-3"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+        [0m [0m
+        [0mGerar romaneio[0m
+      [36m</button>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+        [33mtitle[39m=[32m"Evidências e termos da entrega (assinatura, embalagens e checklist)"[39m
+      [36m>[39m
+        [36m<svg[39m
+          [33mclass[39m=[32m"lucide lucide-file-text h-4 w-4 mr-1"[39m
+          [33mfill[39m=[32m"none"[39m
+          [33mheight[39m=[32m"24"[39m
+          [33mstroke[39m=[32m"currentColor"[39m
+          [33mstroke-linecap[39m=[32m"round"[39m
+          [33mstroke-linejoin[39m=[32m"round"[39m
+          [33mstroke-width[39m=[32m"2"[39m
+          [33mviewBox[39m=[32m"0 0 24 24"[39m
+          [33mwidth[39m=[32m"24"[39m
+          [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+        [36m>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M10 9H8"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M16 13H8"[39m
+          [36m/>[39m
+          [36m<path[39m
+            [33md[39m=[32m"M16 17H8"[39m
+          [36m/>[39m
+        [36m</svg>[39m
+        [0m Evidências[0m
+      [36m</button>[39m
+    [36m</div>[39m
+  [36m</td>[39m
+[36m</tr>[39m
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/entregas/deliveryAtomicPageMount.test.tsx:112:38
+    110|     await act(async () => t.confirm.onConfirmed('physical', E1));
+    111|     await waitFor(() => expect(row('Cliente A').getByText('Entregue'))…
+    112|     fireEvent.click(row('Cliente B').getByRole('button', { name: early…
+       |                                      ^
+    113|     fireEvent.click(await row('Cliente B').findByRole('button', { name…
+    114|     expect(t.confirm.entrega.id).toBe(E2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 26 passed (27)
+   Start at  14:18:14
+   Duration  8.63s (transform 694ms, setup 160ms, collect 1.49s, tests 3.76s, environment 940ms, prepare 543ms)
+
+error: script "test" exited with code 1
