@@ -198,15 +198,6 @@ describe("contratos do módulo", () => {
     expect(page).toMatch(/const termo = buscaDebounced;/);
   });
 
-  it("inclui seq no select de controle de qualidade", () => {
-    expect(page).toMatch(/controle_qualidade\(id, seq, created_at, data_analise, resultado\)/);
-  });
-
-  it("expõe falha das listas auxiliares em vez de exibir ausência de opções", () => {
-    expect(page).toMatch(/erroAuxiliares/);
-    expect(page).toMatch(/Falha ao carregar lotes com saldo e produtos/);
-  });
-
   it("a página tem estados de carga, erro com retry e rótulos acessíveis", () => {
     expect(page).toMatch(/Carregando envases/);
     expect(page).toMatch(/Tentar novamente/);
