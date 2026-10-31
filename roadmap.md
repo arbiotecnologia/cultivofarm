@@ -1,3 +1,6 @@
+- [ ] 31/10 — Confirmação física manual: composição canônica motor/prova/autoridade pós-lock/CAS/replay, install/release/PRE/POST/rollback e matrizes PG locais; sem hosted/publicação.
+- [ ] 31/10 — EnvasePage: retirar promessas de complemento e ofertas de etiqueta/embalagens fechadas; preservar histórico/consulta/impressão e testar montado.
+- [ ] 31/10 — Contratos posteriores independentes: identificar autoridade e provas de embalagens/etiquetas/dispensa antes de preparar qualquer liberação; efeitos financeiros/fiscais/comunicação/automações fechados.
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
 - [x] Revisão23:18: fence das quatro leituras do diálogo, bloqueio leitura incompleta/erro, mensagens por ACK e14testes montados;484Vitest PASS, diff/hashes regenerados sem hosted/publicação.
 - [x] Conclusão22:57: corrida prelock/DML real corrigida NOWAIT55P03 sem deadlock; upstream canônico completo/stock/group/cancel preservados;119PGPASS/470Vitest/3ordem,README/logs/pins atualizados; build automáticoOK, sem hosted/publicação.
