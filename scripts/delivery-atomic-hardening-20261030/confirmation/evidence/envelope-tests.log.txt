@@ -1,0 +1,13 @@
+$ vitest run src/test/entregas/deliveryConfirmationEnvelope.test.ts src/test/entregas/confirmacaoEntregaAck.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/deliveryConfirmationEnvelope.test.ts (14 tests) 27ms
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 2299ms
+   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  429ms
+
+ Test Files  2 passed (2)
+      Tests  33 passed (33)
+   Start at  13:33:52
+   Duration  6.90s (transform 373ms, setup 458ms, collect 1.13s, tests 2.33s, environment 2.90s, prepare 1.89s)
+

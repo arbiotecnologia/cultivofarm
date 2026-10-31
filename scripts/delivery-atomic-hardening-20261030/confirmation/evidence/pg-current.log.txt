@@ -1,0 +1,43 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.6s
+PASS exact local captured composition checkpoint restored; disposable socket verified
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS review release stays NO-GO without remaining matrix
+PASS disposable harness-only activation exact state; review release remains closed
+PASS capability binds observed OS canonical proof and CAS revision
+PASS foreign FSF denies without mutations
+PASS canonical attach then physical confirmation advances transactionally
+PASS first physical success preserves existing financial fiscal outbox stock and ledger full content
+PASS exact replay preserves all snapshots
+PASS same key changed receiver conflicts
+PASS inactive actor cannot replay
+PASS repeatable read explicitly unsupported
+PASS serializable explicitly unsupported
+PASS reused form digital token/hash synchronized atomically
+PASS singleton absent explicitly PT503
+PASS missing CAS denied before writes
+PASS stale CAS denied
+PASS tampered canonical hash denied
+PASS missing storage object denied
+PASS financial payload rejected
+PASS foreign object owner rejects canonical digital proof
+PASS profile revoked DURING observed lock denies confirmation
+PASS role revoked DURING observed lock denies confirmation
+PASS tenant changed DURING observed lock denies confirmation
+PASS SaaS revoked DURING observed gate lock denies confirmation
+PASS canonical digital signature then physical confirmation positive
+CHECKPOINT sql_calls=100 elapsed=15.6s
+PASS digital confirmation replay no duplicate ledger event receipt
+PASS partial envase demand remains open
+PASS proof multi-new-digital exact replay
+PASS proof multi-attach exact replay
+PASS first item cannot finalize with pending independent stock delivery
+PASS second item after OS entregue completes 5000ml demand independently
+PASS first partial ACK replay remains exact after second item finalization
+PASS multi-item physical confirmation no finance fiscal outbox changes
+PASS canonical cancellation wins observed race and confirmation rolls back
+PASS confirmed physical delivery cannot ordinary cancel
+PASS all fourteen existing financial fiscal outbox sentinels full content unchanged
+PASS deny rollback keeps canonical writer closed
+PASS rollback preserves physical proof stock ledger and receipts history

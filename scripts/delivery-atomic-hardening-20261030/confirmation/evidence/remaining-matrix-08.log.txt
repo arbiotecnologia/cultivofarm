@@ -1,0 +1,66 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.4s
+PASS exact local captured composition checkpoint restored; disposable socket verified
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS review release stays NO-GO without remaining matrix
+PASS disposable harness-only activation exact state; review release remains closed
+PASS capability binds observed OS canonical proof and CAS revision
+PASS foreign FSF denies without mutations
+PASS canonical attach then physical confirmation advances transactionally
+PASS first physical success preserves existing financial fiscal outbox stock and ledger full content
+PASS exact replay preserves all snapshots
+PASS same key changed receiver conflicts
+PASS inactive actor cannot replay
+PASS repeatable read explicitly unsupported
+PASS serializable explicitly unsupported
+PASS reused form digital token/hash synchronized atomically
+PASS singleton absent explicitly PT503
+PASS missing CAS denied before writes
+PASS stale CAS denied
+PASS tampered canonical hash denied
+PASS missing storage object denied
+PASS financial payload rejected
+PASS foreign object owner rejects canonical digital proof
+PASS profile revoked DURING observed lock denies confirmation
+PASS role revoked DURING observed lock denies confirmation
+PASS tenant changed DURING observed lock denies confirmation
+PASS SaaS revoked DURING observed gate lock denies confirmation
+PASS canonical digital signature then physical confirmation positive
+CHECKPOINT sql_calls=100 elapsed=15.2s
+PASS digital confirmation replay no duplicate ledger event receipt
+PASS actual corrupted ledger os_id rejects replay
+PASS actual corrupted ledger lote_id rejects replay
+PASS actual corrupted ledger os_tipo rejects replay
+PASS actual corrupted ledger referencia_tipo rejects replay
+PASS restored ledger lineage exact replay no writes
+PASS multiple lots same programming forbidden by canonical unique index
+PASS proof coverage-0 exact replay
+PASS proof coverage-1 exact replay
+PASS proof coverage-2 exact replay
+PASS multi-lot coverage leaves 6000ml demand open 0
+PASS multi-lot coverage leaves 6000ml demand open 1
+PASS cancelled delivery cannot cover remaining product
+PASS canonical cancellation and reversed reservation leave 2000ml demand uncovered
+PASS same OS second product programming forbidden by canonical unique constraint
+PASS different product never covers programming or replay
+PASS multi-product cancellation replacement preserves financial fiscal outbox sentinels
+CHECKPOINT sql_calls=200 elapsed=23.5s
+PASS sign wins observed lock; stale confirmation PT409 with exact snapshots
+CHECKPOINT sql_calls=300 elapsed=28.7s
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 229, in <module>
+    try:run();status=0
+        ~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 71, in run
+    run_matrix()
+    ~~~~~~~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 121, in run_matrix
+    proof_race_matrix()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 223, in proof_race_matrix
+    wait_lock('confirm_proof_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 41, in wait_lock
+    raise AssertionError('LOCK_WAIT_NOT_OBSERVED '+name)
+AssertionError: LOCK_WAIT_NOT_OBSERVED confirm_proof_race

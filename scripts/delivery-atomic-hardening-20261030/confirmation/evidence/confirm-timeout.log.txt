@@ -1,0 +1,11 @@
+$ vitest run src/test/entregas/confirmacaoEntregaAck.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (13 tests) 1344ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  12:58:45
+   Duration  4.83s (transform 235ms, setup 160ms, collect 821ms, tests 1.34s, environment 872ms, prepare 600ms)
+

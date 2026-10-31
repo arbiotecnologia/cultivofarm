@@ -1,0 +1,66 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.5s
+PASS exact local captured composition checkpoint restored; disposable socket verified
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS review release stays NO-GO without remaining matrix
+PASS disposable harness-only activation exact state; review release remains closed
+PASS capability binds observed OS canonical proof and CAS revision
+PASS foreign FSF denies without mutations
+PASS canonical attach then physical confirmation advances transactionally
+PASS first physical success preserves existing financial fiscal outbox stock and ledger full content
+PASS exact replay preserves all snapshots
+PASS same key changed receiver conflicts
+PASS inactive actor cannot replay
+PASS repeatable read explicitly unsupported
+PASS serializable explicitly unsupported
+PASS reused form digital token/hash synchronized atomically
+PASS singleton absent explicitly PT503
+PASS missing CAS denied before writes
+PASS stale CAS denied
+PASS tampered canonical hash denied
+PASS missing storage object denied
+PASS financial payload rejected
+PASS foreign object owner rejects canonical digital proof
+PASS profile revoked DURING observed lock denies confirmation
+PASS role revoked DURING observed lock denies confirmation
+PASS tenant changed DURING observed lock denies confirmation
+PASS SaaS revoked DURING observed gate lock denies confirmation
+CHECKPOINT sql_calls=100 elapsed=14.4s
+PASS canonical digital signature then physical confirmation positive
+PASS digital confirmation replay no duplicate ledger event receipt
+PASS actual corrupted ledger os_id rejects replay
+PASS actual corrupted ledger lote_id rejects replay
+PASS actual corrupted ledger os_tipo rejects replay
+PASS actual corrupted ledger referencia_tipo rejects replay
+PASS restored ledger lineage exact replay no writes
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 231, in <module>
+    try:run();status=0
+        ~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 71, in run
+    run_matrix()
+    ~~~~~~~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 120, in run_matrix
+    coverage_matrix()
+    ~~~~~~~~~~~~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 173, in coverage_matrix
+    sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=6000,status='pronto_entrega')+f"""
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    INSERT INTO public.produtos SELECT (jsonb_populate_record(NULL::public.produtos,to_jsonb(p)||jsonb_build_object('id','{p2}','nome','LOCAL MATRIX PRODUCT 2'))).* FROM public.produtos p WHERE id='{T.PROD}';
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l2}','codigo_lote','LOCAL-MATRIX-2'))).* FROM public.lotes p WHERE id='{l}';
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    INSERT INTO public.lotes SELECT (jsonb_populate_record(NULL::public.lotes,to_jsonb(p)||jsonb_build_object('id','{l3}','codigo_lote','LOCAL-MATRIX-3'))).* FROM public.lotes p WHERE id='{l}';
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    SET session_replication_role=origin;""")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 11, in sql
+    def sql(s):return pg.sql(s)
+                      ~~~~~~^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  duplicate key value violates unique constraint "idx_lotes_programacao_id_unique"
+DETAIL:  Key (programacao_id)=(10000000-0000-4000-8000-000000000702) already exists.
+

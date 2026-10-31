@@ -116,6 +116,9 @@ def run_matrix():
  wait_revoke('SaaS revoked DURING observed gate lock denies confirmation',f"UPDATE public.organization_subscriptions SET status='SUSPENDED',suspended_at=now() WHERE organization_id='{T.A}';",stmt2,f"UPDATE public.organization_subscriptions SET status='ACTIVE',suspended_at=NULL WHERE organization_id='{T.A}';",gate=True)
  b=snapshot();r=json.loads(last(stmt2));assert r['success'] and r['comprovante_id'];ok('canonical digital signature then physical confirmation positive')
  after=snapshot();rep=json.loads(last(stmt2));assert rep['replay'] and snapshot()==after;ok('digital confirmation replay no duplicate ledger event receipt')
+ ledger_lineage_matrix(e2,stmt2)
+ coverage_matrix()
+ proof_race_matrix()
  multi_item_matrix()
  # A new manual chain from unused fixture, then observed cancel wins against waiting confirm.
  e3,path3=create(T.O7,T.PP7,T.L7,'3');obs3=last(f"SELECT updated_at FROM public.entregas WHERE id='{e3}';");stmt3=call(e3,'confirm-0003',obs3)
@@ -129,6 +132,7 @@ def run_matrix():
   assert json.loads(snapshot())[table]==json.loads(before)[table],table
  ok('all fourteen existing financial fiscal outbox sentinels full content unchanged')
  hist=snapshot();sql((H/'rollback.sql.review').read_text());reject('deny rollback keeps canonical writer closed',stmt2,'42501');assert snapshot()==hist;ok('rollback preserves physical proof stock ledger and receipts history')
+ sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;');send_matrix()
 
 def prove(e,key,sign=False,generate=True):
  if generate:assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_formulario_gerar_v1('{e}','generate-{key}');"))['success']
@@ -153,6 +157,121 @@ def multi_item_matrix():
  rep=json.loads(last(stmt1));assert rep['replay'];ok('first partial ACK replay remains exact after second item finalization')
  for t in T.TABLES:assert json.loads(b)[t]==json.loads(snapshot())[t],t
  ok('multi-item physical confirmation no finance fiscal outbox changes')
+
+def ledger_lineage_matrix(e,stmt):
+ # Deliberate corrupt-fixture injection as local postgres, never an actor or deployable seam.
+ mid=last(f"SELECT id FROM public.estoque_movimentacoes WHERE referencia_id='{e}' AND acao='expedicao';")
+ for field,value in [('os_id',T.O7),('lote_id',T.L7),('os_tipo','onfarm'),('referencia_tipo','ordem_servico')]:
+  original=last(f"SELECT {field} FROM public.estoque_movimentacoes WHERE id='{mid}';")
+  sql(f"SET session_replication_role=replica;UPDATE public.estoque_movimentacoes SET {field}='{value}' WHERE id='{mid}';SET session_replication_role=origin;")
+  before=snapshot();reject('actual corrupted ledger '+field+' rejects replay',stmt,'42501','DELIVERY_CONFIRM_REPLAY_STATE_DENIED');assert snapshot()==before
+  sql(f"SET session_replication_role=replica;UPDATE public.estoque_movimentacoes SET {field}='{original}' WHERE id='{mid}';SET session_replication_role=origin;")
+ before=snapshot();assert json.loads(last(stmt))['replay'] and snapshot()==before;ok('restored ledger lineage exact replay no writes')
+
+def send_matrix():
+ spec=importlib.util.spec_from_file_location('send_generator',H/'send/assemble.py');SG=importlib.util.module_from_spec(spec);spec.loader.exec_module(SG)
+ pre=json.loads(last(SG.STATE+'::text;'));post=json.loads([x for x in sql('BEGIN;'+SG.candidate()+SG.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1]);SG.write(pre,post)
+ load(H/'send/install.sql.review');assert json.loads(last(SG.STATE+'::text;'))==post;ok('independent send install exact PRE POST closed')
+ os,pp,l=T.u(801),T.u(802),T.u(803);sql('SET session_replication_role=replica;'+T.manufactured(os,pp,l)+'SET session_replication_role=origin;');e,_=create(os,pp,l,'88');obs=last(f"SELECT updated_at FROM public.entregas WHERE id='{e}';")
+ stmt=T.actor()+f"SELECT public.rpc_entrega_enviar_manual_v1('{e}','{obs}','send-test-001');"
+ reject('send writer initially closed',stmt,'42501');sql(f'GRANT EXECUTE ON FUNCTION {SG.RPC} TO authenticated;')
+ b=snapshot();reject('foreign tenant send denied',stmt.replace(T.U,T.V),'42501');assert snapshot()==b
+ reject('send absent CAS denied',stmt.replace("'"+obs+"'",'NULL'),'22023','DELIVERY_SEND_INVALID');assert snapshot()==b
+ reject('send stale CAS denied',stmt.replace(obs,'2020-01-01'),'PT409','DELIVERY_SEND_OBSERVED_CONFLICT');assert snapshot()==b
+ cap=json.loads(last(T.actor()+f"SELECT public.rpc_entrega_envio_capability_v1('{e}');"));assert cap['available'] and cap['os_id']==os;ok('exact send capability available only after disposable grant')
+ r=json.loads(last(stmt));assert r['status']=='em_rota';after=json.loads(snapshot());before=json.loads(b)
+ for table in ['estoque_produto','estoque_movimentacoes','entrega_comprovantes','ordens_servico','laboratorio_esteira_eventos']+T.TABLES:assert before[table]==after[table],table
+ ok('send changes only delivery status revision receipt; no stock ledger proof downstream effects')
+ b=snapshot();assert json.loads(last(stmt))['replay'] and snapshot()==b;ok('send exact replay no writes')
+ reject('send same key changed CAS conflicts',stmt.replace(obs,'2020-01-01'),'PT409','DELIVERY_SEND_REPLAY_CONFLICT');assert snapshot()==b
+ wait_revoke('send inactive actor after lock denied',f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.U}';")
+ wait_revoke('send role revoked after lock denied',f"DELETE FROM public.user_roles WHERE user_id='{T.U}';",stmt,f"INSERT INTO public.user_roles(user_id,role) VALUES('{T.U}','administrador');")
+ wait_revoke('send tenant changed after lock denied',f"UPDATE public.profiles SET organization_id='{T.B}' WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET organization_id='{T.A}' WHERE user_id='{T.U}';")
+ wait_revoke('send SaaS revoked after gate lock denied',f"UPDATE public.organization_subscriptions SET status='SUSPENDED',suspended_at=now() WHERE organization_id='{T.A}';",stmt,f"UPDATE public.organization_subscriptions SET status='ACTIVE',suspended_at=NULL WHERE organization_id='{T.A}';",gate=True)
+ r=json.loads(last(call(e,'send-then-confirm')));assert r['success'] and r['status']=='entregue';ok('canonical Enviar then Confirmar without second stock ledger dispatch')
+ for n,mode in enumerate(['send','cancel']):
+  osn,ppn,ln=T.u(810+n*3),T.u(811+n*3),T.u(812+n*3);sql('SET session_replication_role=replica;'+T.manufactured(osn,ppn,ln)+'SET session_replication_role=origin;');en,_=create(osn,ppn,ln,str(90+n));obn=last(f"SELECT updated_at FROM public.entregas WHERE id='{en}';")
+  send=T.actor()+f"SELECT public.rpc_entrega_enviar_manual_v1('{en}','{obn}','send-race-{n}');"
+  win=send if mode=='send' else T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{en}','LOCAL CANCEL','{obn}');"
+  holder=T.T.session("SET application_name='send_holder';BEGIN;"+win)
+  for _ in range(100):
+   if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='send_holder' AND state='idle in transaction';")=='1':break
+   time.sleep(.025)
+  loser=send.replace('send-race-'+str(n),'send-other-'+str(n))
+  waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='send_waiter';"+loser);wait_lock('send_waiter');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+  b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':mode+' vs send','stdout':out,'stderr':err});assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_SEND_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok('observed '+mode+' winner send loser PT409 snapshot unchanged')
+ hist=snapshot();sql((H/'send/rollback.sql.review').read_text());reject('send deny-only rollback no regrant',stmt,'42501');assert snapshot()==hist
+
+def coverage_matrix():
+ # Seed otherwise-contained upstream manufacture locally; tested group/proof/confirm run origin triggers.
+ os,pp,l=T.u(701),T.u(702),T.u(703);p2,pp2,l2,l3=T.u(704),T.u(705),T.u(706),T.u(707)
+ sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=6000)+f"""
+ INSERT INTO public.produtos SELECT (jsonb_populate_record(NULL::public.produtos,to_jsonb(p)||jsonb_build_object('id','{p2}','nome','LOCAL MATRIX PRODUCT 2'))).* FROM public.produtos p WHERE id='{T.PROD}';
+ SET session_replication_role=origin;""")
+ stocks=[]
+ b=snapshot();reject('multiple lots same programming forbidden by canonical unique index','BEGIN;SET LOCAL session_replication_role=replica;'+f"INSERT INTO public.lotes(id,organization_id,produto_id,programacao_id,status,codigo_lote,volume_produzido) VALUES('{l2}','{T.A}','{T.PROD}','{pp}','aprovado','LOCAL-MATRIX-2',100000);",'23505','idx_lotes_programacao_id_unique');assert snapshot()==b
+ for n in range(3):assert json.loads(last(T.actor()+T.envase(os,pp,l,[{'tipo_embalagem':'frasco_1L','quantidade':2}],'coverage-envase-'+str(n))))['success']
+ stocks=json.loads(last(f"SELECT jsonb_agg(id ORDER BY id) FROM public.estoque_produto WHERE lote_id='{l}' AND status='reservado';"));assert len(stocks)==3
+ group=json.loads(last(T.actor()+T.group(os,[{'item_id':s,'quantidade':2} for s in stocks],'coverage-group-001')))
+ deliveries=[i['entrega_id'] for i in group['itens']]
+ for n,e in enumerate(deliveries):prove(e,'coverage-'+str(n))
+ before=json.loads(snapshot())
+ # Confirm both same-product lots; the other product still has uncovered demand.
+ same=deliveries[:2]
+ other=deliveries[2]
+ observed=last(f"SELECT updated_at FROM public.entregas WHERE id='{other}';")
+ assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{other}','LOCAL COVERAGE CANCEL','{observed}');"))['success']
+ for n,e in enumerate(same):
+  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-item coverage leaves 6000ml demand open '+str(n))
+ b=snapshot();reject('cancelled delivery cannot cover remaining demand',call(other,'coverage-cancel-deny'),'PT409','DELIVERY_CONFIRM_OBSERVED_CONFLICT');assert snapshot()==b
+ assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('canonical cancellation and reversed reservation leave 2000ml demand uncovered')
+ # Re-deliver the canonically returned stock, with original programming/product roots.
+ sid=last(f"SELECT estoque_produto_id FROM public.entregas WHERE id='{other}';")
+ # Keep the unique one-program-per-OS constraint: unsupported multi-product same OS is tested as an exact negative.
+ b=snapshot();reject('same OS second product programming forbidden by canonical unique constraint','BEGIN;SET LOCAL session_replication_role=replica;'+f"INSERT INTO public.programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario,status,data_programada) VALUES('{pp2}','{T.A}','{os}','{p2}',2000,'aprovado',current_date);",'23505','programacao_producao_os_uniq');assert snapshot()==b
+ # Corrupt product lineage locally, replay must reject and preserve the injected snapshot.
+ original=last(f"SELECT produto_id FROM public.entregas WHERE id='{same[0]}';")
+ sql(f"SET session_replication_role=replica;UPDATE public.entregas SET produto_id='{p2}' WHERE id='{same[0]}';SET session_replication_role=origin;")
+ b=snapshot();reject('different product never covers programming or replay',call(same[0],'coverage-confirm-0'),'42501','DELIVERY_CONFIRM_LINEAGE_DENIED');assert snapshot()==b
+ sql(f"SET session_replication_role=replica;UPDATE public.entregas SET produto_id='{original}' WHERE id='{same[0]}';SET session_replication_role=origin;")
+ for table in T.TABLES:assert before[table]==json.loads(snapshot())[table],table
+ ok('cancellation and reversed reservation preserve financial fiscal outbox sentinels')
+ # Positive second product in its own OS/program/lote, as the real schema requires.
+ os2,prog2,lot2=T.u(721),T.u(722),T.u(723)
+ seed=T.manufactured(os2,prog2,lot2).replace(T.PROD,p2)
+ sql('SET session_replication_role=replica;'+seed+'SET session_replication_role=origin;')
+ e2,_=create(os2,prog2,lot2,'79');r=json.loads(last(call(e2,'second-product-confirm')));assert r['finalizada'] is True
+ assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('second product separate OS finalizes 2000ml without covering first OS missing 2000ml')
+
+def proof_race_matrix():
+ def held(name):
+  for _ in range(100):
+   if last(f"SELECT count(*) FROM pg_stat_activity WHERE application_name='{name}' AND state='idle in transaction';")=='1':return
+   time.sleep(.025)
+  raise AssertionError('HOLDER_NOT_READY '+name)
+ for n,action in enumerate(['sign','attach']):
+  os,pp,l=T.u(730+n*3),T.u(731+n*3),T.u(732+n*3)
+  sql('SET session_replication_role=replica;'+T.manufactured(os,pp,l)+'SET session_replication_role=origin;')
+  e,path=create(os,pp,l,str(80+n));obs=last(f"SELECT updated_at FROM public.entregas WHERE id='{e}';")
+  newpath=f"entregas/{e}/"+('assinaturas/' if action=='sign' else 'comprovantes/')+T.u(780+n)+('.png' if action=='sign' else '.pdf')
+  sql(f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{newpath}','{T.U}','{T.U}');")
+  payload={'recebedor_nome':'LOCAL'}
+  if action=='sign':payload.update(assinatura_digital_png_path=newpath,assinatura_hash='c'*64);rpc='rpc_entrega_assinatura_coletar_v1'
+  else:payload.update(arquivo_path=newpath,arquivo_nome='local.pdf',arquivo_mime='application/pdf');rpc='rpc_entrega_comprovante_anexar_v1'
+  proof=T.actor()+f"SELECT public.{rpc}('{e}','race-proof-{action}','{json.dumps(payload)}');"
+  holder=T.T.session("SET application_name='proof_race_holder';BEGIN;"+proof);held('proof_race_holder')
+  waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='proof_confirm_race';"+call(e,'race-confirm-'+action,obs))
+  wait_lock('proof_confirm_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+  b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':action+' wins against confirm','stdout':out,'stderr':err})
+  assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok(action+' wins observed lock; stale confirmation PT409 with exact snapshots')
+  confirmation=call(e,'race-confirm-fresh-'+action);holder=T.T.session("SET application_name='confirm_race_holder';BEGIN;"+confirmation);held('confirm_race_holder')
+  # Force observation at the first canonical proof advisory lock, held by this same confirmation transaction.
+  holder.stdin.write(f"SELECT pg_advisory_xact_lock(hashtext('entrega_proof:{e}'));\n");holder.stdin.flush()
+  held('confirm_race_holder')
+  waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='confirm_proof_race';"+proof.replace('race-proof-'+action,'race-proof-after-'+action))
+  wait_lock('confirm_proof_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+  b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':'confirm wins against '+action,'stdout':out,'stderr':err})
+  assert re.search(r'ERROR:\s+42501:',err) and 'DELIVERY_PROOF_SCOPE_DENIED' in err,(out,err);assert snapshot()==b;ok('confirmation wins observed lock; '+action+' denied 42501 scope with exact snapshots')
 
 if __name__=='__main__':
  status=1;start=time.monotonic()
