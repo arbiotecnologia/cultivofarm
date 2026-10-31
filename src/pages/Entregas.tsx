@@ -61,6 +61,7 @@ import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoE
 import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
+import { dispatchSend, type SendAttempt } from "@/lib/entregas/deliverySendFlow";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -80,6 +81,7 @@ export default function Entregas() {
   const pendingStore = (): Storage | null => { try { return window.localStorage; } catch { return null; } };
   const deliveryScope = useStorageAccessScope("entregas-operations");
   const operation = useRef<symbol | null>(null);
+  const sendAttempts = useRef(new Map<string, SendAttempt>());
   const unresolved = useRef(new Set<string>());
   const [operationNotice, setOperationNotice] = useState("");
   // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.
@@ -130,7 +132,7 @@ export default function Entregas() {
   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
     try {
       // create/cancel probe the server capability inside the work, before any dispatch.
-      if (target !== "create" && target !== "cancel" && target !== "replay") requireDeliveryOperationContract("delivery");
+      if (target !== "create" && target !== "cancel" && target !== "replay" && target !== "send") requireDeliveryOperationContract("delivery");
     } catch (error) {
       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
       setOperationNotice(message);
@@ -612,7 +614,7 @@ export default function Entregas() {
 
   const updateStatus = useMutation({
     retry: false,
-    mutationFn: ({ id, status }: { id: string; status: string }) => runDeliveryOperation(id, async (check, dispatch) => {
+    mutationFn: ({ id, status }: { id: string; status: string }) => runDeliveryOperation("send", async (check, dispatch, current) => {
       // A confirmação física ("entregue") NÃO passa por aqui: ela exige
       // recebedor identificado e é feita exclusivamente pelo
       // ConfirmarEntregaDialog. Nenhum caminho pode confirmar em silêncio.
@@ -623,11 +625,13 @@ export default function Entregas() {
       }
 
       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || status !== "em_rota") throw new Error("Transição de entrega inválida.");
-      dispatch();
-      const { data, error } = await supabase.from("entregas").update({ status: status as Tables<"entregas">["status"] }).eq("id", id).eq("status", "separado").select("id, status");
-      check();
-      if (data?.length !== 1 || data[0].id !== id || data[0].status !== status) throw new Error("Status não confirmado; consulte as entregas.");
-      if (error) throw error;
+      const row = (entregas as any[]).find(e => e.id === id);
+      if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");
+      const key = `${deliveryScope.scope}:${id}`;
+      const attempt = sendAttempts.current.get(key) ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
+      sendAttempts.current.set(key, attempt);
+      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, dispatch);
+      check(); sendAttempts.current.delete(key);
       return true;
     }),
 
