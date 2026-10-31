@@ -152,7 +152,7 @@ def legacy_replay_matrix(e,path,stmt):
  reject('foreign actor cannot recover legacy sign hash',stmt.replace(T.U,T.V),'42501','DELIVERY_PROOF_SCOPE_DENIED');assert snapshot()==b
  cases=[('arbitrary old delivery hash',f"UPDATE public.entregas SET validation_hash=repeat('0',64) WHERE id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
  ('arbitrary signed proof hash',f"UPDATE public.entrega_comprovantes SET validation_hash=repeat('1',64) WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
- ('different proof path',f"UPDATE public.entrega_comprovantes SET assinatura_digital_png_path='invalid' WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
+ ('different proof path',f"UPDATE public.entrega_comprovantes SET assinatura_digital_png_path='entregas/{e}/assinaturas/{T.u(987)}.png' WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
  ('foreign storage owner',f"UPDATE storage.objects SET owner_id='{T.V}' WHERE name='{path}';",'DELIVERY_PROOF_OBJECT_DENIED'),
  ('missing object',f"DELETE FROM storage.objects WHERE name='{path}';",'DELIVERY_PROOF_OBJECT_DENIED'),
  ('confirmed proof',f"UPDATE public.entrega_comprovantes SET status='confirmado' WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
