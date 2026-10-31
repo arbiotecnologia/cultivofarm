@@ -36,7 +36,7 @@ DECLARE c public.entrega_comprovantes; path text; owner_actor uuid; BEGIN
  IF p_e.assinatura_obrigatoria AND (c.assinatura_coletada IS NOT TRUE OR c.status NOT IN ('anexado','assinatura_digital_coletada','assinado','confirmado') OR nullif(btrim(c.recebedor_nome),'') IS NULL)
  THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SIGNATURE_REQUIRED' USING ERRCODE='42501'; END IF;
  IF c.assinatura_tipo='digital_tela' AND c.assinatura_coletada THEN
-  path:=c.assinatura_digital_png_path; owner_actor:=c.assinatura_capturada_por;
+  path:=c.assinatura_digital_png_path; owner_actor:=p_e.assinatura_digital_capturada_por;
   IF path IS NULL OR path !~ ('^entregas/'||p_e.id::text||'/assinaturas/[0-9a-f-]{36}\.png$') OR coalesce(c.assinatura_hash,'') !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBJECT_DENIED' USING ERRCODE='42501'; END IF;
  ELSIF c.assinatura_tipo='fisica_anexada' OR c.arquivo_path IS NOT NULL THEN
   path:=c.arquivo_path; owner_actor:=c.anexado_por;
@@ -56,7 +56,7 @@ REVOKE ALL ON FUNCTION platform_private.delivery_confirm_proof_v1(public.entrega
 
 CREATE FUNCTION platform_private.delivery_confirm_apply_v1(p_entrega uuid,p_observed timestamptz,p_key text,p_recebedor jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$
-DECLARE org uuid; actor uuid:=auth.uid(); e public.entregas; initial public.entregas; s public.estoque_produto; l public.lotes; pp public.programacao_producao; c public.entrega_comprovantes; prev platform_private.delivery_requests_20261030;
+DECLARE org uuid; v_actor uuid:=auth.uid(); e public.entregas; initial public.entregas; s public.estoque_produto; l public.lotes; pp public.programacao_producao; c public.entrega_comprovantes; prev platform_private.delivery_requests_20261030;
  fp text; result jsonb; ack jsonb; pend int; total numeric; reserved numeric; finalizada boolean:=false; os_status text; p jsonb; k text; v jsonb; path text;
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
@@ -69,8 +69,8 @@ BEGIN
  END LOOP;
  IF nullif(p->>'nome','') IS NULL THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_RECEIVER_REQUIRED' USING ERRCODE='22023'; END IF;
  initial:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
- fp:=encode(extensions.digest(jsonb_build_array(actor,org,p_entrega,p_observed,p)::text,'sha256'),'hex');
- PERFORM pg_advisory_xact_lock(hashtextextended('delivery_confirm:'||jsonb_build_array(actor,org,p_key)::text,0));
+ fp:=encode(extensions.digest(jsonb_build_array(v_actor,org,p_entrega,p_observed,p)::text,'sha256'),'hex');
+ PERFORM pg_advisory_xact_lock(hashtextextended('delivery_confirm:'||jsonb_build_array(v_actor,org,p_key)::text,0));
  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
@@ -102,7 +102,7 @@ BEGIN
   PERFORM 1 FROM storage.objects WHERE bucket_id='entrega-documentos' AND name=path FOR SHARE;
   e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org); c:=platform_private.delivery_confirm_proof_v1(e);
  END IF;
- SELECT * INTO prev FROM platform_private.delivery_requests_20261030 WHERE organization_id=org AND actor=delivery_confirm_apply_v1.actor AND action='confirm' AND request_key=p_key;
+ SELECT * INTO prev FROM platform_private.delivery_requests_20261030 WHERE organization_id=org AND actor=v_actor AND action='confirm' AND request_key=p_key;
  IF FOUND THEN
   IF prev.fingerprint IS DISTINCT FROM fp OR e.status::text<>'entregue' OR c.status<>'confirmado' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
   RETURN prev.result||jsonb_build_object('replay',true);
@@ -118,12 +118,12 @@ BEGIN
  OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('estorno_expedicao','entrega','devolucao')) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LEDGER_DENIED' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id ORDER BY id FOR SHARE;
  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
- INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation) VALUES(txid_current(),actor,org,'confirm',e.id,'confirm');
- UPDATE public.entrega_comprovantes SET status='confirmado',confirmado_por=actor,confirmado_em=now(),updated_at=now() WHERE id=c.id;
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation) VALUES(txid_current(),v_actor,org,'confirm',e.id,'confirm');
+ UPDATE public.entrega_comprovantes SET status='confirmado',confirmado_por=v_actor,confirmado_em=now(),updated_at=now() WHERE id=c.id;
  c:=platform_private.delivery_confirm_proof_v1(e);
  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
- UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=p->>'cargo',recebido_por_documento=p->>'documento',observacoes_confirmacao=p->>'observacoes',confirmado_por=actor,
- recebimento_confirmado_em=now(),recebimento_confirmado_por=actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed;
+ UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=p->>'cargo',recebido_por_documento=p->>'documento',observacoes_confirmacao=p->>'observacoes',confirmado_por=v_actor,
+ recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed;
  IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND mutation='done') THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
  ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);
  IF ack->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id) IS DISTINCT FROM 'entregue' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ADVANCE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
@@ -136,12 +136,12 @@ BEGIN
   finalizada:=true;
  END IF;
  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
- result:=jsonb_build_object('success',true,'action','confirm','replay',false,'actor_id',actor,'organization_id',org,'entrega_id',e.id,'os_id',e.ordem_servico_id,'comprovante_id',c.id,'status','entregue','os_status',(SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id),'finalizada',finalizada,'updated_at',(SELECT updated_at FROM public.entregas WHERE id=e.id));
- INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_key,actor,org,'confirm',fp,result);
+ result:=jsonb_build_object('success',true,'action','confirm','replay',false,'actor_id',v_actor,'organization_id',org,'entrega_id',e.id,'os_id',e.ordem_servico_id,'comprovante_id',c.id,'status','entregue','os_status',(SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id),'finalizada',finalizada,'updated_at',(SELECT updated_at FROM public.entregas WHERE id=e.id));
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_key,v_actor,org,'confirm',fp,result);
  DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();
  RETURN result;
 END $$;
 REVOKE ALL ON FUNCTION platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION public.rpc_entrega_confirmar_manual_v1(p_entrega uuid,p_observed timestamptz,p_request_key text,p_recebedor jsonb)
-RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.delivery_confirm_apply_v1(p_entrega,p_observed,p_request_key,p_recebedor) $$;
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$ SELECT platform_private.delivery_confirm_apply_v1(p_entrega,p_observed,p_request_key,p_recebedor) $$;
 REVOKE ALL ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
