@@ -407,7 +407,7 @@ DECLARE org uuid; e public.entregas; available boolean:=false; BEGIN
  BEGIN org:=platform_private.delivery_confirm_actor_v1(); e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
  available:=has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE') AND e.status::text IN ('separado','em_rota','entregue');
  EXCEPTION WHEN insufficient_privilege THEN available:=false; END;
- RETURN jsonb_build_object('capability','delivery_confirmation_manual_v1','available',available,'actor_id',auth.uid(),'organization_id',org,'entrega_id',p_entrega,'updated_at',e.updated_at,'status',e.status::text);
+ RETURN jsonb_build_object('capability','delivery_confirmation_manual_v1','available',available,'actor_id',auth.uid(),'organization_id',org,'entrega_id',p_entrega,'os_id',e.ordem_servico_id,'comprovante_id',e.comprovante_id,'updated_at',e.updated_at,'status',e.status::text);
 END $$;
 REVOKE ALL ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) TO authenticated;
