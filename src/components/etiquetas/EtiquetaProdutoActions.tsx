@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { buildRastreioUrl } from "./QRCodeRastreioProduto";
 
 interface Props {
+  readOnly?: boolean;
   envaseId?: string;
   loteId?: string;
   etiquetaId?: string | null;
@@ -21,7 +22,7 @@ interface Props {
   onChanged?: () => void;
 }
 
-export function EtiquetaProdutoActions({ envaseId, loteId, etiquetaId, traceToken, status, onChanged }: Props) {
+export function EtiquetaProdutoActions({ readOnly = false, envaseId, loteId, etiquetaId, traceToken, status, onChanged }: Props) {
   const [openGerar, setOpenGerar] = useState(false);
   const [openCancelar, setOpenCancelar] = useState(false);
   const [tipo, setTipo] = useState("principal");
@@ -32,6 +33,7 @@ export function EtiquetaProdutoActions({ envaseId, loteId, etiquetaId, traceToke
   const [loading, setLoading] = useState(false);
 
   const gerar = async () => {
+    if (readOnly) return;
     setLoading(true);
     const { data, error } = await (supabase as any).rpc("rpc_gerar_etiqueta_produto", {
       p_lote_id: loteId || null,
@@ -68,6 +70,7 @@ export function EtiquetaProdutoActions({ envaseId, loteId, etiquetaId, traceToke
   };
 
   const cancelar = async () => {
+    if (readOnly) return;
     if (!etiquetaId || motivo.trim().length < 3) {
       toast.error("Motivo obrigatório (min 3 caracteres)");
       return;
@@ -89,6 +92,8 @@ export function EtiquetaProdutoActions({ envaseId, loteId, etiquetaId, traceToke
   };
 
   const isCancelada = status === "cancelada";
+
+  if (!etiquetaId && readOnly) return <span className="text-muted-foreground">—</span>;
 
   if (!etiquetaId) {
     return (
@@ -149,7 +154,7 @@ export function EtiquetaProdutoActions({ envaseId, loteId, etiquetaId, traceToke
       <Button size="sm" variant="outline" onClick={copiarLink}>
         <LinkIcon className="h-3 w-3 mr-1" /> Link
       </Button>
-      {!isCancelada && (
+      {!readOnly && !isCancelada && (
         <Dialog open={openCancelar} onOpenChange={setOpenCancelar}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline">
