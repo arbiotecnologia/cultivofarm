@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests) 27ms
+ ✓ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests) 29ms
+ ✓ src/test/estoque/stock-caller-compatibility.test.ts (9 tests) 25ms
+
+ Test Files  3 passed (3)
+      Tests  36 passed (36)
+   Start at  16:56:13
+   Duration  3.92s (transform 254ms, setup 775ms, collect 381ms, tests 81ms, environment 4.84s, prepare 2.40s)
+

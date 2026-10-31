@@ -63,12 +63,17 @@ describe("FASE 28C — contrato do motor e das entregas", () => {
     expect(c).toContain("export async function operarEstoque");
   });
 
-  it("Entregas.tsx mantém operarEstoque e as chaves canônicas", () => {
+  it("Entregas.tsx usa somente os contratos atômicos atuais, nunca o motor legado", () => {
     const c = read(ENTREGAS);
-    expect(c).toContain("operarEstoque");
-    expect(c).toContain("entrega-expedicao");
-    expect(c).toContain("entrega-estorno");
-    expect(c).toContain("mensagemErroEstoque");
+    // Substitui a exigência histórica de operarEstoque/entrega-expedicao/entrega-estorno (motor legado contido).
+    expect(c).not.toContain("operarEstoque");
+    expect(c).not.toContain("rpc_estoque_operar_v1");
+    expect(c).not.toMatch(/from\("estoque_produto"\)\.(update|insert|delete|upsert)/);
+    expect(c).toMatch(/runAtomicGroup\(supabase\.rpc/);
+    expect(c).toMatch(/requestKey: grupoId, expectedOrg: orgId, osId, osTipo/);
+    expect(c).toContain("osObservedUpdatedAt: observed.os.updated_at");
+    expect(c).toMatch(/runAtomicCancel\(supabase\.rpc[^\n]*observedUpdatedAt, orgId/);
+    expect(c).toMatch(/dispatchSend\(supabase\.rpc/);
   });
 });
 

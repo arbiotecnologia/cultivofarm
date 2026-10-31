@@ -1,0 +1,146 @@
+diff --git a/src/test/estoque/estoque-contratos-fase28c.test.ts b/src/test/estoque/estoque-contratos-fase28c.test.ts
+index 22f036b1a..e219e7d0c 100644
+--- a/src/test/estoque/estoque-contratos-fase28c.test.ts
++++ b/src/test/estoque/estoque-contratos-fase28c.test.ts
+@@ -63,12 +63,17 @@ describe("FASE 28C — contrato do motor e das entregas", () => {
+     expect(c).toContain("export async function operarEstoque");
+   });
+ 
+-  it("Entregas.tsx mantém operarEstoque e as chaves canônicas", () => {
++  it("Entregas.tsx usa somente os contratos atômicos atuais, nunca o motor legado", () => {
+     const c = read(ENTREGAS);
+-    expect(c).toContain("operarEstoque");
+-    expect(c).toContain("entrega-expedicao");
+-    expect(c).toContain("entrega-estorno");
+-    expect(c).toContain("mensagemErroEstoque");
++    // Substitui a exigência histórica de operarEstoque/entrega-expedicao/entrega-estorno (motor legado contido).
++    expect(c).not.toContain("operarEstoque");
++    expect(c).not.toContain("rpc_estoque_operar_v1");
++    expect(c).not.toMatch(/from\("estoque_produto"\)\.(update|insert|delete|upsert)/);
++    expect(c).toMatch(/runAtomicGroup\(supabase\.rpc/);
++    expect(c).toMatch(/requestKey: grupoId, expectedOrg: orgId, osId, osTipo/);
++    expect(c).toContain("osObservedUpdatedAt: observed.os.updated_at");
++    expect(c).toMatch(/runAtomicCancel\(supabase\.rpc[^\n]*observedUpdatedAt, orgId/);
++    expect(c).toMatch(/dispatchSend\(supabase\.rpc/);
+   });
+ });
+ 
+diff --git a/src/test/estoque/estoque-fase28b-auditoria.test.ts b/src/test/estoque/estoque-fase28b-auditoria.test.ts
+index c9a095d17..06c70e251 100644
+--- a/src/test/estoque/estoque-fase28b-auditoria.test.ts
++++ b/src/test/estoque/estoque-fase28b-auditoria.test.ts
+@@ -128,11 +128,14 @@ describe("FASE 28B — componentes e integrações mapeados", () => {
+     expect(arquivos.filter((f) => !exists(f))).toEqual([]);
+   });
+ 
+-  it("Entregas.tsx usa o motor canônico com chaves de idempotência", () => {
++  it("Entregas.tsx usa contratos atômicos com chave/CAS e não o motor legado", () => {
+     const c = read(ENTREGAS);
+-    expect(c).toContain("operarEstoque");
+-    expect(c).toContain("entrega-expedicao");
+-    expect(c).toContain("entrega-estorno");
++    expect(c).not.toContain("operarEstoque");
++    expect(c).not.toContain("entrega-expedicao");
++    expect(c).not.toContain("entrega-estorno");
++    expect(c).toContain('from "@/lib/entregas/deliveryOperationsFlow"');
++    expect(c).toMatch(/requestKey: grupoId/);
++    expect(c).toMatch(/runAtomicCancel\(/);
+   });
+ 
+   it("nenhum componente de estoque escreve direto em estoque_produto", () => {
+diff --git a/src/test/estoque/stock-caller-compatibility.test.ts b/src/test/estoque/stock-caller-compatibility.test.ts
+index 060e7f599..119deac75 100644
+--- a/src/test/estoque/stock-caller-compatibility.test.ts
++++ b/src/test/estoque/stock-caller-compatibility.test.ts
+@@ -4,27 +4,45 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
+ const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc } }));
+ import { EstoqueMotorError, operarEstoque } from "@/lib/estoque/motorEstoque";
++import { DELIVERY_CANCELLATION_BLOCK, DELIVERY_OPERATION_BLOCK } from "@/lib/entregas/operationalContainment";
++import { buildGroupArgs, GROUP_RPC, runAtomicGroup, type GroupInput } from "@/lib/entregas/deliveryOperationsFlow";
++
++const OS = "11111111-1111-4111-8111-111111111111";
++const ORG = "22222222-2222-4222-8222-222222222222";
++const ITEM = "33333333-3333-4333-8333-333333333333";
++const group = (o: Partial<GroupInput> = {}): GroupInput => ({
++  requestKey: "grupo-key-0001", expectedOrg: ORG, osId: OS, osTipo: "padrao", osOrigem: "agronomica", osPartnerOrderId: null,
++  osObservedUpdatedAt: "2026-10-31T10:00:00.000Z",
++  itens: [{ itemId: ITEM, quantidade: 2, observedUpdatedAt: "2026-10-31T09:00:00.000Z", status: "disponivel" }], dados: {}, ...o,
++});
+ 
+ describe("compatibilidade dos callers de estoque — sem API real", () => {
+   beforeEach(() => rpc.mockReset());
+ 
+-  it("mantém nome, parâmetros e resultado da RPC tipada", async () => {
+-    const data = { ok: true, replay: false, acao: "expedicao" };
+-    const payload = { os_id: "os-id", os_tipo: "onfarm" };
++  it("ação não-entrega mantém nome, parâmetros e resultado da RPC tipada", async () => {
++    const data = { ok: true, replay: false, acao: "ajuste" };
++    const payload = { motivo: "inventário", referencia_tipo: "manual" as const };
+     rpc.mockResolvedValue({ data, error: null });
+-    expect(await operarEstoque("expedicao", "item-id", 2, "key", payload)).toBe(data);
++    expect(await operarEstoque("ajuste", "item-id", 2, "key", payload)).toBe(data);
+     expect(rpc).toHaveBeenCalledExactlyOnceWith("rpc_estoque_operar_v1", {
+-      p_acao: "expedicao", p_item_id: "item-id", p_quantidade: 2,
+-      p_idempotency_key: "key", p_payload: payload,
++      p_acao: "ajuste", p_item_id: "item-id", p_quantidade: 2, p_idempotency_key: "key", p_payload: payload,
+     });
+   });
+ 
+-  it("preserva quantidade NULL do estorno e payload default", async () => {
++  it("preserva quantidade NULL e payload default onde ainda aplicável", async () => {
+     rpc.mockResolvedValue({ data: { ok: true }, error: null });
+-    await operarEstoque("estorno_expedicao", "item-id", null, "key");
+-    expect(rpc).toHaveBeenCalledWith("rpc_estoque_operar_v1", expect.objectContaining({
+-      p_quantidade: null, p_payload: {},
+-    }));
++    await operarEstoque("cancelamento_reserva", "item-id", null, "key");
++    expect(rpc).toHaveBeenCalledExactlyOnceWith("rpc_estoque_operar_v1", expect.objectContaining({ p_quantidade: null, p_payload: {} }));
++  });
++
++  it.each([
++    ["expedicao", 2, {}, DELIVERY_OPERATION_BLOCK],
++    ["entrega", 2, {}, DELIVERY_OPERATION_BLOCK],
++    ["estorno_expedicao", null, {}, DELIVERY_CANCELLATION_BLOCK],
++    ["devolucao", 1, { referencia_tipo: "entrega" }, DELIVERY_OPERATION_BLOCK],
++  ] as const)("contenção: %s pelo motor legado falha sem chamar RPC", async (acao, qtd, payload, msg) => {
++    await expect(operarEstoque(acao, "item-id", qtd, "key", payload)).rejects.toThrow(msg);
++    expect(rpc).not.toHaveBeenCalled();
+   });
+ 
+   it("continua propagando o erro de negócio sem repetir escrita", async () => {
+@@ -33,12 +51,27 @@ describe("compatibilidade dos callers de estoque — sem API real", () => {
+     expect(rpc).toHaveBeenCalledTimes(1);
+   });
+ 
+-  it("expedição automática envia o tipo junto ao ID da OS", () => {
++  it("criação vincula OS/chave/CAS e tipo de OS é validado antes de qualquer RPC", async () => {
++    expect(buildGroupArgs(group())).toEqual({
++      p_os_id: OS, p_origem: "manual", p_request_key: "grupo-key-0001", p_dados: {}, p_os_observed: "2026-10-31T10:00:00.000Z",
++      p_itens: [{ item_id: ITEM, quantidade: 2, observed_updated_at: "2026-10-31T09:00:00.000Z" }],
++    });
++    for (const o of [{ osTipo: "onfarm" }, { osPartnerOrderId: OS }, { osOrigem: "b2b" }]) {
++      await expect(runAtomicGroup(rpc, group(o), () => {})).rejects.toThrow(/OnFarm e B2B/);
++    }
++    expect(rpc).not.toHaveBeenCalled();
++    rpc.mockResolvedValueOnce({ data: { capability: 1, group: false, cancel: false }, error: null });
++    expect(await runAtomicGroup(rpc, group(), () => {})).toEqual({ status: "closed", message: DELIVERY_OPERATION_BLOCK });
++    expect(rpc.mock.calls.some(([fn]) => fn === GROUP_RPC)).toBe(false);
++  });
++
++  it("Entregas passa o tipo da OS e a revisão observada ao contrato atômico", () => {
+     const caller = readFileSync("src/pages/Entregas.tsx", "utf8");
+-    const start = caller.indexOf('origem: "entregas.registrarEntrega"');
++    const start = caller.indexOf("runAtomicGroup(supabase.rpc");
+     expect(start).toBeGreaterThan(-1);
+-    const payload = caller.slice(start, caller.indexOf("},", start));
+-    expect(payload).toContain("os_id: itemOsId");
+-    expect(payload).toContain("os_tipo: itemOsTipo");
++    const call = caller.slice(start, caller.indexOf("}, check,", start));
++    expect(call).toContain("osId, osTipo");
++    expect(call).toContain("osObservedUpdatedAt: observed.os.updated_at");
++    expect(call).toContain("observedUpdatedAt: observed.itens[item.id].updated_at");
+   });
+-});
+\ No newline at end of file
++});

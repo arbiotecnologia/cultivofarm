@@ -1,0 +1,6 @@
+7b1f4b509617d9d67883c825ca8b8e4419a8b9db43368e4b58a88e01c436a565  ./README.md
+f0f88a8879b17b3d59738d1b6f5416887b5fb0c0c6c47c45ed0f556975378eca  ./evidence/first-failed.log.txt
+a506946000ee0d99e89eea2927e1bb9b4d1452c853cecfd3a54f751aad167fa9  ./evidence/focused.log.txt
+21533168ab4a55945c8d5bbb00823b80b3c23a52e30d7a3f48f9f55cbea3da03  ./evidence/regression.log.txt
+19eaf43821a7660ec323a87c8457bf74823beb296c39f5e01aa8a683aa50f061  ./evidence/typecheck.log.txt
+a0a96332adca56131ffbceeed6136d2c27337458c4e8d6687e1ed9fc0d33129b  ./frontend.diff.txt
