@@ -1,3 +1,4 @@
+- [ ] 31/10 — Cancelamento de etiqueta: fechamento ACL-only independente, reprodução estrangeira descartável, 42501 own/foreign/anon/inativo e rollback sem regrant; sem hosted/publicação.
 - [ ] 31/10 — Confirmação física manual: composição canônica motor/prova/autoridade pós-lock/CAS/replay, install/release/PRE/POST/rollback e matrizes PG locais; sem hosted/publicação.
 - [ ] 31/10 — EnvasePage: retirar promessas de complemento e ofertas de etiqueta/embalagens fechadas; preservar histórico/consulta/impressão e testar montado.
 - [ ] 31/10 — Contratos posteriores independentes: identificar autoridade e provas de embalagens/etiquetas/dispensa antes de preparar qualquer liberação; efeitos financeiros/fiscais/comunicação/automações fechados.
