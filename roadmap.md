@@ -1,5 +1,5 @@
 - [x] 31/10 — Cancelamento de etiqueta: closure ACL-only independente; 16PG/504Vitest PASS, reprodução estrangeira revertida, 42501 own/foreign/anon/inativo, rollback sem regrant e UI sem cancelamento; auditor fará PRE/aplicação, sem hosted/publicação nesta execução.
-- [ ] 31/10 — Confirmação física manual: composição canônica motor/prova/autoridade pós-lock/CAS/replay, install/release/PRE/POST/rollback e matrizes PG locais; sem hosted/publicação.
+- [ ] 31/10 — Confirmação física: hash digital corrigido, 39PG/504Vitest locais; concluir multi-lote/produto/cobertura cancelada-estornada e corridas proof/confirm; release NO-GO, sem hosted/publicação.
 - [ ] 31/10 — EnvasePage: retirar promessas de complemento e ofertas de etiqueta/embalagens fechadas; preservar histórico/consulta/impressão e testar montado.
 - [ ] 31/10 — Contratos posteriores independentes: identificar autoridade e provas de embalagens/etiquetas/dispensa antes de preparar qualquer liberação; efeitos financeiros/fiscais/comunicação/automações fechados.
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
