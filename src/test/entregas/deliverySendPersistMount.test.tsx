@@ -102,6 +102,17 @@ function serve() {
 }
 const commit = (id: string) => { t.rows = t.rows.map(r => r.id === id ? { ...r, status: "em_rota", updated_at: T2 } : r); };
 const okAck = (id: string, replay = true) => ({ data: { success: true, action: "send", replay, actor_id: ACTOR, organization_id: ORG, entrega_id: id, os_id: OS, status: "em_rota", updated_at: T2 }, error: null });
+const realStorage = window.localStorage;
+function faulty(fail: { get?: boolean; set?: boolean; remove?: boolean }) {
+  const isSend = (k: string) => k.startsWith("cf:delivery-send:");
+  const proxy = { get length() { return realStorage.length; }, key: (i: number) => realStorage.key(i), clear: () => realStorage.clear(),
+    getItem: (k: string) => { if (fail.get && isSend(k)) throw new Error("denied"); return realStorage.getItem(k); },
+    setItem: (k: string, v: string) => { if (fail.set && isSend(k)) throw new Error("quota"); realStorage.setItem(k, v); },
+    removeItem: (k: string) => { if (fail.remove && isSend(k)) throw new Error("denied"); realStorage.removeItem(k); } };
+  Object.defineProperty(window, "localStorage", { value: proxy, configurable: true });
+  return () => Object.defineProperty(window, "localStorage", { value: realStorage, configurable: true });
+}
+afterEach(() => { Object.defineProperty(window, "localStorage", { value: realStorage, configurable: true }); });
 const lost = () => ({ data: null, error: { code: "57014", message: "timeout" } });
 
 describe("Enviar durable retention (mounted, real QueryClient)", () => {
@@ -144,35 +155,34 @@ describe("Enviar durable retention (mounted, real QueryClient)", () => {
 
   it("setItem failure before dispatch: no writer, no record", async () => {
     writer = async () => { throw new Error("must not dispatch"); };
-    const orig = Storage.prototype.setItem;
-    const set = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, k: string, v: string) { if (k.startsWith("cf:delivery-send:")) throw new Error("quota"); return orig.call(this, k, v); });
+    const restore = faulty({ set: true });
     const h = mount(); await screen.findByText("Cliente A");
     fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
-    set.mockRestore(); expect(sends()).toHaveLength(0); expect(sendKeys()).toEqual([]); h.qc.clear();
+    restore(); expect(sends()).toHaveLength(0); expect(sendKeys()).toEqual([]); h.qc.clear();
   });
 
   it("getItem failure fails closed on mount and on click", async () => {
     writer = async () => { throw new Error("must not dispatch"); };
-    const get = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("denied"); });
     localStorage.setItem(`${SPFX}${E1}`, rec());
-    const h = mount(); await screen.findByText(/Armazenamento local indisponível/);
+    const restore = faulty({ get: true });
+    const h = mount(); await screen.findByText("Outro"); await screen.findByText(/Armazenamento local indisponível/);
     fireEvent.click(row("Outro").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
-    get.mockRestore(); expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
+    restore(); expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(rec()); h.qc.clear();
   });
 
   it("removeItem failure after valid ACK keeps record and warns, without new key", async () => {
     writer = async (a) => { commit(a.p_entrega); return okAck(a.p_entrega, false); };
-    const rm = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => { throw new Error("denied"); });
+    const restore = faulty({ remove: true });
     const h = mount(); await screen.findByText("Cliente A");
     fireEvent.click(row("Cliente A").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.success).toHaveBeenCalled());
-    rm.mockRestore(); expect(sendKeys()).toEqual([`${SPFX}${E1}`]); expect(JSON.parse(localStorage.getItem(`${SPFX}${E1}`) as string).key).toBe(sends()[0][1].p_request_key);
+    restore(); expect(sendKeys()).toEqual([`${SPFX}${E1}`]); expect(JSON.parse(localStorage.getItem(`${SPFX}${E1}`) as string).key).toBe(sends()[0][1].p_request_key);
     await screen.findByText(/registro local não pôde ser removido/); h.qc.clear();
   });
 
   it.each([["malformed", "{not json"], ["version", rec({ v: 2 })], ["schema", rec({ schema: "x" })], ["extra", rec({ jwt: "x" })], ["tampered-key", rec({ key: "not-a-uuid" })], ["slot-mismatch", rec({ entrega: E2 })], ["nil", rec({ os: "00000000-0000-0000-0000-000000000000" })], ["bad-ts", rec({ observed: "2026-10-30" })]])("corrupt record %s blocks sends and is never deleted", async (_n, raw) => {
     writer = async () => { throw new Error("must not dispatch"); };
     localStorage.setItem(`${SPFX}${E1}`, raw);
-    const h = mount(); await screen.findByText(/Registro local de envio inválido/);
+    const h = mount(); await screen.findByText("Outro"); await screen.findByText(/Registro local de envio inválido/);
     fireEvent.click(row("Outro").getByRole("button", { name: "Enviar" })); await waitFor(() => expect(t.error).toHaveBeenCalled());
     expect(sends()).toHaveLength(0); expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(raw); h.qc.clear();
   });
