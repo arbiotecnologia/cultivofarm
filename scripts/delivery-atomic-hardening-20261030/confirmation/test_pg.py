@@ -14,7 +14,7 @@ def ok(n):checks.append({'test':n,'status':'PASS'});print('PASS',n,flush=True)
 def reject(n,s,code,message=None):
  r=subprocess.run(pg.psql(),input='\\set VERBOSITY verbose\n'+s,capture_output=True,text=True,timeout=45);raw.append({'test':n,'returncode':r.returncode,'stdout':r.stdout,'stderr':r.stderr})
  assert r.returncode!=0 and re.search(r'ERROR:\s+'+code+':',r.stderr) and (message is None or message in r.stderr),(n,r.stdout,r.stderr);ok(n)
-def snapshot():return last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in ['entregas','entrega_comprovantes','estoque_produto','estoque_movimentacoes','ordens_servico','laboratorio_esteira_eventos']+T.TABLES)+",'requests',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM platform_private.delivery_requests_20261030 x))::text;")
+def snapshot():return last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in ['entregas','entrega_comprovantes','estoque_produto','estoque_movimentacoes','ordens_servico','laboratorio_esteira_eventos','financial_categories','payment_methods','receivable_payments','company_fiscal_settings']+T.TABLES)+",'requests',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM platform_private.delivery_requests_20261030 x))::text;")
 def state():return json.loads(last(G.STATE+'::text;'))
 def load(p):sources.append({'file':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()});sql(p.read_text())
 def env(os,pp,l,key):return T.envase(os,pp,l,[{'tipo_embalagem':'frasco_1L','quantidade':2}],key)
@@ -64,8 +64,11 @@ def run():
  load(H/'release.sql.review');assert state()==released;ok('separate minimum release exact PRE POST')
  e,path=create(T.O2,T.PP2,T.L2,'1');stmt=call(e,'confirm-0001');before=snapshot()
  reject('foreign FSF denies without mutations',call(e,'foreign-0001',actor=T.V),'42501');assert snapshot()==before
- result=json.loads(last(stmt));assert result['success'] is True and result['status']=='entregue',result
+ first_before=json.loads(before);result=json.loads(last(stmt));assert result['success'] is True and result['status']=='entregue',result
  ok('canonical attach then physical confirmation advances transactionally')
+ first_after=json.loads(snapshot())
+ for table in T.TABLES+['financial_categories','payment_methods','receivable_payments','company_fiscal_settings','estoque_produto','estoque_movimentacoes']:assert first_before[table]==first_after[table],table
+ ok('first physical success preserves existing financial fiscal outbox stock and ledger full content')
  before=snapshot();rep=json.loads(last(stmt));assert rep['replay'] is True and snapshot()==before;ok('exact replay preserves all snapshots')
  reject('same key changed receiver conflicts',stmt.replace('LOCAL','DIVERGENT'),'PT409','REPLAY_CONFLICT');assert snapshot()==before
  sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.U}';");blocked=snapshot();reject('inactive actor cannot replay',stmt,'42501');assert snapshot()==blocked;sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.U}';")
@@ -92,9 +95,9 @@ def run():
  assert 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err and last(f"SELECT status::text FROM public.entregas WHERE id='{e3}';")=='cancelada';ok('canonical cancellation wins observed race and confirmation rolls back')
  cancel2=T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{e2}','LOCAL CANCEL','{r['updated_at']}');";b=snapshot();reject('confirmed physical delivery cannot ordinary cancel',cancel2,'42501');assert snapshot()==b
  # Full content sentinels before/after, not merely counts.
- for table in T.TABLES:
+ for table in T.TABLES+['financial_categories','payment_methods','receivable_payments','company_fiscal_settings']:
   assert json.loads(snapshot())[table]==json.loads(before)[table],table
- ok('all ten existing financial fiscal outbox sentinels full content unchanged')
+ ok('all fourteen existing financial fiscal outbox sentinels full content unchanged')
  hist=snapshot();sql((H/'rollback.sql.review').read_text());reject('deny rollback keeps canonical writer closed',stmt2,'42501');assert snapshot()==hist;ok('rollback preserves physical proof stock ledger and receipts history')
 
 if __name__=='__main__':

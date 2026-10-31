@@ -7575,7 +7575,7 @@
       "platform_private",
       "delivery_confirm_apply_v1",
       "p_entrega uuid, p_observed timestamp with time zone, p_key text, p_recebedor jsonb",
-      "ba83b31b376dbe730977b8db660770da",
+      "ed164900b4e353befe3db15bb591e1e8",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -7588,7 +7588,7 @@
       "platform_private",
       "delivery_confirm_proof_v1",
       "p_e entregas",
-      "93ded8a51f6471e10284661f320e3013",
+      "e651bd166abf6ad77c1a07b4c9adb8c3",
       "{postgres=X/postgres}",
       "postgres",
       [
