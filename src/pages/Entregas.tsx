@@ -629,9 +629,14 @@ export default function Entregas() {
       if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");
       const key = `${deliveryScope.scope}:${id}`;
       if (unresolved.current.has(deliveryScope.scope) && !sendAttempts.current.has(key)) throw new Error("Reconcilie somente o mesmo envio pendente.");
+      if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");
+      if (row.status === 'em_rota' && !sendAttempts.current.has(key)) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");
       const attempt = sendAttempts.current.get(key) ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
-      sendAttempts.current.set(key, attempt);
-      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, dispatch);
+      // Only dispatch creates an uncertain attempt. A failed capability/CAS read cannot strand a fresh key.
+      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {
+        dispatch();
+        sendAttempts.current.set(key, attempt);
+      });
       check(); sendAttempts.current.delete(key); unresolved.current.delete(deliveryScope.scope);
       return true;
     }),
@@ -814,6 +819,11 @@ export default function Entregas() {
           <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>
         )}
         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
+        {Array.from(sendAttempts.current.entries()).filter(([key]) => key.startsWith(`${deliveryScope.scope}:`)).map(([key, attempt]) => {
+          const row = (entregas as any[]).find(e => e.id === attempt.scope.entrega);
+          if (row && ['separado', 'em_rota'].includes(row.status)) return null;
+          return <p key={key}>Envio incerto {attempt.scope.entrega}: {row ? 'entrega encerrada; reconciliação por escrita indisponível.' : 'entrega fora da consulta atual; consulte antes de reconciliar.'} A tentativa permanece retida, sem nova chave.</p>;
+        })}
       </div>
       <RegistrarEntregaDialog
         key={deliveryScope.scope}

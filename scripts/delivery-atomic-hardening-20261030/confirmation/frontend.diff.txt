@@ -113,7 +113,7 @@ index e64c6037d..e289f0a05 100644
 \ No newline at end of file
 diff --git a/src/lib/entregas/deliverySendFlow.ts b/src/lib/entregas/deliverySendFlow.ts
 new file mode 100644
-index 000000000..36bc97bb2
+index 000000000..373b6bb4c
 --- /dev/null
 +++ b/src/lib/entregas/deliverySendFlow.ts
 @@ -0,0 +1,19 @@
@@ -133,12 +133,12 @@ index 000000000..36bc97bb2
 + check();sent();const result = await rpc(SEND_RPC, { p_entrega: attempt.scope.entrega, p_observed: attempt.observed, p_request_key: attempt.key });check();
 + if (result.error) throw new Error(result.error.message || 'Envio não confirmado.');
 + const ack = result.data as Record<string, unknown> | null;
-+ if (!ack || Object.keys(ack).sort().join() !== ['success','action','replay','actor_id','organization_id','entrega_id','os_id','status','updated_at'].sort().join() || ack.success !== true || ack.action !== 'send' || typeof ack.replay !== 'boolean' || ack.actor_id !== attempt.scope.actor || ack.organization_id !== attempt.scope.org || ack.entrega_id !== attempt.scope.entrega || ack.os_id !== attempt.os || ack.status !== 'em_rota' || !confirmationTimestamp(ack.updated_at)) throw new Error('Resultado incerto. Reconcilie o mesmo envio.');
++ if (!ack || Object.keys(ack).sort().join() !== ['success','action','replay','actor_id','organization_id','entrega_id','os_id','status','updated_at'].sort().join() || ack.success !== true || ack.action !== 'send' || typeof ack.replay !== 'boolean' || ack.actor_id !== attempt.scope.actor || ack.organization_id !== attempt.scope.org || ack.entrega_id !== attempt.scope.entrega || ack.os_id !== attempt.os || ack.status !== 'em_rota' || !confirmationTimestamp(ack.updated_at) || Date.parse(String(ack.updated_at)) < Date.parse(attempt.observed)) throw new Error('Resultado incerto. Reconcilie o mesmo envio.');
 + return ack;
 +}
 \ No newline at end of file
 diff --git a/src/pages/Entregas.tsx b/src/pages/Entregas.tsx
-index 018c48e0b..4e22bddd3 100644
+index 018c48e0b..ffec4cdce 100644
 --- a/src/pages/Entregas.tsx
 +++ b/src/pages/Entregas.tsx
 @@ -61,6 +61,7 @@ import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoE
@@ -196,7 +196,7 @@ index 018c48e0b..4e22bddd3 100644
        // A confirmação física ("entregue") NÃO passa por aqui: ela exige
        // recebedor identificado e é feita exclusivamente pelo
        // ConfirmarEntregaDialog. Nenhum caminho pode confirmar em silêncio.
-@@ -621,11 +625,14 @@ export default function Entregas() {
+@@ -621,11 +625,19 @@ export default function Entregas() {
        }
  
        if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || status !== "em_rota") throw new Error("Transição de entrega inválida.");
@@ -209,14 +209,19 @@ index 018c48e0b..4e22bddd3 100644
 +      if (!row?.updated_at || !row.ordem_servico_id || !actorId || !orgId) throw new Error("Revisão e OS observadas obrigatórias.");
 +      const key = `${deliveryScope.scope}:${id}`;
 +      if (unresolved.current.has(deliveryScope.scope) && !sendAttempts.current.has(key)) throw new Error("Reconcilie somente o mesmo envio pendente.");
++      if (!['separado', 'em_rota'].includes(row.status)) throw new Error("Entrega encerrada. O envio incerto exige consulta; nenhuma nova alteração será enviada.");
++      if (row.status === 'em_rota' && !sendAttempts.current.has(key)) throw new Error("Não há tentativa de envio retida para reconciliar esta entrega.");
 +      const attempt = sendAttempts.current.get(key) ?? { scope: { actor: actorId, org: orgId, entrega: id }, os: row.ordem_servico_id, observed: row.updated_at, key: crypto.randomUUID() };
-+      sendAttempts.current.set(key, attempt);
-+      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, dispatch);
++      // Only dispatch creates an uncertain attempt. A failed capability/CAS read cannot strand a fresh key.
++      await dispatchSend(supabase.rpc.bind(supabase) as unknown as Rpc, attempt, current, () => {
++        dispatch();
++        sendAttempts.current.set(key, attempt);
++      });
 +      check(); sendAttempts.current.delete(key); unresolved.current.delete(deliveryScope.scope);
        return true;
      }),
  
-@@ -695,8 +702,11 @@ export default function Entregas() {
+@@ -695,8 +707,11 @@ export default function Entregas() {
     * paralelo nem fallback do nome do operador como recebedor.
     */
    const handleConfirmarEntrega = (id: string) => {
@@ -228,7 +233,19 @@ index 018c48e0b..4e22bddd3 100644
      setSelectedEntrega(entrega);
      setConfirmEntregaOpen(true);
    };
-@@ -929,9 +939,10 @@ export default function Entregas() {
+@@ -804,6 +819,11 @@ export default function Entregas() {
+           <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>
+         )}
+         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
++        {Array.from(sendAttempts.current.entries()).filter(([key]) => key.startsWith(`${deliveryScope.scope}:`)).map(([key, attempt]) => {
++          const row = (entregas as any[]).find(e => e.id === attempt.scope.entrega);
++          if (row && ['separado', 'em_rota'].includes(row.status)) return null;
++          return <p key={key}>Envio incerto {attempt.scope.entrega}: {row ? 'entrega encerrada; reconciliação por escrita indisponível.' : 'entrega fora da consulta atual; consulte antes de reconciliar.'} A tentativa permanece retida, sem nova chave.</p>;
++        })}
+       </div>
+       <RegistrarEntregaDialog
+         key={deliveryScope.scope}
+@@ -929,9 +949,10 @@ export default function Entregas() {
                      actions={
                        <>
                          {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
@@ -240,7 +257,7 @@ index 018c48e0b..4e22bddd3 100644
                              <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
                                <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
                              </Button>
-@@ -1004,9 +1015,10 @@ export default function Entregas() {
+@@ -1004,9 +1025,10 @@ export default function Entregas() {
                      <TableCell>
                        <div className="flex items-center gap-1">
                          {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
@@ -252,7 +269,7 @@ index 018c48e0b..4e22bddd3 100644
                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
                                <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
                              </Button>
-@@ -1078,15 +1090,14 @@ export default function Entregas() {
+@@ -1078,15 +1100,14 @@ export default function Entregas() {
  
        <ConfirmarEntregaDialog
          open={confirmEntregaOpen}
@@ -461,7 +478,7 @@ index cae4a4325..579ff3771 100644
   const data=kind==='missing'?null:{...cap(),...(kind==='false'?{available:false}:kind==='extra'?{extra:true}:{organization_id:'foreign'})};t.rpc.mockResolvedValue({data,error:null});mount();fill();await screen.findByRole('alert');fireEvent.submit(button().closest('form') as HTMLFormElement);expect(button()).toBeDisabled();expect(t.rpc.mock.calls.every(([name])=>name==='rpc_entrega_confirmacao_capability_v1')).toBe(true);expect(t.confirmed).not.toHaveBeenCalled();
   });
 diff --git a/src/test/entregas/deliveryAtomicPageMount.test.tsx b/src/test/entregas/deliveryAtomicPageMount.test.tsx
-index 91b4c78fc..5df22d08b 100644
+index 91b4c78fc..55086c5dc 100644
 --- a/src/test/entregas/deliveryAtomicPageMount.test.tsx
 +++ b/src/test/entregas/deliveryAtomicPageMount.test.tsx
 @@ -1,10 +1,10 @@
@@ -489,10 +506,75 @@ index 91b4c78fc..5df22d08b 100644
  vi.mock("@/components/entregas/EntregaComprovantePanel", () => ({ EntregaComprovantePanel: () => null }));
  vi.mock("@/components/entregas/TermoEntregaPanel", () => ({ TermoEntregaPanel: () => null }));
  vi.mock("@/components/estoque/EmbalagensEntregaPanel", () => ({ EmbalagensEntregaPanel: () => null }));
-@@ -80,6 +80,87 @@ beforeEach(() => {
+@@ -80,6 +80,152 @@ beforeEach(() => {
  afterEach(() => { cleanup(); });
  
  describe("Entregas page with atomic adapter (mounted)", () => {
++  it('send timeout retains ownership until transport settles and never parallel-dispatches', async () => {
++    t.rows=[{id:E1,status:'separado',ordem_servico_id:OS,updated_at:T1,clientes:{nome:'Timeout alvo'}}];
++    let release: ((value:any)=>void) | undefined;
++    t.rpc.mockImplementation((fn:string)=>fn==='rpc_entrega_envio_capability_v1'
++      ? Promise.resolve({data:{capability:'delivery_send_manual_v1',available:true,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'separado',updated_at:T1},error:null})
++      : new Promise(resolve=>{release=resolve;}));
++    const h=mount(); await screen.findByText('Timeout alvo'); vi.useFakeTimers();
++    try {
++      fireEvent.click(screen.getByRole('button',{name:'Enviar'}));await act(async()=>{await Promise.resolve();await Promise.resolve();});
++      expect(t.rpc).toHaveBeenCalledTimes(2);
++      await act(async()=>{await vi.advanceTimersByTimeAsync(30001);});
++      fireEvent.click(screen.getByRole('button',{name:'Enviar'}));await act(async()=>{await Promise.resolve();});
++      expect(t.rpc).toHaveBeenCalledTimes(2);expect(t.error).toHaveBeenCalledWith('Tempo de resposta excedido. Resultado incerto; consulte as entregas, sem reenviar.');
++      await act(async()=>{release?.({data:{success:true,action:'send',replay:false,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'em_rota',updated_at:T2},error:null});await Promise.resolve();});
++      expect(t.success).not.toHaveBeenCalled();expect(t.writes).toEqual([]);expect(t.financial).toBe(false);
++    } finally {vi.useRealTimers();h.qc.clear();}
++  });
++  it('preflight rejection then refresh uses a fresh observed revision and dispatches once', async () => {
++    t.rows = [{ id: E1, status: 'separado', ordem_servico_id: OS, updated_at: T1, clientes: { nome: 'Cliente' } }];
++    const uuid = vi.spyOn(crypto, 'randomUUID');
++    t.rpc.mockImplementation(async (fn: string, args: any) => fn === 'rpc_entrega_envio_capability_v1'
++      ? { data: { capability: 'delivery_send_manual_v1', available: true, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'separado', updated_at: T2 }, error: null }
++      : { data: { success: true, action: 'send', replay: false, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'em_rota', updated_at: T2 }, error: null });
++    const h = mount(); fireEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
++    await waitFor(() => expect(t.error).toHaveBeenCalled()); expect(t.rpc).toHaveBeenCalledTimes(1);
++    t.rows = [{ ...t.rows[0], updated_at: T2 }]; fireEvent.click(screen.getByRole('button', { name: 'Consultar entregas' }));
++    const own = h.qc.getQueryCache().findAll().find(q => q.queryKey[0] === 'entregas');
++    await waitFor(() => expect(h.qc.getQueryData(own?.queryKey ?? [])).toEqual(t.rows));
++    fireEvent.click(screen.getByRole('button', { name: 'Enviar' }));
++    await waitFor(() => expect(t.success).toHaveBeenCalledWith('Status atualizado'));
++    const sends = t.rpc.mock.calls.filter(c => c[0] === 'rpc_entrega_enviar_manual_v1');
++    expect(sends).toHaveLength(1); expect(sends[0][1].p_observed).toBe(T2); expect(uuid).toHaveBeenCalledTimes(2);
++    uuid.mockRestore(); expect(t.writes).toEqual([]); h.qc.clear();
++  });
++  it.each(['reconcile', 'terminal', 'tenant'])('lost ACK then Consultar retains exact send and fences other target: %s', async (mode) => {
++    const E2 = '10000000-0000-4000-8000-000000000102';
++    t.rows = [E1,E2].map((id,i) => ({ id, status:'separado', ordem_servico_id:OS, updated_at:T1, clientes:{ nome:i ? 'Outro' : 'Cliente perdido' } }));
++    let sent = 0;
++    t.rpc.mockImplementation(async (fn:string,args:any) => {
++      if (fn === 'rpc_entrega_envio_capability_v1') { const row=t.rows.find(r=>r.id===args.p_entrega); return { data:{capability:'delivery_send_manual_v1',available:true,actor_id:ACTOR,organization_id:ORG,entrega_id:args.p_entrega,os_id:OS,status:row?.status,updated_at:row?.updated_at},error:null }; }
++      sent++; t.rows=t.rows.map(r=>r.id===E1 ? {...r,status:'em_rota',updated_at:T2}:r);
++      return sent===1 ? {data:null,error:{code:'57014',message:'timeout'}} : {data:{success:true,action:'send',replay:true,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'em_rota',updated_at:T2},error:null};
++    });
++    const h=mount(); await screen.findByText('Cliente perdido');
++    const row=(name:string)=>{const el=screen.getByText(name).closest('tr');if(!el)throw new Error('row');return within(el);};
++    fireEvent.click(row('Cliente perdido').getByRole('button',{name:'Enviar'}));await waitFor(()=>expect(t.error).toHaveBeenCalled());
++    const first=t.rpc.mock.calls.find(c=>c[0]==='rpc_entrega_enviar_manual_v1')?.[1];
++    const calls=t.rpc.mock.calls.length;fireEvent.click(row('Outro').getByRole('button',{name:'Enviar'}));
++    await waitFor(()=>expect(t.error).toHaveBeenCalledWith('Reconcilie somente o mesmo envio pendente.'));expect(t.rpc).toHaveBeenCalledTimes(calls);
++    if(mode==='terminal')t.rows=t.rows.map(r=>r.id===E1?{...r,status:'entregue'}:r);
++    fireEvent.click(screen.getByRole('button',{name:'Consultar entregas'}));
++    if(mode==='terminal') {
++      await screen.findByText(/entrega encerrada; reconciliação por escrita indisponível/);expect(screen.queryByRole('button',{name:'Reconciliar envio'})).toBeNull();expect(sent).toBe(1);
++    } else {
++      await screen.findByRole('button',{name:'Reconciliar envio'});
++      if(mode==='tenant') {
++        t.auth={...t.auth,profile:{...t.auth.profile,organization_id:ORG_B},authzEpoch:1};h.rerender(<Entregas/>);
++        await waitFor(()=>expect(screen.queryByRole('button',{name:'Reconciliar envio'})).toBeNull());expect(sent).toBe(1);
++      } else {
++        fireEvent.click(screen.getByRole('button',{name:'Reconciliar envio'}));await waitFor(()=>expect(t.success).toHaveBeenCalledWith('Status atualizado'));
++        const sends=t.rpc.mock.calls.filter(c=>c[0]==='rpc_entrega_enviar_manual_v1');expect(sends).toHaveLength(2);expect(sends[1][1]).toEqual(first);
++      }
++    }
++    expect(t.writes).toEqual([]);expect(t.financial).toBe(false);h.qc.clear();
++  });
 +  it.each([false, true])("two items: partial A confirmation then B send/replay (early B=%s)", async (early) => {
 +    const E2 = "10000000-0000-4000-8000-000000000102";
 +    t.rows = [E1, E2].map((id, i) => ({ id, status: "separado", ordem_servico_id: OS, updated_at: T1, clientes: { nome: `Cliente ${i ? 'B' : 'A'}` } }));
@@ -605,10 +687,10 @@ index 000000000..0941878b0
 \ No newline at end of file
 diff --git a/src/test/entregas/deliverySendFlow.test.ts b/src/test/entregas/deliverySendFlow.test.ts
 new file mode 100644
-index 000000000..fd5ba093e
+index 000000000..68ff3c023
 --- /dev/null
 +++ b/src/test/entregas/deliverySendFlow.test.ts
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,12 @@
 +import { describe, expect, it, vi } from 'vitest';
 +import { dispatchSend, SEND_CAP_RPC } from '@/lib/entregas/deliverySendFlow';
 +const id='11111111-1111-4111-8111-111111111111', observed='2026-10-31T13:00:00Z';
@@ -616,6 +698,7 @@ index 000000000..fd5ba093e
 +const cap={capability:'delivery_send_manual_v1',available:true,actor_id:id,organization_id:id,entrega_id:id,os_id:id,status:'separado',updated_at:observed};
 +const ack={success:true,action:'send',replay:false,actor_id:id,organization_id:id,entrega_id:id,os_id:id,status:'em_rota',updated_at:observed};
 +describe('Enviar scoped canonical runtime',()=>{
++ it('ACK revision before observed is uncertain after dispatch',async()=>{const sent=vi.fn();const rpc=vi.fn(async n=>({data:n===SEND_CAP_RPC?cap:{...ack,updated_at:'2026-10-31T12:59:59Z'},error:null}));await expect(dispatchSend(rpc,attempt,()=>true,sent)).rejects.toThrow('incerto');expect(sent).toHaveBeenCalledTimes(1);expect(rpc).toHaveBeenCalledTimes(2);});
 + it('valid send one canonical dispatch',async()=>{const rpc=vi.fn(async n=>({data:n===SEND_CAP_RPC?cap:ack,error:null}));await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).resolves.toEqual(ack);expect(rpc).toHaveBeenCalledTimes(2);});
 + it.each([{available:false},{organization_id:'foreign'},{updated_at:''},{os_id:'different'}])('bad capability no mutation %j',async bad=>{const rpc=vi.fn(async()=>({data:{...cap,...bad},error:null}));await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).rejects.toThrow();expect(rpc).toHaveBeenCalledTimes(1);});
 + it('bad ACK uncertain exact key retained on explicit retry',async()=>{const rpc=vi.fn(async n=>({data:n===SEND_CAP_RPC?cap:{...ack,updated_at:''},error:null}));await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).rejects.toThrow('incerto');await expect(dispatchSend(rpc,attempt,()=>true,vi.fn())).rejects.toThrow();expect(rpc.mock.calls[1]).toEqual(rpc.mock.calls[3]);});

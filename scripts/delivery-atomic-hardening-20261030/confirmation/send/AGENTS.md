@@ -3,3 +3,4 @@
 - Use private actor/tenant/action receipts and mandatory observed CAS/key; replay reauthorizes current lineage, cancelled/confirmed states deny, and rollback revokes without restoring legacy DML.
 - Capability/ACK and client retained attempts stay scoped; no generic operational gate opening, no billing/fiscal/outbox, no B2B/waiver/package release.
 - Send and replay allow only ready or partially delivered OS states under the shared OS lock; finalizada and other states remain denied, with unchanged stock/ledger lineage checks — supports sequential items without reopening terminal orders.
+- Client attempts become retained only at dispatch; failed fresh preflight has no retained key, uncertain retries preserve arguments and reject older ACK revisions; terminal rows are consultation-only and timeout owns the lock until settlement — prevents stale CAS loops and parallel writes.

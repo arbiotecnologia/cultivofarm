@@ -80,6 +80,71 @@ beforeEach(() => {
 afterEach(() => { cleanup(); });
 
 describe("Entregas page with atomic adapter (mounted)", () => {
+  it('send timeout retains ownership until transport settles and never parallel-dispatches', async () => {
+    t.rows=[{id:E1,status:'separado',ordem_servico_id:OS,updated_at:T1,clientes:{nome:'Timeout alvo'}}];
+    let release: ((value:any)=>void) | undefined;
+    t.rpc.mockImplementation((fn:string)=>fn==='rpc_entrega_envio_capability_v1'
+      ? Promise.resolve({data:{capability:'delivery_send_manual_v1',available:true,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'separado',updated_at:T1},error:null})
+      : new Promise(resolve=>{release=resolve;}));
+    const h=mount(); await screen.findByText('Timeout alvo'); vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button',{name:'Enviar'}));await act(async()=>{await Promise.resolve();await Promise.resolve();});
+      expect(t.rpc).toHaveBeenCalledTimes(2);
+      await act(async()=>{await vi.advanceTimersByTimeAsync(30001);});
+      fireEvent.click(screen.getByRole('button',{name:'Enviar'}));await act(async()=>{await Promise.resolve();});
+      expect(t.rpc).toHaveBeenCalledTimes(2);expect(t.error).toHaveBeenCalledWith('Tempo de resposta excedido. Resultado incerto; consulte as entregas, sem reenviar.');
+      await act(async()=>{release?.({data:{success:true,action:'send',replay:false,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'em_rota',updated_at:T2},error:null});await Promise.resolve();});
+      expect(t.success).not.toHaveBeenCalled();expect(t.writes).toEqual([]);expect(t.financial).toBe(false);
+    } finally {vi.useRealTimers();h.qc.clear();}
+  });
+  it('preflight rejection then refresh uses a fresh observed revision and dispatches once', async () => {
+    t.rows = [{ id: E1, status: 'separado', ordem_servico_id: OS, updated_at: T1, clientes: { nome: 'Cliente' } }];
+    const uuid = vi.spyOn(crypto, 'randomUUID');
+    t.rpc.mockImplementation(async (fn: string, args: any) => fn === 'rpc_entrega_envio_capability_v1'
+      ? { data: { capability: 'delivery_send_manual_v1', available: true, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'separado', updated_at: T2 }, error: null }
+      : { data: { success: true, action: 'send', replay: false, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'em_rota', updated_at: T2 }, error: null });
+    const h = mount(); fireEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+    await waitFor(() => expect(t.error).toHaveBeenCalled()); expect(t.rpc).toHaveBeenCalledTimes(1);
+    t.rows = [{ ...t.rows[0], updated_at: T2 }]; fireEvent.click(screen.getByRole('button', { name: 'Consultar entregas' }));
+    const own = h.qc.getQueryCache().findAll().find(q => q.queryKey[0] === 'entregas');
+    await waitFor(() => expect(h.qc.getQueryData(own?.queryKey ?? [])).toEqual(t.rows));
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar' }));
+    await waitFor(() => expect(t.success).toHaveBeenCalledWith('Status atualizado'));
+    const sends = t.rpc.mock.calls.filter(c => c[0] === 'rpc_entrega_enviar_manual_v1');
+    expect(sends).toHaveLength(1); expect(sends[0][1].p_observed).toBe(T2); expect(uuid).toHaveBeenCalledTimes(2);
+    uuid.mockRestore(); expect(t.writes).toEqual([]); h.qc.clear();
+  });
+  it.each(['reconcile', 'terminal', 'tenant'])('lost ACK then Consultar retains exact send and fences other target: %s', async (mode) => {
+    const E2 = '10000000-0000-4000-8000-000000000102';
+    t.rows = [E1,E2].map((id,i) => ({ id, status:'separado', ordem_servico_id:OS, updated_at:T1, clientes:{ nome:i ? 'Outro' : 'Cliente perdido' } }));
+    let sent = 0;
+    t.rpc.mockImplementation(async (fn:string,args:any) => {
+      if (fn === 'rpc_entrega_envio_capability_v1') { const row=t.rows.find(r=>r.id===args.p_entrega); return { data:{capability:'delivery_send_manual_v1',available:true,actor_id:ACTOR,organization_id:ORG,entrega_id:args.p_entrega,os_id:OS,status:row?.status,updated_at:row?.updated_at},error:null }; }
+      sent++; t.rows=t.rows.map(r=>r.id===E1 ? {...r,status:'em_rota',updated_at:T2}:r);
+      return sent===1 ? {data:null,error:{code:'57014',message:'timeout'}} : {data:{success:true,action:'send',replay:true,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'em_rota',updated_at:T2},error:null};
+    });
+    const h=mount(); await screen.findByText('Cliente perdido');
+    const row=(name:string)=>{const el=screen.getByText(name).closest('tr');if(!el)throw new Error('row');return within(el);};
+    fireEvent.click(row('Cliente perdido').getByRole('button',{name:'Enviar'}));await waitFor(()=>expect(t.error).toHaveBeenCalled());
+    const first=t.rpc.mock.calls.find(c=>c[0]==='rpc_entrega_enviar_manual_v1')?.[1];
+    const calls=t.rpc.mock.calls.length;fireEvent.click(row('Outro').getByRole('button',{name:'Enviar'}));
+    await waitFor(()=>expect(t.error).toHaveBeenCalledWith('Reconcilie somente o mesmo envio pendente.'));expect(t.rpc).toHaveBeenCalledTimes(calls);
+    if(mode==='terminal')t.rows=t.rows.map(r=>r.id===E1?{...r,status:'entregue'}:r);
+    fireEvent.click(screen.getByRole('button',{name:'Consultar entregas'}));
+    if(mode==='terminal') {
+      await screen.findByText(/entrega encerrada; reconciliação por escrita indisponível/);expect(screen.queryByRole('button',{name:'Reconciliar envio'})).toBeNull();expect(sent).toBe(1);
+    } else {
+      await screen.findByRole('button',{name:'Reconciliar envio'});
+      if(mode==='tenant') {
+        t.auth={...t.auth,profile:{...t.auth.profile,organization_id:ORG_B},authzEpoch:1};h.rerender(<Entregas/>);
+        await waitFor(()=>expect(screen.queryByRole('button',{name:'Reconciliar envio'})).toBeNull());expect(sent).toBe(1);
+      } else {
+        fireEvent.click(screen.getByRole('button',{name:'Reconciliar envio'}));await waitFor(()=>expect(t.success).toHaveBeenCalledWith('Status atualizado'));
+        const sends=t.rpc.mock.calls.filter(c=>c[0]==='rpc_entrega_enviar_manual_v1');expect(sends).toHaveLength(2);expect(sends[1][1]).toEqual(first);
+      }
+    }
+    expect(t.writes).toEqual([]);expect(t.financial).toBe(false);h.qc.clear();
+  });
   it.each([false, true])("two items: partial A confirmation then B send/replay (early B=%s)", async (early) => {
     const E2 = "10000000-0000-4000-8000-000000000102";
     t.rows = [E1, E2].map((id, i) => ({ id, status: "separado", ordem_servico_id: OS, updated_at: T1, clientes: { nome: `Cliente ${i ? 'B' : 'A'}` } }));
