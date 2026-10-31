@@ -75,6 +75,8 @@ def run():
  reject('repeatable read explicitly unsupported','BEGIN ISOLATION LEVEL REPEATABLE READ;'+stmt,'0A000');assert snapshot()==before
  reject('serializable explicitly unsupported','BEGIN ISOLATION LEVEL SERIALIZABLE;'+stmt,'0A000');assert snapshot()==before
  e2,path2=create(T.O5,T.PP5,T.L5,'2',True);stmt2=call(e2,'confirm-0002');b=snapshot()
+ assert last(f"SELECT e.validation_hash=c.validation_hash AND e.validation_token=c.validation_token FROM public.entregas e JOIN public.entrega_comprovantes c ON c.id=e.comprovante_id WHERE e.id='{e2}';")=='t';ok('reused form digital token/hash synchronized atomically')
+ reject('singleton absent explicitly PT503','BEGIN;DELETE FROM cf_user_guards_v1.state;'+stmt2,'PT503');assert snapshot()==b
  reject('missing CAS denied before writes',stmt2.replace("'"+last(f"SELECT updated_at FROM public.entregas WHERE id='{e2}';")+"'",'NULL'),'22023');assert snapshot()==b
  reject('stale CAS denied',call(e2,'cas-stale-0001',obs='2020-01-01'),'PT409');assert snapshot()==b
  reject('financial payload rejected',stmt2.replace('{"nome": "LOCAL"}','{"nome":"LOCAL","faturamento":"bill_now"}'),'22023');assert snapshot()==b

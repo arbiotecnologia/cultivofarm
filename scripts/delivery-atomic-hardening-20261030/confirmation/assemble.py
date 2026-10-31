@@ -41,9 +41,9 @@ END $$;
 REVOKE ALL ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) TO authenticated;
 """
- start=s.index('CREATE OR REPLACE FUNCTION platform_private.delivery_proof_apply_20261030(')
+ start=s.index('CREATE FUNCTION platform_private.delivery_proof_apply_20261030(')
  end=s.index('\nREVOKE',start)
- proof_delta=s[start:end]
+ proof_delta=s[start:end].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1)
  old="validation_token=CASE WHEN v_reused THEN validation_token ELSE v_c.validation_token END,\n  validation_hash=CASE WHEN v_reused THEN validation_hash ELSE v_c.validation_hash END,"
  new="validation_token=v_c.validation_token,\n  validation_hash=v_c.validation_hash,"
  assert proof_delta.count(old)==1
