@@ -1,3 +1,4 @@
+- [x] 31/10 15:05 — Barreira send durável após reload para create/cancel (entrada+dispatch), outro tenant livre; 35 focados, 705/710 (5 preexistentes: 3 estáticas+2 contenção runtime), typecheck 0; sem hosted.
 - [x] 31/10 14:55 — Retenção durável Enviar (storage estrito + Web Locks, fail-closed, sem replay automático) e roteiro autenticado preparado/NÃO executado; 30 focados, regressão 700/705 (5 falhas estoque preexistentes em 8d276bea), typecheck 0 erros; sem hosted/publicação.
 - [ ] Validação autenticada Enviar/Confirmar — bloqueada: aplicação SQL pelo auditor, contas ARBio/FSF/B2B reais e ambiente isolado.
 - [x] 31/10 14:25 — Consumidor Enviar retém somente dispatch, ACK antigo incerto; mounted preflight→refresh/nova revisão, ACK perdido→consulta→mesma tentativa, alvo/tenant/terminal/timeout PASS;546Vitest, sem hosted/publicação.
