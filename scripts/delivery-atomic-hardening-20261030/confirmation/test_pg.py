@@ -189,6 +189,17 @@ def send_matrix():
  wait_revoke('send tenant changed after lock denied',f"UPDATE public.profiles SET organization_id='{T.B}' WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET organization_id='{T.A}' WHERE user_id='{T.U}';")
  wait_revoke('send SaaS revoked after gate lock denied',f"UPDATE public.organization_subscriptions SET status='SUSPENDED',suspended_at=now() WHERE organization_id='{T.A}';",stmt,f"UPDATE public.organization_subscriptions SET status='ACTIVE',suspended_at=NULL WHERE organization_id='{T.A}';",gate=True)
  r=json.loads(last(call(e,'send-then-confirm')));assert r['success'] and r['status']=='entregue';ok('canonical Enviar then Confirmar without second stock ledger dispatch')
+ for n,mode in enumerate(['send','cancel']):
+  osn,ppn,ln=T.u(810+n*3),T.u(811+n*3),T.u(812+n*3);sql('SET session_replication_role=replica;'+T.manufactured(osn,ppn,ln)+'SET session_replication_role=origin;');en,_=create(osn,ppn,ln,str(90+n));obn=last(f"SELECT updated_at FROM public.entregas WHERE id='{en}';")
+  send=T.actor()+f"SELECT public.rpc_entrega_enviar_manual_v1('{en}','{obn}','send-race-{n}');"
+  win=send if mode=='send' else T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{en}','LOCAL CANCEL','{obn}');"
+  holder=T.T.session("SET application_name='send_holder';BEGIN;"+win)
+  for _ in range(100):
+   if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='send_holder' AND state='idle in transaction';")=='1':break
+   time.sleep(.025)
+  loser=send.replace('send-race-'+str(n),'send-other-'+str(n))
+  waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='send_waiter';"+loser);wait_lock('send_waiter');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+  b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':mode+' vs send','stdout':out,'stderr':err});assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_SEND_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok('observed '+mode+' winner send loser PT409 snapshot unchanged')
  hist=snapshot();sql((H/'send/rollback.sql.review').read_text());reject('send deny-only rollback no regrant',stmt,'42501');assert snapshot()==hist
 
 def coverage_matrix():

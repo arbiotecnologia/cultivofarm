@@ -80,6 +80,19 @@ beforeEach(() => {
 afterEach(() => { cleanup(); });
 
 describe("Entregas page with atomic adapter (mounted)", () => {
+  it("Enviar replaces direct UPDATE and makes physical confirmation reachable", async () => {
+    t.rows = [{ id: E1, status: "separado", ordem_servico_id: OS, updated_at: T1, clientes: { nome: "Cliente" } }];
+    t.rpc.mockImplementation(async (fn: string) => {
+      if (fn === 'rpc_entrega_envio_capability_v1') return { data: { capability: 'delivery_send_manual_v1', available: true, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'separado', updated_at: T1 }, error: null };
+      t.rows = [{ ...t.rows[0], status: 'em_rota', updated_at: T2 }];
+      return { data: { success: true, action: 'send', replay: false, actor_id: ACTOR, organization_id: ORG, entrega_id: E1, os_id: OS, status: 'em_rota', updated_at: T2 }, error: null };
+    });
+    const h = mount(); fireEvent.click(await screen.findByRole('button', { name: 'Enviar' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar' }));
+    expect(t.confirm.open).toBe(true); expect(t.confirm.entrega.status).toBe('em_rota');
+    t.rows = [{ ...t.rows[0], status: 'entregue' }]; await act(async () => t.confirm.onConfirmed('physical', E1));
+    expect(await screen.findByText('Entregue')).toBeInTheDocument(); expect(t.financial).toBe(false); expect(t.writes).toEqual([]); h.qc.clear();
+  });
   it("physical ACK refreshes exact real list cache only and never opens finance", async () => {
     t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];
     const h = mount();
