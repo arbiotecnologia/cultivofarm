@@ -31,6 +31,12 @@ EnvasePage não oferece complemento, criar embalagens ou mutações de etiquetas
 
 IDs devem ser UUIDs não nulos; revisão deve ser timestamp com calendário/horário/fuso válidos, não string vazia ou data normalizada inválida. Capability candidata acrescenta os_id/comprovante_id canônicos. A tentativa captura essas raízes da leitura inicial, confronta o preflight e o ACK; resposta de OS/prova diferente não gera sucesso. Capability antiga sem raízes falha fechada. Revisão ACK anterior à observada é incerta. Não houve aplicação hosted nem alteração do pacote independente de cancelamento de etiquetas; sua UI continua sem writer.
 
+## Consulta envase — 31/10 13:37
+
+EnvasePage agora remonta apenas a consulta por escopo canônico de sessão (ator/empresa/papéis/época/readiness), limpando imediatamente histórico, produtos, filtros e debounce ao trocar contexto ou ficar inativo. Histórico captura filtro/página inclusive busca antes do debounce; respostas, erros e finally só são adotados pela geração atual. Produtos usam geração independente e escopo de sessão. Paginação auxiliar verifica fence antes/depois de cada lote e não continua consulta obsoleta. Realtime/timers são aposentados por cleanup e verificam o contexto antes de recarregar. RLS permanece obrigatória e nenhuma operação foi reaberta.
+
+Testes mounted: 7/7 em duas suítes, promises invertidas filtro/página, ARBio→FSF, inativo, unmount/timer e Ver/Imprimir preservados. Evidência local versionável em evidence/envase-scope-tests.txt; não é prova hosted/JWT/browser real.
+
 ## Evidência
 
 logs/ contém saídas brutas finais, inclusive a falha PG e a rodada anterior que demonstrou ausência da tabela durante edição concorrente. sources.json e test-results.json preservam origem e resultado sem mascaramento. frontend.diff.txt é o diff real contra 5557f9ba, não um relato de publicação. SHA256SUMS cobre os artefatos desta preparação.
