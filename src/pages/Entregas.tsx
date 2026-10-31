@@ -1087,7 +1087,7 @@ export default function Entregas() {
         entrega={selectedEntrega}
         onConfirmed={(mode, target) => {
           const captured = confirmationList.current;
-          if (mode !== "physical" || !captured || captured.target !== target || !captured.current()) return;
+          if (mode !== "physical" || !captured || captured.scope !== deliveryScope.scope || captured.target !== target || !captured.current()) return;
           void queryClient.invalidateQueries({ queryKey: ["entregas", captured.scope, captured.scope], exact: true });
           confirmationList.current = null;
           setSelectedEntrega(null);

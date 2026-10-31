@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren } from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const t = vi.hoisted(() => ({ auth: {} as any, confirm: {} as any, financial: false, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
@@ -88,13 +88,17 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     expect(own).toBeDefined();
     const foreignKey = ["entregas", "foreign-actor", "foreign-request"];
     h.qc.setQueryData(foreignKey, [{ id: "foreign", status: "separado" }]);
+    const foreignRead = vi.fn(async () => [{ id: "foreign", status: "separado" }]);
+    const observer = new QueryObserver(h.qc, { queryKey: foreignKey, queryFn: foreignRead, staleTime: Infinity });
+    const unsubscribe = observer.subscribe(() => {});
     const foreignBefore = h.qc.getQueryState(foreignKey);
     t.rows = [{ ...t.rows[0], status: "entregue" }];
     await act(async () => t.confirm.onConfirmed("physical", E1));
     await waitFor(() => expect(h.qc.getQueryData(own?.queryKey ?? [] )).toEqual(t.rows));
     expect(await screen.findByText("Entregue")).toBeInTheDocument();
     expect(h.qc.getQueryState(foreignKey)).toEqual(foreignBefore);
-    expect(t.financial).toBe(false); h.qc.clear();
+    expect(foreignRead).not.toHaveBeenCalled();
+    expect(t.financial).toBe(false); unsubscribe(); h.qc.clear();
   });
   it("late physical callback after tenant change does not invalidate either cache", async () => {
     t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];

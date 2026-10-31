@@ -2,6 +2,7 @@
 - [x] 31/10 — Cancelamento de etiqueta: closure ACL-only independente; 16PG/504Vitest PASS, reprodução estrangeira revertida, 42501 own/foreign/anon/inativo, rollback sem regrant e UI sem cancelamento; auditor fará PRE/aplicação, sem hosted/publicação nesta execução.
 - [ ] 31/10 — Confirmação física: hash digital/envelopes runtime/raízes/mounted incerto corrigidos, PG/pins reensaiados, 33 focados/524 regressão; faltam multi-lote/produto/cobertura cancelada-estornada e corridas proof/confirm; release NO-GO, sem hosted/publicação.
 - [x] 31/10 13:37 — EnvasePage: sessão canônica limpa histórico/produtos/filtros imediatamente; gerações isoladas/fences filtro-página, timers/realtime aposentados; 7 mounted PASS com respostas invertidas, ARBio→FSF/inativo/unmount e impressão preservada; sem hosted/publicação.
+- [x] 31/10 13:39 — Confirmação física: pai captura fence/target da lista ao abrir, invalida somente chave exata entregas/ator/request após ACK físico; cache estrangeiro ativo intacto, callback tardio negado e financeiro fechado; testes integrados QueryClient real.
 - [ ] 31/10 — Contratos posteriores independentes: identificar autoridade e provas de embalagens/etiquetas/dispensa antes de preparar qualquer liberação; efeitos financeiros/fiscais/comunicação/automações fechados.
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
 - [x] Revisão23:18: fence das quatro leituras do diálogo, bloqueio leitura incompleta/erro, mensagens por ACK e14testes montados;484Vitest PASS, diff/hashes regenerados sem hosted/publicação.
