@@ -45,7 +45,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) TO 
 
 def guard(x,name):return "DO $guard$ BEGIN IF ("+STATE+") IS DISTINCT FROM '"+json.dumps(x).replace("'","''")+"'::jsonb THEN RAISE EXCEPTION '"+name+"'; END IF; END $guard$;\n"
 def write(pre,post,released):
- delta=candidate();grant=f'GRANT EXECUTE ON FUNCTION {RPC} TO authenticated;\n'
+ delta=candidate();grant="DO $closed$ BEGIN RAISE EXCEPTION 'CONFIRM_RELEASE_NO_GO_DIGITAL_PROOF_HASH'; END $closed$;\n"
  for n,v in [('candidate',delta),('preflight',guard(pre,'CONFIRM_PRE_DRIFT')),('postflight',guard(post,'CONFIRM_POST_DRIFT')),('install','BEGIN; SET LOCAL lock_timeout=\'3s\';\n'+guard(pre,'CONFIRM_PRE_DRIFT')+delta+guard(post,'CONFIRM_POST_DRIFT')+'COMMIT;'),('release-preflight',guard(post,'CONFIRM_RELEASE_PRE_DRIFT')),('release-postflight',guard(released,'CONFIRM_RELEASE_POST_DRIFT')),('release','BEGIN;\n'+guard(post,'CONFIRM_RELEASE_PRE_DRIFT')+grant+guard(released,'CONFIRM_RELEASE_POST_DRIFT')+'COMMIT;'),('rollback',"BEGIN;\nDO $guard$ BEGIN IF ("+STATE+") NOT IN ('"+json.dumps(post).replace("'","''")+"'::jsonb,'"+json.dumps(released).replace("'","''")+"'::jsonb) THEN RAISE EXCEPTION 'CONFIRM_ROLLBACK_DRIFT'; END IF; END $guard$;\n"+f'REVOKE EXECUTE ON FUNCTION {RPC} FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;')]: (H/(n+'.sql.review')).write_text(v+'\n')
  (H/'state.sql.review').write_text(STATE+';\n')
  for n,x in [('pre-state',pre),('post-state',post),('released-state',released)]: (H/(n+'.json')).write_text(json.dumps(x,indent=2)+'\n')
