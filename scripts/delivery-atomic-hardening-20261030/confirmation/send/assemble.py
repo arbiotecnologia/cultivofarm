@@ -15,7 +15,7 @@ def candidate():
  IF s.status::text<>'expedido' OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
  OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND os_id=e.ordem_servico_id AND os_tipo='manual' AND lote_id=l.id AND quantidade=e.quantidade_entregue)<>1
  OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('estorno_expedicao','entrega','devolucao'))
- OR NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=e.ordem_servico_id AND status::text='pronto_entrega') THEN RAISE EXCEPTION 'DELIVERY_SEND_STATE_DENIED' USING ERRCODE='42501'; END IF;
+ OR NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=e.ordem_servico_id AND organization_id=org AND status::text IN ('pronto_entrega','entregue')) THEN RAISE EXCEPTION 'DELIVERY_SEND_STATE_DENIED' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id ORDER BY id FOR SHARE;
  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
  SELECT * INTO prev FROM platform_private.delivery_requests_20261030 WHERE organization_id=org AND actor=v_actor AND action='send' AND request_key=p_key;
@@ -39,7 +39,7 @@ def candidate():
  REVOKE ALL ON FUNCTION public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;
  CREATE FUNCTION public.rpc_entrega_envio_capability_v1(p_entrega uuid) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
  DECLARE org uuid;e public.entregas;available boolean:=false;BEGIN
- BEGIN org:=platform_private.delivery_confirm_actor_v1();e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);available:=has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE') AND e.status::text IN ('separado','em_rota');EXCEPTION WHEN insufficient_privilege THEN available:=false;END;
+ BEGIN org:=platform_private.delivery_confirm_actor_v1();e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);available:=has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE') AND e.status::text IN ('separado','em_rota') AND EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=e.ordem_servico_id AND organization_id=org AND status::text IN ('pronto_entrega','entregue'));EXCEPTION WHEN insufficient_privilege THEN available:=false;END;
  RETURN jsonb_build_object('capability','delivery_send_manual_v1','available',available,'actor_id',auth.uid(),'organization_id',org,'entrega_id',p_entrega,'os_id',e.ordem_servico_id,'status',e.status::text,'updated_at',e.updated_at);END $$;
  REVOKE ALL ON FUNCTION public.rpc_entrega_envio_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
  GRANT EXECUTE ON FUNCTION public.rpc_entrega_envio_capability_v1(uuid) TO authenticated;

@@ -1,5 +1,5 @@
 import React, { type PropsWithChildren } from "react";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -80,6 +80,45 @@ beforeEach(() => {
 afterEach(() => { cleanup(); });
 
 describe("Entregas page with atomic adapter (mounted)", () => {
+  it.each([false, true])("two items: partial A confirmation then B send/replay (early B=%s)", async (early) => {
+    const E2 = "10000000-0000-4000-8000-000000000102";
+    t.rows = [E1, E2].map((id, i) => ({ id, status: "separado", ordem_servico_id: OS, updated_at: T1, clientes: { nome: `Cliente ${i ? 'B' : 'A'}` } }));
+    const receipts = new Map<string, any>(); let osStatus = 'pronto_entrega';
+    t.rpc.mockImplementation(async (fn: string, args: any) => {
+      const id = args.p_entrega ?? args.p_entrega_id; const row = t.rows.find(r => r.id === id);
+      if (fn === 'rpc_entrega_envio_capability_v1') return { data: { capability: 'delivery_send_manual_v1', available: ['pronto_entrega', 'entregue'].includes(osStatus), actor_id: ACTOR, organization_id: ORG, entrega_id: id, os_id: OS, status: row?.status, updated_at: row?.updated_at }, error: null };
+      expect(fn).toBe('rpc_entrega_enviar_manual_v1'); expect(['pronto_entrega', 'entregue']).toContain(osStatus);
+      const prior = receipts.get(args.p_request_key);
+      if (prior) return { data: { ...prior, replay: true }, error: null };
+      t.rows = t.rows.map(r => r.id === id ? { ...r, status: 'em_rota', updated_at: T2 } : r);
+      const ack = { success: true, action: 'send', replay: false, actor_id: ACTOR, organization_id: ORG, entrega_id: id, os_id: OS, status: 'em_rota', updated_at: T2 };
+      receipts.set(args.p_request_key, ack);
+      return early && id === E2 ? { data: null, error: { code: '57014', message: 'timeout' } } : { data: ack, error: null };
+    });
+    const h = mount();
+    const row = (name: string) => { const el = screen.getByText(name).closest('tr'); if (!el) throw new Error('row missing'); return within(el); };
+    fireEvent.click(row('Cliente A').getByRole('button', { name: 'Enviar' }));
+    await waitFor(() => expect(t.rows[0].status).toBe('em_rota'));
+    if (early) {
+      fireEvent.click(row('Cliente B').getByRole('button', { name: 'Enviar' }));
+      await waitFor(() => expect(receipts.size).toBe(2));
+      await waitFor(() => expect(t.error).toHaveBeenCalled());
+    }
+    fireEvent.click(await row('Cliente A').findByRole('button', { name: 'Confirmar' }));
+    osStatus = 'entregue'; t.rows = t.rows.map(r => r.id === E1 ? { ...r, status: 'entregue' } : r);
+    await act(async () => t.confirm.onConfirmed('physical', E1));
+    await waitFor(() => expect(row('Cliente A').getByText('Entregue')).toBeInTheDocument());
+    fireEvent.click(row('Cliente B').getByRole('button', { name: early ? /Reconciliar/ : 'Enviar' }));
+    fireEvent.click(await row('Cliente B').findByRole('button', { name: 'Confirmar' }));
+    expect(t.confirm.entrega.id).toBe(E2);
+    osStatus = 'finalizada'; t.rows = t.rows.map(r => ({ ...r, status: 'entregue' }));
+    await act(async () => t.confirm.onConfirmed('physical', E2));
+    await waitFor(() => expect(screen.getAllByText('Entregue')).toHaveLength(2));
+    const sends = t.rpc.mock.calls.filter(c => c[0] === 'rpc_entrega_enviar_manual_v1');
+    expect(sends).toHaveLength(early ? 3 : 2);
+    if (early) expect(sends[2][1]).toEqual(sends[1][1]);
+    expect(t.writes).toEqual([]); expect(t.financial).toBe(false); h.qc.clear();
+  });
   it("Enviar replaces direct UPDATE and makes physical confirmation reachable", async () => {
     t.rows = [{ id: E1, status: "separado", ordem_servico_id: OS, updated_at: T1, clientes: { nome: "Cliente" } }];
     t.rpc.mockImplementation(async (fn: string) => {
