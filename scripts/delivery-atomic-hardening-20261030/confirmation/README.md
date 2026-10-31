@@ -4,7 +4,7 @@ Preparação local; nenhum acesso hosted, sessão, segredo, publicação ou fixt
 
 ## Resultado efetivamente executado
 
-- Vitest entrega/envase/etiquetas: 540/540, 35 arquivos (evidence/seq-send-vitest-final.log.txt).
+- Vitest entrega/envase/etiquetas: 546/546, 35 arquivos (evidence/send-consumer-final.log.txt).
 - Envelopes e diálogo montado: 33/33; quatro negativos independentes corrigidos, raiz/prova divergentes negadas e tentativa incerta mantém chave/payload sem toast/onConfirmed/close (envelope-tests.log).
 - Build automático observado OK; sem log de typecheck separado.
 - PostgreSQL: 120 checks PASS, exit_code 0 (evidence/seq-send-complete-pg.log.txt); test-results.json contém contagem e SQLSTATEs exatos. Rodadas históricas falhadas permanecem nas evidências, não compõem a aprovação atual.
