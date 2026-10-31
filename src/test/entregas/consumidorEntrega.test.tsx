@@ -37,9 +37,9 @@ describe('Contenção real antes do primeiro dispatch da página', () => {
   await act(async()=>{await expect(t.submit(p)).rejects.toThrow();}); expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); h.qc.clear();
  });
  it.each(['separado','em_rota'])('cancelamento %s não altera status nem estorna',async status=>{
-  t.rows=[{id:ids[3],status,estoque_produto_id:ids[1],clientes:{nome:'Cliente'}}]; const h=mount();
+  t.rows=[{id:ids[3],status,estoque_produto_id:ids[1],clientes:{nome:'Cliente da linha cancelável'}}]; const h=mount();
   // Row must be rendered from the resolved list query before its action is located (no polling against an unloaded list).
-  await screen.findByText('Cliente'); expect(t.from).toHaveBeenCalledWith('entregas');
+  await screen.findAllByText('Cliente da linha cancelável'); expect(t.from).toHaveBeenCalledWith('entregas');
   fireEvent.click(screen.getAllByRole('button',{name:'Cancelar'})[0]); fireEvent.click(screen.getByRole('button',{name:'Confirmar cancelamento'}));
   await waitFor(()=>expect(t.error).toHaveBeenCalled()); expect(t.updates).toEqual([]); expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
  });
