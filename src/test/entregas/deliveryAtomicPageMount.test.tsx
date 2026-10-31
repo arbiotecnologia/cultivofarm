@@ -96,6 +96,7 @@ describe("Entregas page with atomic adapter (mounted)", () => {
       return early && id === E2 ? { data: null, error: { code: '57014', message: 'timeout' } } : { data: ack, error: null };
     });
     const h = mount();
+    await screen.findByText('Cliente A');
     const row = (name: string) => { const el = screen.getByText(name).closest('tr'); if (!el) throw new Error('row missing'); return within(el); };
     fireEvent.click(row('Cliente A').getByRole('button', { name: 'Enviar' }));
     await waitFor(() => expect(t.rows[0].status).toBe('em_rota'));
