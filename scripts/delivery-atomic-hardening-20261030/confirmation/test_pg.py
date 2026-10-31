@@ -216,12 +216,12 @@ def proof_race_matrix():
   holder=T.T.session('BEGIN;'+proof)
   waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='proof_confirm_race';"+call(e,'race-confirm-'+action,obs))
   wait_lock('proof_confirm_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
-  b=snapshot();out,err=T.T.finish(waiter,'COMMIT;');raw.append({'test':action+' wins against confirm','stdout':out,'stderr':err})
+  b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':action+' wins against confirm','stdout':out,'stderr':err})
   assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' in err,(out,err);assert snapshot()==b;ok(action+' wins observed lock; stale confirmation PT409 with exact snapshots')
   confirmation=call(e,'race-confirm-fresh-'+action);holder=T.T.session('BEGIN;'+confirmation)
   waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='confirm_proof_race';"+proof)
   wait_lock('confirm_proof_race');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
-  b=snapshot();out,err=T.T.finish(waiter,'COMMIT;');raw.append({'test':'confirm wins against '+action,'stdout':out,'stderr':err})
+  b=snapshot();out,err=T.T.finish(waiter);raw.append({'test':'confirm wins against '+action,'stdout':out,'stderr':err})
   assert re.search(r'ERROR:\s+PT409:',err) and 'DELIVERY_PROOF_CLOSED' in err,(out,err);assert snapshot()==b;ok('confirmation wins observed lock; '+action+' denied PT409 with exact snapshots')
 
 if __name__=='__main__':
