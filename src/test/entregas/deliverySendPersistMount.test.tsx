@@ -267,6 +267,8 @@ describe("Enviar durable retention (mounted, real QueryClient)", () => {
       expect(groupCancel()).toHaveLength(0); restore();
       expect(localStorage.getItem(`${SPFX}${E1}`)).toBe(mode === "corrupt" ? "{bad" : rec());
       if (mode === "retained") {
+        fireEvent.keyDown(document.activeElement || document.body, { key: "Escape" });
+        await waitFor(() => expect(screen.queryByRole("button", { name: "Confirmar cancelamento" })).toBeNull());
         fireEvent.click(screen.getByRole("button", { name: "Consultar entregas" }));
         fireEvent.click(await screen.findByRole("button", { name: "Reconciliar envio" })); await waitFor(() => expect(t.success).toHaveBeenCalledWith("Status atualizado"));
         expect(sends()).toHaveLength(1); expect(sends()[0][1].p_request_key).toBe(KEY); expect(sendKeys()).toEqual([]);
