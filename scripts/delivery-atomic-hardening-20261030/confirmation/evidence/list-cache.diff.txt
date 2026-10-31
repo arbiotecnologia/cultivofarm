@@ -1,0 +1,181 @@
+diff --git a/src/components/entregas/ConfirmarEntregaDialog.tsx b/src/components/entregas/ConfirmarEntregaDialog.tsx
+index 9c312e8c7..7f3fb2510 100644
+--- a/src/components/entregas/ConfirmarEntregaDialog.tsx
++++ b/src/components/entregas/ConfirmarEntregaDialog.tsx
+@@ -1,5 +1,4 @@
+ import { useEffect, useRef, useState } from "react";
+-import { useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+@@ -16,8 +15,7 @@ interface Props { open: boolean; onClose: () => void; entrega: any | null; onCon
+ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: Props) {
+  const { user, profile } = useAuth();
+  const fence = useStorageAccessScope(`physical-confirm:${open}:${entrega?.id}`);
+- const qc = useQueryClient();
+- const [read, setRead] = useState<{ scope: string; observed: string; status: string } | null>(null);
++ const [read, setRead] = useState<{ scope: string; observed: string; status: string; os: string; proof: string } | null>(null);
+  const [error, setError] = useState(""); const [busy,setBusy]=useState(false); const [uncertain,setUncertain]=useState(false);
+  const [form,setForm]=useState({nome:"",cargo:"",documento:"",observacoes:""});
+  const lock=useRef(false); const generation=useRef(0);
+@@ -36,7 +34,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+     if(gen!==generation.current||!current())return;
+     const cap=!error&&confirmationCapability(data,scope);
+     if(!cap){setError("Confirmação física indisponível. Nenhuma alteração foi enviada.");return;}
+-    setRead({scope:context,observed:String(cap.updated_at),status:String(cap.status)});
++    setRead({scope:context,observed:cap.updated_at,status:cap.status,os:cap.os_id,proof:cap.comprovante_id});
+    } catch {if(gen===generation.current&&current())setError("Não foi possível consultar a disponibilidade. Nenhuma alteração foi enviada.");}
+   })();
+  },[context,open,entrega?.id]);
+@@ -44,9 +42,9 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+   if(lock.current||!available||!read||!form.nome.trim())return;
+   const current=fence.capture(); if(!current())return;
+   if(read.status==='entregue' && attempt.current?.context!==context){setError("Entrega já confirmada. Consulte o histórico.");return;}
+-  const target=scope.entrega; const capturedScope=context;
++  const target=scope.entrega;
+   const retained=attempt.current?.context===context?attempt.current.value:null;
+-  const pending=retained??{scope:{...scope},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
++  const pending=retained??{scope:{...scope},roots:{os:read.os,proof:read.proof},args:{p_entrega:target,p_observed:read.observed,p_request_key:crypto.randomUUID(),p_recebedor:{...form,nome:form.nome.trim()}}};
+   attempt.current={context,value:pending}; lock.current=true;setBusy(true);setError("");let sent=false;
+   let timedOut=false; let settled=false; let timer: ReturnType<typeof setTimeout> | undefined;
+   const alive=()=>current()&&!timedOut;
+@@ -57,7 +55,6 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+    if(!current())return;
+    attempt.current=null;setUncertain(false);
+    toast({title:"Recebimento físico confirmado"});
+-   void qc.invalidateQueries({predicate:q=>q.queryKey[0]==='entregas'&&q.queryKey.some(k=>String(k)===capturedScope)});
+    onConfirmed?.("physical",target);onClose();
+   } catch(e:unknown){
+    if(current()){setError(e instanceof Error?e.message:"Não foi possível confirmar.");setUncertain(sent);}
+diff --git a/src/pages/Entregas.tsx b/src/pages/Entregas.tsx
+index 018c48e0b..6529f3b28 100644
+--- a/src/pages/Entregas.tsx
++++ b/src/pages/Entregas.tsx
+@@ -198,9 +198,11 @@ export default function Entregas() {
+   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
+   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
+   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
++  const confirmationList = useRef<{ target: string; scope: string; current: () => boolean } | null>(null);
+   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
+   const [motivoCancel, setMotivoCancel] = useState("");
+   useEffect(() => {
++    confirmationList.current = null;
+     setCancelTarget(null); setSelectedEntrega(null); setComprovanteEntrega(null);
+     setConfirmEntregaOpen(false); setFinancialConfirmOpen(false); setPreviewOpen(false);
+     setPreviewPayload(null); setOperationNotice("");
+@@ -695,8 +697,11 @@ export default function Entregas() {
+    * paralelo nem fallback do nome do operador como recebedor.
+    */
+   const handleConfirmarEntrega = (id: string) => {
++    const current = deliveryScope.capture();
++    if (!current()) return;
+     const entrega: any = (entregas as any[]).find((e) => e.id === id);
+     if (!entrega) return;
++    confirmationList.current = { target: id, scope: deliveryScope.scope, current };
+     setSelectedEntrega(entrega);
+     setConfirmEntregaOpen(true);
+   };
+@@ -931,7 +936,7 @@ export default function Entregas() {
+                         {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
+                         {e.status === "em_rota" && (
+                           <div className="flex gap-1 w-full">
+-                            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Apenas Confirmar</Button>
++                            <Button size="sm" variant="outline" className="flex-1" onClick={() => handleConfirmarEntrega(e.id)}>Apenas Confirmar</Button>
+                             <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
+                             </Button>
+@@ -1006,7 +1011,7 @@ export default function Entregas() {
+                         {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
+                         {e.status === "em_rota" && (
+                           <>
+-                            <Button size="sm" variant="outline" onClick={() => { setSelectedEntrega(e); setConfirmEntregaOpen(true); }}>Confirmar</Button>
++                            <Button size="sm" variant="outline" onClick={() => handleConfirmarEntrega(e.id)}>Confirmar</Button>
+                             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setSelectedEntrega(e); setFinancialConfirmOpen(true); }}>
+                               <CheckCircle className="h-4 w-4 mr-1" /> Entregue/Faturar
+                             </Button>
+@@ -1078,15 +1083,14 @@ export default function Entregas() {
+ 
+       <ConfirmarEntregaDialog
+         open={confirmEntregaOpen}
+-        onClose={() => { setConfirmEntregaOpen(false); }}
++        onClose={() => { confirmationList.current = null; setConfirmEntregaOpen(false); }}
+         entrega={selectedEntrega}
+-        onConfirmed={(mode) => {
+-          if (mode === "bill_now") {
+-            // Recarrega entrega e abre o passo financeiro
+-            setFinancialConfirmOpen(true);
+-          } else {
+-            setSelectedEntrega(null);
+-          }
++        onConfirmed={(mode, target) => {
++          const captured = confirmationList.current;
++          if (mode !== "physical" || !captured || captured.scope !== deliveryScope.scope || captured.target !== target || !captured.current()) return;
++          void queryClient.invalidateQueries({ queryKey: ["entregas", captured.scope, captured.scope], exact: true });
++          confirmationList.current = null;
++          setSelectedEntrega(null);
+         }}
+       />
+ 
+diff --git a/src/test/entregas/deliveryAtomicPageMount.test.tsx b/src/test/entregas/deliveryAtomicPageMount.test.tsx
+index 91b4c78fc..f7c87dca5 100644
+--- a/src/test/entregas/deliveryAtomicPageMount.test.tsx
++++ b/src/test/entregas/deliveryAtomicPageMount.test.tsx
+@@ -1,10 +1,10 @@
+ import React, { type PropsWithChildren } from "react";
+ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+ import { MemoryRouter } from "react-router-dom";
+-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ 
+-const t = vi.hoisted(() => ({ auth: {} as any, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
++const t = vi.hoisted(() => ({ auth: {} as any, confirm: {} as any, financial: false, rpc: vi.fn(), from: vi.fn(), submit: undefined as any, success: vi.fn(), error: vi.fn(), current: { os: null as any, estoque: [] as any[], entrega: null as any }, rows: [] as any[], writes: [] as any[] }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
+ vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
+ vi.mock("@/hooks/useSystemConfig", () => ({ useSystemConfig: () => ({ config: {}, defaults: {} }) }));
+@@ -12,8 +12,8 @@ vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+ vi.mock("sonner", () => ({ toast: { success: t.success, error: t.error, info: vi.fn() } }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: t.rpc, from: t.from, channel: () => { const c: any = { on: () => c, subscribe: () => c }; return c; }, removeChannel: vi.fn() } }));
+ vi.mock("@/components/entregas/RegistrarEntregaDialog", () => ({ RegistrarEntregaDialog: (p: any) => { t.submit = p.onSubmit; return null; } }));
+-vi.mock("@/components/entregas/ConfirmarEntregaDialog", () => ({ ConfirmarEntregaDialog: () => null }));
+-vi.mock("@/components/financeiro/ConfirmarEntregaFinanceiroDialog", () => ({ ConfirmarEntregaFinanceiroDialog: () => null }));
++vi.mock("@/components/entregas/ConfirmarEntregaDialog", () => ({ ConfirmarEntregaDialog: (p: any) => { t.confirm = p; return null; } }));
++vi.mock("@/components/financeiro/ConfirmarEntregaFinanceiroDialog", () => ({ ConfirmarEntregaFinanceiroDialog: (p: any) => { t.financial = p.open; return null; } }));
+ vi.mock("@/components/entregas/EntregaComprovantePanel", () => ({ EntregaComprovantePanel: () => null }));
+ vi.mock("@/components/entregas/TermoEntregaPanel", () => ({ TermoEntregaPanel: () => null }));
+ vi.mock("@/components/estoque/EmbalagensEntregaPanel", () => ({ EmbalagensEntregaPanel: () => null }));
+@@ -80,6 +80,34 @@ beforeEach(() => {
+ afterEach(() => { cleanup(); });
+ 
+ describe("Entregas page with atomic adapter (mounted)", () => {
++  it("physical ACK refreshes exact real list cache only and never opens finance", async () => {
++    t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];
++    const h = mount();
++    fireEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
++    const own = h.qc.getQueryCache().findAll().find(q => q.queryKey[0] === "entregas");
++    expect(own).toBeDefined();
++    const foreignKey = ["entregas", "foreign-actor", "foreign-request"];
++    h.qc.setQueryData(foreignKey, [{ id: "foreign", status: "separado" }]);
++    const foreignRead = vi.fn(async () => [{ id: "foreign", status: "separado" }]);
++    const observer = new QueryObserver(h.qc, { queryKey: foreignKey, queryFn: foreignRead, staleTime: Infinity });
++    const unsubscribe = observer.subscribe(() => {});
++    const foreignBefore = h.qc.getQueryState(foreignKey);
++    t.rows = [{ ...t.rows[0], status: "entregue" }];
++    await act(async () => t.confirm.onConfirmed("physical", E1));
++    await waitFor(() => expect(h.qc.getQueryData(own?.queryKey ?? [] )).toEqual(t.rows));
++    expect(await screen.findByText("Entregue")).toBeInTheDocument();
++    expect(h.qc.getQueryState(foreignKey)).toEqual(foreignBefore);
++    expect(foreignRead).not.toHaveBeenCalled();
++    expect(t.financial).toBe(false); unsubscribe(); h.qc.clear();
++  });
++  it("late physical callback after tenant change does not invalidate either cache", async () => {
++    t.rows = [{ id: E1, status: "em_rota", updated_at: T1, clientes: { nome: "Cliente" } }];
++    const h = mount(); fireEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
++    const callback = t.confirm.onConfirmed;
++    t.auth = { ...t.auth, profile: { ...t.auth.profile, organization_id: ORG_B } }; h.rerender(<Entregas />);
++    const invalidation = vi.spyOn(h.qc, "invalidateQueries");
++    await act(async () => callback("physical", E1)); expect(invalidation).not.toHaveBeenCalled(); expect(t.financial).toBe(false); h.qc.clear();
++  });
+   it("dispatches exactly the observed revisions when unchanged", async () => {
+     const h = mount();
+     await act(async () => { await t.submit(payload()); });
