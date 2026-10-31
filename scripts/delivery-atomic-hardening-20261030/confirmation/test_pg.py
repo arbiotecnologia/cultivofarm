@@ -97,7 +97,7 @@ def run_matrix():
  wait_revoke('role revoked DURING observed lock denies confirmation',f"DELETE FROM public.user_roles WHERE user_id='{T.U}';",stmt2,f"INSERT INTO public.user_roles(user_id,role) VALUES('{T.U}','administrador');")
  wait_revoke('tenant changed DURING observed lock denies confirmation',f"UPDATE public.profiles SET organization_id='{T.B}' WHERE user_id='{T.U}';",stmt2,f"UPDATE public.profiles SET organization_id='{T.A}' WHERE user_id='{T.U}';")
  # Existing feature writers use NOWAIT gates: gate wait before acquisition permits committed revocation.
- wait_revoke('SaaS revoked DURING observed gate lock denies confirmation',f"UPDATE public.saas_plan_versions SET features_snapshot='[]' WHERE id='{T.T.VER}';",stmt2,f"UPDATE public.saas_plan_versions SET features_snapshot='[\"estoque_embalagens\",\"envase\",\"ordens_producao\",\"lotes_qualidade\"]' WHERE id='{T.T.VER}';",gate=True)
+ wait_revoke('SaaS revoked DURING observed gate lock denies confirmation',f"UPDATE public.organization_subscriptions SET status='SUSPENDED',suspended_at=now() WHERE organization_id='{T.A}';",stmt2,f"UPDATE public.organization_subscriptions SET status='ACTIVE',suspended_at=NULL WHERE organization_id='{T.A}';",gate=True)
  b=snapshot();r=json.loads(last(stmt2));assert r['success'] and r['comprovante_id'];ok('canonical digital signature then physical confirmation positive')
  after=snapshot();rep=json.loads(last(stmt2));assert rep['replay'] and snapshot()==after;ok('digital confirmation replay no duplicate ledger event receipt')
  multi_item_matrix()
