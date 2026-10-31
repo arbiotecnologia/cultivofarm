@@ -26,7 +26,17 @@ def candidate():
   RAISE EXCEPTION 'DELIVERY_CONFIRM_MUTATION_DENIED' USING ERRCODE='42501';
  END IF;
 """
- assert barrier.count(anchor)==1;barrier=barrier.replace(anchor,branch+anchor)
+ recovery_branch=""" IF c.action='proof_recover' THEN
+  v_org:=platform_private.delivery_confirm_actor_v1();
+  PERFORM platform_private.delivery_proof_recheck_20261030(OLD.id,v_org,'sign');
+  IF TG_OP='UPDATE' AND c.mutation='recover_hash' AND c.organization_id=v_org AND OLD.id=c.target AND NEW.id=c.target
+   AND OLD.status::text IN ('separado','em_rota') AND NEW.status=OLD.status
+   AND (to_jsonb(NEW)-ARRAY['validation_hash','updated_at']) IS NOT DISTINCT FROM (to_jsonb(OLD)-ARRAY['validation_hash','updated_at'])
+  THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid; RETURN NEW; END IF;
+  RAISE EXCEPTION 'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED' USING ERRCODE='42501';
+ END IF;
+"""
+ assert barrier.count(anchor)==1;barrier=barrier.replace(anchor,branch+recovery_branch+anchor)
  meta=json.loads((ROOT/'scripts/delivery-atomic-hardening-20261030/capture/current.json').read_text())
  rows=[r for r in meta['functions'] if r['name']=='fn_validate_entrega_confirmacao'];assert len(rows)==1
  validator=rows[0]['body'];a=validator.index('      SELECT count(*)');b=validator.index('      IF v_anexos = 0',a)
@@ -48,6 +58,9 @@ GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmacao_capability_v1(uuid) TO 
  new="validation_token=v_c.validation_token,\n  validation_hash=v_c.validation_hash,"
  assert proof_delta.count(old)==1
  proof_delta=proof_delta.replace(old,new)
+ replay="  RETURN v_prev.result||'{\"replayed\":true}'::jsonb;"
+ assert proof_delta.count(replay)==1
+ proof_delta=proof_delta.replace(replay,(H/'legacy-replay.sql.review').read_text()+'\n'+replay)
  return proof_delta+'\n'+(H/'permits.sql.review').read_text()+'\n'+(H/'core.sql.review').read_text()+'\n'+barrier+'\n'+validator+';\n'+cap
 
 def guard(x,name):return "DO $guard$ BEGIN IF ("+STATE+") IS DISTINCT FROM '"+json.dumps(x).replace("'","''")+"'::jsonb THEN RAISE EXCEPTION '"+name+"'; END IF; END $guard$;\n"

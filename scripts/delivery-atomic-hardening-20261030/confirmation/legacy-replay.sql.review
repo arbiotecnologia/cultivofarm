@@ -1,0 +1,51 @@
+-- Injected only into exact sign receipt replay, after canonical actor/tenant/row locks.
+-- No receipt/proof rewrite. Only a cryptographically reconstructed legacy delivery hash.
+IF p_action='sign' THEN
+ SELECT * INTO v_c FROM public.entrega_comprovantes WHERE id=v_e.comprovante_id AND entrega_id=v_e.id FOR UPDATE;
+ v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+ IF v_c.id IS NULL THEN RAISE EXCEPTION 'DELIVERY_PROOF_REPLAY_STATE_DENIED' USING ERRCODE='42501'; END IF;
+ IF v_e.validation_hash IS DISTINCT FROM v_c.validation_hash THEN
+  v_path:=v_p->>'assinatura_digital_png_path';
+  PERFORM 1 FROM storage.objects WHERE bucket_id='entrega-documentos' AND name=v_path AND owner_id=v_uid::text FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_PROOF_OBJECT_DENIED' USING ERRCODE='42501'; END IF;
+  v_e:=platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,v_org);
+  IF v_prev.result->>'success' IS DISTINCT FROM 'true' OR v_prev.result->>'action' IS DISTINCT FROM 'sign'
+   OR v_prev.result->>'entrega_id' IS DISTINCT FROM v_e.id::text OR v_prev.result->>'comprovante_id' IS DISTINCT FROM v_c.id::text
+   OR v_prev.result->>'object_path' IS DISTINCT FROM v_path OR v_prev.result->>'validation_token' IS DISTINCT FROM v_c.validation_token::text
+   OR v_prev.result->>'numero_formulario' IS DISTINCT FROM v_c.numero_formulario
+   OR v_e.status::text NOT IN ('separado','em_rota') OR v_c.status IS DISTINCT FROM 'assinatura_digital_coletada'
+   OR v_e.comprovante_status IS DISTINCT FROM 'assinatura_digital_coletada' OR v_c.tipo IS DISTINCT FROM 'formulario_entrega'
+   OR v_c.assinatura_coletada IS NOT TRUE OR v_c.assinatura_tipo IS DISTINCT FROM 'digital_tela' OR v_e.assinatura_tipo IS DISTINCT FROM 'digital_tela'
+   OR v_c.validation_token IS NULL OR v_e.validation_token IS DISTINCT FROM v_c.validation_token
+   OR v_c.gerado_por IS DISTINCT FROM v_uid OR v_e.formulario_gerado_por IS DISTINCT FROM v_uid
+   OR v_e.assinatura_digital_capturada_por IS DISTINCT FROM v_uid OR v_c.assinatura_digital_png_path IS DISTINCT FROM v_path
+   OR v_c.assinatura_hash IS DISTINCT FROM v_p->>'assinatura_hash' OR v_c.assinatura_hash !~ '^[0-9a-f]{64}$'
+   OR v_c.recebedor_nome IS DISTINCT FROM v_p->>'recebedor_nome'
+   OR v_c.recebedor_documento IS DISTINCT FROM v_p->>'recebedor_documento'
+   OR v_c.recebedor_cargo IS DISTINCT FROM v_p->>'recebedor_cargo'
+   OR v_c.recebedor_telefone IS DISTINCT FROM v_p->>'recebedor_telefone'
+   OR v_c.assinatura_digital_svg IS DISTINCT FROM v_p->>'assinatura_digital_svg'
+   OR v_c.assinatura_user_agent IS DISTINCT FROM v_p->>'assinatura_user_agent'
+   OR v_c.assinatura_capturada_em IS NULL OR v_c.gerado_em IS NULL
+   OR v_c.data_assinatura IS DISTINCT FROM v_c.assinatura_capturada_em
+   OR v_e.assinatura_digital_capturada_em IS DISTINCT FROM v_c.assinatura_capturada_em
+   OR v_e.formulario_gerado_em IS DISTINCT FROM v_c.gerado_em
+   OR v_c.validation_hash IS DISTINCT FROM encode(extensions.digest(v_e.id::text||v_c.assinatura_hash||v_c.assinatura_capturada_em::text,'sha256'),'hex')
+   OR v_e.validation_hash IS DISTINCT FROM encode(extensions.digest(v_e.id::text||v_c.numero_formulario||v_c.validation_token::text||v_c.gerado_em::text,'sha256'),'hex')
+   OR EXISTS(SELECT 1 FROM public.entrega_comprovantes WHERE id<>v_c.id AND (arquivo_path=v_path OR assinatura_digital_png_path=v_path))
+  THEN RAISE EXCEPTION 'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED' USING ERRCODE='42501'; END IF;
+  -- Existing one-shot exact-image table; proof remains byte-for-byte unchanged.
+  INSERT INTO platform_private.delivery_confirm_permits_v1(txid,actor,organization_id,target,proof,old_delivery,new_delivery,old_proof,new_proof)
+  VALUES(txid_current(),v_uid,v_org,v_e.id,v_c.id,to_jsonb(v_e),to_jsonb(v_e)||jsonb_build_object('validation_hash',v_c.validation_hash,'updated_at',now()),to_jsonb(v_c),to_jsonb(v_c));
+  INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation) VALUES(txid_current(),v_uid,v_org,'proof_recover',v_e.id,'recover_hash');
+  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,v_org);
+  PERFORM platform_private.delivery_proof_recheck_20261030(p_entrega,v_org,p_action);
+  UPDATE public.entregas SET validation_hash=v_c.validation_hash,updated_at=now() WHERE id=v_e.id;
+  IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current() AND delivery_consumed AND NOT proof_consumed)
+   OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND mutation='done')
+  THEN RAISE EXCEPTION 'DELIVERY_PROOF_RECOVERY_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
+  DELETE FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current();
+  DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();
+ END IF;
+END IF;
