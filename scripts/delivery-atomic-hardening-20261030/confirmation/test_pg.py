@@ -170,14 +170,13 @@ def ledger_lineage_matrix(e,stmt):
 def coverage_matrix():
  # Seed otherwise-contained upstream manufacture locally; tested group/proof/confirm run origin triggers.
  os,pp,l=T.u(701),T.u(702),T.u(703);p2,pp2,l2,l3=T.u(704),T.u(705),T.u(706),T.u(707)
- sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=6000,status='pronto_entrega')+f"""
+ sql("SET session_replication_role=replica;"+T.manufactured(os,pp,l,vol=6000)+f"""
  INSERT INTO public.produtos SELECT (jsonb_populate_record(NULL::public.produtos,to_jsonb(p)||jsonb_build_object('id','{p2}','nome','LOCAL MATRIX PRODUCT 2'))).* FROM public.produtos p WHERE id='{T.PROD}';
  SET session_replication_role=origin;""")
  stocks=[]
  b=snapshot();reject('multiple lots same programming forbidden by canonical unique index','BEGIN;SET LOCAL session_replication_role=replica;'+f"INSERT INTO public.lotes(id,organization_id,produto_id,programacao_id,status,codigo_lote,volume_produzido) VALUES('{l2}','{T.A}','{T.PROD}','{pp}','aprovado','LOCAL-MATRIX-2',100000);",'23505','idx_lotes_programacao_id_unique');assert snapshot()==b
- for n,lot,prod in [(711,l,T.PROD),(712,l,T.PROD),(713,l,T.PROD)]:
-  sid=T.u(n);stocks.append(sid)
-  sql(f"SET session_replication_role=replica;INSERT INTO public.estoque_produto SELECT (jsonb_populate_record(NULL::public.estoque_produto,to_jsonb(s)||jsonb_build_object('id','{sid}','lote_id','{lot}','produto_id','{prod}','reservado_para_os_id','{os}','quantidade',2,'quantidade_reservada',2,'volume_total',2))).* FROM public.estoque_produto s WHERE id='{T.RX}';SET session_replication_role=origin;")
+ for n in range(3):assert json.loads(last(T.actor()+T.envase(os,pp,l,[{'tipo_embalagem':'frasco_1L','quantidade':2}],'coverage-envase-'+str(n))))['success']
+ stocks=json.loads(last(f"SELECT jsonb_agg(id ORDER BY id) FROM public.estoque_produto WHERE lote_id='{l}' AND status='reservado';"));assert len(stocks)==3
  group=json.loads(last(T.actor()+T.group(os,[{'item_id':s,'quantidade':2} for s in stocks],'coverage-group-001')))
  deliveries=[i['entrega_id'] for i in group['itens']]
  for n,e in enumerate(deliveries):prove(e,'coverage-'+str(n))
@@ -194,7 +193,7 @@ def coverage_matrix():
  # Re-deliver the canonically returned stock, with original programming/product roots.
  sid=last(f"SELECT estoque_produto_id FROM public.entregas WHERE id='{other}';")
  # Keep the unique one-program-per-OS constraint: unsupported multi-product same OS is tested as an exact negative.
- b=snapshot();reject('same OS second product programming forbidden by canonical unique constraint','BEGIN;'+f"INSERT INTO public.programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario,status,data_programada) VALUES('{pp2}','{T.A}','{os}','{p2}',2000,'aprovado',current_date);",'23505','programacao_producao_os_uniq');assert snapshot()==b
+ b=snapshot();reject('same OS second product programming forbidden by canonical unique constraint','BEGIN;SET LOCAL session_replication_role=replica;'+f"INSERT INTO public.programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario,status,data_programada) VALUES('{pp2}','{T.A}','{os}','{p2}',2000,'aprovado',current_date);",'23505','programacao_producao_os_uniq');assert snapshot()==b
  # Corrupt product lineage locally, replay must reject and preserve the injected snapshot.
  original=last(f"SELECT produto_id FROM public.entregas WHERE id='{same[0]}';")
  sql(f"SET session_replication_role=replica;UPDATE public.entregas SET produto_id='{p2}' WHERE id='{same[0]}';SET session_replication_role=origin;")
