@@ -135,7 +135,7 @@
     {
       "test": "execution",
       "status": "FAIL",
-      "error": "ERROR:  duplicate key value violates unique constraint \"programacao_producao_os_uniq\"\nDETAIL:  Key (ordem_servico_id)=(10000000-0000-4000-8000-000000000701) already exists.\n"
+      "error": "ERROR:  duplicate key value violates unique constraint \"idx_lotes_programacao_id_unique\"\nDETAIL:  Key (programacao_id)=(10000000-0000-4000-8000-000000000702) already exists.\n"
     }
   ],
   "raw": [
@@ -273,5 +273,5 @@
     }
   ],
   "exit_code": 1,
-  "elapsed_seconds": 18.031783204999556
+  "elapsed_seconds": 16.680089679999583
 }
