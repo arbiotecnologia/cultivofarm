@@ -409,7 +409,15 @@
       "status": "PASS"
     },
     {
+      "test": "send capability closed for OS finalizada",
+      "status": "PASS"
+    },
+    {
       "test": "send replay denies OS aberta",
+      "status": "PASS"
+    },
+    {
+      "test": "send capability closed for OS aberta",
       "status": "PASS"
     },
     {
@@ -445,7 +453,15 @@
       "status": "PASS"
     },
     {
+      "test": "send capability closed for OS finalizada",
+      "status": "PASS"
+    },
+    {
       "test": "send replay denies OS aberta",
+      "status": "PASS"
+    },
+    {
+      "test": "send capability closed for OS aberta",
       "status": "PASS"
     },
     {
@@ -874,5 +890,5 @@
     }
   ],
   "exit_code": 0,
-  "elapsed_seconds": 60.18932253599996
+  "elapsed_seconds": 61.78147800199986
 }
