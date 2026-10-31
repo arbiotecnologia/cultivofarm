@@ -42,5 +42,13 @@
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/release.sql.review",
     "sha256": "ea8083ea5a1f31e29b8ef289021b6c3fedad104bd6044b2cf0b25aef799ba93b"
+  },
+  {
+    "file": "scripts/delivery-atomic-hardening-20261030/confirmation/install.sql.review",
+    "sha256": "139e23dc1060591e644161bc566b435ab8048e24bf94cbd3add5cbc1e7afb5a4"
+  },
+  {
+    "file": "scripts/delivery-atomic-hardening-20261030/confirmation/release.sql.review",
+    "sha256": "c54573b68659155d8944d45ddf7c8c63011bea44d7da442a257fabf096bfe708"
   }
 ]
