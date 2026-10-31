@@ -82,8 +82,12 @@ def run_matrix():
  released=json.loads([x for x in sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;'+G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1]);G.write(pre,post,released)
  load(H/'install.sql.review');assert state()==post;ok('exact install PRE POST commits writer closed')
  reject('closed writer refuses authenticated',call(T.u(999),'closed-0001',obs='2026-10-31'),'42501')
- load(H/'release.sql.review');assert state()==released;ok('separate minimum release exact PRE POST')
+ reject('review release stays NO-GO without remaining matrix', (H/'release.sql.review').read_text(), 'P0001', 'CONFIRM_RELEASE_NO_GO_REMAINING_MATRIX');assert state()==post
+ # Disposable harness activation only; never alter the closed review release artifact.
+ sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;');assert state()==released;ok('disposable harness-only activation exact state; review release remains closed')
  e,path=create(T.O2,T.PP2,T.L2,'1');stmt=call(e,'confirm-0001');before=snapshot()
+ cap=json.loads(last(T.actor()+f"SELECT public.rpc_entrega_confirmacao_capability_v1('{e}');"))
+ assert cap['os_id']==T.O2 and cap['comprovante_id']==last(f"SELECT comprovante_id FROM public.entregas WHERE id='{e}';") and cap['updated_at'];ok('capability binds observed OS canonical proof and CAS revision')
  reject('foreign FSF denies without mutations',call(e,'foreign-0001',actor=T.V),'42501');assert snapshot()==before
  first_before=json.loads(before);result=json.loads(last(stmt));assert result['success'] is True and result['status']=='entregue',result
  ok('canonical attach then physical confirmation advances transactionally')
