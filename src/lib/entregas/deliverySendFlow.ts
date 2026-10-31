@@ -14,6 +14,6 @@ export async function dispatchSend(rpc: Rpc, attempt: SendAttempt, current: () =
  check();sent();const result = await rpc(SEND_RPC, { p_entrega: attempt.scope.entrega, p_observed: attempt.observed, p_request_key: attempt.key });check();
  if (result.error) throw new Error(result.error.message || 'Envio não confirmado.');
  const ack = result.data as Record<string, unknown> | null;
- if (!ack || Object.keys(ack).sort().join() !== ['success','action','replay','actor_id','organization_id','entrega_id','os_id','status','updated_at'].sort().join() || ack.success !== true || ack.action !== 'send' || typeof ack.replay !== 'boolean' || ack.actor_id !== attempt.scope.actor || ack.organization_id !== attempt.scope.org || ack.entrega_id !== attempt.scope.entrega || ack.os_id !== attempt.os || ack.status !== 'em_rota' || !confirmationTimestamp(ack.updated_at)) throw new Error('Resultado incerto. Reconcilie o mesmo envio.');
+ if (!ack || Object.keys(ack).sort().join() !== ['success','action','replay','actor_id','organization_id','entrega_id','os_id','status','updated_at'].sort().join() || ack.success !== true || ack.action !== 'send' || typeof ack.replay !== 'boolean' || ack.actor_id !== attempt.scope.actor || ack.organization_id !== attempt.scope.org || ack.entrega_id !== attempt.scope.entrega || ack.os_id !== attempt.os || ack.status !== 'em_rota' || !confirmationTimestamp(ack.updated_at) || Date.parse(String(ack.updated_at)) < Date.parse(attempt.observed)) throw new Error('Resultado incerto. Reconcilie o mesmo envio.');
  return ack;
 }
