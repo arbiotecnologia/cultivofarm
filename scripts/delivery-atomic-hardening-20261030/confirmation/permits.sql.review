@@ -9,7 +9,7 @@ CREATE FUNCTION platform_private.delivery_confirm_exact_guard_v1()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE p platform_private.delivery_confirm_permits_v1; org uuid; BEGIN
  -- Leave unrelated reviewed proof writers unchanged. A confirmation context always needs its exact permit.
- IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND action='confirm') THEN RETURN NEW; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND action IN ('confirm','proof_recover')) THEN RETURN NEW; END IF;
  org:=platform_private.delivery_confirm_actor_v1();
  SELECT * INTO p FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND organization_id=org;
  IF NOT FOUND OR TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_EXACT_PERMIT_DENIED' USING ERRCODE='42501'; END IF;

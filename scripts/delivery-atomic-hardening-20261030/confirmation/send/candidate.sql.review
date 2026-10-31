@@ -99,6 +99,15 @@ BEGIN
   THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid; RETURN NEW; END IF;
   RAISE EXCEPTION 'DELIVERY_CONFIRM_MUTATION_DENIED' USING ERRCODE='42501';
  END IF;
+ IF c.action='proof_recover' THEN
+  v_org:=platform_private.delivery_confirm_actor_v1();
+  PERFORM platform_private.delivery_proof_recheck_20261030(OLD.id,v_org,'sign');
+  IF TG_OP='UPDATE' AND c.mutation='recover_hash' AND c.organization_id=v_org AND OLD.id=c.target AND NEW.id=c.target
+   AND OLD.status::text IN ('separado','em_rota') AND NEW.status=OLD.status
+   AND (to_jsonb(NEW)-ARRAY['validation_hash','updated_at']) IS NOT DISTINCT FROM (to_jsonb(OLD)-ARRAY['validation_hash','updated_at'])
+  THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid; RETURN NEW; END IF;
+  RAISE EXCEPTION 'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED' USING ERRCODE='42501';
+ END IF;
  IF c.action='proof' THEN
   v_org:=platform_private.delivery_proof_actor_20261030();
   IF TG_OP='UPDATE' AND c.mutation='proof' AND c.organization_id=v_org AND NEW.id=c.target AND OLD.id=c.target

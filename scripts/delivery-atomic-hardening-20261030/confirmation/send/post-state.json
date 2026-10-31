@@ -7606,7 +7606,7 @@
       "platform_private",
       "delivery_confirm_exact_guard_v1",
       "",
-      "26f613802a5f2187ed27b42d2e67c2d4",
+      "ad02f22ce430fe40202470cfb3bcca2e",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -7666,7 +7666,7 @@
       "platform_private",
       "delivery_mutation_guard_20261030",
       "",
-      "6c88fcd07a05454f67a5cd0b917cf924",
+      "5a8dcd6c12274fabe4a1a8498f4354be",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -7714,7 +7714,7 @@
       "platform_private",
       "delivery_proof_apply_20261030",
       "p_action text, p_entrega uuid, p_request_key text, p_payload jsonb",
-      "a331322cdd56b6e88bbe61d872999e31",
+      "2d38e1f75f2ce38cc2a25c862848542b",
       "{postgres=X/postgres}",
       "postgres",
       [
