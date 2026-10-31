@@ -269,12 +269,15 @@ def sequential_send_matrix():
   ok('first of two sent items confirms partial OS entregue mode '+str(n))
   before=json.loads(snapshot());out=json.loads(last(sb));assert out['success'] and out['replay']==early
   after=json.loads(snapshot())
+  for prior,now in zip(before['entregas'],after['entregas']):
+   assert {k:v for k,v in prior.items() if k not in ('status','updated_at')}=={k:v for k,v in now.items() if k not in ('status','updated_at')}
   for table in before:
    if early or table not in ('entregas','requests'):assert before[table]==after[table],table
   ok(('in-route B replay' if early else 'separated B send')+' after A confirmation preserves stock proof OS downstream')
   snap=snapshot();assert json.loads(last(sb))['replay'] and snapshot()==snap
   for terminal in ['finalizada','aberta']:
    reject('send replay denies OS '+terminal,'BEGIN;SET LOCAL session_replication_role=replica;'+f"UPDATE public.ordens_servico SET status='{terminal}' WHERE id='{osn}';"+'SET LOCAL session_replication_role=origin;'+sb,'42501','DELIVERY_SEND_STATE_DENIED');assert snapshot()==snap
+   cap=json.loads(last('BEGIN;SET LOCAL session_replication_role=replica;'+f"UPDATE public.ordens_servico SET status='{terminal}' WHERE id='{osn}';"+'SET LOCAL session_replication_role=origin;'+T.actor()+f"SELECT public.rpc_entrega_envio_capability_v1('{b}');ROLLBACK;"));assert not cap['available'];assert snapshot()==snap;ok('send capability closed for OS '+terminal)
   reject('send replay denies invalid lineage in partial OS','BEGIN;SET LOCAL session_replication_role=replica;'+f"UPDATE public.estoque_produto SET reservado_para_os_tipo='onfarm' WHERE id=(SELECT estoque_produto_id FROM public.entregas WHERE id='{b}');"+'SET LOCAL session_replication_role=origin;'+sb,'42501','DELIVERY_SEND_LINEAGE_DENIED');assert snapshot()==snap
   final=json.loads(last(call(b,f'seq-confirm-b-{n}')));assert final['finalizada'] and final['os_status']=='finalizada'
   after=json.loads(snapshot())
