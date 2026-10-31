@@ -181,7 +181,10 @@ export default function Entregas() {
       if (loaded.corrupt.length) throw new Error("Registro local de envio inválido. Nenhuma alteração foi enviada; consulte as entregas.");
       if (loaded.attempts.length) throw new Error("Há um envio de entrega com resultado incerto. Reconcilie esse envio antes de qualquer nova operação. Nenhuma alteração foi enviada.");
     };
-    sendBarrier();
+    try { sendBarrier(); } catch (error) {
+      const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
+      setOperationNotice(message); toast.error(message); throw error;
+    }
     const ticket = Symbol(target);
     operation.current = ticket;
     let expired = false;
