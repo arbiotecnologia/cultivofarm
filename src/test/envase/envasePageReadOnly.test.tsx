@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const t = vi.hoisted(() => ({ rows: [] as any[], rpc: vi.fn(), open: vi.fn() }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "actor" }, profile: { user_id: "actor", organization_id: "ARB", ativo: true }, roles: ["gestor"], loading: false, authzReady: true }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   rpc: t.rpc,
   from: (table: string) => {
