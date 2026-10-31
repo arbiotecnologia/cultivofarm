@@ -152,6 +152,8 @@ def legacy_replay_matrix(e,path,stmt):
  reject('foreign actor cannot recover legacy sign hash',stmt.replace(T.U,T.V),'42501','DELIVERY_PROOF_SCOPE_DENIED');assert snapshot()==b
  cases=[('arbitrary old delivery hash',f"UPDATE public.entregas SET validation_hash=repeat('0',64) WHERE id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
  ('arbitrary signed proof hash',f"UPDATE public.entrega_comprovantes SET validation_hash=repeat('1',64) WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
+ ('different token',f"UPDATE public.entregas SET validation_token='{T.u(986)}' WHERE id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
+ ('different receiver',f"UPDATE public.entrega_comprovantes SET recebedor_nome='OTHER' WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
  ('different proof path',f"UPDATE public.entrega_comprovantes SET assinatura_digital_png_path='entregas/{e}/assinaturas/{T.u(987)}.png' WHERE entrega_id='{e}';",'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED'),
  ('foreign storage owner',f"UPDATE storage.objects SET owner_id='{T.V}' WHERE name='{path}';",'DELIVERY_PROOF_OBJECT_DENIED'),
  ('missing object',f"DELETE FROM storage.objects WHERE name='{path}';",'DELIVERY_PROOF_OBJECT_DENIED'),
@@ -163,6 +165,14 @@ def legacy_replay_matrix(e,path,stmt):
  wait_revoke('legacy recovery inactive actor during lock denied',f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.U}';")
  wait_revoke('legacy recovery tenant change during lock denied',f"UPDATE public.profiles SET organization_id='{T.B}' WHERE user_id='{T.U}';",stmt,f"UPDATE public.profiles SET organization_id='{T.A}' WHERE user_id='{T.U}';")
  wait_revoke('legacy recovery role revoked during lock denied',f"DELETE FROM public.user_roles WHERE user_id='{T.U}';",stmt,f"INSERT INTO public.user_roles(user_id,role) VALUES('{T.U}','administrador');")
+ holder=T.T.session("SET application_name='legacy_object_holder';BEGIN;"+f"UPDATE storage.objects SET owner_id='{T.V}' WHERE name='{path}';")
+ for _ in range(100):
+  if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='legacy_object_holder' AND state='idle in transaction';")=='1':break
+  time.sleep(.025)
+ waiter=T.T.session("\\set VERBOSITY verbose\nBEGIN;SET application_name='legacy_object_waiter';"+stmt);wait_lock('legacy_object_waiter');out,err=T.T.finish(holder,'COMMIT;');assert not err,(out,err)
+ locked=snapshot();out,err=T.T.finish(waiter);raw.append({'test':'legacy object owner change during lock','stdout':out,'stderr':err})
+ assert re.search(r'ERROR:\s+42501:',err) and 'DELIVERY_PROOF_OBJECT_DENIED' in err,(out,err);assert snapshot()==locked;ok('legacy recovery denies object owner changed DURING observed storage lock')
+ sql(f"UPDATE storage.objects SET owner_id='{T.U}' WHERE name='{path}';")
  old=json.loads(snapshot());r=json.loads(last(stmt));assert r['replayed'];after=json.loads(snapshot())
  for table in old:
   if table!='entregas':assert old[table]==after[table],table
