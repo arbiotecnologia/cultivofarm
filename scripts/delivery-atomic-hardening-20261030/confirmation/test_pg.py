@@ -54,7 +54,17 @@ def run():
  cached=Path('/tmp/delivery-confirmation/applied-fixture.sql')
  if os.environ.get('CONFIRM_LOCAL_REUSE')=='1':
   assert cached.is_file() and cached.is_relative_to(Path('/tmp'))
-  pg.start();sql(cached.read_text());ok('exact local captured composition checkpoint restored; disposable socket verified')
+  pg.start()
+  j=restore.metadata();roles={r['name'] for r in j['roles']}|{'supabase_admin'}
+  for x in j['relations']+j['functions']+j['schemas']:
+   roles.add(x['owner'])
+   for ent in (x.get('acl') or '').strip('{}').split(','):
+    if '=' in ent:roles.update([ent.split('=')[0],ent.split('/')[-1]])
+  for p in j['policies']:roles.update(p['roles'])
+  for r in sorted(roles-{'','postgres','pg_database_owner','public'}):sql('CREATE ROLE "'+r.replace('"','""')+'";')
+  for r in j['roles']:
+   if r['name']!='postgres':sql('ALTER ROLE "'+r['name']+'" '+('BYPASSRLS' if r['bypassrls'] else 'NOBYPASSRLS')+';')
+  sql(cached.read_text());ok('exact local captured composition checkpoint restored; disposable socket verified')
  else:
   r=restore.restore();assert not any(r.values()),r;ok('full captured restore without unresolved objects; disposable socket verified')
   prepare_checkpoint(cached)
