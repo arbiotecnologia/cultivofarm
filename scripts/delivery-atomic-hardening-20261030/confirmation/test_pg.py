@@ -184,10 +184,10 @@ def coverage_matrix():
  # Confirm both same-product lots; the other product still has uncovered demand.
  same=deliveries[:2]
  other=deliveries[2]
- for n,e in enumerate(same):
-  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-lot coverage leaves 6000ml demand open '+str(n))
  observed=last(f"SELECT updated_at FROM public.entregas WHERE id='{other}';")
  assert json.loads(last(T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{other}','LOCAL COVERAGE CANCEL','{observed}');"))['success']
+ for n,e in enumerate(same):
+  r=json.loads(last(call(e,'coverage-confirm-'+str(n))));assert r['finalizada'] is False;ok('multi-lot coverage leaves 6000ml demand open '+str(n))
  b=snapshot();reject('cancelled delivery cannot cover remaining product',call(other,'coverage-cancel-deny'),'PT409','DELIVERY_CONFIRM_OBSERVED_CONFLICT');assert snapshot()==b
  assert last(f"SELECT status FROM public.ordens_servico WHERE id='{os}';")=='entregue';ok('canonical cancellation and reversed reservation leave 2000ml demand uncovered')
  # Re-deliver the canonically returned stock, with original programming/product roots.
