@@ -92,7 +92,7 @@ describe("Entregas page with atomic adapter (mounted)", () => {
       expect(t.rpc).toHaveBeenCalledTimes(2);
       await act(async()=>{await vi.advanceTimersByTimeAsync(30001);});
       fireEvent.click(screen.getByRole('button',{name:'Enviar'}));await act(async()=>{await Promise.resolve();});
-      expect(t.rpc).toHaveBeenCalledTimes(2);expect(t.error).toHaveBeenCalledWith('Uma operação de entrega já está em andamento.');
+      expect(t.rpc).toHaveBeenCalledTimes(2);expect(t.error).toHaveBeenCalledWith('Tempo de resposta excedido. Resultado incerto; consulte as entregas, sem reenviar.');
       await act(async()=>{release?.({data:{success:true,action:'send',replay:false,actor_id:ACTOR,organization_id:ORG,entrega_id:E1,os_id:OS,status:'em_rota',updated_at:T2},error:null});await Promise.resolve();});
       expect(t.success).not.toHaveBeenCalled();expect(t.writes).toEqual([]);expect(t.financial).toBe(false);
     } finally {vi.useRealTimers();h.qc.clear();}
