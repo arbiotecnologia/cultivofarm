@@ -91,6 +91,16 @@ const KIND_ALL = "all";
 const KIND_PRODUCT = "produto";
 const KIND_MICRO = "microrganismo";
 type EntityKindFilter = typeof KIND_ALL | typeof KIND_PRODUCT | typeof KIND_MICRO;
+/** Famílias comerciais canônicas (`produtos.familia_catalogo`) — nunca inferidas. */
+const FAMILY_FILTERS = [
+  { value: "biologico", label: "Produtos biológicos" },
+  { value: "quimico", label: "Produtos químicos" },
+  { value: "fertilizante_adubo", label: "Fertilizantes/Adubos" },
+] as const;
+const FAMILY_LABEL: Record<string, string> = {
+  biologico: "Biológico", quimico: "Químico", fertilizante_adubo: "Fertilizante/Adubo",
+};
+const FAMILY_PREFIX = "fam:";
 
 type FieldKey = keyof ProductFiscalFormValues;
 
@@ -182,25 +192,28 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.
   const canEditProduct = platformGlobal && access === "rw" && fiscalAccess.ready && fiscalAccess.canWrite;
   const canEditMicro = !platformGlobal && routeAccess === "rw";
+  // Plataforma: microrganismos globais exibidos SOMENTE em consulta; a escrita
+  // continua na rota canônica da empresa até existir autoridade server-side própria.
   const uiEnabled = FEATURE_FLAGS.fiscalProductProfilesUi === true;
   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-  const [kind, setKind] = useState<EntityKindFilter>(platformGlobal ? KIND_PRODUCT : KIND_ALL);
+  const [kind, setKind] = useState<EntityKindFilter>(KIND_ALL);
+  const [familia, setFamilia] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<EditingTarget | null>(null);
   const [associating, setAssociating] = useState<
     { microorganismId: string; microorganismNome: string; currentProductId: string | null } | null
   >(null);
 
-  const productsEnabled = uiEnabled && access !== "none" && (platformGlobal || kind !== KIND_MICRO);
+  const productsEnabled = uiEnabled && access !== "none" && kind !== KIND_MICRO;
   const listQuery = useProductFiscalList(
-    { search, status, page, pageSize: PAGE_SIZE },
+    { search, status, page, pageSize: PAGE_SIZE, familia },
     { enabled: productsEnabled },
   );
 
-  const microorganismsEnabled = !platformGlobal && uiEnabled && access !== "none" && kind !== KIND_PRODUCT;
+  const microorganismsEnabled = uiEnabled && access !== "none" && kind !== KIND_PRODUCT && !familia;
   const microorganismsQuery = useMicroorganismList(search, {
     enabled: microorganismsEnabled,
   });
@@ -214,7 +227,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
     [productItemsPage],
   );
   const readinessQuery = useProductFiscalReadiness(productIds, {
-    enabled: uiEnabled && access !== "none" && (platformGlobal || kind !== KIND_MICRO),
+    enabled: uiEnabled && access !== "none" && kind !== KIND_MICRO,
   });
 
   const microItems = useMemo(
@@ -223,10 +236,10 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   );
   const microIds = useMemo(() => microItems.map((m) => m.id), [microItems]);
   const microProfilesQuery = useMicroorganismFiscalProfileList(microIds, {
-    enabled: !platformGlobal && uiEnabled && access !== "none",
+    enabled: microorganismsEnabled,
   });
   const microReadinessQuery = useMicroorganismFiscalReadiness(microIds, {
-    enabled: !platformGlobal && uiEnabled && access !== "none",
+    enabled: microorganismsEnabled,
   });
 
   const permissionDenied =
@@ -332,6 +345,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   const rows: UnifiedRow[] =
     kind === KIND_PRODUCT ? rowsProduto
     : kind === KIND_MICRO ? rowsMicro
+    : familia ? rowsProduto
     : [...rowsProduto, ...rowsMicro];
 
   const totalPages = Math.max(
@@ -349,7 +363,8 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
         <h1 className="text-2xl font-semibold">{platformGlobal ? PLATFORM_PAGE_TITLE : PAGE_TITLE}</h1>
         {platformGlobal ? (
           <p className="text-sm text-muted-foreground" data-testid="fiscal-platform-description">
-            Cadastro fiscal dos produtos do catálogo global, compartilhado por todas as empresas.
+            Cadastro fiscal de todo o catálogo global — produtos biológicos, químicos,
+            fertilizantes/adubos e microrganismos —, compartilhado por todas as empresas.
             Revise NCM, CFOP e demais campos com a contabilidade antes de salvar. Um perfil só
             fica pronto para NF-e depois de completo e revisado; nenhuma nota é emitida por esta tela.
           </p>
@@ -375,13 +390,23 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
         <CardHeader>
           <CardTitle className="text-base">Resumo da página atual</CardTitle>
           <CardDescription>
-            Produtos globais exibidos nesta página. Abra um produto para ver o que falta para ficar pronto para NF-e.
+            Itens globais exibidos nesta página. Abra um item para ver o que falta para ficar pronto para NF-e.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <div>
             <div className="text-muted-foreground">Produtos na página</div>
             <div className="font-medium">{productItems.length}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Microrganismos listados</div>
+            <div className="font-medium" data-testid="platform-micros-listados">{microItems.length}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Microrganismos sem perfil fiscal</div>
+            <div className="font-medium" data-testid="platform-micros-sem-perfil">
+              {microProfilesUnknown ? "—" : microrganismosSemPerfilProprio}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -432,19 +457,26 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                 onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                 className="max-w-sm"
               />
-              {!platformGlobal && <Select
-                value={kind}
-                onValueChange={(v) => { setKind(v as EntityKindFilter); setPage(0); }}
+              <Select
+                value={familia ? FAMILY_PREFIX + familia : kind}
+                onValueChange={(v) => {
+                  if (v.startsWith(FAMILY_PREFIX)) { setKind(KIND_PRODUCT); setFamilia(v.slice(FAMILY_PREFIX.length)); }
+                  else { setKind(v as EntityKindFilter); setFamilia(null); }
+                  setPage(0);
+                }}
               >
-                <SelectTrigger className="max-w-[180px]" aria-label="Filtrar por tipo de item">
+                <SelectTrigger className="max-w-[220px]" aria-label="Filtrar por tipo de item">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={KIND_ALL}>Todos</SelectItem>
                   <SelectItem value={KIND_PRODUCT}>Produtos</SelectItem>
+                  {FAMILY_FILTERS.map((f) => (
+                    <SelectItem key={f.value} value={FAMILY_PREFIX + f.value}>{f.label}</SelectItem>
+                  ))}
                   <SelectItem value={KIND_MICRO}>Microrganismos</SelectItem>
                 </SelectContent>
-              </Select>}
+              </Select>
               <Select
                 value={status ?? STATUS_ALL}
                 onValueChange={(v) => { setStatus(v === STATUS_ALL ? null : v); setPage(0); }}
@@ -463,9 +495,9 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(listQuery.isLoading && (platformGlobal || kind !== KIND_MICRO))
+          {(listQuery.isLoading && kind !== KIND_MICRO)
             || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT)
-            || ((platformGlobal || kind !== KIND_MICRO) && productIds.length > 0 && readinessQuery.isLoading)
+            || (kind !== KIND_MICRO && productIds.length > 0 && readinessQuery.isLoading)
             || (kind !== KIND_PRODUCT && microIds.length > 0 && microProfilesQuery.isLoading)
             || (kind !== KIND_PRODUCT && microIds.length > 0 && microReadinessQuery.isLoading) ? (
             <div className="flex items-center gap-2 text-muted-foreground" data-testid="fiscal-produtos-loading">
@@ -490,7 +522,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm" role="table" aria-label={platformGlobal ? "Perfis fiscais de produtos globais" : "Perfis fiscais de produtos e microrganismos"}>
+                <table className="w-full text-sm" role="table" aria-label={platformGlobal ? "Perfis fiscais do catálogo global" : "Perfis fiscais de produtos e microrganismos"}>
                   <thead className="text-left text-muted-foreground">
                     <tr>
                       <th className="p-2">Item</th>
@@ -535,11 +567,11 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                 </table>
               </div>
 
-              {(platformGlobal || kind !== KIND_MICRO) && (
+              {kind !== KIND_MICRO && (
                 <div className="flex items-center justify-between text-sm">
                   <div className="text-muted-foreground">
                     Página {page + 1} de {totalPages} — {listQuery.data?.total ?? 0} produtos
-                    {!platformGlobal && kind === KIND_ALL && microItems.length > 0 && (
+                    {kind === KIND_ALL && !familia && microItems.length > 0 && (
                       <> + {microItems.length} microrganismo(s) na visão unificada</>
                     )}
                   </div>
@@ -573,7 +605,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           onClose={() => setEditing(null)}
         />
       ) : null}
-      {!platformGlobal && editing?.entity === "microrganismo" ? (
+      {editing?.entity === "microrganismo" ? (
         <MicroorganismEditDrawer
           microorganismId={editing.microorganismId}
           displayName={editing.displayName}
@@ -619,7 +651,14 @@ function renderRow(
           <div className="font-medium">{p.product_nome}</div>
           <div className="text-xs text-muted-foreground">{p.product_codigo ?? "—"}</div>
         </td>
-        <td className="p-2"><Badge variant="secondary">{ENTITY_KIND.label("produto")}</Badge></td>
+        <td className="p-2">
+          <div className="flex flex-wrap gap-1">
+            <Badge variant="secondary">{ENTITY_KIND.label("produto")}</Badge>
+            <Badge variant="outline" data-testid="badge-familia">
+              {p.familia ? FAMILY_LABEL[p.familia] ?? p.familia : "Família pendente"}
+            </Badge>
+          </div>
+        </td>
         <td className="p-2">{p.ncm ?? "—"}</td>
         <td className="p-2">{p.cest ?? "—"}</td>
         <td className="p-2">{(p.cfop_in_state ?? "—")}/{(p.cfop_interstate ?? "—")}</td>

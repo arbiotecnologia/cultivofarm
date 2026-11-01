@@ -46,6 +46,8 @@ export interface ListParams {
   status: string | null;
   page: number;
   pageSize: number;
+  /** Família comercial canônica (`produtos.familia_catalogo`); null = todas. */
+  familia?: string | null;
 }
 
 export interface ProductListItem {
@@ -60,6 +62,7 @@ export interface ProductListItem {
   cfop_in_state: string | null;
   cfop_interstate: string | null;
   updated_at: string | null;
+  familia: string | null;
 }
 
 export interface ListResult {
@@ -109,7 +112,7 @@ export function useProductFiscalList(
         let q = (supabase as any)
           .from("produtos")
           .select(
-            "id, nome, codigo, product_fiscal_profiles!inner(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+            "id, nome, codigo, familia_catalogo, product_fiscal_profiles!inner(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
             { count: "exact" },
           )
           .eq("product_fiscal_profiles.is_active", true)
@@ -120,6 +123,7 @@ export function useProductFiscalList(
         if (safeTerm) {
           q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);
         }
+        if (params.familia) q = q.eq("familia_catalogo", params.familia);
         return q;
       };
 
@@ -127,7 +131,7 @@ export function useProductFiscalList(
         let q = (supabase as any)
           .from("produtos")
           .select(
-            "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+            "id, nome, codigo, familia_catalogo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
             { count: "exact" },
           )
           .eq("product_fiscal_profiles.is_active", true)
@@ -136,6 +140,7 @@ export function useProductFiscalList(
         if (safeTerm) {
           q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);
         }
+        if (params.familia) q = q.eq("familia_catalogo", params.familia);
         return q;
       };
 
@@ -164,6 +169,7 @@ export function useProductFiscalList(
           cfop_in_state: profile?.cfop_in_state ?? null,
           cfop_interstate: profile?.cfop_interstate ?? null,
           updated_at: profile?.updated_at ?? null,
+          familia: p.familia_catalogo ?? null,
         };
       });
 
@@ -227,7 +233,7 @@ export function useProductFiscalListByIds(
       const { data, error } = await (supabase as any)
         .from("produtos")
         .select(
-          "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+          "id, nome, codigo, familia_catalogo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
         )
         .eq("product_fiscal_profiles.is_active", true)
         .in("id", productIds as any);
@@ -252,6 +258,7 @@ export function useProductFiscalListByIds(
           cfop_in_state: profile?.cfop_in_state ?? null,
           cfop_interstate: profile?.cfop_interstate ?? null,
           updated_at: profile?.updated_at ?? null,
+          familia: p.familia_catalogo ?? null,
         };
       });
     },

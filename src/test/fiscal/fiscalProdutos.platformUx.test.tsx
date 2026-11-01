@@ -42,23 +42,24 @@ describe("product (global) vs micro (canonical) edit split", () => {
     m.role = "administrador"; m.write = true; renderWithProviders(<FiscalProdutos />);
     expect(screen.queryByRole("button", { name: "Editar perfil fiscal de INS-4" })).toBeNull();
   });
-  test("Superadmin platform tab: products only, no micro/regulatory flows mounted or started", () => {
+  test("Superadmin platform tab: products AND global micros listed; micro read-only; no regulatory flow", () => {
     m.role = "superadmin"; m.write = true; renderWithProviders(<FiscalProdutos platformGlobal />);
     expect(screen.getByRole("button", { name: /perfil fiscal de INS-4/ }).getAttribute("aria-label")).toBe("Editar perfil fiscal de INS-4");
     expect(screen.queryByTestId("regulatorio-micro")).toBeNull(); expect(m.regulatory).not.toHaveBeenCalled();
-    expect(screen.queryByRole("combobox", { name: "Filtrar por tipo de item" })).toBeNull();
+    expect(screen.getByRole("combobox", { name: "Filtrar por tipo de item" })).toBeInTheDocument();
+    expect(screen.getByTestId("row-micro:micro-1")).toBeInTheDocument();
     expect(screen.queryByTestId("btn-editar-perfil-micro")).toBeNull();
-    expect(m.microList.mock.calls.every(([e]) => e === false)).toBe(true);
-    expect(m.microProfiles.mock.calls.every(([e]) => e === false)).toBe(true);
+    expect(m.microList.mock.calls.some(([e]) => e === true)).toBe(true);
+    expect(m.microProfiles.mock.calls.some(([e]) => e === true)).toBe(true);
   });
-  test("Superadmin platform UX: only global-product copy/counters, no view names or micro counters", () => {
+  test("Superadmin platform UX: global copy/counters include micros, no internal view names", () => {
     m.role = "superadmin"; m.write = true; renderWithProviders(<FiscalProdutos platformGlobal />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Perfis fiscais de produtos globais");
     expect(screen.getByTestId("fiscal-platform-summary")).toBeInTheDocument();
     const text = document.body.textContent ?? "";
-    expect(text).not.toMatch(/icrorganism|v_product_fiscal_readiness|v_microorganism/);
-    expect(screen.queryByTestId("micros-com-perfil-proprio")).toBeNull();
-    expect(screen.queryByTestId("micros-sem-perfil-proprio")).toBeNull();
+    expect(text).not.toMatch(/v_product_fiscal_readiness|v_microorganism/);
+    expect(screen.getByTestId("platform-micros-listados").textContent).toBe("1");
+    expect(screen.getByTestId("badge-familia").textContent).toBe("Família pendente");
   });
   test("tenant mode keeps existing micro summary", () => {
     m.role = "administrador"; renderWithProviders(<FiscalProdutos />);
