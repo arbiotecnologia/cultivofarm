@@ -21,6 +21,8 @@ BEGIN
   END;
 END $$;
 
+-- Etapa de GRANT simulada (no hosted só em etapa separada autorizada).
+GRANT EXECUTE ON FUNCTION public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid), public.tenant_owned_product_fiscal_list(integer,integer) TO authenticated;
 -- 0. gate fechado por padrão: admin A negado
 SET test.uid='11111111-1111-1111-1111-111111111111'; SET ROLE authenticated;
 SELECT pg_temp.expect_err('gate_off_denies', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{"ncm":"31010000"}','motivo de teste ok','90000000-0000-0000-0000-000000000001')$q$,'42501');
