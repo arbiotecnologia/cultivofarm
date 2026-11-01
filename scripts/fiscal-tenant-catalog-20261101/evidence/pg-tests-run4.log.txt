@@ -1,0 +1,193 @@
+== PRE sem fundação de propriedade (deve abortar)
+psql:install.sql.review:21: ERROR:  PRE: catalog ownership not installed (produtos.owner_organization_id)
+== stub + install
+install OK
+== reinstalação (deve recusar)
+psql:install.sql.review:21: ERROR:  PRE: package already installed (rerun refused)
+== testes
+CREATE TABLE
+GRANT
+GRANT
+CREATE FUNCTION
+CREATE FUNCTION
+GRANT
+SET
+SET
+ expect_err 
+------------
+ 
+(1 row)
+
+RESET
+UPDATE 1
+SET
+ expect_ok 
+-----------
+ 
+(1 row)
+
+ expect_ok 
+-----------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_ok 
+-----------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+SET
+ expect_ok 
+-----------
+ 
+(1 row)
+
+ expect_ok 
+-----------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+SET
+ expect_ok 
+-----------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+SET
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_err 
+------------
+ 
+(1 row)
+
+ expect_ok 
+-----------
+ 
+(1 row)
+
+ expect_ok 
+-----------
+ 
+(1 row)
+
+SET
+ expect_ok 
+-----------
+ 
+(1 row)
+
+SET
+ expect_err 
+------------
+ 
+(1 row)
+
+RESET
+SET
+SET
+psql:test/tests.sql:77: ERROR:  permission denied for table r
+CONTEXT:  SQL statement "INSERT INTO r(name,ok,detail) VALUES (p_name, SQLSTATE=p_state, SQLSTATE||' '||SQLERRM)"
+PL/pgSQL function pg_temp_6.expect_err(text,text,text) line 6 at SQL statement
+RESET
+BEGIN
+UPDATE 1
+REVOKE
+REVOKE
+COMMIT
+SET
+SET
+ expect_err 
+------------
+ 
+(1 row)
+
+RESET
+INSERT 0 1
+               name               | result |                                                            detail                                                            
+----------------------------------+--------+------------------------------------------------------------------------------------------------------------------------------
+ gate_off_denies                  | PASS   | 42501 owned_fiscal_forbidden
+ admin_A_creates_own              | PASS   | check=true
+ replay_same_key                  | PASS   | check=true
+ same_key_other_payload           | PASS   | PT409 owned_fiscal_key_conflict
+ cas_missing_expected             | PASS   | PT409 owned_fiscal_stale
+ cas_wrong_expected               | PASS   | PT409 owned_fiscal_stale
+ cas_ok_update                    | PASS   | check=true
+ invalid_ncm                      | PASS   | 22023 owned_fiscal_invalid
+ forbidden_key_status             | PASS   | 22023 owned_fiscal_invalid
+ A_writes_B_denied                | PASS   | 42501 owned_fiscal_forbidden
+ A_writes_global_via_rpc_denied   | PASS   | 42501 owned_fiscal_forbidden
+ A_direct_insert_denied           | PASS   | 42501 new row violates row-level security policy for table "product_fiscal_profiles"
+ B_cannot_read_A                  | PASS   | check=true
+ B_list_only_own                  | PASS   | check=true
+ B_replay_A_key_denied            | PASS   | PT409 owned_fiscal_key_conflict
+ gestor_reads                     | PASS   | check=true
+ gestor_write_denied              | PASS   | 42501 owned_fiscal_forbidden
+ SA_rpc_owned_denied              | PASS   | 42501 owned_fiscal_forbidden
+ SA_direct_owned_denied           | PASS   | 42501 new row violates row-level security policy "product_fiscal_profiles_global_insert" for table "product_fiscal_profiles"
+ SA_global_direct_ok              | PASS   | check=true
+ SA_cannot_read_owned             | PASS   | check=true
+ A_reads_global                   | PASS   | check=true
+ inactive_denied                  | PASS   | 42501 owned_fiscal_forbidden
+ after_rollback_denied            | PASS   | 42501 permission denied for function tenant_owned_product_fiscal_list
+ rollback_keeps_policies_receipts | PASS   | policies/receipts
+(25 rows)
+
+ pass | fail 
+------+------
+   25 |    0
+(1 row)
+

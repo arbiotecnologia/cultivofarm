@@ -4,7 +4,7 @@ set -u
 for v in $(compgen -e | grep '^PG'); do unset "$v"; done
 cd "$(dirname "$0")/.."
 D=$(mktemp -d /tmp/pgfiscal.XXXX); PORT=55437
-AS=""; if [ "$(id -u)" = 0 ]; then chown nobody "$D"; AS="runuser -u nobody --"; fi
+AS=""; if [ "$(id -u)" = 0 ]; then chown 1000:1000 "$D"; AS="setpriv --reuid=1000 --regid=1000 --clear-groups"; fi
 $AS initdb -D "$D/data" -U postgres -A trust >/dev/null
 $AS pg_ctl -D "$D/data" -o "-p $PORT -k $D -c listen_addresses=''" -l "$D/log" -w start >/dev/null
 P="psql -X -h $D -p $PORT -U postgres -d postgres -v ON_ERROR_STOP=1"
