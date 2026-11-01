@@ -1,0 +1,150 @@
+diff --git a/src/lib/fiscal/ownedProductFiscal.ts b/src/lib/fiscal/ownedProductFiscal.ts
+new file mode 100644
+index 000000000..5e7020452
+--- /dev/null
++++ b/src/lib/fiscal/ownedProductFiscal.ts
+@@ -0,0 +1,86 @@
++/**
++ * Perfil fiscal de itens do catálogo PRÓPRIO da empresa (candidato inativo).
++ * Contrato: scripts/fiscal-tenant-catalog-20261101 — RPCs não instalados/sem GRANT.
++ * Empresa vem do servidor (dono imutável do item); nunca enviada pelo cliente.
++ * Dados retornados nunca autorizam nada: o servidor reautoriza toda escrita.
++ */
++export const OWNED_PRODUCT_FISCAL_ENABLED = false as const;
++
++export const OWNED_FISCAL_FIELDS = [
++  "ncm", "cest", "cfop_in_state", "cfop_interstate", "origin_code", "icms_cst", "icms_csosn",
++  "ipi_cst", "pis_cst", "cofins_cst", "commercial_unit", "taxable_unit", "gtin", "taxable_gtin",
++  "tax_benefit_code", "fiscal_description", "accounting_notes",
++] as const;
++export type OwnedFiscalField = (typeof OWNED_FISCAL_FIELDS)[number];
++export type OwnedFiscalValues = Partial<Record<OwnedFiscalField, string | null>>;
++
++const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++const PATTERNS: Partial<Record<OwnedFiscalField, RegExp>> = {
++  ncm: /^[0-9]{8}$/, cest: /^[0-9]{7}$/, cfop_in_state: /^[1-7][0-9]{3}$/, cfop_interstate: /^[1-7][0-9]{3}$/,
++  origin_code: /^[0-8]$/, gtin: /^([0-9]{8}|[0-9]{12,14}|SEM GTIN)$/, taxable_gtin: /^([0-9]{8}|[0-9]{12,14}|SEM GTIN)$/,
++};
++
++export class OwnedFiscalError extends Error {
++  constructor(public readonly kind: "disabled" | "invalid" | "forbidden" | "conflict" | "uncertain", message: string) {
++    super(message);
++  }
++}
++
++/** Valida/normaliza valores; rejeita chaves fora da lista (ex.: profile_status). */
++export function normalizeOwnedFiscalValues(input: Record<string, unknown>): OwnedFiscalValues {
++  const out: OwnedFiscalValues = {};
++  for (const [k, raw] of Object.entries(input)) {
++    if (!(OWNED_FISCAL_FIELDS as readonly string[]).includes(k)) throw new OwnedFiscalError("invalid", `Campo não permitido: ${k}`);
++    if (raw !== null && typeof raw !== "string") throw new OwnedFiscalError("invalid", `Valor inválido: ${k}`);
++    const v = typeof raw === "string" ? raw.trim() : null;
++    const value = v === "" ? null : v;
++    if (value && value.length > 2000) throw new OwnedFiscalError("invalid", `Valor longo demais: ${k}`);
++    const re = PATTERNS[k as OwnedFiscalField];
++    if (value && re && !re.test(value)) throw new OwnedFiscalError("invalid", `Formato inválido: ${k}`);
++    out[k as OwnedFiscalField] = value;
++  }
++  return out;
++}
++
++export interface OwnedFiscalReceipt {
++  product_id: string; profile_id: string; organization_id: string;
++  profile_status: string; updated_at: string; idempotency_key: string; idempotent: boolean;
++}
++
++/** ACK exato: qualquer divergência é incerta (mantém chave para reconciliação, sem nova tentativa automática). */
++export function parseOwnedFiscalReceipt(data: unknown, expected: { productId: string; idempotencyKey: string }): OwnedFiscalReceipt {
++  const r = data as Record<string, unknown> | null;
++  if (!r || typeof r !== "object" || r.success !== true
++    || r.product_id !== expected.productId || r.idempotency_key !== expected.idempotencyKey
++    || typeof r.profile_id !== "string" || !UUID.test(r.profile_id)
++    || typeof r.organization_id !== "string" || !UUID.test(r.organization_id)
++    || typeof r.profile_status !== "string" || r.profile_status === "VALIDATED"
++    || typeof r.updated_at !== "string" || Number.isNaN(Date.parse(r.updated_at))
++    || typeof r.idempotent !== "boolean") {
++    throw new OwnedFiscalError("uncertain", "Resposta do servidor não confirmada; consulte antes de tentar de novo.");
++  }
++  return r as unknown as OwnedFiscalReceipt;
++}
++
++type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> };
++
++export async function saveOwnedProductFiscal(client: RpcClient, input: {
++  productId: string; expectedUpdatedAt: string | null; values: Record<string, unknown>; reason: string; idempotencyKey: string;
++}, enabled: boolean = OWNED_PRODUCT_FISCAL_ENABLED): Promise<OwnedFiscalReceipt> {
++  if (!enabled) throw new OwnedFiscalError("disabled", "Perfil fiscal do catálogo próprio ainda não liberado.");
++  if (!UUID.test(input.productId) || !UUID.test(input.idempotencyKey)) throw new OwnedFiscalError("invalid", "Identificador inválido.");
++  const reason = input.reason.trim();
++  if (reason.length < 10 || reason.length > 500) throw new OwnedFiscalError("invalid", "Informe um motivo de 10 a 500 caracteres.");
++  const values = normalizeOwnedFiscalValues(input.values);
++  const { data, error } = await client.rpc("tenant_owned_product_fiscal_save", {
++    p_product_id: input.productId, p_expected_updated_at: input.expectedUpdatedAt,
++    p_values: values, p_reason: reason, p_idempotency_key: input.idempotencyKey,
++  });
++  if (error) {
++    if (error.code === "42501") throw new OwnedFiscalError("forbidden", "Sem permissão para este item.");
++    if (error.code === "PT409") throw new OwnedFiscalError("conflict", "O perfil mudou ou a chave já foi usada; recarregue antes de salvar.");
++    if (error.code === "22023") throw new OwnedFiscalError("invalid", "Dados fiscais inválidos.");
++    throw new OwnedFiscalError("uncertain", "Não foi possível confirmar a gravação; consulte antes de tentar de novo.");
++  }
++  return parseOwnedFiscalReceipt(data, { productId: input.productId, idempotencyKey: input.idempotencyKey });
++}
+diff --git a/src/test/fiscal/ownedProductFiscal.test.ts b/src/test/fiscal/ownedProductFiscal.test.ts
+new file mode 100644
+index 000000000..54b51a0ac
+--- /dev/null
++++ b/src/test/fiscal/ownedProductFiscal.test.ts
+@@ -0,0 +1,52 @@
++import { describe, expect, test, vi } from "vitest";
++import {
++  OWNED_PRODUCT_FISCAL_ENABLED, OwnedFiscalError, normalizeOwnedFiscalValues,
++  parseOwnedFiscalReceipt, saveOwnedProductFiscal,
++} from "@/lib/fiscal/ownedProductFiscal";
++
++const P = "d0000000-0000-0000-0000-00000000000a";
++const K = "90000000-0000-0000-0000-000000000002";
++const ORG = "a0000000-0000-0000-0000-00000000000a";
++const ack = { success: true, product_id: P, profile_id: "f0000000-0000-0000-0000-000000000001", organization_id: ORG,
++  profile_status: "DRAFT", updated_at: "2026-11-01T13:00:00.000Z", idempotency_key: K, idempotent: false };
++const input = { productId: P, expectedUpdatedAt: null, values: { ncm: "31010000" }, reason: "motivo de teste ok", idempotencyKey: K };
++
++describe("perfil fiscal do catálogo próprio (candidato)", () => {
++  test("gate desligado por padrão e nenhuma RPC é chamada", async () => {
++    expect(OWNED_PRODUCT_FISCAL_ENABLED).toBe(false);
++    const rpc = vi.fn();
++    await expect(saveOwnedProductFiscal({ rpc }, input)).rejects.toMatchObject({ kind: "disabled" });
++    expect(rpc).not.toHaveBeenCalled();
++  });
++  test("cliente não envia empresa nem status; só campos fiscais", () => {
++    expect(() => normalizeOwnedFiscalValues({ organization_id: ORG })).toThrow(OwnedFiscalError);
++    expect(() => normalizeOwnedFiscalValues({ profile_status: "VALIDATED" })).toThrow(OwnedFiscalError);
++    expect(normalizeOwnedFiscalValues({ ncm: " 31010000 ", cest: "" })).toEqual({ ncm: "31010000", cest: null });
++  });
++  test.each([["ncm", "123"], ["cest", "12"], ["cfop_in_state", "9101"], ["origin_code", "9"], ["gtin", "abc"]])(
++    "formato inválido %s=%s é recusado antes do servidor", async (k, v) => {
++      const rpc = vi.fn();
++      await expect(saveOwnedProductFiscal({ rpc }, { ...input, values: { [k]: v } }, true)).rejects.toMatchObject({ kind: "invalid" });
++      expect(rpc).not.toHaveBeenCalled();
++    });
++  test("envia exatamente produto/CAS/valores/motivo/chave e aceita ACK exato", async () => {
++    const rpc = vi.fn().mockResolvedValue({ data: ack, error: null });
++    await expect(saveOwnedProductFiscal({ rpc }, input, true)).resolves.toMatchObject({ profile_status: "DRAFT" });
++    expect(rpc).toHaveBeenCalledWith("tenant_owned_product_fiscal_save", {
++      p_product_id: P, p_expected_updated_at: null, p_values: { ncm: "31010000" }, p_reason: "motivo de teste ok", p_idempotency_key: K });
++  });
++  test.each([
++    ["outro produto", { ...ack, product_id: "e0000000-0000-0000-0000-00000000000b" }],
++    ["outra chave", { ...ack, idempotency_key: "90000000-0000-0000-0000-000000000003" }],
++    ["promovido a VALIDATED", { ...ack, profile_status: "VALIDATED" }],
++    ["sem success", { ...ack, success: undefined }],
++  ])("ACK divergente (%s) é incerto", (_n, data) => {
++    expect(() => parseOwnedFiscalReceipt(data, { productId: P, idempotencyKey: K })).toThrow(/não confirmada/);
++  });
++  test.each([["42501", "forbidden"], ["PT409", "conflict"], ["22023", "invalid"], ["XX000", "uncertain"]])(
++    "erro %s vira %s sem nova tentativa", async (code, kind) => {
++      const rpc = vi.fn().mockResolvedValue({ data: null, error: { code } });
++      await expect(saveOwnedProductFiscal({ rpc }, input, true)).rejects.toMatchObject({ kind });
++      expect(rpc).toHaveBeenCalledTimes(1);
++    });
++});
