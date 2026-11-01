@@ -96,3 +96,4 @@
 - Group/cancel: scripts/delivery-group-capability-20261030/AGENTS.md; exact capability before dispatch prevents early writes.
 - Tenant fences: scripts/{proof-select-tenant,delivery-evidence-tenant,produto-etiquetas-tenant,delivery-checklist-occurrence-authz}-20261030/AGENTS.md.
 - Label cancellation: scripts/label-cancel-closure-20261031/AGENTS.md; client/UI closed, reads kept — blocks tenant bypass.
+- Tenant-owned product fiscal profiles follow scripts/fiscal-tenant-catalog-20261101/AGENTS.md; candidate stays inactive and depends on the catalog ownership foundation — prevents cross-tenant fiscal reads/writes.
