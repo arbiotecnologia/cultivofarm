@@ -1,28 +1,22 @@
-# Confirmação física manual — preparação local
+# Perfis fiscais para todo o catálogo (global e próprio de cada empresa)
 
-## Base preservada
-O auditor informou aplicação do hardening, fechamento legado e release isolado de envase, publicação de `5557f9ba` e provas JWT reais. Não reinstalar esses pacotes nem acessar produção, sessões, segredos ou as fixtures reais preservadas.
+## Objetivo
+- Tela "Perfis fiscais de produtos globais" deve listar TODOS os itens do catálogo global: microrganismos, produtos biológicos, produtos químicos e fertilizantes/adubos, cada um com configuração fiscal para NF-e (NCM, CEST, CFOP int./inter., origem, CST/CSOSN, IBS/CBS etc.).
+- Cada empresa terá a mesma configuração fiscal para os itens do seu catálogo próprio, editável apenas por quem tem autoridade na própria empresa.
+- Emissão de NF-e continua desligada (trava técnica ativa); nada é emitido.
 
-## Entregas
-1. Preparar confirmação física manual transacional sobre a composição aplicada: estoque exclusivamente pelo motor canônico, comprovante canônico vinculado e objeto válido, sem remover exigências existentes.
-2. Validar ator/empresa/papéis/SaaS após esperas; exigir estado fresco, CAS, chave e replay exato. Preservar linhagem lote/OS/estoque/prova e testar disputa confirmação × cancelamento.
-3. Gerar install fechado e release mínimo separados, PRE/POST exatos determinísticos e rollback deny-only. Financeiro/recebíveis/fiscal/comunicação/automações permanecem fechados; B2B/OnFarm não herdam esta liberação.
-4. Integrar frontend com capability exata, fences de sessão/epoch, ACK específico e recuperação de resultado incerto. Retirar já da EnvasePage promessas de complemento e ofertas de geração de etiqueta/embalagens fechadas; manter consulta e impressão existentes.
-5. Avaliar embalagens/etiquetas/dispensa como contratos independentes somente após provas completas de autoridade; registrar precisamente qualquer decisão comercial ausente.
-6. Após concluir as matrizes pendentes da confirmação, preparar o contrato independente de envio manual `separado → em_rota`, preservando essa etapa antes da confirmação. O botão Enviar não ganha acesso por abertura genérica do legado; substituir somente seu consumidor por chamada canônica condicionada à capability exata.
+## Fases
+1. Auditoria read-only (ref `swzpzcwiasxmjutrmvkm` comprovado): quais famílias aparecem hoje, onde ficam químicos/fertilizantes, como microrganismos se ligam a `microorganism_fiscal_profiles`, e como o catálogo próprio é identificado (tenant dono).
+2. Tela global: filtro por família (Microrganismo, Biológico, Químico, Fertilizante/Adubo), listagem completa paginada, editor fiscal reutilizado; microrganismos usam o perfil fiscal existente, sem editor paralelo.
+3. Catálogo próprio: nova seção "Perfis fiscais do catálogo da empresa" dentro do módulo Fiscal da empresa, reaproveitando o mesmo editor/validação.
+4. Banco (pacote candidato inativo, só aplicado com sua autorização): perfil fiscal por item com tenant derivado do dono do item; escrita via RPC com ator real, empresa ativa, papel autorizado, CAS e histórico imutável; superadmin só global, empresa só o próprio; leitura isolada por empresa.
+5. Testes: validação de campos, isolamento entre empresas (ARBio x FSF), negação de escrita global por empresa e de escrita em item de outra empresa, regressão fiscal.
 
-## Contrato independente Enviar — detalhes técnicos
-- Compor sobre os artefatos finais medidos da confirmação, em subpacote revisável separado. Capturar triggers/efeitos atuais da transição antes de alterar; não desabilitar triggers nem inventar regra comercial.
-- Usar ator/empresa derivados no servidor e matriz de papéis/SaaS vigente, revalidando após cada espera e imediatamente antes do replay/escrita. Exigir CAS positivo observado, chave obrigatória, fingerprint e recibo privado isolado por ator/tenant/ação.
-- Locks compatíveis com grupo/cancelamento/confirmação, vínculo lote/OS/cliente/produto/estoque imutável e permit privado de imagem exata, consumido uma vez no mesmo txid. Somente status e revisão previstos podem mudar; nenhum novo movimento de estoque/ledger, comprovante, avanço financeiro/fiscal ou comunicação/automações.
-- Capability específica de envio e ACK estrito com IDs/revisão/estado esperados. UI conserva chave/payload em resultado incerto, fence capturado e atualização exata da lista; remover o UPDATE direto desse consumidor, sem liberar outros caminhos de operationalContainment.
-- Install fechado, release separado inicialmente NO-GO, PRE/POST completos e hashes determinísticos; rollback deny-only sem restaurar writer vulnerável.
-- Não há decisão comercial nova identificada: conservar a transição existente. Se os efeitos capturados conflitarem com o escopo autorizado, explicitar o conflito antes de mudar a semântica.
+## Fora de escopo
+Emissão/transmissão SEFAZ, cobranças, automações, alteração de perfis/roles, publicação.
 
-## Testes e evidências
-PostgreSQL descartável com capturas/migrations reais, sentinelas financeiras/fiscais/outbox existentes comparadas integralmente, matrizes próprias/estrangeiras/inativas, revogação sob locks, concorrência, rollback e regressão de motor/group/cancel/envase/formulário/assinatura/anexo. Testes montados de frontend sem tráfego produtivo. Logs brutos, fontes, diff, manifest e hashes atualizados; build automático, sem certificar typecheck separado sem log.
-
-Antes do contrato Enviar: concluir múltiplos lotes/produtos, cobertura cancelada/reserva estornada, corridas assinatura/anexo × confirmação e alterações de linhagem no replay. Para Enviar: próprios/estrangeiros/inativos, papéis/SaaS revogados durante lock, CAS ausente/stale, chave alterada/replay exato, cancelamento concorrente, envio concorrente e snapshots integrais sem efeitos extras. Integração montada com QueryClient real: Enviar atualiza para em_rota, torna Confirmar alcançável, ACK físico atualiza a linha; cache estrangeiro não invalida e financeiro não abre. Cada fase mantém evidências brutas versionadas, inclusive falhas históricas.
-
-## Limites
-Nenhuma operação hosted, grant produtivo, publicação ou implantação. Provas sintéticas não certificam JWT/RLS/Storage real; auditor fará revisão e PRE/POST/sessões reais posteriormente.
+## Detalhes técnicos
+- Reutilizar `FiscalProdutos`, `useProductFiscalProfiles`, `productFiscalValidation`, `product_fiscal_profiles`; seguir `scripts/fiscal-products-refinement-20261022/AGENTS.md` (não reaplicar migration global).
+- Família vem de rótulos canônicos `catalog_family_labels`, nunca inferida por nome.
+- Pacote SQL em `scripts/fiscal-tenant-catalog-<data>/` com AGENTS.md, install/rollback deny-only, testes PG descartáveis (não certificam JWT/RLS real).
+- Pendência: classificação fiscal real (NCM/CFOP) de cada item deve vir da contabilidade; nada será inventado.
