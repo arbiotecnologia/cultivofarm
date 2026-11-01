@@ -2,3 +2,4 @@
 - Product edit is global Superadmin-only inside the platform; microorganism edit keeps the canonical route level — prevents regressing tenant micro editors.
 - Global product writes require the real actor, platform_actor_access_ready and Superadmin; internal readers stay read-only, active profiles are separate from immutable history, and IBS/CBS uses the same authority and CAS — prevents tenant writes and sibling RPC bypass.
 - Never certify mocked Auth or reduced PostgreSQL as hosted JWT/RLS/browser proof; fixtures remain untouched — prevents false homologation.
+- Platform tab lists the whole global catalogue (products filtered by canonical `familia_catalogo`, plus global microorganisms read-only); microorganism fiscal writes stay on the tenant route until a server-side Superadmin authority exists — owner decision 2026-11-01 without widening writers.
