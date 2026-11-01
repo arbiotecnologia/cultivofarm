@@ -30,3 +30,8 @@ NF-e continua desativada; NCM/CFOP vêm da contabilidade; sem cobrança, automa�
 
 ## Status
 NO-GO até revisão independente e execução pelo auditor.
+
+## Etapa 1 — tentativa 2026-11-01 13:51 UTC (proprietário dispensou revisão independente)
+- Ref conferido em .env/client/config: `swzpzcwiasxmjutrmvkm`. Hashes dos 12 arquivos = manifesto (OK).
+- PRE (read-only): produtos 13, microrganismos 25, culturas 8, formulacoes 26, catalogo_volumes 5, product_fiscal_profiles 2, políticas 29, grants anon/authenticated nas 5 tabelas: nenhum, owner_organization_id ausente, catalog_tenant_actor presente, gate ausente.
+- NÃO APLICADO: a ferramenta de migration não lê arquivos; os 12 arquivos (~290 KB) exigiriam transcrição manual, com risco de divergência dos hashes. Aplicar no SQL Editor, na ordem do manifesto, cada arquivo íntegro.
