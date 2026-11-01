@@ -70,7 +70,7 @@
 - Cross-generation order recovery follows the durable review-directory predecessor-chain rules; local expectations cannot authorize a jump — prevents stale uncertain cache deadends without weakening terminal CAS.
 - Global service IBS/CBS reuses the existing global fiscal catalogue fence, while company RTC uses actor/tenant request fencing; server CAS errors never trigger automatic saves or draft rebasing — prevents tenant writers and stale success without replacing server authorization.
 - RTC company/item hooks share a per-mount scope operation ledger: latest read wins, saves retire prior reads and synchronously own dispatch, reload during save is ignored, and finally releases only its own ticket — prevents stale revisions and concurrent unlocks without replacing server CAS.
-- Fiscal draft updates require the observed positive server version; monitor rescheduling uses only the canonical RPC with the exact observed timestamp and full success/target/date envelope, never a bare ID or direct two-table writes. Both fence mutation results and keep drafts on conflicts without retries — prevents false success, NULL CAS bypass and partial writes while server authorization remains independent.
+- Fiscal drafts need the observed positive server version; monitor rescheduling uses only the canonical RPC with exact observed timestamp and full envelope, never bare IDs or two-table writes; conflicts keep drafts, no retries — prevents false success and CAS bypass.
 - Visit approval submit follows scripts/visit-approval-submit-20261027/AGENTS.md: gate before row, re-authorize after waits, PT409 business conflicts and mandatory CAS — prevents cached-authority approvals.
 - Generic visit monitoring plans follow scripts/visit-monitoring-plan-20261027/AGENTS.md — read before changing that area.
 - Agronomic authenticated write closure uses command-specific restrictive deny policies, preserving tenant SELECT and postgres-owned definer RPCs; service-role risk jobs remain a separate privileged writer — prevents direct mutations bypassing the canonical gate without breaking the job.
@@ -96,3 +96,4 @@
 - Group/cancel: scripts/delivery-group-capability-20261030/AGENTS.md; exact capability before dispatch prevents early writes.
 - Tenant fences: scripts/{proof-select-tenant,delivery-evidence-tenant,produto-etiquetas-tenant,delivery-checklist-occurrence-authz}-20261030/AGENTS.md.
 - Label cancellation: scripts/label-cancel-closure-20261031/AGENTS.md; client/UI closed, reads kept — blocks tenant bypass.
+- Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.

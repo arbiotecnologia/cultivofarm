@@ -1,0 +1,20 @@
+initdb: error: cannot be run as root
+initdb: hint: Please log in (using, e.g., "su") as the (unprivileged) user that will own the server process.
+pg_ctl: cannot be run as root
+Please log in (using, e.g., "su") as the (unprivileged) user that will
+own the server process.
+== PRE sem fundação de propriedade (deve abortar)
+psql: error: connection to server on socket "/tmp/pgfiscal.vHCr/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+psql: error: connection to server on socket "/tmp/pgfiscal.vHCr/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+== stub + install
+psql: error: connection to server on socket "/tmp/pgfiscal.vHCr/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+== reinstalação (deve recusar)
+== testes
+psql: error: connection to server on socket "/tmp/pgfiscal.vHCr/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+pg_ctl: cannot be run as root
+Please log in (using, e.g., "su") as the (unprivileged) user that will
+own the server process.

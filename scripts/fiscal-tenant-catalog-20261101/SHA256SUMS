@@ -1,0 +1,14 @@
+10d45bc72310b0925c5adb5f5a69d2d3b1be9535c6af06567dc5fbc4d2e5e1d2  ./AGENTS.md
+3278dea50848cdf7615a1ab4e405159857c583a90c9dd5389190e81c98c02c0f  ./evidence/frontend.diff
+bcfef8e27776f232f27c57a92ad0a329be3d562c01799ad1e0269c7f4b62ca68  ./evidence/pg-tests-run1.log.txt
+2d57ade39b242c4164fb50c9458989f9e1654f0cd7592cc62c44b0d11118aab5  ./evidence/pg-tests-run2.log.txt
+f266cbc61a76ebb9bbbc2de302d757ffcc83602e5b2b8681974fa57f200b2355  ./evidence/pg-tests-run3.log.txt
+280be007010d0daf1421ff4dbe8660e5fcb55efedb6f4a346400254ed477a340  ./evidence/pg-tests-run4.log.txt
+d39d319e3fc119fadaf0ec218e2fa64c1fe20cc0ee0cd5417c3af13039fc92a0  ./evidence/pg-tests-run5.log.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./evidence/typecheck.log.txt
+aa4d91269253a687db2add270676c3bcad1fbbbb9e4ed64ccd04ecb7d5a970c3  ./evidence/vitest-owned-fiscal.log.txt
+f8d06eccacb267d2285e00e111b69eee1413ca89baab3eb043b2cd5d78ec350c  ./install.sql.review
+719b1bfcc5a4c210d1bd38d2be7a02ba9807c4e388c2476fb531b25b989cce13  ./rollback.sql.review
+f69b7362c3dd3ff5d4581507f00e1cd7c110ffc5b5a9da0150f0537a36be829c  ./test/run.sh
+ae5f0809b155d85c27acc80ecfaaec1782a29ec20ca4320a044e0e8fe4915ab0  ./test/stub-schema.sql
+fa1fe6c6837533998fd2ebc3f9c362cf84b533c867d3d841bf3789ab8f896714  ./test/tests.sql

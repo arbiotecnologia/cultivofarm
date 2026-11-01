@@ -1,4 +1,5 @@
 ## 01/11 09:50 — Perfis fiscais de todo o catálogo
+- [x] Pacote revisável catálogo próprio fiscal (scripts/fiscal-tenant-catalog-20261101): 26/26 PG descartável, 16/16 Vitest, typecheck 0; não aplicado.
 - [x] Global: lista por família + microrganismos (consulta); 2014 testes fiscais PASS.
 - [ ] Edição fiscal de microrganismo pela plataforma — bloqueada: falta autoridade Superadmin no servidor.
 - [ ] Catálogo próprio por empresa com perfil fiscal — bloqueada: produtos não têm empresa dona no banco; catálogo próprio está desligado.
