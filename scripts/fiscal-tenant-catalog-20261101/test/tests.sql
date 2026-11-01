@@ -1,7 +1,7 @@
 -- Asserções em PG descartável. Cada caso imprime PASS/FAIL. Auth sintética via test.uid.
 \set ON_ERROR_STOP 0
 CREATE TEMP TABLE r(n serial, name text, ok boolean, detail text);
-GRANT ALL ON r TO authenticated; GRANT USAGE ON SEQUENCE r_n_seq TO authenticated;
+GRANT ALL ON r TO authenticated, anon; GRANT USAGE ON SEQUENCE r_n_seq TO authenticated, anon;
 
 CREATE FUNCTION pg_temp.expect_err(p_name text, p_sql text, p_state text) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
