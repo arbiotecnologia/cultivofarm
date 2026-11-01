@@ -1,0 +1,16 @@
+chown: invalid user: 'nobody'
+runuser: user nobody does not exist or the user entry does not contain all the required fields
+runuser: user nobody does not exist or the user entry does not contain all the required fields
+== PRE sem fundação de propriedade (deve abortar)
+psql: error: connection to server on socket "/tmp/pgfiscal.N6sC/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+psql: error: connection to server on socket "/tmp/pgfiscal.N6sC/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+== stub + install
+psql: error: connection to server on socket "/tmp/pgfiscal.N6sC/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+== reinstalação (deve recusar)
+== testes
+psql: error: connection to server on socket "/tmp/pgfiscal.N6sC/.s.PGSQL.55437" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+runuser: user nobody does not exist or the user entry does not contain all the required fields
