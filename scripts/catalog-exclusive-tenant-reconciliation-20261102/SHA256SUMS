@@ -1,2 +1,10 @@
-e1a661ee9d56cb677aa7d889bb6253ba4a034710944b9fb36d508674cd8b8695  ./README.md
+16904bbaa4febae439a4340d9a4bec6f037cc171683b1e215c62b6d04c1805da  ./README.md
 0dfe77ad6b4da67e1324cb6c3bce51f150fa27b5fed248ddd1cfec0650099a17  ./evidence/baseline-tests.log.txt
+630a9a7823c7dadc45779fd18ad98b2a45a775bc5e955e0605b92dbe8303494a  ./evidence/monitor-fix/01-before-partnerCatalogMonitor.log.txt
+109c639fe3b06e29158008248b1a9d27acb27cac94c9b4f989ccf85d88274f82  ./evidence/monitor-fix/02-attempt-enabled-envelope-rejected.log.txt
+5e70f9caba6b7fe4a5224245aba3388c0a862c2689817abbb0ded1640d4d5fb3  ./evidence/monitor-fix/03-after-partnerCatalogMonitor.log.txt
+935c68123f20bd6b07ddeb4dc7abc803f6f3360e222f871a279630a3b82d1e37  ./evidence/monitor-fix/04-baseline-51-after.log.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./evidence/monitor-fix/05-typecheck.log.txt
+5753fcdd612635772cb40b041bfb94850c43306de283648ce15a4265badc0fec  ./evidence/monitor-fix/README.md
+dd92461f7a13d6044f53b006b01ccce62c15a574d6962d049d45575aa353b372  ./evidence/monitor-fix/baseline-files.txt
+29156262395fa146f43791784865d31ee0b29017439f8fbf644d1d7a07cbde0a  ./evidence/monitor-fix/partnerCatalogMonitor.diff.txt

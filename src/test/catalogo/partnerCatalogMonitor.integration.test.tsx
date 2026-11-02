@@ -12,7 +12,7 @@ const state = vi.hoisted(() => ({
   epoch: 0, profileStamp: "v1", linkVersion: 1, revoked: false, hasVolume: true,
   holdProbe: undefined as undefined | (() => Promise<{ data: unknown; error: null }>),
   authCb: undefined as undefined | ((event: string, session: unknown) => void), entitled: true, loadingPlan: false, orderCreate: true, catalogRead: true,
-  rpc: vi.fn(), table: vi.fn(), writes: vi.fn(), subscriptions: vi.fn(),
+  rpc: vi.fn(), table: vi.fn(), writes: vi.fn(), subscriptions: vi.fn(), journalProbes: vi.fn(),
 }));
 vi.mock("@/lib/portalBroadcast", () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
 // Unrelated shell infrastructure is excluded, not the route or domain readers.
@@ -68,7 +68,7 @@ beforeEach(() => {
     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
     return { select: () => ({ eq: () => response(state.hasVolume ? [{ id: "volume-local", produto_id: state.partner, item_tipo: "produto", volume_ml: 1000, rotulo: "1 L", preco_brl: 10, ativo: true, ordem: 0 }] : []) }) };
   });
-  state.rpc.mockImplementation((name: string, args?: { p_partner_id?: string }) => {
+  state.rpc.mockImplementation((name: string, args?: { p_partner_id?: string; p_partner?: string }) => {
     if (name === "get_my_available_portal_contexts" && state.holdProbe) {
       const promise = state.holdProbe(); return Object.assign(promise, { abortSignal: () => promise });
     }
@@ -85,6 +85,15 @@ beforeEach(() => {
       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: state.catalogRead, sheets_read: true },
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
+    // Read-only journal capability probe (orderJournal.journalCapability). This suite certifies catalogue
+    // authority, so the journal is fixed in its exact pre-install signal (PGRST202 naming the RPC) => legacy mode.
+    // Durable mode (mount recovery via recover_partner_order_attempt_v1, a server key reservation) is covered by
+    // src/test/pedidos/orderJournal.integration.test.tsx; here recovery stays a forbidden write via state.writes.
+    if (name === "partner_order_journal_capability_v1") {
+      state.journalProbes(args);
+      const promise = Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find the function public.partner_order_journal_capability_v1" } });
+      return Object.assign(promise, { abortSignal: () => promise });
+    }
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
       produto_nome: `Produto ${state.tenant}/${args?.p_partner_id}`, produto_codigo: "LOCAL", familia_catalogo: "biologico",
@@ -201,6 +210,9 @@ it.each(["partner", "tenant"])("real %s change retires modal and cart", async ki
   if (kind === "partner") { state.partner = "44444444-4444-4444-8444-444444444444"; state.linkVersion++; await tick(10_100); }
   else { state.tenant = "55555555-5555-4555-8555-555555555555"; act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } })); await tick(1000); }
   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy(); expect(state.writes).not.toHaveBeenCalled();
+  // Journal probes are only ever scoped to a partner the server context reported, never a stale or invented one.
+  expect(state.journalProbes).toHaveBeenCalled();
+  expect(state.journalProbes.mock.calls.every(([a]) => ["33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444"].includes(a?.p_partner))).toBe(true);
 });
 it("observed A-B-A partner transitions never resurrect the A cart or modal", async () => {
   mount(); await tick(1000); await addItem(); await openModal();
