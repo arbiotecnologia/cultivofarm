@@ -40,7 +40,7 @@ Precisarão ser invertidos (global → contido): `src/test/saas/platformCatalog*
 Manter verdes: `tenant-catalog-{ownership,owned-flow,visibility}`, `ownedProductFiscal`, `catalogFamilyRead`, fiscal estáticos `fase3_*`, `rls_perfis_split_write`.
 
 ## Baseline de testes (evidence/baseline-tests.log.txt)
-`vitest --maxWorkers=2`: 51 arquivos, 1007 passaram, **10 falharam**, todos em `partnerCatalogMonitor.integration.test.tsx` (já listada entre as suítes do monitor com falhas preexistentes de infraestrutura de mocks; causa não reinvestigada nesta rodada). Não é regressão desta rodada (sem alteração de código).
+`vitest --maxWorkers=2`: 51 arquivos, 1007 passaram, **10 falharam**, todos em `partnerCatalogMonitor.integration.test.tsx` — corrigidas em `evidence/monitor-fix/` (51/51, 1017/1017) (já listada entre as suítes do monitor com falhas preexistentes de infraestrutura de mocks; causa não reinvestigada nesta rodada). Não é regressão desta rodada (sem alteração de código).
 
 ## Pendências / bloqueios
 - Receber `814c5bc` aprovado (revisão + testes) antes de integrar.
