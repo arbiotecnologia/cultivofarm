@@ -85,11 +85,14 @@ beforeEach(() => {
       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: state.catalogRead, sheets_read: true },
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
-    // Read-only journal capability probe (orderJournal.journalCapability): canonical envelope bound to the
-    // current actor/tenant/partner. It is a gate, never a writer; any real writer still falls to state.writes.
+    // Read-only journal capability probe (orderJournal.journalCapability). This suite certifies catalogue
+    // authority, so the journal is fixed in its exact pre-install signal (PGRST202 naming the RPC) => legacy mode.
+    // Durable mode (mount recovery via recover_partner_order_attempt_v1, a server key reservation) is covered by
+    // src/test/pedidos/orderJournal.integration.test.tsx; here recovery stays a forbidden write via state.writes.
     if (name === "partner_order_journal_capability_v1") {
       state.journalProbes(args);
-      return response({ contract: "C2_ORDER_JOURNAL_V1", enabled: true, actor_id: state.actor, organization_id: state.tenant, partner_id: args?.p_partner });
+      const promise = Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find the function public.partner_order_journal_capability_v1" } });
+      return Object.assign(promise, { abortSignal: () => promise });
     }
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
