@@ -68,7 +68,7 @@ beforeEach(() => {
     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
     return { select: () => ({ eq: () => response(state.hasVolume ? [{ id: "volume-local", produto_id: state.partner, item_tipo: "produto", volume_ml: 1000, rotulo: "1 L", preco_brl: 10, ativo: true, ordem: 0 }] : []) }) };
   });
-  state.rpc.mockImplementation((name: string, args?: { p_partner_id?: string }) => {
+  state.rpc.mockImplementation((name: string, args?: { p_partner_id?: string; p_partner?: string }) => {
     if (name === "get_my_available_portal_contexts" && state.holdProbe) {
       const promise = state.holdProbe(); return Object.assign(promise, { abortSignal: () => promise });
     }
@@ -207,6 +207,8 @@ it.each(["partner", "tenant"])("real %s change retires modal and cart", async ki
   if (kind === "partner") { state.partner = "44444444-4444-4444-8444-444444444444"; state.linkVersion++; await tick(10_100); }
   else { state.tenant = "55555555-5555-4555-8555-555555555555"; act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } })); await tick(1000); }
   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy(); expect(state.writes).not.toHaveBeenCalled();
+  // Journal probes are only ever scoped to a partner the server context reported, never a stale or invented one.
+  expect(state.journalProbes.mock.calls.every(([a]) => ["33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444"].includes(a?.p_partner))).toBe(true);
 });
 it("observed A-B-A partner transitions never resurrect the A cart or modal", async () => {
   mount(); await tick(1000); await addItem(); await openModal();

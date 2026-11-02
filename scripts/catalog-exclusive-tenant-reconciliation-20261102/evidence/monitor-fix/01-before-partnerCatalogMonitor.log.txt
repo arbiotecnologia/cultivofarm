@@ -1,0 +1,430 @@
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same confirmed probes retain the real modal DOM and cart without profile reload/cache reset
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same-identity token refresh hides old authority then restores cart choices and modal from fresh reads
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > effective revocation retires modal/cart; observed restoration never revives draft
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > real tenant change retires modal and cart
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx (14 tests | 10 failed) 3981ms
+   × same confirmed probes retain the real modal DOM and cart without profile reload/cache reset 657ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ healthy B2B probes can have an empty diagnostics ring; emptiness is not absence of probing 121ms
+   × same-vector context/partner/entitlement refetches preserve the actual modal and cart without cache clearing 349ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   × a confirmed missing feature switches to Cliente comercial without a transport error 295ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   × a confirmed missing capability switches to Cliente comercial without a transport error 262ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   × focus/visibility revalidation still hides uncertain authority, even when the eventual vector is unchanged 336ms
+     → expected "spy" to not be called at all, but actually been called 2 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   × BAC2-like missing volume stays blocked while a 1 L item uses the canonical dialog 113ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ deadline retires authority and a late healthy response cannot resurrect the modal 220ms
+   ✓ offline retires authority and a late healthy response cannot resurrect the modal 238ms
+   × same-identity token refresh hides old authority then restores cart choices and modal from fresh reads 291ms
+     → expected "spy" to not be called at all, but actually been called 2 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   ✓ effective revocation retires modal/cart; observed restoration never revives draft 260ms
+   × real partner change retires modal and cart 252ms
+     → expected "spy" to not be called at all, but actually been called 2 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   × real tenant change retires modal and cart 277ms
+     → expected "spy" to not be called at all, but actually been called 2 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+   × observed A-B-A partner transitions never resurrect the A cart or modal 308ms
+     → expected "spy" to not be called at all, but actually been called 3 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  3rd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same confirmed probes retain the real modal DOM and cart without profile reload/cache reset
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:123:72
+    121|   expect(screen.getByText("Carrinho (1)")).toBeTruthy();
+    122|   expect(state.table.mock.calls.filter(([name]) => name === "profiles"…
+    123|   expect(catalogCalls()).toHaveLength(reads); expect(state.writes).not…
+       |                                                                        ^
+    124|   expect(state.rpc.mock.calls.filter(([name]) => name === "get_my_avai…
+    125| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same-vector context/partner/entitlement refetches preserve the actual modal and cart without cache clearing
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:140:28
+    138|   expect(state.rpc.mock.calls.length).toBeGreaterThan(before);
+    139|   expect(screen.getByRole("dialog")).toBe(modal); expect(screen.getByT…
+    140|   expect(state.writes).not.toHaveBeenCalled();
+       |                            ^
+    141| });
+    142| it.each(["feature", "capability"])("a confirmed missing %s switches to…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > a confirmed missing feature switches to Cliente comercial without a transport error
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > a confirmed missing capability switches to Cliente comercial without a transport error
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:150:28
+    148|   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.query…
+    149|   expect(client.getQueryCache().getAll().every(q => q.state.status !==…
+    150|   expect(state.writes).not.toHaveBeenCalled();
+       |                            ^
+    151| });
+    152| it("focus/visibility revalidation still hides uncertain authority, eve…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > focus/visibility revalidation still hides uncertain authority, even when the eventual vector is unchanged
+AssertionError: expected "spy" to not be called at all, but actually been called 2 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:164:28
+    162|   await tick(1000);
+    163|   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getBy…
+    164|   expect(state.writes).not.toHaveBeenCalled();
+       |                            ^
+    165| });
+    166| it("BAC2-like missing volume stays blocked while a 1 L item uses the c…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > BAC2-like missing volume stays blocked while a 1 L item uses the canonical dialog
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:169:28
+    167|   state.hasVolume = false; mount(); await tick(1000); const dialog = a…
+    168|   expect(within(dialog).getByRole("button", { name: "Adicionar ao carr…
+    169|   expect(state.writes).not.toHaveBeenCalled();
+       |                            ^
+    170| });
+    171| it.each(["deadline", "offline"])("%s retires authority and a late heal…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same-identity token refresh hides old authority then restores cart choices and modal from fresh reads
+AssertionError: expected "spy" to not be called at all, but actually been called 2 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:190:85
+    188|   expect(screen.getByRole("dialog")).toBeTruthy();
+    189|   expect(screen.getByText("Carrinho (1)")).toBeTruthy();
+    190|   expect(catalogCalls().length).toBeGreaterThanOrEqual(2); expect(stat…
+       |                                                                                     ^
+    191| });
+    192| it("effective revocation retires modal/cart; observed restoration neve…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > real partner change retires modal and cart
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > real tenant change retires modal and cart
+AssertionError: expected "spy" to not be called at all, but actually been called 2 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m2[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:203:132
+    201|   if (kind === "partner") { state.partner = "44444444-4444-4444-8444-4…
+    202|   else { state.tenant = "55555555-5555-4555-8555-555555555555"; act(()…
+    203|   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getBy…
+       |                                                                                                                                    ^
+    204| });
+    205| it("observed A-B-A partner transitions never resurrect the A cart or m…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > observed A-B-A partner transitions never resurrect the A cart or modal
+AssertionError: expected "spy" to not be called at all, but actually been called 3 times[90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  2nd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+
+[1m  3rd spy call:
+
+[22m    Array [
+      "partner_order_journal_capability_v1",
+    ]
+[39m[90m
+
+Number of calls: [1m3[22m
+[39m
+ ❯ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx:213:78
+    211|   state.partner = a; state.linkVersion++; await tick(10_100);
+    212|   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getBy…
+    213|   expect(screen.getByText(product())).toBeTruthy(); expect(state.write…
+       |                                                                              ^
+    214| });
+    215| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  10 failed | 4 passed (14)
+   Start at  22:34:25
+   Duration  7.10s (transform 819ms, setup 83ms, collect 1.60s, tests 3.98s, environment 482ms, prepare 412ms)
+
