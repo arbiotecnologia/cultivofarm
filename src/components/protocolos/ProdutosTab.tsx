@@ -698,6 +698,10 @@ export function ProdutosTab() {
 
 
 
+          {!open && partialMessage && partialAck && <div role="status" className="w-full text-sm text-destructive flex flex-wrap items-center gap-2">
+            <span>Composição pendente do produto {partialAck.product_id}. Novas edições ficam bloqueadas até reconciliar.</span>
+            <Button type="button" size="sm" variant="outline" onClick={resumePending}>Retomar reconciliação</Button>
+          </div>}
           <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
             <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
