@@ -1,0 +1,33 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ❯ src/test/catalogo/authContextReceiver.realClient.test.ts (5 tests | 1 failed) 34ms
+   ✓ internalContextProbe usa SDK real e receiver preservado, valida ator/tenant/roles 11ms
+   ✓ internalContextProbe recusa erro backend sem fallback 3ms
+   ✓ producerContextProbe preserva receiver nos dois h15 e na seleção de clientes 11ms
+   ✓ producerContextProbe nega tenant divergente antes de buscar clientes 1ms
+   × chamada B2B exata de useAuth chega ao REST com SDK real sem perda de this 6ms
+     → Unexpected token '>'
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 606ms
+ ✓ src/test/catalogo/tenantExclusiveCatalog.test.ts (8 tests) 12ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/authContextReceiver.realClient.test.ts > chamada B2B exata de useAuth chega ao REST com SDK real sem perda de this
+SyntaxError: Unexpected token '>'
+ ❯ src/test/catalogo/authContextReceiver.realClient.test.ts:59:18
+     57|   // Executes the actual dispatch lines, removing only the TypeScript …
+     58|   const dispatch = source.slice(start, end).replace(/ as unknown as [^…
+     59|   const invoke = new Function('supabase', `return (async () => { ${dis…
+       |                  ^
+     60|   transport.fetch.mockResolvedValue(json({ partner_id: clientId }));
+     61|   expect(await invoke(supabase)).toMatchObject({ data: { partner_id: c…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 24 passed (25)
+   Start at  01:37:21
+   Duration  4.52s (transform 318ms, setup 540ms, collect 943ms, tests 652ms, environment 2.66s, prepare 378ms)
+
