@@ -145,8 +145,9 @@
       "path": "src/lib/comercial/civilDate.ts",
       "candidate_sha256": "3c405f7603e00634b53f83dda9c5273d8da6b42baf1719a34d2a0f4bf572f3e7",
       "baseline_sha256": null,
-      "action": "defer_from_runtime",
-      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/comercial/civilDate.ts"
+      "action": "keep_catalog_dependency",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/comercial/civilDate.ts",
+      "reason": "ownedProductFiscal.ts imports isCivilDate; no transport/business writer"
     },
     {
       "path": "src/lib/financeiro/receivableMoney.ts",
