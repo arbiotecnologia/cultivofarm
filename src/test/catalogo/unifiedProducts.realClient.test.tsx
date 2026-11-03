@@ -238,6 +238,7 @@ it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da compo
       return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
     }
     if (name) throw new Error(`RPC inesperada ${name}`);
+    if (String(url).includes("/microrganismos?")) return json([{ id: "m1", nome: "Bacillus preservado", codigo: "BIO-1", dose_ml_ha: 200 }]);
     return json([]);
   });
   render(<ProdutosTab />, { wrapper });
@@ -246,20 +247,22 @@ it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da compo
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial" } });
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
   fireEvent.click(await screen.findByRole("button", { name: "+ Microrganismo" }));
-  // The mounted draft is populated through the existing composition selector.
-  // Supply a real selectable component through its ordinary detail read.
-  fireEvent.click(screen.getByRole("button", { name: "Remover componente" }));
-  // Exercise a nonempty draft via an existing row instead below; this create tests root replay with empty replacement.
+  fireEvent.click(screen.getByRole("combobox", { name: /Selecionar/ }));
+  fireEvent.click(await screen.findByRole("option", { name: /Bacillus preservado/ }));
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await screen.findByRole("button", { name: "Reconciliar composição" });
   expect(screen.getByRole("alert").textContent).toContain("p1");
   expect(screen.getByRole("alert").textContent).toContain(stamp);
+  expect(screen.getByRole("alert").textContent).toContain("Bacillus preservado · 200 mL");
+  expect(screen.getByRole("button", { name: "Remover componente" }).matches(":disabled")).toBe(true);
+  expect(screen.getByRole("tab", { name: "Identificação" }).matches(":disabled")).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Remover componente" }));
+  expect(screen.getByRole("alert").textContent).toContain("Bacillus preservado · 200 mL");
   expect(screen.getByRole("dialog")).toBeTruthy();
   expect(rpcCalls("tenant_product_save")).toHaveLength(1);
   expect(state.rows).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
-  // Empty replacement requires a zero-cardinality ACK.
-  await waitFor(() => expect(rpcCalls("tenant_product_save")).toHaveLength(2));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
   expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
   expect(state.rows).toHaveLength(1);
