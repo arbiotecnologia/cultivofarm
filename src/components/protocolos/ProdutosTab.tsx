@@ -1,6 +1,6 @@
 import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 import { useTenantProducts, useSaveTenantProduct, useArchiveTenantProduct } from "@/hooks/useTenantProducts";
 import { useTenantProductDetails } from "@/hooks/useTenantProductDetails";
@@ -212,10 +212,6 @@ export async function carregarCatalogoProdutos(client: any): Promise<
 }
 
 export function ProdutosTab() {
-  const [items, setItems] = useState<Produto[]>([]);
-  const [filteredItems, setFilteredItems] = useState<Produto[]>([]);
-  const [microrganismos, setMicrorganismos] = useState<Microrganismo[]>([]);
-  const [profileStatusMap, setProfileStatusMap] = useState<Record<string, string>>({});
   
   const { data: volumesCat } = useCatalogoVolumes();
   const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
@@ -225,8 +221,6 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
-  const tenantVis = useManagedVisibility("produto", filteredItems);
-  const canManageVis = useCanManageTenantVisibility();
   const ownedCapability = useOwnedCatalogCapability();
   const [showArchived, setShowArchived] = useState(false);
   const [ownedOffset, setOwnedOffset] = useState(0);
@@ -273,7 +267,9 @@ export function ProdutosTab() {
   const fetch = async () => { await Promise.all([productList.refetch(), details.refetch()]); };
   const localGeneration = useRef(0);
   const activeScopeKey = editor.scope;
-  useEffect(() => {
+  const microrganismos = (details.data?.microorganisms ?? []) as unknown as Microrganismo[];
+  const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
+  const items = useMemo(() => {
     localGeneration.current += 1;
     setOpen(false); resetForm(); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null);
     setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
@@ -282,15 +278,15 @@ export function ProdutosTab() {
   useEffect(() => {
     const micros = (details.data?.microorganisms ?? []) as unknown as Microrganismo[];
     const microMap = new Map(micros.map(m => [m.id, m]));
-    setMicrorganismos(micros);
-    setProfileStatusMap(Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao])));
     const rows = (productList.data ?? []).map(p => ({ ...p,
       formulacoes: (details.data?.formulas ?? []).filter(f => f.produto_id === p.id).map(f => ({ ...f,
         microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined })) })) as unknown as Produto[];
-    setItems(rows);
-    setFilteredItems(rows.filter(p => (!search || `${p.nome} ${p.codigo ?? ""} ${p.funcao_completa ?? ""}`.toLowerCase().includes(search.toLowerCase())) &&
-      (filterTipo === "todos" || p.tipo === filterTipo)));
-  }, [productList.data, details.data, search, filterTipo]);
+    return rows;
+  }, [productList.data, details.data]);
+  const filteredItems = items.filter(p => (!search || `${p.nome} ${p.codigo ?? ""} ${p.funcao_completa ?? ""}`.toLowerCase().includes(search.toLowerCase())) &&
+    (filterTipo === "todos" || p.tipo === filterTipo));
+  const tenantVis = { displayed: filteredItems, map: undefined };
+  const canManageVis = false;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,6 +325,10 @@ export function ProdutosTab() {
 
 
     try {
+      if (composicaoTouched.current && form.composicao.some(row => (!row.microrganismo_id && !row.component_insumo_id) ||
+        !Number.isFinite(Number(row.volume_ml)) || Number(row.volume_ml) < 0)) {
+        throw new Error("Revise os componentes e os volumes da composição; nenhum dado foi salvo.");
+      }
       const ack = await saveProduct.mutateAsync({ id: form.id || null,
         expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
         draft: payload, composition: composicaoTouched.current ? form.composicao.map(row => ({ ...row })) : undefined });
@@ -458,7 +458,7 @@ export function ProdutosTab() {
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
-      composicao: [...prev.composicao, { microrganismo_id: "", component_insumo_id: null, volume_ml: 100, proporcao: null, e_volume_fixo: false }]
+      composicao: [...prev.composicao, { microrganismo_id: "", component_insumo_id: null, volume_ml: 0, proporcao: null, e_volume_fixo: false }]
     }));
   };
 
@@ -962,7 +962,6 @@ export function ProdutosTab() {
         </div>
       </div>
 
-      <TenantVisibilityBar v={tenantVis} />
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />Mostrar arquivados</label>
       {(productList.isLoading || details.isLoading) && <p role="status">Carregando produtos…</p>}
       {(productList.isError || details.isError) && <p role="alert" className="text-destructive">Não foi possível carregar o catálogo. <Button variant="outline" onClick={fetch}>Recarregar</Button></p>}
