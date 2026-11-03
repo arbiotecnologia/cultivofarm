@@ -372,7 +372,7 @@ async function submitNewWithComponent() {
 
 it("recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca", async () => {
   client();
-  const ctl = mountNewProductFlow({ composition: () => json({ code: "42501", message: "tenant_catalog_ref_foreign" }, 403), failListAfterPartial: 1 });
+  const ctl = mountNewProductFlow({ composition: () => json({ code: "42501", message: "tenant_catalog_ref_foreign" }, 403) });
   await submitNewWithComponent();
   const back = await screen.findByRole("button", { name: "Reconhecer e voltar à edição" });
   expect(screen.queryByRole("button", { name: "Reconciliar composição" })).toBeNull();
@@ -384,7 +384,11 @@ it("recusa definitiva persistente: sem replay inútil, rascunho exportável e vo
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
   expect(screen.getByRole("dialog")).toBeTruthy();
   // 1ª leitura fresca falha: nada é reconhecido, estado parcial e ID preservados.
+  await waitFor(() => expect(state.fetch.mock.calls.filter(([u]) => String(u).endsWith("tenant_product_list")).length).toBeGreaterThan(1));
+  const listsBefore = state.fetch.mock.calls.filter(([u]) => String(u).endsWith("tenant_product_list")).length;
+  ctl.failList = 1;
   fireEvent.click(back);
+  await waitFor(() => expect(state.fetch.mock.calls.filter(([u]) => String(u).endsWith("tenant_product_list")).length).toBe(listsBefore + 1));
   await waitFor(() => expect(screen.getByRole("button", { name: "Reconhecer e voltar à edição" }).matches(":disabled")).toBe(false));
   expect(screen.getByRole("alert").textContent).toContain("p1");
   expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
