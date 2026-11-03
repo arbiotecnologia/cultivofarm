@@ -249,6 +249,7 @@ it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da compo
   fireEvent.click(await screen.findByRole("button", { name: "+ Microrganismo" }));
   fireEvent.click(screen.getByRole("combobox", { name: "" }));
   fireEvent.click(await screen.findByRole("option", { name: /Bacillus preservado/ }));
+  fireEvent.keyDown(screen.getByRole("option", { name: /Bacillus preservado/ }), { key: "Escape" });
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await screen.findByRole("button", { name: "Reconciliar composição" });
   expect(screen.getByRole("alert").textContent).toContain("p1");
