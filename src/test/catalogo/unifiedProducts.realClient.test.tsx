@@ -166,12 +166,15 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   await screen.findByText("Produto existente");
   fireEvent.click(screen.getByRole("button", { name: "Editar" }));
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
-  fireEvent.click(await screen.findByRole("button", { name: "" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Remover componente" }));
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await screen.findByRole("button", { name: "Reconciliar composição" });
   expect(screen.getByRole("dialog")).toBeTruthy();
+  expect(screen.getByLabelText("Nome Comercial *").matches(":disabled")).toBe(true);
   expect(screen.getByRole("alert").textContent).toContain("composição não confirmada");
   expect(rpcCalls("tenant_product_save")).toHaveLength(1);
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.getByRole("dialog")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);

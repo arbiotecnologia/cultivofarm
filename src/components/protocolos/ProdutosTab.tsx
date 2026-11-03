@@ -941,6 +941,7 @@ export function ProdutosTab() {
                                 type="button" 
                                 variant="ghost" 
                                 size="icon" 
+                                aria-label="Remover componente"
                                 className="h-8 w-8 text-destructive"
                                 onClick={() => removeMicrorganismo(idx)}
                               >
