@@ -1,0 +1,12 @@
+-- PRE (READ ONLY). Gerado por test-local.py. Pins: invólucros = captura real 03/11; demais = derivados da composição v4
+-- no PG descartável (CONFIRMAR por captura read-only antes de aplicar; divergência aborta).
+BEGIN READ ONLY;
+DO $pre$ DECLARE r record; BEGIN
+  FOR r IN SELECT * FROM (VALUES ('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)','87418209039589320959c9891e97916c'), ('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)','b201e49e0158bde0140e018282c047fc'), ('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','ab6404d381b02684f1933d3fdac64732'), ('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','7b7f90ddb519a281b4411c528813d927'), ('public.get_partner_catalog_secure(uuid)','d3217db2d641a8bae11bcf7d68d47dae'), ('public.get_partner_catalog_secure(uuid,boolean)','1391adc2133b922e2dcea4b1d3e26820'), ('platform_private.catalog_tenant_actor(text)','5e0ce9cc9122f1c21d76e29a13de8b59'), ('platform_private.tenant_catalog_fence(text,uuid[])','8c6e3eca826410f7e8a504a86ae9381f')) t(sig, md5) LOOP
+    IF to_regprocedure(r.sig) IS NULL OR md5(pg_get_functiondef(to_regprocedure(r.sig))) <> r.md5 THEN RAISE EXCEPTION 'PRE_DRIFT:%', r.sig; END IF;
+  END LOOP;
+  IF EXISTS (SELECT 1 FROM unnest(ARRAY['platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','platform_private.catalog_tenant_actor(text)','platform_private.tenant_catalog_fence(text,uuid[])']) s, unnest(ARRAY['anon','authenticated']) g
+            WHERE has_function_privilege(g, s, 'EXECUTE')) THEN RAISE EXCEPTION 'PRIVATE_ACL_OPEN'; END IF;
+  IF to_regprocedure('platform_private.b2b_partner_catalog_reader(uuid)') IS NOT NULL OR to_regprocedure('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)') IS NOT NULL THEN RAISE EXCEPTION 'PRE_ALREADY_INSTALLED'; END IF;
+END $pre$;
+ROLLBACK;

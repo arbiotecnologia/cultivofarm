@@ -1,0 +1,713 @@
+{
+  "kind": "disposable_pg",
+  "hosted": false,
+  "synthetic_seams": [
+    "auth.uid",
+    "has_role",
+    "is_platform_superadmin",
+    "b2b_actor_scope",
+    "b2b_internal_commercial_actor",
+    "c2_internal_order_target_reason",
+    "c1b_catalog_visibility_scope",
+    "h15_actor_organization",
+    "_saas_user_has_feature",
+    "can_view_catalog_internal",
+    "esquema mínimo de tabelas"
+  ],
+  "wrapper_md5_vs_capture_20261103": {
+    "public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)": {
+      "composed": "87418209039589320959c9891e97916c",
+      "captured": "87418209039589320959c9891e97916c"
+    },
+    "public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)": {
+      "composed": "b201e49e0158bde0140e018282c047fc",
+      "captured": "b201e49e0158bde0140e018282c047fc"
+    }
+  },
+  "pre_pins": {
+    "public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)": {
+      "md5": "87418209039589320959c9891e97916c",
+      "source": "captura_real_20261103"
+    },
+    "public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)": {
+      "md5": "b201e49e0158bde0140e018282c047fc",
+      "source": "captura_real_20261103"
+    },
+    "platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)": {
+      "md5": "ab6404d381b02684f1933d3fdac64732",
+      "source": "derivado_composicao_v4_confirmar_captura"
+    },
+    "platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)": {
+      "md5": "7b7f90ddb519a281b4411c528813d927",
+      "source": "derivado_composicao_v4_confirmar_captura"
+    },
+    "public.get_partner_catalog_secure(uuid)": {
+      "md5": "d3217db2d641a8bae11bcf7d68d47dae",
+      "source": "derivado_composicao_v4_confirmar_captura"
+    },
+    "public.get_partner_catalog_secure(uuid,boolean)": {
+      "md5": "1391adc2133b922e2dcea4b1d3e26820",
+      "source": "captura_live_20261101"
+    },
+    "platform_private.catalog_tenant_actor(text)": {
+      "md5": "5e0ce9cc9122f1c21d76e29a13de8b59",
+      "source": "captura_live_20261101"
+    },
+    "platform_private.tenant_catalog_fence(text,uuid[])": {
+      "md5": "8c6e3eca826410f7e8a504a86ae9381f",
+      "source": "derivado_composicao_v4_confirmar_captura"
+    }
+  },
+  "red": {
+    "buyer_P1": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "buyer_P1_v1_single_arg": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "buyer_other_partner_P2_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "buyer_fsf_P3_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "fsf_admin_no_link_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "tecnico_reads_P1": [
+      "42501",
+      "forbidden_financial_terms"
+    ],
+    "revoked_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "buyer_reads_inactive_partner": [
+      "42501",
+      "partner_not_found"
+    ],
+    "anon_reads_P1": [
+      "42501",
+      "permission denied for function get_partner_catalog_secure"
+    ],
+    "superadmin_reads_P1": [
+      null,
+      []
+    ],
+    "internal_A_reads_P1": [
+      null,
+      [
+        {
+          "item_id": "22222222-0000-0000-0000-000000000001",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000001",
+          "produto_nome": "Quimico A",
+          "produto_codigo": "QA",
+          "descricao_curta": "Resumo QA",
+          "preco_tabela": 150.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 150.0,
+          "produto_ativo": true,
+          "resumo_curto": "Resumo QA",
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "aprovado",
+          "ficha_aprovada": true,
+          "valor_dose_brl": 150.0,
+          "valor_litro_brl": 150.0,
+          "valor_ha_brl": 150.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "quimico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {
+            "funcao": null,
+            "subtitulo": "fungicida",
+            "dose_ml_ha": 500,
+            "alvos_count": 0,
+            "fontes_count": 0,
+            "indicacoes_uso": null,
+            "mecanismo_acao": null,
+            "cuidados_aplicacao": null,
+            "explicacao_produtor": null
+          }
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000007",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000007",
+          "produto_nome": "Sem preco A",
+          "produto_codigo": "SA",
+          "descricao_curta": null,
+          "preco_tabela": null,
+          "desconto_percentual": null,
+          "preco_parceiro": null,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": null,
+          "valor_litro_brl": null,
+          "valor_ha_brl": null,
+          "unidade_preco_principal": "sob_consulta",
+          "familia_catalogo": "biologico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000002",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000002",
+          "produto_nome": "Adubo A",
+          "produto_codigo": "FA",
+          "descricao_curta": null,
+          "preco_tabela": 80.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 80.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 4.0,
+          "valor_litro_brl": 40.0,
+          "valor_ha_brl": 80.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "fertilizante_adubo",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        },
+        {
+          "item_id": "33333333-0000-0000-0000-000000000001",
+          "item_tipo": "microrganismo",
+          "product_id": null,
+          "produto_nome": "Bacillus A",
+          "produto_codigo": "MA",
+          "descricao_curta": null,
+          "preco_tabela": 24.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 24.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 12.0,
+          "valor_litro_brl": 120.0,
+          "valor_ha_brl": 24.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "biologico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        }
+      ]
+    ],
+    "internal_A_reads_P3_fsf": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "buyer_direct_public_b2b_wrapper": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "buyer_direct_public_canonical": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "internal_public_canonical_own": [
+      null,
+      [
+        {
+          "v": 40.0
+        }
+      ]
+    ],
+    "internal_public_canonical_fsf_item": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "internal_public_b2b_wrapper_own": [
+      null,
+      [
+        {
+          "v": "40.00"
+        }
+      ]
+    ],
+    "buyer_direct_b2b_core": [
+      "42501",
+      "permission denied for schema platform_private"
+    ],
+    "buyer_direct_canonical_core": [
+      "42501",
+      "permission denied for schema platform_private"
+    ],
+    "buyer_direct_item_price_helper": [
+      "42501",
+      "permission denied for schema platform_private"
+    ]
+  },
+  "red_reproduced": true,
+  "post_pins": {
+    "public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)": "87418209039589320959c9891e97916c",
+    "public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)": "b201e49e0158bde0140e018282c047fc",
+    "platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)": "8484e0259f2e5800c072d5ce907baf9d",
+    "platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)": "7b7f90ddb519a281b4411c528813d927",
+    "public.get_partner_catalog_secure(uuid)": "f9d054c8e90104dd1026cd82e5da786f",
+    "public.get_partner_catalog_secure(uuid,boolean)": "1391adc2133b922e2dcea4b1d3e26820",
+    "platform_private.catalog_tenant_actor(text)": "5e0ce9cc9122f1c21d76e29a13de8b59",
+    "platform_private.tenant_catalog_fence(text,uuid[])": "8c6e3eca826410f7e8a504a86ae9381f",
+    "platform_private.b2b_partner_catalog_reader(uuid)": "1046feb1124541e61ff5a0874dd6ab82",
+    "platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)": "61e545e6138485ba995f989d2011590a"
+  },
+  "pre": true,
+  "install": true,
+  "post": true,
+  "rerun_install_aborts": true,
+  "public_wrappers_unchanged": true,
+  "acl_after": {
+    "platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)": [],
+    "platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)": [],
+    "platform_private.b2b_partner_catalog_reader(uuid)": [],
+    "platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)": [],
+    "platform_private.catalog_tenant_actor(text)": [],
+    "platform_private.tenant_catalog_fence(text,uuid[])": []
+  },
+  "green": {
+    "buyer_P1": [
+      null,
+      [
+        {
+          "item_id": "22222222-0000-0000-0000-000000000001",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000001",
+          "produto_nome": "Quimico A",
+          "produto_codigo": "QA",
+          "descricao_curta": "Resumo QA",
+          "preco_tabela": 150.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 150.0,
+          "produto_ativo": true,
+          "resumo_curto": "Resumo QA",
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "aprovado",
+          "ficha_aprovada": true,
+          "valor_dose_brl": 150.0,
+          "valor_litro_brl": 150.0,
+          "valor_ha_brl": 150.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "quimico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {
+            "funcao": null,
+            "subtitulo": "fungicida",
+            "dose_ml_ha": 500,
+            "alvos_count": 0,
+            "fontes_count": 0,
+            "indicacoes_uso": null,
+            "mecanismo_acao": null,
+            "cuidados_aplicacao": null,
+            "explicacao_produtor": null
+          }
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000007",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000007",
+          "produto_nome": "Sem preco A",
+          "produto_codigo": "SA",
+          "descricao_curta": null,
+          "preco_tabela": null,
+          "desconto_percentual": null,
+          "preco_parceiro": null,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": null,
+          "valor_litro_brl": null,
+          "valor_ha_brl": null,
+          "unidade_preco_principal": "sob_consulta",
+          "familia_catalogo": "biologico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000002",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000002",
+          "produto_nome": "Adubo A",
+          "produto_codigo": "FA",
+          "descricao_curta": null,
+          "preco_tabela": 80.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 80.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 4.0,
+          "valor_litro_brl": 40.0,
+          "valor_ha_brl": 80.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "fertilizante_adubo",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        },
+        {
+          "item_id": "33333333-0000-0000-0000-000000000001",
+          "item_tipo": "microrganismo",
+          "product_id": null,
+          "produto_nome": "Bacillus A",
+          "produto_codigo": "MA",
+          "descricao_curta": null,
+          "preco_tabela": 24.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 24.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 12.0,
+          "valor_litro_brl": 120.0,
+          "valor_ha_brl": 24.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "biologico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        }
+      ]
+    ],
+    "buyer_P1_v1_single_arg": [
+      null,
+      [
+        {
+          "item_id": "22222222-0000-0000-0000-000000000001",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000001",
+          "produto_nome": "Quimico A",
+          "produto_codigo": "QA",
+          "descricao_curta": "Resumo QA",
+          "preco_tabela": 150.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 150.0,
+          "produto_ativo": true,
+          "resumo_curto": "Resumo QA",
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "aprovado",
+          "ficha_aprovada": true,
+          "valor_dose_brl": 150.0,
+          "valor_litro_brl": 150.0,
+          "valor_ha_brl": 150.0,
+          "unidade_preco_principal": "hectare"
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000007",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000007",
+          "produto_nome": "Sem preco A",
+          "produto_codigo": "SA",
+          "descricao_curta": null,
+          "preco_tabela": null,
+          "desconto_percentual": null,
+          "preco_parceiro": null,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": null,
+          "valor_litro_brl": null,
+          "valor_ha_brl": null,
+          "unidade_preco_principal": "sob_consulta"
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000002",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000002",
+          "produto_nome": "Adubo A",
+          "produto_codigo": "FA",
+          "descricao_curta": null,
+          "preco_tabela": 80.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 80.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 4.0,
+          "valor_litro_brl": 40.0,
+          "valor_ha_brl": 80.0,
+          "unidade_preco_principal": "hectare"
+        },
+        {
+          "item_id": "33333333-0000-0000-0000-000000000001",
+          "item_tipo": "microrganismo",
+          "product_id": null,
+          "produto_nome": "Bacillus A",
+          "produto_codigo": "MA",
+          "descricao_curta": null,
+          "preco_tabela": 24.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 24.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 12.0,
+          "valor_litro_brl": 120.0,
+          "valor_ha_brl": 24.0,
+          "unidade_preco_principal": "hectare"
+        }
+      ]
+    ],
+    "buyer_other_partner_P2_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "buyer_fsf_P3_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "fsf_admin_no_link_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "tecnico_reads_P1": [
+      "42501",
+      "forbidden_financial_terms"
+    ],
+    "revoked_reads_P1": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "buyer_reads_inactive_partner": [
+      "42501",
+      "partner_not_found"
+    ],
+    "anon_reads_P1": [
+      "42501",
+      "permission denied for function get_partner_catalog_secure"
+    ],
+    "superadmin_reads_P1": [
+      null,
+      []
+    ],
+    "internal_A_reads_P1": [
+      null,
+      [
+        {
+          "item_id": "22222222-0000-0000-0000-000000000001",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000001",
+          "produto_nome": "Quimico A",
+          "produto_codigo": "QA",
+          "descricao_curta": "Resumo QA",
+          "preco_tabela": 150.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 150.0,
+          "produto_ativo": true,
+          "resumo_curto": "Resumo QA",
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "aprovado",
+          "ficha_aprovada": true,
+          "valor_dose_brl": 150.0,
+          "valor_litro_brl": 150.0,
+          "valor_ha_brl": 150.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "quimico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {
+            "funcao": null,
+            "subtitulo": "fungicida",
+            "dose_ml_ha": 500,
+            "alvos_count": 0,
+            "fontes_count": 0,
+            "indicacoes_uso": null,
+            "mecanismo_acao": null,
+            "cuidados_aplicacao": null,
+            "explicacao_produtor": null
+          }
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000007",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000007",
+          "produto_nome": "Sem preco A",
+          "produto_codigo": "SA",
+          "descricao_curta": null,
+          "preco_tabela": null,
+          "desconto_percentual": null,
+          "preco_parceiro": null,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": null,
+          "valor_litro_brl": null,
+          "valor_ha_brl": null,
+          "unidade_preco_principal": "sob_consulta",
+          "familia_catalogo": "biologico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        },
+        {
+          "item_id": "22222222-0000-0000-0000-000000000002",
+          "item_tipo": "produto",
+          "product_id": "22222222-0000-0000-0000-000000000002",
+          "produto_nome": "Adubo A",
+          "produto_codigo": "FA",
+          "descricao_curta": null,
+          "preco_tabela": 80.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 80.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 4.0,
+          "valor_litro_brl": 40.0,
+          "valor_ha_brl": 80.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "fertilizante_adubo",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        },
+        {
+          "item_id": "33333333-0000-0000-0000-000000000001",
+          "item_tipo": "microrganismo",
+          "product_id": null,
+          "produto_nome": "Bacillus A",
+          "produto_codigo": "MA",
+          "descricao_curta": null,
+          "preco_tabela": 24.0,
+          "desconto_percentual": 0,
+          "preco_parceiro": 24.0,
+          "produto_ativo": true,
+          "resumo_curto": null,
+          "explicacao_b2b": null,
+          "beneficios_principais": null,
+          "ficha_status": "sem_ficha",
+          "ficha_aprovada": null,
+          "valor_dose_brl": 12.0,
+          "valor_litro_brl": 120.0,
+          "valor_ha_brl": 24.0,
+          "unidade_preco_principal": "hectare",
+          "familia_catalogo": "biologico",
+          "catalog_contract": "C1B_DUAL_TENANT_V1",
+          "ficha_conteudo": {}
+        }
+      ]
+    ],
+    "internal_A_reads_P3_fsf": [
+      "42501",
+      "forbidden_partner"
+    ],
+    "buyer_direct_public_b2b_wrapper": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "buyer_direct_public_canonical": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "internal_public_canonical_own": [
+      null,
+      [
+        {
+          "v": 40.0
+        }
+      ]
+    ],
+    "internal_public_canonical_fsf_item": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "internal_public_b2b_wrapper_own": [
+      null,
+      [
+        {
+          "v": "40.00"
+        }
+      ]
+    ],
+    "buyer_direct_b2b_core": [
+      "42501",
+      "permission denied for schema platform_private"
+    ],
+    "buyer_direct_canonical_core": [
+      "42501",
+      "permission denied for schema platform_private"
+    ],
+    "buyer_direct_item_price_helper": [
+      "42501",
+      "permission denied for schema platform_private"
+    ]
+  },
+  "green_checks": {
+    "buyer_legitimo_le_catalogo": true,
+    "preco_parceiro_150": true,
+    "preco_canonico_volume_40_litro": true,
+    "sem_preco_sob_consulta": true,
+    "familias_preservadas": true,
+    "dto_exato_sem_fiscal": true,
+    "oculto_b2bfalse_inativo_fsf_ausentes": true,
+    "v1_single_arg_ok": true,
+    "buyer_other_partner_P2_reads_P1": true,
+    "buyer_fsf_P3_reads_P1": true,
+    "fsf_admin_no_link_reads_P1": true,
+    "tecnico_reads_P1": true,
+    "revoked_reads_P1": true,
+    "buyer_reads_inactive_partner": true,
+    "internal_A_reads_P3_fsf": true,
+    "anon_negado": true,
+    "superadmin_sem_itens": true,
+    "internal_A_le_P1": true,
+    "buyer_public_wrappers_seguem_negados": true,
+    "internal_public_canonical_own_40": true,
+    "internal_public_b2b_wrapper_own_40": true,
+    "internal_fsf_item_negado": true,
+    "buyer_direct_b2b_core_negado": true,
+    "buyer_direct_canonical_core_negado": true,
+    "buyer_direct_item_price_helper_negado": true
+  },
+  "rollback": true,
+  "after_rollback": {
+    "buyer_P1": [
+      "42501",
+      "tenant_catalog_fence_denied"
+    ],
+    "internal_A_reads_P1_count": 4,
+    "buyer_direct_item_price_helper": [
+      "42501",
+      "permission denied for schema platform_private"
+    ]
+  },
+  "result": "PASS"
+}
