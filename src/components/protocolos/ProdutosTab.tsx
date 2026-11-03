@@ -1,6 +1,9 @@
 import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { useTenantProducts, useSaveTenantProduct, useArchiveTenantProduct } from "@/hooks/useTenantProducts";
+import { useTenantProductDetails } from "@/hooks/useTenantProductDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,7 +228,11 @@ export function ProdutosTab() {
   const ownedCapability = useOwnedCatalogCapability();
   const [showArchived, setShowArchived] = useState(false);
   const [ownedOffset, setOwnedOffset] = useState(0);
-  const ownedRead = useOwnedCatalogRead("produto", { archived: showArchived, offset: ownedOffset, search });
+  const productList = useTenantProducts(showArchived);
+  const details = useTenantProductDetails();
+  const editor = useTenantCatalogEditor();
+  const saveProduct = useSaveTenantProduct();
+  const archiveProduct = useArchiveTenantProduct();
   const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Produto | null }>({ open: false, item: null });
   const [ownedConfirm, setOwnedConfirm] = useState<{ item: Produto; operation: "archive" | "restore" } | null>(null);
 
@@ -259,50 +266,32 @@ export function ProdutosTab() {
 
 
 
-  const fetch = async () => {
-    const generation = localGeneration.current;
-    const result = await carregarCatalogoProdutos(supabase as any);
-    if (generation !== localGeneration.current) return;
-    if ("error" in result) {
-      toast.error("Erro ao carregar produtos");
-      return;
-    }
-    setProfileStatusMap(result.profileStatusMap);
-    setMicrorganismos(result.microrganismos as Microrganismo[]);
-    setItems(result.produtos as unknown as Produto[]);
-
-  };
-
+  const fetch = async () => { await Promise.all([productList.refetch(), details.refetch()]); };
   const localGeneration = useRef(0);
-  const activeScopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
+  const activeScopeKey = editor.scope;
   useEffect(() => {
     localGeneration.current += 1;
-    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null);
-    void fetch();
+    setOpen(false); resetForm(); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null);
+    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
-    // Session-bound legacy global reads; own reads use the scoped QueryClient hook.
   }, [activeScopeKey]);
-
   useEffect(() => {
-    let result = [...items.filter((item) => !item.owner_organization_id), ...((ownedRead.data?.items ?? []) as unknown as Produto[])];
-    result = result.filter((item) => showArchived || !item.archived_at);
-    if (search) {
-      const s = search.toLowerCase();
-      result = result.filter(i => 
-        i.nome.toLowerCase().includes(s) || 
-        (i.codigo && i.codigo.toLowerCase().includes(s)) ||
-        (i.funcao_completa && i.funcao_completa.toLowerCase().includes(s))
-      );
-    }
-    if (filterTipo !== "todos") {
-      result = result.filter(i => i.tipo === filterTipo);
-    }
-    setFilteredItems(result);
-  }, [search, filterTipo, items, ownedRead.data, showArchived]);
+    const micros = (details.data?.microorganisms ?? []) as unknown as Microrganismo[];
+    const microMap = new Map(micros.map(m => [m.id, m]));
+    setMicrorganismos(micros);
+    setProfileStatusMap(Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao])));
+    const rows = (productList.data ?? []).map(p => ({ ...p,
+      formulacoes: (details.data?.formulas ?? []).filter(f => f.produto_id === p.id).map(f => ({ ...f,
+        microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined })) })) as unknown as Produto[];
+    setItems(rows);
+    setFilteredItems(rows.filter(p => (!search || `${p.nome} ${p.codigo ?? ""} ${p.funcao_completa ?? ""}`.toLowerCase().includes(search.toLowerCase())) &&
+      (filterTipo === "todos" || p.tipo === filterTipo)));
+  }, [productList.data, details.data, search, filterTipo]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!TENANT_CAN_EDIT_GLOBAL_CATALOG) { toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE); return; }
+    if (!editor.canEdit || !details.isSuccess || !productList.isSuccess) { toast.error("Catálogo indisponível para edição neste contexto."); return; }
+    const current = editor.capture();
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
@@ -326,8 +315,7 @@ export function ProdutosTab() {
       valor_dose_brl: form.valor_dose_brl ? Number(form.valor_dose_brl) : null,
       valor_litro_brl: form.valor_litro_brl ? Number(form.valor_litro_brl) : null,
       funcao_completa: form.funcao_completa || null,
-      versao_catalogo: normalizeVersaoCatalogoForSave(form.versao_catalogo),
-      ativo: form.ativo,
+
       b2b_enabled: form.b2b_enabled,
       e_insumo: form.e_insumo,
       estoque_minimo: form.estoque_minimo ? Number(form.estoque_minimo) : 0,
@@ -337,14 +325,11 @@ export function ProdutosTab() {
 
 
     try {
-      const outcome = await saveProdutoTenant({
-        client: supabase as any,
-        produtoId: form.id || null,
+      const ack = await saveProduct.mutateAsync({ id: form.id || null,
         expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
-        payload,
-        // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
-        buildFormulacoes: (id: string) => buildFormulacoesPayload(id, form.composicao),
-      });
+        draft: payload, composition: composicaoTouched.current ? buildFormulacoesPayload(form.id, form.composicao) : undefined });
+      if (!current()) return;
+      const outcome = ack.compositionError ? { status: "partial", message: ack.compositionError } : { status: "ok" };
 
       if (outcome.status === "partial") {
         toast.error(outcome.message);
@@ -363,7 +348,7 @@ export function ProdutosTab() {
       resetForm();
       fetch();
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao salvar produto");
+      if (current()) toast.error(err?.message || "Erro ao salvar produto");
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -438,19 +423,6 @@ export function ProdutosTab() {
     lastSuggestion.current = null;
     setOpen(true);
   };
-
-  // Auto-preencher código ao abrir dialog de novo item ou trocar tipo (se vazio/automático)
-  useEffect(() => {
-    if (!open || form.id) return;
-    if (form.codigo && !ehCodigoAutomatico(form.codigo, PREFIXOS_PRODUTO)) return;
-    (async () => {
-      const codigo = await gerarProximoCodigoProduto(form.tipo);
-      setForm((f) => ({ ...f, codigo }));
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, form.tipo, form.id]);
-
-
 
   // Helpers for bidirectional pricing edits (shared util)
   const fmtNum = fmtNumStr;
@@ -615,9 +587,9 @@ export function ProdutosTab() {
             Exportar PDF
           </Button>
 
-          {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
-            <Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}>
-              <Plus className="h-4 w-4 mr-1" />Produto próprio
+          {editor.canEdit && (
+            <Button size="sm" onClick={() => { resetForm(); composicaoTouched.current = false; setOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" />Novo produto
             </Button>
           )}
 
@@ -627,17 +599,9 @@ export function ProdutosTab() {
 
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
-            {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Novo Produto
-              </Button>
-            </DialogTrigger>
-            )}
             <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
-                <DialogTitle>{form.id ? "Editar" : "Novo"} Produto Bioinsumo</DialogTitle>
+                <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
               </DialogHeader>
               
               <form onSubmit={handleSave} className="space-y-6 pt-4">
@@ -672,7 +636,7 @@ export function ProdutosTab() {
                       </div>
                       <div className="space-y-2">
                         <Label>Versão Catálogo</Label>
-                        <Input value={form.versao_catalogo} onChange={(e) => setForm({...form, versao_catalogo: e.target.value})} />
+                        <Input value={form.versao_catalogo} disabled /><p className="text-xs text-muted-foreground">Versão preservada; alteração não disponível.</p>
                       </div>
                     </div>
                     
@@ -785,21 +749,19 @@ export function ProdutosTab() {
                     </div>
 
                     <div className="border-t pt-4">
-                      <h3 className="text-sm font-semibold mb-3">Referência Comercial</h3>
+                      <h3 className="text-sm font-semibold mb-3">Referência Comercial</h3><p className="text-xs text-muted-foreground">Fornecedor e safra não estão disponíveis para alteração neste cadastro.</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Fornecedor</Label>
                           <Input
-                            value={form.fornecedor}
-                            onChange={(e) => setForm({ ...form, fornecedor: e.target.value })}
+                            value={form.fornecedor} disabled
                             placeholder="Deixe em branco para remover"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>Safra</Label>
                           <Input
-                            value={form.safra_referencia}
-                            onChange={(e) => setForm({ ...form, safra_referencia: e.target.value })}
+                            value={form.safra_referencia} disabled
                             placeholder="Deixe em branco para remover"
                           />
                         </div>
@@ -815,7 +777,7 @@ export function ProdutosTab() {
                           <Label htmlFor="prod_b2b">Disponível no portal B2B</Label>
                         </div>
                         <div className="flex items-center gap-2">
-                          <input type="checkbox" id="prod_ativo" checked={form.ativo} onChange={(e) => setForm({...form, ativo: e.target.checked})} className="h-4 w-4" />
+                          <input type="checkbox" id="prod_ativo" checked={form.ativo} disabled className="h-4 w-4" />
                           <Label htmlFor="prod_ativo">Ativo</Label>
                         </div>
                       </div>
@@ -1001,10 +963,9 @@ export function ProdutosTab() {
       </div>
 
       <TenantVisibilityBar v={tenantVis} />
-      {TENANT_OWNED_CATALOG_ENABLED && <OwnedCatalogPagination entity="produto" archived={showArchived} onArchived={setShowArchived}
-        offset={ownedOffset} onOffset={setOwnedOffset} hasMore={ownedRead.data?.has_more ?? false} busy={ownedRead.isFetching}
-        error={ownedRead.isError ? (ownedRead.error as Error).message : null} />}
-
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />Mostrar arquivados</label>
+      {(productList.isLoading || details.isLoading) && <p role="status">Carregando produtos…</p>}
+      {(productList.isError || details.isError) && <p role="alert" className="text-destructive">Não foi possível carregar o catálogo. <Button variant="outline" onClick={fetch}>Recarregar</Button></p>}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -1032,7 +993,7 @@ export function ProdutosTab() {
               const safra: string | null = pAny.safra_referencia ?? null;
               const observacoes: string | null = pAny.observacoes ?? null;
               return (
-              <TableRow key={p.id} className={`hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`} onClick={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => handleEdit(p) : undefined}>
+              <TableRow key={p.id} className={`hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`} onClick={editor.canEdit && details.isSuccess ? () => handleEdit(p) : undefined}>
                 <TableCell>
                   {p.codigo && (
                     <div className="font-mono text-[10px] text-muted-foreground">{p.codigo}</div>
@@ -1182,23 +1143,15 @@ export function ProdutosTab() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
-                    <OwnedCatalogItemControls
-                      item={p}
-                      actorOrganizationId={ownedCapability.scope?.organizationId}
-                      canManage={ownedCapability.canManage}
-                      onEdit={() => setOwnedDialog({ open: true, item: p })}
-                      onArchive={() => setOwnedConfirm({ item: p, operation: "archive" })}
-                      onRestore={() => setOwnedConfirm({ item: p, operation: "restore" })}
-                    />
-                    {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
-                    <DeleteProtocoloButton
-                      table="produtos"
-                      id={p.id}
-                      label={p.nome}
-                      itemLabel="produto"
-                      onDeleted={fetch}
-                    />
-                    )}
+                    {editor.canEdit && <>
+                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending} onClick={() => handleEdit(p)}>Editar</Button>
+                      <Button variant="ghost" size="sm" disabled={archiveProduct.isPending || !p.updated_at} onClick={async () => {
+                        if (!p.updated_at) return;
+                        const current = editor.capture();
+                        try { await archiveProduct.mutateAsync({ id: p.id, archived: p.ativo, expectedUpdatedAt: p.updated_at }); }
+                        catch (e) { if (current()) toast.error((e as Error).message); }
+                      }}>{p.ativo ? "Arquivar" : "Reativar"}</Button>
+                    </>}
                   </div>
                 </TableCell>
               </TableRow>
@@ -1227,28 +1180,6 @@ export function ProdutosTab() {
           parentUpdatedAt={volumesEdit.updated_at ?? null}
         />
       )}
-
-      <OwnedCatalogItemDialog
-        open={ownedDialog.open}
-        onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
-        entity="produto"
-        item={ownedDialog.item}
-        microorganisms={microrganismos}
-        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
-        onLocateGlobal={(id) => {
-          setOwnedDialog({ open: false, item: null }); setFilterTipo("todos");
-          tenantVis.setShowHidden(true);
-          const match = items.find((row) => row.id === id);
-          setSearch(match?.nome ?? "");
-        }}
-      />
-      <OwnedCatalogConfirmDialog
-        item={ownedConfirm?.item ?? null}
-        entity="produto"
-        operation={ownedConfirm?.operation ?? "archive"}
-        onOpenChange={(open) => !open && setOwnedConfirm(null)}
-        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
-      />
 
       <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-4">
         <span>As recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica.</span>
