@@ -1,0 +1,33 @@
+-- ROLLBACK deny-safe. Gerado por test-local.py. Devolve o catálogo B2B ao estado PRÉ (comprador volta a receber 42501
+-- tenant_catalog_fence_denied); helpers ficam fechados (corpo nega, sem EXECUTE de cliente) e NÃO são removidos.
+-- Não amplia nada: o estado PRÉ já negava B2B e mantinha controles internos.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+DO $pre$ DECLARE r record; BEGIN
+  FOR r IN SELECT * FROM (VALUES ('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)','87418209039589320959c9891e97916c'), ('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)','b201e49e0158bde0140e018282c047fc'), ('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','8484e0259f2e5800c072d5ce907baf9d'), ('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','7b7f90ddb519a281b4411c528813d927'), ('public.get_partner_catalog_secure(uuid)','f9d054c8e90104dd1026cd82e5da786f'), ('public.get_partner_catalog_secure(uuid,boolean)','1391adc2133b922e2dcea4b1d3e26820'), ('platform_private.catalog_tenant_actor(text)','5e0ce9cc9122f1c21d76e29a13de8b59'), ('platform_private.tenant_catalog_fence(text,uuid[])','8c6e3eca826410f7e8a504a86ae9381f'), ('platform_private.b2b_partner_catalog_reader(uuid)','1046feb1124541e61ff5a0874dd6ab82'), ('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)','61e545e6138485ba995f989d2011590a')) t(sig, md5) LOOP
+    IF to_regprocedure(r.sig) IS NULL OR md5(pg_get_functiondef(to_regprocedure(r.sig))) <> r.md5 THEN RAISE EXCEPTION 'RB_PRE_DRIFT:%', r.sig; END IF;
+  END LOOP;
+END $pre$;
+DO $d$ DECLARE v text := pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure); BEGIN
+  IF (length(v) - length(replace(v, 'platform_private.b2b_partner_catalog_item_price(p_partner_id, v_pid, v_mid, ', ''))) / length('platform_private.b2b_partner_catalog_item_price(p_partner_id, v_pid, v_mid, ') <> 3 THEN RAISE EXCEPTION 'DELTA_COUNT:public.get_partner_catalog_secure(uuid)'; END IF;
+  EXECUTE replace(v, 'platform_private.b2b_partner_catalog_item_price(p_partner_id, v_pid, v_mid, ', 'public.fn_b2b_resolve_base_unit_price(p_partner_id, v_pid, v_mid, ');
+END $d$;
+DO $d$ DECLARE v text := pg_get_functiondef('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)'::regprocedure); BEGIN
+  IF (length(v) - length(replace(v, 'platform_private.fn_catalogo_preco_canonico__tenant_core(', ''))) / length('platform_private.fn_catalogo_preco_canonico__tenant_core(') <> 1 THEN RAISE EXCEPTION 'DELTA_COUNT:platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)'; END IF;
+  EXECUTE replace(v, 'platform_private.fn_catalogo_preco_canonico__tenant_core(', 'public.fn_catalogo_preco_canonico(');
+END $d$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_partner_catalog_reader(p_partner_id uuid) RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $f$
+BEGIN RAISE EXCEPTION 'b2b_catalog_reader_closed' USING ERRCODE='42501'; END $f$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_partner_catalog_item_price(p_partner_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_ref_date date)
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $f$
+BEGIN RAISE EXCEPTION 'b2b_catalog_reader_closed' USING ERRCODE='42501'; END $f$;
+REVOKE ALL ON FUNCTION platform_private.b2b_partner_catalog_reader(uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date) FROM PUBLIC, anon, authenticated, service_role;
+DO $post$ DECLARE r record; BEGIN
+  FOR r IN SELECT * FROM (VALUES ('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)','87418209039589320959c9891e97916c'), ('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)','b201e49e0158bde0140e018282c047fc'), ('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','ab6404d381b02684f1933d3fdac64732'), ('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','7b7f90ddb519a281b4411c528813d927'), ('public.get_partner_catalog_secure(uuid)','d3217db2d641a8bae11bcf7d68d47dae'), ('public.get_partner_catalog_secure(uuid,boolean)','1391adc2133b922e2dcea4b1d3e26820'), ('platform_private.catalog_tenant_actor(text)','5e0ce9cc9122f1c21d76e29a13de8b59'), ('platform_private.tenant_catalog_fence(text,uuid[])','8c6e3eca826410f7e8a504a86ae9381f')) t(sig, md5) LOOP
+    IF to_regprocedure(r.sig) IS NULL OR md5(pg_get_functiondef(to_regprocedure(r.sig))) <> r.md5 THEN RAISE EXCEPTION 'RB_POST_DRIFT:%', r.sig; END IF;
+  END LOOP;
+  IF EXISTS (SELECT 1 FROM unnest(ARRAY['platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','platform_private.catalog_tenant_actor(text)','platform_private.tenant_catalog_fence(text,uuid[])']) s, unnest(ARRAY['anon','authenticated']) g
+            WHERE has_function_privilege(g, s, 'EXECUTE')) THEN RAISE EXCEPTION 'PRIVATE_ACL_OPEN'; END IF;
+END $post$;
+COMMIT;
