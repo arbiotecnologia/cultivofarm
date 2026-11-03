@@ -1,0 +1,22 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 609ms
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/unifiedProducts.realClient.test.tsx (28 tests) 7696ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1556ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1285ms
+   ✓ Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs  474ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  1383ms
+   ✓ novo produto com recusa definitiva da composição mantém ACK/componentes e replay único  1347ms
+   ✓ novo produto com resposta perdida da composição mantém ACK/componentes e replay único  1389ms
+
+ Test Files  2 passed (2)
+      Tests  40 passed (40)
+   Start at  02:39:48
+   Duration  11.50s (transform 1.34s, setup 325ms, collect 2.92s, tests 8.31s, environment 1.43s, prepare 211ms)
+

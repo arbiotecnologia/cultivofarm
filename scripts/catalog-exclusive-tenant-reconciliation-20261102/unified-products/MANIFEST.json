@@ -21,7 +21,7 @@
     },
     {
       "path": "src/components/protocolos/AGENTS.md",
-      "sha256": "69525649713400f03dd3cb814a2d5a0156a841cf59815a3a3cc1f5cbe95ed26c",
+      "sha256": "bb20ba908cb3c933d8f952f4000ff28126f2950d463446046bbcfa1f019fb79a",
       "original_sha256": "f9f41a74597c465fd3213066c328f97ef20e1e6cafe8bc6a26670e25b6321e57"
     },
     {
@@ -36,7 +36,7 @@
     },
     {
       "path": "src/components/protocolos/ProdutosTab.tsx",
-      "sha256": "6d5fe50013f941c4ed9cfd7bcc206026ee2d2e209e84cd427f29fa9ca143ba8e",
+      "sha256": "e9fda0ec5010e89743ae7c79c639f13ea6ebef8134f9d8cb8a1a92db37f7ffa5",
       "original_sha256": "e59de15d5aa52d4ce08e082f01c8360410eae2ff93fa0bb59f1b050df34a4054"
     },
     {
@@ -46,7 +46,7 @@
     },
     {
       "path": "src/hooks/AGENTS.md",
-      "sha256": "7423b28c7206365b4b44974d638f574c7b2b85dc5a140b186919baef9c020af0",
+      "sha256": "8cf2f52d4720f9ef67a0c3f2d19e87ac450d67ba3cddb97adc079e4ade060b53",
       "original_sha256": "e785b3679ed13e854085a7458b5493b43750c1a2552d31c082decca40288aecc"
     },
     {
@@ -81,7 +81,7 @@
     },
     {
       "path": "src/hooks/useTenantProducts.ts",
-      "sha256": "f30f19ba5624c8c0e22549f2c67fa32dc2638fa365a1508ed9f5ae94289a0953",
+      "sha256": "822dc9f1a1492d83e082c1e1222d74293e5cc8a2ed5a7a91f201bdba8721b2f4",
       "original_sha256": "40159be6b2cfe24e6dce6f2eaab59b4771b76b7c3e33250ea805c2155390085f"
     },
     {
@@ -141,7 +141,7 @@
     },
     {
       "path": "src/test/catalogo/unifiedProducts.realClient.test.tsx",
-      "sha256": "a35eab65ed4353f990bb878855ae06c98e6ddcff9ac925e89b0bbe6057bb2823",
+      "sha256": "12649967524b2766839845cf91935b28f05370da3760d024d5633e6437fec9ad",
       "original_sha256": null
     },
     {

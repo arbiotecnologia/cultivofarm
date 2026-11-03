@@ -217,6 +217,82 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
   expect(state.rows).toHaveLength(1);
 });
+it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da composição mantém ACK/componentes e replay único", async failure => {
+  client(); let attempts = 0; let compositionCommits = 0; const compositionReceipts = new Set<string>(); const receipts = new Map<string, typeof ack>();
+  state.fetch.mockImplementation(async (url, init) => {
+    const name = String(url).split("/rpc/")[1];
+    if (name === "tenant_product_list") return json(state.rows);
+    if (name === "tenant_product_save") {
+      const args = JSON.parse(init.body);
+      if (!receipts.has(args.p_idempotency_key)) {
+        receipts.set(args.p_idempotency_key, ack);
+        state.rows.push({ id: "p1", owner_organization_id: "org-A", ativo: true, updated_at: stamp, ...args.p_payload });
+      }
+      return json(receipts.get(args.p_idempotency_key));
+    }
+    if (name === "tenant_catalog_formulacoes_replace") {
+      const args = JSON.parse(init.body);
+      if (++attempts === 1) {
+        if (failure === "recusa definitiva") return json({ code: "42501", message: "tenant_catalog_ref_foreign" }, 403);
+        compositionReceipts.add(args.p_idempotency_key); compositionCommits++;
+        throw new Error("ACK perdido após composição");
+      }
+      if (!compositionReceipts.has(args.p_idempotency_key)) { compositionReceipts.add(args.p_idempotency_key); compositionCommits++; }
+      return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
+    }
+    if (name) throw new Error(`RPC inesperada ${name}`);
+    if (String(url).includes("/microrganismos?")) return json([{ id: "m1", nome: "Bacillus preservado", codigo: "BIO-1", dose_ml_ha: 200 }]);
+    return json([]);
+  });
+  render(<ProdutosTab />, { wrapper });
+  await screen.findByText("Nenhum produto encontrado");
+  fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
+  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial" } });
+  fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
+  fireEvent.click(await screen.findByRole("button", { name: "+ Microrganismo" }));
+  fireEvent.click(screen.getByRole("combobox", { name: "" }));
+  fireEvent.click(await screen.findByRole("option", { name: /Bacillus preservado/ }));
+  fireEvent.keyDown(screen.getByRole("option", { name: /Bacillus preservado/ }), { key: "Escape" });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await screen.findByRole("button", { name: "Reconciliar composição" });
+  expect(screen.getByRole("alert").textContent).toContain("p1");
+  expect(screen.getByRole("alert").textContent).toContain(stamp);
+  expect(screen.getByRole("alert").textContent).toContain("Bacillus preservado · 200 mL");
+  expect(screen.getByRole("button", { name: "Remover componente" }).matches(":disabled")).toBe(true);
+  expect(screen.getByRole("tab", { name: "Identificação" }).matches(":disabled")).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Remover componente" }));
+  expect(screen.getByRole("alert").textContent).toContain("Bacillus preservado · 200 mL");
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  expect(rpcCalls("tenant_product_save")).toHaveLength(1);
+  expect(state.rows).toHaveLength(1);
+  expect(compositionCommits).toBe(failure === "resposta perdida" ? 1 : 0);
+  fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
+  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
+  expect(state.rows).toHaveLength(1);
+  expect(compositionCommits).toBe(1);
+});
+it("composição pendente bloqueia alteração de rascunho/novo INSERT antes de REST, mas permite replay exato", async () => {
+  client(); let attempts = 0;
+  state.fetch.mockImplementation(async url => {
+    if (String(url).endsWith("tenant_product_save")) return json(ack);
+    if (++attempts === 1) throw new Error("ACK perdido");
+    return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
+  });
+  const { result } = renderHook(useSaveTenantProduct, { wrapper });
+  const input = { id: null, expectedUpdatedAt: null, draft: { nome: "Novo parcial", tipo: "solo" }, composition: [{ microrganismo_id: "m1", volume_ml: 200, concentracao: 3, unidade: "mL" }] };
+  await act(async () => { expect((await result.current.mutateAsync(input)).compositionError).toBeTruthy(); });
+  const calls = state.fetch.mock.calls.length;
+  await act(async () => {
+    await expect(result.current.mutateAsync({ ...input, draft: { nome: "Outra intenção", tipo: "solo" } })).rejects.toThrow(/Reconcilie/);
+    await expect(result.current.mutateAsync({ ...input, composition: [{ microrganismo_id: "m2", volume_ml: 300 }] })).rejects.toThrow(/Reconcilie/);
+  });
+  expect(state.fetch).toHaveBeenCalledTimes(calls);
+  await act(async () => { expect((await result.current.mutateAsync(input)).compositionError).toBeUndefined(); });
+  expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
+  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
+});
 it("CAS recusado não chama composição, não repete e não invalida", async () => {
   const qc = client(); state.fetch.mockResolvedValue(json({ code: "PT409", message: "version_conflict" }, 409));
   const invalidate = vi.spyOn(qc, "invalidateQueries"); const { result } = renderHook(useSaveTenantProduct, { wrapper });

@@ -33,7 +33,7 @@ export function useSaveTenantProduct() {
   const scope = useStorageAccessScope("tenant-product-save");
   const actor = useStorageAccessScope("portal-query-actor");
   const delivery = useStorageAccessScope("entregas-operations");
-  const keyRef = useRef<{ sig: string; key: string; compositionKey: string } | null>(null);
+  const keyRef = useRef<{ scope: string; sig: string; key: string; compositionKey: string } | null>(null);
   const busy = useRef(false);
   return useMutation({
     retry: false,
@@ -47,7 +47,10 @@ export function useSaveTenantProduct() {
       const payload = buildTenantProductPayload(v.draft, v.id === null);
       if (v.id && !v.expectedUpdatedAt) throw new Error("Versão do produto desconhecida. Recarregue antes de editar.");
       const sig = JSON.stringify([scope.scope, v.id, payload, v.expectedUpdatedAt, v.composition]);
-      if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: crypto.randomUUID(), compositionKey: crypto.randomUUID() };
+      if (keyRef.current?.scope === scope.scope && keyRef.current.sig !== sig) {
+        throw new Error("Reconcilie a tentativa pendente antes de alterar o rascunho ou salvar outra intenção.");
+      }
+      if (!keyRef.current || keyRef.current.scope !== scope.scope) keyRef.current = { scope: scope.scope, sig, key: crypto.randomUUID(), compositionKey: crypto.randomUUID() };
       const attempt = keyRef.current;
       const { data, error } = await rpc()("tenant_product_save", {
         p_product_id: v.id, p_payload: payload, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: keyRef.current.key,
@@ -66,7 +69,7 @@ export function useSaveTenantProduct() {
           return { ...ack, updated_at: composition.updated_at, compositionError: undefined };
         } catch (e) {
           if (!current()) throw new Error("catalog_context_changed");
-          return { ...ack, compositionError: `Produto salvo; composição não confirmada. Recarregue e revise antes de continuar. ${(e as Error).message}` };
+          return { ...ack, compositionError: `Produto salvo; composição não confirmada. Reconcilie a mesma tentativa antes de alterar o rascunho. ${(e as Error).message}` };
         }
       }
       keyRef.current = null;

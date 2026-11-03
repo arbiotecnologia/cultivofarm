@@ -1,0 +1,1301 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 617ms
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx (28 tests | 3 failed) 8725ms
+   ✓ único menu de produtos e redirect preserva query/hash com aba destino prioritária 44ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  2063ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1570ms
+   ✓ financeiro não recebe CRUD próprio nem bypass global 5ms
+   ✓ consultor_tecnico não recebe CRUD próprio nem bypass global 2ms
+   ✓ parceiro_b2b não recebe CRUD próprio nem bypass global 4ms
+   ✓ parceiro_b2b_tecnico não recebe CRUD próprio nem bypass global 2ms
+   ✓ superadmin não recebe CRUD próprio nem bypass global 3ms
+   ✓ Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs  537ms
+   ✓ Financeiro não monta aba microrganismos por URL direta 12ms
+   ✓ Financeiro não monta aba catalogo-tecnico por URL direta 4ms
+   ✓ Financeiro não monta aba culturas por URL direta 9ms
+   ✓ Financeiro não monta aba problemas por URL direta 4ms
+   ✓ Financeiro não monta aba fichas por URL direta 4ms
+   ✓ Financeiro não monta aba desconhecida por URL direta 4ms
+   ✓ Financeiro não monta aba produtos&tab=culturas por URL direta 8ms
+   ✓ composição usa CAS retornado, conserva concentração/unidade e falha explícita, sem compensação 7ms
+   ✓ volume e preço conservados via root RPC com CAS, sem writer global 5ms
+   ✓ volume recusa Financeiro antes de REST 6ms
+   ✓ ficha técnica lê versão real, salva conteúdo por CAS e nunca promove status 67ms
+   ✓ composição incerta conserva ambas as chaves e CAS para reconciliação explícita 24ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  1517ms
+   × novo produto com recusa definitiva da composição mantém ACK/componentes e replay único 1291ms
+     → Unable to find an accessible element with the role "combobox" and name `/Selecionar/`
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "Novo produto":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r3p:"[39m
+    [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r3o:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Novo produto":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+    [33mid[39m=[32m"radix-:r3p:"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<fieldset[39m
+    [33mclass[39m=[32m"min-w-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tablist:
+
+  Name "":
+  [36m<div[39m
+    [33maria-orientation[39m=[32m"horizontal"[39m
+    [33mclass[39m=[32m"h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 mb-4"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mrole[39m=[32m"tablist"[39m
+    [33mstyle[39m=[32m"outline: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tab:
+
+  Name "Identificação":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r41:-content-geral"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r41:-trigger-geral"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Aplicação & Custo":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r41:-content-aplicacao"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r41:-trigger-aplicacao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r41:-content-composicao"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r41:-trigger-composicao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tabpanel:
+
+  Name "Composição":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r41:-trigger-composicao"[39m
+    [33mclass[39m=[32m"mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4 min-h-[300px] sm:min-h-[400px]"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r41:-content-composicao"[39m
+    [33mrole[39m=[32m"tabpanel"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "+ Microrganismo":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "+ Matéria-Prima":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Remover componente":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Remover componente"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground sm:h-10 sm:w-10 h-8 w-8 text-destructive"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Salvar Produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+    [33mtype[39m=[32m"submit"[39m
+  [36m/>[39m
+
+  Name "Close":
+  [36m<button[39m
+    [33mclass[39m=[32m"absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-accent data-[state=open]:text-muted-foreground hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4g:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"dialog"[39m
+    [33mclass[39m=[32m"inline-flex items-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-10 py-2 sm:text-sm w-full justify-between h-8 text-xs px-2"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  spinbutton:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors h-8"[39m
+    [33mtype[39m=[32m"number"[39m
+    [33mvalue[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"1"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r3n:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+   × novo produto com resposta perdida da composição mantém ACK/componentes e replay único 1461ms
+     → Unable to find an accessible element with the role "combobox" and name `/Selecionar/`
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "Novo produto":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r4j:"[39m
+    [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r4i:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Novo produto":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+    [33mid[39m=[32m"radix-:r4j:"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<fieldset[39m
+    [33mclass[39m=[32m"min-w-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tablist:
+
+  Name "":
+  [36m<div[39m
+    [33maria-orientation[39m=[32m"horizontal"[39m
+    [33mclass[39m=[32m"h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 mb-4"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mrole[39m=[32m"tablist"[39m
+    [33mstyle[39m=[32m"outline: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tab:
+
+  Name "Identificação":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4r:-content-geral"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r4r:-trigger-geral"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Aplicação & Custo":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4r:-content-aplicacao"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r4r:-trigger-aplicacao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4r:-content-composicao"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r4r:-trigger-composicao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tabpanel:
+
+  Name "Composição":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r4r:-trigger-composicao"[39m
+    [33mclass[39m=[32m"mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4 min-h-[300px] sm:min-h-[400px]"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r4r:-content-composicao"[39m
+    [33mrole[39m=[32m"tabpanel"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "+ Microrganismo":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "+ Matéria-Prima":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Remover componente":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Remover componente"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground sm:h-10 sm:w-10 h-8 w-8 text-destructive"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Salvar Produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+    [33mtype[39m=[32m"submit"[39m
+  [36m/>[39m
+
+  Name "Close":
+  [36m<button[39m
+    [33mclass[39m=[32m"absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-accent data-[state=open]:text-muted-foreground hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r5a:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"dialog"[39m
+    [33mclass[39m=[32m"inline-flex items-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-10 py-2 sm:text-sm w-full justify-between h-8 text-xs px-2"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  spinbutton:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors h-8"[39m
+    [33mtype[39m=[32m"number"[39m
+    [33mvalue[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"1"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r4h:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+   × composição pendente bloqueia alteração de rascunho/novo INSERT antes de REST, mas permite replay exato 4ms
+     → Selecione o tipo do produto
+   ✓ CAS recusado não chama composição, não repete e não invalida 4ms
+   ✓ ACK produto atrasado após ABA não despacha composição nem invalida outra conta 54ms
+   ✓ invalidação atinge só leitores do ator atual, nunca financeiro ou outra empresa 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > novo produto com recusa definitiva da composição mantém ACK/componentes e replay único
+TestingLibraryElementError: Unable to find an accessible element with the role "combobox" and name `/Selecionar/`
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "Novo produto":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r3p:"[39m
+    [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r3o:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Novo produto":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+    [33mid[39m=[32m"radix-:r3p:"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<fieldset[39m
+    [33mclass[39m=[32m"min-w-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tablist:
+
+  Name "":
+  [36m<div[39m
+    [33maria-orientation[39m=[32m"horizontal"[39m
+    [33mclass[39m=[32m"h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 mb-4"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mrole[39m=[32m"tablist"[39m
+    [33mstyle[39m=[32m"outline: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tab:
+
+  Name "Identificação":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r41:-content-geral"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r41:-trigger-geral"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Aplicação & Custo":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r41:-content-aplicacao"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r41:-trigger-aplicacao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r41:-content-composicao"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r41:-trigger-composicao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tabpanel:
+
+  Name "Composição":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r41:-trigger-composicao"[39m
+    [33mclass[39m=[32m"mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4 min-h-[300px] sm:min-h-[400px]"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r41:-content-composicao"[39m
+    [33mrole[39m=[32m"tabpanel"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "+ Microrganismo":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "+ Matéria-Prima":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Remover componente":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Remover componente"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground sm:h-10 sm:w-10 h-8 w-8 text-destructive"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Salvar Produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+    [33mtype[39m=[32m"submit"[39m
+  [36m/>[39m
+
+  Name "Close":
+  [36m<button[39m
+    [33mclass[39m=[32m"absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-accent data-[state=open]:text-muted-foreground hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4g:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"dialog"[39m
+    [33mclass[39m=[32m"inline-flex items-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-10 py-2 sm:text-sm w-full justify-between h-8 text-xs px-2"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  spinbutton:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors h-8"[39m
+    [33mtype[39m=[32m"number"[39m
+    [33mvalue[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"1"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r3n:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:250:26
+    248|   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }),…
+    249|   fireEvent.click(await screen.findByRole("button", { name: "+ Microrg…
+    250|   fireEvent.click(screen.getByRole("combobox", { name: /Selecionar/ })…
+       |                          ^
+    251|   fireEvent.click(await screen.findByRole("option", { name: /Bacillus …
+    252|   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > novo produto com resposta perdida da composição mantém ACK/componentes e replay único
+TestingLibraryElementError: Unable to find an accessible element with the role "combobox" and name `/Selecionar/`
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "Novo produto":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r4j:"[39m
+    [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r4i:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Novo produto":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+    [33mid[39m=[32m"radix-:r4j:"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<fieldset[39m
+    [33mclass[39m=[32m"min-w-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tablist:
+
+  Name "":
+  [36m<div[39m
+    [33maria-orientation[39m=[32m"horizontal"[39m
+    [33mclass[39m=[32m"h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 mb-4"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mrole[39m=[32m"tablist"[39m
+    [33mstyle[39m=[32m"outline: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tab:
+
+  Name "Identificação":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4r:-content-geral"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r4r:-trigger-geral"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Aplicação & Custo":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4r:-content-aplicacao"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"inactive"[39m
+    [33mid[39m=[32m"radix-:r4r:-trigger-aplicacao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r4r:-content-composicao"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-radix-collection-item[39m=[32m""[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r4r:-trigger-composicao"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tabpanel:
+
+  Name "Composição":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"radix-:r4r:-trigger-composicao"[39m
+    [33mclass[39m=[32m"mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4 min-h-[300px] sm:min-h-[400px]"[39m
+    [33mdata-orientation[39m=[32m"horizontal"[39m
+    [33mdata-state[39m=[32m"active"[39m
+    [33mid[39m=[32m"radix-:r4r:-content-composicao"[39m
+    [33mrole[39m=[32m"tabpanel"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "+ Microrganismo":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "+ Matéria-Prima":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-9 rounded-md px-3 sm:text-xs h-7 text-[10px]"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Remover componente":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Remover componente"[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground sm:h-10 sm:w-10 h-8 w-8 text-destructive"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Salvar Produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+    [33mtype[39m=[32m"submit"[39m
+  [36m/>[39m
+
+  Name "Close":
+  [36m<button[39m
+    [33mclass[39m=[32m"absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-accent data-[state=open]:text-muted-foreground hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"radix-:r5a:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"dialog"[39m
+    [33mclass[39m=[32m"inline-flex items-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground sm:h-10 py-2 sm:text-sm w-full justify-between h-8 text-xs px-2"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  spinbutton:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors h-8"[39m
+    [33mtype[39m=[32m"number"[39m
+    [33mvalue[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"1"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r4h:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:250:26
+    248|   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }),…
+    249|   fireEvent.click(await screen.findByRole("button", { name: "+ Microrg…
+    250|   fireEvent.click(screen.getByRole("combobox", { name: /Selecionar/ })…
+       |                          ^
+    251|   fireEvent.click(await screen.findByRole("option", { name: /Bacillus …
+    252|   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > composição pendente bloqueia alteração de rascunho/novo INSERT antes de REST, mas permite replay exato
+Error: Selecione o tipo do produto
+ ❯ Module.buildTenantProductPayload src/lib/catalogo/tenantProducts.ts:65:53
+     63|     throw new Error("O nome deve ter entre 2 e 200 caracteres");
+     64|   }
+     65|   if (create && typeof out.tipo !== "string") throw new Error("Selecio…
+       |                                                     ^
+     66|   return out;
+     67| }
+ ❯ Object.mutationFn src/hooks/useTenantProducts.ts:47:23
+ ❯ Object.fn node_modules/@tanstack/query-core/src/mutation.ts:174:29
+ ❯ run node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Mutation.execute node_modules/@tanstack/query-core/src/mutation.ts:213:40
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:279:35
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  3 failed | 37 passed (40)
+   Start at  02:38:17
+   Duration  13.23s (transform 1.46s, setup 269ms, collect 3.32s, tests 9.34s, environment 1.98s, prepare 421ms)
+
+error: script "test" exited with code 1

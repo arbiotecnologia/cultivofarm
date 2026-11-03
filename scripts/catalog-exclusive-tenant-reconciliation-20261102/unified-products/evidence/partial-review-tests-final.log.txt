@@ -1,0 +1,67 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 640ms
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx (28 tests | 2 failed) 8963ms
+   ✓ único menu de produtos e redirect preserva query/hash com aba destino prioritária 41ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  2256ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1447ms
+   ✓ financeiro não recebe CRUD próprio nem bypass global 3ms
+   ✓ consultor_tecnico não recebe CRUD próprio nem bypass global 2ms
+   ✓ parceiro_b2b não recebe CRUD próprio nem bypass global 2ms
+   ✓ parceiro_b2b_tecnico não recebe CRUD próprio nem bypass global 2ms
+   ✓ superadmin não recebe CRUD próprio nem bypass global 2ms
+   ✓ Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs  538ms
+   ✓ Financeiro não monta aba microrganismos por URL direta 12ms
+   ✓ Financeiro não monta aba catalogo-tecnico por URL direta 6ms
+   ✓ Financeiro não monta aba culturas por URL direta 7ms
+   ✓ Financeiro não monta aba problemas por URL direta 2ms
+   ✓ Financeiro não monta aba fichas por URL direta 3ms
+   ✓ Financeiro não monta aba desconhecida por URL direta 4ms
+   ✓ Financeiro não monta aba produtos&tab=culturas por URL direta 6ms
+   ✓ composição usa CAS retornado, conserva concentração/unidade e falha explícita, sem compensação 9ms
+   ✓ volume e preço conservados via root RPC com CAS, sem writer global 5ms
+   ✓ volume recusa Financeiro antes de REST 3ms
+   ✓ ficha técnica lê versão real, salva conteúdo por CAS e nunca promove status 70ms
+   ✓ composição incerta conserva ambas as chaves e CAS para reconciliação explícita 21ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  1648ms
+   × novo produto com recusa definitiva da composição mantém ACK/componentes e replay único 1425ms
+     → expected 'Produto salvo; composição não confirm…' to contain 'Bacillus preservado · 200 mL'
+   × novo produto com resposta perdida da composição mantém ACK/componentes e replay único 1370ms
+     → expected 'Produto salvo; composição não confirm…' to contain 'Bacillus preservado · 200 mL'
+   ✓ composição pendente bloqueia alteração de rascunho/novo INSERT antes de REST, mas permite replay exato 9ms
+   ✓ CAS recusado não chama composição, não repete e não invalida 5ms
+   ✓ ACK produto atrasado após ABA não despacha composição nem invalida outra conta 57ms
+   ✓ invalidação atinge só leitores do ator atual, nunca financeiro ou outra empresa 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > novo produto com recusa definitiva da composição mantém ACK/componentes e replay único
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > novo produto com resposta perdida da composição mantém ACK/componentes e replay único
+AssertionError: expected 'Produto salvo; composição não confirm…' to contain 'Bacillus preservado · 200 mL'
+
+Expected: [32m"Bacillus preservado · 200 mL"[39m
+Received: [31m"Produto salvo; composição não confirmada. Reconcilie a mesma tentativa antes de alterar o rascunho. O item vinculado não pertence à sua empresa.Produto salvop1Versão confirmada do produto2026-11-03T01:00:00ZComposição pendente de confirmação. O rascunho foi mantido; reconcilie antes de alterar."[39m
+
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:261:49
+    259|   expect(screen.getByRole("tab", { name: "Identificação" }).matches(":…
+    260|   fireEvent.click(screen.getByRole("button", { name: "Remover componen…
+    261|   expect(screen.getByRole("alert").textContent).toContain("Bacillus pr…
+       |                                                 ^
+    262|   expect(screen.getByRole("dialog")).toBeTruthy();
+    263|   expect(rpcCalls("tenant_product_save")).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 38 passed (40)
+   Start at  02:39:17
+   Duration  14.24s (transform 1.78s, setup 384ms, collect 3.93s, tests 9.60s, environment 2.66s, prepare 394ms)
+
+error: script "test" exited with code 1

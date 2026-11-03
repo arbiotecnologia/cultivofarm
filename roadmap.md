@@ -1,4 +1,5 @@
 ## 03/11 — Unificação Catálogo → Produtos (local, sem SQL/publicação)
+- [x] Revisão9a88256: ACK/rascunho visíveis, intenção/handlers congelados até replay exato; falha definitiva e ACK perdido sem duplicação, alteração negada; 68/1067 e5/5 PASS. Patch final consolidado, RBAC restrito, sem SQL/publicação; provas reais/isolado pendentes do auditor.
 - [x] Consolidar RBAC independente: Financeiro restrito a Produtos/link fiscal com gates existentes, Gestor CRUD próprio; 68/1064 Vitest e5/5 separação PASS, patch atualizado sem DDL/publicação. Associação fiscal real/espelho/JWT dependem do auditor.
 - [x] Achado independente incorporado: gate Owned OFF, parcial congelado/reconciliável com mesmas chaves/CAS; 53 focados e 916 catálogo PASS.
 - [x] Unificar menu/redirect e cadastro com hooks scoped, sem writer global.

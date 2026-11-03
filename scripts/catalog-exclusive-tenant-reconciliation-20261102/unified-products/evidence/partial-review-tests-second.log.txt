@@ -1,0 +1,978 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 621ms
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx (28 tests | 2 failed) 7807ms
+   ✓ único menu de produtos e redirect preserva query/hash com aba destino prioritária 32ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1709ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1257ms
+   ✓ financeiro não recebe CRUD próprio nem bypass global 2ms
+   ✓ consultor_tecnico não recebe CRUD próprio nem bypass global 3ms
+   ✓ parceiro_b2b não recebe CRUD próprio nem bypass global 2ms
+   ✓ parceiro_b2b_tecnico não recebe CRUD próprio nem bypass global 1ms
+   ✓ superadmin não recebe CRUD próprio nem bypass global 2ms
+   ✓ Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs  469ms
+   ✓ Financeiro não monta aba microrganismos por URL direta 9ms
+   ✓ Financeiro não monta aba catalogo-tecnico por URL direta 6ms
+   ✓ Financeiro não monta aba culturas por URL direta 7ms
+   ✓ Financeiro não monta aba problemas por URL direta 3ms
+   ✓ Financeiro não monta aba fichas por URL direta 5ms
+   ✓ Financeiro não monta aba desconhecida por URL direta 4ms
+   ✓ Financeiro não monta aba produtos&tab=culturas por URL direta 3ms
+   ✓ composição usa CAS retornado, conserva concentração/unidade e falha explícita, sem compensação 6ms
+   ✓ volume e preço conservados via root RPC com CAS, sem writer global 5ms
+   ✓ volume recusa Financeiro antes de REST 3ms
+   ✓ ficha técnica lê versão real, salva conteúdo por CAS e nunca promove status 66ms
+   ✓ composição incerta conserva ambas as chaves e CAS para reconciliação explícita 19ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  1319ms
+   × novo produto com recusa definitiva da composição mantém ACK/componentes e replay único 1387ms
+     → Unable to find an accessible element with the role "button" and name "Salvar Produto"
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"z-50 rounded-md border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 w-[calc(100vw-80px)] sm:w-[380px] p-0"[39m
+    [33mdata-align[39m=[32m"start"[39m
+    [33mdata-side[39m=[32m"bottom"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r4g:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto; --radix-popover-content-transform-origin: var(--radix-popper-transform-origin); --radix-popover-content-available-width: var(--radix-popper-available-width); --radix-popover-content-available-height: var(--radix-popper-available-height); --radix-popover-trigger-width: var(--radix-popper-anchor-width); --radix-popover-trigger-height: var(--radix-popper-anchor-height);"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<input[39m
+    [33maria-autocomplete[39m=[32m"list"[39m
+    [33maria-controls[39m=[32m"radix-:r4h:"[39m
+    [33maria-expanded[39m=[32m"true"[39m
+    [33maria-labelledby[39m=[32m"radix-:r4i:"[39m
+    [33mautocomplete[39m=[32m"off"[39m
+    [33mautocorrect[39m=[32m"off"[39m
+    [33mclass[39m=[32m"flex w-full rounded-md bg-transparent py-3 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 h-8 text-xs"[39m
+    [33mcmdk-input[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r4j:"[39m
+    [33mplaceholder[39m=[32m"Buscar microrganismo (nome ou código)..."[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mspellcheck[39m=[32m"false"[39m
+    [33mtype[39m=[32m"text"[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  listbox:
+
+  Name "Suggestions":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Suggestions"[39m
+    [33mclass[39m=[32m"overflow-x-hidden max-h-[260px] overflow-y-auto"[39m
+    [33mcmdk-list[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r4h:"[39m
+    [33mrole[39m=[32m"listbox"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  presentation:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"[39m
+    [33mcmdk-group[39m=[32m""[39m
+    [33mdata-value[39m=[32m"undefined"[39m
+    [33mrole[39m=[32m"presentation"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<div[39m
+    [33mcmdk-group-items[39m=[32m""[39m
+    [33mrole[39m=[32m"group"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  option:
+
+  Name "BIO-1 Bacillus preservado":
+  [36m<div[39m
+    [33maria-disabled[39m=[32m"false"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 text-xs"[39m
+    [33mcmdk-item[39m=[32m""[39m
+    [33mdata-disabled[39m=[32m"false"[39m
+    [33mdata-selected[39m=[32m"true"[39m
+    [33mdata-value[39m=[32m"BIO-1 Bacillus preservado"[39m
+    [33mid[39m=[32m"radix-:r4m:"[39m
+    [33mrole[39m=[32m"option"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"2"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r3n:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+   × novo produto com resposta perdida da composição mantém ACK/componentes e replay único 1406ms
+     → Unable to find an accessible element with the role "button" and name "Salvar Produto"
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"z-50 rounded-md border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 w-[calc(100vw-80px)] sm:w-[380px] p-0"[39m
+    [33mdata-align[39m=[32m"start"[39m
+    [33mdata-side[39m=[32m"bottom"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r5g:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto; --radix-popover-content-transform-origin: var(--radix-popper-transform-origin); --radix-popover-content-available-width: var(--radix-popper-available-width); --radix-popover-content-available-height: var(--radix-popper-available-height); --radix-popover-trigger-width: var(--radix-popper-anchor-width); --radix-popover-trigger-height: var(--radix-popper-anchor-height);"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<input[39m
+    [33maria-autocomplete[39m=[32m"list"[39m
+    [33maria-controls[39m=[32m"radix-:r5h:"[39m
+    [33maria-expanded[39m=[32m"true"[39m
+    [33maria-labelledby[39m=[32m"radix-:r5i:"[39m
+    [33mautocomplete[39m=[32m"off"[39m
+    [33mautocorrect[39m=[32m"off"[39m
+    [33mclass[39m=[32m"flex w-full rounded-md bg-transparent py-3 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 h-8 text-xs"[39m
+    [33mcmdk-input[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r5j:"[39m
+    [33mplaceholder[39m=[32m"Buscar microrganismo (nome ou código)..."[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mspellcheck[39m=[32m"false"[39m
+    [33mtype[39m=[32m"text"[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  listbox:
+
+  Name "Suggestions":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Suggestions"[39m
+    [33mclass[39m=[32m"overflow-x-hidden max-h-[260px] overflow-y-auto"[39m
+    [33mcmdk-list[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r5h:"[39m
+    [33mrole[39m=[32m"listbox"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  presentation:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"[39m
+    [33mcmdk-group[39m=[32m""[39m
+    [33mdata-value[39m=[32m"undefined"[39m
+    [33mrole[39m=[32m"presentation"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<div[39m
+    [33mcmdk-group-items[39m=[32m""[39m
+    [33mrole[39m=[32m"group"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  option:
+
+  Name "BIO-1 Bacillus preservado":
+  [36m<div[39m
+    [33maria-disabled[39m=[32m"false"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 text-xs"[39m
+    [33mcmdk-item[39m=[32m""[39m
+    [33mdata-disabled[39m=[32m"false"[39m
+    [33mdata-selected[39m=[32m"true"[39m
+    [33mdata-value[39m=[32m"BIO-1 Bacillus preservado"[39m
+    [33mid[39m=[32m"radix-:r5m:"[39m
+    [33mrole[39m=[32m"option"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"2"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r4n:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+   ✓ composição pendente bloqueia alteração de rascunho/novo INSERT antes de REST, mas permite replay exato 7ms
+   ✓ CAS recusado não chama composição, não repete e não invalida 3ms
+   ✓ ACK produto atrasado após ABA não despacha composição nem invalida outra conta 60ms
+   ✓ invalidação atinge só leitores do ator atual, nunca financeiro ou outra empresa 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > novo produto com recusa definitiva da composição mantém ACK/componentes e replay único
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Salvar Produto"
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"z-50 rounded-md border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 w-[calc(100vw-80px)] sm:w-[380px] p-0"[39m
+    [33mdata-align[39m=[32m"start"[39m
+    [33mdata-side[39m=[32m"bottom"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r4g:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto; --radix-popover-content-transform-origin: var(--radix-popper-transform-origin); --radix-popover-content-available-width: var(--radix-popper-available-width); --radix-popover-content-available-height: var(--radix-popper-available-height); --radix-popover-trigger-width: var(--radix-popper-anchor-width); --radix-popover-trigger-height: var(--radix-popper-anchor-height);"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<input[39m
+    [33maria-autocomplete[39m=[32m"list"[39m
+    [33maria-controls[39m=[32m"radix-:r4h:"[39m
+    [33maria-expanded[39m=[32m"true"[39m
+    [33maria-labelledby[39m=[32m"radix-:r4i:"[39m
+    [33mautocomplete[39m=[32m"off"[39m
+    [33mautocorrect[39m=[32m"off"[39m
+    [33mclass[39m=[32m"flex w-full rounded-md bg-transparent py-3 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 h-8 text-xs"[39m
+    [33mcmdk-input[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r4j:"[39m
+    [33mplaceholder[39m=[32m"Buscar microrganismo (nome ou código)..."[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mspellcheck[39m=[32m"false"[39m
+    [33mtype[39m=[32m"text"[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  listbox:
+
+  Name "Suggestions":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Suggestions"[39m
+    [33mclass[39m=[32m"overflow-x-hidden max-h-[260px] overflow-y-auto"[39m
+    [33mcmdk-list[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r4h:"[39m
+    [33mrole[39m=[32m"listbox"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  presentation:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"[39m
+    [33mcmdk-group[39m=[32m""[39m
+    [33mdata-value[39m=[32m"undefined"[39m
+    [33mrole[39m=[32m"presentation"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<div[39m
+    [33mcmdk-group-items[39m=[32m""[39m
+    [33mrole[39m=[32m"group"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  option:
+
+  Name "BIO-1 Bacillus preservado":
+  [36m<div[39m
+    [33maria-disabled[39m=[32m"false"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 text-xs"[39m
+    [33mcmdk-item[39m=[32m""[39m
+    [33mdata-disabled[39m=[32m"false"[39m
+    [33mdata-selected[39m=[32m"true"[39m
+    [33mdata-value[39m=[32m"BIO-1 Bacillus preservado"[39m
+    [33mid[39m=[32m"radix-:r4m:"[39m
+    [33mrole[39m=[32m"option"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"2"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r3n:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:252:26
+    250|   fireEvent.click(screen.getByRole("combobox", { name: "" }));
+    251|   fireEvent.click(await screen.findByRole("option", { name: /Bacillus …
+    252|   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" …
+       |                          ^
+    253|   await screen.findByRole("button", { name: "Reconciliar composição" }…
+    254|   expect(screen.getByRole("alert").textContent).toContain("p1");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > novo produto com resposta perdida da composição mantém ACK/componentes e replay único
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Salvar Produto"
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"z-50 rounded-md border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 w-[calc(100vw-80px)] sm:w-[380px] p-0"[39m
+    [33mdata-align[39m=[32m"start"[39m
+    [33mdata-side[39m=[32m"bottom"[39m
+    [33mdata-state[39m=[32m"open"[39m
+    [33mid[39m=[32m"radix-:r5g:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mstyle[39m=[32m"pointer-events: auto; --radix-popover-content-transform-origin: var(--radix-popper-transform-origin); --radix-popover-content-available-width: var(--radix-popper-available-width); --radix-popover-content-available-height: var(--radix-popper-available-height); --radix-popover-trigger-width: var(--radix-popper-anchor-width); --radix-popover-trigger-height: var(--radix-popper-anchor-height);"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<input[39m
+    [33maria-autocomplete[39m=[32m"list"[39m
+    [33maria-controls[39m=[32m"radix-:r5h:"[39m
+    [33maria-expanded[39m=[32m"true"[39m
+    [33maria-labelledby[39m=[32m"radix-:r5i:"[39m
+    [33mautocomplete[39m=[32m"off"[39m
+    [33mautocorrect[39m=[32m"off"[39m
+    [33mclass[39m=[32m"flex w-full rounded-md bg-transparent py-3 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 h-8 text-xs"[39m
+    [33mcmdk-input[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r5j:"[39m
+    [33mplaceholder[39m=[32m"Buscar microrganismo (nome ou código)..."[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mspellcheck[39m=[32m"false"[39m
+    [33mtype[39m=[32m"text"[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  listbox:
+
+  Name "Suggestions":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Suggestions"[39m
+    [33mclass[39m=[32m"overflow-x-hidden max-h-[260px] overflow-y-auto"[39m
+    [33mcmdk-list[39m=[32m""[39m
+    [33mid[39m=[32m"radix-:r5h:"[39m
+    [33mrole[39m=[32m"listbox"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  presentation:
+
+  Name "":
+  [36m<div[39m
+    [33mclass[39m=[32m"overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"[39m
+    [33mcmdk-group[39m=[32m""[39m
+    [33mdata-value[39m=[32m"undefined"[39m
+    [33mrole[39m=[32m"presentation"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  [36m<div[39m
+    [33mcmdk-group-items[39m=[32m""[39m
+    [33mrole[39m=[32m"group"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  option:
+
+  Name "BIO-1 Bacillus preservado":
+  [36m<div[39m
+    [33maria-disabled[39m=[32m"false"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 text-xs"[39m
+    [33mcmdk-item[39m=[32m""[39m
+    [33mdata-disabled[39m=[32m"false"[39m
+    [33mdata-selected[39m=[32m"true"[39m
+    [33mdata-value[39m=[32m"BIO-1 Bacillus preservado"[39m
+    [33mid[39m=[32m"radix-:r5m:"[39m
+    [33mrole[39m=[32m"option"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mdata-scroll-locked[39m=[32m"2"[39m
+  [33mstyle[39m=[32m"pointer-events: none;"[39m
+[36m>[39m
+  [36m<span[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+    [33mdata-radix-focus-guard[39m=[32m""[39m
+    [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+    [33mdata-aria-hidden[39m=[32m"true"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r4n:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          ...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:252:26
+    250|   fireEvent.click(screen.getByRole("combobox", { name: "" }));
+    251|   fireEvent.click(await screen.findByRole("option", { name: /Bacillus …
+    252|   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" …
+       |                          ^
+    253|   await screen.findByRole("button", { name: "Reconciliar composição" }…
+    254|   expect(screen.getByRole("alert").textContent).toContain("p1");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 38 passed (40)
+   Start at  02:38:48
+   Duration  12.38s (transform 1.56s, setup 335ms, collect 3.79s, tests 8.43s, environment 1.75s, prepare 354ms)
+
+error: script "test" exited with code 1
