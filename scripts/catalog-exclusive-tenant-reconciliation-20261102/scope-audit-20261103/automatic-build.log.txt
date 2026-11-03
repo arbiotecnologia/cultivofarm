@@ -1,0 +1,21 @@
+=== build 2026-11-03T01:07:21Z ===
+--- typecheck ---
+src/lib/fiscal/ownedProductFiscal.ts(7,29): error TS2307: Cannot find module '@/lib/comercial/civilDate' or its corresponding type declarations.
+
+=== build 2026-11-03T01:07:28Z ===
+build OK
+
+=== build 2026-11-03T01:07:41Z ===
+build OK
+
+=== build 2026-11-03T01:10:13Z ===
+build OK
+
+=== build 2026-11-03T01:12:39Z ===
+build OK
+
+=== build 2026-11-03T01:13:40Z ===
+build OK
+
+=== build 2026-11-03T01:13:52Z ===
+build OK

@@ -1,0 +1,22 @@
+{
+  "checked": [
+    "src/config/featureFlags.ts",
+    "src/config/fiscalBinding.ts",
+    "src/index.css",
+    "src/integrations/supabase/bindingGuard.ts",
+    "src/integrations/supabase/client.ts",
+    "src/integrations/supabase/previewAuthStorage.ts",
+    "src/main.tsx",
+    "src/tailwind.config.lov.json",
+    "src/test/catalogo/ficha-ia-client.test.ts",
+    "src/test/config/binding-gate.integration.test.ts",
+    "src/test/config/connection-binding.static.test.ts",
+    "src/test/config/cultivofarm-runtime.static.test.ts",
+    "src/test/config/edgeFunctionsJwtGate.test.ts",
+    "src/test/fiscal/h7i.ingestaoCertificado.static.test.ts",
+    "src/test/fiscal/h7j.deleteGuard.static.test.ts",
+    "supabase/config.toml",
+    "vite.config.ts"
+  ],
+  "differences": []
+}

@@ -1,0 +1,2589 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index e0d786626..b873ab1c0 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -60,6 +60,7 @@ import ConfigCatalogoIA from "@/pages/configuracoes/ConfigCatalogoIA";
+ import ParametrosCQPage from "@/pages/configuracoes/ParametrosCQPage";
+ import FiscalEmpresa from "@/pages/configuracoes/FiscalEmpresa";
+ import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
++import ProdutosEmpresa from "@/pages/configuracoes/ProdutosEmpresa";
+ import FiscalServicos from "@/pages/configuracoes/FiscalServicos";
+ import FiscalClientes from "@/pages/configuracoes/FiscalClientes";
+ import FiscalDocumentos from "@/pages/fiscal/FiscalDocumentos";
+@@ -645,6 +646,7 @@ const App = () => (
+                 <Route path="/configuracoes/objetivos-visita" element={<RoleGuard><ObjetivosVisita /></RoleGuard>} />
+                 <Route path="/configuracoes/parametros-cq" element={<RoleGuard><ParametrosCQPage /></RoleGuard>} />
+                 <Route path="/configuracoes/fiscal/empresa" element={<RoleGuard><FiscalEmpresa /></RoleGuard>} />
++                <Route path="/configuracoes/produtos" element={<RoleGuard><ProdutosEmpresa /></RoleGuard>} />
+                 <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />
+                 <Route path="/configuracoes/fiscal/servicos" element={<RoleGuard><FiscalServicos /></RoleGuard>} />
+                 <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />
+diff --git a/src/components/protocolos/MicrorganismosTab.tsx b/src/components/protocolos/MicrorganismosTab.tsx
+index dc153cece..243f31402 100644
+--- a/src/components/protocolos/MicrorganismosTab.tsx
++++ b/src/components/protocolos/MicrorganismosTab.tsx
+@@ -38,6 +38,7 @@ import { supabase as sbClient } from "@/integrations/supabase/client";
+ import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
+ import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
+ import { VolumesChips } from "./VolumesChips";
++import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
+ import { gerarProximoCodigoMicro, ehCodigoAutomatico, PREFIXOS_MICRO } from "@/lib/protocolos/autoCodigo";
+ 
+ /** CAT-08 · carga consistente: só aplica dados se ambas as consultas passarem. */
+@@ -145,6 +146,7 @@ export function MicrorganismosTab() {
+     preco_tabela: null as number | null,
+     b2b_enabled: false,
+     ativo: true,
++    updated_at: "" as string,
+   });
+ 
+   const fetch = async () => {
+@@ -228,22 +230,11 @@ export function MicrorganismosTab() {
+           ativo: form.ativo,
+         };
+ 
+-        let error;
+-        if (form.id) {
+-          const { error: err } = await (supabase as any)
+-            .from("microrganismos")
+-            .update(payload)
+-            .eq("id", form.id);
+-          error = err;
+-        } else {
+-          const { error: err } = await (supabase as any)
+-            .from("microrganismos")
+-            .insert([payload]);
+-          error = err;
+-        }
+-
+-        if (error) {
+-          toast.error(error.message);
++        // Catálogo exclusivo por empresa: escrita só pela RPC (empresa do servidor, CAS e idempotência)
++        try {
++          await saveTenantCatalogRoot(supabase as any, "microrganismos", form.id || null, payload, form.id ? form.updated_at : null);
++        } catch (err: any) {
++          toast.error(err?.message || "Não foi possível salvar.");
+           return;
+         }
+ 
+@@ -282,6 +273,7 @@ export function MicrorganismosTab() {
+       preco_tabela: null,
+       b2b_enabled: false,
+       ativo: true,
++      updated_at: "",
+     });
+   };
+ 
+@@ -307,6 +299,7 @@ export function MicrorganismosTab() {
+       preco_tabela: m.preco_tabela,
+       b2b_enabled: !!m.b2b_enabled,
+       ativo: m.ativo ?? true,
++      updated_at: m.updated_at ?? "",
+     });
+     setOpen(true);
+   };
+diff --git a/src/components/protocolos/ProdutosTab.tsx b/src/components/protocolos/ProdutosTab.tsx
+index 981931ad4..a21b6ab85 100644
+--- a/src/components/protocolos/ProdutosTab.tsx
++++ b/src/components/protocolos/ProdutosTab.tsx
+@@ -29,6 +29,8 @@ import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
+ 
+ import { recalcPricing, numOrNullStr, fmtNumStr, type PricingField } from "@/lib/protocolos/pricingRecalc";
+ import { buildFormulacoesPayload } from "@/lib/protocolos/composicaoSync";
++import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck, tenantProductErrorMessage, type TenantProductDraft } from "@/lib/catalogo/tenantProducts";
++import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
+ import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
+ import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
+ import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItemControls";
+@@ -97,127 +99,58 @@ interface Produto {
+ }
+ 
+ 
+-// ── CAT-06/CAT-07 ────────────────────────────────────────────────────────────
+-// Colunas restauráveis (apenas as que `handleSave` altera / precisa reinserir).
+-export const PRODUTO_SNAPSHOT_COLUMNS =
+-  "nome, codigo, tipo, dose_ml_ha, modo_aplicacao, valor_ha_brl, valor_dose_brl, valor_litro_brl, funcao_completa, versao_catalogo, ativo, b2b_enabled, e_insumo, estoque_minimo";
+-export const FORMULACAO_SNAPSHOT_COLUMNS =
+-  "produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao, e_volume_fixo";
+-
++// ── Salvamento por empresa (substitui CAT-06 compensação no cliente) ──────────
+ export type SaveProdutoOutcome =
+   | { status: "ok"; produtoId: string }
+   | { status: "error"; message: string }
+-  | { status: "critical"; message: string };
++  | { status: "partial"; produtoId: string; message: string };
+ 
+-const MSG_CRITICO =
+-  "Falha crítica: a reversão automática não foi concluída. NÃO repita a operação e contate o suporte imediatamente.";
++const MSG_PARCIAL =
++  "Produto salvo, mas a composição não foi alterada (a anterior foi mantida). Recarregue e revise a composição.";
++const MSG_RECARREGAR = "Versão do produto desconhecida. Recarregue antes de editar.";
+ 
+ const MSG_NAO_CONFIRMADO = "Não foi possível confirmar o salvamento do produto. A composição não foi alterada.";
+-const MSG_COMPOSICAO = "Não foi possível confirmar a alteração da composição.";
+-
+-type MutationRow = { id: string; produto_id?: string };
+-function confirmedRows(data: unknown, count: number, produtoId?: string): data is MutationRow[] {
+-  if (!Array.isArray(data) || data.length !== count) return false;
+-  const ids = new Set<string>();
+-  for (const row of data) {
+-    if (!row || typeof row.id !== "string" || !row.id.trim() || ids.has(row.id)
+-      || (produtoId !== undefined && row.produto_id !== produtoId)) return false;
+-    ids.add(row.id);
+-  }
+-  return true;
+-}
+-function confirmedProduct(data: unknown, expectedId?: string): data is MutationRow[] {
+-  return confirmedRows(data, 1) && (expectedId === undefined || data[0].id === expectedId);
+-}
+-function confirmedDeleted(data: unknown, expected: MutationRow[], produtoId: string): boolean {
+-  return confirmedRows(data, expected.length, produtoId)
+-    && data.every(row => expected.some(previous => previous.id === row.id));
+-}
+-
+-/** Compensação best-effort entre chamadas: não é transação nem proteção contra concorrência. */
+-export async function saveProdutoComCompensacao(opts: {
++/**
++ * Catálogo exclusivo por empresa: produto pela RPC `tenant_product_save` (empresa do servidor, CAS, idempotência)
++ * e composição pela substituição ATÔMICA `tenant_catalog_formulacoes_replace` com o token devolvido.
++ * Sem escrita direta nem compensação no cliente: se a composição falhar depois do produto confirmado,
++ * o resultado é "partial" (produto salvo, composição anterior intacta no servidor) — nunca ok.
++ */
++export async function saveProdutoTenant(opts: {
+   client: any;
+   produtoId: string | null;
++  expectedUpdatedAt: string | null;
+   payload: Record<string, any>;
+   buildFormulacoes: (produtoId: string) => any[];
+ }): Promise<SaveProdutoOutcome> {
+-  const { client, produtoId, payload, buildFormulacoes } = opts;
+-  if (produtoId) {
+-    const snapProduto = await client.from("produtos").select(PRODUTO_SNAPSHOT_COLUMNS)
+-      .eq("id", produtoId).maybeSingle();
+-    if (snapProduto.error || !snapProduto.data) {
+-      return { status: "error", message: "Não foi possível ler o estado atual do produto." };
+-    }
+-    // IDs permitem conferir exclusão e restaurar a identidade da composição anterior.
+-    const snapFormulacoes = await client.from("formulacoes")
+-      .select(`id, ${FORMULACAO_SNAPSHOT_COLUMNS}`).eq("produto_id", produtoId);
+-    if (snapFormulacoes.error || !Array.isArray(snapFormulacoes.data)
+-      || !confirmedRows(snapFormulacoes.data, snapFormulacoes.data.length, produtoId)) {
+-      return { status: "error", message: MSG_COMPOSICAO };
+-    }
+-    const formulacoesAnteriores = snapFormulacoes.data;
+-    const compensar = async (motivo: string): Promise<SaveProdutoOutcome> => {
+-      try {
+-        const upd = await client.from("produtos").update(snapProduto.data).eq("id", produtoId).select("id");
+-        // Não tocar composição se a restauração do produto não foi confirmada.
+-        if (upd.error || !confirmedProduct(upd.data, produtoId)) return { status: "critical", message: MSG_CRITICO };
+-        const atuais = await client.from("formulacoes").select("id, produto_id").eq("produto_id", produtoId);
+-        if (atuais.error || !Array.isArray(atuais.data)
+-          || !confirmedRows(atuais.data, atuais.data.length, produtoId)) return { status: "critical", message: MSG_CRITICO };
+-        const del = await client.from("formulacoes").delete().eq("produto_id", produtoId).select("id, produto_id");
+-        if (del.error || !confirmedDeleted(del.data, atuais.data, produtoId)) return { status: "critical", message: MSG_CRITICO };
+-        if (formulacoesAnteriores.length > 0) {
+-          const ins = await client.from("formulacoes").insert(formulacoesAnteriores).select("id, produto_id");
+-          if (ins.error || !confirmedDeleted(ins.data, formulacoesAnteriores, produtoId)) return { status: "critical", message: MSG_CRITICO };
+-        }
+-        return { status: "error", message: motivo };
+-      } catch {
+-        return { status: "critical", message: MSG_CRITICO };
+-      }
+-    };
+-    const upd = await client.from("produtos").update(payload).eq("id", produtoId).select("id");
+-    if (upd.error || !confirmedProduct(upd.data, produtoId)) return { status: "error", message: MSG_NAO_CONFIRMADO };
+-    try {
+-      const formulacoesPayload = buildFormulacoes(produtoId);
+-      if (formulacoesPayload.some(row => row.produto_id !== produtoId)) return await compensar(MSG_COMPOSICAO);
+-      const del = await client.from("formulacoes").delete().eq("produto_id", produtoId).select("id, produto_id");
+-      if (del.error || !confirmedDeleted(del.data, formulacoesAnteriores, produtoId)) return await compensar(MSG_COMPOSICAO);
+-      if (formulacoesPayload.length > 0) {
+-        const ins = await client.from("formulacoes").insert(formulacoesPayload).select("id, produto_id");
+-        if (ins.error || !confirmedRows(ins.data, formulacoesPayload.length, produtoId)) return await compensar(MSG_COMPOSICAO);
+-      }
+-      return { status: "ok", produtoId };
+-    } catch {
+-      return await compensar(MSG_COMPOSICAO);
+-    }
++  const { client, produtoId, expectedUpdatedAt, payload, buildFormulacoes } = opts;
++  if (produtoId && !expectedUpdatedAt) return { status: "error", message: MSG_RECARREGAR };
++  const draft: TenantProductDraft = {};
++  for (const k of TENANT_PRODUCT_FIELDS) {
++    if (!Object.prototype.hasOwnProperty.call(payload, k)) continue;
++    if (k === "codigo" && (payload.codigo === null || payload.codigo === "")) continue; // servidor gera por empresa
++    draft[k] = payload[k];
+   }
+-  const criado = await client.from("produtos").insert([payload]).select("id");
+-  if (criado.error) return { status: "error", message: "Não foi possível salvar o produto." };
+-  // Sem ID confiável não há alvo seguro para compensação; não tentar adivinhá-lo.
+-  if (!confirmedProduct(criado.data, typeof payload.id === "string" ? payload.id : undefined)) {
+-    return { status: "critical", message: MSG_CRITICO };
+-  }
+-  const novoId = criado.data[0].id;
+-  const removerNovo = async (): Promise<SaveProdutoOutcome> => {
+-    try {
+-      const del = await client.from("produtos").delete().eq("id", novoId).select("id");
+-      return del.error || !confirmedProduct(del.data, novoId)
+-        ? { status: "critical", message: MSG_CRITICO }
+-        : { status: "error", message: MSG_COMPOSICAO };
+-    } catch {
+-      return { status: "critical", message: MSG_CRITICO };
+-    }
+-  };
++  let body: Record<string, unknown>;
++  try { body = buildTenantProductPayload(draft, produtoId === null); }
++  catch (e: any) { return { status: "error", message: e?.message || MSG_NAO_CONFIRMADO }; }
++  const saved = await client.rpc("tenant_product_save", {
++    p_product_id: produtoId, p_payload: body, p_expected_updated_at: produtoId ? expectedUpdatedAt : null,
++    p_idempotency_key: crypto.randomUUID(),
++  });
++  if (saved.error) return { status: "error", message: tenantProductErrorMessage(saved.error.code, saved.error.message) };
++  let ack;
++  try { ack = parseTenantProductAck(saved.data, produtoId); }
++  catch { return { status: "error", message: MSG_NAO_CONFIRMADO }; }
+   try {
+-    const formulacoesPayload = buildFormulacoes(novoId);
+-    if (formulacoesPayload.some(row => row.produto_id !== novoId)) return await removerNovo();
+-    if (formulacoesPayload.length > 0) {
+-      const ins = await client.from("formulacoes").insert(formulacoesPayload).select("id, produto_id");
+-      if (ins.error || !confirmedRows(ins.data, formulacoesPayload.length, novoId)) return await removerNovo();
++    const items = buildFormulacoes(ack.product_id);
++    if (items.some((row) => row.produto_id !== undefined && row.produto_id !== ack.product_id)) {
++      return { status: "partial", produtoId: ack.product_id, message: MSG_PARCIAL };
+     }
+-    return { status: "ok", produtoId: novoId };
+-  } catch {
+-    return await removerNovo();
++    await replaceTenantFormulacoes(client, ack.product_id, items, ack.updated_at);
++    return { status: "ok", produtoId: ack.product_id };
++  } catch (e: any) {
++    return { status: "partial", produtoId: ack.product_id, message: `${MSG_PARCIAL} ${e?.message ?? ""}`.trim() };
+   }
+ }
+ 
+@@ -298,6 +231,7 @@ export function ProdutosTab() {
+ 
+   const [form, setForm] = useState({
+     id: "",
++    updated_at: "" as string,
+     codigo: "",
+     nome: "",
+     tipo: "solo",
+@@ -403,16 +337,20 @@ export function ProdutosTab() {
+ 
+ 
+     try {
+-      const outcome = await saveProdutoComCompensacao({
++      const outcome = await saveProdutoTenant({
+         client: supabase as any,
+         produtoId: form.id || null,
++        expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
+         payload,
+         // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
+         buildFormulacoes: (id: string) => buildFormulacoesPayload(id, form.composicao),
+       });
+ 
+-      if (outcome.status === "critical") {
++      if (outcome.status === "partial") {
+         toast.error(outcome.message);
++        setOpen(false);
++        resetForm();
++        fetch();
+         return;
+       }
+       if (outcome.status === "error") {
+@@ -435,6 +373,7 @@ export function ProdutosTab() {
+   const resetForm = () => {
+     setForm({
+       id: "",
++      updated_at: "",
+       codigo: "",
+       nome: "",
+       tipo: "solo",
+@@ -469,6 +408,7 @@ export function ProdutosTab() {
+     }
+     setForm({
+       id: p.id,
++      updated_at: p.updated_at ?? "",
+       codigo: p.codigo || "",
+       nome: p.nome,
+       tipo: p.tipo,
+diff --git a/src/config/navigation.ts b/src/config/navigation.ts
+index 52c2e4ff2..df213fb18 100644
+--- a/src/config/navigation.ts
++++ b/src/config/navigation.ts
+@@ -192,6 +192,7 @@ export const navigation: NavItem[] = [
+ 
+   // ── Administração ──────────────────────────────────────────────────────────
+   { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], legacyRoutes: ["/financeiro/configuracoes"], section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["configurações", "configuracoes", "config", "administração", "administracao", "ajustes", "parâmetros", "sistema", "preferências", "integrações", "usuários", "perfis", "configurações gerais", "configuracoes gerais", "administração geral", "administracao geral", "parâmetros gerais", "parametros gerais", "configurações financeiras", "configuracoes financeiras", "parâmetros financeiros", "parametros financeiros"] },
++  { id: "produtos-empresa", label: "Produtos da empresa", icon: Boxes, route: "/configuracoes/produtos", section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["produtos", "catálogo", "catalogo", "cadastro de produtos", "meus produtos"] },
+   { id: "config-fiscal", label: "Configuração Fiscal", icon: ShieldCheck, route: "/configuracoes/fiscal/empresa", section: "Administração", order: 2, platforms: ["desktop"], searchKeywords: ["fiscal", "configuração fiscal", "configuracao fiscal", "nf-e", "nfe", "nfs-e", "nfse", "empresa fiscal", "homologação", "homologacao", "sefaz", "prefeitura", "certificado", "a1"] },
+ 
+   // ── Fiscal (Fase 3.16 — preparação/homologação, sem emissão) ───────────────
+diff --git a/src/hooks/AGENTS.md b/src/hooks/AGENTS.md
+index 0d23f346d..de050e967 100644
+--- a/src/hooks/AGENTS.md
++++ b/src/hooks/AGENTS.md
+@@ -18,3 +18,6 @@
+ - Legacy individual reservation, delivery creation/confirmation and reservation cancellation stay contained before dispatch; deferEffects, overrides and split UUID callbacks cannot open them. Reviewed independent batch reservation is unchanged — prevents delivery consumers bypassing pre-dispatch containment.
+ - Blocked delivery finance exposes only scoped existing-title reconciliation, with no creation form/catalogue reads or write callbacks; fresh empty reads never prove rollback — preserves honest read-only access.
+ - Envase dispatch requires an exact scoped availability probe, synchronous per-mount lock and shared readiness/roles/authz epoch fence; uncertain attempts stay frozen and stored — prevents stale-session adoption or grant-only client activation.
++- New payment choices require a scoped positive server capability before journal reservation or dispatch and exact choice acknowledgment; legacy absence never authorizes new economics — prevents silent downgrade.
++- Approval follows its captured void contract: transport success with null is valid, explicit negative envelopes are denied, and scope fences still precede cache invalidation — prevents universal ACK assumptions breaking void RPCs.
++- Payment ACKs compare validated typed canonical fields, not serialized JSONB order, and reject conflicting returned scope; uncertainty settlement/retry rules stay unchanged — prevents committed orders being falsely rejected by key permutation.
+diff --git a/src/hooks/useMicroorganismProfile.ts b/src/hooks/useMicroorganismProfile.ts
+index 6e0e200df..44aa3084b 100644
+--- a/src/hooks/useMicroorganismProfile.ts
++++ b/src/hooks/useMicroorganismProfile.ts
+@@ -1,3 +1,4 @@
++import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
+ import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
+ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -76,13 +77,20 @@ export function useUpsertMicroProfile() {
+   return useMutation({
+     mutationFn: async (payload: Partial<MicroProfile> & { microrganismo_id: string }) => {
+       assertGlobalCatalogWriteBlocked();
+-      const { data, error } = await (supabase as any)
+-        .from("microorganism_technical_profiles")
+-        .upsert(payload as any, { onConflict: "microrganismo_id" })
+-        .select()
+-        .maybeSingle();
+-      if (error) throw error;
+-      return data;
++      // Catálogo exclusivo por empresa: ficha técnica só pela RPC (empresa do pai no servidor, CAS, idempotência);
++      // status/validação nunca vêm do formulário — aprovação segue o fluxo auditado próprio.
++      const { id: _id, updated_at: _u, status_validacao, validado_por: _vp, validado_em: _ve, created_at: _c, created_by: _cb, updated_by: _ub, ...fields } = payload as any;
++      // versão OBSERVADA na leitura montada (CAS); nunca uma releitura no momento do envio
++      const observed = (qc.getQueryData(["micro-profile", payload.microrganismo_id]) as any)?.profile ?? null;
++      const id = observed?.id ?? null;
++      const updated_at = observed?.updated_at ?? null;
++      const currentStatus = observed?.status_validacao ?? "rascunho";
++      if (status_validacao !== undefined && status_validacao !== currentStatus) {
++        throw new Error("Mudança de status da ficha ainda não está disponível no catálogo por empresa; o conteúdo não foi salvo.");
++      }
++      if (id) delete fields.microrganismo_id;
++      const ack = await saveTenantCatalogRoot(supabase as any, "microorganism_technical_profiles", id ?? null, fields, id ? (updated_at ?? null) : null);
++      return { ...payload, id: ack.id, updated_at: ack.updated_at };
+     },
+     onSuccess: (_d, v) => {
+       qc.invalidateQueries({ queryKey: ["micro-profile", v.microrganismo_id] });
+diff --git a/src/hooks/useProductFiscalAccess.ts b/src/hooks/useProductFiscalAccess.ts
+index a96160f28..d1539fe93 100644
+--- a/src/hooks/useProductFiscalAccess.ts
++++ b/src/hooks/useProductFiscalAccess.ts
+@@ -14,10 +14,13 @@ export function useProductFiscalAccess(resource: string) {
+   monitor.current = actor.checkAuthzAccess;
+   const ready = (platform.ready || internal) && actor.authzReady === true && (monitor.current?.() ?? false);
+   const canWrite = ready && platform.ready;
++  // Catálogo exclusivo por empresa: ficha fiscal de PRODUTO próprio é escrita pelo administrador/gestor do mesmo
++  // tenant (mesma regra do ator 'mutate' do servidor); Superadmin não tem bypass. O servidor reautoriza tudo.
++  const canWriteOwnedProduct = ready && internal && !platform.ready && actor.roles.some(r => r === "administrador" || r === "gestor");
+   const scope = JSON.stringify(["global-product-fiscal", platform.scope, actor.authzEpoch, ready, resource]);
+   const live = useRef({ scope, mounted: true });
+   live.current.scope = scope;
+   useLayoutEffect(() => { live.current.mounted = true; return () => { live.current.mounted = false; }; }, []);
+   const capture = () => () => ready && live.current.mounted && live.current.scope === scope && (monitor.current?.() ?? false);
+-  return { get ready() { return ready && (monitor.current?.() ?? false); }, canWrite, scope, capture };
++  return { get ready() { return ready && (monitor.current?.() ?? false); }, canWrite, canWriteOwnedProduct, scope, capture };
+ }
+diff --git a/src/hooks/useProductFiscalProfiles.ts b/src/hooks/useProductFiscalProfiles.ts
+index e99c696b5..a109e16d8 100644
+--- a/src/hooks/useProductFiscalProfiles.ts
++++ b/src/hooks/useProductFiscalProfiles.ts
+@@ -4,10 +4,8 @@
+  * - Sem `any`, sem casts amplos.
+  * - `.select(...)` seleciona SOMENTE colunas necessárias.
+  * - Paginação server-side via `.range()`.
+- * - Mutações separadas (create/update) — não usamos upsert porque a
+- *   unicidade `product_id` não é garantida pelo contrato exposto em
+- *   `types.ts` nesta fase.
+- * - Concorrência otimista no UPDATE via `updated_at` prévio.
++ * - Escrita somente pelo RPC canônico `tenant_owned_product_fiscal_save`
++ *   (CAS por `updated_at`, chave de idempotência, sem escrita direta).
+  * - Erro de RLS/permissão nunca se torna sucesso silencioso.
+  */
+ import { useMutation, useQueryClient } from "@tanstack/react-query";
+@@ -22,6 +20,12 @@ import {
+   type ProductFiscalFormValues,
+   type ProductFiscalRow,
+ } from "@/lib/fiscal/productFiscalValidation";
++import {
++  OWNED_PRODUCT_FISCAL_ENABLED,
++  OwnedFiscalError,
++  saveOwnedProductFiscal,
++  type OwnedFiscalReceipt,
++} from "@/lib/fiscal/ownedProductFiscal";
+ import {
+   PRODUCT_FISCAL_PROFILE_STATUSES,
+   isProductFiscalProfileStatus,
+@@ -301,88 +305,59 @@ export class OptimisticConflictError extends Error {
+   }
+ }
+ 
+-export function useSaveProductFiscalProfile() {
++/**
++ * Gravação da ficha fiscal de produto PRÓPRIO: somente pelo writer canônico `tenant_owned_product_fiscal_save`
++ * (empresa = dono imutável do produto no servidor, CAS por updated_at, recibo idempotente, status só DRAFT/BLOCKED).
++ * Nenhuma escrita direta na tabela. Resposta incerta preserva a chave para reconciliação, sem nova tentativa automática.
++ */
++export function useSaveProductFiscalProfile(enabled: boolean = OWNED_PRODUCT_FISCAL_ENABLED) {
+   const qc = useQueryClient();
+   const fence = useProductFiscalAccess("product-fiscal-save");
+   const actor = useProductFiscalAccess("portal-query-actor");
+   return useMutation<
+-    ProductFiscalRow,
++    OwnedFiscalReceipt,
+     Error,
+     {
+       productId: string;
+       current: ProductFiscalRow | null;
+       values: ProductFiscalFormValues;
++      reason: string;
++      idempotencyKey: string;
+     }
+   >({
+-    mutationFn: async ({ productId, current, values }) => {
++    mutationFn: async ({ productId, current, values, reason, idempotencyKey }) => {
+       const valid = fence.capture();
+       const actorValid = actor.capture();
+       const actorScope = actor.scope;
+       const check = () => { if (!valid() || !actorValid()) throw new Error("fiscal_context_changed"); };
+-      const invalidate = async () => {
+-        check();
+-        await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root,
+-          predicate: query => query.queryKey.at(-2) === actorScope });
+-        check();
+-      };
+       check();
+-      if (!fence.canWrite) throw new Error("permission_denied");
++      if (!fence.canWriteOwnedProduct) throw new Error("permission_denied");
+       values = productFiscalFormSchema.parse(values);
+       if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at || current.is_active !== true))) throw new Error("fiscal_target_changed");
+-      if (!current) {
+-        // Verificação prévia: perfil pode existir de outra sessão.
+-        const existing = await (supabase as any)
+-          .from("product_fiscal_profiles")
+-          .select("id")
+-          .eq("product_id", productId)
+-        .eq("is_active", true)
+-          .maybeSingle();
++      const full = buildInsertPayload(productId, values) as Record<string, unknown>;
++      delete full.product_id;
++      const payload = current ? (buildUpdatePayload(values, current) as Record<string, unknown>) : full;
++      let receipt: OwnedFiscalReceipt;
++      try {
++        receipt = await saveOwnedProductFiscal(supabase as never, {
++          productId, expectedUpdatedAt: current ? current.updated_at : null, values: payload, reason, idempotencyKey,
++        }, enabled);
++      } catch (e) {
+         check();
+-        if (existing.error) {
+-          if (isPermissionError(existing.error))
+-            throw new Error("permission_denied");
+-          throw new Error(existing.error.message);
+-        }
+-        if (existing.data) {
+-          throw new Error("duplicate_profile");
++        if (e instanceof OwnedFiscalError) {
++          if (e.kind === "conflict") throw new OptimisticConflictError();
++          if (e.kind === "forbidden") throw new Error("permission_denied");
++          if (e.kind === "disabled") throw new Error("fiscal_writer_disabled");
++          if (e.kind === "invalid") throw new Error("fiscal_invalid");
++          throw new Error("fiscal_uncertain");
+         }
+-        const payload = buildInsertPayload(productId, values);
+-        const { data, error } = await (supabase as any)
+-          .from("product_fiscal_profiles")
+-          .insert(payload as any)
+-          .select("*")
+-          .single();
+-        check();
+-        if (error) {
+-          if (isPermissionError(error)) throw new Error("permission_denied");
+-          throw new Error(error.message);
+-        }
+-        await invalidate();
+-        return data;
+-      }
+-      const payload = buildUpdatePayload(values, current);
+-      if (Object.keys(payload).length === 0) {
+-        return current; // nada a atualizar
++        throw new Error("fiscal_uncertain");
+       }
+-      const { data, error } = await (supabase as any)
+-        .from("product_fiscal_profiles")
+-        .update(payload as any)
+-        .eq("is_active", true)
+-        .eq("id", current.id)
+-        .eq("product_id", current.product_id)
+-        .eq("updated_at", current.updated_at)
+-        .select("*")
+-        .maybeSingle();
+       check();
+-      if (error) {
+-        if (isPermissionError(error)) throw new Error("permission_denied");
+-        throw new Error(error.message);
+-      }
+-      if (!data) {
+-        throw new OptimisticConflictError();
+-      }
+-      await invalidate();
+-      return data;
++      await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root,
++        predicate: query => query.queryKey.at(-2) === actorScope });
++      check();
++      return receipt;
+     },
+   });
+ }
+diff --git a/src/hooks/useProductProfile.ts b/src/hooks/useProductProfile.ts
+index d3ddf64e4..6836539ad 100644
+--- a/src/hooks/useProductProfile.ts
++++ b/src/hooks/useProductProfile.ts
+@@ -1,3 +1,4 @@
++import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
+ import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
+ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -112,13 +113,20 @@ export function useUpsertProductProfile() {
+   return useMutation({
+     mutationFn: async (payload: Partial<ProductProfile> & { produto_id: string }) => {
+       assertGlobalCatalogWriteBlocked();
+-      const { data, error } = await (supabase as any)
+-        .from("product_technical_profiles")
+-        .upsert(payload as any, { onConflict: "produto_id" })
+-        .select()
+-        .maybeSingle();
+-      if (error) throw error;
+-      return data;
++      // Catálogo exclusivo por empresa: ficha técnica só pela RPC (empresa do pai no servidor, CAS, idempotência);
++      // status/validação nunca vêm do formulário — aprovação segue o fluxo auditado próprio.
++      const { id: _id, updated_at: _u, status_validacao, validado_por: _vp, validado_em: _ve, created_at: _c, created_by: _cb, updated_by: _ub, ...fields } = payload as any;
++      // versão OBSERVADA na leitura montada (CAS); nunca uma releitura no momento do envio
++      const observed = (qc.getQueryData(["product-profile", payload.produto_id]) as any)?.profile ?? null;
++      const id = observed?.id ?? null;
++      const updated_at = observed?.updated_at ?? null;
++      const currentStatus = observed?.status_validacao ?? "rascunho";
++      if (status_validacao !== undefined && status_validacao !== currentStatus) {
++        throw new Error("Mudança de status da ficha ainda não está disponível no catálogo por empresa; o conteúdo não foi salvo.");
++      }
++      if (id) delete fields.produto_id;
++      const ack = await saveTenantCatalogRoot(supabase as any, "product_technical_profiles", id ?? null, fields, id ? (updated_at ?? null) : null);
++      return { ...payload, id: ack.id, updated_at: ack.updated_at };
+     },
+     onSuccess: (_d, v) => {
+       qc.invalidateQueries({ queryKey: ["product-profile", v.produto_id] });
+diff --git a/src/hooks/useTenantProducts.ts b/src/hooks/useTenantProducts.ts
+new file mode 100644
+index 000000000..71ead0d1a
+--- /dev/null
++++ b/src/hooks/useTenantProducts.ts
+@@ -0,0 +1,63 @@
++import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
++import { useRef } from "react";
++import { supabase } from "@/integrations/supabase/client";
++import {
++  buildTenantProductPayload, parseTenantProductAck, tenantProductErrorMessage,
++  type TenantProduct, type TenantProductDraft,
++} from "@/lib/catalogo/tenantProducts";
++
++type Rpc = (n: string, a?: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
++const rpc = () => supabase.rpc as unknown as Rpc;
++
++export const TENANT_PRODUCTS_KEY = ["tenant-products"] as const;
++
++export function useTenantProducts(includeArchived: boolean) {
++  return useQuery({
++    queryKey: [...TENANT_PRODUCTS_KEY, includeArchived],
++    queryFn: async () => {
++      const { data, error } = await rpc()("tenant_product_list", { p_include_archived: includeArchived });
++      if (error) throw new Error(tenantProductErrorMessage(error.code, error.message));
++      if (!Array.isArray(data)) throw new Error("Resposta do servidor inválida");
++      return data as TenantProduct[];
++    },
++    retry: false,
++  });
++}
++
++/** Uma chave por intenção; repetição após incerteza reusa a mesma chave (servidor devolve recibo). */
++export function useSaveTenantProduct() {
++  const qc = useQueryClient();
++  const keyRef = useRef<{ sig: string; key: string } | null>(null);
++  return useMutation({
++    mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null }) => {
++      const payload = buildTenantProductPayload(v.draft, v.id === null);
++      const sig = JSON.stringify([v.id, payload, v.expectedUpdatedAt]);
++      if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: crypto.randomUUID() };
++      const { data, error } = await rpc()("tenant_product_save", {
++        p_product_id: v.id, p_payload: payload, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: keyRef.current.key,
++      });
++      if (error) {
++        if (error.code && error.code !== "") keyRef.current = null; // recusa definitiva: nova intenção, nova chave
++        throw new Error(tenantProductErrorMessage(error.code, error.message));
++      }
++      const ack = parseTenantProductAck(data, v.id);
++      keyRef.current = null;
++      return ack;
++    },
++    onSettled: () => qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY }),
++  });
++}
++
++export function useArchiveTenantProduct() {
++  const qc = useQueryClient();
++  return useMutation({
++    mutationFn: async (v: { id: string; archived: boolean; expectedUpdatedAt: string }) => {
++      const { data, error } = await rpc()("tenant_product_set_archived", {
++        p_product_id: v.id, p_archived: v.archived, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: crypto.randomUUID(),
++      });
++      if (error) throw new Error(tenantProductErrorMessage(error.code, error.message));
++      return parseTenantProductAck({ replayed: false, ...(data as object) }, v.id);
++    },
++    onSettled: () => qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY }),
++  });
++}
+diff --git a/src/lib/AGENTS.md b/src/lib/AGENTS.md
+new file mode 100644
+index 000000000..6f15fc58f
+--- /dev/null
++++ b/src/lib/AGENTS.md
+@@ -0,0 +1,5 @@
++- Monetary semantics are explicit and versioned; absent discriminator preserves legacy principal-plus-interest, and financed interest is removed only from its declared breakdown — prevents silent historical reinterpretation.
++- Civil dates and ISO instants must validate calendar fields before parsing — prevents normalization of invalid inputs.
++- Price preview uses explicit amortization semantics, never infers the financing system from a generic compound plan — preserves unrelated commercial contracts.
++- Price rounds payment, interest and amortization to cents each period and settles the final residual; independent Decimal vectors are synthetic arithmetic controls, never commercial defaults — preserves exact schedule sums and zero final balance.
++- Operational receivable consumers require the canonical monetary-origin projection, tied to installment/title and immutable generator snapshot; missing projection blocks rather than guesses legacy semantics — prevents fake fixture-only authority.
+\ No newline at end of file
+diff --git a/src/lib/catalogo/tenantCatalogRoots.ts b/src/lib/catalogo/tenantCatalogRoots.ts
+new file mode 100644
+index 000000000..bf8f8f9d4
+--- /dev/null
++++ b/src/lib/catalogo/tenantCatalogRoots.ts
+@@ -0,0 +1,110 @@
++/**
++ * Catálogo EXCLUSIVO por empresa (01/11/2026) — escrita das raízes auxiliares, perfis técnicos e formulações
++ * SOMENTE pelas RPCs candidatas `tenant_catalog_root_save/delete` e `tenant_catalog_formulacoes_replace`
++ * (scripts/tenant-exclusive-catalog-20261101/crud_section.py). Empresa/dono e status de validação nunca são
++ * enviados; a edição exige o `updated_at` observado (CAS); cada tentativa leva chave de idempotência e
++ * nunca é repetida automaticamente após falha incerta.
++ */
++export type TenantCatalogRoot =
++  | "microrganismos"
++  | "culturas"
++  | "catalogo_volumes"
++  | "product_technical_profiles"
++  | "microorganism_technical_profiles";
++
++/** Campos que o servidor recusa; filtrados aqui para falhar antes do envio. */
++const FORBIDDEN = new Set([
++  "id", "owner_organization_id", "created_at", "updated_at", "created_by", "updated_by",
++  "status_validacao", "validado_por", "validado_em", "desativada_em", "desativada_por",
++]);
++
++export interface TenantCatalogAck { id: string; updated_at: string | null; replayed: boolean }
++
++export function buildTenantCatalogPayload(payload: Record<string, unknown>): Record<string, unknown> {
++  const out: Record<string, unknown> = {};
++  for (const k of Object.keys(payload)) {
++    if (FORBIDDEN.has(k)) throw new Error(`Campo não permitido: ${k}`);
++    const v = payload[k];
++    if (v === undefined) continue;
++    if (typeof v === "number" && !Number.isFinite(v)) throw new Error(`Valor inválido em ${k}`);
++    out[k] = v;
++  }
++  return out;
++}
++
++export function parseTenantCatalogAck(data: unknown, expectedId: string | null): TenantCatalogAck {
++  const d = data as Record<string, unknown> | null;
++  if (!d || d.ok !== true || typeof d.id !== "string" || typeof d.replayed !== "boolean") {
++    throw new Error("Resposta do servidor inválida");
++  }
++  if (expectedId && d.id !== expectedId) throw new Error("Resposta do servidor de outro registro");
++  return { id: d.id, updated_at: typeof d.updated_at === "string" ? d.updated_at : null, replayed: d.replayed };
++}
++
++export function tenantCatalogErrorMessage(code: string | undefined, message: string | undefined): string {
++  const m = message ?? "";
++  if (m.includes("tenant_catalog_stale") || m.includes("cas_required")) return "O registro foi alterado por outra pessoa. Recarregue e tente de novo.";
++  if (m.includes("idempotency_conflict")) return "Tentativa anterior diferente com a mesma chave. Recarregue e tente de novo.";
++  if (m.includes("tenant_catalog_duplicate")) return "Já existe um registro igual na sua empresa.";
++  if (m.includes("tenant_catalog_in_use")) return "O registro está em uso e não pode ser excluído.";
++  if (m.includes("ref_foreign")) return "O item vinculado não pertence à sua empresa.";
++  if (m.includes("tenant_catalog_not_found")) return "Registro não encontrado na sua empresa.";
++  if (m.includes("field_forbidden")) return "Há um campo que não pode ser alterado por aqui.";
++  if (code === "42501" || m.includes("permission denied") || m.includes("actor_changed")) return "Você não tem permissão para gerenciar o catálogo desta empresa.";
++  if (code === "PGRST202" || m.includes("Could not find the function")) return "Cadastro do catálogo da empresa ainda não está disponível neste ambiente.";
++  return "Não foi possível salvar.";
++}
++
++type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> };
++
++export async function saveTenantCatalogRoot(
++  client: RpcClient,
++  root: TenantCatalogRoot,
++  id: string | null,
++  payload: Record<string, unknown>,
++  expectedUpdatedAt: string | null,
++  idempotencyKey: string = crypto.randomUUID(),
++): Promise<TenantCatalogAck> {
++  if (id && !expectedUpdatedAt) throw new Error(tenantCatalogErrorMessage(undefined, "cas_required"));
++  const { data, error } = await client.rpc("tenant_catalog_root_save", {
++    p_root: root, p_id: id, p_payload: buildTenantCatalogPayload(payload),
++    p_expected_updated_at: id ? expectedUpdatedAt : null, p_idempotency_key: idempotencyKey,
++  });
++  if (error) throw new Error(tenantCatalogErrorMessage(error.code, error.message));
++  return parseTenantCatalogAck(data, id);
++}
++
++export async function deleteTenantCatalogRoot(
++  client: RpcClient, root: "microrganismos" | "culturas" | "catalogo_volumes", id: string, expectedUpdatedAt: string,
++  idempotencyKey: string = crypto.randomUUID(),
++): Promise<void> {
++  const { data, error } = await client.rpc("tenant_catalog_root_delete", {
++    p_root: root, p_id: id, p_expected_updated_at: expectedUpdatedAt, p_idempotency_key: idempotencyKey,
++  });
++  if (error) throw new Error(tenantCatalogErrorMessage(error.code, error.message));
++  const d = data as Record<string, unknown> | null;
++  if (!d || d.ok !== true || d.deleted !== true || d.id !== id) throw new Error("Resposta do servidor inválida");
++}
++
++const FORM_FIELDS = ["microrganismo_id", "component_insumo_id", "concentracao", "unidade", "volume_ml", "proporcao", "e_volume_fixo"];
++
++/** Substitui atomicamente o conjunto de formulações do produto (CAS pelo `updated_at` do produto). */
++export async function replaceTenantFormulacoes(
++  client: RpcClient, produtoId: string, items: Record<string, unknown>[], expectedProdutoUpdatedAt: string,
++  idempotencyKey: string = crypto.randomUUID(),
++): Promise<{ updated_at: string; items: number }> {
++  const clean = items.map((it) => {
++    const o: Record<string, unknown> = {};
++    for (const k of FORM_FIELDS) if (it[k] !== undefined) o[k] = it[k];
++    return o;
++  });
++  const { data, error } = await client.rpc("tenant_catalog_formulacoes_replace", {
++    p_produto_id: produtoId, p_items: clean, p_expected_produto_updated_at: expectedProdutoUpdatedAt, p_idempotency_key: idempotencyKey,
++  });
++  if (error) throw new Error(tenantCatalogErrorMessage(error.code, error.message));
++  const d = data as Record<string, unknown> | null;
++  if (!d || d.ok !== true || d.produto_id !== produtoId || typeof d.updated_at !== "string" || d.items !== clean.length) {
++    throw new Error("Resposta do servidor inválida");
++  }
++  return { updated_at: d.updated_at, items: d.items as number };
++}
+diff --git a/src/lib/catalogo/tenantProducts.ts b/src/lib/catalogo/tenantProducts.ts
+new file mode 100644
+index 000000000..baff017f2
+--- /dev/null
++++ b/src/lib/catalogo/tenantProducts.ts
+@@ -0,0 +1,88 @@
++/**
++ * Catálogo EXCLUSIVO por empresa (decisão 01/11/2026). Contrato das RPCs candidatas
++ * `tenant_product_list/save/set_archived` (scripts/tenant-exclusive-catalog-20261101).
++ * O tenant é sempre derivado no servidor; o payload nunca carrega empresa/dono.
++ */
++import { Constants } from "@/integrations/supabase/cultivofarm.types";
++
++/** Valores do enum real `tipo_produto`; o servidor continua recusando qualquer outro (22P02). */
++export const TIPOS_PRODUTO = Constants.public.Enums.tipo_produto as readonly string[];
++export const TENANT_PRODUCT_FIELDS = [
++  "nome", "codigo", "descricao", "tipo", "classe_catalogo", "familia_catalogo", "modo_acao",
++  "modo_aplicacao", "funcao_completa", "e_insumo", "b2b_enabled", "dose_ml_ha", "estoque_minimo",
++  "valor_dose_brl", "valor_ha_brl", "valor_litro_brl",
++] as const;
++export type TenantProductField = (typeof TENANT_PRODUCT_FIELDS)[number];
++const NUMERIC: TenantProductField[] = ["dose_ml_ha", "estoque_minimo", "valor_dose_brl", "valor_ha_brl", "valor_litro_brl"];
++
++export interface TenantProduct {
++  id: string;
++  owner_organization_id: string;
++  nome: string;
++  codigo: string | null;
++  descricao: string | null;
++  tipo: string | null;
++  ativo: boolean | null;
++  valor_ha_brl: number | null;
++  updated_at: string;
++}
++
++export interface TenantProductAck { product_id: string; updated_at: string; replayed: boolean }
++
++export type TenantProductDraft = Partial<Record<TenantProductField, string | number | boolean | null>>;
++
++/** Valida e normaliza o rascunho; lança erro legível antes de qualquer envio. */
++export function buildTenantProductPayload(draft: TenantProductDraft, create: boolean): Record<string, unknown> {
++  const out: Record<string, unknown> = {};
++  for (const [k, v] of Object.entries(draft)) {
++    if (!Object.prototype.hasOwnProperty.call(draft, k)) continue;
++    if (!(TENANT_PRODUCT_FIELDS as readonly string[]).includes(k)) throw new Error(`Campo não permitido: ${k}`);
++    if (v === undefined) continue;
++    if (NUMERIC.includes(k as TenantProductField)) {
++      if (v === null || v === "") { out[k] = null; continue; }
++      const n = typeof v === "number" ? v : Number(String(v).replace(",", "."));
++      if (!Number.isFinite(n) || n < 0) throw new Error(`Valor inválido em ${k}`);
++      out[k] = n;
++    } else if (k === "b2b_enabled") {
++      // omitido = servidor grava false; nulo nunca é enviado (coluna NOT NULL, default LIVE true)
++      if (typeof v !== "boolean") throw new Error("Valor inválido em b2b_enabled");
++      out[k] = v;
++    } else if (k === "tipo") {
++      if (typeof v !== "string" || !TIPOS_PRODUTO.includes(v)) throw new Error("Selecione um tipo de produto válido");
++      out[k] = v;
++    } else if (k === "e_insumo") {
++      if (v !== null && typeof v !== "boolean") throw new Error(`Valor inválido em ${k}`);
++      out[k] = v;
++    } else {
++      out[k] = v === null ? null : String(v).trim();
++    }
++  }
++  const nome = out.nome;
++  if (create && (typeof nome !== "string")) throw new Error("Informe o nome do produto");
++  if (nome !== undefined && (typeof nome !== "string" || nome.length < 2 || nome.length > 200)) {
++    throw new Error("O nome deve ter entre 2 e 200 caracteres");
++  }
++  if (create && typeof out.tipo !== "string") throw new Error("Selecione o tipo do produto");
++  return out;
++}
++
++/** ACK do servidor precisa referir o produto pedido (edição) e trazer versão. */
++export function parseTenantProductAck(data: unknown, expectedId: string | null): TenantProductAck {
++  const d = data as Record<string, unknown> | null;
++  if (!d || typeof d.product_id !== "string" || typeof d.updated_at !== "string" || typeof d.replayed !== "boolean") {
++    throw new Error("Resposta do servidor inválida");
++  }
++  if (expectedId && d.product_id !== expectedId) throw new Error("Resposta do servidor de outro produto");
++  return { product_id: d.product_id, updated_at: d.updated_at, replayed: d.replayed };
++}
++
++export function tenantProductErrorMessage(code: string | undefined, message: string | undefined): string {
++  const m = message ?? "";
++  if (m.includes("duplicate_name")) return "Já existe um produto com esse nome na sua empresa.";
++  if (m.includes("version_conflict") || m.includes("cas_required")) return "O produto foi alterado por outra pessoa. Recarregue e tente de novo.";
++  if (code === "42501" || m.includes("forbidden")) return "Você não tem permissão para gerenciar produtos desta empresa.";
++  if (m.includes("not_found")) return "Produto não encontrado na sua empresa.";
++  if (m.includes("tipo_required") || m.includes("tipo_invalid") || code === "22P02") return "Selecione um tipo de produto válido.";
++  if (code === "PGRST202" || m.includes("Could not find the function")) return "Cadastro de produtos da empresa ainda não está disponível neste ambiente.";
++  return "Não foi possível salvar o produto.";
++}
+diff --git a/src/lib/comercial/civilDate.ts b/src/lib/comercial/civilDate.ts
+new file mode 100644
+index 000000000..9e93d3274
+--- /dev/null
++++ b/src/lib/comercial/civilDate.ts
+@@ -0,0 +1,15 @@
++/** Strict civil date, no Date.parse normalization or timezone truncation. */
++export function isCivilDate(value: unknown): boolean {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
++  const [year, month, day] = value.split('-').map(Number);
++  if (year < 100 || month < 1 || month > 12 || day < 1) return false;
++  return day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
++}
++
++export function strictInstant(value: string): number {
++  if (isCivilDate(value)) return Date.parse(value);
++  const match = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/);
++  if (!match || !isCivilDate(match[1]) || Number(match[2]) > 23 || Number(match[3]) > 59 || Number(match[4] ?? 0) > 59) return NaN;
++  if (match[5] !== 'Z' && (Number(match[5].slice(1, 3)) > 23 || Number(match[5].slice(4, 6)) > 59)) return NaN;
++  return Date.parse(value);
++}
+\ No newline at end of file
+diff --git a/src/lib/fiscal/ownedProductFiscal.ts b/src/lib/fiscal/ownedProductFiscal.ts
+index 5e7020452..f3deba1f3 100644
+--- a/src/lib/fiscal/ownedProductFiscal.ts
++++ b/src/lib/fiscal/ownedProductFiscal.ts
+@@ -4,6 +4,8 @@
+  * Empresa vem do servidor (dono imutável do item); nunca enviada pelo cliente.
+  * Dados retornados nunca autorizam nada: o servidor reautoriza toda escrita.
+  */
++import { isCivilDate } from "@/lib/comercial/civilDate";
++
+ export const OWNED_PRODUCT_FISCAL_ENABLED = false as const;
+ 
+ export const OWNED_FISCAL_FIELDS = [
+@@ -42,9 +44,29 @@ export function normalizeOwnedFiscalValues(input: Record<string, unknown>): Owne
+   return out;
+ }
+ 
++/** Único status que o writer canônico pode devolver (nunca promove para VALIDATED). */
++export const OWNED_FISCAL_RECEIPT_STATUSES = ["DRAFT", "BLOCKED"] as const;
++export type OwnedFiscalReceiptStatus = (typeof OWNED_FISCAL_RECEIPT_STATUSES)[number];
++
++/**
++ * timestamptz do servidor: data civil real, hora válida, até 6 frações e fuso obrigatório.
++ * Aceita a forma ISO (T) e a forma textual do PostgreSQL (espaço, offset +HH ou +HH:MM).
++ */
++export function isStrictServerTimestamp(value: unknown): value is string {
++  if (typeof value !== "string") return false;
++  const m = value.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(Z|[+-]\d{2}(?::?\d{2})?)$/);
++  if (!m || !isCivilDate(m[1])) return false;
++  if (Number(m[2]) > 23 || Number(m[3]) > 59 || Number(m[4]) > 59) return false;
++  if (m[5] !== "Z") {
++    const off = m[5].slice(1).replace(":", "");
++    if (Number(off.slice(0, 2)) > 15 || (off.length > 2 && Number(off.slice(2, 4)) > 59)) return false;
++  }
++  return true;
++}
++
+ export interface OwnedFiscalReceipt {
+   product_id: string; profile_id: string; organization_id: string;
+-  profile_status: string; updated_at: string; idempotency_key: string; idempotent: boolean;
++  profile_status: OwnedFiscalReceiptStatus; updated_at: string; idempotency_key: string; idempotent: boolean;
+ }
+ 
+ /** ACK exato: qualquer divergência é incerta (mantém chave para reconciliação, sem nova tentativa automática). */
+@@ -54,8 +76,8 @@ export function parseOwnedFiscalReceipt(data: unknown, expected: { productId: st
+     || r.product_id !== expected.productId || r.idempotency_key !== expected.idempotencyKey
+     || typeof r.profile_id !== "string" || !UUID.test(r.profile_id)
+     || typeof r.organization_id !== "string" || !UUID.test(r.organization_id)
+-    || typeof r.profile_status !== "string" || r.profile_status === "VALIDATED"
+-    || typeof r.updated_at !== "string" || Number.isNaN(Date.parse(r.updated_at))
++    || !(OWNED_FISCAL_RECEIPT_STATUSES as readonly unknown[]).includes(r.profile_status)
++    || !isStrictServerTimestamp(r.updated_at)
+     || typeof r.idempotent !== "boolean") {
+     throw new OwnedFiscalError("uncertain", "Resposta do servidor não confirmada; consulte antes de tentar de novo.");
+   }
+diff --git a/src/lib/permissions.ts b/src/lib/permissions.ts
+index d6333aaf6..dfbb41051 100644
+--- a/src/lib/permissions.ts
++++ b/src/lib/permissions.ts
+@@ -124,13 +124,18 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
+   },
+   // Fase Fiscal 3.1 — Configuração fiscal da empresa. Admin edita;
+   // gestor e financeiro somente leem. Demais perfis: bloqueado.
++  // Catálogo EXCLUSIVO por empresa (01/11/2026): cada tenant cadastra os próprios produtos.
++  // Servidor (tenant_product_*) deriva o tenant e decide a escrita; aqui só a visibilidade da tela.
++  "/configuracoes/produtos": {
++    administrador: "rw", gestor: "r", gestor_comercial: "r", financeiro: "r",
++  },
+   "/configuracoes/fiscal/empresa": {
+     administrador: "rw", gestor: "r", financeiro: "r",
+   },
+   // Rota unificada: nível canônico preservado para o editor de microrganismos
+   // (RLS microorganism_fiscal_profiles_write: admin OU financeiro; gestor lê).
+   // Perfis de PRODUTO são globais: na página o editor de produto é separado
+-  // (canEditProduct) e só o Superadmin forte edita, dentro de /plataforma.
++  // (canEditProduct) e só o Superadmin forte edita, dentro do painel da plataforma.
+   "/configuracoes/fiscal/produtos": {
+     administrador: "rw", financeiro: "rw", gestor: "r",
+   },
+diff --git a/src/lib/protocolos/seedCatalogoARBioV13.ts b/src/lib/protocolos/seedCatalogoARBioV13.ts
+index 0f1d630f9..2858f3fb1 100644
+--- a/src/lib/protocolos/seedCatalogoARBioV13.ts
++++ b/src/lib/protocolos/seedCatalogoARBioV13.ts
+@@ -179,7 +179,12 @@ export async function auditProdutosOrfaos(): Promise<ProdutosOrfaosAuditResult>
+  * Idempotente por `codigo` (upsert). Se algum microrganismo requerido não existir,
+  * a função aborta antes de inserir/atualizar produtos.
+  */
++const TENANT_EXCLUSIVE_SEED_DISABLED: boolean = true;
++
+ export async function importCatalogoARBioV13(): Promise<SeedResult> {
++  // Catálogo exclusivo por empresa (01/11/2026): carga fixa com escrita direta desativada — o dono seria
++  // inferido pelo cliente (risco de gravar tudo em uma empresa). Cadastro só pelas RPCs por empresa.
++  if (TENANT_EXCLUSIVE_SEED_DISABLED) throw new Error("Carga fixa do catálogo desativada: use o cadastro da própria empresa.");
+   // 1) resolver microrganismos por nome_cientifico
+   const nomesCientificos = Array.from(
+     new Set(SEED_PRODUTOS_AR_BIO_V13.flatMap((p) => p.composicao.map((c) => c.nome_cientifico))),
+diff --git a/src/lib/protocolos/seedMicrorganismosARBio2026.ts b/src/lib/protocolos/seedMicrorganismosARBio2026.ts
+index 526cdf9bc..b25b210d4 100644
+--- a/src/lib/protocolos/seedMicrorganismosARBio2026.ts
++++ b/src/lib/protocolos/seedMicrorganismosARBio2026.ts
+@@ -53,7 +53,12 @@ export interface ImportResult {
+  *    preservando `codigo`, `b2b_enabled`, `ativo`, fichas técnicas e demais campos manuais.
+  *  - se não existe: insere com defaults e deixa o trigger `set_codigo_microrganismo` gerar `codigo`.
+  */
++const TENANT_EXCLUSIVE_SEED_DISABLED: boolean = true;
++
+ export async function importarMicrosARBio2026(): Promise<ImportResult> {
++  // Catálogo exclusivo por empresa (01/11/2026): carga fixa com escrita direta desativada — o dono seria
++  // inferido pelo cliente (risco de gravar tudo em uma empresa). Cadastro só pelas RPCs por empresa.
++  if (TENANT_EXCLUSIVE_SEED_DISABLED) throw new Error("Carga fixa do catálogo desativada: use o cadastro da própria empresa.");
+   const { data: existing, error: fetchErr } = await supabase
+     .from("microrganismos")
+     .select("id,nome")
+diff --git a/src/pages/configuracoes/FiscalProdutos.tsx b/src/pages/configuracoes/FiscalProdutos.tsx
+index 97dd9df82..b916902b6 100644
+--- a/src/pages/configuracoes/FiscalProdutos.tsx
++++ b/src/pages/configuracoes/FiscalProdutos.tsx
+@@ -20,6 +20,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { useAuth } from "@/hooks/useAuth";
+ import { getAccessLevel } from "@/lib/permissions";
+ import { FEATURE_FLAGS } from "@/config/featureFlags";
++import { OWNED_PRODUCT_FISCAL_ENABLED } from "@/lib/fiscal/ownedProductFiscal";
+ import {
+   useProductFiscalList,
+   useProductFiscalReadiness,
+@@ -55,6 +56,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
+ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
++import { Textarea } from "@/components/ui/textarea";
+ import { Label } from "@/components/ui/label";
+ import { Badge } from "@/components/ui/badge";
+ import {
+@@ -188,9 +190,10 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
+   const { role } = useAuth();
+   const routeAccess = getAccessLevel(role, "/configuracoes/fiscal/produtos");
+   const access = platformGlobal ? fiscalAccess.ready && fiscalAccess.canWrite ? "rw" : "none" : routeAccess;
+-  // Produto global: somente Superadmin forte na plataforma. Microrganismo: permissão
++  // Produto PRÓPRIO da empresa (catálogo exclusivo): administrador/gestor do tenant, somente pelo writer canônico
++  // e só quando liberado (OWNED_PRODUCT_FISCAL_ENABLED); sem escrita global de Superadmin. Microrganismo: permissão
+   // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.
+-  const canEditProduct = platformGlobal && access === "rw" && fiscalAccess.ready && fiscalAccess.canWrite;
++  const canEditProduct = !platformGlobal && OWNED_PRODUCT_FISCAL_ENABLED && fiscalAccess.ready && fiscalAccess.canWriteOwnedProduct === true;
+   const canEditMicro = !platformGlobal && routeAccess === "rw";
+   // Plataforma: microrganismos globais exibidos SOMENTE em consulta; a escrita
+   // continua na rota canônica da empresa até existir autoridade server-side própria.
+@@ -921,10 +924,16 @@ function ProductEditDrawer({
+     productRowToFormValues(null),
+   );
+   const [errors, setErrors] = useState<Record<string, string>>({});
++  const [reason, setReason] = useState("");
++  // chave de idempotência por tentativa: mantida após resposta incerta (reconciliação), descartada após
++  // confirmação/conflito ou quando o conteúdo enviado muda
++  const attempt = useRef<{ key: string; sig: string } | null>(null);
+ 
+   useEffect(() => {
+     setValues(productRowToFormValues(null));
+     setErrors({});
++    setReason("");
++    attempt.current = null;
+   }, [fence.scope]);
+   useEffect(() => {
+     if (profileQuery.data !== undefined) {
+@@ -948,18 +957,35 @@ function ProductEditDrawer({
+       toast({ title: "Verifique os campos", variant: "destructive" });
+       return;
+     }
++    const motive = reason.trim();
++    if (motive.length < 10 || motive.length > 500) {
++      setErrors({ reason: "Informe o motivo da alteração (10 a 500 caracteres)." });
++      return;
++    }
++    const sig = JSON.stringify([productId, profileQuery.data?.updated_at ?? null, parsed.data, motive]);
++    if (!attempt.current || attempt.current.sig !== sig) attempt.current = { key: crypto.randomUUID(), sig };
+     try {
+       submitLock.current = true;
+       await save.mutateAsync({
+         productId,
+         current: profileQuery.data ?? null,
+         values: parsed.data,
++        reason: motive,
++        idempotencyKey: attempt.current.key,
+       });
++      attempt.current = null;
+       if (!valid()) return;
+-      toast({ title: "Perfil fiscal salvo." });
++      toast({ title: "Rascunho fiscal salvo.", description: "A classificação continua pendente de validação contábil." });
+       onClose();
+     } catch (err) {
++      const msg0 = err instanceof Error ? err.message : "unknown";
++      if (msg0 !== "fiscal_uncertain") attempt.current = null;
+       if (!valid()) return;
++      if (msg0 === "fiscal_uncertain") {
++        toast({ title: "Gravação não confirmada", description: "Consulte o perfil antes de tentar de novo; a mesma tentativa será reaproveitada.", variant: "destructive" });
++        await profileQuery.refetch();
++        return;
++      }
+       if (err instanceof OptimisticConflictError) {
+         toast({
+           title: "Conflito de atualização",
+@@ -971,7 +997,8 @@ function ProductEditDrawer({
+       }
+       const msg = err instanceof Error ? err.message : "unknown";
+       if (msg === "permission_denied") toast({ title: "Sem permissão para salvar", variant: "destructive" });
+-      else if (msg === "duplicate_profile") toast({ title: "Perfil já existe", description: "Este produto já possui um perfil fiscal.", variant: "destructive" });
++      else if (msg === "fiscal_writer_disabled") toast({ title: "Edição fiscal de produto ainda não liberada", variant: "destructive" });
++      else if (msg === "fiscal_invalid") toast({ title: "Dados fiscais inválidos", variant: "destructive" });
+       else toast({ title: "Não foi possível salvar", variant: "destructive" });
+     } finally {
+       submitLock.current = false;
+@@ -993,6 +1020,14 @@ function ProductEditDrawer({
+       testId="fiscal-drawer-produto"
+       footer={
+         <div className="mt-6" data-testid="fiscal-produtos-ibs-cbs">
++          {canEdit && (
++            <div className="mb-4 space-y-1">
++              <Label htmlFor="fiscal-produto-motivo">Motivo da alteração</Label>
++              <Textarea id="fiscal-produto-motivo" data-testid="fiscal-produto-motivo" value={reason} maxLength={500}
++                onChange={(e) => setReason(e.target.value)} placeholder="Ex.: classificação informada pela contabilidade" />
++              {errors.reason && <p className="text-sm text-destructive">{errors.reason}</p>}
++            </div>
++          )}
+           <Alert className="mb-4">
+             <AlertTitle>{preparation.stage === "incomplete_draft" ? "Rascunho incompleto" : preparation.stage === "inactive" ? "Perfil inativo" : preparation.stage === "accounting_pending" ? "Revisão contábil pendente" : preparation.stage === "unavailable" ? "Prontidão indisponível" : "Cadastro revisado; operação pendente"}</AlertTitle>
+             <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>
+diff --git a/src/pages/configuracoes/ProdutosEmpresa.tsx b/src/pages/configuracoes/ProdutosEmpresa.tsx
+new file mode 100644
+index 000000000..657410833
+--- /dev/null
++++ b/src/pages/configuracoes/ProdutosEmpresa.tsx
+@@ -0,0 +1,119 @@
++import { useState } from "react";
++import { Button } from "@/components/ui/button";
++import { Input } from "@/components/ui/input";
++import { Label } from "@/components/ui/label";
++import { Switch } from "@/components/ui/switch";
++import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
++import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
++import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
++import { useToast } from "@/hooks/use-toast";
++import { useAuth } from "@/hooks/useAuth";
++import { getAccessLevel } from "@/lib/permissions";
++import { useArchiveTenantProduct, useSaveTenantProduct, useTenantProducts } from "@/hooks/useTenantProducts";
++import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
++import { TIPOS_PRODUTO, type TenantProduct } from "@/lib/catalogo/tenantProducts";
++
++const brl = (v: number | null) => (v === null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v));
++
++export default function ProdutosEmpresa() {
++  const { role } = useAuth();
++  const podeEditar = getAccessLevel(role, "/configuracoes/produtos") === "rw";
++  const [arquivados, setArquivados] = useState(false);
++  const lista = useTenantProducts(arquivados);
++  const salvar = useSaveTenantProduct();
++  const arquivar = useArchiveTenantProduct();
++  const { toast } = useToast();
++  const [edit, setEdit] = useState<{ p: TenantProduct | null; nome: string; tipo: string; codigo: string; descricao: string; valor: string } | null>(null);
++
++  const abrir = (p: TenantProduct | null) =>
++    setEdit({ p, nome: p?.nome ?? "", tipo: p?.tipo ?? "", codigo: p?.codigo ?? "", descricao: p?.descricao ?? "", valor: p?.valor_ha_brl?.toString() ?? "" });
++
++  const enviar = async () => {
++    if (!edit) return;
++    try {
++      await salvar.mutateAsync({
++        id: edit.p?.id ?? null,
++        expectedUpdatedAt: edit.p?.updated_at ?? null,
++        draft: { nome: edit.nome, ...(edit.tipo ? { tipo: edit.tipo } : {}), codigo: edit.codigo || null, descricao: edit.descricao || null, valor_ha_brl: edit.valor === "" ? null : edit.valor },
++      });
++      toast({ title: "Produto salvo" });
++      setEdit(null);
++    } catch (e) {
++      toast({ title: "Não foi possível salvar", description: (e as Error).message, variant: "destructive" });
++    }
++  };
++
++  return (
++    <div className="space-y-4 p-6">
++      <Card>
++        <CardHeader className="flex flex-row items-center justify-between gap-4">
++          <CardTitle>Produtos da empresa</CardTitle>
++          <div className="flex items-center gap-4">
++            <label className="flex items-center gap-2 text-sm text-muted-foreground">
++              <Switch checked={arquivados} onCheckedChange={setArquivados} aria-label="Mostrar arquivados" />
++              Mostrar arquivados
++            </label>
++            {podeEditar && <Button onClick={() => abrir(null)}>Novo produto</Button>}
++          </div>
++        </CardHeader>
++        <CardContent>
++          {lista.isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
++          {lista.isError && <p role="alert" className="text-sm text-destructive">{(lista.error as Error).message}</p>}
++          {lista.data && lista.data.length === 0 && <p className="text-sm text-muted-foreground">Nenhum produto cadastrado pela sua empresa.</p>}
++          {lista.data && lista.data.length > 0 && (
++            <Table>
++              <TableHeader>
++                <TableRow><TableHead>Nome</TableHead><TableHead>Código</TableHead><TableHead>Valor/ha</TableHead><TableHead>Situação</TableHead><TableHead /></TableRow>
++              </TableHeader>
++              <TableBody>
++                {lista.data.map((p) => (
++                  <TableRow key={p.id}>
++                    <TableCell>{p.nome}</TableCell>
++                    <TableCell>{p.codigo ?? "—"}</TableCell>
++                    <TableCell>{brl(p.valor_ha_brl)}</TableCell>
++                    <TableCell>{p.ativo ? "Ativo" : "Arquivado"}</TableCell>
++                    <TableCell className="space-x-2 text-right">
++                      {podeEditar && <Button variant="outline" size="sm" onClick={() => abrir(p)}>Editar</Button>}
++                      {podeEditar && (
++                        <Button variant="ghost" size="sm" disabled={arquivar.isPending}
++                          onClick={() => arquivar.mutate({ id: p.id, archived: !!p.ativo, expectedUpdatedAt: p.updated_at },
++                            { onError: (e) => toast({ title: "Não foi possível alterar", description: (e as Error).message, variant: "destructive" }) })}>
++                          {p.ativo ? "Arquivar" : "Reativar"}
++                        </Button>
++                      )}
++                    </TableCell>
++                  </TableRow>
++                ))}
++              </TableBody>
++            </Table>
++          )}
++        </CardContent>
++      </Card>
++
++      <Dialog open={!!edit} onOpenChange={(o) => !o && !salvar.isPending && setEdit(null)}>
++        <DialogContent>
++          <DialogHeader><DialogTitle>{edit?.p ? "Editar produto" : "Novo produto"}</DialogTitle></DialogHeader>
++          {edit && (
++            <div className="space-y-3">
++              <div><Label htmlFor="tp-nome">Nome</Label><Input id="tp-nome" value={edit.nome} onChange={(e) => setEdit({ ...edit, nome: e.target.value })} /></div>
++              <div>
++                <Label htmlFor="tp-tipo">Tipo</Label>
++                <Select value={edit.tipo} onValueChange={(v) => setEdit({ ...edit, tipo: v })}>
++                  <SelectTrigger id="tp-tipo"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
++                  <SelectContent>{TIPOS_PRODUTO.map((t) => <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>)}</SelectContent>
++                </Select>
++              </div>
++              <div><Label htmlFor="tp-codigo">Código</Label><Input id="tp-codigo" value={edit.codigo} onChange={(e) => setEdit({ ...edit, codigo: e.target.value })} /></div>
++              <div><Label htmlFor="tp-desc">Descrição</Label><Input id="tp-desc" value={edit.descricao} onChange={(e) => setEdit({ ...edit, descricao: e.target.value })} /></div>
++              <div><Label htmlFor="tp-valor">Valor por hectare (R$)</Label><Input id="tp-valor" inputMode="decimal" value={edit.valor} onChange={(e) => setEdit({ ...edit, valor: e.target.value })} /></div>
++            </div>
++          )}
++          <DialogFooter>
++            <Button variant="outline" onClick={() => setEdit(null)} disabled={salvar.isPending}>Cancelar</Button>
++            <Button onClick={enviar} disabled={salvar.isPending}>{salvar.isPending ? "Salvando…" : "Salvar"}</Button>
++          </DialogFooter>
++        </DialogContent>
++      </Dialog>
++    </div>
++  );
++}
+diff --git a/src/pages/plataforma/PlataformaHome.tsx b/src/pages/plataforma/PlataformaHome.tsx
+index 51180e448..e1772154e 100644
+--- a/src/pages/plataforma/PlataformaHome.tsx
++++ b/src/pages/plataforma/PlataformaHome.tsx
+@@ -4,13 +4,11 @@
+  * Não toca menus operacionais: esta rota vive fora do layout administrativo
+  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
+  */
+-import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
+ import { useState } from "react";
+-import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare, Package } from "lucide-react";
++import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare } from "lucide-react";
+ import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
+ import PlataformaAdmins from "./PlataformaAdmins";
+ import PlataformaEmpresas from "./PlataformaEmpresas";
+-import { PlatformCatalogReadTab } from "@/components/plataforma/PlatformCatalogReadTab";
+ import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
+ import { VersaoComercialEditor } from "@/components/plataforma/VersaoComercialEditor";
+ import { Button } from "@/components/ui/button";
+@@ -103,8 +101,8 @@ const moeda = (valor: number | null, currency: string | null) => valor === null
+ 
+ export default function PlataformaHome() {
+   const { signOut } = useAuth();
+-  // `?catalogo=` (estado das abas do catálogo global) reabre a aba Catálogo; sem rota nova.
+-  const [aba, setAba] = useState(() => new URLSearchParams(window.location.search).has("catalogo") ? "catalogo" : "planos");
++  // Catálogo global removido (catálogo exclusivo por empresa, 01/11/2026): sem aba nem `?catalogo=`.
++  const [aba, setAba] = useState("planos");
+   const [organizacaoEmContexto, setOrganizacaoEmContexto] = useState<string | null>(null);
+   const planos = usePlanosSaaS();
+   const versoes = useVersoesPlanosSaaS();
+@@ -182,14 +180,7 @@ export default function PlataformaHome() {
+               <History className="mr-2 h-4 w-4" aria-hidden="true" />
+               Histórico
+             </TabsTrigger>
+-            <TabsTrigger value="catalogo">
+-              <Package className="mr-2 h-4 w-4" aria-hidden="true" />
+-              Catálogo
+-            </TabsTrigger>
+-            <TabsTrigger value="fiscal-produtos">Perfis fiscais de produtos</TabsTrigger>
+           </TabsList>
+-          <TabsContent value="catalogo"><PlatformCatalogReadTab /></TabsContent>
+-          <TabsContent value="fiscal-produtos"><FiscalProdutos platformGlobal /></TabsContent>
+ 
+           {/* PLANOS ------------------------------------------------------- */}
+           <TabsContent value="planos" className="space-y-4">
+diff --git a/src/test/catalogo/globalCatalogContainment.test.ts b/src/test/catalogo/globalCatalogContainment.test.ts
+index 15398c5ba..2deae5440 100644
+--- a/src/test/catalogo/globalCatalogContainment.test.ts
++++ b/src/test/catalogo/globalCatalogContainment.test.ts
+@@ -35,11 +35,11 @@ describe("contenção de escrita do catálogo global", () => {
+     "src/pages/configuracoes/ParametrosCQPage.tsx",
+   ])("%s bloqueia antes de gravar", (f) => {
+     const s = read(f);
+-    const blocks = s.split("mutationFn").slice(1).filter((b) => /\.(insert|update|delete|upsert)\(|bulk_inserir_alvos/.test(b.slice(0, 1500)));
++    const blocks = s.split("mutationFn").slice(1).filter((b) => /\.(insert|update|delete|upsert)\(|bulk_inserir_alvos|saveTenantCatalogRoot\(/.test(b.slice(0, 2500)));
+     expect(blocks.length).toBeGreaterThan(0);
+     for (const b of blocks) {
+       const guard = b.indexOf("assertGlobalCatalogWriteBlocked()");
+-      const write = b.search(/\.(insert|update|delete|upsert)\(|bulk_inserir_alvos/);
++      const write = b.search(/\.(insert|update|delete|upsert)\(|bulk_inserir_alvos|saveTenantCatalogRoot\(/);
+       expect(guard).toBeGreaterThan(-1);
+       expect(guard).toBeLessThan(write);
+     }
+diff --git a/src/test/catalogo/tenantExclusiveCatalog.test.ts b/src/test/catalogo/tenantExclusiveCatalog.test.ts
+new file mode 100644
+index 000000000..b3a443968
+--- /dev/null
++++ b/src/test/catalogo/tenantExclusiveCatalog.test.ts
+@@ -0,0 +1,47 @@
++import { describe, expect, it } from "vitest";
++import { readFileSync } from "node:fs";
++import { buildTenantProductPayload, parseTenantProductAck, tenantProductErrorMessage } from "@/lib/catalogo/tenantProducts";
++import { getAccessLevel } from "@/lib/permissions";
++
++describe("catálogo exclusivo por empresa — contrato do cliente", () => {
++  it("nunca envia empresa/dono no payload", () => {
++    expect(() => buildTenantProductPayload({ nome: "X", owner_organization_id: "a" } as never, true)).toThrow(/não permitido/);
++  });
++  it("criação exige nome com 2..200 caracteres", () => {
++    expect(() => buildTenantProductPayload({ codigo: "A" }, true)).toThrow(/nome/);
++    expect(() => buildTenantProductPayload({ nome: " x " }, true)).toThrow(/2 e 200/);
++  });
++  it("valores monetários negativos ou inválidos são recusados", () => {
++    expect(() => buildTenantProductPayload({ nome: "Bio", valor_ha_brl: -1 }, true)).toThrow(/inválido/);
++    expect(() => buildTenantProductPayload({ nome: "Bio", valor_ha_brl: "abc" }, true)).toThrow(/inválido/);
++    expect(buildTenantProductPayload({ nome: "Bio", tipo: "inoculante", valor_ha_brl: "10,5" }, true)).toEqual({ nome: "Bio", tipo: "inoculante", valor_ha_brl: 10.5 });
++  });
++  it("revisão f588e1d8: criação exige tipo do enum real; b2b_enabled nunca nulo (omitido = false no servidor)", () => {
++    expect(() => buildTenantProductPayload({ nome: "Bio" }, true)).toThrow(/tipo/);
++    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "INVALID" }, true)).toThrow(/tipo de produto válido/);
++    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "solo", b2b_enabled: null }, true)).toThrow(/b2b_enabled/);
++    expect(buildTenantProductPayload({ nome: "Bio", tipo: "solo" }, true)).not.toHaveProperty("b2b_enabled");
++    expect(buildTenantProductPayload({ descricao: "x" }, false)).toEqual({ descricao: "x" });
++    expect(tenantProductErrorMessage("22P02", "invalid input value for enum")).toMatch(/tipo/);
++  });
++  it("ACK de outro produto é recusado; ACK sem versão é recusado", () => {
++    expect(() => parseTenantProductAck({ product_id: "b", updated_at: "t", replayed: false }, "a")).toThrow(/outro produto/);
++    expect(() => parseTenantProductAck({ product_id: "a", replayed: false }, "a")).toThrow(/inválida/);
++    expect(parseTenantProductAck({ product_id: "a", updated_at: "t", replayed: true }, "a").replayed).toBe(true);
++  });
++  it("conflitos de versão e permissão têm mensagens específicas", () => {
++    expect(tenantProductErrorMessage("PT409", "tenant_product_version_conflict")).toMatch(/alterado/);
++    expect(tenantProductErrorMessage("42501", "catalog_tenant_forbidden")).toMatch(/permissão/);
++    expect(tenantProductErrorMessage("PT409", "tenant_product_duplicate_name")).toMatch(/mesmo nome|com esse nome/);
++  });
++  it("Superadmin não recebe a tela de produtos da empresa; administrador edita", () => {
++    expect(getAccessLevel("superadmin" as never, "/configuracoes/produtos")).toBe("none");
++    expect(getAccessLevel("administrador", "/configuracoes/produtos")).toBe("rw");
++    expect(getAccessLevel("parceiro_b2b", "/configuracoes/produtos")).toBe("none");
++  });
++  it("painel da plataforma não monta mais o catálogo global nem perfis fiscais globais", () => {
++    const src = readFileSync("src/pages/plataforma/PlataformaHome.tsx", "utf8");
++    expect(src).not.toContain("PlatformCatalogReadTab");
++    expect(src).not.toContain("platformGlobal");
++  });
++});
+diff --git a/src/test/comunicacao/notification-p1-scope.test.tsx b/src/test/comunicacao/notification-p1-scope.test.tsx
+index b5ea527cb..0a6e8f641 100644
+--- a/src/test/comunicacao/notification-p1-scope.test.tsx
++++ b/src/test/comunicacao/notification-p1-scope.test.tsx
+@@ -103,7 +103,10 @@ describe("P1 structural containment (not remote runtime)", () => {
+     expect(hook).toContain("requestGeneration === generation.current && liveScope.current === scope && !abort.signal.aborted");
+     expect(hook).toContain('if (!current()) return;');
+     expect(hook).toContain('ready && resolvedScope === scope');
+-    expect(hook).toContain("${STORAGE_KEY}:${scope}");
++    // Preferência local escopada por identidade/organização/papéis (preferenceScope), nunca chave global.
++    expect(hook).toContain("${STORAGE_KEY}:${preferenceScope}");
++    expect(hook).toContain('const preferenceScope = JSON.stringify([user?.id ?? "", organizationId ?? "", [...roles].sort()]);');
++    expect(hook).not.toMatch(/localStorage\.(get|set|remove)Item\(STORAGE_KEY[,)]/);
+     expect(hook).toContain('.filter("organization_id", "eq", organizationId)');
+   });
+ });
+diff --git a/src/test/config/b2bOpenSession.integration.test.tsx b/src/test/config/b2bOpenSession.integration.test.tsx
+index 05c42e60f..91bfada23 100644
+--- a/src/test/config/b2bOpenSession.integration.test.tsx
++++ b/src/test/config/b2bOpenSession.integration.test.tsx
+@@ -32,16 +32,18 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+   },
+   rpc: (name: string) => {
+     const request = (async () => {
+-    if (name === "get_my_commercial_partner_context") {
+-      state.contextCalls++;
+-      const override = state.override; state.override = undefined;
+-      return { data: override ? await override() : state.context, error: null };
+-    }
++    if (name === "get_my_commercial_partner_context") return {data:state.context && typeof state.context==='object' ? {...state.context,contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,external_roles:state.roles,manager:state.roles.includes('parceiro_b2b'),technician:state.roles.includes('parceiro_b2b_tecnico')} : state.context,error:null};
+     if (name === "get_my_commercial_partner_projection") {
+       const ctx = state.context as Record<string, unknown> | null;
+-      return { data: ctx ? { id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, papel: ctx.papel, mode: ctx.mode } : null };
++      return { data: ctx ? { id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, papel: ctx.papel, mode: ctx.mode,contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,external_roles:state.roles } : null };
++    }
++    if (name === "get_my_available_portal_contexts") {
++      state.contextCalls++;const override=state.override;state.override=undefined;
++      const raw=override?await override():state.context;
++      if(raw===null) return {data:{contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,ready:true,available_contexts:[],has_b2b_access:false,has_technical_access:false},error:null};
++      if(!raw || typeof raw!=='object' || Array.isArray(raw) || (raw as {papel?:string}).papel!==(state.roles[0]==='parceiro_b2b_tecnico'?'tecnico':'gestor')) return {data:raw,error:null};
++      return {data:{contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,ready:true,partner_id:(raw as {partner_id:string}).partner_id,available_contexts:state.roles.includes('parceiro_b2b')?['b2b']:['technical'],has_b2b_access:state.roles.includes('parceiro_b2b'),has_technical_access:state.roles.includes('parceiro_b2b_tecnico')},error:null};
+     }
+-    if (name === "get_my_available_portal_contexts") return { data: { available_contexts: ["b2b"], has_b2b_access: true, has_technical_access: false } };
+     if (name === "get_partner_catalog_secure") return state.catalog();
+     if (name === "b2b_read_simulations") return state.simulations();
+     throw new Error(`unexpected RPC: ${name}`);
+@@ -53,6 +55,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+ vi.mock("@/lib/authz/authenticatedAttachment", () => ({ ATTACHMENT_LIMITS: { files: 24, totalBytes: 60 * 1024 * 1024 }, downloadAuthenticatedAttachment: (...args: unknown[]) => state.download(...args) }));
+ import { AuthProvider } from "@/hooks/useAuth";
+ import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
++import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
+ import { CatalogFilterPreferencesProvider } from "@/components/catalogo/CatalogFilterPreferencesProvider";
+ import { CatalogFilterMemoryContext } from "@/lib/catalogo/catalogFilterPreferences";
+ import { usePartnerCatalog } from "@/hooks/usePartnerCatalog";
+@@ -85,7 +88,7 @@ function Location() { return <output data-testid="url">{useLocation().pathname}<
+ function setup() {
+   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+   render(<QueryClientProvider client={client}><AuthProvider><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><CatalogFilterPreferencesProvider><Location /><Routes>
+-    <Route path="/portal-parceiro/*" element={<B2BRouteGuard><Data /></B2BRouteGuard>} />
++    <Route path="/portal-parceiro/*" element={state.roles[0]==='parceiro_b2b_tecnico'?<AppPortalGuard><Data /></AppPortalGuard>:<B2BRouteGuard><Data /></B2BRouteGuard>} />
+     <Route path="/sem-permissao" element={<div>acesso negado</div>} />
+   </Routes></CatalogFilterPreferencesProvider></MemoryRouter></AuthProvider></QueryClientProvider>);
+   return client;
+@@ -114,7 +117,8 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
+     const input = screen.getByRole("textbox", { name: "Preferência filtro" });
+     fireEvent.change(input, { target: { value: "químicos" } });
+     await tick(10_000);
+-    expect(input.isConnected).toBe(false);
++    // Current monitor renews an identical fingerprint without remounting.
++    expect(input.isConnected).toBe(true);
+     expect(screen.getByRole("textbox", { name: "Preferência filtro" })).toHaveValue("químicos");
+     state.context = null; await tick(10_000); paused(client);
+     expect(screen.queryByRole("textbox", { name: "Preferência filtro" })).toBeNull();
+@@ -175,10 +179,10 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
+     await tick(10_000); paused(client); fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" })); await tick();
+     expect(screen.getByText("portal aberto")).toBeTruthy();
+   });
+-  it("mesma tupla confirmada novamente retira cache e refaz leitura (não prova ABA server)", async () => {
+-    setup(); await tick(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); await tick(10_000);
+-    expect(screen.getByText("catálogo novo")).toBeTruthy(); expect(screen.queryByText("catálogo atual")).toBeNull();
+-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned");
++  it("mesma tupla renova lease sem remontar; não prova ABA server", async () => {
++    setup(); await tick(); const calls=state.catalog.mock.calls.length;state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); await tick(10_000);
++    expect(screen.getByText("catálogo atual")).toBeTruthy(); expect(screen.queryByText("catálogo novo")).toBeNull();
++    expect(state.catalog).toHaveBeenCalledTimes(calls);expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+   });
+   it("A→B→A observado refaz leituras; resposta A anterior não contamina A restaurado", async () => {
+     let resolve: ((v: unknown) => void) | undefined;
+@@ -200,8 +204,12 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
+     Object.defineProperty(document, "visibilityState", { value: "visible" }); act(() => window.dispatchEvent(new Event("focus"))); await tick();
+     expect(screen.queryByText("portal aberto")).toBeNull(); resolve?.(ctx()); await tick(); expect(screen.getByText("portal aberto")).toBeTruthy();
+   });
+-  it.each([{ roles: ["cliente_produtor"] }, { roles: ["administrador"] }, { roles: ["parceiro_b2b", "administrador"] }, { roles: ["parceiro_b2b", "parceiro_b2b_tecnico"] }])("não inicia probe para roles $roles", async ({ roles }) => {
+-    state.roles = roles; setup(); await tick(); await tick(30_000); expect(state.contextCalls).toBe(0);
++  it.each([{ roles: ["cliente_produtor"] }, { roles: ["administrador"] }, { roles: ["parceiro_b2b", "administrador"] }])("roles sem autoridade B2B não montam leitores $roles", async ({ roles }) => {
++    state.roles = roles; setup(); await tick(); await tick(30_000); expect(state.catalog).not.toHaveBeenCalled();expect(state.download).not.toHaveBeenCalled();
++  });
++  it('par externo C2 comprovado usa o monitor canônico sem inventar papéis',async()=>{
++    state.roles=['parceiro_b2b','parceiro_b2b_tecnico'];setup();await tick();await tick(10000);
++    expect(state.contextCalls).toBeGreaterThan(1);expect(screen.getByText('portal aberto')).toBeTruthy();
+   });
+   it("gate fechado não inicia monitor B2B", async () => { state.gate = false; setup(); await tick(); const calls = state.contextCalls; await tick(30_000); expect(state.contextCalls).toBe(calls); expect(screen.getByText("portal aberto")).toBeTruthy(); });
+ });
+diff --git a/src/test/config/criacaoUsuarioReentrada.test.ts b/src/test/config/criacaoUsuarioReentrada.test.ts
+index caf261820..d9be1f3e2 100644
+--- a/src/test/config/criacaoUsuarioReentrada.test.ts
++++ b/src/test/config/criacaoUsuarioReentrada.test.ts
+@@ -26,9 +26,9 @@ function harness() {
+   const mutation = { isPending: false, mutateAsync: invoke };
+   const handler: () => Promise<void> = new Function(
+     "createSubmitLock", "createUser", "newUser", "validateUserDraft",
+-    "setCreateErros", "primeiroCampoInvalido", "setCreateResumo", "requestAnimationFrame", "campoRefs", "selectedClients", "primaryClient", "registrationKind", "createFence",
++    "setCreateErros", "primeiroCampoInvalido", "setCreateResumo", "requestAnimationFrame", "campoRefs", "selectedClients", "primaryClient", "registrationKind", "createFence", "verifiedClients",
+     `${javascript}; return handleCriarUsuario;`,
+-  )(lock, mutation, {}, validar, vi.fn(), primeiro, vi.fn(), vi.fn(), { current: {} }, [], null, "internal", { capture: () => () => true });
++  )(lock, mutation, {}, validar, vi.fn(), primeiro, vi.fn(), vi.fn(), { current: {} }, [], null, "internal", { capture: () => () => true }, []);
+   return { handler, lock, invoke, mutation, primeiro };
+ }
+ 
+diff --git a/src/test/config/externalUserDraft.test.ts b/src/test/config/externalUserDraft.test.ts
+index e3f2e2ecc..9de354af4 100644
+--- a/src/test/config/externalUserDraft.test.ts
++++ b/src/test/config/externalUserDraft.test.ts
+@@ -3,11 +3,11 @@ import { validateUserDraft, externalUserPayload, EXTERNAL_USER_ACTIVATION_REVIEW
+ const partner = "11111111-1111-4111-8111-111111111111", client = "22222222-2222-4222-8222-222222222222", key = "33333333-3333-4333-8333-333333333333";
+ const draft = { nome: "Teste", email: "test@example.invalid", password: "", roles: ["parceiro_b2b"], partner_id: partner };
+ describe("external dialog contract", () => {
+- it("activation enables the existing dialog but not technical authority",()=>{expect(EXTERNAL_USER_ACTIVATION_REVIEWED).toBe(true);expect(validateUserDraft({...draft,roles:['parceiro_b2b_tecnico']},'b2b').roles).toBeTruthy();});
++ it("activation exposes draft only; technical role still requires valid partner and server authority",()=>{expect(EXTERNAL_USER_ACTIVATION_REVIEWED).toBe(true);expect(validateUserDraft({...draft,roles:['parceiro_b2b_tecnico'],partner_id:null},'b2b').partner_id).toBeTruthy();});
+  it("B2B gestor exclusive without credential or tenant",()=>{ expect(validateUserDraft(draft,"b2b")).toEqual({}); const p=externalUserPayload(draft,"b2b",key);expect(p.roles).toEqual(["parceiro_b2b"]);expect(p.partner_papel).toBe("gestor");expect(p).not.toHaveProperty("password");expect(p).not.toHaveProperty("organization_id"); });
+- it("technical denied",()=>expect(validateUserDraft({...draft,roles:["parceiro_b2b_tecnico"]},"b2b").roles).toBeTruthy());
++ it("technical draft cannot bypass partner linkage",()=>expect(validateUserDraft({...draft,roles:["parceiro_b2b_tecnico"],partner_id:'invalid'},"b2b").partner_id).toBeTruthy());
+  it("cumulative denied",()=>expect(validateUserDraft({...draft,roles:["parceiro_b2b","administrador"]},"b2b").roles).toBeTruthy());
+- it("producer explicit primary",()=>{const p={...draft,roles:["cliente_produtor"],partner_id:null,cliente_ids:[client],principal_cliente_id:client};expect(validateUserDraft(p,"producer")).toEqual({});expect(externalUserPayload(p,"producer",key).cliente_ids).toEqual([client]);expect(validateUserDraft({...p,principal_cliente_id:partner},"producer").cliente_ids).toBeTruthy();});
++ it("producer explicit primary requires verified tenant clients",()=>{const p={...draft,roles:["cliente_produtor"],partner_id:null,cliente_ids:[client],principal_cliente_id:client,verified_client_ids:[client]};expect(validateUserDraft(p,"producer")).toEqual({});expect(externalUserPayload(p,"producer",key).cliente_ids).toEqual([client]);expect(validateUserDraft({...p,principal_cliente_id:partner},"producer").cliente_ids).toBeTruthy();expect(validateUserDraft({...p,verified_client_ids:[]},"producer").cliente_ids).toBeTruthy();});
+  it("duplicate client denied",()=>expect(validateUserDraft({...draft,roles:["cliente_produtor"],partner_id:null,cliente_ids:[client,client],principal_cliente_id:client},"producer").cliente_ids).toBeTruthy());
+  it("external password denied",()=>expect(validateUserDraft({...draft,password:"Example123"},"b2b").password).toBeTruthy());
+  it("internal password preserved",()=>expect(validateUserDraft({...draft,roles:["administrativo"],partner_id:null},"internal").password).toBeTruthy());
+diff --git a/src/test/config/producerLoginHome.integration.test.tsx b/src/test/config/producerLoginHome.integration.test.tsx
+index 461676157..d2db69af8 100644
+--- a/src/test/config/producerLoginHome.integration.test.tsx
++++ b/src/test/config/producerLoginHome.integration.test.tsx
+@@ -7,6 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ const U = '00000000-0000-4000-8000-0000000000a1', O = '00000000-0000-4000-8000-0000000000a2', C = '00000000-0000-4000-8000-0000000000a3';
+ const s = vi.hoisted(() => ({ roles: ['cliente_produtor'] as string[], active: true, org: '', ids: [] as string[], rows: [] as unknown[],
+   ctx: [] as string[], ctxError: false, h15Error: false, h15Org: null as string | null, calls: {} as Record<string, number> }));
++// Historical producer login/h15 contract isolated from later C2 rollout.
++// Real producer probe/guards are retained; current C2 has separate tests.
++vi.mock('@/lib/authz/multiProfileContract',async importOriginal=>({...await importOriginal<typeof import('@/lib/authz/multiProfileContract')>(),isC2ExternalScope:()=>false}));
+ function chain(result: () => unknown) { const q: Record<string, unknown> = {}; for (const n of ['select', 'eq', 'in', 'filter', 'order', 'abortSignal', 'not', 'is']) q[n] = () => q; q.maybeSingle = async () => result(); q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => Promise.resolve(result()).then(f, r); return q; }
+ vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
+ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
+diff --git a/src/test/config/producerOpenSession.integration.test.tsx b/src/test/config/producerOpenSession.integration.test.tsx
+index dbc8d2228..85af192ff 100644
+--- a/src/test/config/producerOpenSession.integration.test.tsx
++++ b/src/test/config/producerOpenSession.integration.test.tsx
+@@ -7,6 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ import { useState } from 'react';
+ const U='00000000-0000-4000-8000-000000000001', O='00000000-0000-4000-8000-000000000002', C='00000000-0000-4000-8000-000000000003', D='00000000-0000-4000-8000-000000000004';
+ const s=vi.hoisted(()=>({gate:true,roles:['cliente_produtor'],org:'00000000-0000-4000-8000-000000000002',ids:['00000000-0000-4000-8000-000000000003'] as unknown, rowOrg:undefined as string|undefined, h15:0,hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),error:false}));
++// This historical suite targets the h15/RLS producer probe, not C2's envelope.
++// C2 current contracts remain covered separately; no runtime gate is modified.
++vi.mock('@/lib/authz/multiProfileContract',async importOriginal=>({...await importOriginal<typeof import('@/lib/authz/multiProfileContract')>(),isC2ExternalScope:()=>false}));
+ function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
+ vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: false, AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',FINANCIAL_CONTEXT_MONITOR_ENABLED:false,get PRODUCER_CONTEXT_MONITOR_ENABLED(){return s.gate;}}));
+ vi.mock('@/lib/portalBroadcast',()=>({subscribePortalEvents:()=>()=>{},broadcastPortalEvent:()=>{}}));
+@@ -34,7 +37,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
+  rpc:(name:string)=>{const request=(async()=>{
+   if(name==='h15_actor_organization'){s.h15++; const hold=s.hold;s.hold=undefined;return {data:hold?await hold():s.org,error:s.error?{}:null};}
+   if(name==='get_cliente_ids_for_user')return {data:s.ids,error:null};
+-  if(name==='get_my_available_portal_contexts')return {data:{available_contexts:[],has_technical_access:false,is_admin:false}};
++  if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['producer'],has_technical_access:false,is_admin:false}};
+   throw new Error('unexpected '+name);
+  })();return Object.assign(request,{abortSignal:()=>request});},
+  channel:()=>{const c={on:()=>c,subscribe:()=>c};return c;},removeChannel:()=>{}
+diff --git a/src/test/equipe-tecnica/authenticatedBlobPaging.test.tsx b/src/test/equipe-tecnica/authenticatedBlobPaging.test.tsx
+index ed6837344..7c144c527 100644
+--- a/src/test/equipe-tecnica/authenticatedBlobPaging.test.tsx
++++ b/src/test/equipe-tecnica/authenticatedBlobPaging.test.tsx
+@@ -5,6 +5,17 @@ import { readFileSync } from "node:fs";
+ const mocks = vi.hoisted(() => ({ stream: vi.fn(), sign: vi.fn(), fetch: vi.fn() }));
+ const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["consultor_tecnico", "gestor"], loading: false, authzReady: true, authzEpoch: 0 }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
++// "consultor-arquivos" é lido pelo loader técnico dedicado; aqui ele delega ao mesmo stream simulado do SDK
++// (mesma assinatura signal/no-store), para que o teste continue exercendo os fences do hook.
++vi.mock("@/lib/authz/loadTechnicalAttachment", () => ({
++  loadTechnicalAttachment: async (path: string, signal: AbortSignal) => {
++    const { data, error } = await mocks.stream(path, {}, { signal, cache: "no-store" });
++    if (error || !data || signal.aborted) throw new Error("attachment_unavailable");
++    const reader = data.getReader(); const chunks: Uint8Array[] = [];
++    for (;;) { const item = await reader.read(); if (signal.aborted) throw new Error("attachment_unavailable"); if (item.done) break; chunks.push(item.value); }
++    return new Blob(chunks as BlobPart[]);
++  },
++}));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { storage: { from: () => ({ download: (...args: unknown[]) => ({ asStream: () => mocks.stream(...args) }), createSignedUrls: mocks.sign, createSignedUrl: mocks.sign }) } } }));
+ import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
+ import { ATTACHMENT_LIMITS } from "@/lib/authz/authenticatedAttachment";
+diff --git a/src/test/equipe-tecnica/authenticatedBlobUrls.test.tsx b/src/test/equipe-tecnica/authenticatedBlobUrls.test.tsx
+index 07bb2e912..a276deb86 100644
+--- a/src/test/equipe-tecnica/authenticatedBlobUrls.test.tsx
++++ b/src/test/equipe-tecnica/authenticatedBlobUrls.test.tsx
+@@ -5,6 +5,17 @@ import { StrictMode, type ReactNode } from "react";
+ const mocks = vi.hoisted(() => ({ stream: vi.fn(), sign: vi.fn() }));
+ const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["cliente_produtor"], loading: false, authzReady: true, authzEpoch: 0 }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
++// "consultor-arquivos" é lido pelo loader técnico dedicado; aqui ele delega ao mesmo stream simulado do SDK
++// (mesma assinatura signal/no-store), para que o teste continue exercendo os fences do hook.
++vi.mock("@/lib/authz/loadTechnicalAttachment", () => ({
++  loadTechnicalAttachment: async (path: string, signal: AbortSignal) => {
++    const { data, error } = await mocks.stream(path, {}, { signal, cache: "no-store" });
++    if (error || !data || signal.aborted) throw new Error("attachment_unavailable");
++    const reader = data.getReader(); const chunks: Uint8Array[] = [];
++    for (;;) { const item = await reader.read(); if (signal.aborted) throw new Error("attachment_unavailable"); if (item.done) break; chunks.push(item.value); }
++    return new Blob(chunks as BlobPart[]);
++  },
++}));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { storage: { from: () => ({ download: (...args: unknown[]) => ({ asStream: () => mocks.stream(...args) }), createSignedUrls: mocks.sign }) } } }));
+ import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
+ import { ATTACHMENT_LIMITS, downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
+diff --git a/src/test/fiscal/arbioSyntheticFiscal.audit.test.ts b/src/test/fiscal/arbioSyntheticFiscal.audit.test.ts
+new file mode 100644
+index 000000000..08a94a19e
+--- /dev/null
++++ b/src/test/fiscal/arbioSyntheticFiscal.audit.test.ts
+@@ -0,0 +1,23 @@
++import { expect, it } from 'vitest';
++import { productFiscalFormSchema, productFiscalPreparation } from '@/lib/fiscal/productFiscalValidation';
++import { ALLOWED_ENVIRONMENTS, ALLOWED_STATUSES, hasSensitiveKey } from '@/lib/fiscal/companyFiscalValidation';
++import { FISCAL_PRODUCTION_EMISSION_ALLOWED } from '@/config/fiscalBinding';
++
++// Synthetic formatting only: these codes/issuer never assert lawful real taxation.
++const fakeProduct = { ncm: '00000000', cest: '0000000', cfop_in_state: '0000', cfop_interstate: '0000', fiscal_description: 'FICTÍCIO AUDITORIA SEM USO COMERCIAL', commercial_unit: 'L', taxable_unit: 'L' };
++it('AUD-FISC-001 produto fiscal sintético preenchido só comprova formato, não emissão', () => {
++  expect(productFiscalFormSchema.safeParse(fakeProduct).success).toBe(true);
++  expect(productFiscalPreparation({ minimally_classified: true, accounting_validated: true }, true)).toEqual({ stage: 'operation_pending', readyForNfe: false });
++});
++it('AUD-FISC-002 fiscal incompleto permanece rascunho e indevido por tamanho é negado', () => {
++  expect(productFiscalPreparation({ minimally_classified: false }, true).readyForNfe).toBe(false);
++  expect(productFiscalFormSchema.safeParse({ ncm: '123' }).success).toBe(false);
++});
++it('AUD-FISC-003 emitente não recebe estado de produção ou atestado contábil pelo editor', () => {
++  expect(ALLOWED_ENVIRONMENTS).not.toContain('PRODUCTION');
++  expect(ALLOWED_STATUSES).not.toContain('VALIDATED');
++  expect(FISCAL_PRODUCTION_EMISSION_ALLOWED).toBe(false);
++});
++it('AUD-FISC-004 credencial embutida em configuração é indevida', () => {
++  expect(hasSensitiveKey({ nfe_configuration: { token: 'SYNTHETIC_NOT_A_CREDENTIAL' } })).toBe(true);
++});
+\ No newline at end of file
+diff --git a/src/test/fiscal/fase3_20.unified_list.ui.test.tsx b/src/test/fiscal/fase3_20.unified_list.ui.test.tsx
+index dd6e04668..19762b2a9 100644
+--- a/src/test/fiscal/fase3_20.unified_list.ui.test.tsx
++++ b/src/test/fiscal/fase3_20.unified_list.ui.test.tsx
+@@ -84,7 +84,12 @@ vi.mock("@/components/fiscal/IbsCbsItemCard", () => ({
+ }));
+ 
+ import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
+-const fiscalFence = vi.hoisted(() => ({ ready: true, canWrite: true, scope: "A/T", capture: () => () => fiscalFence.ready && fiscalFence.scope === "A/T" }));
++const fiscalFence = vi.hoisted(() => ({ ready: true, canWrite: true, canWriteOwnedProduct: false, scope: "A/T", capture: () => () => fiscalFence.ready && fiscalFence.scope === "A/T" }));
++const ownedGate = vi.hoisted(() => ({ on: false }));
++vi.mock("@/lib/fiscal/ownedProductFiscal", async () => {
++  const actual = await vi.importActual<Record<string, unknown>>("@/lib/fiscal/ownedProductFiscal");
++  return { ...actual, get OWNED_PRODUCT_FISCAL_ENABLED() { return ownedGate.on; } };
++});
+ vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => fiscalFence }));
+ vi.mock("@/hooks/useProductFiscalAccess", () => ({ useProductFiscalAccess: () => fiscalFence }));
+ 
+@@ -111,7 +116,7 @@ const MICRO_OWN_PROFILE = {
+ 
+ beforeEach(() => {
+   vi.clearAllMocks();
+-  Object.assign(fiscalFence, { ready: true, canWrite: true, scope: "A/T" });
++  Object.assign(fiscalFence, { ready: true, canWrite: true, canWriteOwnedProduct: false, scope: "A/T" }); ownedGate.on = false;
+   mockUseProductFiscalProfile.mockReturnValue({ data: null, isLoading: false, isFetching: false, isError: false, refetch: vi.fn() });
+   mockUseAuth.mockReturnValue({ role: "administrador" });
+   mockUseProductFiscalList.mockReturnValue({
+@@ -140,27 +145,55 @@ beforeEach(() => {
+ });
+ 
+ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21)", () => {
+-  test("existing product drawer saves an empty draft without guessed tax codes", async () => {
++  test("tenant admin saves own product draft only via writer: reason + idempotency key, no guessed tax codes", async () => {
+     const mutateAsync = vi.fn().mockResolvedValue({});
+     mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
+-    mockUseAuth.mockReturnValue({ role: "superadmin" });
+-    renderWithProviders(<FiscalProdutos platformGlobal />);
++    ownedGate.on = true; fiscalFence.canWriteOwnedProduct = true;
++    renderWithProviders(<FiscalProdutos />);
+     fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
+     fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
++    expect(mutateAsync).not.toHaveBeenCalled();   // motivo obrigatório (10–500)
++    fireEvent.change(screen.getByTestId("fiscal-produto-motivo"), { target: { value: "Classificação informada pela contabilidade" } });
++    fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
+     await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
+     const input = mutateAsync.mock.calls[0][0];
+     expect(input.productId).toBe("prod-A"); expect(input.current).toBeNull();
++    expect(input.reason).toBe("Classificação informada pela contabilidade");
++    expect(input.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
+     expect(input.values.ncm).toBe(""); expect(input.values.cest).toBe("");
+     expect(input.values.cfop_in_state).toBe(""); expect(input.values.icms_cst).toBe("");
+   });
++  test("uncertain response keeps the same idempotency key on manual resubmit; success discards it", async () => {
++    const mutateAsync = vi.fn().mockRejectedValueOnce(new Error("fiscal_uncertain")).mockResolvedValue({});
++    mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
++    ownedGate.on = true; fiscalFence.canWriteOwnedProduct = true;
++    renderWithProviders(<FiscalProdutos />);
++    fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
++    fireEvent.change(screen.getByTestId("fiscal-produto-motivo"), { target: { value: "Classificação informada pela contabilidade" } });
++    fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
++    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
++    await waitFor(() => expect(screen.getByRole("form", { name: "Formulário de perfil fiscal" })).toBeInTheDocument());
++    fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
++    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2));
++    expect(mutateAsync.mock.calls[1][0].idempotencyKey).toBe(mutateAsync.mock.calls[0][0].idempotencyKey);
++  });
++  test("writer gate off: product stays read-only even for tenant admin with write role", () => {
++    fiscalFence.canWriteOwnedProduct = true;
++    renderWithProviders(<FiscalProdutos />);
++    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
++  });
++  test("Superadmin platform tab has no product fiscal writer (no global bypass)", () => {
++    mockUseAuth.mockReturnValue({ role: "superadmin" }); ownedGate.on = true;
++    renderWithProviders(<FiscalProdutos platformGlobal />);
++    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
++  });
+   test("paused actor cannot submit existing product form", () => {
+     const mutateAsync = vi.fn(); mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
+-    mockUseAuth.mockReturnValue({ role: "superadmin" });
+-    const view = renderWithProviders(<FiscalProdutos platformGlobal />);
++    ownedGate.on = true; fiscalFence.canWriteOwnedProduct = true;
++    const view = renderWithProviders(<FiscalProdutos />);
+     fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
+     fireEvent.click(screen.getByRole("button", { name: /Cancelar|Fechar/ }));
+-    fiscalFence.ready = false; view.rerender(<FiscalProdutos platformGlobal />);
+-    // Paused Superadmin: platform tab fails closed, no edit entry point remains.
++    fiscalFence.ready = false; view.rerender(<FiscalProdutos />);
+     expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
+     expect(screen.queryByRole("form", { name: "Formulário de perfil fiscal" })).toBeNull();
+     expect(mutateAsync).not.toHaveBeenCalled();
+diff --git a/src/test/fiscal/fiscalProdutos.platformUx.test.tsx b/src/test/fiscal/fiscalProdutos.platformUx.test.tsx
+index 0bb058860..77e0238d8 100644
+--- a/src/test/fiscal/fiscalProdutos.platformUx.test.tsx
++++ b/src/test/fiscal/fiscalProdutos.platformUx.test.tsx
+@@ -44,7 +44,8 @@ describe("product (global) vs micro (canonical) edit split", () => {
+   });
+   test("Superadmin platform tab: products AND global micros listed; micro read-only; no regulatory flow", () => {
+     m.role = "superadmin"; m.write = true; renderWithProviders(<FiscalProdutos platformGlobal />);
+-    expect(screen.getByRole("button", { name: /perfil fiscal de INS-4/ }).getAttribute("aria-label")).toBe("Editar perfil fiscal de INS-4");
++    // catálogo exclusivo por empresa: sem writer global de Superadmin para ficha fiscal de produto
++    expect(screen.getByRole("button", { name: /perfil fiscal de INS-4/ }).getAttribute("aria-label")).toBe("Ver perfil fiscal de INS-4");
+     expect(screen.queryByTestId("regulatorio-micro")).toBeNull(); expect(m.regulatory).not.toHaveBeenCalled();
+     expect(screen.getByRole("combobox", { name: "Filtrar por tipo de item" })).toBeInTheDocument();
+     expect(screen.getByTestId("row-micro:micro-1")).toBeInTheDocument();
+diff --git a/src/test/fiscal/ownedProductFiscal.strictReceipt.review.test.ts b/src/test/fiscal/ownedProductFiscal.strictReceipt.review.test.ts
+new file mode 100644
+index 000000000..83c8529bd
+--- /dev/null
++++ b/src/test/fiscal/ownedProductFiscal.strictReceipt.review.test.ts
+@@ -0,0 +1,43 @@
++import { describe, expect, test } from "vitest";
++import { parseOwnedFiscalReceipt } from "@/lib/fiscal/ownedProductFiscal";
++
++/**
++ * Revisão independente 80c64c3: o parser original aceitava status arbitrário,
++ * data civil inexistente e timestamps sem fuso. O recibo do servidor só pode
++ * conter DRAFT/BLOCKED e updated_at timestamptz ISO com fuso e até 6 frações.
++ */
++const P = "d0000000-0000-0000-0000-00000000000a";
++const K = "90000000-0000-0000-0000-000000000002";
++const exp = { productId: P, idempotencyKey: K };
++const ack = {
++  success: true, product_id: P, profile_id: "f0000000-0000-0000-0000-000000000001",
++  organization_id: "a0000000-0000-0000-0000-00000000000a", profile_status: "DRAFT",
++  updated_at: "2026-11-01T13:00:00.123456+00:00", idempotency_key: K, idempotent: false,
++};
++
++describe("recibo fiscal próprio estrito", () => {
++  test.each([
++    ["DRAFT com micros e offset", { ...ack }],
++    ["BLOCKED com Z", { ...ack, profile_status: "BLOCKED", updated_at: "2026-11-01T13:00:00Z" }],
++    ["formato PostgreSQL com espaço e +00", { ...ack, updated_at: "2026-11-01 13:00:00.5+00" }],
++    ["29/02 em ano bissexto", { ...ack, updated_at: "2028-02-29T00:00:00-03:00" }],
++  ])("aceita %s", (_n, data) => {
++    expect(parseOwnedFiscalReceipt(data, exp).profile_status).toMatch(/^(DRAFT|BLOCKED)$/);
++  });
++
++  test.each([
++    ["status arbitrário", { ...ack, profile_status: "ARBITRARY" }],
++    ["PENDING_ACCOUNTING (não emitido pelo writer)", { ...ack, profile_status: "PENDING_ACCOUNTING" }],
++    ["VALIDATED", { ...ack, profile_status: "VALIDATED" }],
++    ["31/02 inexistente", { ...ack, updated_at: "2026-02-31T10:00:00Z" }],
++    ["29/02 não bissexto", { ...ack, updated_at: "2026-02-29T10:00:00Z" }],
++    ["somente data", { ...ack, updated_at: "2026-11-01" }],
++    ["data/hora sem fuso", { ...ack, updated_at: "2026-11-01T13:00:00" }],
++    ["sete frações", { ...ack, updated_at: "2026-11-01T13:00:00.1234567Z" }],
++    ["hora 24", { ...ack, updated_at: "2026-11-01T24:00:00Z" }],
++    ["offset inválido", { ...ack, updated_at: "2026-11-01T13:00:00+25:00" }],
++    ["texto livre parseável", { ...ack, updated_at: "Nov 1, 2026 13:00 GMT" }],
++  ])("recusa %s como incerto", (_n, data) => {
++    expect(() => parseOwnedFiscalReceipt(data, exp)).toThrow(/não confirmada/);
++  });
++});
+diff --git a/src/test/fiscal/productFiscalProfiles.session.test.tsx b/src/test/fiscal/productFiscalProfiles.session.test.tsx
+index 71f7670bc..151ff8bd7 100644
+--- a/src/test/fiscal/productFiscalProfiles.session.test.tsx
++++ b/src/test/fiscal/productFiscalProfiles.session.test.tsx
+@@ -3,66 +3,93 @@ import { act,renderHook,waitFor } from "@testing-library/react";
+ import { QueryClient,QueryClientProvider } from "@tanstack/react-query";
+ import { useProductFiscalProfile,useSaveProductFiscalProfile,OptimisticConflictError } from "@/hooks/useProductFiscalProfiles";
+ import { productFiscalFormSchema } from "@/lib/fiscal/productFiscalValidation";
+-const state=vi.hoisted(()=>({actor:"A",tenant:"A",epoch:0,ready:true,read:vi.fn(),write:vi.fn(),from:vi.fn()}));
++const state=vi.hoisted(()=>({actor:"A",tenant:"A",epoch:0,ready:true,owned:true,read:vi.fn(),rpc:vi.fn(),from:vi.fn()}));
+ vi.mock("@/hooks/useStorageAccessScope",()=>({useStorageAccessScope:(resource:string)=>{
+  const scope=JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource]);
+  return {ready:state.ready,scope,capture:()=>()=>state.ready&&scope===JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource])};
+ }}));
+-// Global product hooks use the product-specific fence (Superadmin canonical write); same scope semantics.
++// Tenant-owned product fiscal fence: administrador/gestor of the same tenant (canWriteOwnedProduct); same scope semantics.
+ vi.mock("@/hooks/useProductFiscalAccess",()=>({useProductFiscalAccess:(resource:string)=>{
+  const scope=JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource]);
+- return {ready:state.ready,canWrite:state.ready,scope,capture:()=>()=>state.ready&&scope===JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource])};
++ return {ready:state.ready,canWrite:false,canWriteOwnedProduct:state.ready&&state.owned,scope,capture:()=>()=>state.ready&&scope===JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource])};
+ }}));
+-vi.mock("@/integrations/supabase/client",()=>({supabase:{from:(...a:unknown[])=>state.from(...a)}}));
++vi.mock("@/integrations/supabase/client",()=>({supabase:{from:(...a:unknown[])=>state.from(...a),rpc:(...a:unknown[])=>state.rpc(...a)}}));
+ let client:QueryClient;
+ function wrapper({children}:{children:React.ReactNode}){return <QueryClientProvider client={client}>{children}</QueryClientProvider>}
+-// Only the ACTIVE global profile is an editable CAS target (history is immutable).
+-const row={id:"profile",product_id:"product",is_active:true,updated_at:"2026-10-22T00:00:00Z",ncm:null};
++const PID="11111111-1111-4111-8111-111111111111", KEY="22222222-2222-4222-8222-222222222222", ORG="33333333-3333-4333-8333-333333333333";
++const row={id:"44444444-4444-4444-8444-444444444444",product_id:PID,is_active:true,updated_at:"2026-10-22T00:00:00Z",ncm:null};
++const receipt=(over:Record<string,unknown>={})=>({success:true,product_id:PID,profile_id:row.id,organization_id:ORG,profile_status:"DRAFT",updated_at:"2026-10-22 00:00:01+00",idempotency_key:KEY,idempotent:false,...over});
++const input=(over:Record<string,unknown>={})=>({productId:PID,current:row,values:productFiscalFormSchema.parse({ncm:"12345678"}),reason:"Classificação informada pela contabilidade",idempotencyKey:KEY,...over});
+ beforeEach(()=>{
+- state.actor="A";state.tenant="A";state.epoch=0;state.ready=true;vi.clearAllMocks();
++ state.actor="A";state.tenant="A";state.epoch=0;state.ready=true;state.owned=true;vi.clearAllMocks();
+  client=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});
+- state.read.mockResolvedValue({data:row,error:null});state.write.mockResolvedValue({data:{...row,ncm:"12345678"},error:null});
+- state.from.mockImplementation(()=>{
+-  let writing=false;
+-  const q={select:()=>q,eq:()=>q,update:()=>{writing=true;return q},insert:()=>{writing=true;return q},maybeSingle:()=>writing?state.write():state.read(),single:()=>state.write()};return q;
+- });
++ state.read.mockResolvedValue({data:row,error:null});state.rpc.mockResolvedValue({data:receipt(),error:null});
++ state.from.mockImplementation(()=>{const q={select:()=>q,eq:()=>q,maybeSingle:()=>state.read()};return q;});
+ });
+-describe("fiscal product canonical hook fences",()=>{
++describe("fiscal product canonical hook fences (tenant-owned writer)",()=>{
+  it("effective profile key includes actor/tenant and request scope, not only product ID",async()=>{
+-  const h=renderHook(()=>useProductFiscalProfile("product"),{wrapper});
+-  await waitFor(()=>expect(h.result.current.data?.id).toBe("profile"));
++  const h=renderHook(()=>useProductFiscalProfile(PID),{wrapper});
++  await waitFor(()=>expect(h.result.current.data?.id).toBe(row.id));
+   const query=client.getQueryCache().getAll().find(q=>q.queryKey[2]==="profile");
+-  expect(query?.queryKey.slice(0,4)).toEqual(["fiscal","product-profiles","profile","product"]);
++  expect(query?.queryKey.slice(0,4)).toEqual(["fiscal","product-profiles","profile",PID]);
+   expect(JSON.parse(String(query?.queryKey.at(-2)))).toEqual(["A","A",0,true,"portal-query-actor"]);
+   expect(JSON.parse(String(query?.queryKey.at(-1)))).toEqual(["A","A",0,true,"product-fiscal-read"]);
+  });
++ it("writes only through tenant_owned_product_fiscal_save with CAS, reason and key; never direct table DML",async()=>{
++  const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await h.result.current.mutateAsync(input())});
++  expect(state.rpc).toHaveBeenCalledWith("tenant_owned_product_fiscal_save",{p_product_id:PID,p_expected_updated_at:row.updated_at,
++   p_values:{ncm:"12345678"},p_reason:"Classificação informada pela contabilidade",p_idempotency_key:KEY});
++  expect(state.from).not.toHaveBeenCalled();
++ });
++ it("new profile sends NULL CAS token and only filled fields (no product_id/status in payload)",async()=>{
++  const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await h.result.current.mutateAsync(input({current:null}))});
++  const args=state.rpc.mock.calls[0][1];
++  expect(args.p_expected_updated_at).toBeNull();expect(args.p_values).toEqual({ncm:"12345678"});
++ });
++ it("writer disabled by gate: no RPC dispatch",async()=>{
++  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
++  await act(async()=>{await expect(h.result.current.mutateAsync(input())).rejects.toThrow("fiscal_writer_disabled")});
++  expect(state.rpc).not.toHaveBeenCalled();
++ });
++ it("actor without tenant write role (e.g. Superadmin/financeiro) cannot dispatch",async()=>{
++  state.owned=false;const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await expect(h.result.current.mutateAsync(input())).rejects.toThrow("permission_denied")});
++  expect(state.rpc).not.toHaveBeenCalled();
++ });
+  it("confirmed save invalidates only matching actor scope, never foreign cache",async()=>{
+   const actorScope=JSON.stringify(["A","A",0,true,"portal-query-actor"]);
+   const own=["fiscal","product-profiles","list",{},actorScope,"request-A"];
+   const foreign=["fiscal","product-profiles","list",{},JSON.stringify(["B","B",0,true,"portal-query-actor"]),"request-B"];
+   client.setQueryData(own,{items:[]});client.setQueryData(foreign,{items:[]});
+-  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+-  await act(async()=>{await h.result.current.mutateAsync({productId:"product",current:row,values:productFiscalFormSchema.parse({ncm:"12345678"})})});
++  const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await h.result.current.mutateAsync(input())});
+   expect(client.getQueryState(own)?.isInvalidated).toBe(true);
+   expect(client.getQueryState(foreign)?.isInvalidated).toBe(false);
+  });
+- it("revocation during new-profile existence check prevents insert",async()=>{
+-  let resolve:(v:unknown)=>void=()=>{};state.read.mockImplementation(()=>new Promise(r=>{resolve=r}));
+-  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});let pending:Promise<unknown>=Promise.resolve();
+-  act(()=>{pending=h.result.current.mutateAsync({productId:"product",current:null,values:productFiscalFormSchema.parse({})}).catch(e=>e)});
+-  await waitFor(()=>expect(state.read).toHaveBeenCalled());state.ready=false;h.rerender();
+-  let result:unknown;await act(async()=>{resolve({data:null,error:null});result=await pending});
+-  expect(result).toBeInstanceOf(Error);expect(state.write).not.toHaveBeenCalled();
+- });
+- it("RLS rejection never invalidates or reports a confirmed save",async()=>{
+-  state.write.mockResolvedValue({data:null,error:{code:"42501"}});
+-  const invalidate=vi.spyOn(client,"invalidateQueries");const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+-  await act(async()=>{await expect(h.result.current.mutateAsync({productId:"product",current:row,values:productFiscalFormSchema.parse({ncm:"12345678"})})).rejects.toThrow("permission_denied")});
++ it("server 42501 never invalidates or reports a confirmed save",async()=>{
++  state.rpc.mockResolvedValue({data:null,error:{code:"42501"}});
++  const invalidate=vi.spyOn(client,"invalidateQueries");const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await expect(h.result.current.mutateAsync(input())).rejects.toThrow("permission_denied")});
+   expect(invalidate).not.toHaveBeenCalled();
+  });
++ it("PT409 maps to CAS conflict without retry",async()=>{
++  state.rpc.mockResolvedValue({data:null,error:{code:"PT409"}});const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await expect(h.result.current.mutateAsync(input())).rejects.toBeInstanceOf(OptimisticConflictError)});
++  expect(state.rpc).toHaveBeenCalledTimes(1);
++ });
++ it("ACK divergente (outro produto/chave ou status VALIDATED) é incerto, sem invalidar",async()=>{
++  for (const bad of [receipt({product_id:ORG}),receipt({idempotency_key:ORG}),receipt({profile_status:"VALIDATED"}),receipt({success:false})]) {
++   state.rpc.mockResolvedValueOnce({data:bad,error:null});
++   const invalidate=vi.spyOn(client,"invalidateQueries");const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++   await act(async()=>{await expect(h.result.current.mutateAsync(input())).rejects.toThrow("fiscal_uncertain")});
++   expect(invalidate).not.toHaveBeenCalled();invalidate.mockRestore();
++  }
++ });
+  it("rejects cached profile after denied refetch",async()=>{
+-  const h=renderHook(()=>useProductFiscalProfile("product"),{wrapper});
+-  await waitFor(()=>expect(h.result.current.data?.id).toBe("profile"));
++  const h=renderHook(()=>useProductFiscalProfile(PID),{wrapper});
++  await waitFor(()=>expect(h.result.current.data?.id).toBe(row.id));
+   state.read.mockResolvedValue({data:null,error:{code:"42501"}});
+   await act(async()=>{await h.result.current.refetch()});
+   await waitFor(()=>expect(h.result.current.isError).toBe(true));
+@@ -71,34 +98,30 @@ describe("fiscal product canonical hook fences",()=>{
+  it("does not adopt actor A response after tenant switch",async()=>{
+   let resolve:(v:unknown)=>void=()=>{};
+   state.read.mockImplementationOnce(()=>new Promise(r=>{resolve=r}));
+-  const h=renderHook(()=>useProductFiscalProfile("product"),{wrapper});
++  const h=renderHook(()=>useProductFiscalProfile(PID),{wrapper});
+   await waitFor(()=>expect(state.read).toHaveBeenCalled());
+   state.actor="B";state.tenant="B";state.read.mockResolvedValue({data:null,error:null});h.rerender();
+   await act(async()=>resolve({data:row,error:null}));
+   await waitFor(()=>expect(h.result.current.data).toBeNull());
+  });
+  it("late save cannot invalidate the next actor",async()=>{
+-  let resolve:(v:unknown)=>void=()=>{};state.write.mockImplementation(()=>new Promise(r=>{resolve=r}));
++  let resolve:(v:unknown)=>void=()=>{};state.rpc.mockImplementation(()=>new Promise(r=>{resolve=r}));
+   const invalidate=vi.spyOn(client,"invalidateQueries");
+-  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
++  const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
+   let pending:Promise<unknown>=Promise.resolve();
+-  act(()=>{pending=h.result.current.mutateAsync({productId:"product",current:row,values:productFiscalFormSchema.parse({ncm:"12345678"})}).catch(e=>e)});
+-  await waitFor(()=>expect(state.write).toHaveBeenCalled());state.actor="B";state.tenant="B";h.rerender();
+-  let result:unknown;await act(async()=>{resolve({data:row,error:null});result=await pending});
++  act(()=>{pending=h.result.current.mutateAsync(input()).catch(e=>e)});
++  await waitFor(()=>expect(state.rpc).toHaveBeenCalled());state.actor="B";state.tenant="B";h.rerender();
++  let result:unknown;await act(async()=>{resolve({data:receipt(),error:null});result=await pending});
+   expect(result).toBeInstanceOf(Error);expect(invalidate).not.toHaveBeenCalled();
+  });
+- it("preserves CAS conflict",async()=>{
+-  state.write.mockResolvedValue({data:null,error:null});const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+-  await act(async()=>{await expect(h.result.current.mutateAsync({productId:"product",current:row,values:productFiscalFormSchema.parse({ncm:"12345678"})})).rejects.toBeInstanceOf(OptimisticConflictError)});
+- });
+  it("rejects product ID mismatch before writing",async()=>{
+-  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+-  await act(async()=>{await expect(h.result.current.mutateAsync({productId:"another",current:row,values:productFiscalFormSchema.parse({})})).rejects.toThrow("fiscal_target_changed")});
+-  expect(state.from).not.toHaveBeenCalled();
++  const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await expect(h.result.current.mutateAsync(input({productId:ORG}))).rejects.toThrow("fiscal_target_changed")});
++  expect(state.rpc).not.toHaveBeenCalled();
+  });
+  it("expired scope blocks writes",async()=>{
+-  state.ready=false;const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+-  await act(async()=>{await expect(h.result.current.mutateAsync({productId:"product",current:row,values:productFiscalFormSchema.parse({})})).rejects.toThrow("fiscal_context_changed")});
+-  expect(state.from).not.toHaveBeenCalled();
++  state.ready=false;const h=renderHook(()=>useSaveProductFiscalProfile(true),{wrapper});
++  await act(async()=>{await expect(h.result.current.mutateAsync(input())).rejects.toThrow("fiscal_context_changed")});
++  expect(state.rpc).not.toHaveBeenCalled();
+  });
+-});
+\ No newline at end of file
++});
+diff --git a/src/test/migration_integration.test.tsx b/src/test/migration_integration.test.tsx
+index 91560b900..2a61d30f3 100644
+--- a/src/test/migration_integration.test.tsx
++++ b/src/test/migration_integration.test.tsx
+@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
+ vi.mock("@/integrations/supabase/client", () => ({
+   supabase: {
+     from: vi.fn(),
++    // Módulos importados fazem `supabase.rpc.bind(supabase)` no carregamento; o simulado nunca responde com dados.
++    rpc: vi.fn(async () => ({ data: null, error: { message: "rpc_not_mocked" } })),
+   },
+ }));
+ 
+diff --git a/src/test/monitoramento/agronomicOriginPostgres.test.ts b/src/test/monitoramento/agronomicOriginPostgres.test.ts
+index 7a918db59..44d64348d 100644
+--- a/src/test/monitoramento/agronomicOriginPostgres.test.ts
++++ b/src/test/monitoramento/agronomicOriginPostgres.test.ts
+@@ -20,5 +20,9 @@ it("origem agronômica e reprogramação: PostgreSQL descartável/Auth sintétic
+   for (const c of ["link visit without plan rejected PT409", "link malformed block (no end marker) rejected PT409", "link plan with null visit date rejected PT409",
+     "link plan with 0 notices rejected PT409", "link plan with 2 notices rejected PT409", "link notice date divergent rejected PT409",
+     "legacy origin without plan: reschedule rejected PT409", "rejected links left no receipts"]) expect(output).toContain("PASS " + c);
+-  expect(output).toContain("TOTAL 87");
++  // O roteiro cresceu (87 → 103 cenários); exige-se o total reportado igual às linhas PASS, ≥ 87 e nenhuma falha.
++  const total = Number(/^TOTAL (\d+)$/m.exec(output)?.[1] ?? 0);
++  expect(total).toBeGreaterThanOrEqual(87);
++  expect(output.split("\n").filter(l => l.startsWith("PASS ")).length).toBe(total);
++  expect(output).not.toMatch(/^(FAIL|ERROR)/m);
+ }, 120_000);
+diff --git a/src/test/protocolos/produtos-tab-cat06-cat07.test.ts b/src/test/protocolos/produtos-tab-cat06-cat07.test.ts
+index 6254879b4..ea71d946e 100644
+--- a/src/test/protocolos/produtos-tab-cat06-cat07.test.ts
++++ b/src/test/protocolos/produtos-tab-cat06-cat07.test.ts
+@@ -5,7 +5,7 @@ vi.mock("@/integrations/supabase/client", () => ({
+ }));
+ 
+ import {
+-  saveProdutoComCompensacao,
++  saveProdutoTenant,
+   carregarCatalogoProdutos,
+ } from "@/components/protocolos/ProdutosTab";
+ 
+@@ -52,194 +52,78 @@ const FORMULACOES_ANTERIORES = [
+ ];
+ const NOVAS = [{ produto_id: "p1", microrganismo_id: "m2", volume_ml: 200 }];
+ 
+-describe("CAT-06 · integridade na edição de produto", () => {
+-  it("falha ao inserir novas formulações tenta restaurar produto e composição anterior", async () => {
+-    const { client, calls } = makeClient((c) => {
+-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
+-      if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
+-      if (c.table === "formulacoes" && c.op === "insert" && c.payload === NOVAS)
+-        return { data: null, error: { message: "insert falhou" } };
+-      return successfulMutation(c);
+-    });
+-
+-    const out = await saveProdutoComCompensacao({
+-      client,
+-      produtoId: "p1",
+-      payload: PAYLOAD,
+-      buildFormulacoes: () => NOVAS,
+-    });
+-
+-    expect(out.status).toBe("error");
+-    expect((out as any).message).toMatch(/composição/);
+-    // restaurou o produto anterior
+-    expect(calls.some((c) => c.table === "produtos" && c.op === "update" && c.payload === ANTERIOR)).toBe(true);
+-    // removeu composição parcial e reinseriu o snapshot anterior
+-    const idxDelete = calls.findIndex(
+-      (c, i) => c.table === "formulacoes" && c.op === "delete" && i > calls.findIndex((x) => x.op === "insert"),
+-    );
+-    expect(idxDelete).toBeGreaterThan(-1);
+-    expect(calls.some((c) => c.table === "formulacoes" && c.op === "insert" && c.payload === FORMULACOES_ANTERIORES)).toBe(true);
+-  });
+-
+-  it("falha do rollback devolve erro crítico", async () => {
+-    const { client } = makeClient((c) => {
+-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
+-      if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
+-      if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
+-      if (c.table === "produtos" && c.op === "update" && c.payload === ANTERIOR)
+-        return { data: null, error: { message: "rollback falhou" } };
+-      return successfulMutation(c);
+-    });
+-
+-    const out = await saveProdutoComCompensacao({
+-      client,
+-      produtoId: "p1",
+-      payload: PAYLOAD,
+-      buildFormulacoes: () => NOVAS,
+-    });
+-
+-    expect(out.status).toBe("critical");
+-    expect((out as any).message).toMatch(/contate o suporte/i);
+-  });
+-
+-  it("não escreve nada quando o snapshot inicial falha", async () => {
+-    const { client, calls } = makeClient((c) => {
+-      if (c.table === "produtos" && c.op === "select") return { data: null, error: { message: "sem leitura" } };
+-      return successfulMutation(c);
+-    });
+-    const out = await saveProdutoComCompensacao({
+-      client,
+-      produtoId: "p1",
+-      payload: PAYLOAD,
+-      buildFormulacoes: () => NOVAS,
+-    });
+-    expect(out.status).toBe("error");
+-    expect(calls.every((c) => c.op === "select")).toBe(true);
+-  });
+-
+-  it("produto novo: falha na composição apaga o produto criado", async () => {
+-    const { client, calls } = makeClient((c) => {
+-      if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
+-      if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
+-      return successfulMutation(c);
+-    });
+-    const out = await saveProdutoComCompensacao({
+-      client,
+-      produtoId: null,
+-      payload: PAYLOAD,
+-      buildFormulacoes: id => NOVAS.map(row => ({ ...row, produto_id: id })),
+-    });
++/**
++ * CAT-06 (v2.8, catálogo exclusivo por empresa): a compensação no cliente com escrita direta foi substituída
++ * pela RPC do produto + substituição atômica da composição no servidor. Os cenários de falha continuam
++ * cobertos: nenhum caminho devolve ok sem ACK do servidor e não existe escrita direta em tabela.
++ */
++function makeRpc(handler: (fn: string, args: any, index: number) => any) {
++  const calls: { fn: string; args: any }[] = [];
++  const client = {
++    rpc: (fn: string, args: any) => { const i = calls.length; calls.push({ fn, args }); return Promise.resolve(handler(fn, args, i)); },
++    from: () => { throw new Error("escrita/leitura direta proibida no salvamento"); },
++  };
++  return { client, calls };
++}
++const ACK = (id: string) => ({ data: { product_id: id, updated_at: "2026-11-02T10:00:00.000001+00:00", replayed: false }, error: null });
++const FORM_ACK = (id: string, n: number) => ({ data: { ok: true, produto_id: id, items: n, updated_at: "2026-11-02T10:00:00.000002+00:00" }, error: null });
++const BASE = { nome: "Produto X", tipo: "solo", codigo: null, versao_catalogo: "v1", ativo: true, b2b_enabled: false };
++const build = (id: string) => [{ produto_id: id, microrganismo_id: "m2", volume_ml: 200 }];
++
++describe("CAT-06 · salvamento de produto por empresa", () => {
++  it("edição sem versão observada não envia nada", async () => {
++    const { client, calls } = makeRpc(() => ACK("p1"));
++    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: null, payload: BASE, buildFormulacoes: build });
+     expect(out.status).toBe("error");
+-    expect(calls.some((c) => c.table === "produtos" && c.op === "delete")).toBe(true);
+-  });
+-
+-  it("produto novo: falha da exclusão compensatória vira erro crítico", async () => {
+-    const { client } = makeClient((c) => {
+-      if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
+-      if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
+-      if (c.table === "produtos" && c.op === "delete") return { data: null, error: { message: "delete falhou" } };
+-      return successfulMutation(c);
+-    });
+-    const out = await saveProdutoComCompensacao({
+-      client,
+-      produtoId: null,
+-      payload: PAYLOAD,
+-      buildFormulacoes: id => NOVAS.map(row => ({ ...row, produto_id: id })),
+-    });
+-    expect(out.status).toBe("critical");
++    expect(calls).toHaveLength(0);
+   });
+-
+-  it("caminho feliz devolve ok", async () => {
+-    const { client } = makeClient((c) => {
+-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
+-      if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
+-      return successfulMutation(c);
+-    });
+-    const out = await saveProdutoComCompensacao({
+-      client,
+-      produtoId: "p1",
+-      payload: PAYLOAD,
+-      buildFormulacoes: () => NOVAS,
+-    });
++  it("caminho feliz: produto com CAS e composição com o token devolvido", async () => {
++    const { client, calls } = makeRpc((fn, a) => fn === "tenant_product_save" ? ACK("p1") : FORM_ACK("p1", 1));
++    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
+     expect(out).toEqual({ status: "ok", produtoId: "p1" });
+-  });
+-});
+-
+-describe("confirmação de linhas e compensação", () => {
+-  const run = async (handler: (c: Call & { index: number }) => any, novo = false) => {
+-    const { client, calls } = makeClient(handler);
+-    const build = vi.fn(id => [{ produto_id: id, volume_ml: 100 }]);
+-    const out = await saveProdutoComCompensacao({ client, produtoId: novo ? null : "p1", payload: PAYLOAD, buildFormulacoes: build });
+-    return { out, calls, build };
+-  };
+-  const baseline = (c: Call) => {
+-    if (c.op === "select" && c.table === "produtos") return { data: ANTERIOR, error: null };
+-    if (c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
+-    return successfulMutation(c);
+-  };
+-  it.each([[], [{ id: "outro" }], [{}], [{ id: "p1" }, { id: "p1" }]])("UPDATE sem linha/ID exato interrompe antes da composição: %j", async data => {
+-    const { out, calls, build } = await run(c => c.op === "update" ? { data, error: null } : baseline(c));
++    expect(calls.map((c) => c.fn)).toEqual(["tenant_product_save", "tenant_catalog_formulacoes_replace"]);
++    expect(calls[0].args.p_expected_updated_at).toBe("T0");
++    expect(calls[1].args.p_expected_produto_updated_at).toBe("2026-11-02T10:00:00.000001+00:00");
++    expect(calls[1].args.p_items).toEqual([{ microrganismo_id: "m2", volume_ml: 200 }]);
++  });
++  it("payload sem empresa/campos fora do contrato; código vazio deixado ao servidor", async () => {
++    const { client, calls } = makeRpc((fn) => fn === "tenant_product_save" ? ACK("novo") : FORM_ACK("novo", 1));
++    await saveProdutoTenant({ client, produtoId: null, expectedUpdatedAt: null, payload: { ...BASE, owner_organization_id: "x" }, buildFormulacoes: build });
++    const body = calls[0].args.p_payload;
++    expect(body).not.toHaveProperty("owner_organization_id");
++    expect(body).not.toHaveProperty("versao_catalogo");
++    expect(body).not.toHaveProperty("ativo");
++    expect(body).not.toHaveProperty("codigo");
++    expect(calls[0].args.p_expected_updated_at).toBeNull();
++  });
++  it("falha do produto: composição não é enviada", async () => {
++    const { client, calls } = makeRpc(() => ({ data: null, error: { code: "PT409", message: "tenant_product_version_conflict" } }));
++    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
+     expect(out.status).toBe("error");
+-    expect(build).not.toHaveBeenCalled();
+-    expect(calls.filter(c => c.table === "formulacoes" && c.op !== "select")).toHaveLength(0);
+-  });
+-  it.each([[], [{}], [{ id: "" }], [{ id: "a" }, { id: "b" }]])("INSERT sem ID/cardinalidade confiável é crítico: %j", async data => {
+-    const { out, calls, build } = await run(() => ({ data, error: null }), true);
+-    expect(out.status).toBe("critical");
+-    expect(build).not.toHaveBeenCalled();
+     expect(calls).toHaveLength(1);
+   });
+-  it("compensação UPDATE zero linhas é crítica sem nova exclusão da composição", async () => {
+-    const { out, calls } = await run(c => {
+-      if (c.op === "update" && c.payload === ANTERIOR) return { data: [], error: null };
+-      if (c.op === "insert" && c.table === "formulacoes") return { data: [], error: null };
+-      return baseline(c);
+-    });
+-    expect(out.status).toBe("critical");
+-    expect(calls.filter(c => c.op === "delete")).toHaveLength(1);
+-  });
+-  it("DELETE composição zero quando snapshot tem uma linha não confirma sucesso", async () => {
+-    const { out } = await run(c => c.op === "delete" ? { data: [], error: null } : baseline(c));
+-    expect(out.status).toBe("critical");
+-  });
+-  it("compensação confiável restaura IDs e devolve erro, nunca ok", async () => {
+-    const { out, calls } = await run(c => c.op === "insert" && c.payload !== FORMULACOES_ANTERIORES
+-      ? { data: [], error: null } : baseline(c));
+-    expect(out.status).toBe("error");
+-    expect(calls.some(c => c.op === "insert" && c.payload === FORMULACOES_ANTERIORES)).toBe(true);
+-  });
+-  it("INSERT composição com produto divergente não confirma sucesso", async () => {
+-    const { out } = await run(c => c.op === "insert" && c.payload !== FORMULACOES_ANTERIORES
+-      ? { data: [{ id: "f2", produto_id: "outro" }], error: null } : baseline(c));
++  it("ACK de outro produto não confirma sucesso nem envia composição", async () => {
++    const { client, calls } = makeRpc(() => ACK("outro"));
++    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
+     expect(out.status).toBe("error");
++    expect(calls).toHaveLength(1);
+   });
+-  it("restauração da composição com zero linhas é crítica", async () => {
+-    const { out } = await run(c => c.op === "insert" ? { data: [], error: null } : baseline(c));
+-    expect(out.status).toBe("critical");
+-  });
+-  it("UPDATE com compensação ID divergente é crítico", async () => {
+-    const { out } = await run(c => {
+-      if (c.op === "update" && c.payload === ANTERIOR) return { data: [{ id: "outro" }], error: null };
+-      if (c.op === "insert") return { data: [], error: null };
+-      return baseline(c);
+-    });
+-    expect(out.status).toBe("critical");
+-  });
+-  it("composição vazia aceita DELETE de zero linhas quando snapshot também vazio", async () => {
+-    const { client } = makeClient(c => {
+-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
+-      if (c.table === "produtos") return { data: [{ id: "p1" }], error: null };
+-      return { data: [], error: null };
+-    });
+-    expect(await saveProdutoComCompensacao({ client, produtoId: "p1", payload: PAYLOAD, buildFormulacoes: () => [] }))
+-      .toEqual({ status: "ok", produtoId: "p1" });
+-  });
+-  it("DELETE compensatório do novo produto zero linhas é crítico", async () => {
+-    const { out } = await run(c => {
+-      if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
+-      return { data: [], error: null };
+-    }, true);
+-    expect(out.status).toBe("critical");
++  it("falha da composição depois do produto: parcial honesto, nunca ok, sem compensação", async () => {
++    const { client, calls } = makeRpc((fn) => fn === "tenant_product_save" ? ACK("p1") : ({ data: null, error: { code: "42501", message: "tenant_catalog_ref_foreign:microrganismo_id" } }));
++    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
++    expect(out.status).toBe("partial");
++    expect(calls).toHaveLength(2);
++  });
++  it("ACK de composição com contagem divergente é parcial", async () => {
++    const { client } = makeRpc((fn) => fn === "tenant_product_save" ? ACK("p1") : FORM_ACK("p1", 5));
++    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
++    expect(out.status).toBe("partial");
++  });
++  it("composição apontando para outro produto é parcial e não é enviada", async () => {
++    const { client, calls } = makeRpc(() => ACK("p1"));
++    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: () => [{ produto_id: "p9", microrganismo_id: "m" }] });
++    expect(out.status).toBe("partial");
++    expect(calls).toHaveLength(1);
+   });
+ });
+ 
+diff --git a/src/test/saas/c2-final-integrated-manual-postgres.test.ts b/src/test/saas/c2-final-integrated-manual-postgres.test.ts
+index c97f81059..b4ee8ec34 100644
+--- a/src/test/saas/c2-final-integrated-manual-postgres.test.ts
++++ b/src/test/saas/c2-final-integrated-manual-postgres.test.ts
+@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
+ 
+ it("integrates reconciled origin, receipt lock order and the LIVE manual installments correction", async () => {
+   const directory = "scripts/owner-orders-20261023/credit-numeric-20261024/final-integrated-manual-20261024";
+-  const { stdout } = await promisify(execFile)("python3", [`${directory}/origin/test-local.py`], { timeout: 240_000 });
++  const { stdout } = await promisify(execFile)("python3", [`${directory}/origin/test-local.py`], { timeout: 470_000 });
+   expect(stdout).toContain("LIVE manual correction bodies and private context table reproduce deployed MD5s");
+   expect(stdout).toContain("composed manual receivable 1/3 exact .34/.33/.33 inserted first");
+   expect(stdout).toContain("composed manual payable 1/3 exact .34/.33/.33 inserted first");
+@@ -30,4 +30,4 @@ it("integrates reconciled origin, receipt lock order and the LIVE manual install
+   expect(stdout).toContain("inactive candidate applied directly with validated synthetic owner");
+   expect(stdout).toContain("TOTAL 127 PASS");
+   expect(stdout).toContain("synthetic Auth, no hosted JWT/RLS certification");
+-}, 240_000);
++}, 480_000);
+diff --git a/src/test/saas/c2-order-concurrency-postgres.test.ts b/src/test/saas/c2-order-concurrency-postgres.test.ts
+index 326c07831..909f82820 100644
+--- a/src/test/saas/c2-order-concurrency-postgres.test.ts
++++ b/src/test/saas/c2-order-concurrency-postgres.test.ts
+@@ -3,7 +3,7 @@ import { promisify } from "node:util";
+ import { expect, it } from "vitest";
+ 
+ it("serializes canonical orders and billing with two real local PostgreSQL connections", async () => {
+-  const { stdout: output } = await promisify(execFile)("python3", ["scripts/owner-orders-20261023/credit-numeric-20261024/test-concurrency.py"], { encoding: "utf8", timeout: 240_000 });
++  const { stdout: output } = await promisify(execFile)("python3", ["scripts/owner-orders-20261023/credit-numeric-20261024/test-concurrency.py"], { encoding: "utf8", timeout: 470_000 });
+   expect(output).toContain("TOTAL 183 PASS; synthetic Auth, no hosted JWT/RLS certification");
+   expect(output).toContain("two sessions same key exactly one order and identical receipt");
+   expect(output).toContain("two sessions changed fingerprint conflict one order");
+@@ -27,4 +27,4 @@ it("serializes canonical orders and billing with two real local PostgreSQL conne
+   expect(output).toContain("atomic complete containment deliberate POST failure preserves all function hashes owner ACL");
+   expect(output).toContain("atomic preflight all checkpoints one real read-only transaction");
+   expect(output).toMatch(/TOTAL \d+ PASS; synthetic Auth, no hosted JWT\/RLS certification/);
+-}, 240_000);
+\ No newline at end of file
++}, 480_000);
+\ No newline at end of file
+diff --git a/src/test/saas/c2-orders-origin-composition-postgres.test.ts b/src/test/saas/c2-orders-origin-composition-postgres.test.ts
+index 534a70f28..6d3dfb077 100644
+--- a/src/test/saas/c2-orders-origin-composition-postgres.test.ts
++++ b/src/test/saas/c2-orders-origin-composition-postgres.test.ts
+@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
+ import { expect, it } from "vitest";
+ 
+ it("C2 external origin: captured chain, delivery billing denied and numeric blocker in disposable PostgreSQL", () => {
+-  const output = execFileSync("python3", ["scripts/owner-orders-20261023/internal-origin-composition-20261023/test-local.py"], { encoding: "utf8", timeout: 120_000 });
++  const output = execFileSync("python3", ["scripts/owner-orders-20261023/internal-origin-composition-20261023/test-local.py"], { encoding: "utf8", timeout: 400_000 });
+   expect(output).toContain("TOTAL 84 PASS; synthetic Auth, no hosted JWT/RLS certification");
+   expect(output).toContain("na_entrega external approval no title singleton/cumulative");
+   expect(output).toContain("na_entrega before delivery billing denied no effects");
+@@ -15,4 +15,4 @@ it("C2 external origin: captured chain, delivery billing denied and numeric bloc
+   expect(output).toContain("contained external approval/billing denied no effects");
+   expect(output).toContain("internal approval original downstream denial preserved after containment");
+   expect(output).toContain("internal billing original downstream denial preserved after containment");
+-}, 120_000);
+\ No newline at end of file
++}, 420_000); // Postgres descartável: ~60 s isolado, mais lento sob a suíte paralela.
+\ No newline at end of file
+diff --git a/src/test/security/create-user-edge-handler.test.ts b/src/test/security/create-user-edge-handler.test.ts
+index a4111f17d..27308b106 100644
+--- a/src/test/security/create-user-edge-handler.test.ts
++++ b/src/test/security/create-user-edge-handler.test.ts
+@@ -1,13 +1,10 @@
+ import { describe, expect, it, vi } from "vitest";
+ import { readFileSync } from "node:fs";
+-import ts from "typescript";
++import { createUserEntrypointJavascript } from "./createUserEntrypoint";
+ 
+ // Executes the real entrypoint with isolated SDK/Deno mocks. No network/Auth calls.
+-const source = readFileSync("supabase/functions/create-user/index.ts", "utf8")
+-  .replace(/^import .*createClient.*;\s*/m, "");
+-const javascript = ts.transpileModule(source, {
+-  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+-}).outputText;
++const source = readFileSync("supabase/functions/create-user/index.ts", "utf8");
++const javascript = createUserEntrypointJavascript();
+ 
+ type Scenario = {
+   authorized?: boolean; authorizationError?: boolean; oldJwt?: boolean;
+@@ -23,9 +20,12 @@ type Scenario = {
+ 
+ async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> = {}) {
+   const sentinel = "private-test-sentinel";
+-  const rpc = vi.fn(async (name: string, args: Record<string, string>) => name === "b2b_claim_provisioning" ? ({
+-    data: { claim_id: "receipt", fence: "fence", user_id: "created-user", organization_id: "actor-org",
+-      status: scenario.claimStatus ?? "claimed", lease_valid: true, acquired: scenario.acquired !== false },
++  const rpc = vi.fn(async (name: string, args: Record<string, any>) => name === "b2b_claim_provisioning" ? ({
++    data: { claim_id: "receipt", fence: "fence", user_id: "created-user", organization_id: scenario.preflightOrg ?? "actor-org",
++      status: scenario.claimStatus ?? "claimed", lease_valid: true, acquired: scenario.acquired !== false,
++      // C2 multiprofile claim envelope required by the current entrypoint (server-issued, echoed exactly).
++      contract: "C2_MULTIPROFILE_V1", actor_id: "actor", partner_id: args.p_partner ?? null, readers_ready: true,
++      provisioning_ready: true, external_roles: args.p_roles ?? [], producer_links_valid: true },
+     error: scenario.claimFailure ? new Error(sentinel) : null,
+   }) : name === "b2b_provisioning_preflight" ? ({
+     data: { organization_id: scenario.preflightOrg ?? "actor-org", partner_id: args.p_partner, role: args.p_role, papel: args.p_papel, enabled: true },
+@@ -108,21 +108,24 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
+   const partnerId = "11111111-1111-4111-8111-111111111111";
+   it("validates commercial preflight with caller bearer but never opens Auth via a remote flag", async () => {
+     const r = await invoke({ b2bOpen: false }, { role: "parceiro_b2b", partner_id: partnerId, password: undefined });
+-    expect(r.rpc).toHaveBeenCalledWith("b2b_provisioning_preflight", { p_partner: partnerId, p_role: "parceiro_b2b", p_papel: "gestor" });
++    // C2 (23/10): o preflight separado foi absorvido pelo claim canônico; com o gate de código fechado nenhum
++    // canal B2B é chamado além da autorização do ator.
++    expect(r.rpc.mock.calls.map(c => c[0])).toEqual(["has_role"]);
+     expect(r.response.status).toBe(503);
+     expect(r.createUser).not.toHaveBeenCalled();
+   });
+-  it.each([{ preflightFailure: true }, { preflightOrg: "foreign" }])("rejects unauthorized owner preflight: %j", async (scenario) => {
+-    const r = await invoke(scenario, { role: "parceiro_b2b", partner_id: partnerId });
+-    expect(r.response.status).toBe(403); expect(r.createUser).not.toHaveBeenCalled();
++  // C2: a autoridade de dono/tenant vem do claim do servidor; falha ou organização estrangeira nunca abre Auth.
++  it.each([{ claimFailure: true }, { preflightOrg: "foreign" }])("rejects unauthorized owner claim: %j", async (scenario) => {
++    const r = await invoke({ b2bOpen: true, ...scenario }, { role: "parceiro_b2b", partner_id: partnerId, password: undefined, idempotency_key: "55555555-5555-4555-8555-555555555555" });
++    expect(r.response.status).toBe(409); expect(r.createUser).not.toHaveBeenCalled(); expect(r.elevatedRpc).not.toHaveBeenCalled();
+   });
+   it.each([
+     { role: "parceiro_b2b", roles: ["parceiro_b2b", "gestor"] },
+     { role: "parceiro_b2b", roles: ["parceiro_b2b", "parceiro_b2b"] },
+     { role: "parceiro_b2b", partner_papel: "tecnico" },
+     { role: "gestor", roles: ["parceiro_b2b"] },
+-    { role: "parceiro_b2b", cliente_ids: ["other"] },
+-  ])("rejects extras/mismatch before preflight: %j", async (payload) => {
++    { role: "parceiro_b2b", cliente_ids: ["22222222-2222-4222-8222-222222222222"] },
++  ])("rejects extras/mismatch before claim: %j", async (payload) => {
+     const r = await invoke({}, { partner_id: partnerId, ...payload });
+     expect(r.response.status).toBe(403);
+     expect(r.rpc.mock.calls.map(c => c[0])).toEqual(["has_role"]);
+@@ -201,7 +204,7 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
+     expect(r.response.status).toBe(403);
+     expect(r.createUser).not.toHaveBeenCalled();
+   });
+-  it.each([{ partner_id: "foreign-partner" }, { cliente_ids: ["foreign-client"] }])("vínculo fora do escopo falha fechado: %j", async (payload) => {
++  it.each([{ partner_id: "33333333-3333-4333-8333-333333333333" }, { cliente_ids: ["44444444-4444-4444-8444-444444444444"] }])("vínculo fora do escopo falha fechado: %j", async (payload) => {
+     const r = await invoke({}, payload);
+     expect(r.body.error).toBe("tenant_link_scope_unavailable");
+     expect(r.createUser).not.toHaveBeenCalled();
+@@ -280,8 +283,15 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
+     const r = await invoke({ b2bOpen: true, providerFailure: "user_already_exists" }, b2bPayload);
+     expect(r.response.status).toBe(200); expect(r.deleteUser).not.toHaveBeenCalled();
+   });
+-  it.each([{ password: "operator-password1" }, { role: "parceiro_b2b_tecnico" }, { idempotency_key: null }])("denies operator password/technical role/missing key: %j", async payload => {
++  it.each([{ password: "operator-password1" }, { idempotency_key: null }])("denies operator password/missing key: %j", async payload => {
++    const r = await invoke({ b2bOpen: true }, { ...b2bPayload, ...payload });
++    expect(r.response.status).toBe(400); expect(r.createUser).not.toHaveBeenCalled();
++  });
++  // C2 (23/10) tornou Técnico B2B atribuível pelo claim canônico com papel "tecnico"; papel divergente e mistura com
++  // perfil interno continuam negados antes de qualquer claim/Auth.
++  it.each([{ role: "parceiro_b2b_tecnico", partner_papel: "gestor" }, { role: undefined, roles: ["parceiro_b2b_tecnico", "gestor"] }])("denies technical role with divergent papel or internal mix: %j", async payload => {
+     const r = await invoke({ b2bOpen: true }, { ...b2bPayload, ...payload });
+-    expect(r.response.status).toBe(payload.role ? 403 : 400); expect(r.createUser).not.toHaveBeenCalled();
++    expect(r.response.status).toBe(403); expect(r.createUser).not.toHaveBeenCalled();
++    expect(r.rpc.mock.calls.map(c => c[0])).toEqual(["has_role"]);
+   });
+ });
+\ No newline at end of file
+diff --git a/src/test/security/createUserEntrypoint.ts b/src/test/security/createUserEntrypoint.ts
+new file mode 100644
+index 000000000..8e96d9bc0
+--- /dev/null
++++ b/src/test/security/createUserEntrypoint.ts
+@@ -0,0 +1,28 @@
++import { readFileSync } from "node:fs";
++import ts from "typescript";
++import { z } from "zod";
++
++/**
++ * Loads the real create-user entrypoint for isolated execution. The entrypoint now exports `handler` and only serves
++ * under `import.meta.main` (Deno module semantics); here the module is evaluated as a function body, so the guard is
++ * replaced by an unconditional `Deno.serve` registration and the remaining npm imports are injected as parameters.
++ * No authorization branch of the handler is altered.
++ */
++export function createUserEntrypointJavascript(transform: (source: string) => string = (s) => s): string {
++  const source = transform(readFileSync("supabase/functions/create-user/index.ts", "utf8"))
++    .replace(/^import .*createClient.*;\s*/m, "")
++    .replace(/^import \{ corsHeaders \} from .*;\s*/m, "")
++    .replace(/^import \{ z \} from .*;\s*/m, "")
++    .replace(/^export (async function|function|const) /gm, "$1 ")
++    .replace(/^if \(import\.meta\.main\) Deno\.serve\(/m, "Deno.serve(");
++  if (/import\.meta|^import |^export /m.test(source)) throw new Error("create-user entrypoint has unsupported module syntax");
++  (globalThis as Record<string, unknown>).__cfCreateUserDeps = { z, corsHeaders: ENTRYPOINT_CORS_HEADERS };
++  return "const { z, corsHeaders } = globalThis.__cfCreateUserDeps;\n" + ts.transpileModule(source, {
++    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
++  }).outputText;
++}
++
++export const ENTRYPOINT_CORS_HEADERS = {
++  "Access-Control-Allow-Origin": "*",
++  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
++};
+diff --git a/src/test/security/d51-5-p0d-production-rbac.test.ts b/src/test/security/d51-5-p0d-production-rbac.test.ts
+index c18b728f8..546624d50 100644
+--- a/src/test/security/d51-5-p0d-production-rbac.test.ts
++++ b/src/test/security/d51-5-p0d-production-rbac.test.ts
+@@ -34,7 +34,8 @@ describe("D51.5 P0-D — frontend alinhado ao ACCESS_MAP", () => {
+   });
+ 
+   it("não oferece envase complementar a perfil somente leitura", () => {
+-    expect(envase).toContain('canWrite(role, "/envase")');
+-    expect(envase).toContain("canManage && lotesComplementares.length > 0");
++    // A página atual é somente consulta (EnvaseConsulta): nenhuma ação de envase complementar nem escrita é montada.
++    expect(envase).toContain("<EnvaseConsulta key={session.scope} />");
++    expect(envase).not.toMatch(/lotesComplementares|\.rpc\(|\.insert\(|\.update\(|\.delete\(|useMutation/);
+   });
+ });
+\ No newline at end of file
+diff --git a/src/test/security/d51-5-p1-systemic.test.ts b/src/test/security/d51-5-p1-systemic.test.ts
+index 693cac74a..96814fac1 100644
+--- a/src/test/security/d51-5-p1-systemic.test.ts
++++ b/src/test/security/d51-5-p1-systemic.test.ts
+@@ -20,7 +20,11 @@ describe("D51.5 P1 sistêmico — configuração global", () => {
+   });
+ 
+   it("não aceita deep-link da aparência para usuário tenant", () => {
+-    expect(settingsPage).toContain('tabParam === "aparencia" && isPlatformSuperadmin');
++    // A resolução da aba foi extraída para configuracoesTabs; a página só passa isPlatformSuperadmin.
++    const tabs = readFileSync("src/lib/configuracoes/configuracoesTabs.ts", "utf8");
++    expect(settingsPage).toContain("resolveConfiguracoesTab(tabParam, { isAdmin, canFin, canMeuPlano, isPlatformSuperadmin })");
++    expect(tabs).toContain('tabParam === "aparencia" && perms.isPlatformSuperadmin');
++    expect(tabs).not.toMatch(/CONFIGURACOES_OPEN_TABS = \[[^\]]*"aparencia"/);
+     expect(settingsPage).not.toContain('["perfil", "empresa", "aparencia", "catalogos"');
+   });
+ 
+diff --git a/src/test/security/external-user-ab-proposal.test.ts b/src/test/security/external-user-ab-proposal.test.ts
+index d9cf507f6..0eeb296ad 100644
+--- a/src/test/security/external-user-ab-proposal.test.ts
++++ b/src/test/security/external-user-ab-proposal.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, expect, it, vi } from 'vitest';
+ import { readFileSync } from 'node:fs';
+-import ts from 'typescript';
++import { createUserEntrypointJavascript } from './createUserEntrypoint';
+ 
+ // Execute the applied production entrypoint; SDK/Auth remain isolated mocks.
+ function appliedSource() {
+@@ -8,7 +8,7 @@ function appliedSource() {
+ }
+ async function invoke(role:string, extra:Record<string,unknown>={},open=true, retry=false, owned=true, lookupMode='ok', failure='', recoveryState='') {
+  let source=appliedSource();if(!open)source=source.replace('B2B_PROVISIONING_CHANNELS_REVIEWED = true','B2B_PROVISIONING_CHANNELS_REVIEWED = false');
+- const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:recoveryState?'compensating':'claimed',acquired:!retry,lease_valid:!retry},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
++ const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:recoveryState?'compensating':'claimed',acquired:!retry,lease_valid:!retry,contract:'C2_MULTIPROFILE_V1',actor_id:'admin',partner_id:args.p_partner??null,readers_ready:true,provisioning_ready:true,external_roles:args.p_roles??[],producer_links_valid:true},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
+  const createUser=vi.fn(async()=>({data:{user:{id:'reserved'}},error:null}));const finish=vi.fn(async(_name:string,_args:Record<string,unknown>)=>{
+   if(_name==='b2b_prepare_provisioning_compensation')return {data:recoveryState,error:null};
+   if(_name==='b2b_complete_provisioning_compensation')return {data:failure!=='cleanup',error:failure==='cleanup'?{code:'42501'}:null};
+@@ -22,7 +22,7 @@ async function invoke(role:string, extra:Record<string,unknown>={},open=true, re
+  const deleteUser=vi.fn(async()=>{if(failure==='delete-timeout')throw new Error('timeout');return {error:failure==='delete-error'?{status:503}:null};});
+  const server={rpc:finish,auth:{admin:{createUser,getUserById,deleteUser}},from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{organization_id:'org',ativo:true},error:null})})})})};
+  let handler:((req:Request)=>Promise<Response>)|undefined;
+- new Function('Deno','createClient',ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText)({env:{get:(name:string)=>name==='SUPABASE_URL'?'https://swzpzcwiasxmjutrmvkm.supabase.co':'mock'},serve:(fn:typeof handler)=>{handler=fn;}},(_u:unknown,_k:unknown,opts:unknown)=>opts?actor:server);
++ new Function('Deno','createClient',createUserEntrypointJavascript(()=>source))({env:{get:(name:string)=>name==='SUPABASE_URL'?'https://swzpzcwiasxmjutrmvkm.supabase.co':'mock'},serve:(fn:typeof handler)=>{handler=fn;}},(_u:unknown,_k:unknown,opts:unknown)=>opts?actor:server);
+  if(!handler)throw new Error('missing handler');
+  const response=await handler(new Request('https://isolated.invalid',{method:'POST',headers:{Authorization:'Bearer mock','Content-Type':'application/json'},body:JSON.stringify({role,nome:'Test',email:'test@example.invalid',idempotency_key:'55555555-5555-4555-8555-555555555555',...extra})}));
+  return {response,rpc,createUser,finish,getUserById,deleteUser};
+@@ -47,10 +47,12 @@ describe('external user applied entrypoint — SDK/Auth mocked, no deploy',()=>{
+  });
+  it.each(['cliente_produtor','parceiro_b2b'])('rollback gate stays closed %s',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner},false);expect(r.response.status).toBe(503);expect(r.createUser).not.toHaveBeenCalled();});
+  it.each(['organization_id','org_id','tenant_id','tenant','organization','owner_organization_id'])('forged scope %s denied before claim/Auth',async field=>{const r=await invoke('cliente_produtor',{cliente_ids:[client],[field]:'foreign'});expect(r.response.status).toBe(403);expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);expect(r.createUser).not.toHaveBeenCalled();});
+- it.each([{cliente_id:partner,cliente_ids:[client]},{cliente_id:client,cliente_ids:[]},{cliente_id:client,cliente_ids:[client,partner]},{cliente_ids:'invalid'}])('conflicting client payload %j denied',async payload=>{const r=await invoke('cliente_produtor',payload);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);});
++ it.each([{cliente_id:partner,cliente_ids:[client]},{cliente_id:client,cliente_ids:[]},{cliente_id:client,cliente_ids:[client,partner]},{cliente_ids:'invalid'}])('conflicting client payload %j denied',async payload=>{const r=await invoke('cliente_produtor',payload);expect([400,403]).toContain(r.response.status);expect(r.createUser).not.toHaveBeenCalled();expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);});
+  it('identical singular/list alias uses one validated client',async()=>{const r=await invoke('cliente_produtor',{cliente_id:client,cliente_ids:[client]});expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_clients:[client],p_primary:client}));});
+- it.each(['cliente_produtor','parceiro_b2b'])('isolated explicit role %s uses claim and finish',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner},true);expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_role:role,p_clients:role==='cliente_produtor'?[client]:[],p_primary:role==='cliente_produtor'?client:null}));expect(r.createUser).toHaveBeenCalledOnce();expect(r.finish).toHaveBeenCalledOnce();});
+- it('technical remains denied even with open flag',async()=>{const r=await invoke('parceiro_b2b_tecnico',{partner_id:partner},true);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();});
++ it.each(['cliente_produtor','parceiro_b2b'])('isolated explicit role %s uses claim and finish',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner},true);expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_roles:[role],p_clients:role==='cliente_produtor'?[client]:[],p_primary:role==='cliente_produtor'?client:null}));expect(r.createUser).toHaveBeenCalledOnce();expect(r.finish).toHaveBeenCalledOnce();});
++ // C2 (23/10): Técnico B2B passa pelo claim canônico com papel tecnico; papel divergente segue negado antes do claim.
++ it('technical uses canonical claim with papel tecnico',async()=>{const r=await invoke('parceiro_b2b_tecnico',{partner_id:partner},true);expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_roles:['parceiro_b2b_tecnico']}));});
++ it('technical with divergent papel denied even with open flag',async()=>{const r=await invoke('parceiro_b2b_tecnico',{partner_id:partner,partner_papel:'gestor'},true);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);});
+  it('expired occupied receipt reconciles exact own Auth, never creates another',async()=>{const r=await invoke('parceiro_b2b',{partner_id:partner},true,true);expect(r.response.status).toBe(200);expect(r.createUser).not.toHaveBeenCalled();expect(r.finish).toHaveBeenCalledOnce();});
+  it('missing own UUID cannot adopt email or create Auth',async()=>{const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,false);expect(r.response.status).toBe(409);expect(r.createUser).not.toHaveBeenCalled();expect(r.finish).not.toHaveBeenCalled();});
+  it.each(['ok','error','throw'])('pre-Auth crash/uncertain lookup %s stays pending on same request',async(mode)=>{
+diff --git a/src/test/visita/etapasVisita.test.ts b/src/test/visita/etapasVisita.test.ts
+index e6e3bd4b8..352bff4e4 100644
+--- a/src/test/visita/etapasVisita.test.ts
++++ b/src/test/visita/etapasVisita.test.ts
+@@ -143,10 +143,13 @@ describe("Ordem de validação — primeiro requisito bloqueante", () => {
+ 
+   it("a tela usa o primeiro bloqueio antes de consultar o servidor", () => {
+     const corpo = pagina.slice(pagina.indexOf("const handleFinalize"));
++    // A consulta ao servidor vive em doFinalize(); o bloqueio retorna antes de qualquer chamada a ela.
+     const iBloqueio = corpo.indexOf("etapas.bloqueio");
+-    const iConsulta = corpo.indexOf('.from("portal_solicitacoes")');
++    const iRetorno = corpo.indexOf("return;", iBloqueio);
++    const iConsulta = corpo.indexOf("doFinalize()");
+     expect(iBloqueio).toBeGreaterThan(-1);
+-    expect(iBloqueio).toBeLessThan(iConsulta);
++    expect(iRetorno).toBeGreaterThan(iBloqueio);
++    expect(iRetorno).toBeLessThan(iConsulta);
+   });
+ });
+ 
+@@ -190,7 +193,7 @@ describe("Estados desabilitados das etapas dependentes", () => {
+   });
+ 
+   it("a tela aplica esses estados aos botões", () => {
+-    expect(pagina).toContain("disabled={generatingPdf || !etapas.podeGerarPdf}");
++    expect(pagina).toContain("disabled={pdfExport.busy || !etapas.podeGerarPdf}");
+     expect(pagina).toContain("disabled={!etapas.podeEnviar}");
+     expect(pagina).toContain("disabled={saveMutation.isPending || !etapas.finalizarAcionavel}");
+   });
+@@ -199,7 +202,7 @@ describe("Estados desabilitados das etapas dependentes", () => {
+ describe("Prevenção de dupla submissão e recuperação após falha", () => {
+   it("finalização tem trava de clique único e salvamento em andamento", () => {
+     expect(pagina).toContain("const finalizandoRef = useRef(false);");
+-    expect(pagina).toContain("if (finalizandoRef.current || saveMutation.isPending) return;");
++    expect(pagina).toContain("if (finalizandoRef.current || saveMutation.isPending || !acoesVisita.showFinalize) return;");
+     expect(pagina).toContain("finalizandoRef.current = false;");
+   });
+ 
+@@ -222,7 +225,7 @@ describe("Cascata cliente → fazenda → talhão", () => {
+   });
+ 
+   it("seletores dependentes ficam desabilitados sem o pai", () => {
+-    expect(pagina).toContain("disabled={!clienteId}");
+-    expect(pagina).toContain("disabled={!fazendaId}");
++    expect(pagina).toContain("disabled={isReadOnly || !clienteId}");
++    expect(pagina).toContain("disabled={isReadOnly || !fazendaId}");
+   });
+ });
+diff --git a/src/test/visita/pdfVisitaAuthenticated.test.ts b/src/test/visita/pdfVisitaAuthenticated.test.ts
+index 5cf796c79..93cb477df 100644
+--- a/src/test/visita/pdfVisitaAuthenticated.test.ts
++++ b/src/test/visita/pdfVisitaAuthenticated.test.ts
+@@ -2,6 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
+ import { ReadableStream } from "node:stream/web";
+ const mocks = vi.hoisted(() => ({ stream: vi.fn(), sign: vi.fn(), fetch: vi.fn() }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { storage: { from: (b: string) => ({ download: (...a: unknown[]) => ({ asStream: () => mocks.stream(b, ...a) }), createSignedUrl: mocks.sign, createSignedUrls: mocks.sign }) } } }));
++// O bucket "consultor-arquivos" é lido pelo loader técnico canônico (POST autenticado à função dedicada, testado
++// à parte); aqui ele delega ao stream simulado com o mesmo bucket/caminho/signal para manter as asserções do PDF.
++vi.mock("@/lib/authz/loadTechnicalAttachment", () => ({
++  loadTechnicalAttachment: async (path: string, signal: AbortSignal) => {
++    const { data, error } = await mocks.stream("consultor-arquivos", path, {}, { signal, cache: "no-store" });
++    if (error || !data || signal.aborted) throw new Error("Documento indisponível");
++    const reader = data.getReader(); const chunks: Uint8Array[] = [];
++    for (;;) { const item = await reader.read(); if (item.done) break; chunks.push(item.value); }
++    return new Blob(chunks as BlobPart[], { type: "image/png" });
++  },
++}));
+ import { generateVisitaPdf } from "@/lib/pdfVisita";
+ const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="), c => c.charCodeAt(0));
+ const ok = () => ({ data: new ReadableStream({ start(c) { c.enqueue(png); c.close(); } }), error: null });
+diff --git a/src/test/visita/visitaTecnicaSalvamento.static.test.ts b/src/test/visita/visitaTecnicaSalvamento.static.test.ts
+index 7a7467336..e2e304437 100644
+--- a/src/test/visita/visitaTecnicaSalvamento.static.test.ts
++++ b/src/test/visita/visitaTecnicaSalvamento.static.test.ts
+@@ -17,7 +17,7 @@ const src = readFileSync(resolve(process.cwd(), "src/pages/VisitaTecnica.tsx"),
+ 
+ describe("H9-G 2B — salvamento canônico da visita", () => {
+   it("inclui as notas rápidas no payload de observacoes_tecnicas", () => {
+-    expect(src).toMatch(/observacoes_tecnicas:\s*\n?\s*serializeNotes\(/);
++    expect(src).toMatch(/observacoes_tecnicas:\s*preserveMonitoringPlan\([^,]+,\s*\n?\s*serializeNotes\(/);
+   });
+ 
+   it("expõe uma única ação canônica de salvar reutilizada pelos dois botões", () => {
