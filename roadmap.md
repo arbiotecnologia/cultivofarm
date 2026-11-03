@@ -1,3 +1,8 @@
+## 03/11 — Integração LOCAL do export exato 75972877 sobre 9d3a9424
+- [ ] Verificar hashes, todos os caminhos/fontes/destinos, seis fusões e 51 arquivos protegidos; dry-run sem erros antes de copiar.
+- [ ] Integrar 692 add / 72 replace / 6 merged byte a byte, sem SQL hosted/publicação e sem pacote global anterior.
+- [ ] Executar testes locais, typecheck separado e conferir build automático; consolidar diff/logs/hashes e bloqueios JWT/POST de produção.
+
 ## 01/11 09:50 — Perfis fiscais de todo o catálogo
 - [x] Pacote revisável catálogo próprio fiscal (scripts/fiscal-tenant-catalog-20261101): 26/26 PG descartável, 16/16 Vitest, typecheck 0; não aplicado.
 - [x] Global: lista por família + microrganismos (consulta); 2014 testes fiscais PASS.
