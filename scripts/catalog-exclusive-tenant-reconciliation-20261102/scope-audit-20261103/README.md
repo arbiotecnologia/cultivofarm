@@ -1,6 +1,16 @@
-# Catálogo-only: revisão de escopo e produção — 03/11/2026
+# Catálogo exclusivo por empresa — preparação local e compatibilidade
 
 **LOCAL SEPARADO / PUBLICAÇÃO NO-GO.** Nenhum SQL de aplicação, writer hosted, publicação, NF-e, cobrança ou envio SMTP executado. Somente SELECT de catálogo PostgreSQL no Supabase canônico, comprovado em `supabase/config.toml` (`swzpzcwiasxmjutrmvkm`) antes da consulta.
+
+**Descrição final:** delta local de catálogo exclusivamente por empresa; pedidos, pagamento e financeiro preservados na base original9d3a9424. O export integral75972877 não é candidato de publicação. A marca do aplicativo permanece Cultivo Farm; este título/descrição identifica a entrega revisável, não muda metadados comerciais do site.
+
+## Reconfirmação final — 01:15 UTC
+
+- `partner_order_journal_capability_v1(p_partner uuid)` **EXISTE**, jsonb, EXECUTE authenticated, MD5 `e348e7407d84a0491d4bbfd487336b7d`; não confundir com a capability de pagamento AUSENTE.
+- `recover_partner_order_attempt_v1` **EXISTE**, com os cinco argumentos originais e defaults, jsonb, EXECUTE authenticated, MD5 `e4249abb0fcc76c5f40d8a03d03c5344`. Ambos permanecem intocados da base original; o journal não foi fechado nem substituído por fallback/stub.
+- `rpc_associate_microorganism_fiscal_product` existe com `(p_microorganism_id uuid,p_product_id uuid DEFAULT NULL)`, TABLE(id,product_id), mas EXECUTE authenticated **false**. Seu consumidor preexistente conserva a contenção anterior ao dispatch. O candidato catálogo01 poderá substituir a autoridade somente sob revisão/JWT/POST próprios, não nesta rodada.
+- As sete RPCs tenant_product/root/formulacoes/owned_fiscal continuam ausentes. Matriz final suplementar registra implantação pendente; não executar SQL financeiro/fiscal para satisfazê-las automaticamente.
+-16arquivos runtime e17testes originais novamente verificados por igualdade byte a byte; import de civilDate permanece única dependência pura partilhada, sem capability de pagamento ou projeção monetária alcançável por src. Testes de fechamento verificam arquivos e chamadas ausentes, não autorizam servidor.
 
 ## Evidência real versus testes
 

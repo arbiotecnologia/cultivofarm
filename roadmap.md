@@ -1,4 +1,5 @@
 ## 03/11 — Revisão independente: catálogo isolado do financeiro
+- [x] Reconfirmação01:15: journal(uuid) e recovery existem/inalterados; capability pagamento ausente. Associação fiscal existe com EXECUTE authenticatedfalse; fechamento de imports, título/descrição documental de catálogo e retestes finais registrados.
 - [x] Auditoria read-only canônica: capability de condições/projeção monetária ausentes; create/simulate sem p_payment_choice; matriz44linhas registrada.
 - [x] Restaurados16arquivos runtime financeiros/comerciais e17testes originais byte a byte da base9d3a9424. Candidatos e testes novos preservados fora de src; civilDate mantido por dependência do fiscal do catálogo.
 - [x] Financeiro original75/1127 PASS; baseline51/1019 PASS; regressão50/720 PASS; typecheck0/build automáticoOK. Primeira baseline interrompida por dependência civilDate omitida, corrigida e log preservado.
