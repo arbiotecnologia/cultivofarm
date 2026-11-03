@@ -1,0 +1,259 @@
+{
+  "restore_runtime": [
+    "src/components/comercial/PaymentPlanSelector.tsx",
+    "src/hooks/useCommercialPaymentPlans.ts",
+    "src/hooks/useCommercialPaymentPlansAdmin.ts",
+    "src/hooks/useCreatePartnerOrder.ts",
+    "src/hooks/usePartnerOrderActions.ts",
+    "src/hooks/useSimulateB2BPaymentPlan.ts",
+    "src/pages/portal-parceiro/NovoPedido.tsx",
+    "src/pages/comercial/CommercialPaymentPlansPage.tsx",
+    "src/pages/comercial/SimuladorComercial.tsx",
+    "src/lib/comercial/validation.ts",
+    "src/lib/authz/pendingOrderAttempt.ts",
+    "src/components/financeiro/BaixaDialog.tsx",
+    "src/components/financeiro/ContaDrawer.tsx",
+    "src/pages/financeiro/ContasReceber.tsx",
+    "src/lib/financeiro/baixaRecebimento.ts",
+    "src/lib/financeiro/contasReceber.ts"
+  ],
+  "defer_added_runtime": [
+    "src/hooks/usePaymentConditionCapability.ts",
+    "src/lib/comercial/paymentContract.ts",
+    "src/lib/comercial/paymentSchedule.ts",
+    "src/lib/comercial/price.ts",
+    "src/lib/comercial/civilDate.ts",
+    "src/lib/financeiro/receivableMoney.ts",
+    "src/lib/financeiro/receivableOrigin.ts"
+  ],
+  "tests": [
+    {
+      "path": "src/test/comercial/commercial-package.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "b6224d2afe6b159d22215d5077efa3e5d7c63f2e423c009cc03e8c5937cecd34",
+      "original_sha256": "383a736bc88a6ed4d41ce62e90e672a66de23e213efbe04be549697aaad9a76e"
+    },
+    {
+      "path": "src/test/comercial/preview-cronograma.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "78ac26533575b65cd39438a72878284a93c51971a8e1b1a6dd345acb089a0648",
+      "original_sha256": "a6961cad4b6d1ac9a946e6d4a00a430e96fa7d184bec516e934e2ee44ddef5eb"
+    },
+    {
+      "path": "src/test/comercial/priceDecimalOracle.review.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "36c2bd0a6547ec5b8c7a9569d05eec8e4bdf0fcdbd9e00d0becbe751ddee9b8e",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/arbioAuditCurrentGaps.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "ce37cc9d497fe15fab41bd4afcf6d79f969fdf26346c17156803ee36c896e2a2",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/arbioMoneyContract.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "4b8b31fb8cd4e9c1b10dbd5f696cae9549c48110f76e175b1d75e1dc3dfc0563",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/b2bCapturedContracts.audit.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "52a125ec1d78cc83ece503a5faff1bf661f9b4a442f259ade95b175b5da79cee",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/b2bIntegratedOrigin.review.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "37f3c4fbddb6baac2dd90e97fc2e8c8d883f165de139de286a897714d9b84818",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/cancelAuthorizationPostgres.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "d5058a89c1c89fb3a9acc017f9b81a83fdeb6b9935a96b7dad20d94661659615",
+      "original_sha256": "713caced88c7c7eeaafaa90a17ea23ff0d6291d38b9a0577d5bed081c11da140"
+    },
+    {
+      "path": "src/test/financeiro/contasPagarBloco5.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "d3e40fa2e9d4cf49dc8e30060dc3a970842f73f422d9c9d1cf1d484946785110",
+      "original_sha256": "6a4560819c9958356f256bd92c1c3e5d9d11c48d8a21f8fa8e8a2704194eaa1f"
+    },
+    {
+      "path": "src/test/financeiro/contasReceberTela.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "0763f12f7eee557888a642a9b11d3867c2fb1c505a49233ea76d8517794bc6fd",
+      "original_sha256": "c4058bd1c5c2082d5bd99da08705ee6b73f5f6cafa1e618b476f58b663b41c28"
+    },
+    {
+      "path": "src/test/financeiro/financialProvenanceOffline.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "70a854a4bf301172fd0d1dd0573eee0b0c12183ca565dfeb50e972e020d211b0",
+      "original_sha256": "731dadc22fd6004a2b0e596b74b4277265eb750efced0efc31b53caac03d9169"
+    },
+    {
+      "path": "src/test/financeiro/fixtures/money-origin-projection.json",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "29dba6fe6c963ef3ae2855b803949140b4c2abc05fd1e48e7b1f2259696e1379",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/receivableOrigin.baselineContract.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "4a62f21c5bd20cedcce30b83fd4bed31f89812221d48803cf44a8dd1f04b16c4",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/receivableOrigin.integration.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "36cab0a61c626cc68231b00e20cea36cf95983901e731a9f6bb5bea8ddb17ad9",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/receivableTarget.review.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "032602e67c2274b10e23235ca01422fbf2ad96d6a79805aff492ea72d3ca5bf4",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/financeiro/receivableTargetConsumer.review.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "8e6e46c699594cafcfc9d5b3c3ea860f7784c251719070d0af602434c6026dc1",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/arbioApprovalAck.audit.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "c7e58a974ef3f78f3bcaa5720f9768bf2071bc67a40b9a8c5c3644023e761ea1",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/arbioCashDeadline.audit.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "4dfdb7e26e25f72569913c5aaa7d798292dbcfab2f5986e5353ae2930cc5d66e",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/arbioFinalPaymentRules.audit.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "0d4dac55d9903f2710a3e991759c5498ea87fb1e656d77c86dbd2845f6860ad3",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/arbioPaymentChoice.audit.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "f25d02d51c0450ad8418b467929f6a2a364ca17b9e490ad4605c6106389319ea",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/arbioPaymentContract.integration.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "465e0de4efc3b0689ecd59ce311de90b5b26d42d5cec46372341d85df9c31857",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/arbioScheduleContract.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "836b3bdc1e7665f8642b497d1e12b0c42ed6edb5dfffa5a292a9f3da17eeaa3c",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/concurrentAttemptHook.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "f06f6d3d58a4b01331eeff4c0106c69ea2fee7d618949f9527c40f0f03d17923",
+      "original_sha256": "1f91d9067b5964e0ab664d1d0d7bc276b14f80de091ff34318697ceb42408c17"
+    },
+    {
+      "path": "src/test/pedidos/createPartnerOrderOwnChannel.integration.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "0980934e688f4bfa33c58f030846036ddb21c0ec0fac0416b8e0a7c3f673d783",
+      "original_sha256": "5d249479b3bf51b91cc960bf5cd7b9ca8240ad49f0a6c72c6df81331bc3798f3"
+    },
+    {
+      "path": "src/test/pedidos/createPartnerOrderOwnChannelInvalidation.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "3dd21e2ba324aae725be2724848ee662ee563f89bbf674af63409fb40cc1da29",
+      "original_sha256": "525b7824a2011c80af94e4ef02c740b54c4d329b4ba026577bc94f0393c868a8"
+    },
+    {
+      "path": "src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "ac5a1bac20695ab5b941facfe9ecf7104d239888399372fc24c1ca6f642036c5",
+      "original_sha256": "cc46a396e6c514780f1b105d6a4a3649c145ca039a4ce31d2568fbb983c390b0"
+    },
+    {
+      "path": "src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "8c8eebe316176de66ba5d952ad2bcfc7f1bd07e6537deeb3151039de01f86080",
+      "original_sha256": "89eb188af9c0ba58533730dcfcda3eba6dca199a831a5ced390aae0a46320ed0"
+    },
+    {
+      "path": "src/test/pedidos/novoPedidoDeliveryDate.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "517036a863d23ffbb2299945f58137a0a3e0f29d527d1ca4865b7c2d8721ce15",
+      "original_sha256": "ba9729449a5ddba67994a2979ae580c2d134aa289a9ebfa83a7828b3c77a0799"
+    },
+    {
+      "path": "src/test/pedidos/orderJournal.integration.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "5154464fc1f3666b207afa3087d2aad35b3fcc87479776204f8232119a9eb1f6",
+      "original_sha256": "1f3b970742aa8b39b0b7bcee9c47a280bdf5973cddea7d330dab77ea1c3e85fc"
+    },
+    {
+      "path": "src/test/pedidos/partnerOrdersAdminScope.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "c18f420968c410ce771d426fa33ab8942b3a04eaa7ee724f3ca365dd53ee84d2",
+      "original_sha256": "767d402f7ac8b7da25bb9dc40a379fca71505722c95987af7cbcf0c5d5975296"
+    },
+    {
+      "path": "src/test/pedidos/paymentInputs.review.test.ts",
+      "kind": "OURS_ONLY",
+      "action": "add",
+      "sha256": "32e6969a9b764fe350836bf94a819d2c47eb6e755a0197b6be4059897a99b020",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/pedidos/preDispatchSettlement.test.tsx",
+      "kind": "OURS_ONLY",
+      "action": "replace",
+      "sha256": "4d482fec61d04fdc586dea76e5f0b392c66350a5da9447e863f79006303d3d4a",
+      "original_sha256": "2bf2b8f8843112dfb2228d774550a70d15301e27bcb52a481cba9d4ae6b05fd7"
+    }
+  ],
+  "restore_extra_tests": [
+    "src/test/catalogo/partnerCatalogMonitor.integration.test.tsx",
+    "src/test/catalogo/partnerOutletNovoPedido.test.tsx"
+  ]
+}

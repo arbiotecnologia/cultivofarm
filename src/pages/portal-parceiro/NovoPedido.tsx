@@ -45,9 +45,6 @@ import { useCommercialPaymentPlans } from "@/hooks/useCommercialPaymentPlans";
 import { useSimulateB2BPaymentPlan, type SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
 import { PaymentPlanSelector } from "@/components/comercial/PaymentPlanSelector";
 import { PaymentSimulationSummary } from "@/components/comercial/PaymentSimulationSummary";
-import { usePaymentConditionCapability } from '@/hooks/usePaymentConditionCapability';
-import { PAYMENT_METHODS, requirePaymentChoice, paymentPlanAvailable, type PaymentMethod } from '@/lib/comercial/paymentContract';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import {
   labelUnidadeCurta,
@@ -214,8 +211,6 @@ export default function NovoPedido() {
     useCommercialPaymentPlans(!isSimulationMode);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
-  const paymentCapability = usePaymentConditionCapability(partner?.id ?? null, !isSimulationMode);
   const [simulation, setSimulation] = useState<SimulateResult | null>(null);
   const [cashSimulation, setCashSimulation] = useState<SimulateResult | null>(null);
   const simulateSelectedPlan = useSimulateB2BPaymentPlan();
@@ -401,30 +396,20 @@ export default function NovoPedido() {
     () => paymentPlans.find((p) => p.id === selectedPlanId) ?? null,
     [paymentPlans, selectedPlanId],
   );
-  const paymentChoice = useMemo(() => {
-    if (!paymentCapability.data || paymentCapability.isError || !selectedPlan || selectedPlan.payment_contract !== 'B2B_PAYMENT_CONDITION_V1' || !paymentMethod || !selectedPlan.payment_methods?.includes(paymentMethod)) return null;
-    if (!selectedPlan.pricing_mode || !paymentPlanAvailable({ ...selectedPlan, pricing_mode: selectedPlan.pricing_mode, payment_method: paymentMethod })) return null;
-    try { return requirePaymentChoice({ payment_method: paymentMethod, payment_condition_version: selectedPlan.version, payment_deadline_days: selectedPlan.payment_deadline_days }); } catch { return null; }
-  }, [selectedPlan, paymentMethod, paymentCapability.data, paymentCapability.isError]);
-  const simulationGeneration = useRef(0);
 
   // Dispara simulação sempre que plano/itens mudam
   useEffect(() => {
-    const generation = ++simulationGeneration.current;
-    const current = pageScope.capture();
-    setSimulation(null);
     if (isSimulationMode || !confirmOpen) return;
-    if (!partner?.id || !selectedPlanId || !paymentChoice || simulationItems.length === 0 || cartInvalid) {
+    if (!partner?.id || !selectedPlanId || simulationItems.length === 0 || cartInvalid) {
       setSimulation(null);
       return;
     }
     simulateSelectedPlan.mutate(
-      { partner_id: partner.id, payment_plan_id: selectedPlanId, items: simulationItems, payment_choice: paymentChoice },
-      { onSuccess: (res) => { if (current() && generation === simulationGeneration.current) setSimulation(res); }, onError: () => { if (current() && generation === simulationGeneration.current) setSimulation(null); } },
+      { partner_id: partner.id, payment_plan_id: selectedPlanId, items: simulationItems },
+      { onSuccess: (res) => setSimulation(res), onError: () => setSimulation(null) },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => { ++simulationGeneration.current; };
-  }, [selectedPlanId, paymentChoice, simulationItems, partner?.id, confirmOpen, isSimulationMode, cartInvalid]);
+  }, [selectedPlanId, simulationItems, partner?.id, confirmOpen, isSimulationMode, cartInvalid]);
 
   // Referência à vista (para diferença) — recalcula sempre que carrinho/parceiro/plano mudam
   useEffect(() => {
@@ -455,7 +440,6 @@ export default function NovoPedido() {
   liveInputRef.current = {
     partner_id: partner?.id ?? "", observacoes: obs || undefined, requested_delivery_date: requestedDate || null,
     items: cartList.map(({ key, ...rest }) => rest), payment_plan_id: selectedPlanId,
-    ...(paymentChoice ?? {}),
     first_due_date: simulation?.schedule?.[0]?.due_date ?? null, installment_count: selectedPlan?.installment_count ?? null,
   };
   const handleSubmit = (opts?: { simStatus?: "rascunho" | "enviada_gestor" }) => {
@@ -531,7 +515,7 @@ export default function NovoPedido() {
       toast.error("Selecione uma condição de pagamento antes de finalizar o pedido.");
       return;
     }
-    if (!paymentChoice || !simulation?.cart_hash || JSON.stringify(simulation.payment_choice) !== JSON.stringify(paymentChoice)) {
+    if (!simulation?.cart_hash) {
       toast.error("Aguarde a validação de preços pelo servidor antes de enviar o pedido.");
       return;
     }
@@ -550,7 +534,6 @@ export default function NovoPedido() {
       requested_delivery_date: requestedDate || null,
       items,
       payment_plan_id: selectedPlanId,
-      ...paymentChoice,
       first_due_date: simulation?.schedule?.[0]?.due_date ?? null,
       installment_count: selectedPlan?.installment_count ?? null,
       expected_cart_hash: simulation.cart_hash,
@@ -1120,12 +1103,6 @@ export default function NovoPedido() {
                   }
                   loading={simulateSelectedPlan.isPending}
                 />
-                <Label htmlFor="order-payment-method">Forma de pagamento</Label>
-                <Select value={paymentMethod ?? ''} onValueChange={(method) => setPaymentMethod(method as PaymentMethod)} disabled={!paymentCapability.data || paymentCapability.isError}>
-                  <SelectTrigger id="order-payment-method"><SelectValue placeholder="Selecione a forma de pagamento" /></SelectTrigger>
-                  <SelectContent>{Object.entries(PAYMENT_METHODS).map(([method, label]) => <SelectItem key={method} value={method} disabled={!selectedPlan?.payment_methods?.includes(method as PaymentMethod)}>{label}</SelectItem>)}</SelectContent>
-                </Select>
-                {!paymentCapability.data || paymentCapability.isError ? <p role="status" className="text-sm text-muted-foreground">Condições de pagamento indisponíveis neste ambiente.</p> : paymentChoice ? <p className="text-sm text-muted-foreground">Versão {paymentChoice.payment_condition_version} · {selectedPlan?.installment_count} parcela(s) · prazo D+{paymentChoice.payment_deadline_days} da data de emissão do documento fiscal autorizado</p> : null}
 
                 {simulation && (
                   <PaymentSimulationSummary
@@ -1239,7 +1216,7 @@ export default function NovoPedido() {
               <Button
                 onClick={() => handleSubmit()}
                 disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
-                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !paymentChoice || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
+                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
               >
                 {createOrder.isPending
                   ? "Enviando..."

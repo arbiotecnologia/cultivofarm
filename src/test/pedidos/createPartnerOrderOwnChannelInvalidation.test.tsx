@@ -18,8 +18,7 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
 vi.mock("sonner", () => ({ toast: notices }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    rpc: vi.fn((name:string) => name==='partner_payment_condition_capability_v1'
-      ? Promise.resolve({data:{contract:'B2B_PAYMENT_CONDITION_V1',actor_id:state.auth.user?.id,organization_id:state.auth.profile.organization_id,partner_id:'33333333-3333-4333-8333-333333333333',simulate:true,create:true},error:null}) : name==='partner_order_journal_capability_v1'
+    rpc: vi.fn((name:string) => name==='partner_order_journal_capability_v1'
       ? Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}})
       : new Promise((resolve) => state.pending.push(resolve))),
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: { message: "stub" } }) }) }) }),
@@ -29,7 +28,6 @@ import { useCreatePartnerOrder } from "@/hooks/useCreatePartnerOrder";
 
 const PARTNER = "33333333-3333-4333-8333-333333333333";
 const INPUT = {
-  payment_method:'pix' as const, payment_condition_version:1,payment_deadline_days:7,
   partner_id: PARTNER,
   items: [{ item_id: "i1", item_tipo: "produto" as const, product_id: "p1", nome: "INS4", quantidade: 1, preco_unitario: 1, desconto_percentual: 0, subtotal: 1, unidade_pedido: "litro" as const }],
   expected_cart_hash: "hash-ok",
@@ -68,7 +66,7 @@ describe("useCreatePartnerOrder — invalidação do canal próprio", () => {
     let done: Promise<unknown> = Promise.resolve();
     await act(async () => { done = h.result.current.mutateAsync(INPUT).catch(() => undefined); });
     expect(state.pending).toHaveLength(1);
-    await act(async () => { state.pending[0]({ data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 1, payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null }); await done; });
+    await act(async () => { state.pending[0]({ data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 1 }, error: null }); await done; });
     const keys = matchedKeys(invalidate);
     expect(keys).toContain(JSON.stringify(["partner-orders"]));
     expect(keys).toContain(JSON.stringify(["commercial-own-orders", scopeA]));
@@ -88,7 +86,7 @@ describe("useCreatePartnerOrder — invalidação do canal próprio", () => {
     else if (mode === "logout") { state.auth.user = null; h.rerender(); }
     else if (mode === "revoked") { state.auth.profile.ativo = false; h.rerender(); }
     else h.unmount();
-    await act(async () => { state.pending[0]({ data: { id: "x", numero: "PB-X", total: 1, payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null }); await done; });
+    await act(async () => { state.pending[0]({ data: { id: "x", numero: "PB-X", total: 1 }, error: null }); await done; });
     expect(invalidate).not.toHaveBeenCalled();
     expect(notices.success).not.toHaveBeenCalled(); expect(notices.info).not.toHaveBeenCalled(); expect(notices.warning).not.toHaveBeenCalled();
     expect(qc.getQueryData(["commercial-own-orders", scopeB])).toEqual([{ id: "b1" }]);
@@ -100,7 +98,7 @@ describe("useCreatePartnerOrder — invalidação do canal próprio", () => {
     const h = renderHook(() => useCreatePartnerOrder(), { wrapper });
     let done: Promise<unknown> = Promise.resolve();
     await act(async () => { done = h.result.current.mutateAsync(INPUT).catch(() => undefined); });
-    await act(async () => { state.pending[0]({ data: { id: "x", numero: "PB-X", total: 1, payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null }); await done; });
+    await act(async () => { state.pending[0]({ data: { id: "x", numero: "PB-X", total: 1 }, error: null }); await done; });
     const keys = matchedKeys(invalidate);
     expect(keys.filter((k) => k.includes("commercial-own-orders"))).toEqual([JSON.stringify(["commercial-own-orders", scopeA])]);
     h.unmount(); qc.clear();

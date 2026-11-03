@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { readProvenReceivables, MONEY_ORIGIN_MESSAGE } from '@/lib/financeiro/receivableOrigin';
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,7 +49,7 @@ export default function ContasReceber() {
       const { data, error, count } = await supabase
         .from("accounts_receivable")
         .select(
-          "id, description, total_amount, first_due_date, status, origin_type, fiscal_invoice_required, fiscal_invoice_status, created_at, clientes(nome, codigo_cliente), category:financial_categories(name), installments:accounts_receivable_installments(id, receivable_id, status, due_date, installment_number)",
+          "*, clientes(nome, codigo_cliente), category:financial_categories(name), installments:accounts_receivable_installments(*)",
           { count: "exact" },
         )
         // Ordem estável: created_at + id evitam repetição/omissão entre páginas.
@@ -80,19 +79,16 @@ export default function ContasReceber() {
   // KPIs de saldo: todas as parcelas, em páginas reais (nunca truncado em 1000).
   const parcelas = useQuery({
     queryKey: ["ar-kpi-installments"],
-    queryFn: async () => {
-      const rows: any[] = [];
-      const ids = new Set<string>();
-      for (let offset = 0; ; offset += 1000) {
-        const page = await readProvenReceivables(supabase as any, null, offset);
-        for (const row of page) {
-          if (ids.has(row.id)) throw new Error(MONEY_ORIGIN_MESSAGE);
-          ids.add(row.id);
-        }
-        rows.push(...page);
-        if (page.length < 1000) return rows;
-      }
-    },
+    queryFn: async () =>
+      fetchAllRows<any>((from, to) =>
+        supabase
+          .from("accounts_receivable_installments")
+          .select(
+            "id, receivable_id, original_amount, received_amount, interest_amount, penalty_amount, discount_amount, due_date, status",
+          )
+          .order("id", { ascending: true })
+          .range(from, to),
+      ),
   });
 
   // Recebido no mês: eventos de caixa (inclui estornos negativos), como no DRE.
@@ -296,12 +292,7 @@ export default function ContasReceber() {
                       <TableCell><StatusBadge status={r.status} /></TableCell>
                       <TableCell className="text-right space-x-1 whitespace-nowrap">
                         <Button size="icon" variant="ghost" onClick={() => setDrawerId(r.id)} title="Visualizar"><Eye className="h-4 w-4" /></Button>
-                        {nextOpen && !cancelada && <Button size="icon" variant="ghost" disabled={emCancelamento} onClick={() => {
-                          if (!parcelas.isSuccess || parcelas.isFetching) { toast.error(MONEY_ORIGIN_MESSAGE); return; }
-                          const proven = parcelas.data?.find(row => row.id === nextOpen.id && row.receivable_id === r.id);
-                          if (!proven) { toast.error("Origem monetária não comprovada. Recebimento bloqueado."); return; }
-                          setBaixa(proven);
-                        }} title="Registrar recebimento"><Wallet className="h-4 w-4" /></Button>}
+                        {nextOpen && !cancelada && <Button size="icon" variant="ghost" disabled={emCancelamento} onClick={() => setBaixa(nextOpen)} title="Registrar recebimento"><Wallet className="h-4 w-4" /></Button>}
                         {!cancelada && r.status !== "PAID" && (
                           <Button
                             size="icon"

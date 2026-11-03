@@ -4,7 +4,6 @@ import { brl } from "@/lib/financial/format";
 import { cn } from "@/lib/utils";
 import type { CommercialPaymentPlan } from "@/hooks/useCommercialPaymentPlans";
 import { formatarPercentual } from "@/lib/catalogo/formatUnidades";
-import { PAYMENT_METHODS } from '@/lib/comercial/paymentContract';
 
 interface Props {
   plans: CommercialPaymentPlan[];
@@ -62,9 +61,7 @@ export function PaymentPlanSelector({ plans, selectedPlanId, onSelect, finalAmou
               )}
             </div>
             <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
-              <span>{p.payment_contract === 'B2B_PAYMENT_CONDITION_V1' ? `Prazo D+${p.payment_deadline_days ?? '—'} da data de emissão do documento fiscal autorizado` : `Prazo legado: ${p.max_days} dias`}</span>
-              <span>{p.installment_count} parcela(s)</span>
-              {p.payment_methods?.map(method => <span key={method}>{PAYMENT_METHODS[method]}</span>)}
+              <span>Prazo: {p.max_days === 0 ? "à vista" : `${p.max_days} dias`}</span>
               {p.discount_percent > 0 && <span>Desconto: {formatarPercentual(p.discount_percent)}</span>}
               {p.monthly_interest_percent > 0 && (
                 <span>Juros: {formatarPercentual(p.monthly_interest_percent)} a.m.</span>
@@ -88,7 +85,7 @@ export function PaymentPlanSelector({ plans, selectedPlanId, onSelect, finalAmou
                   ? "Calculando condição…"
                   : finalAmount != null
                     ? p.installment_count > 1
-                      ? `${p.installment_count} parcelas · total ${brl(finalAmount)}`
+                      ? `${p.installment_count}× de ${brl(finalAmount / p.installment_count)}`
                       : "Pagamento único"
                     : "Condição selecionada"}
               </div>

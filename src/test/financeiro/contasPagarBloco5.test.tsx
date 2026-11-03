@@ -57,7 +57,7 @@ function abrirDialog(kind: "payable" | "receivable" = "payable") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(
     <QueryClientProvider client={qc}>
-      <BaixaDialog open onClose={() => {}} kind={kind} installment={kind === 'receivable' ? {...PARCELA,receivable_id:'local-title',monetary_semantics:'financed_total_v1',financed_interest_amount:0,monetary_origin:{contract:'RECEIVABLE_MONEY_V1',source:'price_snapshot_v1',installment_id:PARCELA.id,receivable_id:'local-title',snapshot_principal:100,snapshot_interest:0}} : PARCELA} />
+      <BaixaDialog open onClose={() => {}} kind={kind} installment={PARCELA} />
     </QueryClientProvider>,
   );
 }

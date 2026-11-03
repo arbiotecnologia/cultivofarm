@@ -30,7 +30,6 @@ import { MatrizConfiguravelTab } from "@/components/comercial/MatrizConfiguravel
 import { AlertCircle, Plus, Pencil, GitBranch, Star, Loader2 } from "lucide-react";
 import { useTabParam } from "@/lib/navigation/useTabParam";
 import { formatCivilDateDisplay } from "@/lib/date-utils";
-import { priceSchedule } from '@/lib/comercial/price';
 
 const PAGE_SIZE = 20;
 
@@ -76,11 +75,6 @@ export function preview(form: PaymentPlanPayload, base = 100000) {
   if (form.interest_type === "compound") final = liquido * Math.pow(1 + taxa, meses);
   else if (form.interest_type === "simple") final = liquido * (1 + taxa * meses);
   const parcelas = Math.max(Number(form.installment_count) || 1, 1);
-  if (form.amortization_type === 'price') {
-    const rows = priceSchedule(liquido, Number(form.monthly_interest_percent), parcelas);
-    final = rows.reduce((sum, row) => sum + Math.round(row.original_amount * 100), 0) / 100;
-    return { liquido, final, juros: final - liquido, parcela: rows[0]?.original_amount ?? 0 };
-  }
   return { liquido, final, juros: final - liquido, parcela: final / parcelas };
 }
 
@@ -154,7 +148,6 @@ export default function CommercialPaymentPlansPage() {
   }
 
   function submit() {
-    if (form.amortization_type === 'price') { toast.error('Contrato Price indisponível neste ambiente.'); return; }
     if (saving || Object.keys(errors).length > 0) return;
     const onError = (e: unknown) => toast.error(planErrorMessage(e));
     if (mode === "create") {
@@ -607,11 +600,6 @@ export default function CommercialPaymentPlansPage() {
 </div>
                 <div>
                   <Label htmlFor="plan-interest_type">Tipo de juros</Label>
-                  <Label htmlFor="plan-amortization">Sistema de cálculo</Label>
-                  <Select value={form.amortization_type ?? 'generic'} onValueChange={v => setForm({...form,amortization_type:v as 'price'|'generic'})} disabled={mode === 'metadata'}>
-                    <SelectTrigger id="plan-amortization"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="generic">Genérico legado</SelectItem><SelectItem value="price">Price sobre saldo — prévia local</SelectItem></SelectContent>
-                  </Select>
                   <Select
                     value={form.interest_type}
                     disabled={mode === "metadata"}

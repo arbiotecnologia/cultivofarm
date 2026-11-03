@@ -1,0 +1,107 @@
+[
+  {
+    "path": "src/App.tsx",
+    "package_sha256": "f0af466c015991837665b23aa822cfa017e7e26494bba39d8c7374ed448ce889",
+    "current_sha256": "f0af466c015991837665b23aa822cfa017e7e26494bba39d8c7374ed448ce889"
+  },
+  {
+    "path": "src/components/protocolos/MicrorganismosTab.tsx",
+    "package_sha256": "ac04fe08a0b65fd37d80a1e480463e4ef49591eb8b27a7dd6f422303b32da5ac",
+    "current_sha256": "ac04fe08a0b65fd37d80a1e480463e4ef49591eb8b27a7dd6f422303b32da5ac"
+  },
+  {
+    "path": "src/components/protocolos/ProdutosTab.tsx",
+    "package_sha256": "e59de15d5aa52d4ce08e082f01c8360410eae2ff93fa0bb59f1b050df34a4054",
+    "current_sha256": "e59de15d5aa52d4ce08e082f01c8360410eae2ff93fa0bb59f1b050df34a4054"
+  },
+  {
+    "path": "src/config/navigation.ts",
+    "package_sha256": "54b9d363c02f5ad86a1d1bc4791c2ff4c262f076015871884ba726a438cf33db",
+    "current_sha256": "54b9d363c02f5ad86a1d1bc4791c2ff4c262f076015871884ba726a438cf33db"
+  },
+  {
+    "path": "src/hooks/AGENTS.md",
+    "package_sha256": "e785b3679ed13e854085a7458b5493b43750c1a2552d31c082decca40288aecc",
+    "current_sha256": "e785b3679ed13e854085a7458b5493b43750c1a2552d31c082decca40288aecc"
+  },
+  {
+    "path": "src/hooks/useMicroorganismProfile.ts",
+    "package_sha256": "3fd0de16da6755a6ad92e2cee14c000dae094b8f5b4c4cbce931ff143baea7d0",
+    "current_sha256": "3fd0de16da6755a6ad92e2cee14c000dae094b8f5b4c4cbce931ff143baea7d0"
+  },
+  {
+    "path": "src/hooks/useProductFiscalAccess.ts",
+    "package_sha256": "d695afb2aa6aea7e12de7e4f5bf5df30db0ffcb24cfa79154c99bd174247c7d7",
+    "current_sha256": "d695afb2aa6aea7e12de7e4f5bf5df30db0ffcb24cfa79154c99bd174247c7d7"
+  },
+  {
+    "path": "src/hooks/useProductFiscalProfiles.ts",
+    "package_sha256": "713b9b21b1e6910fadb479ef21a4c51ac8315564250868d53a9419b14a65639f",
+    "current_sha256": "713b9b21b1e6910fadb479ef21a4c51ac8315564250868d53a9419b14a65639f"
+  },
+  {
+    "path": "src/hooks/useProductProfile.ts",
+    "package_sha256": "fac9c14f28debda839b7851bdf318b5950c1a72174327e92b16edf7cc8823602",
+    "current_sha256": "fac9c14f28debda839b7851bdf318b5950c1a72174327e92b16edf7cc8823602"
+  },
+  {
+    "path": "src/hooks/useTenantProducts.ts",
+    "package_sha256": "b785da2866b5d7363a56555c449d81b12cb34db81d1ff3e454e6332656624f52",
+    "current_sha256": "b785da2866b5d7363a56555c449d81b12cb34db81d1ff3e454e6332656624f52"
+  },
+  {
+    "path": "src/lib/AGENTS.md",
+    "package_sha256": "2934779a57bafe93459d28bac50eb6e94ab5c74b2e05989eca25bfe7bd5f59ce",
+    "current_sha256": "2934779a57bafe93459d28bac50eb6e94ab5c74b2e05989eca25bfe7bd5f59ce"
+  },
+  {
+    "path": "src/lib/catalogo/tenantCatalogRoots.ts",
+    "package_sha256": "2ddf89c22d0566a566c003d385d4d463f87f48f01740e56db6044b38840d6dcf",
+    "current_sha256": "2ddf89c22d0566a566c003d385d4d463f87f48f01740e56db6044b38840d6dcf"
+  },
+  {
+    "path": "src/lib/catalogo/tenantProducts.ts",
+    "package_sha256": "57865de679d7e5da489e708da3ffee42d4a9d00fc8b8688088c57086f20209f0",
+    "current_sha256": "57865de679d7e5da489e708da3ffee42d4a9d00fc8b8688088c57086f20209f0"
+  },
+  {
+    "path": "src/lib/comercial/civilDate.ts",
+    "package_sha256": "3c405f7603e00634b53f83dda9c5273d8da6b42baf1719a34d2a0f4bf572f3e7",
+    "current_sha256": "3c405f7603e00634b53f83dda9c5273d8da6b42baf1719a34d2a0f4bf572f3e7"
+  },
+  {
+    "path": "src/lib/fiscal/ownedProductFiscal.ts",
+    "package_sha256": "2c8a3d54e114712567e9eedb03a80bc8e91839f45b88029a8a5c1594031d0885",
+    "current_sha256": "2c8a3d54e114712567e9eedb03a80bc8e91839f45b88029a8a5c1594031d0885"
+  },
+  {
+    "path": "src/lib/permissions.ts",
+    "package_sha256": "feefacd367e52a05868504c68948f06f6ceefeeddf225273fe02a77204b783df",
+    "current_sha256": "feefacd367e52a05868504c68948f06f6ceefeeddf225273fe02a77204b783df"
+  },
+  {
+    "path": "src/lib/protocolos/seedCatalogoARBioV13.ts",
+    "package_sha256": "70a226fa1bace6abc9f83b5f3aef2263c1f49813dc5d83f58b93bb9a3533ee39",
+    "current_sha256": "70a226fa1bace6abc9f83b5f3aef2263c1f49813dc5d83f58b93bb9a3533ee39"
+  },
+  {
+    "path": "src/lib/protocolos/seedMicrorganismosARBio2026.ts",
+    "package_sha256": "15093cd3b55d77ba872cb10bde0568a0547017bc5e5799c231c77d418795ae91",
+    "current_sha256": "15093cd3b55d77ba872cb10bde0568a0547017bc5e5799c231c77d418795ae91"
+  },
+  {
+    "path": "src/pages/configuracoes/FiscalProdutos.tsx",
+    "package_sha256": "f6ab8b882fdfad04955e42d8db98bf9fe6eb96de5ef5ebeee0301d6b8bc304d4",
+    "current_sha256": "f6ab8b882fdfad04955e42d8db98bf9fe6eb96de5ef5ebeee0301d6b8bc304d4"
+  },
+  {
+    "path": "src/pages/configuracoes/ProdutosEmpresa.tsx",
+    "package_sha256": "7f2d1b7da52539dc5592587b597f024f9ee8eb405d720b4a1863fd15e840ac8c",
+    "current_sha256": "7f2d1b7da52539dc5592587b597f024f9ee8eb405d720b4a1863fd15e840ac8c"
+  },
+  {
+    "path": "src/pages/plataforma/PlataformaHome.tsx",
+    "package_sha256": "ac9d3e74e84d4b228cab036d7ff33c71af9b71296e6ec31496a220ecd069012e",
+    "current_sha256": "ac9d3e74e84d4b228cab036d7ff33c71af9b71296e6ec31496a220ecd069012e"
+  }
+]

@@ -1,0 +1,405 @@
+{
+  "base": "9d3a9424d708f6daebfb67b969696db2d1b7e0d0",
+  "records": [
+    {
+      "path": "src/components/comercial/PaymentPlanSelector.tsx",
+      "candidate_sha256": "b8bd9db7a9ef6ed117113818075d478fb8b346585d6b02e2060a661a0d4d594d",
+      "baseline_sha256": "522c68eccadda92566a36dba25d7b26a3bf7e18fc11410e2c101d3f5ff54efb4",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/components/comercial/PaymentPlanSelector.tsx"
+    },
+    {
+      "path": "src/hooks/useCommercialPaymentPlans.ts",
+      "candidate_sha256": "fcd958a180c5d6be28d8993a6b26dcfc2526a2a5afe2d616002f2ed67d9e6884",
+      "baseline_sha256": "0e09db77c804ac2693170721d166183232fdaa9c82980848661e941da41a8e75",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/hooks/useCommercialPaymentPlans.ts"
+    },
+    {
+      "path": "src/hooks/useCommercialPaymentPlansAdmin.ts",
+      "candidate_sha256": "0e5c49a7233bd25296d9ac98b439e849f41a33cb774fcf5f54fa594dab9f07fa",
+      "baseline_sha256": "02d8cf12a285a7e6540e7544bee1a8926b80594076f86b92ce6705d2c37d102f",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/hooks/useCommercialPaymentPlansAdmin.ts"
+    },
+    {
+      "path": "src/hooks/useCreatePartnerOrder.ts",
+      "candidate_sha256": "c763c8b88f1bd86e5d4197587b14832fb67f04ba5eb8db37f6e8a3f989687bee",
+      "baseline_sha256": "27da17f94d9bea0a2b460698df7fd888b7b65bc4edac72792984f04d49160280",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/hooks/useCreatePartnerOrder.ts"
+    },
+    {
+      "path": "src/hooks/usePartnerOrderActions.ts",
+      "candidate_sha256": "e017f70e0d4131b29dddb53c0cf96c10939f591cc7665662c701a3637241b3cc",
+      "baseline_sha256": "dd42c452d3e4893ad70545b2b7529af741f9f939a04798171e98b49e5681e331",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/hooks/usePartnerOrderActions.ts"
+    },
+    {
+      "path": "src/hooks/useSimulateB2BPaymentPlan.ts",
+      "candidate_sha256": "8157ae26471a6731ab5950dc02058398330b45274c300b2a7298f078e7de7779",
+      "baseline_sha256": "ed670abb4a31c0b98188381ebfb738d12ff813237983b8bd7b1253137536670b",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/hooks/useSimulateB2BPaymentPlan.ts"
+    },
+    {
+      "path": "src/pages/portal-parceiro/NovoPedido.tsx",
+      "candidate_sha256": "1f263da587e98497195ab75ededfe5684450e90c32efa39dc313660b4c234cf8",
+      "baseline_sha256": "4f24ba8d14060a40141e01b58da43d60ae8075e7b8cc6d08039733a19a924811",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/pages/portal-parceiro/NovoPedido.tsx"
+    },
+    {
+      "path": "src/pages/comercial/CommercialPaymentPlansPage.tsx",
+      "candidate_sha256": "2cfaf373d06969a9630d24768d5cd4c305a5ea0d762cda515e05214fa1bd6fbb",
+      "baseline_sha256": "47a6a18c88a603b8f00950709182c98b61442db4b97fb6dc00d3fec39c2e1311",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/pages/comercial/CommercialPaymentPlansPage.tsx"
+    },
+    {
+      "path": "src/pages/comercial/SimuladorComercial.tsx",
+      "candidate_sha256": "537ac14e316344ab4042e6f094104a97cfdb96811108f1f704ade9fedf8799ad",
+      "baseline_sha256": "8aa06690e2b6432dd631410e077681d67f65723ce5d54d0eb1e9b8da06e3cf30",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/pages/comercial/SimuladorComercial.tsx"
+    },
+    {
+      "path": "src/lib/comercial/validation.ts",
+      "candidate_sha256": "5463bfa030ae52687d993152a5dd082c8a906ec609852844252ff3dd05617b6f",
+      "baseline_sha256": "2100729b04da1cf8dc17202e72b3a7623b3b3b2bfeece25362e294f22aa2df9d",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/comercial/validation.ts"
+    },
+    {
+      "path": "src/lib/authz/pendingOrderAttempt.ts",
+      "candidate_sha256": "b206512bd24b926925ad801f18d1980f3359a2612f995bb5d42311b7386ebfc3",
+      "baseline_sha256": "a10f72cb4803eccac49424e2939e39fd097e36acf54ff8dffaf22db6379ff3e3",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/authz/pendingOrderAttempt.ts"
+    },
+    {
+      "path": "src/components/financeiro/BaixaDialog.tsx",
+      "candidate_sha256": "ada8b58de28e68029e4f14430897627168bb29fbe5f75e8b465b6da7ca3fafd0",
+      "baseline_sha256": "07c639c37046171456846378d0f264f06febb550b628d6df78f2df53fbe4c29b",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/components/financeiro/BaixaDialog.tsx"
+    },
+    {
+      "path": "src/components/financeiro/ContaDrawer.tsx",
+      "candidate_sha256": "10055a7f21afe8f8fe1fe917945cdc70793e979b4158f5fd8eea6047d733a6cd",
+      "baseline_sha256": "5a298f9d3d636e5dbeadada855fbccaa846c9833cb4cf9fe1de5d05c14ee5a29",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/components/financeiro/ContaDrawer.tsx"
+    },
+    {
+      "path": "src/pages/financeiro/ContasReceber.tsx",
+      "candidate_sha256": "6646ac3962777ef55706be783f6adc5f8ec3ab122038aff1d2f5ee5201ffa6a7",
+      "baseline_sha256": "8f05279c9f2fccf0b2edc9007c3f2447338df7509551eb821dbe31b43f24ec65",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/pages/financeiro/ContasReceber.tsx"
+    },
+    {
+      "path": "src/lib/financeiro/baixaRecebimento.ts",
+      "candidate_sha256": "e5ece3b755b2925766843a501e23ea0012e5e15b56dd97bfb7f28069c4a2a0cc",
+      "baseline_sha256": "c6a3d1254afcec0ca6022c6a97866b434590c59e2fcac559e2a2bcf6afc5d30a",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/financeiro/baixaRecebimento.ts"
+    },
+    {
+      "path": "src/lib/financeiro/contasReceber.ts",
+      "candidate_sha256": "38f5ad209fa27cc96331e0a4ec60baf8da93a3667289a5a98a7fdeaf7eaf8258",
+      "baseline_sha256": "6b7149fb97619cdf46a27082047311d6f0dcbd5b708ce94be74aadc78b636a90",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/financeiro/contasReceber.ts"
+    },
+    {
+      "path": "src/hooks/usePaymentConditionCapability.ts",
+      "candidate_sha256": "db4ff7d96ea3e805af1b6315ae18b39155a01b456ec7ad821cbd3d448efe6f15",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/hooks/usePaymentConditionCapability.ts"
+    },
+    {
+      "path": "src/lib/comercial/paymentContract.ts",
+      "candidate_sha256": "fb30a5efcb64bd33605a269afd1ae193a91279902ed34080753fb8ee99f160e2",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/comercial/paymentContract.ts"
+    },
+    {
+      "path": "src/lib/comercial/paymentSchedule.ts",
+      "candidate_sha256": "d0e5ba903f8559cdb77c12ca1ddce4e02fdf320df66299fe072cc4460db3c713",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/comercial/paymentSchedule.ts"
+    },
+    {
+      "path": "src/lib/comercial/price.ts",
+      "candidate_sha256": "d76bff5415125ffc5a2ce245baab18b01ffff414c03ccbf3467adaaf5d9a8818",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/comercial/price.ts"
+    },
+    {
+      "path": "src/lib/comercial/civilDate.ts",
+      "candidate_sha256": "3c405f7603e00634b53f83dda9c5273d8da6b42baf1719a34d2a0f4bf572f3e7",
+      "baseline_sha256": null,
+      "action": "keep_catalog_dependency",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/comercial/civilDate.ts",
+      "reason": "ownedProductFiscal.ts imports isCivilDate; no transport/business writer"
+    },
+    {
+      "path": "src/lib/financeiro/receivableMoney.ts",
+      "candidate_sha256": "38dceea7a2dd6ebab78fc33793c643307f35a3095d3e77788a86aab9a9b159ab",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/financeiro/receivableMoney.ts"
+    },
+    {
+      "path": "src/lib/financeiro/receivableOrigin.ts",
+      "candidate_sha256": "bb9103567517cee90b23556b36b9362d242fc0cd528c753411fbec274620de24",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/lib/financeiro/receivableOrigin.ts"
+    },
+    {
+      "path": "src/test/comercial/commercial-package.test.tsx",
+      "candidate_sha256": "b6224d2afe6b159d22215d5077efa3e5d7c63f2e423c009cc03e8c5937cecd34",
+      "baseline_sha256": "383a736bc88a6ed4d41ce62e90e672a66de23e213efbe04be549697aaad9a76e",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/comercial/commercial-package.test.tsx"
+    },
+    {
+      "path": "src/test/comercial/preview-cronograma.test.ts",
+      "candidate_sha256": "78ac26533575b65cd39438a72878284a93c51971a8e1b1a6dd345acb089a0648",
+      "baseline_sha256": "a6961cad4b6d1ac9a946e6d4a00a430e96fa7d184bec516e934e2ee44ddef5eb",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/comercial/preview-cronograma.test.ts"
+    },
+    {
+      "path": "src/test/comercial/priceDecimalOracle.review.test.ts",
+      "candidate_sha256": "36c2bd0a6547ec5b8c7a9569d05eec8e4bdf0fcdbd9e00d0becbe751ddee9b8e",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/comercial/priceDecimalOracle.review.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/arbioAuditCurrentGaps.test.ts",
+      "candidate_sha256": "ce37cc9d497fe15fab41bd4afcf6d79f969fdf26346c17156803ee36c896e2a2",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/arbioAuditCurrentGaps.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/arbioMoneyContract.test.ts",
+      "candidate_sha256": "4b8b31fb8cd4e9c1b10dbd5f696cae9549c48110f76e175b1d75e1dc3dfc0563",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/arbioMoneyContract.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/b2bCapturedContracts.audit.test.ts",
+      "candidate_sha256": "52a125ec1d78cc83ece503a5faff1bf661f9b4a442f259ade95b175b5da79cee",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/b2bCapturedContracts.audit.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/b2bIntegratedOrigin.review.test.ts",
+      "candidate_sha256": "37f3c4fbddb6baac2dd90e97fc2e8c8d883f165de139de286a897714d9b84818",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/b2bIntegratedOrigin.review.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/cancelAuthorizationPostgres.test.ts",
+      "candidate_sha256": "d5058a89c1c89fb3a9acc017f9b81a83fdeb6b9935a96b7dad20d94661659615",
+      "baseline_sha256": "713caced88c7c7eeaafaa90a17ea23ff0d6291d38b9a0577d5bed081c11da140",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/cancelAuthorizationPostgres.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/contasPagarBloco5.test.tsx",
+      "candidate_sha256": "d3e40fa2e9d4cf49dc8e30060dc3a970842f73f422d9c9d1cf1d484946785110",
+      "baseline_sha256": "6a4560819c9958356f256bd92c1c3e5d9d11c48d8a21f8fa8e8a2704194eaa1f",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/contasPagarBloco5.test.tsx"
+    },
+    {
+      "path": "src/test/financeiro/contasReceberTela.test.tsx",
+      "candidate_sha256": "0763f12f7eee557888a642a9b11d3867c2fb1c505a49233ea76d8517794bc6fd",
+      "baseline_sha256": "c4058bd1c5c2082d5bd99da08705ee6b73f5f6cafa1e618b476f58b663b41c28",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/contasReceberTela.test.tsx"
+    },
+    {
+      "path": "src/test/financeiro/financialProvenanceOffline.test.ts",
+      "candidate_sha256": "70a854a4bf301172fd0d1dd0573eee0b0c12183ca565dfeb50e972e020d211b0",
+      "baseline_sha256": "731dadc22fd6004a2b0e596b74b4277265eb750efced0efc31b53caac03d9169",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/financialProvenanceOffline.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/fixtures/money-origin-projection.json",
+      "candidate_sha256": "29dba6fe6c963ef3ae2855b803949140b4c2abc05fd1e48e7b1f2259696e1379",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/fixtures/money-origin-projection.json"
+    },
+    {
+      "path": "src/test/financeiro/receivableOrigin.baselineContract.test.ts",
+      "candidate_sha256": "4a62f21c5bd20cedcce30b83fd4bed31f89812221d48803cf44a8dd1f04b16c4",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/receivableOrigin.baselineContract.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/receivableOrigin.integration.test.tsx",
+      "candidate_sha256": "36cab0a61c626cc68231b00e20cea36cf95983901e731a9f6bb5bea8ddb17ad9",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/receivableOrigin.integration.test.tsx"
+    },
+    {
+      "path": "src/test/financeiro/receivableTarget.review.test.ts",
+      "candidate_sha256": "032602e67c2274b10e23235ca01422fbf2ad96d6a79805aff492ea72d3ca5bf4",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/receivableTarget.review.test.ts"
+    },
+    {
+      "path": "src/test/financeiro/receivableTargetConsumer.review.test.tsx",
+      "candidate_sha256": "8e6e46c699594cafcfc9d5b3c3ea860f7784c251719070d0af602434c6026dc1",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/financeiro/receivableTargetConsumer.review.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/arbioApprovalAck.audit.test.tsx",
+      "candidate_sha256": "c7e58a974ef3f78f3bcaa5720f9768bf2071bc67a40b9a8c5c3644023e761ea1",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/arbioApprovalAck.audit.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/arbioCashDeadline.audit.test.ts",
+      "candidate_sha256": "4dfdb7e26e25f72569913c5aaa7d798292dbcfab2f5986e5353ae2930cc5d66e",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/arbioCashDeadline.audit.test.ts"
+    },
+    {
+      "path": "src/test/pedidos/arbioFinalPaymentRules.audit.test.ts",
+      "candidate_sha256": "0d4dac55d9903f2710a3e991759c5498ea87fb1e656d77c86dbd2845f6860ad3",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/arbioFinalPaymentRules.audit.test.ts"
+    },
+    {
+      "path": "src/test/pedidos/arbioPaymentChoice.audit.test.ts",
+      "candidate_sha256": "f25d02d51c0450ad8418b467929f6a2a364ca17b9e490ad4605c6106389319ea",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/arbioPaymentChoice.audit.test.ts"
+    },
+    {
+      "path": "src/test/pedidos/arbioPaymentContract.integration.test.tsx",
+      "candidate_sha256": "465e0de4efc3b0689ecd59ce311de90b5b26d42d5cec46372341d85df9c31857",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/arbioPaymentContract.integration.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/arbioScheduleContract.test.ts",
+      "candidate_sha256": "836b3bdc1e7665f8642b497d1e12b0c42ed6edb5dfffa5a292a9f3da17eeaa3c",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/arbioScheduleContract.test.ts"
+    },
+    {
+      "path": "src/test/pedidos/concurrentAttemptHook.test.tsx",
+      "candidate_sha256": "f06f6d3d58a4b01331eeff4c0106c69ea2fee7d618949f9527c40f0f03d17923",
+      "baseline_sha256": "1f91d9067b5964e0ab664d1d0d7bc276b14f80de091ff34318697ceb42408c17",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/concurrentAttemptHook.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/createPartnerOrderOwnChannel.integration.test.tsx",
+      "candidate_sha256": "0980934e688f4bfa33c58f030846036ddb21c0ec0fac0416b8e0a7c3f673d783",
+      "baseline_sha256": "5d249479b3bf51b91cc960bf5cd7b9ca8240ad49f0a6c72c6df81331bc3798f3",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/createPartnerOrderOwnChannel.integration.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/createPartnerOrderOwnChannelInvalidation.test.tsx",
+      "candidate_sha256": "3dd21e2ba324aae725be2724848ee662ee563f89bbf674af63409fb40cc1da29",
+      "baseline_sha256": "525b7824a2011c80af94e4ef02c740b54c4d329b4ba026577bc94f0393c868a8",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/createPartnerOrderOwnChannelInvalidation.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+      "candidate_sha256": "ac5a1bac20695ab5b941facfe9ecf7104d239888399372fc24c1ca6f642036c5",
+      "baseline_sha256": "cc46a396e6c514780f1b105d6a4a3649c145ca039a4ce31d2568fbb983c390b0",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+      "candidate_sha256": "8c8eebe316176de66ba5d952ad2bcfc7f1bd07e6537deeb3151039de01f86080",
+      "baseline_sha256": "89eb188af9c0ba58533730dcfcda3eba6dca199a831a5ced390aae0a46320ed0",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/novoPedidoAttemptClosure.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/novoPedidoDeliveryDate.test.tsx",
+      "candidate_sha256": "517036a863d23ffbb2299945f58137a0a3e0f29d527d1ca4865b7c2d8721ce15",
+      "baseline_sha256": "ba9729449a5ddba67994a2979ae580c2d134aa289a9ebfa83a7828b3c77a0799",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/novoPedidoDeliveryDate.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/orderJournal.integration.test.tsx",
+      "candidate_sha256": "5154464fc1f3666b207afa3087d2aad35b3fcc87479776204f8232119a9eb1f6",
+      "baseline_sha256": "1f3b970742aa8b39b0b7bcee9c47a280bdf5973cddea7d330dab77ea1c3e85fc",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/orderJournal.integration.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/partnerOrdersAdminScope.test.tsx",
+      "candidate_sha256": "c18f420968c410ce771d426fa33ab8942b3a04eaa7ee724f3ca365dd53ee84d2",
+      "baseline_sha256": "767d402f7ac8b7da25bb9dc40a379fca71505722c95987af7cbcf0c5d5975296",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/partnerOrdersAdminScope.test.tsx"
+    },
+    {
+      "path": "src/test/pedidos/paymentInputs.review.test.ts",
+      "candidate_sha256": "32e6969a9b764fe350836bf94a819d2c47eb6e755a0197b6be4059897a99b020",
+      "baseline_sha256": null,
+      "action": "defer_from_runtime",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/paymentInputs.review.test.ts"
+    },
+    {
+      "path": "src/test/pedidos/preDispatchSettlement.test.tsx",
+      "candidate_sha256": "4d482fec61d04fdc586dea76e5f0b392c66350a5da9447e863f79006303d3d4a",
+      "baseline_sha256": "2bf2b8f8843112dfb2228d774550a70d15301e27bcb52a481cba9d4ae6b05fd7",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/pedidos/preDispatchSettlement.test.tsx"
+    },
+    {
+      "path": "src/test/catalogo/partnerCatalogMonitor.integration.test.tsx",
+      "candidate_sha256": "c3d0292596f58a4b818064a1aaa5e4c409a16e8e5dd29b8361b07e4e9f980ea3",
+      "baseline_sha256": "fa8f14884e41725c1fba5c2dae7247e0a9208919e7e777bbf0fb4ab6115af019",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/catalogo/partnerCatalogMonitor.integration.test.tsx"
+    },
+    {
+      "path": "src/test/catalogo/partnerOutletNovoPedido.test.tsx",
+      "candidate_sha256": "977f2465f05909af01511095b869930a9ceb018c59854a3a70509c1518e693b3",
+      "baseline_sha256": "2f76cc728bc23b6708d97bc298218b18ab3f9e6bc1981a7c3ba51ccc3f3b808d",
+      "action": "restore_base",
+      "candidate_path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/deferred/source/src/test/catalogo/partnerOutletNovoPedido.test.tsx"
+    }
+  ]
+}

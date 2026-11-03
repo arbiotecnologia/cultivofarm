@@ -85,11 +85,6 @@ beforeEach(() => {
       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: state.catalogRead, sheets_read: true },
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
-    // Read-only capability probe added by the B2B payment-condition work (usePaymentConditionCapability). This suite asserts
-    // catalogue-authority transitions with zero query errors, so the probe answers with a scoped, exact-envelope local
-    // fixture (same actor/tenant/partner) — a read, never a write; the server function itself remains uninstalled.
-    if (name === "partner_payment_condition_capability_v1") return response({ contract: "B2B_PAYMENT_CONDITION_V1", actor_id: state.actor,
-      organization_id: state.tenant, partner_id: args?.p_partner_id, simulate: true, create: true });
     // Read-only journal capability probe (orderJournal.journalCapability). This suite certifies catalogue
     // authority, so the journal is fixed in its exact pre-install signal (PGRST202 naming the RPC) => legacy mode.
     // Durable mode (mount recovery via recover_partner_order_attempt_v1, a server key reservation) is covered by

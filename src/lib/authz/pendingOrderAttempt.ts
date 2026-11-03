@@ -64,17 +64,12 @@ function digest(text: string): string {
 export function orderAttemptFingerprint(input: {
   partner_id: string; observacoes?: string | null; requested_delivery_date?: string | null;
   payment_plan_id?: string | null; installment_count?: number | null; first_due_date?: string | null;
-  payment_method?: string | null; payment_condition_version?: number | null; payment_deadline_days?: number | null;
   items: Array<{ item_id: string; item_tipo: string; quantidade: number; unidade_pedido: string; volume_ml?: number | null }>;
 }): string {
   const items = input.items.map(i => [i.item_id, i.item_tipo, Number(i.quantidade), i.unidade_pedido, i.volume_ml ?? null])
     .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
-  const legacy = [input.partner_id, input.observacoes || null, input.requested_delivery_date || null,
-    input.payment_plan_id ?? null, input.installment_count ?? null, input.first_due_date || null, items];
-  // Preserve historical identities without payment fields; new choices cannot
-  // collide with a legacy attempt, and economics remain server-owned.
-  return digest(JSON.stringify(input.payment_method == null && input.payment_condition_version == null && input.payment_deadline_days == null
-    ? legacy : [...legacy, input.payment_method ?? null, input.payment_condition_version ?? null, input.payment_deadline_days ?? null]));
+  return digest(JSON.stringify([input.partner_id, input.observacoes || null, input.requested_delivery_date || null,
+    input.payment_plan_id ?? null, input.installment_count ?? null, input.first_due_date || null, items]));
 }
 
 export function readOrderAttempt(slot: string | null): OrderAttempt | null {
