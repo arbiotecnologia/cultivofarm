@@ -1,0 +1,49 @@
+{
+  "scope": "catalog-products-receiver-local-only",
+  "base": "16f60b95b7a43a026baf53d3bfb931bba203308b",
+  "hosted_executed": false,
+  "jwt_verified": false,
+  "tests": {
+    "files": 177,
+    "passed": 2876,
+    "failed": 0
+  },
+  "records": [
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/README.md",
+      "sha256": "1993e9c7f7d3c9fd08896c85aa557f3ba2402affccbdd078895095515b52f66d"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/automatic-build.log.txt",
+      "sha256": "a70bddeb4512ef8f0695c4efff04006385dab94145bfd8c234b3038fb9e9b8ef"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/catalog-products-receiver.patch",
+      "sha256": "68899b805847f871dd56c447ac94e6c70618a49c758802b59de4cca03446f845"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/diff-check.log.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/focused.log.txt",
+      "sha256": "b81dfd470e934c9155f81b025463e1f8e751bd7e3b9246f956787e19a55e33cc"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/regression.log.txt",
+      "sha256": "4cb6f2e5b6091726bccd7a68a9fb4609edaf13b278ca9c1746999639c256e88e"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/runtime.patch",
+      "sha256": "3058c235c4bd2c7666fa4c65d93f6dbe091a5dc4f8f7a042f6f75f2a1155377f"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/separation.log.txt",
+      "sha256": "7394fa3b7be7f731923f3eb59df1272a4220224cd28e7ec2e7b8bacc1c770c99"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/test-files.txt",
+      "sha256": "d135a0f829b8bacde1aca785539acc1a27d044092bfcf9442b1a557f05c120ac"
+    }
+  ]
+}
