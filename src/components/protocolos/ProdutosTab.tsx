@@ -228,6 +228,10 @@ export function ProdutosTab() {
   const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
   const [partialMessage, setPartialMessage] = useState<string | null>(null);
   const [partialAck, setPartialAck] = useState<{ product_id: string; updated_at: string } | null>(null);
+  const [partialKind, setPartialKind] = useState<"definitive" | "uncertain" | null>(null);
+  const [partialExport, setPartialExport] = useState<string | null>(null);
+  const [reconciling, setReconciling] = useState(false);
+  const retainedForm = useRef<any>(null);
 
   const [form, setForm] = useState({
     id: "",
@@ -272,9 +276,10 @@ export function ProdutosTab() {
   const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
   useEffect(() => {
     localGeneration.current += 1;
-    retainedSave.current = null;
+    // Escopo mudou: descarta rascunho/exportação retidos (nunca reutilizados em outro ator/tenant).
+    retainedSave.current = null; retainedForm.current = null;
     setPartialMessage(null);
-    setPartialAck(null);
+    setPartialAck(null); setPartialKind(null); setPartialExport(null); setReconciling(false);
     setOpen(false); resetForm();
     setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
