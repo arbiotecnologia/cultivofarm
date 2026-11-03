@@ -1,0 +1,4097 @@
+{
+  "source": "READ ONLY production metadata 2026-11-02",
+  "tables": [
+    "accounts_receivable",
+    "aprovacoes_tecnicas",
+    "catalog_tenant_visibility",
+    "catalogo_alvos",
+    "catalogo_volumes",
+    "clientes",
+    "commercial_campaign_products",
+    "commercial_campaigns",
+    "commercial_condition_item_prices",
+    "commercial_payment_plan_assignments",
+    "commercial_payment_plans",
+    "commercial_price_rules",
+    "cq_parametros_referencia",
+    "culturas",
+    "entrega_comprovantes",
+    "entregas",
+    "envase",
+    "estoque_embalagens",
+    "estoque_produto",
+    "fazendas",
+    "formulacoes",
+    "lotes",
+    "microorganism_crop_recommendations",
+    "microorganism_fiscal_profiles",
+    "microorganism_ncm_candidates",
+    "microorganism_regulatory_dossiers",
+    "microorganism_regulatory_presentations",
+    "microorganism_regulatory_publication_snapshots",
+    "microorganism_targets",
+    "microorganism_technical_profiles",
+    "microrganismos",
+    "objetivos_visita_sugestoes",
+    "ordens_servico",
+    "ordens_servico_onfarm",
+    "organizations",
+    "os_faturamento_base",
+    "partner_accounts",
+    "partner_order_items",
+    "partner_orders",
+    "partner_product_prices",
+    "partner_simulation_items",
+    "partner_simulations",
+    "portal_solicitacoes",
+    "product_crop_recommendations",
+    "product_fiscal_profiles",
+    "product_target_recommendations",
+    "product_technical_profiles",
+    "produto_composicao_conjuntos",
+    "produto_composicao_declaracoes",
+    "produto_conformidade_perfis",
+    "produto_etiquetas",
+    "produtos",
+    "profiles",
+    "programacao_producao",
+    "registros_consultor",
+    "registros_consultor_recomendacoes",
+    "talhao_safras",
+    "talhoes",
+    "visitas_campo"
+  ],
+  "enums": [
+    {
+      "schema_name": "public",
+      "typname": "access_level_tecnico",
+      "enumlabel": "read",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "access_level_tecnico",
+      "enumlabel": "execute",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "access_level_tecnico",
+      "enumlabel": "manage",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "administrador",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "tecnico_agronomo",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "producao",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "administrativo",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "gestor",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "cliente_produtor",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "consultor_tecnico",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "aplicador",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "operador_onfarm",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "financeiro",
+      "enumsortorder": 10
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "gestor_comercial",
+      "enumsortorder": 11
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "parceiro_b2b",
+      "enumsortorder": 12
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "parceiro_b2b_tecnico",
+      "enumsortorder": 13
+    },
+    {
+      "schema_name": "public",
+      "typname": "app_role",
+      "enumlabel": "superadmin",
+      "enumsortorder": 14
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "praga",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "doenca",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "planta_daninha",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "nematoide",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "solo",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "aplicacao",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "geral",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "laudo",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "documento_cliente",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "recomendacao_anexa",
+      "enumsortorder": 10
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "checkin",
+      "enumsortorder": 11
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "vistoria",
+      "enumsortorder": 12
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_arquivo_consultor",
+      "enumlabel": "retorno",
+      "enumsortorder": 13
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "insetos_praga",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "doencas_fungicas",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "doencas_bacterianas",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "nematoides",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "plantas_daninhas",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "desequilibrio_biologico_solo",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "baixa_vitalidade",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "falha_estande",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "fitotoxidade",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "categoria_problema_consultor",
+      "enumlabel": "outro",
+      "enumsortorder": 10
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "contrato_social",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "procuracao",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "car_mapa",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "outro",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "cnh",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "cartao_cnpj",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "inscricao_produtor",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "rg",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_doc_tipo",
+      "enumlabel": "comprovante_endereco",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_status",
+      "enumlabel": "prospect",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_status",
+      "enumlabel": "ativo",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_status",
+      "enumlabel": "inativo",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_status",
+      "enumlabel": "bloqueado_financeiro",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_tipo_pessoa",
+      "enumlabel": "fisica",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "cliente_tipo_pessoa",
+      "enumlabel": "juridica",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_canal",
+      "enumlabel": "email",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_canal",
+      "enumlabel": "whatsapp",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_canal",
+      "enumlabel": "in_app",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_canal",
+      "enumlabel": "push",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_evento_status",
+      "enumlabel": "received",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_evento_status",
+      "enumlabel": "processed",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_evento_status",
+      "enumlabel": "skipped",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_outbox_status",
+      "enumlabel": "pending",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_outbox_status",
+      "enumlabel": "processing",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_outbox_status",
+      "enumlabel": "sent",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_outbox_status",
+      "enumlabel": "failed",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_outbox_status",
+      "enumlabel": "cancelled",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_outbox_status",
+      "enumlabel": "skipped",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_outbox_status",
+      "enumlabel": "dead_letter",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_template_status",
+      "enumlabel": "draft",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_template_status",
+      "enumlabel": "active",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "comunicacao_template_status",
+      "enumlabel": "archived",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "estrategia_manejo",
+      "enumlabel": "biologico",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "estrategia_manejo",
+      "enumlabel": "manejo_integrado",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "estrategia_manejo",
+      "enumlabel": "monitoramento",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "estrategia_manejo",
+      "enumlabel": "correcao_operacional",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "estrategia_manejo",
+      "enumlabel": "ajuste_aplicacao",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "estrategia_manejo",
+      "enumlabel": "ajuste_janela",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "estrategia_manejo",
+      "enumlabel": "outro",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "faturamento_base_status",
+      "enumlabel": "PENDENTE",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "faturamento_base_status",
+      "enumlabel": "LIBERADO_FATURAMENTO",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "faturamento_base_status",
+      "enumlabel": "FATURADO_PARCIAL",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "faturamento_base_status",
+      "enumlabel": "FATURADO_TOTAL",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "faturamento_base_status",
+      "enumlabel": "CANCELADO",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "modo_aplicacao_consultor",
+      "enumlabel": "foliar",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "modo_aplicacao_consultor",
+      "enumlabel": "aplicacao_no_colo_da_planta",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "modo_aplicacao_consultor",
+      "enumlabel": "via_solo",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "modo_aplicacao_consultor",
+      "enumlabel": "tratamento_semente",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "modo_aplicacao_consultor",
+      "enumlabel": "sulco_plantio",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "modo_aplicacao_consultor",
+      "enumlabel": "jato_dirigido",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "modo_aplicacao_consultor",
+      "enumlabel": "outro",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "natureza_registro_consultor",
+      "enumlabel": "ocorrencia",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "natureza_registro_consultor",
+      "enumlabel": "visita",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "necessidade_intervencao",
+      "enumlabel": "monitorar",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "necessidade_intervencao",
+      "enumlabel": "intervir_ate_7_dias",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "necessidade_intervencao",
+      "enumlabel": "intervir_ate_3_dias",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "necessidade_intervencao",
+      "enumlabel": "intervir_imediatamente",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_pressao",
+      "enumlabel": "baixo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_pressao",
+      "enumlabel": "medio",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_pressao",
+      "enumlabel": "alto",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_pressao",
+      "enumlabel": "severo",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_risco",
+      "enumlabel": "baixo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_risco",
+      "enumlabel": "medio",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_risco",
+      "enumlabel": "alto",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_risco",
+      "enumlabel": "critico",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_severidade",
+      "enumlabel": "baixo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_severidade",
+      "enumlabel": "medio",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "nivel_severidade",
+      "enumlabel": "alto",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "objetivo_recomendacao",
+      "enumlabel": "preventivo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "objetivo_recomendacao",
+      "enumlabel": "corretivo",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "objetivo_recomendacao",
+      "enumlabel": "reducao_pressao",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "objetivo_recomendacao",
+      "enumlabel": "tratamento_solo",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "objetivo_recomendacao",
+      "enumlabel": "reequilibrio_biologico",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "objetivo_recomendacao",
+      "enumlabel": "suporte_fisiologico",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "objetivo_recomendacao",
+      "enumlabel": "manejo_integrado",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "order_message_author",
+      "enumlabel": "parceiro",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "order_message_author",
+      "enumlabel": "comercial",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "order_message_author",
+      "enumlabel": "admin",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_contact_setor",
+      "enumlabel": "comercial",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_contact_setor",
+      "enumlabel": "financeiro",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_contact_setor",
+      "enumlabel": "operacional",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_contact_setor",
+      "enumlabel": "tecnico",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_contact_setor",
+      "enumlabel": "administrativo",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_contact_setor",
+      "enumlabel": "outro",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_priority",
+      "enumlabel": "normal",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_priority",
+      "enumlabel": "urgente",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_priority",
+      "enumlabel": "programado",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "rascunho",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "pendente",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "solicitado",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "em_analise_comercial",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "aprovado",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "reprovado",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "em_producao",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "produzido",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "aguardando_entrega",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "confirmado",
+      "enumsortorder": 10
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "em_separacao",
+      "enumsortorder": 11
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "enviado",
+      "enumsortorder": 12
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "entregue",
+      "enumsortorder": 13
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "faturado",
+      "enumsortorder": 14
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "cancelado",
+      "enumsortorder": 15
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "aguardando_aprovacao_credito",
+      "enumsortorder": 16
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "aguardando_ajuste_comercial",
+      "enumsortorder": 17
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "aguardando_itens",
+      "enumsortorder": 18
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "reprovado_sem_itens",
+      "enumsortorder": 19
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_order_status",
+      "enumlabel": "aguardando_cotacao",
+      "enumsortorder": 20
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_porte",
+      "enumlabel": "pequeno",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_porte",
+      "enumlabel": "medio",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_porte",
+      "enumlabel": "grande",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_regime_tributario",
+      "enumlabel": "simples",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_regime_tributario",
+      "enumlabel": "lucro_presumido",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_regime_tributario",
+      "enumlabel": "lucro_real",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_regime_tributario",
+      "enumlabel": "mei",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_regime_tributario",
+      "enumlabel": "isento",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_segmento",
+      "enumlabel": "cooperativa",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_segmento",
+      "enumlabel": "revenda_agro",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_segmento",
+      "enumlabel": "consultoria",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_segmento",
+      "enumlabel": "industria",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_segmento",
+      "enumlabel": "produtor_direto",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_segmento",
+      "enumlabel": "outro",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_type_enum",
+      "enumlabel": "distribuidor",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_type_enum",
+      "enumlabel": "revenda",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_type_enum",
+      "enumlabel": "cooperativa",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_type_enum",
+      "enumlabel": "produtor_parceiro",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_type_enum",
+      "enumlabel": "canal_estrategico",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "partner_type_enum",
+      "enumlabel": "representante",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "ponto_area_consultor",
+      "enumlabel": "entrada_talhao",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "ponto_area_consultor",
+      "enumlabel": "bordadura",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "ponto_area_consultor",
+      "enumlabel": "centro_area",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "ponto_area_consultor",
+      "enumlabel": "reboleira",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "ponto_area_consultor",
+      "enumlabel": "outro",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "prioridade_os",
+      "enumlabel": "baixa",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "prioridade_os",
+      "enumlabel": "media",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "prioridade_os",
+      "enumlabel": "alta",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "production_planning_status",
+      "enumlabel": "aguardando_planejamento",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "production_planning_status",
+      "enumlabel": "planejado",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "production_planning_status",
+      "enumlabel": "em_producao",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "production_planning_status",
+      "enumlabel": "produzido",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "production_planning_status",
+      "enumlabel": "entregue",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "production_planning_status",
+      "enumlabel": "cancelado",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "production_planning_status",
+      "enumlabel": "replanejar",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "recomendacao_comentario_autor_tipo",
+      "enumlabel": "produtor",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "recomendacao_comentario_autor_tipo",
+      "enumlabel": "tecnico",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "recomendacao_comentario_autor_tipo",
+      "enumlabel": "gestor",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "recomendacao_comentario_autor_tipo",
+      "enumlabel": "admin",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "resultado_cq",
+      "enumlabel": "aprovado",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "resultado_cq",
+      "enumlabel": "reprovado",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "risco_produtivo",
+      "enumlabel": "baixo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "risco_produtivo",
+      "enumlabel": "medio",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "risco_produtivo",
+      "enumlabel": "alto",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "risco_produtivo",
+      "enumlabel": "critico",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "saas_subscription_status",
+      "enumlabel": "TRIAL",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "saas_subscription_status",
+      "enumlabel": "ACTIVE",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "saas_subscription_status",
+      "enumlabel": "PAST_DUE",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "saas_subscription_status",
+      "enumlabel": "SUSPENDED",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "saas_subscription_status",
+      "enumlabel": "CANCELLED",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "saas_subscription_status",
+      "enumlabel": "EXPIRED",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_alerta",
+      "enumlabel": "ativo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_alerta",
+      "enumlabel": "monitoramento",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_alerta",
+      "enumlabel": "encerrado",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_aprovacao",
+      "enumlabel": "pendente",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_aprovacao",
+      "enumlabel": "aprovado",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_aprovacao",
+      "enumlabel": "reprovado",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_aprovacao",
+      "enumlabel": "solicitar_ajuste",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_aprovacao",
+      "enumlabel": "ajuste_solicitado",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_aprovacao",
+      "enumlabel": "reaberto",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_atribuicao",
+      "enumlabel": "atribuida",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_atribuicao",
+      "enumlabel": "aceita",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_atribuicao",
+      "enumlabel": "recusada",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_atribuicao",
+      "enumlabel": "concluida",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_checkin",
+      "enumlabel": "realizado",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_checkin",
+      "enumlabel": "inconsistente",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_checkin",
+      "enumlabel": "validado",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_diagnostico",
+      "enumlabel": "novo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_diagnostico",
+      "enumlabel": "em_analise",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_diagnostico",
+      "enumlabel": "diagnostico_concluido",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_entrega",
+      "enumlabel": "separado",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_entrega",
+      "enumlabel": "em_rota",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_entrega",
+      "enumlabel": "entregue",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_entrega",
+      "enumlabel": "cancelada",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_estoque",
+      "enumlabel": "disponivel",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_estoque",
+      "enumlabel": "reservado",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_estoque",
+      "enumlabel": "expedido",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_estoque",
+      "enumlabel": "estornado",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_lote",
+      "enumlabel": "em_producao",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_lote",
+      "enumlabel": "aguardando_cq",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_lote",
+      "enumlabel": "aprovado",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_lote",
+      "enumlabel": "reprovado",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "aberta",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "aprovada",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "programada",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "em_producao",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "em_cq",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "envase",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "aguardando_reserva",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "pronto_entrega",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "entregue",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os",
+      "enumlabel": "finalizada",
+      "enumsortorder": 10
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "aberta",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "aprovada",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "programada",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "em_producao",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "em_cq",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "envase",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "aguardando_reserva",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "pronto_entrega",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "entregue",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "finalizada",
+      "enumsortorder": 10
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_os_onfarm",
+      "enumlabel": "cancelada",
+      "enumsortorder": 11
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_programacao",
+      "enumlabel": "aguardando",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_programacao",
+      "enumlabel": "em_producao",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_programacao",
+      "enumlabel": "aguardando_cq",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_programacao",
+      "enumlabel": "aprovado",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "rascunho",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "em_andamento",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "finalizado",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "enviado_aprovacao",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "aprovado",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "convertido_os",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "arquivado",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "status_registro_consultor",
+      "enumlabel": "reprovado",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_alerta",
+      "enumlabel": "praga",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_alerta",
+      "enumlabel": "doenca",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_alerta",
+      "enumlabel": "daninha",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_alerta",
+      "enumlabel": "nematoide",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_alerta",
+      "enumlabel": "estresse_hidrico",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_arquivo_consultor",
+      "enumlabel": "foto",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_arquivo_consultor",
+      "enumlabel": "audio",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_arquivo_consultor",
+      "enumlabel": "pdf",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_checkin",
+      "enumlabel": "chegada_fazenda",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_checkin",
+      "enumlabel": "chegada_talhao",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_checkin",
+      "enumlabel": "inicio_visita",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_checkin",
+      "enumlabel": "checkout",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "praga",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "doenca",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "planta_daninha",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "nematoide",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "solo",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "nutricao_biologica",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "manejo_preventivo",
+      "enumsortorder": 7
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "manejo_corretivo",
+      "enumsortorder": 8
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_demanda_consultor",
+      "enumlabel": "outro",
+      "enumsortorder": 9
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_embalagem",
+      "enumlabel": "frasco_1L",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_embalagem",
+      "enumlabel": "bombona_5L",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_embalagem",
+      "enumlabel": "bombona_20L",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_microrganismo",
+      "enumlabel": "bacteria",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_microrganismo",
+      "enumlabel": "fungo",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_microrganismo",
+      "enumlabel": "levedura",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_microrganismo",
+      "enumlabel": "consorcio",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_notificacao_portal",
+      "enumlabel": "informativo",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_notificacao_portal",
+      "enumlabel": "alerta",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_notificacao_portal",
+      "enumlabel": "entrega",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_notificacao_portal",
+      "enumlabel": "recomendacao",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_notificacao_portal",
+      "enumlabel": "aplicacao",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_notificacao_portal",
+      "enumlabel": "sistema",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_problema",
+      "enumlabel": "praga",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_problema",
+      "enumlabel": "doenca",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_problema",
+      "enumlabel": "solo",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_problema",
+      "enumlabel": "nutricao",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_problema",
+      "enumlabel": "nematoide",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_produto",
+      "enumlabel": "inseticida",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_produto",
+      "enumlabel": "fungicida",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_produto",
+      "enumlabel": "solo",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_produto",
+      "enumlabel": "inoculante",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_produto",
+      "enumlabel": "solubilizador",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_visita",
+      "enumlabel": "vistoria_inicial",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_visita",
+      "enumlabel": "retorno",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_visita",
+      "enumlabel": "monitoramento",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_visita",
+      "enumlabel": "pos_aplicacao",
+      "enumsortorder": 4
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_visita",
+      "enumlabel": "emergencia",
+      "enumsortorder": 5
+    },
+    {
+      "schema_name": "public",
+      "typname": "tipo_visita",
+      "enumlabel": "acompanhamento_programado",
+      "enumsortorder": 6
+    },
+    {
+      "schema_name": "public",
+      "typname": "urgencia_consultor",
+      "enumlabel": "baixa",
+      "enumsortorder": 1
+    },
+    {
+      "schema_name": "public",
+      "typname": "urgencia_consultor",
+      "enumlabel": "media",
+      "enumsortorder": 2
+    },
+    {
+      "schema_name": "public",
+      "typname": "urgencia_consultor",
+      "enumlabel": "alta",
+      "enumsortorder": 3
+    },
+    {
+      "schema_name": "public",
+      "typname": "urgencia_consultor",
+      "enumlabel": "critica",
+      "enumsortorder": 4
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "accounts_receivable",
+      "conname": "accounts_receivable_fiscal_invoice_status_check",
+      "contype": "c",
+      "definition": "CHECK ((fiscal_invoice_status = ANY (ARRAY['NOT_REQUIRED'::text, 'PENDING'::text, 'ISSUED'::text, 'CANCELED'::text, 'PENDING_PARAMETRIZATION'::text, 'EXEMPT'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "accounts_receivable",
+      "conname": "accounts_receivable_installment_count_check",
+      "contype": "c",
+      "definition": "CHECK ((installment_count >= 1))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "accounts_receivable",
+      "conname": "accounts_receivable_origin_type_check",
+      "contype": "c",
+      "definition": "CHECK ((origin_type = ANY (ARRAY['DELIVERY'::text, 'SERVICE'::text, 'MANUAL'::text, 'RECURRING'::text, 'CONTRACT'::text, 'B2B_ORDER'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "accounts_receivable",
+      "conname": "accounts_receivable_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "accounts_receivable",
+      "conname": "accounts_receivable_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['OPEN'::text, 'PARTIAL'::text, 'PAID'::text, 'CANCELED'::text, 'OVERDUE'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "accounts_receivable",
+      "conname": "accounts_receivable_total_amount_check",
+      "contype": "c",
+      "definition": "CHECK ((total_amount >= (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "accounts_receivable",
+      "conname": "ar_customer_or_partner",
+      "contype": "c",
+      "definition": "CHECK (((customer_id IS NOT NULL) OR (partner_id IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "aprovacoes_tecnicas",
+      "conname": "aprovacoes_tecnicas_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalog_tenant_visibility",
+      "conname": "catalog_tenant_visibility_entity_type_check",
+      "contype": "c",
+      "definition": "CHECK ((entity_type = ANY (ARRAY['produto'::text, 'microrganismo'::text, 'cultura'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalog_tenant_visibility",
+      "conname": "catalog_tenant_visibility_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalog_tenant_visibility",
+      "conname": "catalog_tenant_visibility_reason_check",
+      "contype": "c",
+      "definition": "CHECK (((char_length(btrim(reason)) >= 5) AND (char_length(btrim(reason)) <= 500)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalog_tenant_visibility",
+      "conname": "catalog_tenant_visibility_version_check",
+      "contype": "c",
+      "definition": "CHECK ((version >= 1))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalog_tenant_visibility",
+      "conname": "ctv_entity_check",
+      "contype": "c",
+      "definition": "CHECK (((((entity_type = 'produto'::text) AND (produto_id IS NOT NULL) AND (microrganismo_id IS NULL) AND (cultura_id IS NULL)) OR ((entity_type = 'microrganismo'::text) AND (microrganismo_id IS NOT NULL) AND (produto_id IS NULL) AND (cultura_id IS NULL)) OR ((entity_type = 'cultura'::text) AND (cultura_id IS NOT NULL) AND (produto_id IS NULL) AND (microrganismo_id IS NULL))) IS TRUE))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalogo_alvos",
+      "conname": "catalogo_alvos_nome_tipo_uk",
+      "contype": "u",
+      "definition": "UNIQUE (nome_normalizado, tipo)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalogo_alvos",
+      "conname": "catalogo_alvos_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalogo_volumes",
+      "conname": "catalogo_volumes_item_ref",
+      "contype": "c",
+      "definition": "CHECK ((((item_tipo = 'produto'::text) AND (produto_id IS NOT NULL) AND (microrganismo_id IS NULL)) OR ((item_tipo = 'microrganismo'::text) AND (microrganismo_id IS NOT NULL) AND (produto_id IS NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalogo_volumes",
+      "conname": "catalogo_volumes_item_tipo_check",
+      "contype": "c",
+      "definition": "CHECK ((item_tipo = ANY (ARRAY['produto'::text, 'microrganismo'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalogo_volumes",
+      "conname": "catalogo_volumes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalogo_volumes",
+      "conname": "catalogo_volumes_preco_brl_check",
+      "contype": "c",
+      "definition": "CHECK ((preco_brl >= (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "catalogo_volumes",
+      "conname": "catalogo_volumes_volume_ml_check",
+      "contype": "c",
+      "definition": "CHECK ((volume_ml > (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "clientes",
+      "conname": "clientes_marca_cor_hex",
+      "contype": "c",
+      "definition": "CHECK (((marca_cor_primaria IS NULL) OR (marca_cor_primaria ~ '^#[0-9a-fA-F]{6}$'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "clientes",
+      "conname": "clientes_marca_nome_len",
+      "contype": "c",
+      "definition": "CHECK (((marca_nome IS NULL) OR ((char_length(btrim(marca_nome)) >= 2) AND (char_length(btrim(marca_nome)) <= 80))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "clientes",
+      "conname": "clientes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_campaign_products",
+      "conname": "commercial_campaign_products_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (campaign_id, product_id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_campaigns",
+      "conname": "commercial_campaigns_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_campaigns",
+      "conname": "commercial_campaigns_tipo_publico_check",
+      "contype": "c",
+      "definition": "CHECK ((tipo_publico = ANY (ARRAY['b2b'::text, 'comercial'::text, 'ambos'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_campaigns",
+      "conname": "commercial_campaigns_valid_period_check",
+      "contype": "c",
+      "definition": "CHECK (((data_inicio IS NOT NULL) AND (data_fim IS NOT NULL) AND (data_fim >= data_inicio)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "ccip_buyer_scope_ck",
+      "contype": "c",
+      "definition": "CHECK ((buyer_scope = ANY (ARRAY['partner'::text, 'producer'::text, 'default'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "ccip_item_ck",
+      "contype": "c",
+      "definition": "CHECK ((((product_id IS NOT NULL) AND (microrganismo_id IS NULL)) OR ((product_id IS NULL) AND (microrganismo_id IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "ccip_mode_value_ck",
+      "contype": "c",
+      "definition": "CHECK ((((pricing_mode = 'fixed_item_price'::text) AND (condition_price IS NOT NULL)) OR ((pricing_mode = 'discount_from_base'::text) AND (discount_percent IS NOT NULL)) OR (pricing_mode = 'quote_only'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "ccip_scope_target_ck",
+      "contype": "c",
+      "definition": "CHECK ((((buyer_scope = 'partner'::text) AND (partner_id IS NOT NULL) AND (customer_id IS NULL)) OR ((buyer_scope = 'producer'::text) AND (customer_id IS NOT NULL) AND (partner_id IS NULL)) OR ((buyer_scope = 'default'::text) AND (partner_id IS NULL) AND (customer_id IS NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "ccip_validity_ck",
+      "contype": "c",
+      "definition": "CHECK (((valid_until IS NULL) OR (valid_until >= valid_from)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "ccip_volume_ck",
+      "contype": "c",
+      "definition": "CHECK (((unit_type <> 'unidade'::text) OR (volume_ml IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "commercial_condition_item_prices_condition_price_check",
+      "contype": "c",
+      "definition": "CHECK (((condition_price IS NULL) OR (condition_price >= (0)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "commercial_condition_item_prices_discount_percent_check",
+      "contype": "c",
+      "definition": "CHECK (((discount_percent IS NULL) OR ((discount_percent >= (0)::numeric) AND (discount_percent <= (100)::numeric))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "commercial_condition_item_prices_min_quantity_check",
+      "contype": "c",
+      "definition": "CHECK ((min_quantity >= (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "commercial_condition_item_prices_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "commercial_condition_item_prices_pricing_mode_check",
+      "contype": "c",
+      "definition": "CHECK ((pricing_mode = ANY (ARRAY['fixed_item_price'::text, 'discount_from_base'::text, 'quote_only'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "commercial_condition_item_prices_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'published'::text, 'archived'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_condition_item_prices",
+      "conname": "commercial_condition_item_prices_unit_type_check",
+      "contype": "c",
+      "definition": "CHECK ((unit_type = ANY (ARRAY['hectare'::text, 'dose'::text, 'litro'::text, 'unidade'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plan_assignments",
+      "conname": "commercial_payment_plan_assignments_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plan_assignments",
+      "conname": "commercial_payment_plan_assignments_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'published'::text, 'archived'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plan_assignments",
+      "conname": "cppa_buyer_scope_ck",
+      "contype": "c",
+      "definition": "CHECK ((buyer_scope = ANY (ARRAY['partner'::text, 'producer'::text, 'default'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plan_assignments",
+      "conname": "cppa_scope_target_ck",
+      "contype": "c",
+      "definition": "CHECK ((((buyer_scope = 'partner'::text) AND (partner_id IS NOT NULL) AND (customer_id IS NULL)) OR ((buyer_scope = 'producer'::text) AND (customer_id IS NOT NULL) AND (partner_id IS NULL)) OR ((buyer_scope = 'default'::text) AND (partner_id IS NULL) AND (customer_id IS NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plan_assignments",
+      "conname": "cppa_validity_ck",
+      "contype": "c",
+      "definition": "CHECK (((valid_until IS NULL) OR (valid_until >= valid_from)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "commercial_payment_plans_code_key",
+      "contype": "u",
+      "definition": "UNIQUE (code)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "commercial_payment_plans_discount_percent_check",
+      "contype": "c",
+      "definition": "CHECK (((discount_percent >= (0)::numeric) AND (discount_percent <= (100)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "commercial_payment_plans_installment_count_check",
+      "contype": "c",
+      "definition": "CHECK ((installment_count >= 1))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "commercial_payment_plans_interest_type_check",
+      "contype": "c",
+      "definition": "CHECK ((interest_type = ANY (ARRAY['none'::text, 'simple'::text, 'compound'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "commercial_payment_plans_monthly_interest_percent_check",
+      "contype": "c",
+      "definition": "CHECK ((monthly_interest_percent >= (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "commercial_payment_plans_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "commercial_payment_plans_plan_type_check",
+      "contype": "c",
+      "definition": "CHECK ((plan_type = ANY (ARRAY['cash'::text, 'short_term'::text, 'medium_term'::text, 'extended_term'::text, 'harvest'::text, 'custom'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "cpp_nonnegative_chk",
+      "contype": "c",
+      "definition": "CHECK (((max_days >= 0) AND (months_count >= (0)::numeric) AND (sort_order >= 0) AND (version >= 1) AND ((minimum_order_amount IS NULL) OR (minimum_order_amount >= (0)::numeric))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "cpp_pricing_mode_chk",
+      "contype": "c",
+      "definition": "CHECK ((pricing_mode = ANY (ARRAY['discount_from_base'::text, 'fixed_item_price'::text, 'quote_only'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_payment_plans",
+      "conname": "cpp_validity_window_chk",
+      "contype": "c",
+      "definition": "CHECK (((valid_until IS NULL) OR (valid_until > valid_from)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "commercial_price_rules_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_buyer_identity_chk",
+      "contype": "c",
+      "definition": "CHECK ((((buyer_scope = 'partner'::text) AND (partner_id IS NOT NULL) AND (customer_id IS NULL)) OR ((buyer_scope = 'producer'::text) AND (customer_id IS NOT NULL) AND (partner_id IS NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_buyer_scope_chk",
+      "contype": "c",
+      "definition": "CHECK ((buyer_scope = ANY (ARRAY['partner'::text, 'producer'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_condition_price_chk",
+      "contype": "c",
+      "definition": "CHECK ((((pricing_mode = 'fixed_item_price'::text) AND (condition_price IS NOT NULL) AND (condition_price > (0)::numeric)) OR ((pricing_mode <> 'fixed_item_price'::text) AND (condition_price IS NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_currency_chk",
+      "contype": "c",
+      "definition": "CHECK ((currency = 'BRL'::text))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_discount_percent_range",
+      "contype": "c",
+      "definition": "CHECK (((discount_percent IS NULL) OR ((discount_percent >= (0)::numeric) AND (discount_percent <= (100)::numeric))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_item_xor_chk",
+      "contype": "c",
+      "definition": "CHECK ((num_nonnulls(product_id, microrganismo_id) = 1))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_min_quantity_nonneg",
+      "contype": "c",
+      "definition": "CHECK ((min_quantity >= (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_no_overlap",
+      "contype": "x",
+      "definition": "EXCLUDE USING gist (COALESCE(partner_id, '00000000-0000-0000-0000-000000000000'::uuid) WITH =, COALESCE(customer_id, '00000000-0000-0000-0000-000000000000'::uuid) WITH =, COALESCE(plan_id, '00000000-0000-0000-0000-000000000000'::uuid) WITH =, COALESCE(product_id, '00000000-0000-0000-0000-000000000000'::uuid) WITH =, COALESCE(microrganismo_id, '00000000-0000-0000-0000-000000000000'::uuid) WITH =, unit_type WITH =, COALESCE(volume_ml, (- (1)::numeric)) WITH =, daterange(valid_from, valid_until, '[]'::text) WITH &&) WHERE (active)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_plan_required_chk",
+      "contype": "c",
+      "definition": "CHECK (((pricing_mode <> 'fixed_item_price'::text) OR (plan_id IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_pricing_mode_chk",
+      "contype": "c",
+      "definition": "CHECK ((pricing_mode = ANY (ARRAY['fixed_item_price'::text, 'discount_from_base'::text, 'quote_only'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_unit_type_chk",
+      "contype": "c",
+      "definition": "CHECK ((unit_type = ANY (ARRAY['hectare'::text, 'litro'::text, 'dose'::text, 'unidade'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_validity_chk",
+      "contype": "c",
+      "definition": "CHECK (((valid_until IS NULL) OR (valid_until >= valid_from)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "commercial_price_rules",
+      "conname": "cpr_volume_chk",
+      "contype": "c",
+      "definition": "CHECK ((((unit_type = 'unidade'::text) AND (volume_ml IS NOT NULL) AND (volume_ml > (0)::numeric)) OR ((unit_type <> 'unidade'::text) AND (volume_ml IS NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "cq_parametros_referencia",
+      "conname": "cq_h5_referencia",
+      "contype": "c",
+      "definition": "CHECK ((((ph_min IS NULL) OR (((ph_min)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])) AND ((ph_min >= (0)::numeric) AND (ph_min <= (14)::numeric)))) AND ((ph_max IS NULL) OR (((ph_max)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])) AND ((ph_max >= (0)::numeric) AND (ph_max <= (14)::numeric)))) AND ((ph_min IS NULL) OR (ph_max IS NULL) OR (ph_min <= ph_max)) AND ((concentracao_min_ufc_ml IS NULL) OR (((concentracao_min_ufc_ml)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])) AND (concentracao_min_ufc_ml >= (0)::numeric)))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "cq_parametros_referencia",
+      "conname": "cq_parametros_referencia_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "cq_parametros_referencia",
+      "conname": "cq_reference_item_required_v1",
+      "contype": "c",
+      "definition": "CHECK (((microrganismo_id IS NOT NULL) OR (produto_id IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "culturas",
+      "conname": "culturas_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_arquivo_path_canonico_chk",
+      "contype": "c",
+      "definition": "CHECK (((arquivo_path IS NULL) OR (arquivo_path ~ (('^entregas/'::text || (entrega_id)::text) || '/(documentos|comprovantes)/[^/]+$'::text))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_assinatura_hash_sha256_chk",
+      "contype": "c",
+      "definition": "CHECK (((assinatura_tipo IS DISTINCT FROM 'digital_tela'::text) OR (COALESCE(assinatura_hash, ''::text) ~ '^[0-9a-f]{64}$'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_assinatura_path_canonico_chk",
+      "contype": "c",
+      "definition": "CHECK (((assinatura_digital_png_path IS NULL) OR (assinatura_digital_png_path ~ (('^entregas/'::text || (entrega_id)::text) || '/assinaturas/[^/]+[.]png$'::text))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_assinatura_tipo_chk",
+      "contype": "c",
+      "definition": "CHECK (((assinatura_tipo IS NULL) OR (assinatura_tipo = ANY (ARRAY['fisica_anexada'::text, 'digital_tela'::text, 'dispensada'::text, 'nao_coletada'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_numero_formulario_key",
+      "contype": "u",
+      "definition": "UNIQUE (numero_formulario)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['gerado'::text, 'impresso'::text, 'aguardando_assinatura'::text, 'assinatura_digital_coletada'::text, 'assinado'::text, 'anexado'::text, 'confirmado'::text, 'rejeitado'::text, 'cancelado'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_tipo_chk",
+      "contype": "c",
+      "definition": "CHECK ((tipo = ANY (ARRAY['formulario_entrega'::text, 'termo_recebimento'::text, 'comprovante_entrega'::text, 'comprovante_assinado'::text, 'assinatura_digital'::text, 'foto_recebimento'::text, 'outro'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "conname": "entrega_comprovantes_validation_token_key",
+      "contype": "u",
+      "definition": "UNIQUE (validation_token)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entregas",
+      "conname": "entregas_comprovante_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((comprovante_status = ANY (ARRAY['pendente'::text, 'formulario_gerado'::text, 'aguardando_assinatura'::text, 'assinatura_digital_coletada'::text, 'anexado'::text, 'confirmado'::text, 'dispensado'::text, 'rejeitado'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entregas",
+      "conname": "entregas_financial_status_chk",
+      "contype": "c",
+      "definition": "CHECK (((financial_status IS NULL) OR (financial_status = ANY (ARRAY['NOT_BILLABLE'::text, 'PENDING_BILLING'::text, 'BILLED'::text, 'CANCELED'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entregas",
+      "conname": "entregas_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "entregas",
+      "conname": "entregas_tipo_entrega_check",
+      "contype": "c",
+      "definition": "CHECK ((tipo_entrega = ANY (ARRAY['motorista'::text, 'retirada'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "envase",
+      "conname": "envase_embalagem_volume_coerente",
+      "contype": "c",
+      "definition": "CHECK (((((tipo_embalagem)::text = 'frasco_1L'::text) AND (volume_por_unidade = (1000)::numeric)) OR (((tipo_embalagem)::text = 'bombona_5L'::text) AND (volume_por_unidade = (5000)::numeric)) OR (((tipo_embalagem)::text = 'bombona_20L'::text) AND (volume_por_unidade = (20000)::numeric))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "envase",
+      "conname": "envase_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "envase",
+      "conname": "envase_quantidade_positiva",
+      "contype": "c",
+      "definition": "CHECK ((quantidade > 0))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "envase",
+      "conname": "envase_volume_valido",
+      "contype": "c",
+      "definition": "CHECK (((volume_por_unidade > (0)::numeric) AND ((volume_por_unidade)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "estoque_embalagens",
+      "conname": "estoque_embalagens_codigo_embalagem_key",
+      "contype": "u",
+      "definition": "UNIQUE (codigo_embalagem)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "estoque_embalagens",
+      "conname": "estoque_embalagens_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "estoque_embalagens",
+      "conname": "estoque_embalagens_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['em_estoque'::text, 'reservado'::text, 'separado'::text, 'entregue'::text, 'cancelado'::text, 'descartado'::text, 'vencido'::text, 'bloqueado_cq'::text, 'bloqueado_operacional'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "estoque_produto",
+      "conname": "estoque_produto_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "estoque_produto",
+      "conname": "estoque_produto_quantidade_nonneg",
+      "contype": "c",
+      "definition": "CHECK ((quantidade >= (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "fazendas",
+      "conname": "fazendas_latitude_check",
+      "contype": "c",
+      "definition": "CHECK (((latitude IS NULL) OR ((latitude >= ('-90'::integer)::numeric) AND (latitude <= (90)::numeric))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "fazendas",
+      "conname": "fazendas_longitude_check",
+      "contype": "c",
+      "definition": "CHECK (((longitude IS NULL) OR ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "fazendas",
+      "conname": "fazendas_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "formulacoes",
+      "conname": "formulacoes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "formulacoes",
+      "conname": "formulacoes_produto_microrganismo_unique",
+      "contype": "u",
+      "definition": "UNIQUE (produto_id, microrganismo_id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "lotes",
+      "conname": "lotes_codigo_lote_key",
+      "contype": "u",
+      "definition": "UNIQUE (codigo_lote)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "lotes",
+      "conname": "lotes_item_chk",
+      "contype": "c",
+      "definition": "CHECK (((produto_id IS NOT NULL) OR (microrganismo_id IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "lotes",
+      "conname": "lotes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_crop_recommendations",
+      "conname": "microorganism_crop_recommendations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_fiscal_profiles",
+      "conname": "microorganism_fiscal_profiles_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_fiscal_profiles",
+      "conname": "microorganism_fiscal_profiles_profile_status_check",
+      "contype": "c",
+      "definition": "CHECK ((profile_status = ANY (ARRAY['DRAFT'::text, 'PENDING_ACCOUNTING'::text, 'VALIDATED'::text, 'BLOCKED'::text, 'NOT_FISCALLY_SOLD'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "microorganism_ncm_candidates_conditional_not_approved",
+      "contype": "c",
+      "definition": "CHECK (((status <> 'APPROVED'::text) OR (upper(btrim(COALESCE(confidence, ''::text))) <> 'CONDITIONAL'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "microorganism_ncm_candidates_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_approved_evidence_chk",
+      "contype": "c",
+      "definition": "CHECK (((status <> 'APPROVED'::text) OR ((source_id IS NOT NULL) AND (length(btrim(COALESCE(official_description, ''::text))) >= 10) AND (NULLIF(btrim(COALESCE(table_version, ''::text)), ''::text) IS NOT NULL) AND (table_reference_date IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_cest_chk",
+      "contype": "c",
+      "definition": "CHECK (((cest IS NULL) OR (cest ~ '^[0-9]{7}$'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_conditional_not_approved_chk",
+      "contype": "c",
+      "definition": "CHECK (((status <> 'APPROVED'::text) OR (confidence <> 'CONDITIONAL'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_conf_chk",
+      "contype": "c",
+      "definition": "CHECK ((confidence = ANY (ARRAY['LOW'::text, 'MEDIUM'::text, 'HIGH'::text, 'CONDITIONAL'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_decision_actor_chk",
+      "contype": "c",
+      "definition": "CHECK (((decided_at IS NULL) = (decided_by IS NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_decision_chk",
+      "contype": "c",
+      "definition": "CHECK (((status = 'PROPOSED'::text) = (decided_at IS NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_justification_chk",
+      "contype": "c",
+      "definition": "CHECK ((length(btrim(justification)) >= 20))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_ncm_chk",
+      "contype": "c",
+      "definition": "CHECK ((ncm ~ '^[0-9]{8}$'::text))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_source_required_chk",
+      "contype": "c",
+      "definition": "CHECK ((((source_id IS NOT NULL) OR fn_fiscal_official_url_allowlisted(source_url)) AND (consulted_at IS NOT NULL) AND (length(btrim(justification)) >= 20)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['PROPOSED'::text, 'REJECTED'::text, 'APPROVED'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_ncm_candidates",
+      "conname": "mnc_url_chk",
+      "contype": "c",
+      "definition": "CHECK (((source_url IS NULL) OR (source_url ~ '^https://'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "microorganism_regulatory_dossiers_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_blocked_reason_chk",
+      "contype": "c",
+      "definition": "CHECK (((status <> 'BLOCKED'::text) OR (NULLIF(btrim(COALESCE(blocked_reason, ''::text)), ''::text) IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_category_chk",
+      "contype": "c",
+      "definition": "CHECK (((regulatory_category IS NULL) OR (regulatory_category = ANY (ARRAY['INOCULANTE'::text, 'BIOFERTILIZANTE'::text, 'FERTILIZANTE'::text, 'CONDICIONADOR_SOLO'::text, 'AGENTE_BIOLOGICO_CONTROLE'::text, 'REMINERALIZADOR'::text, 'SUBSTRATO'::text, 'OUTRO_A_DEFINIR'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_cest_chk",
+      "contype": "c",
+      "definition": "CHECK (((published_cest IS NULL) OR (published_cest ~ '^[0-9]{7}$'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_mapa_na_chk",
+      "contype": "c",
+      "definition": "CHECK (((mapa_status <> 'NOT_APPLICABLE'::text) OR (NULLIF(btrim(COALESCE(mapa_not_applicable_reason, ''::text)), ''::text) IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_mapa_status_chk",
+      "contype": "c",
+      "definition": "CHECK (((mapa_status IS NULL) OR (mapa_status = ANY (ARRAY['ACTIVE'::text, 'SUSPENDED'::text, 'EXPIRED'::text, 'IN_PROCESS'::text, 'NOT_APPLICABLE'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_ncm_chk",
+      "contype": "c",
+      "definition": "CHECK (((published_ncm IS NULL) OR (published_ncm ~ '^[0-9]{8}$'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_published_requires_reviews",
+      "contype": "c",
+      "definition": "CHECK (((status <> 'VALIDATED'::text) OR ((technical_review_status = 'APPROVED'::text) AND (regulatory_review_status = 'APPROVED'::text) AND (fiscal_review_status = 'APPROVED'::text) AND (published_at IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_review_status_chk",
+      "contype": "c",
+      "definition": "CHECK (((technical_review_status = ANY (ARRAY['PENDING'::text, 'APPROVED'::text, 'REJECTED'::text])) AND (regulatory_review_status = ANY (ARRAY['PENDING'::text, 'APPROVED'::text, 'REJECTED'::text])) AND (fiscal_review_status = ANY (ARRAY['PENDING'::text, 'APPROVED'::text, 'REJECTED'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_sod_override_chk",
+      "contype": "c",
+      "definition": "CHECK (((NOT sod_override_active) OR ((sod_override_by IS NOT NULL) AND (sod_override_at IS NOT NULL) AND (length(btrim(COALESCE(sod_override_reason, ''::text))) >= 40))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_soft_delete_chk",
+      "contype": "c",
+      "definition": "CHECK (((deleted_at IS NULL) = (deleted_by IS NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['DRAFT'::text, 'PENDING_REVIEW'::text, 'VALIDATED'::text, 'BLOCKED'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_version_chk",
+      "contype": "c",
+      "definition": "CHECK ((version >= 1))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_dossiers",
+      "conname": "mrd_vigencia_chk",
+      "contype": "c",
+      "definition": "CHECK (((effective_to IS NULL) OR (effective_from IS NULL) OR (effective_to > effective_from)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "microorganism_regulatory_presentations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_factor_chk",
+      "contype": "c",
+      "definition": "CHECK (((conversion_factor IS NULL) OR (conversion_factor > (0)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_gtin_absent_reason_chk",
+      "contype": "c",
+      "definition": "CHECK (((NOT gtin_absent) OR ((length(btrim(COALESCE(gtin_absent_reason, ''::text))) >= 20) AND (gtin_absent_by IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_gtin_checkdigit_chk",
+      "contype": "c",
+      "definition": "CHECK (((gtin IS NULL) OR fn_gtin_is_valid(gtin)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_gtin_confirm_actor_chk",
+      "contype": "c",
+      "definition": "CHECK ((gtin_confirmed = (gtin_confirmed_by IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_gtin_confirm_chk",
+      "contype": "c",
+      "definition": "CHECK (((NOT gtin_confirmed) OR ((gtin IS NOT NULL) OR gtin_absent)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_gtin_exclusive_chk",
+      "contype": "c",
+      "definition": "CHECK ((NOT (gtin_absent AND (gtin IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_gtin_format_chk",
+      "contype": "c",
+      "definition": "CHECK (((gtin IS NULL) OR (gtin ~ '^[0-9]{8}$|^[0-9]{12}$|^[0-9]{13}$|^[0-9]{14}$'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_gtin_mutual_chk",
+      "contype": "c",
+      "definition": "CHECK ((NOT (gtin_absent AND (gtin IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_units_confirm_actor_chk",
+      "contype": "c",
+      "definition": "CHECK ((units_confirmed = (units_confirmed_by IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_units_confirm_chk",
+      "contype": "c",
+      "definition": "CHECK (((NOT units_confirmed) OR ((NULLIF(btrim(COALESCE(commercial_unit, ''::text)), ''::text) IS NOT NULL) AND (NULLIF(btrim(COALESCE(taxable_unit, ''::text)), ''::text) IS NOT NULL) AND (conversion_factor IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_presentations",
+      "conname": "mrp_volume_chk",
+      "contype": "c",
+      "definition": "CHECK ((volume_ml > 0))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_publication_snapshots",
+      "conname": "microorganism_regulatory_publication_snapshots_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_regulatory_publication_snapshots",
+      "conname": "mrps_sha_chk",
+      "contype": "c",
+      "definition": "CHECK ((snapshot_sha256 ~ '^[0-9a-f]{64}$'::text))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_targets",
+      "conname": "microorganism_targets_alvo_tipo_check",
+      "contype": "c",
+      "definition": "CHECK ((alvo_tipo = ANY (ARRAY['praga'::text, 'doenca'::text, 'nematoide'::text, 'nutricao'::text, 'solo'::text, 'estresse'::text, 'crescimento'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_targets",
+      "conname": "microorganism_targets_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_technical_profiles",
+      "conname": "microorganism_technical_profiles_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microorganism_technical_profiles",
+      "conname": "microorganism_technical_profiles_status_validacao_check",
+      "contype": "c",
+      "definition": "CHECK ((status_validacao = ANY (ARRAY['rascunho'::text, 'em_revisao'::text, 'aprovado'::text, 'arquivado'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microrganismos",
+      "conname": "microrganismos_codigo_key",
+      "contype": "u",
+      "definition": "UNIQUE (codigo)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microrganismos",
+      "conname": "microrganismos_nome_unique",
+      "contype": "u",
+      "definition": "UNIQUE (nome)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "microrganismos",
+      "conname": "microrganismos_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "objetivos_visita_sugestoes",
+      "conname": "objetivos_visita_sugestoes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "ordens_servico",
+      "conname": "ordens_servico_audit_positive_numbers_v1",
+      "contype": "c",
+      "definition": "CHECK ((((volume_total_ml IS NULL) OR ((volume_total_ml > (0)::numeric) AND ((volume_total_ml)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])))) AND ((area_hectares IS NULL) OR ((area_hectares > (0)::numeric) AND ((area_hectares)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text]))))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "ordens_servico",
+      "conname": "ordens_servico_origem_check",
+      "contype": "c",
+      "definition": "CHECK ((origem = ANY (ARRAY['agronomica'::text, 'b2b'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "ordens_servico",
+      "conname": "ordens_servico_origem_required_fields",
+      "contype": "c",
+      "definition": "CHECK ((((origem = 'agronomica'::text) AND (cliente_id IS NOT NULL) AND (fazenda_id IS NOT NULL) AND (talhao_id IS NOT NULL)) OR ((origem = 'b2b'::text) AND (partner_order_item_id IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "ordens_servico",
+      "conname": "ordens_servico_partner_order_item_unique",
+      "contype": "u",
+      "definition": "UNIQUE (partner_order_item_id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "ordens_servico",
+      "conname": "ordens_servico_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "ordens_servico_onfarm",
+      "conname": "ordens_servico_onfarm_audit_positive_numbers_v1",
+      "contype": "c",
+      "definition": "CHECK ((((volume_total_ml IS NULL) OR ((volume_total_ml > (0)::numeric) AND ((volume_total_ml)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])))) AND ((area_hectares IS NULL) OR ((area_hectares > (0)::numeric) AND ((area_hectares)::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text]))))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "ordens_servico_onfarm",
+      "conname": "ordens_servico_onfarm_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "organizations",
+      "conname": "organizations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "organizations",
+      "conname": "organizations_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['rascunho'::text, 'aguardando_ativacao'::text, 'onboarding'::text, 'ativa'::text, 'suspensa'::text, 'cancelada'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "os_faturamento_base",
+      "conname": "os_faturamento_base_origem_os_tipo_check",
+      "contype": "c",
+      "definition": "CHECK ((origem_os_tipo = ANY (ARRAY['TRADICIONAL'::text, 'ON_FARM'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "os_faturamento_base",
+      "conname": "os_faturamento_base_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_accounts",
+      "conname": "partner_accounts_codigo_key",
+      "contype": "u",
+      "definition": "UNIQUE (codigo)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_accounts",
+      "conname": "partner_accounts_comissao_range",
+      "contype": "c",
+      "definition": "CHECK (((comissao_percentual IS NULL) OR ((comissao_percentual >= (0)::numeric) AND (comissao_percentual <= (100)::numeric))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_accounts",
+      "conname": "partner_accounts_desconto_padrao_check",
+      "contype": "c",
+      "definition": "CHECK (((desconto_padrao >= (0)::numeric) AND (desconto_padrao <= (100)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_accounts",
+      "conname": "partner_accounts_limite_credito_pos",
+      "contype": "c",
+      "definition": "CHECK (((limite_credito_brl IS NULL) OR (limite_credito_brl >= (0)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_accounts",
+      "conname": "partner_accounts_marca_cor_hex",
+      "contype": "c",
+      "definition": "CHECK (((marca_cor_primaria IS NULL) OR (marca_cor_primaria ~ '^#[0-9a-fA-F]{6}$'::text)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_accounts",
+      "conname": "partner_accounts_marca_nome_len",
+      "contype": "c",
+      "definition": "CHECK (((marca_nome IS NULL) OR ((char_length(btrim(marca_nome)) >= 2) AND (char_length(btrim(marca_nome)) <= 80))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_accounts",
+      "conname": "partner_accounts_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_order_items",
+      "conname": "partner_order_items_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_order_items",
+      "conname": "partner_order_items_quantidade_check",
+      "contype": "c",
+      "definition": "CHECK ((quantidade > (0)::numeric))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_order_items",
+      "conname": "partner_order_items_unidade_check",
+      "contype": "c",
+      "definition": "CHECK ((unidade_medida = ANY (ARRAY['ml'::text, 'litro'::text, 'hectare'::text, 'dose'::text, 'unidade'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_order_items",
+      "conname": "poi_item_xor",
+      "contype": "c",
+      "definition": "CHECK ((((product_id IS NOT NULL) AND (microrganismo_id IS NULL)) OR ((product_id IS NULL) AND (microrganismo_id IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_orders",
+      "conname": "partner_orders_financial_status_check",
+      "contype": "c",
+      "definition": "CHECK ((financial_status = ANY (ARRAY['pendente'::text, 'gerado'::text, 'parcial'::text, 'recebido'::text, 'vencido'::text, 'cancelado'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_orders",
+      "conname": "partner_orders_numero_key",
+      "contype": "u",
+      "definition": "UNIQUE (numero)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_orders",
+      "conname": "partner_orders_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_product_prices",
+      "conname": "partner_product_prices_desconto_percentual_check",
+      "contype": "c",
+      "definition": "CHECK (((desconto_percentual >= (0)::numeric) AND (desconto_percentual <= (100)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_product_prices",
+      "conname": "partner_product_prices_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_product_prices",
+      "conname": "ppp_item_xor",
+      "contype": "c",
+      "definition": "CHECK ((((product_id IS NOT NULL) AND (microrganismo_id IS NULL)) OR ((product_id IS NULL) AND (microrganismo_id IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_simulation_items",
+      "conname": "partner_simulation_items_item_tipo_check",
+      "contype": "c",
+      "definition": "CHECK ((item_tipo = ANY (ARRAY['produto'::text, 'microrganismo'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_simulation_items",
+      "conname": "partner_simulation_items_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_simulation_items",
+      "conname": "partner_simulation_items_quantidade_check",
+      "contype": "c",
+      "definition": "CHECK (((quantidade IS NOT NULL) AND (quantidade > (0)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_simulation_items",
+      "conname": "partner_simulation_items_subtotal_check",
+      "contype": "c",
+      "definition": "CHECK (((subtotal IS NOT NULL) AND (subtotal >= (0)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_simulations",
+      "conname": "partner_simulations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_simulations",
+      "conname": "partner_simulations_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['rascunho'::text, 'enviada_gestor'::text, 'convertida_pedido'::text, 'arquivada'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "partner_simulations",
+      "conname": "partner_simulations_total_check",
+      "contype": "c",
+      "definition": "CHECK (((total_cheio IS NOT NULL) AND (total_cheio >= (0)::numeric)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "portal_solicitacoes",
+      "conname": "portal_solicitacoes_numero_solicitacao_key",
+      "contype": "u",
+      "definition": "UNIQUE (numero_solicitacao)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "portal_solicitacoes",
+      "conname": "portal_solicitacoes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_crop_recommendations",
+      "conname": "product_crop_recommendations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_fiscal_profiles",
+      "conname": "product_fiscal_profiles_ibs_cbs_no_secret_chk",
+      "contype": "c",
+      "definition": "CHECK ((NOT fiscal_rtc_has_sensitive_key(ibs_cbs_configuration)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_fiscal_profiles",
+      "conname": "product_fiscal_profiles_ibs_cbs_object_chk",
+      "contype": "c",
+      "definition": "CHECK ((jsonb_typeof(ibs_cbs_configuration) = 'object'::text))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_fiscal_profiles",
+      "conname": "product_fiscal_profiles_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_fiscal_profiles",
+      "conname": "product_fiscal_profiles_profile_status_check",
+      "contype": "c",
+      "definition": "CHECK ((profile_status = ANY (ARRAY['DRAFT'::text, 'PENDING_ACCOUNTING'::text, 'VALIDATED'::text, 'BLOCKED'::text, 'NOT_FISCALLY_SOLD'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_target_recommendations",
+      "conname": "product_target_recommendations_alvo_tipo_check",
+      "contype": "c",
+      "definition": "CHECK ((alvo_tipo = ANY (ARRAY['praga'::text, 'doenca'::text, 'nematoide'::text, 'nutricao'::text, 'solo'::text, 'estresse'::text, 'crescimento'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_target_recommendations",
+      "conname": "product_target_recommendations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_technical_profiles",
+      "conname": "product_technical_profiles_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "product_technical_profiles",
+      "conname": "product_technical_profiles_status_validacao_check",
+      "contype": "c",
+      "definition": "CHECK ((status_validacao = ANY (ARRAY['rascunho'::text, 'em_revisao'::text, 'aprovado'::text, 'arquivado'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_conjuntos",
+      "conname": "produto_composicao_conjuntos_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (produto_id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_conjuntos",
+      "conname": "produto_composicao_conjuntos_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['rascunho'::text, 'completo'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "pcd_identidade_check",
+      "contype": "c",
+      "definition": "CHECK (((((tipo_componente = 'microrganismo'::text) AND (microrganismo_id IS NOT NULL) AND (componente_nome IS NULL)) OR ((tipo_componente <> 'microrganismo'::text) AND (microrganismo_id IS NULL) AND (componente_nome IS NOT NULL) AND ((char_length(btrim(componente_nome)) >= 2) AND (char_length(btrim(componente_nome)) <= 160)) AND (componente_nome = btrim(componente_nome)))) IS TRUE))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "pcd_medida_check",
+      "contype": "c",
+      "definition": "CHECK (((quantidade IS NULL) OR (((quantidade > (0)::numeric) AND (quantidade <> 'NaN'::numeric) AND (unidade = ANY (ARRAY['mL/L'::text, 'g/L'::text, 'g/kg'::text, '%m/m'::text, '%m/v'::text, '%v/v'::text, 'UFC/mL'::text, 'UFC/g'::text])) AND (((unidade = ANY (ARRAY['mL/L'::text, 'g/L'::text, '%m/v'::text, '%v/v'::text, 'UFC/mL'::text])) AND (base = 'por_volume_produto'::text)) OR ((unidade = ANY (ARRAY['g/kg'::text, '%m/m'::text, 'UFC/g'::text])) AND (base = 'por_massa_produto'::text))) AND (((unidade = ANY (ARRAY['%m/m'::text, '%m/v'::text, '%v/v'::text])) AND (quantidade <= (100)::numeric)) OR ((unidade = ANY (ARRAY['UFC/mL'::text, 'UFC/g'::text])) AND (quantidade <= '1000000000000000'::numeric)) OR ((unidade = ANY (ARRAY['mL/L'::text, 'g/L'::text, 'g/kg'::text])) AND (quantidade <= (1000)::numeric))) AND ((tipo_componente = 'microrganismo'::text) = (unidade = ANY (ARRAY['UFC/mL'::text, 'UFC/g'::text])))) IS TRUE)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "pcd_medida_conjunta_check",
+      "contype": "c",
+      "definition": "CHECK ((((quantidade IS NULL) AND (unidade IS NULL) AND (base IS NULL)) OR ((quantidade IS NOT NULL) AND (unidade IS NOT NULL) AND (base IS NOT NULL))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "pcd_ordem_unique",
+      "contype": "u",
+      "definition": "UNIQUE (produto_id, ordem)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "produto_composicao_declaracoes_natureza_check",
+      "contype": "c",
+      "definition": "CHECK ((natureza = ANY (ARRAY['teor_garantido'::text, 'concentracao_declarada'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "produto_composicao_declaracoes_ordem_check",
+      "contype": "c",
+      "definition": "CHECK (((ordem >= 1) AND (ordem <= 50)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "produto_composicao_declaracoes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_composicao_declaracoes",
+      "conname": "produto_composicao_declaracoes_tipo_componente_check",
+      "contype": "c",
+      "definition": "CHECK ((tipo_componente = ANY (ARRAY['microrganismo'::text, 'ingrediente_ativo'::text, 'nutriente'::text, 'outro'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_conformidade_perfis",
+      "conname": "pcp_escopo_chk",
+      "contype": "c",
+      "definition": "CHECK (((produto_id IS NOT NULL) OR (categoria IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_conformidade_perfis",
+      "conname": "pcp_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['rascunho'::text, 'em_revisao'::text, 'aprovado'::text, 'inativo'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_conformidade_perfis",
+      "conname": "pcp_validade_meses_chk",
+      "contype": "c",
+      "definition": "CHECK (((validade_meses IS NULL) OR (validade_meses > 0)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_conformidade_perfis",
+      "conname": "produto_conformidade_perfis_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_etiquetas",
+      "conname": "produto_etiquetas_codigo_etiqueta_key",
+      "contype": "u",
+      "definition": "UNIQUE (codigo_etiqueta)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_etiquetas",
+      "conname": "produto_etiquetas_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_etiquetas",
+      "conname": "produto_etiquetas_status_chk",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['gerada'::text, 'impressa'::text, 'reimpressa'::text, 'cancelada'::text, 'substituida'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_etiquetas",
+      "conname": "produto_etiquetas_tipo_chk",
+      "contype": "c",
+      "definition": "CHECK ((tipo_etiqueta = ANY (ARRAY['principal'::text, 'reduzida'::text, 'caixa'::text, 'transporte'::text, 'amostra'::text, 'interna'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produto_etiquetas",
+      "conname": "produto_etiquetas_trace_token_key",
+      "contype": "u",
+      "definition": "UNIQUE (trace_token)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produtos",
+      "conname": "produtos_codigo_key",
+      "contype": "u",
+      "definition": "UNIQUE (codigo)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produtos",
+      "conname": "produtos_familia_catalogo_check",
+      "contype": "c",
+      "definition": "CHECK (((familia_catalogo IS NULL) OR (familia_catalogo = ANY (ARRAY['biologico'::text, 'quimico'::text, 'fertilizante_adubo'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "produtos",
+      "conname": "produtos_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "profiles",
+      "conname": "profiles_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "profiles",
+      "conname": "profiles_user_id_key",
+      "contype": "u",
+      "definition": "UNIQUE (user_id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "programacao_producao",
+      "conname": "programacao_producao_item_chk",
+      "contype": "c",
+      "definition": "CHECK (((produto_id IS NOT NULL) OR (microrganismo_id IS NOT NULL)))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "programacao_producao",
+      "conname": "programacao_producao_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "registros_consultor",
+      "conname": "registros_consultor_origem_atendimento_chk",
+      "contype": "c",
+      "definition": "CHECK (((origem_atendimento IS NULL) OR (origem_atendimento = ANY (ARRAY['ocorrencia_campo'::text, 'solicitacao_produtor'::text, 'agenda'::text, 'retorno_monitoramento'::text, 'visita_avulsa'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "registros_consultor",
+      "conname": "registros_consultor_pdf_status_check",
+      "contype": "c",
+      "definition": "CHECK (((pdf_status IS NULL) OR (pdf_status = ANY (ARRAY['pending'::text, 'generating'::text, 'generated'::text, 'error'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "registros_consultor",
+      "conname": "registros_consultor_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "registros_consultor_recomendacoes",
+      "conname": "registros_consultor_recomendacoes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "talhao_safras",
+      "conname": "talhao_safras_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "talhoes",
+      "conname": "talhoes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "talhoes",
+      "conname": "talhoes_tipo_manejo_agua_check",
+      "contype": "c",
+      "definition": "CHECK ((tipo_manejo_agua = ANY (ARRAY['irrigado'::text, 'sequeiro'::text])))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "visitas_campo",
+      "conname": "visitas_campo_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "visitas_campo",
+      "conname": "visitas_campo_registro_consultor_id_key",
+      "contype": "u",
+      "definition": "UNIQUE (registro_consultor_id)",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    },
+    {
+      "table_name": "visitas_campo",
+      "conname": "visitas_campo_uniformidade_check",
+      "contype": "c",
+      "definition": "CHECK (((uniformidade IS NULL) OR (uniformidade = ANY (ARRAY['baixa'::text, 'media'::text, 'alta'::text]))))",
+      "convalidated": true,
+      "condeferrable": false,
+      "condeferred": false
+    }
+  ]
+}

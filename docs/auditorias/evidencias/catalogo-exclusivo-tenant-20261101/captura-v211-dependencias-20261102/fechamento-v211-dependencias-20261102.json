@@ -1,0 +1,3772 @@
+{
+  "source": "production READ ONLY swzpzcwiasxmjutrmvkm",
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "supplier_id",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "supplier_name",
+      "type": "text",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "category_id",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "cost_center_id",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "total_amount",
+      "type": "numeric(14,2)",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "issue_date",
+      "type": "date",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "CURRENT_DATE",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "first_due_date",
+      "type": "date",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "installment_count",
+      "type": "integer",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "'OPEN'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "origin_type",
+      "type": "text",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "'MANUAL'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "origin_id",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_document_number",
+      "type": "text",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "supplier_invoice_date",
+      "type": "date",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "recurring_template_id",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "reference_month",
+      "type": "date",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "auto_generated",
+      "type": "boolean",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "accounts_payable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "origin_type",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "origin_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "customer_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "category_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "cost_center_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "total_amount",
+      "type": "numeric(14,2)",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "issue_date",
+      "type": "date",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "CURRENT_DATE",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "first_due_date",
+      "type": "date",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "installment_count",
+      "type": "integer",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "'OPEN'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_invoice_required",
+      "type": "boolean",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_invoice_status",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "'NOT_REQUIRED'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "payment_method_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_invoice_number",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_access_key",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_issue_date",
+      "type": "date",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "recurring_template_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "reference_month",
+      "type": "date",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "auto_generated",
+      "type": "boolean",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "partner_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "external_payment_id",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "payment_gateway",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "pix_qr_code",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "pix_copia_cola",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "boleto_url",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_requirement_source",
+      "type": "text",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_policy_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_exemption_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "name",
+      "type": "text",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "bank_name",
+      "type": "text",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "agency",
+      "type": "text",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "account_number",
+      "type": "text",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "pix_key",
+      "type": "text",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "opening_balance",
+      "type": "numeric(14,2)",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": "0",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "bank_accounts",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "operation",
+      "type": "text",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "actor_id",
+      "type": "uuid",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "reason",
+      "type": "text",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "correlation_id",
+      "type": "uuid",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "counts_before",
+      "type": "jsonb",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": "'{}'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "counts_after",
+      "type": "jsonb",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": "'{}'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "completed_at",
+      "type": "timestamp with time zone",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "event_key",
+      "type": "text",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "perfil",
+      "type": "app_role",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "estrategia",
+      "type": "text",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "'by_role'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "canal",
+      "type": "comunicacao_canal",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "template_chave",
+      "type": "text",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "template_versao",
+      "type": "integer",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "condicoes",
+      "type": "jsonb",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "'{}'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "prioridade",
+      "type": "integer",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "100",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "enabled",
+      "type": "boolean",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "cooldown_seconds",
+      "type": "integer",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "0",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "updated_by",
+      "type": "uuid",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "chave",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "canal",
+      "type": "comunicacao_canal",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "versao",
+      "type": "integer",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "comunicacao_template_status",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "'draft'::comunicacao_template_status",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "locale",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "'pt-BR'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "assunto",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "corpo",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "variaveis",
+      "type": "jsonb",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "'[]'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "updated_by",
+      "type": "uuid",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "archived_at",
+      "type": "timestamp with time zone",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "provider_template_name",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "language_code",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "parameter_mapping",
+      "type": "jsonb",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": "'[]'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "provider_template_status",
+      "type": "text",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "customer_id",
+      "type": "uuid",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "taxpayer_indicator",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "state_registration_status",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "municipal_registration",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_email",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_phone",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "use_main_address",
+      "type": "boolean",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_postal_code",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_street",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_number",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_complement",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_neighborhood",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_city",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_municipality_ibge_code",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_state",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "country_code",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "'BR'::text",
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "rural_producer_indicator",
+      "type": "boolean",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "foreign_customer_indicator",
+      "type": "boolean",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "profile_status",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "'INCOMPLETE'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "validation_notes",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "updated_by",
+      "type": "uuid",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "person_type",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "cpf_cnpj",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "legal_name",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "state_registration",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "final_consumer",
+      "type": "boolean",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "icms_taxpayer",
+      "type": "boolean",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "nfe_readiness_status",
+      "type": "text",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "'NOT_READY'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "nfe_readiness_pendencies",
+      "type": "jsonb",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": "'[]'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "nfe_readiness_checked_at",
+      "type": "timestamp with time zone",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "codigo",
+      "type": "text",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "versao",
+      "type": "integer",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "midia",
+      "type": "text",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "'termica'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "largura_mm",
+      "type": "numeric",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "altura_mm",
+      "type": "numeric",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "margem_topo_mm",
+      "type": "numeric",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "2",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "margem_direita_mm",
+      "type": "numeric",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "2",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "margem_base_mm",
+      "type": "numeric",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "2",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "margem_esquerda_mm",
+      "type": "numeric",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "2",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "orientacao",
+      "type": "text",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "'retrato'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "densidade_dpi",
+      "type": "integer",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "203",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "colunas",
+      "type": "integer",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "linhas",
+      "type": "integer",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "campos",
+      "type": "jsonb",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "'{}'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "name",
+      "type": "text",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "code",
+      "type": "text",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "rule_key",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "version",
+      "type": "integer",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "tax_kind",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "calc_mode",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "'PERCENT'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "crt",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "origin_uf",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "destination_uf",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "ncm_prefix",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "product_category",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "final_consumer",
+      "type": "boolean",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "taxpayer_indicator",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "cst",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "csosn",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "rate",
+      "type": "numeric(9,4)",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "base_reduction_pct",
+      "type": "numeric(9,4)",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "deferral_pct",
+      "type": "numeric(9,4)",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "mva_pct",
+      "type": "numeric(9,4)",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fcp_rate",
+      "type": "numeric(9,4)",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "difal_dest_share_pct",
+      "type": "numeric(9,4)",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "legal_basis",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "legal_version",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "source_id",
+      "type": "uuid",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "justification",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "priority",
+      "type": "integer",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "100",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "valid_from",
+      "type": "date",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "CURRENT_DATE",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "valid_until",
+      "type": "date",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "'DRAFT'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "prepared_by",
+      "type": "uuid",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "published_by",
+      "type": "uuid",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "published_at",
+      "type": "timestamp with time zone",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "superseded_by",
+      "type": "uuid",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "updated_by",
+      "type": "uuid",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "st_modality",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "internal_rate_pct",
+      "type": "numeric",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "interstate_rate_pct",
+      "type": "numeric",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fcp_st_rate",
+      "type": "numeric",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "credit_own_icms",
+      "type": "boolean",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "base_components",
+      "type": "jsonb",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "'[]'::jsonb",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "base_reduction_mode",
+      "type": "text",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "default": "'NONE'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "dossier_id",
+      "type": "uuid",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "item_key",
+      "type": "text",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "state",
+      "type": "text",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": "'PENDING'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "justification",
+      "type": "text",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "evidence_document_id",
+      "type": "uuid",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "decided_by",
+      "type": "uuid",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "decided_at",
+      "type": "timestamp with time zone",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "dossier_id",
+      "type": "uuid",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "doc_type",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "title",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "storage_bucket",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": "'fiscal-regulatorio'::text",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "storage_path",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "content_sha256",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "issuer",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "issued_at",
+      "type": "date",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "valid_until",
+      "type": "date",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "source_id",
+      "type": "uuid",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "source_url",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "consulted_at",
+      "type": "date",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "doc_version",
+      "type": "text",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "uploaded_by",
+      "type": "uuid",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "uploaded_at",
+      "type": "timestamp with time zone",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamp with time zone",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "deleted_by",
+      "type": "uuid",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "type",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "name",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "customer_id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "supplier_id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "supplier_name",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "category_id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "cost_center_id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "amount",
+      "type": "numeric(14,2)",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "installment_count",
+      "type": "integer",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "1",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "recurrence_frequency",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "due_day",
+      "type": "integer",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "next_generation_date",
+      "type": "date",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "auto_generate",
+      "type": "boolean",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "payment_method_id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "bank_account_id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "paused_at",
+      "type": "timestamp with time zone",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "fiscal_invoice_required",
+      "type": "boolean",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "adjustment_type",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "adjustment_value",
+      "type": "numeric(10,4)",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "adjustment_index_name",
+      "type": "text",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "last_adjustment_date",
+      "type": "date",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "next_adjustment_date",
+      "type": "date",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "default": "platform_private.h15_actor_organization()",
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "key",
+      "type": "text",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "name",
+      "type": "text",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": "true",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "is_default",
+      "type": "boolean",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": "false",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "table": "saas_plans",
+      "schema": "public",
+      "default": "now()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "application_id",
+      "type": "uuid",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "actor_id",
+      "type": "uuid",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "client_id",
+      "type": "uuid",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "payload",
+      "type": "jsonb",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "rectify_id",
+      "type": "uuid",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    },
+    {
+      "name": "manifest",
+      "type": "jsonb",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "keep_ids",
+      "type": "uuid[]",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": true,
+      "generated": ""
+    },
+    {
+      "name": "committed_at",
+      "type": "timestamp with time zone",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "default": null,
+      "identity": "",
+      "not_null": false,
+      "generated": ""
+    }
+  ],
+  "constraints": [
+    {
+      "name": "accounts_payable_category_id_fkey",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (category_id) REFERENCES financial_categories(id)"
+    },
+    {
+      "name": "accounts_payable_cost_center_id_fkey",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (cost_center_id) REFERENCES financial_cost_centers(id)"
+    },
+    {
+      "name": "accounts_payable_created_by_fkey",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "name": "accounts_payable_installment_count_check",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "CHECK ((installment_count >= 1))"
+    },
+    {
+      "name": "accounts_payable_organization_id_fkey",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "accounts_payable_origin_type_check",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "CHECK ((origin_type = ANY (ARRAY['MANUAL'::text, 'PURCHASE'::text, 'FREIGHT'::text, 'COMMISSION'::text, 'RECURRING'::text, 'TAX'::text])))"
+    },
+    {
+      "name": "accounts_payable_pkey",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "accounts_payable_recurring_template_id_fkey",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (recurring_template_id) REFERENCES recurring_financial_templates(id)"
+    },
+    {
+      "name": "accounts_payable_status_check",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "CHECK ((status = ANY (ARRAY['OPEN'::text, 'PARTIAL'::text, 'PAID'::text, 'CANCELED'::text, 'OVERDUE'::text])))"
+    },
+    {
+      "name": "accounts_payable_total_amount_check",
+      "table": "accounts_payable",
+      "schema": "public",
+      "definition": "CHECK ((total_amount >= (0)::numeric))"
+    },
+    {
+      "name": "accounts_receivable_category_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (category_id) REFERENCES financial_categories(id)"
+    },
+    {
+      "name": "accounts_receivable_cost_center_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (cost_center_id) REFERENCES financial_cost_centers(id)"
+    },
+    {
+      "name": "accounts_receivable_created_by_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+    },
+    {
+      "name": "accounts_receivable_customer_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (customer_id) REFERENCES clientes(id)"
+    },
+    {
+      "name": "accounts_receivable_fiscal_exemption_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (fiscal_exemption_id) REFERENCES fiscal_requirement_exemptions(id)"
+    },
+    {
+      "name": "accounts_receivable_fiscal_invoice_status_check",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "CHECK ((fiscal_invoice_status = ANY (ARRAY['NOT_REQUIRED'::text, 'PENDING'::text, 'ISSUED'::text, 'CANCELED'::text, 'PENDING_PARAMETRIZATION'::text, 'EXEMPT'::text])))"
+    },
+    {
+      "name": "accounts_receivable_installment_count_check",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "CHECK ((installment_count >= 1))"
+    },
+    {
+      "name": "accounts_receivable_organization_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "accounts_receivable_origin_type_check",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "CHECK ((origin_type = ANY (ARRAY['DELIVERY'::text, 'SERVICE'::text, 'MANUAL'::text, 'RECURRING'::text, 'CONTRACT'::text, 'B2B_ORDER'::text])))"
+    },
+    {
+      "name": "accounts_receivable_partner_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id)"
+    },
+    {
+      "name": "accounts_receivable_payment_method_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)"
+    },
+    {
+      "name": "accounts_receivable_pkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "accounts_receivable_recurring_template_id_fkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "FOREIGN KEY (recurring_template_id) REFERENCES recurring_financial_templates(id)"
+    },
+    {
+      "name": "accounts_receivable_status_check",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "CHECK ((status = ANY (ARRAY['OPEN'::text, 'PARTIAL'::text, 'PAID'::text, 'CANCELED'::text, 'OVERDUE'::text])))"
+    },
+    {
+      "name": "accounts_receivable_total_amount_check",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "CHECK ((total_amount >= (0)::numeric))"
+    },
+    {
+      "name": "ar_customer_or_partner",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "CHECK (((customer_id IS NOT NULL) OR (partner_id IS NOT NULL)))"
+    },
+    {
+      "name": "bank_accounts_pkey",
+      "table": "bank_accounts",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "catalog_platform_admin_audit_correlation_unique",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "definition": "UNIQUE (correlation_id)"
+    },
+    {
+      "name": "catalog_platform_admin_audit_operation_check",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "definition": "CHECK ((operation = ANY (ARRAY['wipe_global_products'::text, 'update_global_product_metadata'::text, 'create_global_product'::text, 'set_global_product_status'::text, 'create_global_microorganism'::text, 'update_global_microorganism'::text, 'set_global_microorganism_status'::text, 'create_global_culture'::text, 'update_global_culture'::text, 'set_global_culture_status'::text, 'create_global_volume'::text, 'update_global_volume'::text, 'set_global_volume_status'::text, 'set_global_b2b_enabled'::text, 'set_global_product_family'::text, 'set_global_product_composition'::text, 'create_catalog_label'::text, 'update_catalog_label'::text, 'set_catalog_label_active'::text])))"
+    },
+    {
+      "name": "catalog_platform_admin_audit_pkey",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "catalog_platform_admin_audit_reason_check",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "definition": "CHECK (((char_length(btrim(reason)) >= 10) AND (char_length(btrim(reason)) <= 500)))"
+    },
+    {
+      "name": "catalog_platform_admin_audit_status_check",
+      "table": "catalog_platform_admin_audit",
+      "schema": "public",
+      "definition": "CHECK ((status = 'completed'::text))"
+    },
+    {
+      "name": "comunicacao_regras_condicoes_obj",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "definition": "CHECK (((jsonb_typeof(condicoes) = 'object'::text) AND (length((condicoes)::text) <= 8000)))"
+    },
+    {
+      "name": "comunicacao_regras_cooldown_chk",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "definition": "CHECK (((cooldown_seconds >= 0) AND (cooldown_seconds <= 604800)))"
+    },
+    {
+      "name": "comunicacao_regras_estrategia_chk",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "definition": "CHECK ((estrategia = ANY (ARRAY['by_role'::text, 'source_participants'::text, 'broadcast_role'::text, 'source_cliente'::text, 'assigned_consultant'::text])))"
+    },
+    {
+      "name": "comunicacao_regras_event_chk",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "definition": "CHECK (((length(event_key) >= 3) AND (length(event_key) <= 100)))"
+    },
+    {
+      "name": "comunicacao_regras_pkey",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "comunicacao_regras_prio_chk",
+      "table": "comunicacao_regras",
+      "schema": "public",
+      "definition": "CHECK (((prioridade >= 0) AND (prioridade <= 1000)))"
+    },
+    {
+      "name": "comunicacao_templates_assunto_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((assunto IS NULL) OR (length(assunto) <= 300)))"
+    },
+    {
+      "name": "comunicacao_templates_chave_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((length(chave) >= 3) AND (length(chave) <= 120)))"
+    },
+    {
+      "name": "comunicacao_templates_corpo_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((length(corpo) >= 1) AND (length(corpo) <= 30000)))"
+    },
+    {
+      "name": "comunicacao_templates_email_assunto_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((status = 'draft'::comunicacao_template_status) OR (canal <> 'email'::comunicacao_canal) OR ((assunto IS NOT NULL) AND ((length(assunto) >= 1) AND (length(assunto) <= 300)))))"
+    },
+    {
+      "name": "comunicacao_templates_locale_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK ((locale = 'pt-BR'::text))"
+    },
+    {
+      "name": "comunicacao_templates_non_whatsapp_meta_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((canal = 'whatsapp'::comunicacao_canal) OR ((provider_template_name IS NULL) AND (language_code IS NULL) AND (provider_template_status IS NULL) AND (jsonb_array_length(COALESCE(parameter_mapping, '[]'::jsonb)) = 0))))"
+    },
+    {
+      "name": "comunicacao_templates_pkey",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "comunicacao_templates_provider_status_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((provider_template_status IS NULL) OR (provider_template_status = ANY (ARRAY['draft'::text, 'pending'::text, 'approved'::text, 'rejected'::text, 'paused'::text, 'disabled'::text]))))"
+    },
+    {
+      "name": "comunicacao_templates_variaveis_arr",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((jsonb_typeof(variaveis) = 'array'::text) AND (jsonb_array_length(variaveis) <= 64)))"
+    },
+    {
+      "name": "comunicacao_templates_versao_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK ((versao >= 1))"
+    },
+    {
+      "name": "comunicacao_templates_whatsapp_meta_chk",
+      "table": "comunicacao_templates",
+      "schema": "public",
+      "definition": "CHECK (((status = 'draft'::comunicacao_template_status) OR (canal <> 'whatsapp'::comunicacao_canal) OR ((provider_template_name IS NOT NULL) AND ((length(provider_template_name) >= 1) AND (length(provider_template_name) <= 512)) AND (language_code IS NOT NULL) AND (language_code ~ '^[a-z]{2}(_[A-Z]{2})?$'::text) AND (jsonb_typeof(parameter_mapping) = 'array'::text) AND (jsonb_array_length(parameter_mapping) <= 64) AND (provider_template_status = 'approved'::text))))"
+    },
+    {
+      "name": "cfp_nfe_readiness_domain",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "definition": "CHECK ((nfe_readiness_status = ANY (ARRAY['NOT_READY'::text, 'PARTIAL'::text, 'READY'::text])))"
+    },
+    {
+      "name": "cfp_nfe_readiness_pendencies_shape",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "definition": "CHECK ((jsonb_typeof(nfe_readiness_pendencies) = 'array'::text))"
+    },
+    {
+      "name": "cfp_person_type_domain",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "definition": "CHECK (((person_type IS NULL) OR (person_type = ANY (ARRAY['PF'::text, 'PJ'::text, 'ESTRANGEIRO'::text]))))"
+    },
+    {
+      "name": "customer_fiscal_profiles_customer_id_fkey",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "definition": "FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "customer_fiscal_profiles_pkey",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "customer_fiscal_profiles_profile_status_check",
+      "table": "customer_fiscal_profiles",
+      "schema": "public",
+      "definition": "CHECK ((profile_status = ANY (ARRAY['INCOMPLETE'::text, 'PENDING_REVIEW'::text, 'VALIDATED'::text, 'BLOCKED'::text])))"
+    },
+    {
+      "name": "et_dim_chk",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "definition": "CHECK (((largura_mm > (0)::numeric) AND (altura_mm > (0)::numeric)))"
+    },
+    {
+      "name": "et_grid_chk",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "definition": "CHECK (((colunas > 0) AND (linhas > 0)))"
+    },
+    {
+      "name": "et_midia_chk",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "definition": "CHECK ((midia = ANY (ARRAY['termica'::text, 'a4'::text])))"
+    },
+    {
+      "name": "et_orientacao_chk",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "definition": "CHECK ((orientacao = ANY (ARRAY['retrato'::text, 'paisagem'::text])))"
+    },
+    {
+      "name": "etiqueta_templates_pkey",
+      "table": "etiqueta_templates",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "financial_cost_centers_code_key",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "definition": "UNIQUE (code)"
+    },
+    {
+      "name": "financial_cost_centers_pkey",
+      "table": "financial_cost_centers",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "fiscal_tax_rules_pkey",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "fiscal_tax_rules_source_id_fkey",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "FOREIGN KEY (source_id) REFERENCES fiscal_official_sources(id)"
+    },
+    {
+      "name": "fiscal_tax_rules_superseded_by_fkey",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "FOREIGN KEY (superseded_by) REFERENCES fiscal_tax_rules(id)"
+    },
+    {
+      "name": "ftr_base_components_chk",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (fn_fiscal_base_components_valid(base_components))"
+    },
+    {
+      "name": "ftr_base_reduction_mode_coherent",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK ((((base_reduction_mode = 'NONE'::text) AND (COALESCE(base_reduction_pct, (0)::numeric) = (0)::numeric)) OR ((base_reduction_mode = 'FIXED'::text) AND (base_reduction_pct IS NOT NULL) AND (base_reduction_pct > (0)::numeric)) OR ((base_reduction_mode = 'MANUAL'::text) AND (base_reduction_pct IS NULL))))"
+    },
+    {
+      "name": "ftr_base_reduction_mode_domain",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK ((base_reduction_mode = ANY (ARRAY['NONE'::text, 'FIXED'::text, 'MANUAL'::text])))"
+    },
+    {
+      "name": "ftr_calc_mode_domain",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK ((calc_mode = ANY (ARRAY['PERCENT'::text, 'EXEMPT_DOCUMENTED'::text, 'NOT_TAXED_DOCUMENTED'::text, 'SUSPENDED_DOCUMENTED'::text, 'DEFERRED_DOCUMENTED'::text])))"
+    },
+    {
+      "name": "ftr_crt_cst_csosn_chk",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((tax_kind <> ALL (ARRAY['ICMS'::text, 'ICMS_ST'::text])) OR (crt IS NULL) OR ((crt = ANY (ARRAY['1'::text, '2'::text])) AND (csosn IS NOT NULL) AND (cst IS NULL)) OR ((crt = ANY (ARRAY['3'::text, '4'::text])) AND (cst IS NOT NULL) AND (csosn IS NULL))))"
+    },
+    {
+      "name": "ftr_crt_domain",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((crt IS NULL) OR (crt = ANY (ARRAY['1'::text, '2'::text, '3'::text, '4'::text]))))"
+    },
+    {
+      "name": "ftr_cst_csosn_exclusive",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((cst IS NULL) OR (csosn IS NULL)))"
+    },
+    {
+      "name": "ftr_non_icms_csosn_chk",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((tax_kind <> ALL (ARRAY['PIS'::text, 'COFINS'::text, 'IPI'::text, 'FCP'::text, 'FCP_ST'::text, 'DIFAL'::text])) OR (csosn IS NULL)))"
+    },
+    {
+      "name": "ftr_pct_ranges",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK ((((base_reduction_pct IS NULL) OR ((base_reduction_pct >= (0)::numeric) AND (base_reduction_pct <= (100)::numeric))) AND ((deferral_pct IS NULL) OR ((deferral_pct >= (0)::numeric) AND (deferral_pct <= (100)::numeric))) AND ((mva_pct IS NULL) OR (mva_pct >= (0)::numeric)) AND ((fcp_rate IS NULL) OR ((fcp_rate >= (0)::numeric) AND (fcp_rate <= (100)::numeric))) AND ((difal_dest_share_pct IS NULL) OR ((difal_dest_share_pct >= (0)::numeric) AND (difal_dest_share_pct <= (100)::numeric)))))"
+    },
+    {
+      "name": "ftr_published_requires_evidence",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((status <> 'PUBLISHED'::text) OR ((source_id IS NOT NULL) AND (NULLIF(btrim(COALESCE(legal_basis, ''::text)), ''::text) IS NOT NULL) AND (published_at IS NOT NULL) AND (published_by IS NOT NULL) AND ((cst IS NOT NULL) OR (csosn IS NOT NULL) OR (tax_kind = ANY (ARRAY['IBS'::text, 'CBS'::text, 'IS'::text]))) AND ((calc_mode <> 'PERCENT'::text) OR (rate IS NOT NULL)) AND ((calc_mode = 'PERCENT'::text) OR (length(btrim(COALESCE(justification, ''::text))) >= 20)))))"
+    },
+    {
+      "name": "ftr_rate_range",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((rate IS NULL) OR ((rate >= (0)::numeric) AND (rate <= (100)::numeric))))"
+    },
+    {
+      "name": "ftr_rtc_not_publishable_chk",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((tax_kind <> ALL (ARRAY['IBS'::text, 'CBS'::text, 'IS'::text])) OR (status <> 'PUBLISHED'::text)))"
+    },
+    {
+      "name": "ftr_rule_version_unique",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "UNIQUE (rule_key, version)"
+    },
+    {
+      "name": "ftr_st_modality_chk",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((st_modality IS NULL) OR (st_modality = ANY (ARRAY['MVA'::text, 'PAUTA'::text, 'PRECO_TABELADO'::text, 'VALOR_OPERACAO'::text]))))"
+    },
+    {
+      "name": "ftr_status_domain",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK ((status = ANY (ARRAY['DRAFT'::text, 'PUBLISHED'::text, 'SUPERSEDED'::text])))"
+    },
+    {
+      "name": "ftr_tax_kind_domain",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK ((tax_kind = ANY (ARRAY['ICMS'::text, 'ICMS_ST'::text, 'FCP'::text, 'FCP_ST'::text, 'DIFAL'::text, 'PIS'::text, 'COFINS'::text, 'IPI'::text, 'IBS'::text, 'CBS'::text, 'IS'::text])))"
+    },
+    {
+      "name": "ftr_ufs_domain",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK ((((origin_uf IS NULL) OR (fn_fiscal_uf_ibge_code(origin_uf) IS NOT NULL)) AND ((destination_uf IS NULL) OR (destination_uf = 'EX'::text) OR (fn_fiscal_uf_ibge_code(destination_uf) IS NOT NULL))))"
+    },
+    {
+      "name": "ftr_validity",
+      "table": "fiscal_tax_rules",
+      "schema": "public",
+      "definition": "CHECK (((valid_until IS NULL) OR (valid_until >= valid_from)))"
+    },
+    {
+      "name": "microorganism_regulatory_checklist_dossier_id_fkey",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "definition": "FOREIGN KEY (dossier_id) REFERENCES microorganism_regulatory_dossiers(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "microorganism_regulatory_checklist_evidence_document_id_fkey",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "definition": "FOREIGN KEY (evidence_document_id) REFERENCES microorganism_regulatory_documents(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "microorganism_regulatory_checklist_pkey",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "mrc_decided_chk",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "definition": "CHECK (((state = 'PENDING'::text) OR (decided_by IS NOT NULL)))"
+    },
+    {
+      "name": "mrc_item_chk",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "definition": "CHECK ((item_key = ANY (ARRAY['FINALIDADE_REGULATORIA'::text, 'CEPA'::text, 'FORMULACAO'::text, 'GARANTIA_ROTULO'::text, 'REGISTRO_MAPA'::text, 'TITULAR_FABRICANTE'::text, 'NCM_CEST_TIPI'::text, 'GTIN'::text, 'UNIDADE_CONVERSAO'::text, 'ORIGEM'::text, 'CFOP'::text, 'TRIBUTACAO'::text])))"
+    },
+    {
+      "name": "mrc_na_chk",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "definition": "CHECK (((state <> 'NOT_APPLICABLE'::text) OR (NULLIF(btrim(COALESCE(justification, ''::text)), ''::text) IS NOT NULL)))"
+    },
+    {
+      "name": "mrc_state_chk",
+      "table": "microorganism_regulatory_checklist",
+      "schema": "public",
+      "definition": "CHECK ((state = ANY (ARRAY['PENDING'::text, 'CONFIRMED'::text, 'NOT_APPLICABLE'::text])))"
+    },
+    {
+      "name": "microorganism_regulatory_documents_dossier_id_fkey",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "FOREIGN KEY (dossier_id) REFERENCES microorganism_regulatory_dossiers(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "microorganism_regulatory_documents_pkey",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "microorganism_regulatory_documents_source_id_fkey",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "FOREIGN KEY (source_id) REFERENCES fiscal_official_sources(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "mrdoc_bucket_chk",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "CHECK ((storage_bucket = 'fiscal-regulatorio'::text))"
+    },
+    {
+      "name": "mrdoc_path_chk",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "CHECK ((storage_path ~ '^[A-Za-z0-9._/-]+$'::text))"
+    },
+    {
+      "name": "mrdoc_sha_chk",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "CHECK ((content_sha256 ~ '^[0-9a-f]{64}$'::text))"
+    },
+    {
+      "name": "mrdoc_soft_delete_chk",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "CHECK (((deleted_at IS NULL) = (deleted_by IS NULL)))"
+    },
+    {
+      "name": "mrdoc_type_chk",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "CHECK ((doc_type = ANY (ARRAY['ROTULO'::text, 'LAUDO'::text, 'FICHA_TECNICA'::text, 'ATO_REGISTRO'::text, 'CERTIFICADO_ANALISE'::text, 'PARECER_CONTABIL'::text, 'OUTRO'::text])))"
+    },
+    {
+      "name": "mrdoc_url_chk",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "CHECK (((source_url IS NULL) OR (source_url ~ '^https://'::text)))"
+    },
+    {
+      "name": "mrdoc_validade_chk",
+      "table": "microorganism_regulatory_documents",
+      "schema": "public",
+      "definition": "CHECK (((valid_until IS NULL) OR (issued_at IS NULL) OR (valid_until >= issued_at)))"
+    },
+    {
+      "name": "chk_recurring_customer_required",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK (((type <> 'RECEIVABLE'::text) OR (customer_id IS NOT NULL)))"
+    },
+    {
+      "name": "chk_recurring_end_after_start",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK (((end_date IS NULL) OR (end_date >= start_date)))"
+    },
+    {
+      "name": "recurring_financial_templates_adjustment_type_check",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK ((adjustment_type = ANY (ARRAY['PERCENTAGE'::text, 'INDEX'::text, 'FIXED'::text])))"
+    },
+    {
+      "name": "recurring_financial_templates_amount_check",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK ((amount >= (0)::numeric))"
+    },
+    {
+      "name": "recurring_financial_templates_bank_account_id_fkey",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id)"
+    },
+    {
+      "name": "recurring_financial_templates_category_id_fkey",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (category_id) REFERENCES financial_categories(id)"
+    },
+    {
+      "name": "recurring_financial_templates_cost_center_id_fkey",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (cost_center_id) REFERENCES financial_cost_centers(id)"
+    },
+    {
+      "name": "recurring_financial_templates_customer_id_fkey",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (customer_id) REFERENCES clientes(id)"
+    },
+    {
+      "name": "recurring_financial_templates_due_day_check",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK (((due_day >= 1) AND (due_day <= 31)))"
+    },
+    {
+      "name": "recurring_financial_templates_installment_count_check",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK ((installment_count >= 1))"
+    },
+    {
+      "name": "recurring_financial_templates_payment_method_id_fkey",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)"
+    },
+    {
+      "name": "recurring_financial_templates_pkey",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "recurring_financial_templates_recurrence_frequency_check",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK ((recurrence_frequency = ANY (ARRAY['WEEKLY'::text, 'MONTHLY'::text, 'BIMONTHLY'::text, 'QUARTERLY'::text, 'SEMIANNUAL'::text, 'ANNUAL'::text])))"
+    },
+    {
+      "name": "recurring_financial_templates_type_check",
+      "table": "recurring_financial_templates",
+      "schema": "public",
+      "definition": "CHECK ((type = ANY (ARRAY['RECEIVABLE'::text, 'PAYABLE'::text])))"
+    },
+    {
+      "name": "saas_plans_default_requires_active",
+      "table": "saas_plans",
+      "schema": "public",
+      "definition": "CHECK (((NOT is_default) OR active))"
+    },
+    {
+      "name": "saas_plans_key_format",
+      "table": "saas_plans",
+      "schema": "public",
+      "definition": "CHECK ((key ~ '^[a-z][a-z0-9_]{1,63}$'::text))"
+    },
+    {
+      "name": "saas_plans_key_unique",
+      "table": "saas_plans",
+      "schema": "public",
+      "definition": "UNIQUE (key)"
+    },
+    {
+      "name": "saas_plans_name_nonblank",
+      "table": "saas_plans",
+      "schema": "public",
+      "definition": "CHECK ((btrim(name) <> ''::text))"
+    },
+    {
+      "name": "saas_plans_pkey",
+      "table": "saas_plans",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "application_save_preparations_pkey",
+      "table": "application_save_preparations",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (application_id)"
+    }
+  ],
+  "views": [
+    {
+      "name": "_src_vw_esteira_laboratorio",
+      "schema": "public",
+      "definition": " SELECT os_id,\n    origem_os,\n    numero_os,\n    cliente_id,\n    fazenda_id,\n    talhao_id,\n    status_os,\n    created_at,\n    volume_total_ml,\n    produto_id,\n    microrganismo_id,\n    prioridade,\n    volume_solicitado_l,\n    cliente_nome,\n    fazenda_nome,\n    talhao_nome,\n    produto_nome,\n    microrganismo_nome,\n    partner_id,\n    partner_numero,\n    partner_nome,\n    titular_tipo,\n    titular_nome,\n    programacao_id,\n    status_programacao,\n    data_programada,\n    data_inicio_producao,\n    lote_id,\n    codigo_lote,\n    status_lote,\n    data_lote,\n    cq_id,\n    cq_resultado,\n    data_cq,\n    envase_id,\n    data_envase,\n    estoque_id,\n    data_estoque,\n    estoque_reservado_id,\n    data_estoque_reservado,\n    entrega_id,\n    entrega_status,\n    data_entrega,\n    aplicacao_id,\n    data_aplicacao,\n    entrega_confirmada,\n    aplicacao_bloqueante,\n    pendencias_informativas,\n    bloqueios,\n    pode_finalizar,\n        CASE\n            WHEN (status_esteira_oficial = ANY (ARRAY['programada'::text, 'aberta'::text])) AND (status_os = 'em_producao'::text OR status_programacao = 'em_producao'::text) THEN 'em_producao'::text\n            ELSE status_esteira_oficial\n        END AS status_esteira_oficial,\n    tempo_os_ate_programacao,\n    tempo_programacao_ate_lote,\n    tempo_lote_ate_cq,\n    tempo_cq_ate_envase,\n    tempo_envase_ate_entrega,\n    tempo_os_ate_entrega,\n    atrasado,\n        CASE\n            WHEN programacao_id IS NULL THEN 'Programar Produção'::text\n            WHEN lote_id IS NULL THEN 'Gerar Lote'::text\n            WHEN cq_id IS NULL OR cq_resultado IS NULL THEN 'Realizar CQ'::text\n            WHEN cq_resultado = 'reprovado'::text THEN 'Tratar reprovação'::text\n            WHEN envase_id IS NULL THEN 'Registrar Envase'::text\n            WHEN estoque_reservado_id IS NULL THEN 'Gerar Estoque/Reserva'::text\n            WHEN entrega_id IS NULL THEN 'Confirmar Entrega'::text\n            WHEN NOT entrega_confirmada THEN 'Confirmar Entrega'::text\n            WHEN pode_finalizar AND status_os <> 'finalizada'::text THEN 'Finalizar OS'::text\n            WHEN status_os = 'finalizada'::text THEN 'Concluído'::text\n            ELSE 'Verificar Status'::text\n        END AS proxima_acao\n   FROM vw_os_integridade_esteira;"
+    }
+  ],
+  "functions": [
+    {
+      "md5": "f478fba6b5ecc18f4355bcfcfb0c3def",
+      "name": "assert_os_approval_scope",
+      "schema": "private",
+      "definition": "CREATE OR REPLACE FUNCTION private.assert_os_approval_scope(p_os_id uuid, p_origin text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n v_uid uuid:=auth.uid(); v_org uuid; v_os record; v_pp public.programacao_producao%ROWTYPE;\nBEGIN\n v_org:=platform_private.h15_actor_organization();\n -- Alçada antes de lookup/status/replay. NULL não é permissão.\n IF v_uid IS NULL OR v_org IS NULL OR public.technical_actor_ready(v_uid) IS NOT TRUE\n OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE\n OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor')) IS NOT TRUE\n OR p_os_id IS NULL OR p_origin NOT IN ('manual','onfarm') OR p_origin IS NULL THEN\n RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n IF NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=p_origin) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n -- Mesmo ordenamento do caminho direto: lock da OS antes dos filhos, sem advisory invertido.\n IF p_origin='manual' THEN\n SELECT o.organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,o.origem,o.partner_order_id,o.partner_order_item_id INTO v_os FROM public.ordens_servico o WHERE id=p_os_id FOR UPDATE;\n ELSE\n SELECT NULL::uuid organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,'onfarm'::text origem,NULL::uuid partner_order_id,NULL::uuid partner_order_item_id INTO v_os FROM public.ordens_servico_onfarm o WHERE id=p_os_id FOR UPDATE;\n END IF;\n IF v_os.id IS NULL OR (p_origin='manual' AND v_os.organization_id IS DISTINCT FROM v_org) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n PERFORM 1 FROM public.profiles WHERE user_id=v_uid OR id IN (SELECT responsavel_id FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id) ORDER BY user_id FOR SHARE;\n PERFORM 1 FROM public.organizations WHERE id=v_org FOR SHARE;\n -- Lock existing role rows; canonical has_role remains authority, never client claims.\n PERFORM 1 FROM public.user_roles WHERE user_id=v_uid ORDER BY role::text FOR SHARE;\n PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id FOR SHARE;\n PERFORM 1 FROM public.fazendas WHERE id=v_os.fazenda_id FOR SHARE;\n PERFORM 1 FROM public.talhoes WHERE id=v_os.talhao_id FOR SHARE;\n PERFORM 1 FROM public.produtos WHERE id=v_os.produto_id FOR SHARE;\n PERFORM 1 FROM public.microrganismos WHERE id=v_os.microrganismo_id FOR SHARE;\n PERFORM 1 FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;\n IF platform_private.h15_actor_organization() IS DISTINCT FROM v_org OR public.technical_actor_ready(v_uid) IS NOT TRUE\n OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE\n OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor')) IS NOT TRUE\n OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=p_origin) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n -- Efeitos comerciais/planejamento ainda não homologados: não autorizar por alias.\n IF v_os.origem='b2b' OR v_os.partner_order_id IS NOT NULL OR v_os.partner_order_item_id IS NOT NULL\n OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id)\n OR platform_private.lab_item_is_manufacturable(v_os.produto_id,v_os.microrganismo_id) IS NOT TRUE THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n -- Aprovação não cria programação nem inventa data. Ausência exige revisão do fluxo atual.\n IF (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id)<>1 THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n SELECT * INTO v_pp FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id;\n IF v_pp.organization_id IS DISTINCT FROM v_org OR v_pp.status::text IS DISTINCT FROM 'aguardando'\n OR v_pp.produto_id IS DISTINCT FROM v_os.produto_id OR v_pp.microrganismo_id IS DISTINCT FROM v_os.microrganismo_id\n OR NOT (((p_origin='manual' AND v_pp.ordem_servico_id=p_os_id AND v_pp.ordem_servico_onfarm_id IS NULL)\n OR (p_origin='onfarm' AND v_pp.ordem_servico_onfarm_id=p_os_id AND v_pp.ordem_servico_id IS NULL)) IS TRUE)\n OR (v_pp.responsavel_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.profiles pr WHERE pr.id=v_pp.responsavel_id AND pr.organization_id=v_org AND pr.ativo IS TRUE))\n OR EXISTS(SELECT 1 FROM public.lotes WHERE programacao_id=v_pp.id) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n RETURN v_org;\nEND $function$\n",
+      "identity_args": "p_os_id uuid, p_origin text"
+    },
+    {
+      "md5": "929816d95b7a76b201a45b6d1e74f0a2",
+      "name": "c2p1_rule_log_allowed",
+      "schema": "platform_private",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_log_allowed(p_action text, p_partner uuid, p_before jsonb, p_after jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT COALESCE(p_action IN ('price_rule_insert','price_rule_update','price_rule_delete')\n AND (p_before IS NOT NULL OR p_after IS NOT NULL)\n AND platform_private.c2p1_rule_snapshot_allowed(p_before,p_partner)\n AND platform_private.c2p1_rule_snapshot_allowed(p_after,p_partner),false);\n$function$\n",
+      "identity_args": "p_action text, p_partner uuid, p_before jsonb, p_after jsonb"
+    },
+    {
+      "md5": "609c1485e4f82d6946a586dff25874b8",
+      "name": "can_user_access_registro_consultor",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_user_access_registro_consultor(_registro_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT _registro_id IS NOT NULL\n     AND auth.uid() IS NOT NULL\n     AND (\n       public.has_role(auth.uid(), 'administrador'::app_role)\n       OR public.has_role(auth.uid(), 'gestor'::app_role)\n       OR public.can_view_technical_visit(auth.uid(), _registro_id)\n       OR EXISTS (\n            SELECT 1 FROM public.registros_consultor r\n            WHERE r.id = _registro_id\n              AND (\n                r.consultor_responsavel = auth.uid()\n                OR r.created_by = auth.uid()\n                OR r.finalized_by = auth.uid()\n                OR r.cliente_id = ANY (public.get_cliente_ids_for_user(auth.uid()))\n              )\n          )\n     );\n$function$\n",
+      "identity_args": "_registro_id uuid"
+    },
+    {
+      "md5": "9261dd7f47317296b2b07dc3afbb2bbc",
+      "name": "fn_fiscal_uf_ibge_code",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_fiscal_uf_ibge_code(_uf text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO 'public', 'pg_temp'\nAS $function$\n  SELECT CASE upper(btrim(coalesce(_uf,'')))\n    WHEN 'RO' THEN '11' WHEN 'AC' THEN '12' WHEN 'AM' THEN '13' WHEN 'RR' THEN '14'\n    WHEN 'PA' THEN '15' WHEN 'AP' THEN '16' WHEN 'TO' THEN '17' WHEN 'MA' THEN '21'\n    WHEN 'PI' THEN '22' WHEN 'CE' THEN '23' WHEN 'RN' THEN '24' WHEN 'PB' THEN '25'\n    WHEN 'PE' THEN '26' WHEN 'AL' THEN '27' WHEN 'SE' THEN '28' WHEN 'BA' THEN '29'\n    WHEN 'MG' THEN '31' WHEN 'ES' THEN '32' WHEN 'RJ' THEN '33' WHEN 'SP' THEN '35'\n    WHEN 'PR' THEN '41' WHEN 'SC' THEN '42' WHEN 'RS' THEN '43' WHEN 'MS' THEN '50'\n    WHEN 'MT' THEN '51' WHEN 'GO' THEN '52' WHEN 'DF' THEN '53'\n    ELSE NULL END;\n$function$\n",
+      "identity_args": "_uf text"
+    },
+    {
+      "md5": "7509f3dd5fcb72f58cf01a68227a3718",
+      "name": "h15_fiscal_audit_access",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.h15_fiscal_audit_access(p_table text, p_record uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nBEGIN\n  IF public.h15_actor_organization() IS NULL OR p_record IS NULL THEN RETURN false; END IF;\n  RETURN CASE p_table\n    WHEN 'company_fiscal_settings' THEN public.h15_company_access(p_record)\n    WHEN 'fiscal_invoices' THEN public.h15_invoice_access(p_record)\n    WHEN 'fiscal_events' THEN EXISTS (SELECT 1 FROM public.fiscal_events e WHERE e.id=p_record AND public.h15_invoice_access(e.fiscal_invoice_id))\n    WHEN 'fiscal_xml_runs' THEN EXISTS (SELECT 1 FROM public.fiscal_xml_runs r WHERE r.id=p_record AND public.h15_invoice_access(r.fiscal_invoice_id))\n    WHEN 'fiscal_sefaz_transmissions' THEN EXISTS (SELECT 1 FROM public.fiscal_sefaz_transmissions t WHERE t.id=p_record AND public.h15_invoice_access(t.fiscal_invoice_id))\n    WHEN 'fiscal_protocoled_documents' THEN EXISTS (SELECT 1 FROM public.fiscal_protocoled_documents d WHERE d.id=p_record AND public.h15_invoice_access(d.fiscal_invoice_id))\n    WHEN 'fiscal_certificates' THEN EXISTS (SELECT 1 FROM public.fiscal_certificates c WHERE c.id=p_record AND public.h15_company_access(c.company_settings_id))\n    ELSE false\n  END;\nEND;\n$function$\n",
+      "identity_args": "p_table text, p_record uuid"
+    },
+    {
+      "md5": "9f281bcacc931e1d064d552e6898d3b5",
+      "name": "notification_p1_visible",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.notification_p1_visible(uid uuid, st text, sid uuid, cid uuid DEFAULT NULL::uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.notification_p1_visible(uid,st,sid,cid); $function$\n",
+      "identity_args": "uid uuid, st text, sid uuid, cid uuid"
+    },
+    {
+      "md5": "ba6fb694fbe66ac230b5ad11a24122b8",
+      "name": "notification_p1_visible",
+      "schema": "platform_private",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.notification_p1_visible(uid uuid, st text, sid uuid, cid uuid DEFAULT NULL::uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ DECLARE org uuid; BEGIN\n org:=platform_private.notification_source_org(st,sid);\n IF uid IS DISTINCT FROM auth.uid() OR NOT COALESCE(platform_private.notification_user_ok(uid,org),false) OR public.h15_actor_organization() IS DISTINCT FROM org THEN RETURN false; END IF;\n IF cid IS NOT NULL THEN\nIF platform_private.notification_source_client(st,sid) IS DISTINCT FROM cid THEN RETURN false; END IF;\n  RETURN public.has_role(uid,'cliente_produtor') AND EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=cid AND c.organization_id=org) AND public._portal_cliente_user_has_link(uid,cid);\n END IF;\n RETURN true; END $function$\n",
+      "identity_args": "uid uuid, st text, sid uuid, cid uuid"
+    },
+    {
+      "md5": "aac11ad7b68d10fe225996f13f32e9b4",
+      "name": "stock_p1_movement_owned",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.stock_p1_movement_owned(p_stock uuid, p_lote uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.stock_p1_movement_owned(p_stock,p_lote); $function$\n",
+      "identity_args": "p_stock uuid, p_lote uuid"
+    },
+    {
+      "md5": "9d5199e2226bf08314ea98e7ba1bd56f",
+      "name": "stock_p1_movement_owned",
+      "schema": "platform_private",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.stock_p1_movement_owned(p_stock uuid, p_lote uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ SELECT auth.uid() IS NOT NULL AND EXISTS (SELECT 1 FROM public.estoque_produto e WHERE e.id=p_stock AND e.lote_id=p_lote AND platform_private.stock_p1_lote_owned(e.lote_id)); $function$\n",
+      "identity_args": "p_stock uuid, p_lote uuid"
+    },
+    {
+      "md5": "cce7d02cc6a065d820c358e9dcc9badf",
+      "name": "tenant_email_actor_org",
+      "schema": "platform_private",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.tenant_email_actor_org()\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n IF auth.uid() IS NULL OR public.is_platform_superadmin(auth.uid())\n OR platform_private.platform_actor_access_ready(auth.uid()) IS DISTINCT FROM true\n OR public.has_role(auth.uid(),'administrador'::public.app_role) IS DISTINCT FROM true THEN\n  RETURN NULL;\n END IF;\n SELECT p.organization_id INTO v_org FROM public.profiles p\n JOIN public.organizations o ON o.id=p.organization_id\n WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE AND o.ativo IS TRUE;\n RETURN v_org;\nEND $function$\n",
+      "identity_args": ""
+    }
+  ],
+  "sequences": [
+    {
+      "cycle": false,
+      "data_type": "bigint",
+      "max_value": 9223372036854776000,
+      "min_value": 1,
+      "cache_size": 1,
+      "schemaname": "public",
+      "start_value": 1,
+      "increment_by": 1,
+      "sequencename": "estoque_embalagem_seq",
+      "sequenceowner": "postgres"
+    },
+    {
+      "cycle": false,
+      "data_type": "bigint",
+      "max_value": 9223372036854776000,
+      "min_value": 1,
+      "cache_size": 1,
+      "schemaname": "public",
+      "start_value": 1,
+      "increment_by": 1,
+      "sequencename": "produto_etiqueta_seq",
+      "sequenceowner": "postgres"
+    }
+  ]
+}

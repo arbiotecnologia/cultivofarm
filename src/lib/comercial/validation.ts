@@ -1,11 +1,12 @@
 import type { PaymentPlanPayload } from '@/hooks/useCommercialPaymentPlansAdmin';
 import type { PlanAssignment } from '@/hooks/useCommercialConditions';
+import { isCivilDate, strictInstant } from './civilDate';
 
 /**
  * Erros dos parâmetros financeiros do plano (faixas idênticas às do formulário).
  * Usado tanto pela validação completa quanto pelo preview do cronograma.
  */
-export function planFinancialErrors(p: PaymentPlanPayload) {
+export function planFinancialErrors(p: PaymentPlanPayload & { payment_method?: string; approved_payment_configuration?: { approved: boolean; version: number } | null }) {
   const errors: Record<string, string> = {};
   const ranges = { discount_percent: [0, 100], monthly_interest_percent: [0, 100], installment_count: [1, 60], months_count: [0, 60], max_days: [0, 1095] } as const;
   for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) {
@@ -13,6 +14,11 @@ export function planFinancialErrors(p: PaymentPlanPayload) {
     if (!Number.isFinite(p[key]) || p[key] < min || p[key] > max || (['installment_count', 'max_days'].includes(key) && !Number.isInteger(p[key]))) errors[key] = `Informe um valor ${['installment_count', 'max_days'].includes(key) ? 'inteiro ' : ''}entre ${min} e ${max}.`;
   }
   if (p.minimum_order_amount != null && (!Number.isFinite(p.minimum_order_amount) || p.minimum_order_amount < 0)) errors.minimum_order_amount = 'Informe um mínimo não negativo.';
+  if (p.payment_method && !['dinheiro', 'pix', 'promissoria', 'boleto', 'cartao_credito', 'cartao_debito'].includes(p.payment_method)) errors.payment_method = 'Meio de pagamento inválido.';
+  if (['pix', 'dinheiro', 'cartao_debito'].includes(p.payment_method ?? '') && p.installment_count !== 1) errors.installment_count = 'À vista exige uma parcela com prazo configurado.';
+  if (['pix', 'dinheiro', 'cartao_debito'].includes(p.payment_method ?? '') && p.monthly_interest_percent !== 0) errors.monthly_interest_percent = 'Prazo à vista não concede juros tácitos.';
+  if (p.payment_method === 'boleto' && p.installment_count > 3) errors.installment_count = 'Boleto permite até três parcelas mensais.';
+  if (['promissoria', 'cartao_credito'].includes(p.payment_method ?? '') && (p.approved_payment_configuration?.approved !== true || !Number.isSafeInteger(p.approved_payment_configuration.version) || p.approved_payment_configuration.version < 1)) errors.payment_configuration = 'Configuração aprovada de parcelas e taxas indisponível.';
   return errors;
 }
 
@@ -26,9 +32,9 @@ export function validatePlan(p: PaymentPlanPayload, mode = 'create', now = Date.
   if (!['cash', 'short_term', 'medium_term', 'extended_term', 'harvest', 'custom'].includes(p.plan_type)) errors.plan_type = 'Tipo inválido.';
   if (!['none', 'simple', 'compound'].includes(p.interest_type)) errors.interest_type = 'Tipo de juros inválido.';
   if (!['discount_from_base', 'fixed_item_price', 'quote_only'].includes(p.pricing_mode)) errors.pricing_mode = 'Modo inválido.';
-  const start = p.valid_from ? Date.parse(p.valid_from) : now;
+  const start = p.valid_from ? strictInstant(p.valid_from) : now;
   if (!Number.isFinite(start)) errors.valid_from = 'Data inicial inválida.';
-  if (p.valid_until && (!Number.isFinite(Date.parse(p.valid_until)) || Date.parse(p.valid_until) <= start)) errors.valid_until = 'A data final deve ser posterior ao início da vigência.';
+  if (p.valid_until && (!Number.isFinite(strictInstant(p.valid_until)) || strictInstant(p.valid_until) <= start)) errors.valid_until = 'A data final deve ser posterior ao início da vigência.';
   if (mode === 'version' && !p.motivo?.trim()) errors.motivo = 'Informe o motivo da nova versão.';
   return errors;
 }
@@ -44,7 +50,7 @@ export function validateSimulation(f: SimulationForm, needsDate = false) {
   if (!['hectare', 'litro', 'dose', 'unidade'].includes(f.unit)) errors.unit = 'Selecione a unidade.';
   if (!f.quantity.trim() || !Number.isFinite(Number(f.quantity)) || Number(f.quantity) <= 0) errors.quantity = 'Informe uma quantidade finita maior que zero.';
   if (f.unit === 'unidade' && (!f.volume.trim() || !Number.isFinite(Number(f.volume)) || Number(f.volume) <= 0)) errors.volume = 'Informe um volume maior que zero.';
-  if ((needsDate && !f.due) || (f.due && !Number.isFinite(Date.parse(f.due)))) errors.due = 'Informe o primeiro vencimento válido.';
+  if ((needsDate && !f.due) || (f.due && !isCivilDate(f.due))) errors.due = 'Informe o primeiro vencimento válido.';
   return errors;
 }
 /** Unidade/volume de uma linha publicada da matriz, elegível para simulação. */
@@ -115,8 +121,7 @@ export function assignmentApplies(a: PlanAssignment, partner: string, now = Date
   if (!partner || !Number.isFinite(now) || a.status !== 'published') return false;
   // Assignment validity uses SQL DATE, inclusive at both ends (CURRENT_DATE).
   const today = new Date(now).toISOString().slice(0, 10);
-  const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+  const validDate = (value: string) => isCivilDate(value);
   if (!validDate(a.valid_from) || a.valid_from > today ||
       (a.valid_until != null && (!validDate(a.valid_until) || a.valid_until < today))) return false;
   // Default assignments are publishable; default price-table rows are only templates.

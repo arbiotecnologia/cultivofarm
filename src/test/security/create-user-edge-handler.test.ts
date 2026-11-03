@@ -1,13 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import ts from "typescript";
+import { createUserEntrypointJavascript } from "./createUserEntrypoint";
 
 // Executes the real entrypoint with isolated SDK/Deno mocks. No network/Auth calls.
-const source = readFileSync("supabase/functions/create-user/index.ts", "utf8")
-  .replace(/^import .*createClient.*;\s*/m, "");
-const javascript = ts.transpileModule(source, {
-  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-}).outputText;
+const source = readFileSync("supabase/functions/create-user/index.ts", "utf8");
+const javascript = createUserEntrypointJavascript();
 
 type Scenario = {
   authorized?: boolean; authorizationError?: boolean; oldJwt?: boolean;
@@ -23,9 +20,12 @@ type Scenario = {
 
 async function invoke(scenario: Scenario = {}, payload: Record<string, unknown> = {}) {
   const sentinel = "private-test-sentinel";
-  const rpc = vi.fn(async (name: string, args: Record<string, string>) => name === "b2b_claim_provisioning" ? ({
-    data: { claim_id: "receipt", fence: "fence", user_id: "created-user", organization_id: "actor-org",
-      status: scenario.claimStatus ?? "claimed", lease_valid: true, acquired: scenario.acquired !== false },
+  const rpc = vi.fn(async (name: string, args: Record<string, any>) => name === "b2b_claim_provisioning" ? ({
+    data: { claim_id: "receipt", fence: "fence", user_id: "created-user", organization_id: scenario.preflightOrg ?? "actor-org",
+      status: scenario.claimStatus ?? "claimed", lease_valid: true, acquired: scenario.acquired !== false,
+      // C2 multiprofile claim envelope required by the current entrypoint (server-issued, echoed exactly).
+      contract: "C2_MULTIPROFILE_V1", actor_id: "actor", partner_id: args.p_partner ?? null, readers_ready: true,
+      provisioning_ready: true, external_roles: args.p_roles ?? [], producer_links_valid: true },
     error: scenario.claimFailure ? new Error(sentinel) : null,
   }) : name === "b2b_provisioning_preflight" ? ({
     data: { organization_id: scenario.preflightOrg ?? "actor-org", partner_id: args.p_partner, role: args.p_role, papel: args.p_papel, enabled: true },
@@ -108,21 +108,24 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
   const partnerId = "11111111-1111-4111-8111-111111111111";
   it("validates commercial preflight with caller bearer but never opens Auth via a remote flag", async () => {
     const r = await invoke({ b2bOpen: false }, { role: "parceiro_b2b", partner_id: partnerId, password: undefined });
-    expect(r.rpc).toHaveBeenCalledWith("b2b_provisioning_preflight", { p_partner: partnerId, p_role: "parceiro_b2b", p_papel: "gestor" });
+    // C2 (23/10): o preflight separado foi absorvido pelo claim canônico; com o gate de código fechado nenhum
+    // canal B2B é chamado além da autorização do ator.
+    expect(r.rpc.mock.calls.map(c => c[0])).toEqual(["has_role"]);
     expect(r.response.status).toBe(503);
     expect(r.createUser).not.toHaveBeenCalled();
   });
-  it.each([{ preflightFailure: true }, { preflightOrg: "foreign" }])("rejects unauthorized owner preflight: %j", async (scenario) => {
-    const r = await invoke(scenario, { role: "parceiro_b2b", partner_id: partnerId });
-    expect(r.response.status).toBe(403); expect(r.createUser).not.toHaveBeenCalled();
+  // C2: a autoridade de dono/tenant vem do claim do servidor; falha ou organização estrangeira nunca abre Auth.
+  it.each([{ claimFailure: true }, { preflightOrg: "foreign" }])("rejects unauthorized owner claim: %j", async (scenario) => {
+    const r = await invoke({ b2bOpen: true, ...scenario }, { role: "parceiro_b2b", partner_id: partnerId, password: undefined, idempotency_key: "55555555-5555-4555-8555-555555555555" });
+    expect(r.response.status).toBe(409); expect(r.createUser).not.toHaveBeenCalled(); expect(r.elevatedRpc).not.toHaveBeenCalled();
   });
   it.each([
     { role: "parceiro_b2b", roles: ["parceiro_b2b", "gestor"] },
     { role: "parceiro_b2b", roles: ["parceiro_b2b", "parceiro_b2b"] },
     { role: "parceiro_b2b", partner_papel: "tecnico" },
     { role: "gestor", roles: ["parceiro_b2b"] },
-    { role: "parceiro_b2b", cliente_ids: ["other"] },
-  ])("rejects extras/mismatch before preflight: %j", async (payload) => {
+    { role: "parceiro_b2b", cliente_ids: ["22222222-2222-4222-8222-222222222222"] },
+  ])("rejects extras/mismatch before claim: %j", async (payload) => {
     const r = await invoke({}, { partner_id: partnerId, ...payload });
     expect(r.response.status).toBe(403);
     expect(r.rpc.mock.calls.map(c => c[0])).toEqual(["has_role"]);
@@ -201,7 +204,7 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
     expect(r.response.status).toBe(403);
     expect(r.createUser).not.toHaveBeenCalled();
   });
-  it.each([{ partner_id: "foreign-partner" }, { cliente_ids: ["foreign-client"] }])("vínculo fora do escopo falha fechado: %j", async (payload) => {
+  it.each([{ partner_id: "33333333-3333-4333-8333-333333333333" }, { cliente_ids: ["44444444-4444-4444-8444-444444444444"] }])("vínculo fora do escopo falha fechado: %j", async (payload) => {
     const r = await invoke({}, payload);
     expect(r.body.error).toBe("tenant_link_scope_unavailable");
     expect(r.createUser).not.toHaveBeenCalled();
@@ -280,8 +283,15 @@ describe("create-user — handler real, SDK e Auth isolados", () => {
     const r = await invoke({ b2bOpen: true, providerFailure: "user_already_exists" }, b2bPayload);
     expect(r.response.status).toBe(200); expect(r.deleteUser).not.toHaveBeenCalled();
   });
-  it.each([{ password: "operator-password1" }, { role: "parceiro_b2b_tecnico" }, { idempotency_key: null }])("denies operator password/technical role/missing key: %j", async payload => {
+  it.each([{ password: "operator-password1" }, { idempotency_key: null }])("denies operator password/missing key: %j", async payload => {
     const r = await invoke({ b2bOpen: true }, { ...b2bPayload, ...payload });
-    expect(r.response.status).toBe(payload.role ? 403 : 400); expect(r.createUser).not.toHaveBeenCalled();
+    expect(r.response.status).toBe(400); expect(r.createUser).not.toHaveBeenCalled();
+  });
+  // C2 (23/10) tornou Técnico B2B atribuível pelo claim canônico com papel "tecnico"; papel divergente e mistura com
+  // perfil interno continuam negados antes de qualquer claim/Auth.
+  it.each([{ role: "parceiro_b2b_tecnico", partner_papel: "gestor" }, { role: undefined, roles: ["parceiro_b2b_tecnico", "gestor"] }])("denies technical role with divergent papel or internal mix: %j", async payload => {
+    const r = await invoke({ b2bOpen: true }, { ...b2bPayload, ...payload });
+    expect(r.response.status).toBe(403); expect(r.createUser).not.toHaveBeenCalled();
+    expect(r.rpc.mock.calls.map(c => c[0])).toEqual(["has_role"]);
   });
 });

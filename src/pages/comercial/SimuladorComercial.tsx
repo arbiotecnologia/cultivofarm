@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { brl } from '@/lib/financial/format';
 import { catalogFamilyLabel } from '@/lib/catalogo/catalogFamilyRead';
+import { PAYMENT_METHODS, requirePaymentChoice, paymentPlanAvailable, type PaymentMethod } from '@/lib/comercial/paymentContract';
+import { usePaymentConditionCapability } from '@/hooks/usePaymentConditionCapability';
 
 export default function SimuladorComercial() {
   const sim = useSimulateB2BPaymentPlan();
@@ -27,11 +29,17 @@ export default function SimuladorComercial() {
   const [form, setForm] = useState<SimulationForm>({ partner: '', plan: '', item: '', unit: 'hectare', quantity: '1', volume: '', due: '' });
   const [result, setResult] = useState<SimulateResult | null>(null);
   const [failure, setFailure] = useState('');
+  const [method, setMethod] = useState<PaymentMethod | null>(null);
+  const capability = usePaymentConditionCapability(form.partner || null, Boolean(form.partner));
   const [pending, setPending] = useState(false);
   const revision = useRef(0);
   const busy = useRef(false);
   const availablePlans = (plans.data ?? []).filter(p => (assignments.data ?? []).some(a => a.plan_id === p.id && assignmentApplies(a, form.partner)));
   const plan = availablePlans.find(p => p.id === form.plan);
+  let paymentChoice = null;
+  if (capability.data && !capability.isError && plan?.payment_contract === 'B2B_PAYMENT_CONDITION_V1' && method && plan.payment_methods?.includes(method) && plan.pricing_mode && paymentPlanAvailable({...plan,pricing_mode:plan.pricing_mode,payment_method:method})) {
+    try { paymentChoice = requirePaymentChoice({payment_method:method,payment_condition_version:plan.version,payment_deadline_days:plan.payment_deadline_days}); } catch { /* no configured choice */ }
+  }
   const items = (catalog.data ?? []).filter(i => i.ativo && i.b2b_enabled);
   const item = items.find(i => `${i.tipo}:${i.id}` === form.item);
   const needsDate = Boolean(plan && plan.max_days > 0 && plan.pricing_mode !== 'quote_only');
@@ -48,11 +56,12 @@ export default function SimuladorComercial() {
     setForm(f => ({ ...f, [key]: value, ...(key === 'partner' ? { plan: '', due: '' } : {}), ...(key === 'plan' ? { due: '' } : {}) }));
   }
   async function simulate() {
-    if (busy.current || loading || loadError || Object.keys(errors).length || !item || !plan) return;
+    if (busy.current || loading || loadError || Object.keys(errors).length || !item || !plan || !paymentChoice) return;
     busy.current = true; setPending(true); setResult(null); setFailure('');
     const requestRevision = revision.current;
     try {
       const data = await sim.mutateAsync({ partner_id: form.partner, payment_plan_id: form.plan,
+        payment_choice: paymentChoice,
         items: [{ item_id: item.id, item_tipo: item.tipo, quantidade: Number(form.quantity), unidade_medida: form.unit, volume_ml: form.unit === 'unidade' ? Number(form.volume) : null }],
         first_due_date: needsDate ? form.due : null });
       if (requestRevision === revision.current) setResult(data);
@@ -78,7 +87,9 @@ export default function SimuladorComercial() {
         {needsDate && <div><Label htmlFor="sim-due">Primeiro vencimento</Label><Input id="sim-due" type="date" value={form.due} aria-invalid={!!errors.due} aria-describedby="sim-due-error" onChange={e => change('due', e.target.value)} />{errorFor('due')}</div>}
       </div>
       {plan?.pricing_mode === 'quote_only' && <p role="status">Sob consulta — esta condição exige cotação.</p>}
-      <Button type="submit" disabled={pending || Object.keys(errors).length > 0}>{pending ? 'Calculando…' : 'Simular'}</Button>
+      <div><Label htmlFor="simulation-payment-method">Forma de pagamento</Label><Select value={method ?? ''} onValueChange={v=>{revision.current++;setResult(null);setMethod(v as PaymentMethod);}} disabled={!capability.data || capability.isError}><SelectTrigger id="simulation-payment-method"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{Object.entries(PAYMENT_METHODS).map(([value,label])=><SelectItem key={value} value={value} disabled={!plan?.payment_methods?.includes(value as PaymentMethod)}>{label}</SelectItem>)}</SelectContent></Select></div>
+      {!capability.data || capability.isError ? <p role="status">Condições de pagamento indisponíveis neste ambiente.</p> : null}
+      <Button type="submit" disabled={pending || !paymentChoice || Object.keys(errors).length > 0}>{pending ? 'Calculando…' : 'Simular'}</Button>
     </form>}
     {failure && <p role="alert" className="text-destructive">{failure}</p>}
     {result && <section aria-label="Resultado" className="space-y-3 border-t pt-4">

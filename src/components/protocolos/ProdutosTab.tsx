@@ -29,6 +29,8 @@ import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
 
 import { recalcPricing, numOrNullStr, fmtNumStr, type PricingField } from "@/lib/protocolos/pricingRecalc";
 import { buildFormulacoesPayload } from "@/lib/protocolos/composicaoSync";
+import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck, tenantProductErrorMessage, type TenantProductDraft } from "@/lib/catalogo/tenantProducts";
+import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
 import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItemControls";
@@ -97,127 +99,58 @@ interface Produto {
 }
 
 
-// ── CAT-06/CAT-07 ────────────────────────────────────────────────────────────
-// Colunas restauráveis (apenas as que `handleSave` altera / precisa reinserir).
-export const PRODUTO_SNAPSHOT_COLUMNS =
-  "nome, codigo, tipo, dose_ml_ha, modo_aplicacao, valor_ha_brl, valor_dose_brl, valor_litro_brl, funcao_completa, versao_catalogo, ativo, b2b_enabled, e_insumo, estoque_minimo";
-export const FORMULACAO_SNAPSHOT_COLUMNS =
-  "produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao, e_volume_fixo";
-
+// ── Salvamento por empresa (substitui CAT-06 compensação no cliente) ──────────
 export type SaveProdutoOutcome =
   | { status: "ok"; produtoId: string }
   | { status: "error"; message: string }
-  | { status: "critical"; message: string };
+  | { status: "partial"; produtoId: string; message: string };
 
-const MSG_CRITICO =
-  "Falha crítica: a reversão automática não foi concluída. NÃO repita a operação e contate o suporte imediatamente.";
+const MSG_PARCIAL =
+  "Produto salvo, mas a composição não foi alterada (a anterior foi mantida). Recarregue e revise a composição.";
+const MSG_RECARREGAR = "Versão do produto desconhecida. Recarregue antes de editar.";
 
 const MSG_NAO_CONFIRMADO = "Não foi possível confirmar o salvamento do produto. A composição não foi alterada.";
-const MSG_COMPOSICAO = "Não foi possível confirmar a alteração da composição.";
-
-type MutationRow = { id: string; produto_id?: string };
-function confirmedRows(data: unknown, count: number, produtoId?: string): data is MutationRow[] {
-  if (!Array.isArray(data) || data.length !== count) return false;
-  const ids = new Set<string>();
-  for (const row of data) {
-    if (!row || typeof row.id !== "string" || !row.id.trim() || ids.has(row.id)
-      || (produtoId !== undefined && row.produto_id !== produtoId)) return false;
-    ids.add(row.id);
-  }
-  return true;
-}
-function confirmedProduct(data: unknown, expectedId?: string): data is MutationRow[] {
-  return confirmedRows(data, 1) && (expectedId === undefined || data[0].id === expectedId);
-}
-function confirmedDeleted(data: unknown, expected: MutationRow[], produtoId: string): boolean {
-  return confirmedRows(data, expected.length, produtoId)
-    && data.every(row => expected.some(previous => previous.id === row.id));
-}
-
-/** Compensação best-effort entre chamadas: não é transação nem proteção contra concorrência. */
-export async function saveProdutoComCompensacao(opts: {
+/**
+ * Catálogo exclusivo por empresa: produto pela RPC `tenant_product_save` (empresa do servidor, CAS, idempotência)
+ * e composição pela substituição ATÔMICA `tenant_catalog_formulacoes_replace` com o token devolvido.
+ * Sem escrita direta nem compensação no cliente: se a composição falhar depois do produto confirmado,
+ * o resultado é "partial" (produto salvo, composição anterior intacta no servidor) — nunca ok.
+ */
+export async function saveProdutoTenant(opts: {
   client: any;
   produtoId: string | null;
+  expectedUpdatedAt: string | null;
   payload: Record<string, any>;
   buildFormulacoes: (produtoId: string) => any[];
 }): Promise<SaveProdutoOutcome> {
-  const { client, produtoId, payload, buildFormulacoes } = opts;
-  if (produtoId) {
-    const snapProduto = await client.from("produtos").select(PRODUTO_SNAPSHOT_COLUMNS)
-      .eq("id", produtoId).maybeSingle();
-    if (snapProduto.error || !snapProduto.data) {
-      return { status: "error", message: "Não foi possível ler o estado atual do produto." };
-    }
-    // IDs permitem conferir exclusão e restaurar a identidade da composição anterior.
-    const snapFormulacoes = await client.from("formulacoes")
-      .select(`id, ${FORMULACAO_SNAPSHOT_COLUMNS}`).eq("produto_id", produtoId);
-    if (snapFormulacoes.error || !Array.isArray(snapFormulacoes.data)
-      || !confirmedRows(snapFormulacoes.data, snapFormulacoes.data.length, produtoId)) {
-      return { status: "error", message: MSG_COMPOSICAO };
-    }
-    const formulacoesAnteriores = snapFormulacoes.data;
-    const compensar = async (motivo: string): Promise<SaveProdutoOutcome> => {
-      try {
-        const upd = await client.from("produtos").update(snapProduto.data).eq("id", produtoId).select("id");
-        // Não tocar composição se a restauração do produto não foi confirmada.
-        if (upd.error || !confirmedProduct(upd.data, produtoId)) return { status: "critical", message: MSG_CRITICO };
-        const atuais = await client.from("formulacoes").select("id, produto_id").eq("produto_id", produtoId);
-        if (atuais.error || !Array.isArray(atuais.data)
-          || !confirmedRows(atuais.data, atuais.data.length, produtoId)) return { status: "critical", message: MSG_CRITICO };
-        const del = await client.from("formulacoes").delete().eq("produto_id", produtoId).select("id, produto_id");
-        if (del.error || !confirmedDeleted(del.data, atuais.data, produtoId)) return { status: "critical", message: MSG_CRITICO };
-        if (formulacoesAnteriores.length > 0) {
-          const ins = await client.from("formulacoes").insert(formulacoesAnteriores).select("id, produto_id");
-          if (ins.error || !confirmedDeleted(ins.data, formulacoesAnteriores, produtoId)) return { status: "critical", message: MSG_CRITICO };
-        }
-        return { status: "error", message: motivo };
-      } catch {
-        return { status: "critical", message: MSG_CRITICO };
-      }
-    };
-    const upd = await client.from("produtos").update(payload).eq("id", produtoId).select("id");
-    if (upd.error || !confirmedProduct(upd.data, produtoId)) return { status: "error", message: MSG_NAO_CONFIRMADO };
-    try {
-      const formulacoesPayload = buildFormulacoes(produtoId);
-      if (formulacoesPayload.some(row => row.produto_id !== produtoId)) return await compensar(MSG_COMPOSICAO);
-      const del = await client.from("formulacoes").delete().eq("produto_id", produtoId).select("id, produto_id");
-      if (del.error || !confirmedDeleted(del.data, formulacoesAnteriores, produtoId)) return await compensar(MSG_COMPOSICAO);
-      if (formulacoesPayload.length > 0) {
-        const ins = await client.from("formulacoes").insert(formulacoesPayload).select("id, produto_id");
-        if (ins.error || !confirmedRows(ins.data, formulacoesPayload.length, produtoId)) return await compensar(MSG_COMPOSICAO);
-      }
-      return { status: "ok", produtoId };
-    } catch {
-      return await compensar(MSG_COMPOSICAO);
-    }
+  const { client, produtoId, expectedUpdatedAt, payload, buildFormulacoes } = opts;
+  if (produtoId && !expectedUpdatedAt) return { status: "error", message: MSG_RECARREGAR };
+  const draft: TenantProductDraft = {};
+  for (const k of TENANT_PRODUCT_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(payload, k)) continue;
+    if (k === "codigo" && (payload.codigo === null || payload.codigo === "")) continue; // servidor gera por empresa
+    draft[k] = payload[k];
   }
-  const criado = await client.from("produtos").insert([payload]).select("id");
-  if (criado.error) return { status: "error", message: "Não foi possível salvar o produto." };
-  // Sem ID confiável não há alvo seguro para compensação; não tentar adivinhá-lo.
-  if (!confirmedProduct(criado.data, typeof payload.id === "string" ? payload.id : undefined)) {
-    return { status: "critical", message: MSG_CRITICO };
-  }
-  const novoId = criado.data[0].id;
-  const removerNovo = async (): Promise<SaveProdutoOutcome> => {
-    try {
-      const del = await client.from("produtos").delete().eq("id", novoId).select("id");
-      return del.error || !confirmedProduct(del.data, novoId)
-        ? { status: "critical", message: MSG_CRITICO }
-        : { status: "error", message: MSG_COMPOSICAO };
-    } catch {
-      return { status: "critical", message: MSG_CRITICO };
-    }
-  };
+  let body: Record<string, unknown>;
+  try { body = buildTenantProductPayload(draft, produtoId === null); }
+  catch (e: any) { return { status: "error", message: e?.message || MSG_NAO_CONFIRMADO }; }
+  const saved = await client.rpc("tenant_product_save", {
+    p_product_id: produtoId, p_payload: body, p_expected_updated_at: produtoId ? expectedUpdatedAt : null,
+    p_idempotency_key: crypto.randomUUID(),
+  });
+  if (saved.error) return { status: "error", message: tenantProductErrorMessage(saved.error.code, saved.error.message) };
+  let ack;
+  try { ack = parseTenantProductAck(saved.data, produtoId); }
+  catch { return { status: "error", message: MSG_NAO_CONFIRMADO }; }
   try {
-    const formulacoesPayload = buildFormulacoes(novoId);
-    if (formulacoesPayload.some(row => row.produto_id !== novoId)) return await removerNovo();
-    if (formulacoesPayload.length > 0) {
-      const ins = await client.from("formulacoes").insert(formulacoesPayload).select("id, produto_id");
-      if (ins.error || !confirmedRows(ins.data, formulacoesPayload.length, novoId)) return await removerNovo();
+    const items = buildFormulacoes(ack.product_id);
+    if (items.some((row) => row.produto_id !== undefined && row.produto_id !== ack.product_id)) {
+      return { status: "partial", produtoId: ack.product_id, message: MSG_PARCIAL };
     }
-    return { status: "ok", produtoId: novoId };
-  } catch {
-    return await removerNovo();
+    await replaceTenantFormulacoes(client, ack.product_id, items, ack.updated_at);
+    return { status: "ok", produtoId: ack.product_id };
+  } catch (e: any) {
+    return { status: "partial", produtoId: ack.product_id, message: `${MSG_PARCIAL} ${e?.message ?? ""}`.trim() };
   }
 }
 
@@ -298,6 +231,7 @@ export function ProdutosTab() {
 
   const [form, setForm] = useState({
     id: "",
+    updated_at: "" as string,
     codigo: "",
     nome: "",
     tipo: "solo",
@@ -403,16 +337,20 @@ export function ProdutosTab() {
 
 
     try {
-      const outcome = await saveProdutoComCompensacao({
+      const outcome = await saveProdutoTenant({
         client: supabase as any,
         produtoId: form.id || null,
+        expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
         payload,
         // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
         buildFormulacoes: (id: string) => buildFormulacoesPayload(id, form.composicao),
       });
 
-      if (outcome.status === "critical") {
+      if (outcome.status === "partial") {
         toast.error(outcome.message);
+        setOpen(false);
+        resetForm();
+        fetch();
         return;
       }
       if (outcome.status === "error") {
@@ -435,6 +373,7 @@ export function ProdutosTab() {
   const resetForm = () => {
     setForm({
       id: "",
+      updated_at: "",
       codigo: "",
       nome: "",
       tipo: "solo",
@@ -469,6 +408,7 @@ export function ProdutosTab() {
     }
     setForm({
       id: p.id,
+      updated_at: p.updated_at ?? "",
       codigo: p.codigo || "",
       nome: p.nome,
       tipo: p.tipo,

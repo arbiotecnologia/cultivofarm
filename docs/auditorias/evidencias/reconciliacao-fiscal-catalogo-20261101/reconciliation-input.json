@@ -1,0 +1,1404 @@
+{
+  "source_project": "a79bb3db-f665-466d-bf41-ee8c6cb91fab",
+  "source_commit": "80c64c38455bc11fc4335fbd93586741f1c5a9ed",
+  "base_commit": "a2b305487287c7600dde8c5b0866155477901370",
+  "destination_project": "aec6d152-e409-44bf-9cb3-10da72365572",
+  "destination_base": "301bf5971c77651ab8249c6d102523dc89596f99",
+  "purpose": "Reconcile source ONLY in isolated copy; no hosted install or release",
+  "files": {
+    "scripts/fiscal-tenant-catalog-20261101/AGENTS.md": "# AGENTS — fiscal-tenant-catalog-20261101\n\n- Preparation only: never apply install/rollback hosted, publish, grant or flip gates from this package; the owner/auditor reviews and applies — prevents unreviewed fiscal writers.\n- Depends on the uninstalled tenant catalog ownership package (scripts/rbac-audit/proposed-tenant-catalog-ownership*.sql); PRE aborts if `produtos.owner_organization_id` or `catalog_ownership_enabled()` is absent — never inline or fork that foundation.\n- Reuse `product_fiscal_profiles` (one active profile per product); owned-item tenant is always the product's immutable owner, never a payload/GUC/claim value — single fiscal source.\n- Owned writes only through `tenant_owned_product_fiscal_save` (DEFINER, fixed search_path, actor+tenant+role re-check after lock, CAS by `updated_at`, idempotent receipt); RESTRICTIVE policies keep direct client writes to global rows only and hide other tenants' owned rows — prevents cross-tenant reads/writes and Superadmin writes on tenant items.\n- New profiles start DRAFT; the RPC never sets VALIDATED nor infers NCM/CFOP — classification comes from accounting.\n- Own gate `owned_fiscal_gate` starts disabled; rollback is deny-only (gate false + revoke EXECUTE), never drops policies or receipts.\n- Global fertilizer creation reuses `platform_create_global_product` + `platform_set_global_product_family`; no SQL here — fertilizer `tipo`/unit remain an owner decision.\n- Local tests use disposable PostgreSQL with synthetic auth stubs; never report them as hosted JWT/RLS proof.\n",
+    "scripts/fiscal-tenant-catalog-20261101/README.md": "# Perfil fiscal do catálogo próprio + cadastro de Fertilizante/Adubo — pacote revisável (NÃO APLICADO)\n\nStatus: **NO-GO para aplicação** até revisão independente, instalação da fundação de propriedade e prova JWT real.\nNada foi escrito no banco hosted, publicado ou liberado. Ref auditado (somente leitura): `swzpzcwiasxmjutrmvkm`.\n\n## Auditoria read-only (01/11/2026)\n- `produtos` NÃO tem `owner_organization_id`: o catálogo próprio por empresa não existe hoje no banco. A fundação está em `scripts/rbac-audit/proposed-tenant-catalog-ownership*.sql` (não instalada; gate próprio desligado).\n- `product_fiscal_profiles`: 4 policies LIVE — leitura para Superadmin/administrador/gestor/financeiro de qualquer empresa; gravação só Superadmin; DELETE false.\n  Depois que existirem itens próprios, isso deixaria uma empresa ler o perfil fiscal do item de outra. Este pacote corrige isso com policies RESTRICTIVE.\n- `platform_create_global_product` (LIVE, Superadmin) aceita `tipo` do enum `tipo_produto` = inseticida, fungicida, solo, inoculante, solubilizador. Não existe tipo \"fertilizante\".\n  O único fertilizante existente usa `tipo=solo` + `familia_catalogo=fertilizante_adubo`. A tela global hoje esconde o botão de criar fertilizante (\"tipo e unidade próprios pendentes\").\n\n## O que o pacote contém\n- `install.sql.review`: PRE fail-closed (exige a fundação, recusa reinstalação e divergência de policies); gate `owned_fiscal_gate` desligado; RPC `tenant_owned_product_fiscal_save` (ator real, empresa ativa, administrador/financeiro, nunca Superadmin, reautorização após cada lock, CAS `updated_at`, recibo idempotente, perfil sempre DRAFT, sem VALIDATED); leitor `tenant_owned_product_fiscal_list` (admin/financeiro/gestor da própria empresa); 3 policies RESTRICTIVE; **sem GRANT a authenticated** (etapa separada).\n- `rollback.sql.review`: deny-only (gate false + REVOKE), mantém policies restritivas e recibos.\n- Frontend candidato: `src/lib/fiscal/ownedProductFiscal.ts` com gate `OWNED_PRODUCT_FISCAL_ENABLED=false`, validação de campos, ACK exato e erros sem nova tentativa automática. Nenhuma tela foi ligada.\n\n## Evidências (logs brutos em `evidence/`)\n| Log | Resultado |\n|---|---|\n| pg-tests-run1..3.log.txt | FALHA de ambiente (initdb como root / usuário inexistente) — preservados |\n| pg-tests-run4.log.txt | 25/25 PASS; caso anônimo não registrado (tabela de resultados sem GRANT a anon — erro do teste) |\n| pg-tests-run5.log.txt | **26/26 PASS** + PRE sem fundação abortou + reinstalação recusada |\n| vitest-owned-fiscal.log.txt | 16/16 PASS |\n| typecheck.log.txt | `tsgo --noEmit -p tsconfig.app.json` exit 0 |\n\nCasos PG: gate desligado nega; admin A cria DRAFT; replay idempotente sem duplicar; mesma chave/outro payload PT409; CAS ausente/errado PT409; CAS correto atualiza; NCM inválido e `profile_status` no payload 22023; A não grava item de B nem global pela RPC; A não insere direto; B não lê perfil de A e lista só os seus; B não reaproveita chave de A; gestor lê e não grava; Superadmin não grava/lê item próprio e continua gravando global; A lê global; ator inativo e anon negados; após rollback, negado e policies/recibos preservados.\n\nLimites: esquema reduzido e Auth sintética (`test.uid`) em PostgreSQL descartável — **não** prova JWT/RLS/PostgREST hosted. O GRANT foi simulado só no banco descartável.\n\n## Pendências / decisões do proprietário\n1. Instalar e homologar antes a fundação de propriedade do catálogo (pacote rbac-audit) — pré-requisito.\n2. **Fertilizante/Adubo**: decidir o `tipo` (reutilizar `solo`, como o item existente, ou criar um tipo novo — mudança irreversível no enum) e a unidade (kg/L; hoje a dose é só em mL/ha). Sem essa decisão, o botão de cadastro continua desligado no global e no próprio.\n3. NCM/CFOP reais de cada item vêm da contabilidade; nada é preenchido automaticamente.\n4. Validação autenticada (NÃO EXECUTADA): após instalação autorizada, testar com contas reais ARBio (positiva) e FSF (negativa), gestor somente leitura e Superadmin negado em itens próprios, com snapshots antes/depois e sem emissão, cobrança ou automação.\n",
+    "scripts/fiscal-tenant-catalog-20261101/RUNBOOK-APLICACAO.md": "# Roteiro de aplicação — catálogo próprio + perfis fiscais (NÃO EXECUTADO)\n\nOpção A escolhida pelo proprietário em 2026-11-01: o assistente apenas lê e prepara; o auditor revisa e executa.\n\n## Pré-condição obrigatória\n- Ref do projeto: `swzpzcwiasxmjutrmvkm` (conferir no SQL Editor antes de tudo; divergente = parar).\n\n## Estado lido em produção (somente leitura, 2026-11-01 13:40 UTC)\n| Item | Valor |\n|---|---|\n| `produtos.owner_organization_id` | ausente |\n| `catalog_ownership_enabled()` / `tenant_owned_product_fiscal_save` | ausentes |\n| produtos | 13 |\n| `product_fiscal_profiles` | 2 |\n| enum `tipo_produto` | fungicida, inoculante, inseticida, solo, solubilizador (Fertilizante/Adubo reutiliza `solo`; nenhuma alteração de enum) |\n\n## Ordem de aplicação\n1. Snapshot PRE: contagens de `produtos`, `product_fiscal_profiles`, ACL e políticas de ambas.\n2. Fundação de propriedade, na ordem de `scripts/rbac-audit/ownership-ordered-manifest.json`:\n   `proposed-tenant-catalog-ownership.sql`, depois `-02` … `-13`. Rollback: `rollback-tenant-catalog-ownership.sql`.\n   Revisar antes os testes `runtime-test-tenant-catalog-ownership*.sql` em banco descartável.\n3. Conferir: coluna `owner_organization_id` presente, produtos existentes continuam globais (NULL), gate desligado.\n4. Catálogo fiscal por empresa: `scripts/fiscal-tenant-catalog-20261101/install.sql.review` (o PRE aborta se o passo 2 faltar). Rollback: `rollback.sql.review` (só nega).\n5. Snapshot POST: mesmas contagens (13 / 2 esperados, sem perda), gates `false`, sem GRANT novo a `anon`.\n6. Somente após revisão: ligar gates e conceder EXECUTE, em etapa separada autorizada.\n7. Validação autenticada real: empresa A (ARBio) cria/edita item próprio; empresa B (FSF) não vê nem altera; Superadmin não escreve em item de empresa.\n\n## Fora do escopo\nNF-e continua desativada; NCM/CFOP vêm da contabilidade; sem cobrança, automação ou publicação.\n\n## Status\nNO-GO até revisão independente e execução pelo auditor.\n\n## Etapa 1 — tentativa 2026-11-01 13:51 UTC (proprietário dispensou revisão independente)\n- Ref conferido em .env/client/config: `swzpzcwiasxmjutrmvkm`. Hashes dos 12 arquivos = manifesto (OK).\n- PRE (read-only): produtos 13, microrganismos 25, culturas 8, formulacoes 26, catalogo_volumes 5, product_fiscal_profiles 2, políticas 29, grants anon/authenticated nas 5 tabelas: nenhum, owner_organization_id ausente, catalog_tenant_actor presente, gate ausente.\n- NÃO APLICADO: a ferramenta de migration não lê arquivos; os 12 arquivos (~290 KB) exigiriam transcrição manual, com risco de divergência dos hashes. Aplicar no SQL Editor, na ordem do manifesto, cada arquivo íntegro.\n",
+    "scripts/fiscal-tenant-catalog-20261101/SHA256SUMS": "10d45bc72310b0925c5adb5f5a69d2d3b1be9535c6af06567dc5fbc4d2e5e1d2  ./AGENTS.md\n3278dea50848cdf7615a1ab4e405159857c583a90c9dd5389190e81c98c02c0f  ./evidence/frontend.diff\nbcfef8e27776f232f27c57a92ad0a329be3d562c01799ad1e0269c7f4b62ca68  ./evidence/pg-tests-run1.log.txt\n2d57ade39b242c4164fb50c9458989f9e1654f0cd7592cc62c44b0d11118aab5  ./evidence/pg-tests-run2.log.txt\nf266cbc61a76ebb9bbbc2de302d757ffcc83602e5b2b8681974fa57f200b2355  ./evidence/pg-tests-run3.log.txt\n280be007010d0daf1421ff4dbe8660e5fcb55efedb6f4a346400254ed477a340  ./evidence/pg-tests-run4.log.txt\nd39d319e3fc119fadaf0ec218e2fa64c1fe20cc0ee0cd5417c3af13039fc92a0  ./evidence/pg-tests-run5.log.txt\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./evidence/typecheck.log.txt\naa4d91269253a687db2add270676c3bcad1fbbbb9e4ed64ccd04ecb7d5a970c3  ./evidence/vitest-owned-fiscal.log.txt\nf8d06eccacb267d2285e00e111b69eee1413ca89baab3eb043b2cd5d78ec350c  ./install.sql.review\n719b1bfcc5a4c210d1bd38d2be7a02ba9807c4e388c2476fb531b25b989cce13  ./rollback.sql.review\nf69b7362c3dd3ff5d4581507f00e1cd7c110ffc5b5a9da0150f0537a36be829c  ./test/run.sh\nae5f0809b155d85c27acc80ecfaaec1782a29ec20ca4320a044e0e8fe4915ab0  ./test/stub-schema.sql\nfa1fe6c6837533998fd2ebc3f9c362cf84b533c867d3d841bf3789ab8f896714  ./test/tests.sql\n",
+    "scripts/fiscal-tenant-catalog-20261101/install.sql.review": "-- fiscal-tenant-catalog-20261101 — CANDIDATO INATIVO. NÃO APLICAR sem revisão/autorização.\n-- Pré-requisito: pacote de propriedade do catálogo (owner_organization_id) já instalado.\nBEGIN;\nSET LOCAL lock_timeout = '3s';\n\n-- ---------------------------------------------------------------- PRE (fail-closed)\nDO $pre$ BEGIN\n  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'\n       AND table_name='produtos' AND column_name='owner_organization_id') THEN\n    RAISE EXCEPTION 'PRE: catalog ownership not installed (produtos.owner_organization_id)'; END IF;\n  IF to_regprocedure('platform_private.catalog_ownership_enabled()') IS NULL\n     OR to_regprocedure('platform_private.h15_actor_organization()') IS NULL\n     OR to_regprocedure('platform_private.has_role(uuid,public.app_role)') IS NULL\n     OR to_regprocedure('platform_private.platform_actor_access_ready(uuid)') IS NULL\n     OR to_regprocedure('platform_private.catalog_reader_org()') IS NULL THEN\n    RAISE EXCEPTION 'PRE: required helpers missing'; END IF;\n  IF to_regclass('platform_private.owned_fiscal_gate') IS NOT NULL THEN\n    RAISE EXCEPTION 'PRE: package already installed (rerun refused)'; END IF;\n  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='product_fiscal_profiles') <> 4 THEN\n    RAISE EXCEPTION 'PRE: product_fiscal_profiles policy drift'; END IF;\nEND $pre$;\n\n-- ---------------------------------------------------------------- gate próprio (desligado)\nCREATE TABLE platform_private.owned_fiscal_gate (\n  singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),\n  enabled boolean NOT NULL DEFAULT false\n);\nINSERT INTO platform_private.owned_fiscal_gate VALUES (true, false);\nREVOKE ALL ON platform_private.owned_fiscal_gate FROM PUBLIC, anon, authenticated;\n\nCREATE FUNCTION platform_private.owned_fiscal_enabled() RETURNS boolean\nLANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$\n  SELECT platform_private.catalog_ownership_enabled()\n     AND COALESCE((SELECT enabled FROM platform_private.owned_fiscal_gate WHERE singleton), false) $$;\nREVOKE ALL ON FUNCTION platform_private.owned_fiscal_enabled() FROM PUBLIC, anon, authenticated;\n\n-- Ator de empresa: retorna a empresa ativa do ator real com papel exigido; nunca SA.\nCREATE FUNCTION platform_private.owned_fiscal_actor(p_write boolean) RETURNS uuid\nLANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$\nDECLARE v_uid uuid := auth.uid(); v_org uuid;\nBEGIN\n  IF v_uid IS NULL OR NOT platform_private.owned_fiscal_enabled()\n     OR public.is_platform_superadmin(v_uid)\n     OR NOT platform_private.platform_actor_access_ready(v_uid) THEN\n    RAISE EXCEPTION 'owned_fiscal_forbidden' USING ERRCODE='42501'; END IF;\n  v_org := platform_private.h15_actor_organization();\n  IF v_org IS NULL THEN RAISE EXCEPTION 'owned_fiscal_forbidden' USING ERRCODE='42501'; END IF;\n  IF NOT (platform_private.has_role(v_uid,'administrador') OR platform_private.has_role(v_uid,'financeiro')\n          OR (NOT p_write AND platform_private.has_role(v_uid,'gestor'))) THEN\n    RAISE EXCEPTION 'owned_fiscal_forbidden' USING ERRCODE='42501'; END IF;\n  RETURN v_org;\nEND $$;\nREVOKE ALL ON FUNCTION platform_private.owned_fiscal_actor(boolean) FROM PUBLIC, anon, authenticated;\n\n-- ---------------------------------------------------------------- recibos idempotentes (privados)\nCREATE TABLE platform_private.owned_fiscal_receipts (\n  idempotency_key uuid PRIMARY KEY,\n  actor_id uuid NOT NULL, organization_id uuid NOT NULL, product_id uuid NOT NULL,\n  request jsonb NOT NULL, receipt jsonb NOT NULL,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\nREVOKE ALL ON platform_private.owned_fiscal_receipts FROM PUBLIC, anon, authenticated;\n\n-- ---------------------------------------------------------------- RLS restritiva\n-- Leitura: global para quem já lê; próprio só da empresa do leitor.\nCREATE POLICY product_fiscal_profiles_owner_read ON public.product_fiscal_profiles AS RESTRICTIVE\n  FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.produtos p WHERE p.id=product_id\n    AND (p.owner_organization_id IS NULL OR p.owner_organization_id = platform_private.catalog_reader_org())));\n-- Escrita direta: somente perfis de produtos GLOBAIS (Superadmin pelas policies existentes).\nCREATE POLICY product_fiscal_profiles_global_insert ON public.product_fiscal_profiles AS RESTRICTIVE\n  FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM public.produtos p WHERE p.id=product_id AND p.owner_organization_id IS NULL));\nCREATE POLICY product_fiscal_profiles_global_update ON public.product_fiscal_profiles AS RESTRICTIVE\n  FOR UPDATE TO authenticated\n  USING (EXISTS (SELECT 1 FROM public.produtos p WHERE p.id=product_id AND p.owner_organization_id IS NULL))\n  WITH CHECK (EXISTS (SELECT 1 FROM public.produtos p WHERE p.id=product_id AND p.owner_organization_id IS NULL));\n\n-- ---------------------------------------------------------------- validação de valores\nCREATE FUNCTION platform_private.owned_fiscal_validate(p jsonb) RETURNS void\nLANGUAGE plpgsql IMMUTABLE SET search_path='' AS $$\nDECLARE k text;\n  v_allowed constant text[] := ARRAY['ncm','cest','cfop_in_state','cfop_interstate','origin_code','icms_cst','icms_csosn',\n    'ipi_cst','pis_cst','cofins_cst','commercial_unit','taxable_unit','gtin','taxable_gtin','tax_benefit_code',\n    'fiscal_description','accounting_notes'];\nBEGIN\n  IF p IS NULL OR jsonb_typeof(p) <> 'object' THEN RAISE EXCEPTION 'owned_fiscal_invalid' USING ERRCODE='22023'; END IF;\n  FOR k IN SELECT jsonb_object_keys(p) LOOP\n    IF NOT k = ANY(v_allowed) OR jsonb_typeof(p->k) NOT IN ('string','null')\n       OR char_length(p->>k) > 2000 THEN\n      RAISE EXCEPTION 'owned_fiscal_invalid' USING ERRCODE='22023'; END IF;\n  END LOOP;\n  IF (p->>'ncm') IS NOT NULL AND (p->>'ncm') !~ '^[0-9]{8}$'\n     OR (p->>'cest') IS NOT NULL AND (p->>'cest') !~ '^[0-9]{7}$'\n     OR (p->>'cfop_in_state') IS NOT NULL AND (p->>'cfop_in_state') !~ '^[1-7][0-9]{3}$'\n     OR (p->>'cfop_interstate') IS NOT NULL AND (p->>'cfop_interstate') !~ '^[1-7][0-9]{3}$'\n     OR (p->>'origin_code') IS NOT NULL AND (p->>'origin_code') !~ '^[0-8]$'\n     OR (p->>'gtin') IS NOT NULL AND (p->>'gtin') !~ '^([0-9]{8}|[0-9]{12,14}|SEM GTIN)$'\n     OR (p->>'taxable_gtin') IS NOT NULL AND (p->>'taxable_gtin') !~ '^([0-9]{8}|[0-9]{12,14}|SEM GTIN)$' THEN\n    RAISE EXCEPTION 'owned_fiscal_invalid' USING ERRCODE='22023'; END IF;\nEND $$;\nREVOKE ALL ON FUNCTION platform_private.owned_fiscal_validate(jsonb) FROM PUBLIC, anon, authenticated;\n\n-- ---------------------------------------------------------------- writer canônico\nCREATE FUNCTION public.tenant_owned_product_fiscal_save(p_product_id uuid, p_expected_updated_at timestamptz,\n  p_values jsonb, p_reason text, p_idempotency_key uuid) RETURNS jsonb\nLANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$\nDECLARE v_uid uuid := auth.uid(); v_org uuid; v_owner uuid; v_prof public.product_fiscal_profiles%ROWTYPE;\n  v_req jsonb; v_old platform_private.owned_fiscal_receipts%ROWTYPE; v_receipt jsonb; v_v jsonb;\nBEGIN\n  v_org := platform_private.owned_fiscal_actor(true);\n  IF p_product_id IS NULL OR p_idempotency_key IS NULL OR p_reason IS NULL\n     OR char_length(btrim(p_reason)) NOT BETWEEN 10 AND 500 THEN\n    RAISE EXCEPTION 'owned_fiscal_invalid' USING ERRCODE='22023'; END IF;\n  PERFORM platform_private.owned_fiscal_validate(p_values);\n  v_v := jsonb_strip_nulls(p_values) || '{}'::jsonb;\n  v_req := jsonb_build_object('product_id',p_product_id,'expected',p_expected_updated_at,'values',p_values,'reason',btrim(p_reason));\n\n  PERFORM pg_advisory_xact_lock(hashtextextended('owned-fiscal:'||p_idempotency_key::text,0));\n  IF platform_private.owned_fiscal_actor(true) IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'owned_fiscal_forbidden' USING ERRCODE='42501'; END IF;\n  SELECT * INTO v_old FROM platform_private.owned_fiscal_receipts WHERE idempotency_key=p_idempotency_key;\n  IF FOUND THEN\n    IF v_old.actor_id<>v_uid OR v_old.organization_id<>v_org OR v_old.request IS DISTINCT FROM v_req THEN\n      RAISE EXCEPTION 'owned_fiscal_key_conflict' USING ERRCODE='PT409'; END IF;\n    RETURN v_old.receipt || '{\"idempotent\":true}'::jsonb;\n  END IF;\n\n  SELECT owner_organization_id INTO v_owner FROM public.produtos WHERE id=p_product_id FOR SHARE;\n  IF NOT FOUND OR v_owner IS NULL OR v_owner<>v_org THEN\n    RAISE EXCEPTION 'owned_fiscal_forbidden' USING ERRCODE='42501'; END IF;\n  PERFORM pg_advisory_xact_lock(hashtextextended('owned-fiscal-product:'||p_product_id::text,0));\n  IF platform_private.owned_fiscal_actor(true) IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'owned_fiscal_forbidden' USING ERRCODE='42501'; END IF;\n\n  SELECT * INTO v_prof FROM public.product_fiscal_profiles\n   WHERE product_id=p_product_id AND is_active IS TRUE FOR UPDATE;\n  IF FOUND THEN\n    IF p_expected_updated_at IS NULL OR v_prof.updated_at IS DISTINCT FROM p_expected_updated_at THEN\n      RAISE EXCEPTION 'owned_fiscal_stale' USING ERRCODE='PT409'; END IF;\n    UPDATE public.product_fiscal_profiles SET\n      ncm=p_values->>'ncm', cest=p_values->>'cest', cfop_in_state=p_values->>'cfop_in_state',\n      cfop_interstate=p_values->>'cfop_interstate', origin_code=p_values->>'origin_code',\n      icms_cst=p_values->>'icms_cst', icms_csosn=p_values->>'icms_csosn', ipi_cst=p_values->>'ipi_cst',\n      pis_cst=p_values->>'pis_cst', cofins_cst=p_values->>'cofins_cst', commercial_unit=p_values->>'commercial_unit',\n      taxable_unit=p_values->>'taxable_unit', gtin=p_values->>'gtin', taxable_gtin=p_values->>'taxable_gtin',\n      tax_benefit_code=p_values->>'tax_benefit_code', fiscal_description=p_values->>'fiscal_description',\n      accounting_notes=p_values->>'accounting_notes',\n      -- edição reabre revisão contábil; nunca promove para VALIDATED\n      profile_status=CASE WHEN v_prof.profile_status='BLOCKED' THEN 'BLOCKED' ELSE 'DRAFT' END,\n      accounting_validated_at=NULL, accounting_validated_by=NULL,\n      updated_at=clock_timestamp(), updated_by=v_uid\n    WHERE id=v_prof.id RETURNING * INTO v_prof;\n  ELSE\n    IF p_expected_updated_at IS NOT NULL THEN\n      RAISE EXCEPTION 'owned_fiscal_stale' USING ERRCODE='PT409'; END IF;\n    INSERT INTO public.product_fiscal_profiles (product_id,is_active,profile_status,ncm,cest,cfop_in_state,cfop_interstate,\n      origin_code,icms_cst,icms_csosn,ipi_cst,pis_cst,cofins_cst,commercial_unit,taxable_unit,gtin,taxable_gtin,\n      tax_benefit_code,fiscal_description,accounting_notes,created_by,updated_by)\n    VALUES (p_product_id,true,'DRAFT',p_values->>'ncm',p_values->>'cest',p_values->>'cfop_in_state',p_values->>'cfop_interstate',\n      p_values->>'origin_code',p_values->>'icms_cst',p_values->>'icms_csosn',p_values->>'ipi_cst',p_values->>'pis_cst',\n      p_values->>'cofins_cst',p_values->>'commercial_unit',p_values->>'taxable_unit',p_values->>'gtin',p_values->>'taxable_gtin',\n      p_values->>'tax_benefit_code',p_values->>'fiscal_description',p_values->>'accounting_notes',v_uid,v_uid)\n    RETURNING * INTO v_prof;\n  END IF;\n\n  v_receipt := jsonb_build_object('success',true,'product_id',p_product_id,'profile_id',v_prof.id,\n    'organization_id',v_org,'profile_status',v_prof.profile_status,'updated_at',v_prof.updated_at,\n    'idempotency_key',p_idempotency_key,'idempotent',false);\n  INSERT INTO platform_private.owned_fiscal_receipts VALUES (p_idempotency_key,v_uid,v_org,p_product_id,v_req,v_receipt,now());\n  RETURN v_receipt;\nEND $$;\nREVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC, anon;\n-- GRANT EXECUTE ... TO authenticated: SOMENTE em etapa separada autorizada, após PRE/POST e prova JWT real.\n\n-- ---------------------------------------------------------------- leitor da empresa\nCREATE FUNCTION public.tenant_owned_product_fiscal_list(p_limit integer, p_offset integer) RETURNS jsonb\nLANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$\nDECLARE v_org uuid;\nBEGIN\n  v_org := platform_private.owned_fiscal_actor(false);\n  IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100 OR p_offset IS NULL OR p_offset < 0 THEN\n    RAISE EXCEPTION 'owned_fiscal_invalid' USING ERRCODE='22023'; END IF;\n  RETURN jsonb_build_object('organization_id',v_org,\n    'total',(SELECT count(*) FROM public.produtos WHERE owner_organization_id=v_org),\n    'items',COALESCE((SELECT jsonb_agg(r ORDER BY r->>'nome', r->>'product_id') FROM (\n      SELECT jsonb_build_object('product_id',p.id,'nome',p.nome,'codigo',p.codigo,'familia',p.familia_catalogo,\n        'profile', (SELECT to_jsonb(f) - ARRAY['created_by','updated_by','accounting_validated_by']\n                      FROM public.product_fiscal_profiles f WHERE f.product_id=p.id AND f.is_active IS TRUE)) r\n      FROM public.produtos p WHERE p.owner_organization_id=v_org\n      ORDER BY p.nome, p.id LIMIT p_limit OFFSET p_offset) s),'[]'::jsonb));\nEND $$;\nREVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_list(integer,integer) FROM PUBLIC, anon;\n\nCOMMIT;\n",
+    "scripts/fiscal-tenant-catalog-20261101/rollback.sql.review": "-- Rollback deny-only. NÃO remove policies restritivas (removê-las reabriria leitura entre empresas)\n-- nem recibos. Fecha o gate e revoga execução dos RPCs.\nBEGIN;\nUPDATE platform_private.owned_fiscal_gate SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC, anon, authenticated;\nREVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_list(integer,integer) FROM PUBLIC, anon, authenticated;\nCOMMIT;\n",
+    "scripts/fiscal-tenant-catalog-20261101/test/run.sh": "#!/usr/bin/env bash\n# PostgreSQL descartável local. Remove todas as variáveis PG* para nunca tocar banco hosted.\nset -u\nfor v in $(compgen -e | grep '^PG'); do unset \"$v\"; done\ncd \"$(dirname \"$0\")/..\"\nD=$(mktemp -d /tmp/pgfiscal.XXXX); PORT=55437\nAS=\"\"; if [ \"$(id -u)\" = 0 ]; then chown 1000:1000 \"$D\"; AS=\"setpriv --reuid=1000 --regid=1000 --clear-groups\"; fi\n$AS initdb -D \"$D/data\" -U postgres -A trust >/dev/null\n$AS pg_ctl -D \"$D/data\" -o \"-p $PORT -k $D -c listen_addresses=''\" -l \"$D/log\" -w start >/dev/null\nP=\"psql -X -h $D -p $PORT -U postgres -d postgres -v ON_ERROR_STOP=1\"\necho \"== PRE sem fundação de propriedade (deve abortar)\"\n$P -q -c \"CREATE TABLE public.produtos(id uuid);\" && $P -f install.sql.review 2>&1 | grep -E \"PRE:|ERROR\" | head -2\n$P -q -c \"DROP TABLE public.produtos;\"\necho \"== stub + install\"\n$P -q -f test/stub-schema.sql && $P -q -f install.sql.review && echo \"install OK\"\necho \"== reinstalação (deve recusar)\"\n$P -f install.sql.review 2>&1 | grep -E \"PRE:\" | head -1\necho \"== testes\"\n$P -v ON_ERROR_STOP=0 -f test/tests.sql\n$AS pg_ctl -D \"$D/data\" -m fast stop >/dev/null; rm -rf \"$D\"\n",
+    "scripts/fiscal-tenant-catalog-20261101/test/stub-schema.sql": "-- Esquema REDUZIDO e Auth SINTÉTICA para PostgreSQL descartável. Não é prova hosted.\nCREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;\nCREATE SCHEMA auth; CREATE SCHEMA platform_private;\nGRANT USAGE ON SCHEMA public, auth TO authenticated, anon;\nCREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULLIF(current_setting('test.uid',true),'')::uuid $$;\nGRANT EXECUTE ON FUNCTION auth.uid() TO authenticated, anon;\nCREATE TYPE public.app_role AS ENUM ('administrador','gestor','financeiro','tecnico_agronomo','superadmin');\nCREATE TABLE public.organizations (id uuid PRIMARY KEY, ativo boolean NOT NULL DEFAULT true, status text NOT NULL DEFAULT 'ativa');\nCREATE TABLE public.profiles (user_id uuid PRIMARY KEY, organization_id uuid, ativo boolean NOT NULL DEFAULT true, senha_provisoria boolean NOT NULL DEFAULT false);\nCREATE TABLE public.user_roles (user_id uuid, role public.app_role);\nCREATE TABLE platform_private.test_gate (enabled boolean);\nINSERT INTO platform_private.test_gate VALUES (true);\nCREATE FUNCTION public.is_platform_superadmin(u uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS\n $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=u AND role='superadmin') $$;\nCREATE FUNCTION platform_private.platform_actor_access_ready(p_user uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS\n $$ SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo AND NOT p.senha_provisoria) $$;\nCREATE FUNCTION platform_private.has_role(_user_id uuid, _role public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS\n $$ SELECT EXISTS(SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.user_id=r.user_id WHERE r.user_id=_user_id AND r.role=_role AND p.ativo AND platform_private.platform_actor_access_ready(p.user_id)) $$;\nCREATE FUNCTION platform_private.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS\n $$ SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo WHERE p.user_id=auth.uid() AND p.ativo AND platform_private.platform_actor_access_ready(p.user_id) $$;\nCREATE FUNCTION platform_private.catalog_ownership_enabled() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS\n $$ SELECT enabled FROM platform_private.test_gate $$;\nCREATE FUNCTION platform_private.catalog_reader_org() RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$\nDECLARE v uuid; BEGIN\n  IF auth.uid() IS NULL OR public.is_platform_superadmin(auth.uid()) THEN RETURN NULL; END IF;\n  v := platform_private.h15_actor_organization(); RETURN v; END $$;\nGRANT USAGE ON SCHEMA platform_private TO authenticated;\nGRANT EXECUTE ON FUNCTION platform_private.catalog_reader_org() TO authenticated;\nCREATE FUNCTION platform_private.global_product_fiscal_read_ready() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS\n $$ SELECT auth.uid() IS NOT NULL AND (public.is_platform_superadmin(auth.uid()) OR platform_private.has_role(auth.uid(),'administrador') OR platform_private.has_role(auth.uid(),'gestor') OR platform_private.has_role(auth.uid(),'financeiro')) $$;\nCREATE FUNCTION platform_private.global_product_fiscal_write_ready() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS\n $$ SELECT auth.uid() IS NOT NULL AND public.is_platform_superadmin(auth.uid()) $$;\nGRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;\nCREATE TABLE public.produtos (id uuid PRIMARY KEY, nome text NOT NULL, codigo text, familia_catalogo text,\n  owner_organization_id uuid REFERENCES public.organizations(id));\nCREATE TABLE public.product_fiscal_profiles (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), product_id uuid NOT NULL REFERENCES public.produtos(id),\n  is_active boolean NOT NULL DEFAULT true, fiscal_description text, commercial_unit text, taxable_unit text, ncm text, cest text,\n  origin_code text, cfop_in_state text, cfop_interstate text, icms_cst text, icms_csosn text, pis_cst text, cofins_cst text, ipi_cst text,\n  gtin text, taxable_gtin text, tax_benefit_code text, approximate_tax_source text, profile_status text NOT NULL DEFAULT 'DRAFT',\n  accounting_notes text, accounting_validated_at timestamptz, accounting_validated_by uuid,\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), created_by uuid, updated_by uuid);\nCREATE UNIQUE INDEX ON public.product_fiscal_profiles(product_id) WHERE is_active;\nGRANT SELECT, INSERT, UPDATE ON public.product_fiscal_profiles TO authenticated;\nGRANT SELECT ON public.produtos TO authenticated;\nALTER TABLE public.product_fiscal_profiles ENABLE ROW LEVEL SECURITY;\n-- Réplica das 4 policies LIVE (lidas 01/11 read-only).\nCREATE POLICY product_fiscal_profiles_delete ON public.product_fiscal_profiles FOR DELETE TO authenticated USING (false);\nCREATE POLICY product_fiscal_profiles_insert ON public.product_fiscal_profiles FOR INSERT TO authenticated WITH CHECK (platform_private.global_product_fiscal_write_ready());\nCREATE POLICY product_fiscal_profiles_read ON public.product_fiscal_profiles FOR SELECT TO authenticated USING (platform_private.global_product_fiscal_read_ready());\nCREATE POLICY product_fiscal_profiles_update ON public.product_fiscal_profiles FOR UPDATE TO authenticated USING (platform_private.global_product_fiscal_write_ready()) WITH CHECK (platform_private.global_product_fiscal_write_ready());\n\n-- Fixtures sintéticas: A=ARBio-like, B=FSF-like\nINSERT INTO public.organizations VALUES ('a0000000-0000-0000-0000-00000000000a',true,'ativa'),('b0000000-0000-0000-0000-00000000000b',true,'ativa');\nINSERT INTO public.profiles VALUES\n ('11111111-1111-1111-1111-111111111111','a0000000-0000-0000-0000-00000000000a',true,false), -- admin A\n ('22222222-2222-2222-2222-222222222222','a0000000-0000-0000-0000-00000000000a',true,false), -- gestor A\n ('33333333-3333-3333-3333-333333333333','b0000000-0000-0000-0000-00000000000b',true,false), -- admin B\n ('44444444-4444-4444-4444-444444444444',NULL,true,false),                                    -- superadmin\n ('55555555-5555-5555-5555-555555555555','a0000000-0000-0000-0000-00000000000a',false,false); -- admin A inativo\nINSERT INTO public.user_roles VALUES ('11111111-1111-1111-1111-111111111111','administrador'),('22222222-2222-2222-2222-222222222222','gestor'),\n ('33333333-3333-3333-3333-333333333333','administrador'),('44444444-4444-4444-4444-444444444444','superadmin'),('55555555-5555-5555-5555-555555555555','administrador');\nINSERT INTO public.produtos VALUES\n ('c0000000-0000-0000-0000-00000000000c','Global X','G-1','biologico',NULL),\n ('d0000000-0000-0000-0000-00000000000a','Adubo A','A-1','fertilizante_adubo','a0000000-0000-0000-0000-00000000000a'),\n ('e0000000-0000-0000-0000-00000000000b','Adubo B','B-1','fertilizante_adubo','b0000000-0000-0000-0000-00000000000b');\nGRANT USAGE ON SCHEMA public TO authenticated;\n",
+    "scripts/fiscal-tenant-catalog-20261101/test/tests.sql": "-- Asserções em PG descartável. Cada caso imprime PASS/FAIL. Auth sintética via test.uid.\n\\set ON_ERROR_STOP 0\nCREATE TEMP TABLE r(n serial, name text, ok boolean, detail text);\nGRANT ALL ON r TO authenticated, anon; GRANT USAGE ON SEQUENCE r_n_seq TO authenticated, anon;\n\nCREATE FUNCTION pg_temp.expect_err(p_name text, p_sql text, p_state text) RETURNS void LANGUAGE plpgsql AS $$\nBEGIN\n  BEGIN EXECUTE p_sql;\n    INSERT INTO r(name,ok,detail) VALUES (p_name,false,'no error');\n  EXCEPTION WHEN OTHERS THEN\n    INSERT INTO r(name,ok,detail) VALUES (p_name, SQLSTATE=p_state, SQLSTATE||' '||SQLERRM);\n  END;\nEND $$;\nCREATE FUNCTION pg_temp.expect_ok(p_name text, p_sql text, p_check text) RETURNS void LANGUAGE plpgsql AS $$\nDECLARE v boolean;\nBEGIN\n  BEGIN EXECUTE p_sql; EXECUTE p_check INTO v;\n    INSERT INTO r(name,ok,detail) VALUES (p_name, coalesce(v,false), 'check='||coalesce(v::text,'null'));\n  EXCEPTION WHEN OTHERS THEN\n    INSERT INTO r(name,ok,detail) VALUES (p_name,false,SQLSTATE||' '||SQLERRM);\n  END;\nEND $$;\n\n-- Etapa de GRANT simulada (no hosted só em etapa separada autorizada).\nGRANT EXECUTE ON FUNCTION public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid), public.tenant_owned_product_fiscal_list(integer,integer) TO authenticated;\n-- 0. gate fechado por padrão: admin A negado\nSET test.uid='11111111-1111-1111-1111-111111111111'; SET ROLE authenticated;\nSELECT pg_temp.expect_err('gate_off_denies', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{\"ncm\":\"31010000\"}','motivo de teste ok','90000000-0000-0000-0000-000000000001')$q$,'42501');\nRESET ROLE; UPDATE platform_private.owned_fiscal_gate SET enabled=true; SET ROLE authenticated;\n\n-- 1. admin A cria perfil DRAFT do próprio item\nSELECT pg_temp.expect_ok('admin_A_creates_own', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{\"ncm\":\"31010000\",\"cfop_in_state\":\"5101\"}','motivo de teste ok','90000000-0000-0000-0000-000000000002')$q$,\n  $c$SELECT profile_status='DRAFT' AND ncm='31010000' FROM public.product_fiscal_profiles WHERE product_id='d0000000-0000-0000-0000-00000000000a'$c$);\n-- 2. replay mesma chave/payload: idempotente, sem duplicar\nSELECT pg_temp.expect_ok('replay_same_key', $q$SELECT 1$q$,\n  $c$SELECT (public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{\"ncm\":\"31010000\",\"cfop_in_state\":\"5101\"}','motivo de teste ok','90000000-0000-0000-0000-000000000002')->>'idempotent')::boolean\n     AND (SELECT count(*) FROM public.product_fiscal_profiles WHERE product_id='d0000000-0000-0000-0000-00000000000a')=1$c$);\n-- 3. mesma chave, payload diferente: conflito\nSELECT pg_temp.expect_err('same_key_other_payload', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{\"ncm\":\"31010001\"}','motivo de teste ok','90000000-0000-0000-0000-000000000002')$q$,'PT409');\n-- 4. CAS: sem expected em perfil existente = stale\nSELECT pg_temp.expect_err('cas_missing_expected', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{\"ncm\":\"31010001\"}','motivo de teste ok','90000000-0000-0000-0000-000000000003')$q$,'PT409');\nSELECT pg_temp.expect_err('cas_wrong_expected', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a','2000-01-01','{\"ncm\":\"31010001\"}','motivo de teste ok','90000000-0000-0000-0000-000000000004')$q$,'PT409');\n-- 5. CAS correto atualiza e mantém DRAFT\nSELECT pg_temp.expect_ok('cas_ok_update', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',(SELECT updated_at FROM public.product_fiscal_profiles WHERE product_id='d0000000-0000-0000-0000-00000000000a'),'{\"ncm\":\"31010001\"}','motivo de teste ok','90000000-0000-0000-0000-000000000005')$q$,\n  $c$SELECT ncm='31010001' AND profile_status='DRAFT' AND cfop_in_state IS NULL FROM public.product_fiscal_profiles WHERE product_id='d0000000-0000-0000-0000-00000000000a'$c$);\n-- 6. formato inválido / chave não permitida\nSELECT pg_temp.expect_err('invalid_ncm', $q$SELECT public.tenant_owned_product_fiscal_save('e0000000-0000-0000-0000-00000000000b',NULL,'{\"ncm\":\"123\"}','motivo de teste ok','90000000-0000-0000-0000-000000000006')$q$,'22023');\nSELECT pg_temp.expect_err('forbidden_key_status', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{\"profile_status\":\"VALIDATED\"}','motivo de teste ok','90000000-0000-0000-0000-000000000007')$q$,'22023');\n-- 7. admin A não grava item de B nem global\nSELECT pg_temp.expect_err('A_writes_B_denied', $q$SELECT public.tenant_owned_product_fiscal_save('e0000000-0000-0000-0000-00000000000b',NULL,'{\"ncm\":\"31010000\"}','motivo de teste ok','90000000-0000-0000-0000-000000000008')$q$,'42501');\nSELECT pg_temp.expect_err('A_writes_global_via_rpc_denied', $q$SELECT public.tenant_owned_product_fiscal_save('c0000000-0000-0000-0000-00000000000c',NULL,'{\"ncm\":\"31010000\"}','motivo de teste ok','90000000-0000-0000-0000-000000000009')$q$,'42501');\n-- 8. admin A direto na tabela: insert em item próprio negado por RLS\nSELECT pg_temp.expect_err('A_direct_insert_denied', $q$INSERT INTO public.product_fiscal_profiles(product_id) VALUES ('d0000000-0000-0000-0000-00000000000a')$q$,'42501');\n-- 9. admin B não vê perfil de A (RLS restritiva)\nSET test.uid='33333333-3333-3333-3333-333333333333';\nSELECT pg_temp.expect_ok('B_cannot_read_A', $q$SELECT 1$q$, $c$SELECT count(*)=0 FROM public.product_fiscal_profiles WHERE product_id='d0000000-0000-0000-0000-00000000000a'$c$);\nSELECT pg_temp.expect_ok('B_list_only_own', $q$SELECT 1$q$, $c$SELECT (public.tenant_owned_product_fiscal_list(50,0)->>'total')::int=1 AND public.tenant_owned_product_fiscal_list(50,0)->'items'->0->>'product_id'='e0000000-0000-0000-0000-00000000000b'$c$);\nSELECT pg_temp.expect_err('B_replay_A_key_denied', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{\"ncm\":\"31010000\",\"cfop_in_state\":\"5101\"}','motivo de teste ok','90000000-0000-0000-0000-000000000002')$q$,'PT409');\n-- 10. gestor A lê, não grava\nSET test.uid='22222222-2222-2222-2222-222222222222';\nSELECT pg_temp.expect_ok('gestor_reads', $q$SELECT 1$q$, $c$SELECT (public.tenant_owned_product_fiscal_list(50,0)->>'total')::int=1$c$);\nSELECT pg_temp.expect_err('gestor_write_denied', $q$SELECT public.tenant_owned_product_fiscal_save('d0000000-0000-0000-0000-00000000000a',NULL,'{}','motivo de teste ok','90000000-0000-0000-0000-00000000000a')$q$,'42501');\n-- 11. superadmin não grava item próprio (RPC e direto); continua gravando global direto\nSET test.uid='44444444-4444-4444-4444-444444444444';\nSELECT pg_temp.expect_err('SA_rpc_owned_denied', $q$SELECT public.tenant_owned_product_fiscal_save('e0000000-0000-0000-0000-00000000000b',NULL,'{}','motivo de teste ok','90000000-0000-0000-0000-00000000000b')$q$,'42501');\nSELECT pg_temp.expect_err('SA_direct_owned_denied', $q$INSERT INTO public.product_fiscal_profiles(product_id) VALUES ('e0000000-0000-0000-0000-00000000000b')$q$,'42501');\nSELECT pg_temp.expect_ok('SA_global_direct_ok', $q$INSERT INTO public.product_fiscal_profiles(product_id,ncm) VALUES ('c0000000-0000-0000-0000-00000000000c','31010000')$q$,\n  $c$SELECT count(*)=1 FROM public.product_fiscal_profiles WHERE product_id='c0000000-0000-0000-0000-00000000000c'$c$);\nSELECT pg_temp.expect_ok('SA_cannot_read_owned', $q$SELECT 1$q$, $c$SELECT count(*)=0 FROM public.product_fiscal_profiles WHERE product_id='d0000000-0000-0000-0000-00000000000a'$c$);\n-- 12. global continua visível para admin A\nSET test.uid='11111111-1111-1111-1111-111111111111';\nSELECT pg_temp.expect_ok('A_reads_global', $q$SELECT 1$q$, $c$SELECT count(*)=1 FROM public.product_fiscal_profiles WHERE product_id='c0000000-0000-0000-0000-00000000000c'$c$);\n-- 13. ator inativo e anon negados\nSET test.uid='55555555-5555-5555-5555-555555555555';\nSELECT pg_temp.expect_err('inactive_denied', $q$SELECT public.tenant_owned_product_fiscal_list(50,0)$q$,'42501');\nRESET ROLE; SET test.uid=''; SET ROLE anon;\nSELECT pg_temp.expect_err('anon_no_execute', $q$SELECT public.tenant_owned_product_fiscal_list(50,0)$q$,'42501');\nRESET ROLE;\n-- 14. rollback deny-only fecha tudo e preserva dados/policies\n\\i rollback.sql.review\nSET test.uid='11111111-1111-1111-1111-111111111111'; SET ROLE authenticated;\nSELECT pg_temp.expect_err('after_rollback_denied', $q$SELECT public.tenant_owned_product_fiscal_list(50,0)$q$,'42501');\nRESET ROLE;\nINSERT INTO r(name,ok,detail) SELECT 'rollback_keeps_policies_receipts',\n  (SELECT count(*) FROM pg_policies WHERE tablename='product_fiscal_profiles')=7\n  AND (SELECT count(*) FROM platform_private.owned_fiscal_receipts)>=2, 'policies/receipts';\n-- 15. reinstalação recusada\n\\set ON_ERROR_STOP 0\nSELECT name, CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS result, detail FROM r ORDER BY n;\nSELECT count(*) FILTER (WHERE ok) AS pass, count(*) FILTER (WHERE NOT ok) AS fail FROM r;\n",
+    "src/hooks/useProductFiscalProfiles.ts": "/**\n * Fase Fiscal 3.2 — Hooks tipados para `product_fiscal_profiles`.\n *\n * - Sem `any`, sem casts amplos.\n * - `.select(...)` seleciona SOMENTE colunas necessárias.\n * - Paginação server-side via `.range()`.\n * - Mutações separadas (create/update) — não usamos upsert porque a\n *   unicidade `product_id` não é garantida pelo contrato exposto em\n *   `types.ts` nesta fase.\n * - Concorrência otimista no UPDATE via `updated_at` prévio.\n * - Erro de RLS/permissão nunca se torna sucesso silencioso.\n */\nimport { useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { useScopedPortalQuery } from \"@/hooks/useScopedPortalQuery\";\nimport { useProductFiscalAccess } from \"@/hooks/useProductFiscalAccess\";\nimport { supabase } from \"@/integrations/supabase/client\";\nimport type { Database } from \"@/integrations/supabase/cultivofarm.types\";\nimport {\n  buildInsertPayload,\n  buildUpdatePayload,\n  productFiscalFormSchema,\n  type ProductFiscalFormValues,\n  type ProductFiscalRow,\n} from \"@/lib/fiscal/productFiscalValidation\";\nimport {\n  PRODUCT_FISCAL_PROFILE_STATUSES,\n  isProductFiscalProfileStatus,\n} from \"@/lib/fiscal/fiscalOptions\";\n\nexport type ReadinessRow = any;\n\n// Resource prefixes only: useScopedPortalQuery appends canonical actor and\n// request scopes (actor/tenant/roles/epoch). Never use these prefixes for raw reads.\nexport const PRODUCT_FISCAL_KEYS = {\n  root: [\"fiscal\", \"product-profiles\"] as const,\n  list: (p: ListParams) =>\n    [...PRODUCT_FISCAL_KEYS.root, \"list\", p] as const,\n  readiness: (ids: string[]) =>\n    [...PRODUCT_FISCAL_KEYS.root, \"readiness\", ids.slice().sort()] as const,\n  byIds: (ids: string[]) =>\n    [...PRODUCT_FISCAL_KEYS.root, \"by-ids\", ids.slice().sort()] as const,\n};\n\nexport interface ListParams {\n  search: string;\n  status: string | null;\n  page: number;\n  pageSize: number;\n  /** Família comercial canônica (`produtos.familia_catalogo`); null = todas. */\n  familia?: string | null;\n}\n\nexport interface ProductListItem {\n  product_id: string;\n  product_nome: string;\n  product_codigo: string | null;\n  profile_id: string | null;\n  profile_status: string | null;\n  is_active: boolean | null;\n  ncm: string | null;\n  cest: string | null;\n  cfop_in_state: string | null;\n  cfop_interstate: string | null;\n  updated_at: string | null;\n  familia: string | null;\n}\n\nexport interface ListResult {\n  items: ProductListItem[];\n  total: number;\n  statuses: string[];\n}\n\nfunction isPermissionError(err: unknown): boolean {\n  if (!err || typeof err !== \"object\") return false;\n  const e = err as { code?: string; status?: number; message?: string };\n  if (e.code === \"42501\" || e.code === \"PGRST301\") return true;\n  if (e.status === 401 || e.status === 403) return true;\n  if (typeof e.message === \"string\" && /permission|denied|rls/i.test(e.message))\n    return true;\n  return false;\n}\n\n/**\n * Lista dirigida pela tabela `produtos` (fonte de verdade do catálogo) com\n * join left para `product_fiscal_profiles`. Assim exibimos produtos sem\n * perfil e produtos com perfil, sem alterar o cadastro mestre.\n */\nexport function useProductFiscalList(\n  params: ListParams,\n  options: { enabled?: boolean } = {},\n) {\n  const request = useProductFiscalAccess(\"product-fiscal-read\");\n  const actor = useProductFiscalAccess(\"portal-query-actor\");\n  const enabled = options.enabled ?? true;\n  const result = useScopedPortalQuery<ListResult>({\n    queryKey: PRODUCT_FISCAL_KEYS.list(params),\n    enabled,\n    queryFn: async () => {\n      const from = params.page * params.pageSize;\n      const to = from + params.pageSize - 1;\n\n      const term = params.search.trim();\n      const safeTerm = term.replace(/[,()]/g, \" \").slice(0, 100);\n      // Status entra ANTES do range: quando definido, usamos !inner para que\n      // o count e os items reflitam exatamente o subconjunto filtrado.\n      // Ramos separados por variante (evita união de tipos do query builder).\n      const hasStatus =\n        !!params.status && isProductFiscalProfileStatus(params.status);\n\n      const runFiltered = async () => {\n        let q = (supabase as any)\n          .from(\"produtos\")\n          .select(\n            \"id, nome, codigo, familia_catalogo, product_fiscal_profiles!inner(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)\",\n            { count: \"exact\" },\n          )\n          .eq(\"product_fiscal_profiles.is_active\", true)\n          .eq(\"product_fiscal_profiles.profile_status\", params.status as string)\n          .eq(\"product_fiscal_profiles.is_active\", true)\n          .order(\"nome\", { ascending: true })\n          .range(from, to);\n        if (safeTerm) {\n          q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);\n        }\n        if (params.familia) q = q.eq(\"familia_catalogo\", params.familia);\n        return q;\n      };\n\n      const runUnfiltered = async () => {\n        let q = (supabase as any)\n          .from(\"produtos\")\n          .select(\n            \"id, nome, codigo, familia_catalogo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)\",\n            { count: \"exact\" },\n          )\n          .eq(\"product_fiscal_profiles.is_active\", true)\n          .order(\"nome\", { ascending: true })\n          .range(from, to);\n        if (safeTerm) {\n          q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);\n        }\n        if (params.familia) q = q.eq(\"familia_catalogo\", params.familia);\n        return q;\n      };\n\n      const { data, error, count } = hasStatus\n        ? await runFiltered()\n        : await runUnfiltered();\n      if (error) {\n        if (isPermissionError(error)) throw new Error(\"permission_denied\");\n        throw new Error(error.message);\n      }\n\n      const items: ProductListItem[] = (data ?? []).map((p: any) => {\n        const profileRaw = p.product_fiscal_profiles;\n        const profile = Array.isArray(profileRaw)\n          ? profileRaw[0] ?? null\n          : profileRaw ?? null;\n        return {\n          product_id: p.id,\n          product_nome: p.nome,\n          product_codigo: p.codigo ?? null,\n          profile_id: profile?.id ?? null,\n          profile_status: profile?.profile_status ?? null,\n          is_active: profile?.is_active ?? null,\n          ncm: profile?.ncm ?? null,\n          cest: profile?.cest ?? null,\n          cfop_in_state: profile?.cfop_in_state ?? null,\n          cfop_interstate: profile?.cfop_interstate ?? null,\n          updated_at: profile?.updated_at ?? null,\n          familia: p.familia_catalogo ?? null,\n        };\n      });\n\n      // Opções derivadas da lista canônica tipada (não da página).\n      const statuses = [...PRODUCT_FISCAL_PROFILE_STATUSES];\n\n      return { items, total: count ?? items.length, statuses };\n    },\n  }, { request, actor });\n  return { ...result, data: result.ready && !result.isError ? result.data : undefined };\n}\n\n/** Resumo agregado da view `v_product_fiscal_readiness` para os produtos da página. */\nexport function useProductFiscalReadiness(\n  productIds: string[],\n  options: { enabled?: boolean } = {},\n) {\n  const request = useProductFiscalAccess(\"product-fiscal-read\");\n  const actor = useProductFiscalAccess(\"portal-query-actor\");\n  const enabled = (options.enabled ?? true) && productIds.length > 0;\n  const result = useScopedPortalQuery<ReadinessRow[]>({\n    queryKey: PRODUCT_FISCAL_KEYS.readiness(productIds),\n    enabled,\n    queryFn: async () => {\n      const { data, error } = await (supabase as any)\n        .from(\"v_product_fiscal_readiness\")\n        .select(\"product_id, profile_status, minimally_classified, accounting_validated\")\n        .in(\"product_id\", productIds as any);\n      if (error) {\n        if (isPermissionError(error)) throw new Error(\"permission_denied\");\n        throw new Error(error.message);\n      }\n      return data ?? [];\n    },\n  }, { request, actor });\n  return { ...result, data: result.ready && !result.isError ? result.data : undefined };\n}\n\n/**\n * Fase Fiscal 3.20.1 — Fonte independente para resolver produtos canônicos\n * por ID, sem depender da página/filtro corrente de `useProductFiscalList`.\n *\n * Motivação: microrganismos podem apontar para produtos que não estão na\n * página atual (ou que estão fora do filtro \"Produtos\"). Sem esta consulta,\n * o vínculo seria falsamente exibido como \"não associado\". Buscamos apenas\n * pelos IDs recebidos (dataset pequeno, N ≤ dezenas), com o MESMO join a\n * `product_fiscal_profiles` para reutilizar o mesmo perfil canônico —\n * nenhum perfil paralelo é criado.\n */\nexport function useProductFiscalListByIds(\n  productIds: string[],\n  options: { enabled?: boolean } = {},\n) {\n  const request = useProductFiscalAccess(\"product-fiscal-read\");\n  const actor = useProductFiscalAccess(\"portal-query-actor\");\n  const enabled = (options.enabled ?? true) && productIds.length > 0;\n  const result = useScopedPortalQuery<ProductListItem[]>({\n    queryKey: PRODUCT_FISCAL_KEYS.byIds(productIds),\n    enabled,\n    queryFn: async () => {\n      const { data, error } = await (supabase as any)\n        .from(\"produtos\")\n        .select(\n          \"id, nome, codigo, familia_catalogo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)\",\n        )\n        .eq(\"product_fiscal_profiles.is_active\", true)\n        .in(\"id\", productIds as any);\n      if (error) {\n        if (isPermissionError(error)) throw new Error(\"permission_denied\");\n        throw new Error(error.message);\n      }\n      return (data ?? []).map((p: any) => {\n        const profileRaw = p.product_fiscal_profiles;\n        const profile = Array.isArray(profileRaw)\n          ? profileRaw[0] ?? null\n          : profileRaw ?? null;\n        return {\n          product_id: p.id,\n          product_nome: p.nome,\n          product_codigo: p.codigo ?? null,\n          profile_id: profile?.id ?? null,\n          profile_status: profile?.profile_status ?? null,\n          is_active: profile?.is_active ?? null,\n          ncm: profile?.ncm ?? null,\n          cest: profile?.cest ?? null,\n          cfop_in_state: profile?.cfop_in_state ?? null,\n          cfop_interstate: profile?.cfop_interstate ?? null,\n          updated_at: profile?.updated_at ?? null,\n          familia: p.familia_catalogo ?? null,\n        };\n      });\n    },\n  }, { request, actor });\n  return { ...result, data: result.ready && !result.isError ? result.data : undefined };\n}\n\nexport function useProductFiscalProfile(\n  productId: string | null,\n  options: { enabled?: boolean } = {},\n) {\n  const request = useProductFiscalAccess(\"product-fiscal-read\");\n  const actor = useProductFiscalAccess(\"portal-query-actor\");\n  const enabled = (options.enabled ?? true) && !!productId;\n  const result = useScopedPortalQuery<ProductFiscalRow | null>({\n    queryKey: [...PRODUCT_FISCAL_KEYS.root, \"profile\", productId] as const,\n    enabled,\n    queryFn: async () => {\n      if (!productId) throw new Error(\"product_required\");\n      const { data, error } = await (supabase as any)\n        .from(\"product_fiscal_profiles\")\n        .select(\"*\")\n        .eq(\"product_id\", productId)\n        .eq(\"is_active\", true)\n        .maybeSingle();\n      if (error) {\n        if (isPermissionError(error)) throw new Error(\"permission_denied\");\n        throw new Error(error.message);\n      }\n      return data ?? null;\n    },\n  }, { request, actor });\n  return { ...result, data: result.ready && !result.isError ? result.data : undefined };\n}\n\nexport class OptimisticConflictError extends Error {\n  constructor() {\n    super(\"optimistic_conflict\");\n    this.name = \"OptimisticConflictError\";\n  }\n}\n\nexport function useSaveProductFiscalProfile() {\n  const qc = useQueryClient();\n  const fence = useProductFiscalAccess(\"product-fiscal-save\");\n  const actor = useProductFiscalAccess(\"portal-query-actor\");\n  return useMutation<\n    ProductFiscalRow,\n    Error,\n    {\n      productId: string;\n      current: ProductFiscalRow | null;\n      values: ProductFiscalFormValues;\n    }\n  >({\n    mutationFn: async ({ productId, current, values }) => {\n      const valid = fence.capture();\n      const actorValid = actor.capture();\n      const actorScope = actor.scope;\n      const check = () => { if (!valid() || !actorValid()) throw new Error(\"fiscal_context_changed\"); };\n      const invalidate = async () => {\n        check();\n        await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root,\n          predicate: query => query.queryKey.at(-2) === actorScope });\n        check();\n      };\n      check();\n      if (!fence.canWrite) throw new Error(\"permission_denied\");\n      values = productFiscalFormSchema.parse(values);\n      if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at || current.is_active !== true))) throw new Error(\"fiscal_target_changed\");\n      if (!current) {\n        // Verificação prévia: perfil pode existir de outra sessão.\n        const existing = await (supabase as any)\n          .from(\"product_fiscal_profiles\")\n          .select(\"id\")\n          .eq(\"product_id\", productId)\n        .eq(\"is_active\", true)\n          .maybeSingle();\n        check();\n        if (existing.error) {\n          if (isPermissionError(existing.error))\n            throw new Error(\"permission_denied\");\n          throw new Error(existing.error.message);\n        }\n        if (existing.data) {\n          throw new Error(\"duplicate_profile\");\n        }\n        const payload = buildInsertPayload(productId, values);\n        const { data, error } = await (supabase as any)\n          .from(\"product_fiscal_profiles\")\n          .insert(payload as any)\n          .select(\"*\")\n          .single();\n        check();\n        if (error) {\n          if (isPermissionError(error)) throw new Error(\"permission_denied\");\n          throw new Error(error.message);\n        }\n        await invalidate();\n        return data;\n      }\n      const payload = buildUpdatePayload(values, current);\n      if (Object.keys(payload).length === 0) {\n        return current; // nada a atualizar\n      }\n      const { data, error } = await (supabase as any)\n        .from(\"product_fiscal_profiles\")\n        .update(payload as any)\n        .eq(\"is_active\", true)\n        .eq(\"id\", current.id)\n        .eq(\"product_id\", current.product_id)\n        .eq(\"updated_at\", current.updated_at)\n        .select(\"*\")\n        .maybeSingle();\n      check();\n      if (error) {\n        if (isPermissionError(error)) throw new Error(\"permission_denied\");\n        throw new Error(error.message);\n      }\n      if (!data) {\n        throw new OptimisticConflictError();\n      }\n      await invalidate();\n      return data;\n    },\n  });\n}\n",
+    "src/lib/fiscal/ownedProductFiscal.ts": "/**\n * Perfil fiscal de itens do catálogo PRÓPRIO da empresa (candidato inativo).\n * Contrato: scripts/fiscal-tenant-catalog-20261101 — RPCs não instalados/sem GRANT.\n * Empresa vem do servidor (dono imutável do item); nunca enviada pelo cliente.\n * Dados retornados nunca autorizam nada: o servidor reautoriza toda escrita.\n */\nexport const OWNED_PRODUCT_FISCAL_ENABLED = false as const;\n\nexport const OWNED_FISCAL_FIELDS = [\n  \"ncm\", \"cest\", \"cfop_in_state\", \"cfop_interstate\", \"origin_code\", \"icms_cst\", \"icms_csosn\",\n  \"ipi_cst\", \"pis_cst\", \"cofins_cst\", \"commercial_unit\", \"taxable_unit\", \"gtin\", \"taxable_gtin\",\n  \"tax_benefit_code\", \"fiscal_description\", \"accounting_notes\",\n] as const;\nexport type OwnedFiscalField = (typeof OWNED_FISCAL_FIELDS)[number];\nexport type OwnedFiscalValues = Partial<Record<OwnedFiscalField, string | null>>;\n\nconst UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst PATTERNS: Partial<Record<OwnedFiscalField, RegExp>> = {\n  ncm: /^[0-9]{8}$/, cest: /^[0-9]{7}$/, cfop_in_state: /^[1-7][0-9]{3}$/, cfop_interstate: /^[1-7][0-9]{3}$/,\n  origin_code: /^[0-8]$/, gtin: /^([0-9]{8}|[0-9]{12,14}|SEM GTIN)$/, taxable_gtin: /^([0-9]{8}|[0-9]{12,14}|SEM GTIN)$/,\n};\n\nexport class OwnedFiscalError extends Error {\n  constructor(public readonly kind: \"disabled\" | \"invalid\" | \"forbidden\" | \"conflict\" | \"uncertain\", message: string) {\n    super(message);\n  }\n}\n\n/** Valida/normaliza valores; rejeita chaves fora da lista (ex.: profile_status). */\nexport function normalizeOwnedFiscalValues(input: Record<string, unknown>): OwnedFiscalValues {\n  const out: OwnedFiscalValues = {};\n  for (const [k, raw] of Object.entries(input)) {\n    if (!(OWNED_FISCAL_FIELDS as readonly string[]).includes(k)) throw new OwnedFiscalError(\"invalid\", `Campo não permitido: ${k}`);\n    if (raw !== null && typeof raw !== \"string\") throw new OwnedFiscalError(\"invalid\", `Valor inválido: ${k}`);\n    const v = typeof raw === \"string\" ? raw.trim() : null;\n    const value = v === \"\" ? null : v;\n    if (value && value.length > 2000) throw new OwnedFiscalError(\"invalid\", `Valor longo demais: ${k}`);\n    const re = PATTERNS[k as OwnedFiscalField];\n    if (value && re && !re.test(value)) throw new OwnedFiscalError(\"invalid\", `Formato inválido: ${k}`);\n    out[k as OwnedFiscalField] = value;\n  }\n  return out;\n}\n\nexport interface OwnedFiscalReceipt {\n  product_id: string; profile_id: string; organization_id: string;\n  profile_status: string; updated_at: string; idempotency_key: string; idempotent: boolean;\n}\n\n/** ACK exato: qualquer divergência é incerta (mantém chave para reconciliação, sem nova tentativa automática). */\nexport function parseOwnedFiscalReceipt(data: unknown, expected: { productId: string; idempotencyKey: string }): OwnedFiscalReceipt {\n  const r = data as Record<string, unknown> | null;\n  if (!r || typeof r !== \"object\" || r.success !== true\n    || r.product_id !== expected.productId || r.idempotency_key !== expected.idempotencyKey\n    || typeof r.profile_id !== \"string\" || !UUID.test(r.profile_id)\n    || typeof r.organization_id !== \"string\" || !UUID.test(r.organization_id)\n    || typeof r.profile_status !== \"string\" || r.profile_status === \"VALIDATED\"\n    || typeof r.updated_at !== \"string\" || Number.isNaN(Date.parse(r.updated_at))\n    || typeof r.idempotent !== \"boolean\") {\n    throw new OwnedFiscalError(\"uncertain\", \"Resposta do servidor não confirmada; consulte antes de tentar de novo.\");\n  }\n  return r as unknown as OwnedFiscalReceipt;\n}\n\ntype RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> };\n\nexport async function saveOwnedProductFiscal(client: RpcClient, input: {\n  productId: string; expectedUpdatedAt: string | null; values: Record<string, unknown>; reason: string; idempotencyKey: string;\n}, enabled: boolean = OWNED_PRODUCT_FISCAL_ENABLED): Promise<OwnedFiscalReceipt> {\n  if (!enabled) throw new OwnedFiscalError(\"disabled\", \"Perfil fiscal do catálogo próprio ainda não liberado.\");\n  if (!UUID.test(input.productId) || !UUID.test(input.idempotencyKey)) throw new OwnedFiscalError(\"invalid\", \"Identificador inválido.\");\n  const reason = input.reason.trim();\n  if (reason.length < 10 || reason.length > 500) throw new OwnedFiscalError(\"invalid\", \"Informe um motivo de 10 a 500 caracteres.\");\n  const values = normalizeOwnedFiscalValues(input.values);\n  const { data, error } = await client.rpc(\"tenant_owned_product_fiscal_save\", {\n    p_product_id: input.productId, p_expected_updated_at: input.expectedUpdatedAt,\n    p_values: values, p_reason: reason, p_idempotency_key: input.idempotencyKey,\n  });\n  if (error) {\n    if (error.code === \"42501\") throw new OwnedFiscalError(\"forbidden\", \"Sem permissão para este item.\");\n    if (error.code === \"PT409\") throw new OwnedFiscalError(\"conflict\", \"O perfil mudou ou a chave já foi usada; recarregue antes de salvar.\");\n    if (error.code === \"22023\") throw new OwnedFiscalError(\"invalid\", \"Dados fiscais inválidos.\");\n    throw new OwnedFiscalError(\"uncertain\", \"Não foi possível confirmar a gravação; consulte antes de tentar de novo.\");\n  }\n  return parseOwnedFiscalReceipt(data, { productId: input.productId, idempotencyKey: input.idempotencyKey });\n}\n",
+    "src/pages/configuracoes/FiscalProdutos.tsx": "import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from \"@/lib/catalogo/globalCatalogWriteContainment\";\n/**\n * Fase Fiscal 3.21 — Perfis Fiscais unificados: produtos + microrganismos.\n *\n * Mudança de contrato desta fase:\n *  - Microrganismo pode ter PERFIL FISCAL PRÓPRIO\n *    (`microorganism_fiscal_profiles`) e ser faturado DIRETAMENTE, sem\n *    depender de vínculo a produto canônico.\n *  - O vínculo `microrganismos.product_id` permanece OPCIONAL e serve\n *    apenas como referência comercial/de composição. Nunca é requisito\n *    fiscal.\n *  - Colunas fiscais (NCM/CEST/CFOP/Status/Prontidão) do microrganismo\n *    vêm SEMPRE do próprio perfil fiscal do microrganismo. O perfil do\n *    produto vinculado NÃO é usado como fallback fiscal.\n *  - Nenhuma nota é emitida por esta tela.\n */\nimport { useMemo, useState, useEffect, useRef } from \"react\";\nimport { useProductFiscalAccess } from \"@/hooks/useProductFiscalAccess\";\nimport { useStorageAccessScope } from \"@/hooks/useStorageAccessScope\";\nimport { useAuth } from \"@/hooks/useAuth\";\nimport { getAccessLevel } from \"@/lib/permissions\";\nimport { FEATURE_FLAGS } from \"@/config/featureFlags\";\nimport {\n  useProductFiscalList,\n  useProductFiscalReadiness,\n  useProductFiscalProfile,\n  useSaveProductFiscalProfile,\n  OptimisticConflictError,\n  type ProductListItem,\n} from \"@/hooks/useProductFiscalProfiles\";\nimport {\n  useMicroorganismList,\n  useAssociateMicroorganism,\n} from \"@/hooks/useMicroorganismFiscalAssociation\";\nimport {\n  useMicroorganismFiscalProfile,\n  useMicroorganismFiscalProfileList,\n  useMicroorganismFiscalReadiness,\n  useSaveMicroorganismFiscalProfile,\n  OptimisticConflictError as MicroOptimisticConflictError,\n  type MicroorganismFiscalListItem,\n} from \"@/hooks/useMicroorganismFiscalProfiles\";\nimport {\n  productFiscalFormSchema,\n  productFiscalPreparation,\n  rowToFormValues as productRowToFormValues,\n  type ProductFiscalFormValues,\n} from \"@/lib/fiscal/productFiscalValidation\";\nimport {\n  microorganismFiscalFormSchema,\n  rowToFormValues as microRowToFormValues,\n  type MicroorganismFiscalFormValues,\n} from \"@/lib/fiscal/microorganismFiscalValidation\";\nimport { Card, CardContent, CardHeader, CardTitle, CardDescription } from \"@/components/ui/card\";\nimport { Alert, AlertDescription, AlertTitle } from \"@/components/ui/alert\";\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { Badge } from \"@/components/ui/badge\";\nimport {\n  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,\n} from \"@/components/ui/sheet\";\nimport {\n  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,\n} from \"@/components/ui/dialog\";\nimport {\n  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,\n} from \"@/components/ui/select\";\nimport { toast } from \"@/hooks/use-toast\";\nimport { AlertTriangle, ShieldOff, Loader2, Pencil, Plus, Link2, Link2Off } from \"lucide-react\";\nimport { IbsCbsItemCard } from \"@/components/fiscal/IbsCbsItemCard\";\nimport { RegulatorioMicrorganismosSecao } from \"@/components/fiscal/RegulatorioMicrorganismosSecao\";\nimport {\n  PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS,\n  getFiscalStatusLabel,\n} from \"@/lib/fiscal/fiscalOptions\";\nimport { ENTITY_KIND } from \"@/lib/fiscal/labels\";\nimport {\n  ORIGIN_CODE_OPTIONS, ICMS_CST_OPTIONS, ICMS_CSOSN_OPTIONS,\n  IPI_CST_OPTIONS, PIS_COFINS_CST_OPTIONS, withLegacyOption,\n  type FiscalOption,\n} from \"@/lib/fiscal/fiscalOptions\";\n\n\nconst PAGE_TITLE = \"Perfis Fiscais de Produtos e Microrganismos\";\nconst PLATFORM_PAGE_TITLE = \"Perfis fiscais de produtos globais\";\nconst EMISSION_BANNER = \"Emissão fiscal desativada — ambiente em preparação\";\nconst PAGE_SIZE = 20;\nconst STATUS_ALL = \"__all__\";\nconst KIND_ALL = \"all\";\nconst KIND_PRODUCT = \"produto\";\nconst KIND_MICRO = \"microrganismo\";\ntype EntityKindFilter = typeof KIND_ALL | typeof KIND_PRODUCT | typeof KIND_MICRO;\n/** Famílias comerciais canônicas (`produtos.familia_catalogo`) — nunca inferidas. */\nconst FAMILY_FILTERS = [\n  { value: \"biologico\", label: \"Produtos biológicos\" },\n  { value: \"quimico\", label: \"Produtos químicos\" },\n  { value: \"fertilizante_adubo\", label: \"Fertilizantes/Adubos\" },\n] as const;\nconst FAMILY_LABEL: Record<string, string> = {\n  biologico: \"Biológico\", quimico: \"Químico\", fertilizante_adubo: \"Fertilizante/Adubo\",\n};\nconst FAMILY_PREFIX = \"fam:\";\n\ntype FieldKey = keyof ProductFiscalFormValues;\n\nconst FIELD_LABELS: Record<FieldKey, string> = {\n  ncm: \"NCM\",\n  cest: \"CEST\",\n  cfop_in_state: \"CFOP interno\",\n  cfop_interstate: \"CFOP interestadual\",\n  origin_code: \"Origem\",\n  icms_cst: \"ICMS CST\",\n  icms_csosn: \"ICMS CSOSN\",\n  ipi_cst: \"IPI CST\",\n  pis_cst: \"PIS CST\",\n  cofins_cst: \"COFINS CST\",\n  commercial_unit: \"Unidade comercial\",\n  taxable_unit: \"Unidade tributável\",\n  taxable_gtin: \"GTIN tributável\",\n  gtin: \"GTIN\",\n  fiscal_description: \"Descrição fiscal\",\n  tax_benefit_code: \"Código de benefício fiscal\",\n  accounting_notes: \"Notas contábeis\",\n};\n\nconst FIELD_ORDER: FieldKey[] = [\n  \"ncm\", \"cest\", \"cfop_in_state\", \"cfop_interstate\",\n  \"origin_code\", \"icms_cst\", \"icms_csosn\", \"ipi_cst\",\n  \"pis_cst\", \"cofins_cst\", \"commercial_unit\", \"taxable_unit\",\n  \"taxable_gtin\", \"gtin\", \"tax_benefit_code\",\n  \"fiscal_description\", \"accounting_notes\",\n];\n\nconst FIELD_SELECTS: Partial<Record<FieldKey, FiscalOption[]>> = {\n  origin_code: ORIGIN_CODE_OPTIONS,\n  icms_cst: ICMS_CST_OPTIONS,\n  icms_csosn: ICMS_CSOSN_OPTIONS,\n  ipi_cst: IPI_CST_OPTIONS,\n  pis_cst: PIS_COFINS_CST_OPTIONS,\n  cofins_cst: PIS_COFINS_CST_OPTIONS,\n};\n\nconst FIELD_HINTS: Partial<Record<FieldKey, string>> = {\n  ncm: \"8 dígitos da classificação revisada para este item. A família comercial não determina o NCM.\",\n  cest: \"7 dígitos numéricos, quando aplicável.\",\n  cfop_in_state: \"Definido pela operação e pelo estabelecimento emitente; não é inferido do produto.\",\n  cfop_interstate: \"Revisar conforme operação, destino e regime do emitente.\",\n  gtin: \"GTIN-13/14 ou SEM GTIN.\",\n  taxable_gtin: \"GTIN-13/14 ou SEM GTIN.\",\n  icms_cst: \"Preencha CST se Regime Normal; CSOSN se Simples Nacional.\",\n  icms_csosn: \"Preencha CSOSN se Simples Nacional; CST se Regime Normal.\",\n};\n\nconst FIELD_PLACEHOLDERS: Partial<Record<FieldKey, string>> = {\n  ncm: \"Classificação revisada\",\n  cest: \"Quando aplicável\",\n  cfop_in_state: \"Operação interna\",\n  cfop_interstate: \"Operação interestadual\",\n};\n\n// —————————————————————————— Unified row type ——————————————————————————\ntype UnifiedRow =\n  | {\n      rowKey: string;\n      kind: \"produto\";\n      productId: string;\n      product: ProductListItem;\n    }\n  | {\n      rowKey: string;\n      kind: \"microrganismo\";\n      microorganismId: string;\n      microorganismNome: string;\n      microorganismCodigo: string | null;\n      /** Vínculo comercial opcional — jamais requisito fiscal. */\n      linkedProductId: string | null;\n      /** Resumo do PRÓPRIO perfil fiscal do microrganismo. */\n      ownProfile: MicroorganismFiscalListItem | null;\n    };\n\ntype EditingTarget =\n  | { entity: \"produto\"; productId: string; displayName: string; displayCodigo: string | null }\n  | { entity: \"microrganismo\"; microorganismId: string; displayName: string; displayCodigo: string | null };\n\nexport default function FiscalProdutos({ platformGlobal = false }: { platformGlobal?: boolean } = {}) {\n  const fiscalAccess = useProductFiscalAccess(\"product-fiscal-page\");\n  const { role } = useAuth();\n  const routeAccess = getAccessLevel(role, \"/configuracoes/fiscal/produtos\");\n  const access = platformGlobal ? fiscalAccess.ready && fiscalAccess.canWrite ? \"rw\" : \"none\" : routeAccess;\n  // Produto global: somente Superadmin forte na plataforma. Microrganismo: permissão\n  // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.\n  const canEditProduct = platformGlobal && access === \"rw\" && fiscalAccess.ready && fiscalAccess.canWrite;\n  const canEditMicro = !platformGlobal && routeAccess === \"rw\";\n  // Plataforma: microrganismos globais exibidos SOMENTE em consulta; a escrita\n  // continua na rota canônica da empresa até existir autoridade server-side própria.\n  const uiEnabled = FEATURE_FLAGS.fiscalProductProfilesUi === true;\n  const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;\n\n  const [search, setSearch] = useState(\"\");\n  const [status, setStatus] = useState<string | null>(null);\n  const [kind, setKind] = useState<EntityKindFilter>(KIND_ALL);\n  const [familia, setFamilia] = useState<string | null>(null);\n  const [page, setPage] = useState(0);\n  const [editing, setEditing] = useState<EditingTarget | null>(null);\n  const [associating, setAssociating] = useState<\n    { microorganismId: string; microorganismNome: string; currentProductId: string | null } | null\n  >(null);\n\n  const productsEnabled = uiEnabled && access !== \"none\" && kind !== KIND_MICRO;\n  const listQuery = useProductFiscalList(\n    { search, status, page, pageSize: PAGE_SIZE, familia },\n    { enabled: productsEnabled },\n  );\n\n  const microorganismsEnabled = uiEnabled && access !== \"none\" && kind !== KIND_PRODUCT && !familia;\n  const microorganismsQuery = useMicroorganismList(search, {\n    enabled: microorganismsEnabled,\n  });\n\n  const productItemsPage = useMemo(\n    () => listQuery.data?.items ?? [],\n    [listQuery.data],\n  );\n  const productIds = useMemo(\n    () => productItemsPage.map((it) => it.product_id),\n    [productItemsPage],\n  );\n  const readinessQuery = useProductFiscalReadiness(productIds, {\n    enabled: uiEnabled && access !== \"none\" && kind !== KIND_MICRO,\n  });\n\n  const microItems = useMemo(\n    () => microorganismsQuery.data ?? [],\n    [microorganismsQuery.data],\n  );\n  const microIds = useMemo(() => microItems.map((m) => m.id), [microItems]);\n  const microProfilesQuery = useMicroorganismFiscalProfileList(microIds, {\n    enabled: microorganismsEnabled,\n  });\n  const microReadinessQuery = useMicroorganismFiscalReadiness(microIds, {\n    enabled: microorganismsEnabled,\n  });\n\n  const permissionDenied =\n    listQuery.error?.message === \"permission_denied\" ||\n    readinessQuery.error?.message === \"permission_denied\" ||\n    microorganismsQuery.error?.message === \"permission_denied\" ||\n    microProfilesQuery.error?.message === \"permission_denied\" ||\n    microReadinessQuery.error?.message === \"permission_denied\";\n\n  // Estados de acesso/flag ————————————————————————————————\n  if (access === \"none\") {\n    return (\n      <div className=\"p-6\" data-testid=\"fiscal-produtos-forbidden\">\n        <Alert variant=\"destructive\">\n          <ShieldOff className=\"h-4 w-4\" aria-hidden />\n          <AlertTitle>Sem permissão</AlertTitle>\n          <AlertDescription>Você não tem acesso aos perfis fiscais.</AlertDescription>\n        </Alert>\n      </div>\n    );\n  }\n\n  if (!uiEnabled) {\n    return (\n      <div className=\"p-6 max-w-3xl\" data-testid=\"fiscal-produtos-preparation\">\n        <Card>\n          <CardHeader>\n            <CardTitle>{PAGE_TITLE}</CardTitle>\n            <CardDescription>Módulo fiscal em preparação</CardDescription>\n          </CardHeader>\n          <CardContent>\n            <Alert>\n              <AlertTriangle className=\"h-4 w-4\" aria-hidden />\n              <AlertTitle>{EMISSION_BANNER}</AlertTitle>\n              <AlertDescription>\n                Esta tela ficará disponível quando os perfis fiscais forem habilitados.\n              </AlertDescription>\n            </Alert>\n          </CardContent>\n        </Card>\n      </div>\n    );\n  }\n\n  if (permissionDenied) {\n    return (\n      <div className=\"p-6\" data-testid=\"fiscal-produtos-permission-denied\">\n        <Alert variant=\"destructive\">\n          <ShieldOff className=\"h-4 w-4\" aria-hidden />\n          <AlertTitle>Sem permissão para ler perfis fiscais</AlertTitle>\n          <AlertDescription>Solicite acesso ao administrador.</AlertDescription>\n        </Alert>\n      </div>\n    );\n  }\n\n  // Indexes ————————————————————————————————\n  const productItems = productItemsPage;\n  const readinessByProduct = new Map(\n    (readinessQuery.data ?? []).map((r) => [r.product_id ?? \"\", r] as const),\n  );\n  const microProfileByMicro = new Map(\n    (microProfilesQuery.data ?? []).map((p) => [p.microorganism_id, p] as const),\n  );\n  const microReadinessByMicro = new Map(\n    (microReadinessQuery.data ?? []).map((r) => [r.microorganism_id, r] as const),\n  );\n\n  const microProfilesUnknown =\n    microIds.length > 0 &&\n    (microProfilesQuery.isLoading || microProfilesQuery.isError);\n  const microReadinessUnknown =\n    microIds.length > 0 &&\n    (microReadinessQuery.isLoading || microReadinessQuery.isError);\n  const readinessUnknown =\n    productIds.length > 0 &&\n    (readinessQuery.isLoading || readinessQuery.isError);\n\n  // Aplica filtro de status também em micros — usando o STATUS PRÓPRIO\n  // do microrganismo (não mais o do produto vinculado).\n  const microFilteredByStatus = status\n    ? microItems.filter(\n        (m) => (microProfileByMicro.get(m.id)?.profile_status ?? null) === status,\n      )\n    : microItems;\n\n  const rowsProduto: UnifiedRow[] = productItems.map((p) => ({\n    rowKey: `product:${p.product_id}`,\n    kind: \"produto\",\n    productId: p.product_id,\n    product: p,\n  }));\n  const rowsMicro: UnifiedRow[] = microFilteredByStatus.map((m) => ({\n    rowKey: `micro:${m.id}`,\n    kind: \"microrganismo\",\n    microorganismId: m.id,\n    microorganismNome: m.nome,\n    microorganismCodigo: m.codigo ?? null,\n    linkedProductId: m.product_id,\n    ownProfile: microProfileByMicro.get(m.id) ?? null,\n  }));\n\n  const rows: UnifiedRow[] =\n    kind === KIND_PRODUCT ? rowsProduto\n    : kind === KIND_MICRO ? rowsMicro\n    : familia ? rowsProduto\n    : [...rowsProduto, ...rowsMicro];\n\n  const totalPages = Math.max(\n    1,\n    Math.ceil((listQuery.data?.total ?? 0) / PAGE_SIZE),\n  );\n\n  const microrganismosSemPerfilProprio = microItems.filter(\n    (m) => !microProfileByMicro.get(m.id),\n  ).length;\n\n  return (\n    <div className=\"p-4 md:p-6 max-w-6xl space-y-4\" data-testid=\"fiscal-produtos-page\">\n      <header className=\"space-y-1\">\n        <h1 className=\"text-2xl font-semibold\">{platformGlobal ? PLATFORM_PAGE_TITLE : PAGE_TITLE}</h1>\n        {platformGlobal ? (\n          <p className=\"text-sm text-muted-foreground\" data-testid=\"fiscal-platform-description\">\n            Cadastro fiscal de todo o catálogo global — produtos biológicos, químicos,\n            fertilizantes/adubos e microrganismos —, compartilhado por todas as empresas.\n            Revise NCM, CFOP e demais campos com a contabilidade antes de salvar. Um perfil só\n            fica pronto para NF-e depois de completo e revisado; nenhuma nota é emitida por esta tela.\n          </p>\n        ) : (\n        <p className=\"text-sm text-muted-foreground\">\n          Preparação fiscal do catálogo. Produtos e microrganismos comercializáveis\n          aparecem aqui. Cada microrganismo pode ter perfil fiscal próprio e ser\n          faturado diretamente. Nenhuma nota é emitida por esta tela.\n        </p>\n        )}\n      </header>\n\n      <Alert data-testid=\"fiscal-emission-banner\">\n        <AlertTriangle className=\"h-4 w-4\" aria-hidden />\n        <AlertTitle>{EMISSION_BANNER}</AlertTitle>\n        <AlertDescription>\n          Trava técnica de emissão ativa: <strong>{emissionLock ? \"sim\" : \"não\"}</strong>.\n        </AlertDescription>\n      </Alert>\n\n      {platformGlobal ? (\n      <Card data-testid=\"fiscal-platform-summary\">\n        <CardHeader>\n          <CardTitle className=\"text-base\">Resumo da página atual</CardTitle>\n          <CardDescription>\n            Itens globais exibidos nesta página. Abra um item para ver o que falta para ficar pronto para NF-e.\n          </CardDescription>\n        </CardHeader>\n        <CardContent className=\"grid grid-cols-2 md:grid-cols-4 gap-3 text-sm\">\n          <div>\n            <div className=\"text-muted-foreground\">Produtos na página</div>\n            <div className=\"font-medium\">{productItems.length}</div>\n          </div>\n          <div>\n            <div className=\"text-muted-foreground\">Microrganismos listados</div>\n            <div className=\"font-medium\" data-testid=\"platform-micros-listados\">{microItems.length}</div>\n          </div>\n          <div>\n            <div className=\"text-muted-foreground\">Microrganismos sem perfil fiscal</div>\n            <div className=\"font-medium\" data-testid=\"platform-micros-sem-perfil\">\n              {microProfilesUnknown ? \"—\" : microrganismosSemPerfilProprio}\n            </div>\n          </div>\n        </CardContent>\n      </Card>\n      ) : (\n      <Card>\n        <CardHeader>\n          <CardTitle className=\"text-base\">Resumo de prontidão (página atual)</CardTitle>\n          <CardDescription>\n            Produtos e microrganismos listados nesta página e situação dos perfis fiscais próprios.\n          </CardDescription>\n        </CardHeader>\n        <CardContent className=\"grid grid-cols-2 md:grid-cols-4 gap-3 text-sm\">\n          <div>\n            <div className=\"text-muted-foreground\">Produtos na página</div>\n            <div className=\"font-medium\">{productItems.length}</div>\n          </div>\n          <div>\n            <div className=\"text-muted-foreground\">Microrganismos listados</div>\n            <div className=\"font-medium\">{microItems.length}</div>\n          </div>\n          <div>\n            <div className=\"text-muted-foreground\">Micro com perfil fiscal próprio</div>\n            <div className=\"font-medium\" data-testid=\"micros-com-perfil-proprio\">\n              {microProfilesQuery.data?.length ?? 0}\n            </div>\n          </div>\n          <div>\n            <div className=\"text-muted-foreground\">Micro sem perfil fiscal próprio</div>\n            <div className=\"font-medium\" data-testid=\"micros-sem-perfil-proprio\">\n              {microrganismosSemPerfilProprio}\n            </div>\n          </div>\n        </CardContent>\n      </Card>\n      )}\n\n      {!platformGlobal && <RegulatorioMicrorganismosSecao />}\n\n\n      <Card>\n        <CardHeader className=\"gap-3\">\n          <div className=\"flex flex-col md:flex-row md:items-center md:justify-between gap-3\">\n            <div className=\"flex flex-col sm:flex-row gap-2 md:flex-1 flex-wrap\">\n              <Input\n                placeholder=\"Buscar por nome, código ou referência\"\n                aria-label=\"Buscar por nome, código ou referência\"\n                value={search}\n                onChange={(e) => { setSearch(e.target.value); setPage(0); }}\n                className=\"max-w-sm\"\n              />\n              <Select\n                value={familia ? FAMILY_PREFIX + familia : kind}\n                onValueChange={(v) => {\n                  if (v.startsWith(FAMILY_PREFIX)) { setKind(KIND_PRODUCT); setFamilia(v.slice(FAMILY_PREFIX.length)); }\n                  else { setKind(v as EntityKindFilter); setFamilia(null); }\n                  setPage(0);\n                }}\n              >\n                <SelectTrigger className=\"max-w-[220px]\" aria-label=\"Filtrar por tipo de item\">\n                  <SelectValue placeholder=\"Tipo\" />\n                </SelectTrigger>\n                <SelectContent>\n                  <SelectItem value={KIND_ALL}>Todos</SelectItem>\n                  <SelectItem value={KIND_PRODUCT}>Produtos</SelectItem>\n                  {FAMILY_FILTERS.map((f) => (\n                    <SelectItem key={f.value} value={FAMILY_PREFIX + f.value}>{f.label}</SelectItem>\n                  ))}\n                  <SelectItem value={KIND_MICRO}>Microrganismos</SelectItem>\n                </SelectContent>\n              </Select>\n              <Select\n                value={status ?? STATUS_ALL}\n                onValueChange={(v) => { setStatus(v === STATUS_ALL ? null : v); setPage(0); }}\n              >\n                <SelectTrigger className=\"max-w-xs\" aria-label=\"Filtrar por status\">\n                  <SelectValue placeholder=\"Todos os status\" />\n                </SelectTrigger>\n                <SelectContent>\n                  <SelectItem value={STATUS_ALL}>Todos os status</SelectItem>\n                  {PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS.map((s) => (\n                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>\n                  ))}\n                </SelectContent>\n              </Select>\n            </div>\n          </div>\n        </CardHeader>\n        <CardContent className=\"space-y-3\">\n          {(listQuery.isLoading && kind !== KIND_MICRO)\n            || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT)\n            || (kind !== KIND_MICRO && productIds.length > 0 && readinessQuery.isLoading)\n            || (kind !== KIND_PRODUCT && microIds.length > 0 && microProfilesQuery.isLoading)\n            || (kind !== KIND_PRODUCT && microIds.length > 0 && microReadinessQuery.isLoading) ? (\n            <div className=\"flex items-center gap-2 text-muted-foreground\" data-testid=\"fiscal-produtos-loading\">\n              <Loader2 className=\"h-4 w-4 animate-spin\" aria-hidden /> Carregando…\n            </div>\n          ) : listQuery.isError\n            || microorganismsQuery.isError\n            || readinessQuery.isError\n            || microProfilesQuery.isError\n            || microReadinessQuery.isError ? (\n            <Alert variant=\"destructive\" data-testid=\"fiscal-produtos-error\">\n              <AlertTriangle className=\"h-4 w-4\" aria-hidden />\n              <AlertTitle>Não foi possível carregar</AlertTitle>\n              <AlertDescription>Tente novamente em instantes.</AlertDescription>\n            </Alert>\n\n          ) : rows.length === 0 ? (\n            <Alert data-testid=\"fiscal-produtos-empty\">\n              <AlertTitle>Nenhum item encontrado</AlertTitle>\n              <AlertDescription>Ajuste a busca ou filtros.</AlertDescription>\n            </Alert>\n          ) : (\n            <>\n              <div className=\"overflow-x-auto\">\n                <table className=\"w-full text-sm\" role=\"table\" aria-label={platformGlobal ? \"Perfis fiscais do catálogo global\" : \"Perfis fiscais de produtos e microrganismos\"}>\n                  <thead className=\"text-left text-muted-foreground\">\n                    <tr>\n                      <th className=\"p-2\">Item</th>\n                      <th className=\"p-2\">Tipo</th>\n                      <th className=\"p-2\">NCM</th>\n                      <th className=\"p-2\">CEST</th>\n                      <th className=\"p-2\">CFOP int./inter.</th>\n                      <th className=\"p-2\">Status</th>\n                      <th className=\"p-2\" title=\"Verificação inicial dos campos essenciais. A revisão contábil e os demais dados fiscais continuam necessários antes da emissão.\">Prontidão mínima</th>\n                      <th className=\"p-2 text-right\">Ação</th>\n                    </tr>\n                  </thead>\n                  <tbody>\n                    {rows.map((r) => renderRow(\n                      r,\n                      readinessByProduct,\n                      microReadinessByMicro,\n                      canEditProduct,\n                      canEditMicro,\n                      readinessUnknown,\n                      microProfilesUnknown,\n                      microReadinessUnknown,\n                      (item) => setEditing({\n                        entity: \"produto\",\n                        productId: item.product_id,\n                        displayName: item.product_nome,\n                        displayCodigo: item.product_codigo ?? null,\n                      }),\n                      (m) => setEditing({\n                        entity: \"microrganismo\",\n                        microorganismId: m.microorganismId,\n                        displayName: m.microorganismNome,\n                        displayCodigo: m.microorganismCodigo,\n                      }),\n                      (m) => setAssociating({\n                        microorganismId: m.microorganismId,\n                        microorganismNome: m.microorganismNome,\n                        currentProductId: m.linkedProductId,\n                      }),\n                    ))}\n                  </tbody>\n                </table>\n              </div>\n\n              {kind !== KIND_MICRO && (\n                <div className=\"flex items-center justify-between text-sm\">\n                  <div className=\"text-muted-foreground\">\n                    Página {page + 1} de {totalPages} — {listQuery.data?.total ?? 0} produtos\n                    {kind === KIND_ALL && !familia && microItems.length > 0 && (\n                      <> + {microItems.length} microrganismo(s) na visão unificada</>\n                    )}\n                  </div>\n                  <div className=\"flex gap-2\">\n                    <Button\n                      variant=\"outline\"\n                      size=\"sm\"\n                      disabled={page === 0}\n                      onClick={() => setPage((p) => Math.max(0, p - 1))}\n                    >Anterior</Button>\n                    <Button\n                      variant=\"outline\"\n                      size=\"sm\"\n                      disabled={page + 1 >= totalPages}\n                      onClick={() => setPage((p) => p + 1)}\n                    >Próxima</Button>\n                  </div>\n                </div>\n              )}\n            </>\n          )}\n        </CardContent>\n      </Card>\n\n      {editing?.entity === \"produto\" ? (\n        <ProductEditDrawer\n          productId={editing.productId}\n          displayName={editing.displayName}\n          displayCodigo={editing.displayCodigo}\n          canEdit={canEditProduct}\n          onClose={() => setEditing(null)}\n        />\n      ) : null}\n      {editing?.entity === \"microrganismo\" ? (\n        <MicroorganismEditDrawer\n          microorganismId={editing.microorganismId}\n          displayName={editing.displayName}\n          displayCodigo={editing.displayCodigo}\n          canEdit={canEditMicro}\n          onClose={() => setEditing(null)}\n        />\n      ) : null}\n\n      {TENANT_CAN_EDIT_GLOBAL_CATALOG && associating ? (\n        <AssociateDialog\n          microorganismId={associating.microorganismId}\n          microorganismNome={associating.microorganismNome}\n          currentProductId={associating.currentProductId}\n          onClose={() => setAssociating(null)}\n        />\n      ) : null}\n    </div>\n  );\n}\n\n// ————————————————————————— Row renderer —————————————————————————\nfunction renderRow(\n  r: UnifiedRow,\n  readinessByProduct: Map<string, { minimally_classified: boolean | null }>,\n  microReadinessByMicro: Map<string, { minimally_classified: boolean | null; profile_status: string | null }>,\n  canEditProduct: boolean,\n  canEditMicro: boolean,\n  readinessUnknown: boolean,\n  microProfilesUnknown: boolean,\n  microReadinessUnknown: boolean,\n  onEditProduct: (p: ProductListItem) => void,\n  onEditMicro: (m: Extract<UnifiedRow, { kind: \"microrganismo\" }>) => void,\n  onLinkOptional: (m: Extract<UnifiedRow, { kind: \"microrganismo\" }>) => void,\n) {\n  if (r.kind === \"produto\") {\n    const p = r.product;\n    const ready = readinessByProduct.get(p.product_id);\n    const pending = readinessUnknown ? null : !ready?.minimally_classified;\n    return (\n      <tr key={r.rowKey} className=\"border-t\" data-row-kind=\"produto\" data-testid={`row-${r.rowKey}`}>\n        <td className=\"p-2\">\n          <div className=\"font-medium\">{p.product_nome}</div>\n          <div className=\"text-xs text-muted-foreground\">{p.product_codigo ?? \"—\"}</div>\n        </td>\n        <td className=\"p-2\">\n          <div className=\"flex flex-wrap gap-1\">\n            <Badge variant=\"secondary\">{ENTITY_KIND.label(\"produto\")}</Badge>\n            <Badge variant=\"outline\" data-testid=\"badge-familia\">\n              {p.familia ? FAMILY_LABEL[p.familia] ?? p.familia : \"Família pendente\"}\n            </Badge>\n          </div>\n        </td>\n        <td className=\"p-2\">{p.ncm ?? \"—\"}</td>\n        <td className=\"p-2\">{p.cest ?? \"—\"}</td>\n        <td className=\"p-2\">{(p.cfop_in_state ?? \"—\")}/{(p.cfop_interstate ?? \"—\")}</td>\n        <td className=\"p-2\">\n          <Badge variant=\"outline\" title={p.profile_status ?? undefined}>\n            {getFiscalStatusLabel(\"product\", p.profile_status)}\n          </Badge>\n        </td>\n        <td className=\"p-2\">\n          {pending === null\n            ? <Badge variant=\"outline\" data-testid=\"readiness-unknown-badge\">—</Badge>\n            : pending\n              ? <Badge variant=\"destructive\" data-testid=\"pending-badge\">Pendente</Badge>\n              : <Badge>OK</Badge>}\n        </td>\n        <td className=\"p-2 text-right\">\n          <Button\n            variant=\"outline\" size=\"sm\"\n            onClick={() => onEditProduct(p)}\n            aria-label={`${canEditProduct ? \"Editar\" : \"Ver\"} perfil fiscal de ${p.product_nome}`}\n          >\n            {canEditProduct ? (p.profile_id ? <Pencil className=\"h-4 w-4\" /> : <Plus className=\"h-4 w-4\" />) : \"Ver\"}\n          </Button>\n        </td>\n      </tr>\n    );\n  }\n  // microrganismo — perfil fiscal PRÓPRIO\n  const own = r.ownProfile;\n  const ownReadiness = microReadinessByMicro.get(r.microorganismId);\n  const ownProfileUnknown = microProfilesUnknown;\n  const pending = !own\n    ? null\n    : microReadinessUnknown\n      ? null\n      : !ownReadiness?.minimally_classified;\n  return (\n    <tr key={r.rowKey} className=\"border-t\" data-row-kind=\"microrganismo\" data-testid={`row-${r.rowKey}`}>\n      <td className=\"p-2\">\n        <div className=\"font-medium\">{r.microorganismNome}</div>\n        <div className=\"text-xs text-muted-foreground\">{r.microorganismCodigo ?? \"—\"}</div>\n      </td>\n      <td className=\"p-2\">\n        <div className=\"flex flex-wrap gap-1\">\n          <Badge variant=\"secondary\">{ENTITY_KIND.label(\"microrganismo\")}</Badge>\n          {r.linkedProductId && (\n            <Badge variant=\"outline\" data-testid=\"badge-vinculo-opcional\" title=\"Vínculo comercial opcional a produto do catálogo — não interfere no perfil fiscal\">\n              Vínculo comercial opcional\n            </Badge>\n          )}\n          {!own && !ownProfileUnknown && (\n            <Badge\n              variant=\"outline\"\n              className=\"border-amber-500/60 text-amber-700 dark:text-amber-300\"\n              data-testid=\"badge-perfil-fiscal-pendente\"\n            >\n              Perfil fiscal pendente\n            </Badge>\n          )}\n          {ownProfileUnknown && (\n            <Badge variant=\"outline\" data-testid=\"badge-perfil-desconhecido\">\n              Carregando perfil…\n            </Badge>\n          )}\n        </div>\n      </td>\n      <td className=\"p-2\">{own?.ncm ?? \"—\"}</td>\n      <td className=\"p-2\">{own?.cest ?? \"—\"}</td>\n      <td className=\"p-2\">\n        {(own?.cfop_in_state ?? \"—\")}/{(own?.cfop_interstate ?? \"—\")}\n      </td>\n      <td className=\"p-2\">\n        {own ? (\n          <Badge variant=\"outline\" title={own.profile_status ?? undefined}>\n            {getFiscalStatusLabel(\"product\", own.profile_status)}\n          </Badge>\n        ) : (\n          <Badge variant=\"outline\">—</Badge>\n        )}\n      </td>\n      <td className=\"p-2\">\n        {!own\n          ? <Badge variant=\"outline\">—</Badge>\n          : pending === null\n            ? <Badge variant=\"outline\" data-testid=\"readiness-unknown-badge\">—</Badge>\n            : pending\n              ? <Badge variant=\"destructive\" data-testid=\"pending-badge\">Pendente</Badge>\n              : <Badge>OK</Badge>}\n      </td>\n\n      <td className=\"p-2 text-right space-x-2\">\n        {canEditMicro ? (\n          <>\n            <Button\n              variant={own ? \"outline\" : \"default\"}\n              size=\"sm\"\n              onClick={() => onEditMicro(r)}\n              aria-label={`${own ? \"Editar\" : \"Criar\"} perfil fiscal de ${r.microorganismNome}`}\n              data-testid=\"btn-editar-perfil-micro\"\n            >\n              {own ? <Pencil className=\"h-4 w-4\" /> : <><Plus className=\"h-4 w-4 mr-1\" /> Criar perfil fiscal</>}\n            </Button>\n            {/* Vínculo product_id é GLOBAL (migration 20261014192417 revogou a RPC): sem ação para empresa. */}\n            {TENANT_CAN_EDIT_GLOBAL_CATALOG && <Button\n              variant=\"ghost\" size=\"sm\"\n              onClick={() => onLinkOptional(r)}\n              aria-label={`Vínculo opcional a produto — ${r.microorganismNome}`}\n              title=\"Vínculo comercial opcional a produto do catálogo (não afeta emissão fiscal)\"\n              data-testid=\"btn-vinculo-opcional\"\n            >\n              {r.linkedProductId ? <Link2Off className=\"h-4 w-4\" /> : <Link2 className=\"h-4 w-4\" />}\n            </Button>}\n          </>\n        ) : (\n          <Button\n            variant=\"outline\" size=\"sm\"\n            onClick={() => onEditMicro(r)}\n            aria-label={`Ver perfil fiscal de ${r.microorganismNome}`}\n          >\n            Ver\n          </Button>\n        )}\n      </td>\n    </tr>\n  );\n}\n\n// ———————————————————————— Association dialog ————————————————————————\nfunction AssociateDialog({\n  microorganismId, microorganismNome, currentProductId, onClose,\n}: {\n  microorganismId: string;\n  microorganismNome: string;\n  currentProductId: string | null;\n  onClose: () => void;\n}) {\n  const [pickerSearch, setPickerSearch] = useState(\"\");\n  const [selected, setSelected] = useState<string | null>(currentProductId);\n  const productsQuery = useProductFiscalList(\n    { search: pickerSearch, status: null, page: 0, pageSize: 50 },\n    { enabled: true },\n  );\n  const associate = useAssociateMicroorganism();\n\n  async function handleAssociate(productId: string | null) {\n    try {\n      await associate.mutateAsync({ microorganismId, productId });\n      toast({\n        title: productId ? \"Vínculo comercial atualizado\" : \"Vínculo comercial removido\",\n        description: productId\n          ? \"O microrganismo passa a apontar para o produto do catálogo como referência comercial. O perfil fiscal usado no faturamento continua sendo o do próprio microrganismo.\"\n          : \"O vínculo comercial foi removido. Microrganismo, produto e perfis fiscais permanecem intactos.\",\n      });\n      onClose();\n    } catch (err) {\n      const msg = err instanceof Error ? err.message : \"unknown\";\n      if (msg === \"permission_denied\") {\n        toast({ title: \"Sem permissão para alterar o vínculo\", variant: \"destructive\" });\n      } else {\n        toast({ title: \"Não foi possível atualizar\", description: msg, variant: \"destructive\" });\n      }\n    }\n  }\n\n  return (\n    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>\n      <DialogContent className=\"max-w-lg\">\n        <DialogHeader>\n          <DialogTitle>Vínculo comercial opcional a produto</DialogTitle>\n          <DialogDescription>\n            Vincule <strong>{microorganismNome}</strong> a um produto do catálogo por\n            motivos comerciais ou de composição. <strong>Este vínculo NÃO afeta o\n            faturamento fiscal</strong> — o perfil fiscal do microrganismo continua\n            sendo o próprio.\n          </DialogDescription>\n        </DialogHeader>\n        <div className=\"space-y-3\">\n          <div className=\"grid min-w-0 content-start gap-1.5\">\n            <Label htmlFor=\"picker-search\">Buscar produto por nome ou código</Label>\n            <Input\n              id=\"picker-search\"\n              value={pickerSearch}\n              onChange={(e) => setPickerSearch(e.target.value)}\n              placeholder=\"Digite para filtrar\"\n            />\n          </div>\n          <div className=\"max-h-64 overflow-y-auto border rounded-md\" role=\"listbox\" aria-label=\"Produtos disponíveis\">\n            {productsQuery.isLoading ? (\n              <div className=\"p-4 text-sm text-muted-foreground flex items-center gap-2\">\n                <Loader2 className=\"h-4 w-4 animate-spin\" /> Carregando…\n              </div>\n            ) : (productsQuery.data?.items.length ?? 0) === 0 ? (\n              <div className=\"p-4 text-sm text-muted-foreground\">Nenhum produto encontrado.</div>\n            ) : (\n              <ul className=\"divide-y\">\n                {productsQuery.data!.items.map((p) => {\n                  const isSel = selected === p.product_id;\n                  return (\n                    <li key={p.product_id}>\n                      <button\n                        type=\"button\"\n                        onClick={() => setSelected(p.product_id)}\n                        aria-selected={isSel}\n                        role=\"option\"\n                        className={`w-full text-left px-3 py-2 hover:bg-accent ${isSel ? \"bg-accent\" : \"\"}`}\n                      >\n                        <div className=\"text-sm font-medium\">{p.product_nome}</div>\n                        <div className=\"text-xs text-muted-foreground\">{p.product_codigo ?? \"—\"}</div>\n                      </button>\n                    </li>\n                  );\n                })}\n              </ul>\n            )}\n          </div>\n        </div>\n        <DialogFooter className=\"gap-2 flex-wrap sm:flex-nowrap\">\n          <Button type=\"button\" variant=\"outline\" onClick={onClose}>Cancelar</Button>\n          {currentProductId && (\n            <Button\n              type=\"button\" variant=\"ghost\"\n              onClick={() => handleAssociate(null)}\n              disabled={associate.isPending}\n              data-testid=\"btn-desassociar\"\n            >\n              Remover vínculo\n            </Button>\n          )}\n          <Button\n            type=\"button\"\n            onClick={() => selected && handleAssociate(selected)}\n            disabled={!selected || selected === currentProductId || associate.isPending}\n            data-testid=\"btn-confirmar-associacao\"\n          >\n            {associate.isPending ? \"Salvando…\" : \"Confirmar vínculo\"}\n          </Button>\n        </DialogFooter>\n      </DialogContent>\n    </Dialog>\n  );\n}\n\n// —————————————————————————— Drawer: produto ——————————————————————————\nfunction ProductEditDrawer({\n  productId, displayName, displayCodigo, canEdit, onClose,\n}: {\n  productId: string;\n  displayName: string;\n  displayCodigo: string | null;\n  canEdit: boolean;\n  onClose: () => void;\n}) {\n  const profileQuery = useProductFiscalProfile(productId);\n  const save = useSaveProductFiscalProfile();\n  const fence = useProductFiscalAccess(`fiscal-drawer:${productId}`);\n  const submitLock = useRef(false);\n  const readiness = useProductFiscalReadiness([productId]);\n  const preparation = productFiscalPreparation(!fence.ready || readiness.isError || readiness.isFetching ? undefined : readiness.data?.find(r => r.product_id === productId), profileQuery.data?.is_active);\n  const [values, setValues] = useState<ProductFiscalFormValues>(() =>\n    productRowToFormValues(null),\n  );\n  const [errors, setErrors] = useState<Record<string, string>>({});\n\n  useEffect(() => {\n    setValues(productRowToFormValues(null));\n    setErrors({});\n  }, [fence.scope]);\n  useEffect(() => {\n    if (profileQuery.data !== undefined) {\n      setValues(productRowToFormValues(profileQuery.data));\n    }\n  }, [profileQuery.data]);\n\n  async function onSubmit(ev: React.FormEvent) {\n    ev.preventDefault();\n    if (submitLock.current || !canEdit || !fence.ready || profileQuery.isFetching || profileQuery.isError || profileQuery.data === undefined) return;\n    const valid = fence.capture();\n    setErrors({});\n    const parsed = productFiscalFormSchema.safeParse(values);\n    if (!parsed.success) {\n      const flat: Record<string, string> = {};\n      for (const issue of parsed.error.issues) {\n        const key = String(issue.path[0] ?? \"form\");\n        if (!flat[key]) flat[key] = issue.message;\n      }\n      setErrors(flat);\n      toast({ title: \"Verifique os campos\", variant: \"destructive\" });\n      return;\n    }\n    try {\n      submitLock.current = true;\n      await save.mutateAsync({\n        productId,\n        current: profileQuery.data ?? null,\n        values: parsed.data,\n      });\n      if (!valid()) return;\n      toast({ title: \"Perfil fiscal salvo.\" });\n      onClose();\n    } catch (err) {\n      if (!valid()) return;\n      if (err instanceof OptimisticConflictError) {\n        toast({\n          title: \"Conflito de atualização\",\n          description: \"Outro usuário alterou este perfil. A versão atual será consultada; revise antes de salvar novamente.\",\n          variant: \"destructive\",\n        });\n        await profileQuery.refetch();\n        return;\n      }\n      const msg = err instanceof Error ? err.message : \"unknown\";\n      if (msg === \"permission_denied\") toast({ title: \"Sem permissão para salvar\", variant: \"destructive\" });\n      else if (msg === \"duplicate_profile\") toast({ title: \"Perfil já existe\", description: \"Este produto já possui um perfil fiscal.\", variant: \"destructive\" });\n      else toast({ title: \"Não foi possível salvar\", variant: \"destructive\" });\n    } finally {\n      submitLock.current = false;\n    }\n  }\n\n  return (\n    <FiscalProfileDrawer\n      title={`${canEdit ? \"Editar\" : \"Detalhes do\"} perfil fiscal — produto`}\n      subtitle={`${displayName}${displayCodigo ? ` — ${displayCodigo}` : \"\"}`}\n      loading={!fence.ready || profileQuery.isLoading || profileQuery.isFetching || profileQuery.isError}\n      saving={save.isPending}\n      canEdit={canEdit && fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined}\n      values={values}\n      errors={errors}\n      onChange={(k, v) => setValues((prev) => ({ ...prev, [k]: v }))}\n      onSubmit={onSubmit}\n      onClose={onClose}\n      testId=\"fiscal-drawer-produto\"\n      footer={\n        <div className=\"mt-6\" data-testid=\"fiscal-produtos-ibs-cbs\">\n          <Alert className=\"mb-4\">\n            <AlertTitle>{preparation.stage === \"incomplete_draft\" ? \"Rascunho incompleto\" : preparation.stage === \"inactive\" ? \"Perfil inativo\" : preparation.stage === \"accounting_pending\" ? \"Revisão contábil pendente\" : preparation.stage === \"unavailable\" ? \"Prontidão indisponível\" : \"Cadastro revisado; operação pendente\"}</AlertTitle>\n            <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>\n          </Alert>\n          {fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined && (\n            <IbsCbsItemCard kind=\"product\" itemId={productId} canEdit={canEdit && fence.canWrite && profileQuery.data?.is_active === true} />\n          )}\n        </div>\n      }\n    />\n  );\n}\n\n// ————————————————————— Drawer: microrganismo (perfil próprio) —————————————————————\nfunction MicroorganismEditDrawer({\n  microorganismId, displayName, displayCodigo, canEdit, onClose,\n}: {\n  microorganismId: string;\n  displayName: string;\n  displayCodigo: string | null;\n  canEdit: boolean;\n  onClose: () => void;\n}) {\n  const profileQuery = useMicroorganismFiscalProfile(microorganismId);\n  const save = useSaveMicroorganismFiscalProfile();\n  const [values, setValues] = useState<MicroorganismFiscalFormValues>(() =>\n    microRowToFormValues(null),\n  );\n  const [errors, setErrors] = useState<Record<string, string>>({});\n\n  useEffect(() => {\n    if (profileQuery.data !== undefined) {\n      setValues(microRowToFormValues(profileQuery.data));\n    }\n  }, [profileQuery.data]);\n\n  async function onSubmit(ev: React.FormEvent) {\n    ev.preventDefault();\n    setErrors({});\n    const parsed = microorganismFiscalFormSchema.safeParse(values);\n    if (!parsed.success) {\n      const flat: Record<string, string> = {};\n      for (const issue of parsed.error.issues) {\n        const key = String(issue.path[0] ?? \"form\");\n        if (!flat[key]) flat[key] = issue.message;\n      }\n      setErrors(flat);\n      toast({ title: \"Verifique os campos\", variant: \"destructive\" });\n      return;\n    }\n    try {\n      await save.mutateAsync({\n        microorganismId,\n        current: profileQuery.data ?? null,\n        values: parsed.data,\n      });\n      toast({ title: \"Perfil fiscal do microrganismo salvo.\" });\n      onClose();\n    } catch (err) {\n      if (err instanceof MicroOptimisticConflictError) {\n        toast({\n          title: \"Conflito de atualização\",\n          description: \"Outro usuário alterou este perfil. Recarregue e tente novamente.\",\n          variant: \"destructive\",\n        });\n        return;\n      }\n      const msg = err instanceof Error ? err.message : \"unknown\";\n      if (msg === \"permission_denied\") toast({ title: \"Sem permissão para salvar\", variant: \"destructive\" });\n      else if (msg === \"duplicate_profile\") toast({ title: \"Perfil já existe\", description: \"Este microrganismo já possui um perfil fiscal ativo.\", variant: \"destructive\" });\n      else toast({ title: \"Não foi possível salvar\", variant: \"destructive\" });\n    }\n  }\n\n  return (\n    <FiscalProfileDrawer\n      title={`${canEdit ? \"Editar\" : \"Detalhes do\"} perfil fiscal — microrganismo`}\n      subtitle={`${displayName}${displayCodigo ? ` — ${displayCodigo}` : \"\"}`}\n      loading={profileQuery.isLoading}\n      saving={save.isPending}\n      canEdit={canEdit}\n      values={values}\n      errors={errors}\n      onChange={(k, v) => setValues((prev) => ({ ...prev, [k]: v }))}\n      onSubmit={onSubmit}\n      onClose={onClose}\n      testId=\"fiscal-drawer-microrganismo\"\n    />\n  );\n}\n\n// ————————————————————— Drawer genérico compartilhado —————————————————————\nfunction FiscalProfileDrawer({\n  title, subtitle, loading, saving, canEdit, values, errors,\n  onChange, onSubmit, onClose, testId, footer,\n}: {\n  title: string;\n  subtitle: string;\n  loading: boolean;\n  saving: boolean;\n  canEdit: boolean;\n  values: ProductFiscalFormValues;\n  errors: Record<string, string>;\n  onChange: <K extends FieldKey>(k: K, v: ProductFiscalFormValues[K]) => void;\n  onSubmit: (ev: React.FormEvent) => void;\n  onClose: () => void;\n  testId: string;\n  footer?: React.ReactNode;\n}) {\n  return (\n    <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>\n      <SheetContent side=\"right\" className=\"w-full sm:max-w-xl overflow-y-auto\" data-testid={testId}>\n        <SheetHeader>\n          <SheetTitle>{title}</SheetTitle>\n          <SheetDescription>{subtitle}</SheetDescription>\n        </SheetHeader>\n\n        {loading ? (\n          <div className=\"py-6 flex items-center gap-2 text-muted-foreground\">\n            <Loader2 className=\"h-4 w-4 animate-spin\" aria-hidden /> Carregando…\n          </div>\n        ) : (\n          <form onSubmit={onSubmit} className=\"mt-4 space-y-4\" aria-label=\"Formulário de perfil fiscal\">\n            <fieldset disabled={!canEdit || saving} className=\"space-y-4\">\n              {FIELD_ORDER.map((k) => {\n                const raw = values[k] ?? \"\";\n                const select = FIELD_SELECTS[k];\n                const hint = FIELD_HINTS[k];\n                const placeholder = FIELD_PLACEHOLDERS[k];\n                return (\n                  <div key={k} className=\"grid min-w-0 content-start gap-1.5\">\n                    <Label htmlFor={`f-${k}`}>{FIELD_LABELS[k]}</Label>\n                    {select ? (\n                      <select\n                        id={`f-${k}`}\n                        className=\"h-10 border rounded-md px-3 bg-background disabled:opacity-60\"\n                        value={raw}\n                        onChange={(e) => onChange(k, e.target.value)}\n                        aria-invalid={!!errors[k]}\n                      >\n                        <option value=\"\">— selecione —</option>\n                        {withLegacyOption(select, raw).map((o) => (\n                          <option key={o.value} value={o.value}>{o.label}</option>\n                        ))}\n                      </select>\n                    ) : (\n                      <Input\n                        id={`f-${k}`}\n                        value={raw}\n                        placeholder={placeholder}\n                        onChange={(e) => onChange(k, e.target.value)}\n                        aria-invalid={!!errors[k]}\n                        inputMode={\n                          k === \"ncm\" || k === \"cest\" ||\n                          k === \"cfop_in_state\" || k === \"cfop_interstate\"\n                            ? \"numeric\"\n                            : undefined\n                        }\n                      />\n                    )}\n                    {errors[k] ? (\n                      <p className=\"text-xs text-destructive\" role=\"alert\">{errors[k]}</p>\n                    ) : hint ? (\n                      <p className=\"text-xs text-muted-foreground\">{hint}</p>\n                    ) : null}\n                  </div>\n                );\n              })}\n            </fieldset>\n            <SheetFooter className=\"mt-4\">\n              <Button type=\"button\" variant=\"outline\" onClick={onClose}>\n                {canEdit ? \"Cancelar\" : \"Fechar\"}\n              </Button>\n              {canEdit ? (\n                <Button type=\"submit\" disabled={saving}>\n                  {saving ? \"Salvando…\" : \"Salvar\"}\n                </Button>\n              ) : null}\n            </SheetFooter>\n          </form>\n        )}\n        {footer}\n      </SheetContent>\n    </Sheet>\n  );\n}\n",
+    "src/test/fiscal/fiscalProdutos.platformUx.test.tsx": "import { describe, test, expect, vi, beforeEach } from \"vitest\";\nimport { screen } from \"@testing-library/react\";\nimport { renderWithProviders } from \"@/test/helpers/renderWithProviders\";\nconst m = vi.hoisted(() => ({ role: \"administrador\", write: false, regulatory: vi.fn(), microList: vi.fn(), microProfiles: vi.fn() }));\nvi.mock(\"@/hooks/useAuth\", () => ({ useAuth: () => ({ role: m.role }) }));\nvi.mock(\"@/hooks/useProductFiscalAccess\", () => ({ useProductFiscalAccess: () => ({ ready: true, canWrite: m.write, scope: \"A/T\", capture: () => () => true }) }));\nvi.mock(\"@/hooks/useStorageAccessScope\", () => ({ useStorageAccessScope: () => ({ ready: true, scope: \"A/T\", capture: () => () => true }) }));\nvi.mock(\"@/hooks/useScopedPortalQuery\", () => ({ useScopedPortalQuery: () => ({ data: undefined, ready: false, isError: false }) }));\nvi.mock(\"@/components/fiscal/IbsCbsItemCard\", () => ({ IbsCbsItemCard: () => null }));\nvi.mock(\"@/components/fiscal/RegulatorioMicrorganismosSecao\", () => ({ RegulatorioMicrorganismosSecao: () => { m.regulatory(); return <div data-testid=\"regulatorio-micro\" />; } }));\nconst q = (data: unknown) => ({ data, isLoading: false, isFetching: false, isError: false, error: null, refetch: vi.fn() });\nvi.mock(\"@/hooks/useProductFiscalProfiles\", async () => ({ ...(await vi.importActual<object>(\"@/hooks/useProductFiscalProfiles\")),\n  useProductFiscalList: () => q({ items: [{ product_id: \"prod-A\", product_nome: \"INS-4\", product_codigo: \"INS-4\", profile_id: null, profile_status: null }], total: 1 }),\n  useProductFiscalListByIds: () => q([]), useProductFiscalReadiness: () => q([]), useProductFiscalProfile: () => q(null),\n  useSaveProductFiscalProfile: () => ({ mutateAsync: vi.fn(), isPending: false }) }));\nvi.mock(\"@/hooks/useMicroorganismFiscalAssociation\", async () => ({ ...(await vi.importActual<object>(\"@/hooks/useMicroorganismFiscalAssociation\")),\n  useMicroorganismList: (_s: unknown, o: { enabled: boolean }) => { m.microList(o.enabled); return q(o.enabled ? [{ id: \"micro-1\", nome: \"Trichoderma\", codigo: \"TRI\", product_id: null, ativo: true }] : []); },\n  useAssociateMicroorganism: () => ({ mutateAsync: vi.fn(), isPending: false }) }));\nvi.mock(\"@/hooks/useMicroorganismFiscalProfiles\", async () => ({ ...(await vi.importActual<object>(\"@/hooks/useMicroorganismFiscalProfiles\")),\n  useMicroorganismFiscalProfile: () => q(null), useMicroorganismFiscalProfileList: (_i: unknown, o: { enabled: boolean }) => { m.microProfiles(o.enabled); return q([]); },\n  useMicroorganismFiscalReadiness: () => q([]), useSaveMicroorganismFiscalProfile: () => ({ mutateAsync: vi.fn(), isPending: false }) }));\nvi.mock(\"@/config/featureFlags\", () => ({ FEATURE_FLAGS: { fiscalProductProfilesUi: true, fiscalEmissionEnabled: false }, isFeatureEnabled: () => true }));\nimport FiscalProdutos from \"@/pages/configuracoes/FiscalProdutos\";\nimport { getAccessLevel } from \"@/lib/permissions\";\nbeforeEach(() => { vi.clearAllMocks(); m.write = false; });\ndescribe(\"product (global) vs micro (canonical) edit split\", () => {\n  test.each([\"administrador\", \"financeiro\"])(\"%s: route stays rw for micro; product read-only; micro editable\", (role) => {\n    m.role = role; expect(getAccessLevel(role as never, \"/configuracoes/fiscal/produtos\")).toBe(\"rw\");\n    renderWithProviders(<FiscalProdutos />);\n    expect(screen.getByRole(\"button\", { name: \"Ver perfil fiscal de INS-4\" })).toBeInTheDocument();\n    expect(screen.queryByRole(\"button\", { name: \"Editar perfil fiscal de INS-4\" })).toBeNull();\n    expect(screen.getByTestId(\"btn-editar-perfil-micro\")).toBeInTheDocument();\n    expect(screen.getByTestId(\"regulatorio-micro\")).toBeInTheDocument();\n  });\n  test(\"gestor: everything read-only\", () => {\n    m.role = \"gestor\"; expect(getAccessLevel(\"gestor\" as never, \"/configuracoes/fiscal/produtos\")).toBe(\"r\");\n    renderWithProviders(<FiscalProdutos />);\n    expect(screen.getByRole(\"button\", { name: \"Ver perfil fiscal de INS-4\" })).toBeInTheDocument();\n    expect(screen.queryByTestId(\"btn-editar-perfil-micro\")).toBeNull();\n  });\n  test(\"internal role with stray product write capability still cannot edit product outside platform\", () => {\n    m.role = \"administrador\"; m.write = true; renderWithProviders(<FiscalProdutos />);\n    expect(screen.queryByRole(\"button\", { name: \"Editar perfil fiscal de INS-4\" })).toBeNull();\n  });\n  test(\"Superadmin platform tab: products AND global micros listed; micro read-only; no regulatory flow\", () => {\n    m.role = \"superadmin\"; m.write = true; renderWithProviders(<FiscalProdutos platformGlobal />);\n    expect(screen.getByRole(\"button\", { name: /perfil fiscal de INS-4/ }).getAttribute(\"aria-label\")).toBe(\"Editar perfil fiscal de INS-4\");\n    expect(screen.queryByTestId(\"regulatorio-micro\")).toBeNull(); expect(m.regulatory).not.toHaveBeenCalled();\n    expect(screen.getByRole(\"combobox\", { name: \"Filtrar por tipo de item\" })).toBeInTheDocument();\n    expect(screen.getByTestId(\"row-micro:micro-1\")).toBeInTheDocument();\n    expect(screen.queryByTestId(\"btn-editar-perfil-micro\")).toBeNull();\n    expect(m.microList.mock.calls.some(([e]) => e === true)).toBe(true);\n    expect(m.microProfiles.mock.calls.some(([e]) => e === true)).toBe(true);\n  });\n  test(\"Superadmin platform UX: global copy/counters include micros, no internal view names\", () => {\n    m.role = \"superadmin\"; m.write = true; renderWithProviders(<FiscalProdutos platformGlobal />);\n    expect(screen.getByRole(\"heading\", { level: 1 }).textContent).toBe(\"Perfis fiscais de produtos globais\");\n    expect(screen.getByTestId(\"fiscal-platform-summary\")).toBeInTheDocument();\n    const text = document.body.textContent ?? \"\";\n    expect(text).not.toMatch(/v_product_fiscal_readiness|v_microorganism/);\n    expect(screen.getByTestId(\"platform-micros-listados\").textContent).toBe(\"1\");\n    expect(screen.getByTestId(\"badge-familia\").textContent).toBe(\"Família pendente\");\n  });\n  test(\"tenant mode keeps existing micro summary\", () => {\n    m.role = \"administrador\"; renderWithProviders(<FiscalProdutos />);\n    expect(screen.getByRole(\"heading\", { level: 1 }).textContent).toBe(\"Perfis Fiscais de Produtos e Microrganismos\");\n    expect(screen.getByTestId(\"micros-sem-perfil-proprio\")).toBeInTheDocument();\n    expect(screen.queryByTestId(\"fiscal-platform-summary\")).toBeNull();\n  });\n});\n",
+    "src/test/fiscal/ownedProductFiscal.test.ts": "import { describe, expect, test, vi } from \"vitest\";\nimport {\n  OWNED_PRODUCT_FISCAL_ENABLED, OwnedFiscalError, normalizeOwnedFiscalValues,\n  parseOwnedFiscalReceipt, saveOwnedProductFiscal,\n} from \"@/lib/fiscal/ownedProductFiscal\";\n\nconst P = \"d0000000-0000-0000-0000-00000000000a\";\nconst K = \"90000000-0000-0000-0000-000000000002\";\nconst ORG = \"a0000000-0000-0000-0000-00000000000a\";\nconst ack = { success: true, product_id: P, profile_id: \"f0000000-0000-0000-0000-000000000001\", organization_id: ORG,\n  profile_status: \"DRAFT\", updated_at: \"2026-11-01T13:00:00.000Z\", idempotency_key: K, idempotent: false };\nconst input = { productId: P, expectedUpdatedAt: null, values: { ncm: \"31010000\" }, reason: \"motivo de teste ok\", idempotencyKey: K };\n\ndescribe(\"perfil fiscal do catálogo próprio (candidato)\", () => {\n  test(\"gate desligado por padrão e nenhuma RPC é chamada\", async () => {\n    expect(OWNED_PRODUCT_FISCAL_ENABLED).toBe(false);\n    const rpc = vi.fn();\n    await expect(saveOwnedProductFiscal({ rpc }, input)).rejects.toMatchObject({ kind: \"disabled\" });\n    expect(rpc).not.toHaveBeenCalled();\n  });\n  test(\"cliente não envia empresa nem status; só campos fiscais\", () => {\n    expect(() => normalizeOwnedFiscalValues({ organization_id: ORG })).toThrow(OwnedFiscalError);\n    expect(() => normalizeOwnedFiscalValues({ profile_status: \"VALIDATED\" })).toThrow(OwnedFiscalError);\n    expect(normalizeOwnedFiscalValues({ ncm: \" 31010000 \", cest: \"\" })).toEqual({ ncm: \"31010000\", cest: null });\n  });\n  test.each([[\"ncm\", \"123\"], [\"cest\", \"12\"], [\"cfop_in_state\", \"9101\"], [\"origin_code\", \"9\"], [\"gtin\", \"abc\"]])(\n    \"formato inválido %s=%s é recusado antes do servidor\", async (k, v) => {\n      const rpc = vi.fn();\n      await expect(saveOwnedProductFiscal({ rpc }, { ...input, values: { [k]: v } }, true)).rejects.toMatchObject({ kind: \"invalid\" });\n      expect(rpc).not.toHaveBeenCalled();\n    });\n  test(\"envia exatamente produto/CAS/valores/motivo/chave e aceita ACK exato\", async () => {\n    const rpc = vi.fn().mockResolvedValue({ data: ack, error: null });\n    await expect(saveOwnedProductFiscal({ rpc }, input, true)).resolves.toMatchObject({ profile_status: \"DRAFT\" });\n    expect(rpc).toHaveBeenCalledWith(\"tenant_owned_product_fiscal_save\", {\n      p_product_id: P, p_expected_updated_at: null, p_values: { ncm: \"31010000\" }, p_reason: \"motivo de teste ok\", p_idempotency_key: K });\n  });\n  test.each([\n    [\"outro produto\", { ...ack, product_id: \"e0000000-0000-0000-0000-00000000000b\" }],\n    [\"outra chave\", { ...ack, idempotency_key: \"90000000-0000-0000-0000-000000000003\" }],\n    [\"promovido a VALIDATED\", { ...ack, profile_status: \"VALIDATED\" }],\n    [\"sem success\", { ...ack, success: undefined }],\n  ])(\"ACK divergente (%s) é incerto\", (_n, data) => {\n    expect(() => parseOwnedFiscalReceipt(data, { productId: P, idempotencyKey: K })).toThrow(/não confirmada/);\n  });\n  test.each([[\"42501\", \"forbidden\"], [\"PT409\", \"conflict\"], [\"22023\", \"invalid\"], [\"XX000\", \"uncertain\"]])(\n    \"erro %s vira %s sem nova tentativa\", async (code, kind) => {\n      const rpc = vi.fn().mockResolvedValue({ data: null, error: { code } });\n      await expect(saveOwnedProductFiscal({ rpc }, input, true)).rejects.toMatchObject({ kind });\n      expect(rpc).toHaveBeenCalledTimes(1);\n    });\n});\n",
+    "scripts/rbac-audit/ownership-ordered-manifest.json": "{\n  \"project_ref\": \"swzpzcwiasxmjutrmvkm\",\n  \"gate\": \"OFF\",\n  \"apply_authorized\": false,\n  \"files\": [\n    {\n      \"order\": 1,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership.sql\",\n      \"sha256\": \"c80f2dde30d7c0579c5da94afd44e62c3ad77b79d03be13c44d98013bfbbf5cd\"\n    },\n    {\n      \"order\": 2,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-02-readers.sql\",\n      \"sha256\": \"68bb6e110b0320763832174b647c12174ee4d3edccc61c433aa690f1f2d1c57c\"\n    },\n    {\n      \"order\": 3,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-03-volumes-b2b.sql\",\n      \"sha256\": \"56c6a0dd5311d89d8a6cb520ea924fba5616c75a757999d2343f9e38534cd2a1\"\n    },\n    {\n      \"order\": 4,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-04-operational-containment.sql\",\n      \"sha256\": \"ccd735c5da2b77b620c4479887571e9b27e16930335df3b024520e71809c0c95\"\n    },\n    {\n      \"order\": 5,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-05-backend.sql\",\n      \"sha256\": \"7f7a6651e26c79c4ee5a5752e9a7d36304e8afe4fcbc8cbaf00a33ccd615acbf\"\n    },\n    {\n      \"order\": 6,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-06-operational-readers.sql\",\n      \"sha256\": \"98de5e5009b410f0d34a08b49bd078f3b41715632f5b3c88cbf6811c7d18bb2e\"\n    },\n    {\n      \"order\": 7,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-08-owned-read.sql\",\n      \"sha256\": \"b7d9c2ac2c296476fa4788c14ddbad953653b7d907bf0bb7b01149f7c1e80d7f\"\n    },\n    {\n      \"order\": 8,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-09-commercial-matrix.sql\",\n      \"sha256\": \"7daafeb8f4e70f0342d0c53e40c176a2084003710c6288649f39e66aff03eea6\"\n    },\n    {\n      \"order\": 9,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-10-global-roots.sql\",\n      \"sha256\": \"4c0ee9fe64dbfb518e77f144fda82f8ae95bffeeecc3cf7c248ef771076e1c48\"\n    },\n    {\n      \"order\": 10,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-11-regulatory-presentations.sql\",\n      \"sha256\": \"288a0645f1559b977217ca6282ead94bce6d99dd129e05b9d0274586670abc96\"\n    },\n    {\n      \"order\": 11,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-12-visit-selection.sql\",\n      \"sha256\": \"9238b893d0de2ab7c0743c7a05f5f2e8285f1ce5f3afa865d583f08d78f6d1ac\"\n    },\n    {\n      \"order\": 12,\n      \"path\": \"scripts/rbac-audit/proposed-tenant-catalog-ownership-13-visibility-target.sql\",\n      \"sha256\": \"52c0fe63c903475f92bf0a98cf4ab58caf23cb7c85c84df5e5ad2bcc21309066\",\n      \"hash_before_live\": \"806751acb0477165ed863320ab24c6d0\",\n      \"runtime_local\": \"check-ownership13-pglite.mjs\",\n      \"rollback\": \"operacional existente preserva filtros; não restaurar before\"\n    }\n  ],\n  \"separate_phase\": {\n    \"path\": \"scripts/rbac-audit/proposed-lab-biological-only-07.sql\",\n    \"sha256\": \"aecc7b8a92e47f65601c7d4488b2ada434e0f2d380f847c3bf289485015d7e21\",\n    \"apply_authorized\": false,\n    \"authorization_review\": \"h15 + explicit commercial owner; no portal mandate inference; local 45/45 stubs, hosted UNVERIFIED\"\n  },\n  \"rollback\": \"rollback-tenant-catalog-ownership.sql\",\n  \"runtime\": \"runtime-test-tenant-catalog-ownership.sql\",\n  \"runtime_sha256\": \"f07b0206336d5d85842e0c73537310412e0bccdba4ee6dd5fc25a6ea68c1255c\",\n  \"rollback_sha256\": \"9ca4c1f0e0b9b0260692f10c33eacf2330dc74a878484c8f269ced80b7e1cb99\"\n}\n",
+    "scripts/fiscal-products-refinement-20261022/AGENTS.md": "- Global fiscal SQL was applied by the auditor and frontend copies promoted to src; never reapply the migration, regenerate copies from build_frontend.py and reuse FiscalProdutos/product_fiscal_profiles — prevents drift and parallel editors.\n- Product edit is global Superadmin-only inside the platform; microorganism edit keeps the canonical route level — prevents regressing tenant micro editors.\n- Global product writes require the real actor, platform_actor_access_ready and Superadmin; internal readers stay read-only, active profiles are separate from immutable history, and IBS/CBS uses the same authority and CAS — prevents tenant writes and sibling RPC bypass.\n- Never certify mocked Auth or reduced PostgreSQL as hosted JWT/RLS/browser proof; fixtures remain untouched — prevents false homologation.\n- Platform tab lists the whole global catalogue (products filtered by canonical `familia_catalogo`, plus global microorganisms read-only); microorganism fiscal writes stay on the tenant route until a server-side Superadmin authority exists — owner decision 2026-11-01 without widening writers.\n"
+  },
+  "live_readonly_audit": [
+    {
+      "audit": {
+        "rls": [
+          {
+            "rls": true,
+            "force": false,
+            "table": "product_fiscal_profiles"
+          },
+          {
+            "rls": true,
+            "force": false,
+            "table": "produtos"
+          }
+        ],
+        "grants": [
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "INSERT",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "SELECT",
+            "with_hierarchy": "YES"
+          },
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "UPDATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "DELETE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRUNCATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "REFERENCES",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRIGGER",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "INSERT",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "SELECT",
+            "with_hierarchy": "YES"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "UPDATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "DELETE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRUNCATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "REFERENCES",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRIGGER",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "INSERT",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "SELECT",
+            "with_hierarchy": "YES"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "UPDATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "DELETE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRUNCATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "REFERENCES",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "product_fiscal_profiles",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRIGGER",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "anon",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "SELECT",
+            "with_hierarchy": "YES"
+          },
+          {
+            "grantee": "authenticated",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "SELECT",
+            "with_hierarchy": "YES"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "INSERT",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "SELECT",
+            "with_hierarchy": "YES"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "UPDATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "DELETE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRUNCATE",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "REFERENCES",
+            "with_hierarchy": "NO"
+          },
+          {
+            "grantee": "service_role",
+            "grantor": "postgres",
+            "table_name": "produtos",
+            "is_grantable": "NO",
+            "table_schema": "public",
+            "table_catalog": "postgres",
+            "privilege_type": "TRIGGER",
+            "with_hierarchy": "NO"
+          }
+        ],
+        "columns": [
+          {
+            "type": "uuid",
+            "table": "company_fiscal_settings",
+            "column": "id"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "is_active"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "legal_name"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "trade_name"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "cnpj"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "state_registration"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "municipal_registration"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "tax_regime"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "crt"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "primary_cnae"
+          },
+          {
+            "type": "ARRAY",
+            "table": "company_fiscal_settings",
+            "column": "additional_cnaes"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "fiscal_email"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "phone"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "postal_code"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "street"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "number"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "complement"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "neighborhood"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "city"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "municipality_ibge_code"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "state"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "country_code"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfe_series"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfse_series"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "fiscal_provider"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "fiscal_environment"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "nfe_enabled"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "nfse_enabled"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "production_enabled"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "configuration_status"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "company_fiscal_settings",
+            "column": "accounting_validated_at"
+          },
+          {
+            "type": "uuid",
+            "table": "company_fiscal_settings",
+            "column": "accounting_validated_by"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "company_fiscal_settings",
+            "column": "created_at"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "company_fiscal_settings",
+            "column": "updated_at"
+          },
+          {
+            "type": "uuid",
+            "table": "company_fiscal_settings",
+            "column": "created_by"
+          },
+          {
+            "type": "uuid",
+            "table": "company_fiscal_settings",
+            "column": "updated_by"
+          },
+          {
+            "type": "jsonb",
+            "table": "company_fiscal_settings",
+            "column": "nfe_configuration"
+          },
+          {
+            "type": "jsonb",
+            "table": "company_fiscal_settings",
+            "column": "nfse_configuration"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfe_provider"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfse_provider"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfe_credential_ref"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfse_credential_ref"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "certificate_ref"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "webhook_ref"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "configuration_notes"
+          },
+          {
+            "type": "integer",
+            "table": "company_fiscal_settings",
+            "column": "configuration_version"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "company_fiscal_settings",
+            "column": "last_validation_at"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "last_validation_status"
+          },
+          {
+            "type": "jsonb",
+            "table": "company_fiscal_settings",
+            "column": "last_validation_summary"
+          },
+          {
+            "type": "jsonb",
+            "table": "company_fiscal_settings",
+            "column": "rtc_configuration"
+          },
+          {
+            "type": "integer",
+            "table": "company_fiscal_settings",
+            "column": "nfe_series_number"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfe_environment_code"
+          },
+          {
+            "type": "jsonb",
+            "table": "company_fiscal_settings",
+            "column": "uf_accreditations"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "pis_cofins_regime"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "ipi_taxpayer"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "icms_st_responsible"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "fcp_applicable"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "difal_responsible"
+          },
+          {
+            "type": "boolean",
+            "table": "company_fiscal_settings",
+            "column": "rtc_scaffolding_enabled"
+          },
+          {
+            "type": "text",
+            "table": "company_fiscal_settings",
+            "column": "nfe_readiness_status"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "company_fiscal_settings",
+            "column": "nfe_readiness_checked_at"
+          },
+          {
+            "type": "jsonb",
+            "table": "company_fiscal_settings",
+            "column": "nfe_readiness_pendencies"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "company_fiscal_settings",
+            "column": "sefaz_homologation_at"
+          },
+          {
+            "type": "jsonb",
+            "table": "company_fiscal_settings",
+            "column": "sefaz_homologation_evidence"
+          },
+          {
+            "type": "uuid",
+            "table": "company_fiscal_settings",
+            "column": "organization_id"
+          },
+          {
+            "type": "uuid",
+            "table": "product_fiscal_profiles",
+            "column": "id"
+          },
+          {
+            "type": "uuid",
+            "table": "product_fiscal_profiles",
+            "column": "product_id"
+          },
+          {
+            "type": "boolean",
+            "table": "product_fiscal_profiles",
+            "column": "is_active"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "fiscal_description"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "commercial_unit"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "taxable_unit"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "ncm"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "cest"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "origin_code"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "cfop_in_state"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "cfop_interstate"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "icms_cst"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "icms_csosn"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "pis_cst"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "cofins_cst"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "ipi_cst"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "gtin"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "taxable_gtin"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "tax_benefit_code"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "approximate_tax_source"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "profile_status"
+          },
+          {
+            "type": "text",
+            "table": "product_fiscal_profiles",
+            "column": "accounting_notes"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "product_fiscal_profiles",
+            "column": "accounting_validated_at"
+          },
+          {
+            "type": "uuid",
+            "table": "product_fiscal_profiles",
+            "column": "accounting_validated_by"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "product_fiscal_profiles",
+            "column": "created_at"
+          },
+          {
+            "type": "timestamp with time zone",
+            "table": "product_fiscal_profiles",
+            "column": "updated_at"
+          },
+          {
+            "type": "uuid",
+            "table": "product_fiscal_profiles",
+            "column": "created_by"
+          },
+          {
+            "type": "uuid",
+            "table": "product_fiscal_profiles",
+            "column": "updated_by"
+          },
+          {
+            "type": "jsonb",
+            "table": "product_fiscal_profiles",
+            "column": "ibs_cbs_configuration"
+          }
+        ],
+        "policies": [
+          {
+            "cmd": "DELETE",
+            "qual": "false",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "product_fiscal_profiles",
+            "permissive": "PERMISSIVE",
+            "policyname": "product_fiscal_profiles_delete",
+            "schemaname": "public",
+            "with_check": null
+          },
+          {
+            "cmd": "INSERT",
+            "qual": null,
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "product_fiscal_profiles",
+            "permissive": "PERMISSIVE",
+            "policyname": "product_fiscal_profiles_insert",
+            "schemaname": "public",
+            "with_check": "platform_private.global_product_fiscal_write_ready()"
+          },
+          {
+            "cmd": "SELECT",
+            "qual": "platform_private.global_product_fiscal_read_ready()",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "product_fiscal_profiles",
+            "permissive": "PERMISSIVE",
+            "policyname": "product_fiscal_profiles_read",
+            "schemaname": "public",
+            "with_check": null
+          },
+          {
+            "cmd": "UPDATE",
+            "qual": "platform_private.global_product_fiscal_write_ready()",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "product_fiscal_profiles",
+            "permissive": "PERMISSIVE",
+            "policyname": "product_fiscal_profiles_update",
+            "schemaname": "public",
+            "with_check": "platform_private.global_product_fiscal_write_ready()"
+          },
+          {
+            "cmd": "DELETE",
+            "qual": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "produtos",
+            "permissive": "RESTRICTIVE",
+            "policyname": "d51_5_catalog_global_mutation_delete",
+            "schemaname": "public",
+            "with_check": null
+          },
+          {
+            "cmd": "INSERT",
+            "qual": null,
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "produtos",
+            "permissive": "RESTRICTIVE",
+            "policyname": "d51_5_catalog_global_mutation_insert",
+            "schemaname": "public",
+            "with_check": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))"
+          },
+          {
+            "cmd": "UPDATE",
+            "qual": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "produtos",
+            "permissive": "RESTRICTIVE",
+            "policyname": "d51_5_catalog_global_mutation_update",
+            "schemaname": "public",
+            "with_check": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))"
+          },
+          {
+            "cmd": "SELECT",
+            "qual": "((platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b_tecnico'::app_role)) AND (ativo = true) AND (COALESCE(b2b_enabled, false) = true))",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "produtos",
+            "permissive": "PERMISSIVE",
+            "policyname": "produtos_b2b_read",
+            "schemaname": "public",
+            "with_check": null
+          },
+          {
+            "cmd": "SELECT",
+            "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'tecnico_agronomo'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'aplicador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role))",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "produtos",
+            "permissive": "PERMISSIVE",
+            "policyname": "produtos_select_internal",
+            "schemaname": "public",
+            "with_check": null
+          },
+          {
+            "cmd": "SELECT",
+            "qual": "platform_private.global_product_fiscal_write_ready()",
+            "roles": [
+              "authenticated"
+            ],
+            "tablename": "produtos",
+            "permissive": "PERMISSIVE",
+            "policyname": "produtos_select_platform_fiscal_superadmin",
+            "schemaname": "public",
+            "with_check": null
+          }
+        ],
+        "triggers": [
+          {
+            "table": "produtos",
+            "definition": "CREATE TRIGGER produtos_catalog_family_label_validate BEFORE INSERT OR UPDATE OF familia_catalogo, classe_catalogo ON public.produtos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_family_label_validate()"
+          },
+          {
+            "table": "produtos",
+            "definition": "CREATE TRIGGER produtos_composicao_family_guard BEFORE UPDATE OF familia_catalogo ON public.produtos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_composition_family_guard()"
+          },
+          {
+            "table": "produtos",
+            "definition": "CREATE TRIGGER trg_set_codigo_produto_ins BEFORE INSERT ON public.produtos FOR EACH ROW EXECUTE FUNCTION set_codigo_produto()"
+          },
+          {
+            "table": "produtos",
+            "definition": "CREATE TRIGGER trg_set_codigo_produto_upd BEFORE UPDATE OF codigo ON public.produtos FOR EACH ROW EXECUTE FUNCTION set_codigo_produto()"
+          },
+          {
+            "table": "produtos",
+            "definition": "CREATE TRIGGER trg_sync_product_pricing BEFORE INSERT OR UPDATE ON public.produtos FOR EACH ROW EXECUTE FUNCTION sync_product_pricing()"
+          },
+          {
+            "table": "produtos",
+            "definition": "CREATE TRIGGER trg_zz_produtos_guard_preco BEFORE INSERT OR UPDATE ON public.produtos FOR EACH ROW EXECUTE FUNCTION trg_mestre_guard_preco_canonico()"
+          },
+          {
+            "table": "produtos",
+            "definition": "CREATE TRIGGER update_produtos_updated_at BEFORE UPDATE ON public.produtos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_touch_version()"
+          },
+          {
+            "table": "product_fiscal_profiles",
+            "definition": "CREATE TRIGGER a00_global_product_fiscal_gate BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH STATEMENT EXECUTE FUNCTION platform_private.global_product_fiscal_statement_gate()"
+          },
+          {
+            "table": "product_fiscal_profiles",
+            "definition": "CREATE TRIGGER a10_global_product_fiscal_authorize BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION platform_private.global_product_fiscal_before_write()"
+          },
+          {
+            "table": "product_fiscal_profiles",
+            "definition": "CREATE TRIGGER trg_fiscal_audit_product_fiscal_profiles AFTER INSERT OR DELETE OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION fiscal_audit_trigger()"
+          }
+        ],
+        "functions": [
+          {
+            "acl": [
+              "postgres=X/postgres"
+            ],
+            "md5": "5e0ce9cc9122f1c21d76e29a13de8b59",
+            "name": "catalog_tenant_actor",
+            "schema": "platform_private",
+            "signature": "platform_private.catalog_tenant_actor(text)",
+            "definition": "CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_actor(p_mode text)\n RETURNS uuid\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_claims jsonb := NULLIF(current_setting('request.jwt.claims', true), '')::jsonb;\n  v_org uuid;\nBEGIN\n  IF v_uid IS NULL OR v_claims IS NULL OR v_claims->>'role' IS DISTINCT FROM 'authenticated'\n     OR (v_claims->>'sub') IS DISTINCT FROM v_uid::text\n     OR NULLIF(v_claims->>'exp','') IS NULL OR (v_claims->>'exp') !~ '^[0-9]{1,12}$'\n     OR to_timestamp((v_claims->>'exp')::bigint) <= now()\n     OR (NULLIF(v_claims->>'iat','') IS NOT NULL AND ((v_claims->>'iat') !~ '^[0-9]{1,12}$'\n         OR to_timestamp((v_claims->>'iat')::bigint) > now() + interval '60 seconds')) THEN\n    RAISE EXCEPTION 'catalog_visibility_auth_required' USING ERRCODE='42501';\n  END IF;\n  IF public.is_platform_superadmin(v_uid) THEN\n    RAISE EXCEPTION 'catalog_visibility_platform_actor_denied' USING ERRCODE='42501';\n  END IF;\n  v_org := platform_private.h15_actor_organization();\n  IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa') THEN\n    RAISE EXCEPTION 'catalog_visibility_tenant_unavailable' USING ERRCODE='42501';\n  END IF;\n  IF p_mode IN ('mutate','read_catalog','read_management') AND NOT public._saas_user_has_feature(v_uid, 'catalogo_precos') THEN\n    RAISE EXCEPTION 'catalog_visibility_feature_unavailable' USING ERRCODE='42501';\n  END IF;\n  IF p_mode='mutate' THEN\n    IF NOT (platform_private.has_role(v_uid,'administrador'::public.app_role) OR platform_private.has_role(v_uid,'gestor'::public.app_role)) THEN\n      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;\n  ELSIF p_mode='read_catalog' THEN\n    IF NOT public.can_view_catalog_internal(v_uid) THEN\n      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;\n  ELSIF p_mode NOT IN ('read_management','read_selection_cultura','read_prefs') OR p_mode IS NULL THEN\n    RAISE EXCEPTION 'catalog_visibility_mode_invalid' USING ERRCODE='22023';\n  END IF;\n  RETURN v_org;\nEND; $function$\n"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "authenticated=X/postgres",
+              "service_role=X/postgres"
+            ],
+            "md5": "55edafec08bcc84a00f1526c14334a2c",
+            "name": "h15_actor_organization",
+            "schema": "public",
+            "signature": "h15_actor_organization()",
+            "definition": "CREATE OR REPLACE FUNCTION public.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.h15_actor_organization(); $function$\n"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "authenticated=X/postgres",
+              "service_role=X/postgres"
+            ],
+            "md5": "64e10608403238a41a9baf92857ca881",
+            "name": "h15_actor_organization",
+            "schema": "platform_private",
+            "signature": "platform_private.h15_actor_organization()",
+            "definition": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "authenticated=X/postgres",
+              "service_role=X/postgres"
+            ],
+            "md5": "048249c0c2106c3761e26eacb8d0de84",
+            "name": "platform_actor_access_ready",
+            "schema": "platform_private",
+            "signature": "platform_private.platform_actor_access_ready(uuid)",
+            "definition": "CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)\n AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));\n$function$\n"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "authenticated=X/postgres"
+            ],
+            "md5": "6335cdcfc5806c34ea87c532f93d0d0d",
+            "name": "platform_create_global_product",
+            "schema": "public",
+            "signature": "platform_create_global_product(jsonb,text,uuid)",
+            "definition": "CREATE OR REPLACE FUNCTION public.platform_create_global_product(p_payload jsonb, p_reason text, p_idempotency_key uuid)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT platform_private.create_global_product_core(p_payload,p_reason,p_idempotency_key);\n$function$\n"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "authenticated=X/postgres"
+            ],
+            "md5": "9f3d74fc898944514574360d091bb1ff",
+            "name": "platform_set_global_product_family",
+            "schema": "public",
+            "signature": "platform_set_global_product_family(uuid,timestamp with time zone,text,text,text,uuid)",
+            "definition": "CREATE OR REPLACE FUNCTION public.platform_set_global_product_family(p_id uuid, p_expected_updated_at timestamp with time zone, p_familia text, p_classe text, p_reason text, p_idempotency_key uuid)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$ SELECT platform_private.set_global_product_family_core(p_id,p_expected_updated_at,p_familia,p_classe,p_reason,p_idempotency_key) $function$\n"
+          }
+        ]
+      }
+    }
+  ],
+  "live_fiscal_details": [
+    {
+      "audit": {
+        "families": [
+          {
+            "tipo": "inoculante",
+            "count": 2,
+            "familia_catalogo": "biologico"
+          },
+          {
+            "tipo": "solubilizador",
+            "count": 1,
+            "familia_catalogo": "biologico"
+          },
+          {
+            "tipo": "fungicida",
+            "count": 2,
+            "familia_catalogo": "biologico"
+          },
+          {
+            "tipo": "inseticida",
+            "count": 1,
+            "familia_catalogo": "quimico"
+          },
+          {
+            "tipo": "solo",
+            "count": 1,
+            "familia_catalogo": "fertilizante_adubo"
+          },
+          {
+            "tipo": "solo",
+            "count": 2,
+            "familia_catalogo": null
+          },
+          {
+            "tipo": "solo",
+            "count": 1,
+            "familia_catalogo": "biologico"
+          },
+          {
+            "tipo": "inseticida",
+            "count": 2,
+            "familia_catalogo": "biologico"
+          },
+          {
+            "tipo": "inseticida",
+            "count": 1,
+            "familia_catalogo": null
+          }
+        ],
+        "functions": [
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "service_role=X/postgres"
+            ],
+            "name": "fiscal_audit_trigger",
+            "signature": "fiscal_audit_trigger()",
+            "definition": "CREATE OR REPLACE FUNCTION public.fiscal_audit_trigger()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_actor uuid;\n  v_allowed text[] := ARRAY[\n    'company_fiscal_settings','product_fiscal_profiles','service_fiscal_profiles',\n    'customer_fiscal_profiles','fiscal_invoices','fiscal_invoice_items',\n    'fiscal_events','fiscal_idempotency_keys',\n    'fiscal_operation_policies','fiscal_tax_rules','fiscal_document_series',\n    'fiscal_number_reservations','fiscal_rule_sod_overrides','fiscal_calculation_runs'\n  ];\nBEGIN\n  IF NOT (TG_TABLE_NAME = ANY(v_allowed)) THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  BEGIN v_actor := auth.uid(); EXCEPTION WHEN OTHERS THEN v_actor := NULL; END;\n  IF TG_OP = 'INSERT' THEN\n    INSERT INTO public.fiscal_audit_log(table_name, record_id, action, changed_by, new_values)\n    VALUES (TG_TABLE_NAME, NEW.id, 'INSERT', v_actor, public.mask_sensitive_jsonb(to_jsonb(NEW)));\n    RETURN NEW;\n  ELSIF TG_OP = 'UPDATE' THEN\n    INSERT INTO public.fiscal_audit_log(table_name, record_id, action, changed_by, old_values, new_values)\n    VALUES (TG_TABLE_NAME, NEW.id, 'UPDATE', v_actor,\n            public.mask_sensitive_jsonb(to_jsonb(OLD)), public.mask_sensitive_jsonb(to_jsonb(NEW)));\n    RETURN NEW;\n  ELSIF TG_OP = 'DELETE' THEN\n    INSERT INTO public.fiscal_audit_log(table_name, record_id, action, changed_by, old_values)\n    VALUES (TG_TABLE_NAME, OLD.id, 'DELETE', v_actor, public.mask_sensitive_jsonb(to_jsonb(OLD)));\n    RETURN OLD;\n  END IF;\n  RETURN NULL;\nEND $function$\n",
+            "volatility": "v"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres"
+            ],
+            "name": "global_product_fiscal_before_write",
+            "signature": "platform_private.global_product_fiscal_before_write()",
+            "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_before_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF NOT platform_private.global_product_fiscal_write_ready() THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;\n IF TG_OP='UPDATE' THEN\n  IF OLD.is_active IS NOT TRUE THEN RAISE EXCEPTION 'FISCAL_HISTORY_IMMUTABLE' USING ERRCODE='42501'; END IF;\n  IF NEW.product_id IS DISTINCT FROM OLD.product_id OR NEW.id IS DISTINCT FROM OLD.id THEN RAISE EXCEPTION 'FISCAL_IDENTITY_IMMUTABLE'; END IF;\n  -- Server-owned CAS token for ALL direct editor and IBS/CBS updates.\n  -- Strictly newer even inside one transaction; caller timestamps are ignored.\n  -- The existing AFTER fiscal audit observes this token in the same transaction.\n  NEW.updated_at:=greatest(clock_timestamp(),OLD.updated_at+interval '1 microsecond');\n ELSE NEW.updated_at:=clock_timestamp(); END IF;\n RETURN NEW;\nEND $function$\n",
+            "volatility": "v"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "authenticated=X/postgres"
+            ],
+            "name": "global_product_fiscal_read_ready",
+            "signature": "platform_private.global_product_fiscal_read_ready()",
+            "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_read_ready()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT auth.uid() IS NOT NULL AND platform_private.platform_actor_access_ready(auth.uid()) AND\n (public.is_platform_superadmin(auth.uid()) OR platform_private.has_role(auth.uid(),'administrador') OR platform_private.has_role(auth.uid(),'gestor') OR platform_private.has_role(auth.uid(),'financeiro'));\n$function$\n",
+            "volatility": "s"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres"
+            ],
+            "name": "global_product_fiscal_statement_gate",
+            "signature": "platform_private.global_product_fiscal_statement_gate()",
+            "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_statement_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF TG_WHEN<>'BEFORE' OR TG_LEVEL<>'STATEMENT' OR TG_OP NOT IN ('INSERT','UPDATE') OR TG_RELID<>'public.product_fiscal_profiles'::regclass THEN RAISE EXCEPTION 'invalid_fiscal_guard_context' USING ERRCODE='42501'; END IF;\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;\n PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n RETURN NULL;\nEND $function$\n",
+            "volatility": "v"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "authenticated=X/postgres"
+            ],
+            "name": "global_product_fiscal_write_ready",
+            "signature": "platform_private.global_product_fiscal_write_ready()",
+            "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_write_ready()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT auth.uid() IS NOT NULL AND platform_private.platform_actor_access_ready(auth.uid()) AND public.is_platform_superadmin(auth.uid());\n$function$\n",
+            "volatility": "s"
+          }
+        ],
+        "constraints": [
+          "CHECK ((NOT fiscal_rtc_has_sensitive_key(ibs_cbs_configuration)))",
+          "CHECK ((jsonb_typeof(ibs_cbs_configuration) = 'object'::text))",
+          "PRIMARY KEY (id)",
+          "FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE RESTRICT",
+          "CHECK ((profile_status = ANY (ARRAY['DRAFT'::text, 'PENDING_ACCOUNTING'::text, 'VALIDATED'::text, 'BLOCKED'::text, 'NOT_FISCALLY_SOLD'::text])))"
+        ],
+        "default_acl": [
+          {
+            "acl": [
+              "postgres=X/supabase_admin",
+              "anon=X/supabase_admin",
+              "authenticated=X/supabase_admin",
+              "service_role=X/supabase_admin"
+            ],
+            "type": "f",
+            "owner": "supabase_admin",
+            "schema": "public"
+          },
+          {
+            "acl": [
+              "postgres=arwdDxtm/supabase_admin",
+              "anon=arwdDxtm/supabase_admin",
+              "authenticated=arwdDxtm/supabase_admin",
+              "service_role=arwdDxtm/supabase_admin"
+            ],
+            "type": "r",
+            "owner": "supabase_admin",
+            "schema": "public"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "anon=X/postgres",
+              "authenticated=X/postgres",
+              "service_role=X/postgres"
+            ],
+            "type": "f",
+            "owner": "postgres",
+            "schema": "public"
+          },
+          {
+            "acl": [
+              "postgres=arwdDxtm/postgres",
+              "anon=arwdDxtm/postgres",
+              "authenticated=arwdDxtm/postgres",
+              "service_role=arwdDxtm/postgres"
+            ],
+            "type": "r",
+            "owner": "postgres",
+            "schema": "public"
+          },
+          {
+            "acl": [
+              "postgres=X*/supabase_admin"
+            ],
+            "type": "f",
+            "owner": "supabase_admin",
+            "schema": "extensions"
+          },
+          {
+            "acl": [
+              "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
+            ],
+            "type": "r",
+            "owner": "supabase_admin",
+            "schema": "extensions"
+          },
+          {
+            "acl": [
+              "postgres=X/supabase_admin",
+              "anon=X/supabase_admin",
+              "authenticated=X/supabase_admin",
+              "service_role=X/supabase_admin"
+            ],
+            "type": "f",
+            "owner": "supabase_admin",
+            "schema": "graphql_public"
+          },
+          {
+            "acl": [
+              "postgres=arwdDxtm/supabase_admin",
+              "anon=arwdDxtm/supabase_admin",
+              "authenticated=arwdDxtm/supabase_admin",
+              "service_role=arwdDxtm/supabase_admin"
+            ],
+            "type": "r",
+            "owner": "supabase_admin",
+            "schema": "graphql_public"
+          },
+          {
+            "acl": [
+              "postgres=X/supabase_admin",
+              "anon=X/supabase_admin",
+              "authenticated=X/supabase_admin",
+              "service_role=X/supabase_admin"
+            ],
+            "type": "f",
+            "owner": "supabase_admin",
+            "schema": "graphql"
+          },
+          {
+            "acl": [
+              "postgres=arwdDxtm/supabase_admin",
+              "anon=arwdDxtm/supabase_admin",
+              "authenticated=arwdDxtm/supabase_admin",
+              "service_role=arwdDxtm/supabase_admin"
+            ],
+            "type": "r",
+            "owner": "supabase_admin",
+            "schema": "graphql"
+          },
+          {
+            "acl": [
+              "postgres=X/supabase_auth_admin",
+              "dashboard_user=X/supabase_auth_admin"
+            ],
+            "type": "f",
+            "owner": "supabase_auth_admin",
+            "schema": "auth"
+          },
+          {
+            "acl": [
+              "postgres=arwdDxtm/supabase_auth_admin",
+              "dashboard_user=arwdDxtm/supabase_auth_admin"
+            ],
+            "type": "r",
+            "owner": "supabase_auth_admin",
+            "schema": "auth"
+          },
+          {
+            "acl": [
+              "postgres=X/postgres",
+              "anon=X/postgres",
+              "authenticated=X/postgres",
+              "service_role=X/postgres"
+            ],
+            "type": "f",
+            "owner": "postgres",
+            "schema": "storage"
+          },
+          {
+            "acl": [
+              "postgres=arwdDxtm/postgres",
+              "anon=arwdDxtm/postgres",
+              "authenticated=arwdDxtm/postgres",
+              "service_role=arwdDxtm/postgres"
+            ],
+            "type": "r",
+            "owner": "postgres",
+            "schema": "storage"
+          },
+          {
+            "acl": [
+              "postgres=X*/supabase_admin"
+            ],
+            "type": "f",
+            "owner": "supabase_admin",
+            "schema": "cron"
+          },
+          {
+            "acl": [
+              "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
+            ],
+            "type": "r",
+            "owner": "supabase_admin",
+            "schema": "cron"
+          },
+          {
+            "acl": [
+              "postgres=a*r*wdDxtm/supabase_admin",
+              "dashboard_user=arwdDxtm/supabase_admin"
+            ],
+            "type": "r",
+            "owner": "supabase_admin",
+            "schema": "realtime"
+          },
+          {
+            "acl": [
+              "postgres=X/supabase_admin",
+              "dashboard_user=X/supabase_admin"
+            ],
+            "type": "f",
+            "owner": "supabase_admin",
+            "schema": "realtime"
+          }
+        ],
+        "fiscal_tables": [
+          "company_fiscal_settings",
+          "customer_fiscal_profiles",
+          "fiscal_operation_policies",
+          "fiscal_rtc_layout_support",
+          "fiscal_environment_marker",
+          "fiscal_protocoled_documents",
+          "fiscal_invoices",
+          "fiscal_matrix_load_ledger",
+          "fiscal_number_reservations",
+          "fiscal_stock_loss_contexts",
+          "fiscal_xml_runs",
+          "fiscal_xsd_registry",
+          "fiscal_certificate_material",
+          "fiscal_reference_catalogs",
+          "fiscal_reference_entries",
+          "fiscal_audit_log",
+          "fiscal_calculation_runs",
+          "fiscal_certificates",
+          "fiscal_document_series",
+          "fiscal_events",
+          "fiscal_idempotency_keys",
+          "fiscal_invoice_item_references",
+          "fiscal_invoice_items",
+          "fiscal_invoice_references",
+          "fiscal_official_sources",
+          "fiscal_requirement_exemptions",
+          "fiscal_rule_sod_overrides",
+          "fiscal_sefaz_transmissions",
+          "fiscal_tax_rules",
+          "microorganism_fiscal_profiles",
+          "product_fiscal_profiles",
+          "service_fiscal_profiles",
+          "v_customer_fiscal_readiness",
+          "v_fiscal_certificate_readiness",
+          "v_fiscal_company_readiness",
+          "v_fiscal_document_reconciliation_pending",
+          "v_fiscal_nfe_emitter_readiness",
+          "v_fiscal_nfe_recipient_readiness",
+          "v_fiscal_nfe_rule_coverage",
+          "v_fiscal_sefaz_event_state",
+          "v_microorganism_fiscal_readiness",
+          "v_product_fiscal_readiness",
+          "v_service_fiscal_readiness"
+        ],
+        "profile_statuses": [
+          {
+            "count": 2,
+            "profile_status": "DRAFT"
+          }
+        ]
+      }
+    }
+  ],
+  "review_findings": [
+    "Original package NOT installed live: owner column false, owned funcs absent, 13 products, 2 DRAFT profiles. ARBio config DRAFT, no accounting validation, nfe/nfse/production false.",
+    "Live product_fiscal_profiles triggers a00 statement/global a10 row require superadmin; reduced harness omits them. Tenant-owned writer positive is not proven until composition.",
+    "Live default public function privileges explicitly grant authenticated/service_role. Candidate REVOKE FROM PUBLIC,anon leaves authenticated default grant; test actual default ACL and revoke explicitly.",
+    "Live anon/authenticated have TRUNCATE and TRIGGER grants on fiscal profiles. No TRUNCATE guard captured. Audit local only; do not exercise on live.",
+    "Writer rechecks actor before profile FOR UPDATE, not immediately after potential wait. Reauthorize after all waits and prove concurrent revocation in Read Committed; no fake stable-stub proof.",
+    "PRE only counts four policies, does not pin contents. Must detect altered predicate with same count and correct foundation manifest (12 files, excludes separate07).",
+    "Plan promises IBS/CBS and own-profile screens/fertilizer creation, package only inactive helper18fields without IBS_CBS fields and UI remains disconnected. Document delivered vs pending; don't invent classification/unit decisions.",
+    "Independent TS review original11PASS4FAIL: arbitrary status, invalid February date, date-only, timezone-free receipts accepted. Local candidate status DRAFT/BLOCKED only and strict civil timestamp microseconds passes15. Preserve RED.",
+    "Original runbook says no anon/auth grants on catalog; live products has SELECT anon/auth. Capture actual privileges; don't transpose declared absence into installer assumptions."
+  ]
+}

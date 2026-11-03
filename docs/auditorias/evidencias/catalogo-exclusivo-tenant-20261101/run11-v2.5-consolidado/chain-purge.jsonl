@@ -1,0 +1,46 @@
+{"id": "CP-0", "scenario": "82 gatilhos pinados instalados (22 de DELETE com corpo LIVE md5-idêntico; demais stubs que abortam se disparados)", "expected": "82", "actual": "82", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-0b", "scenario": "pins LIVE dos 22 gatilhos de DELETE reproduzidos sem substituição (gatilho+função)", "expected": "0|0", "actual": "0|0", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-1", "scenario": "baseline: DELETE comum bloqueado pela proteção real (append-only)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-2", "scenario": "baseline: DELETE comum bloqueado pela proteção real (ENVASE_IMUTAVEL)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-3", "scenario": "baseline: DELETE comum bloqueado pela proteção real (DELIVERY_MUTATION_CLOSED)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-4", "scenario": "baseline: DELETE comum bloqueado pela proteção real (CQ_MANUAL_REQUIRES_REVIEWED_RPC)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-5", "scenario": "baseline: DELETE comum bloqueado pela proteção real (ESTQ_TENANT_FORBIDDEN)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-6", "scenario": "baseline: DELETE comum bloqueado pela proteção real (MANUAL_LOT_DELETE_FORBIDDEN)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-7", "scenario": "baseline: DELETE comum não removeu nada", "expected": "19", "actual": "19", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-8", "scenario": "falha intermediária (após excluir checklist/comprovante/entrega/movimentações): gate ativo (NOWAIT real) aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-9", "scenario": "rollback integral: 19 linhas presentes", "expected": "19", "actual": "19", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-10", "scenario": "rollback integral: nenhum gatilho desabilitado", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-11", "scenario": "rollback integral: registro de auditoria vazio", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-12", "scenario": "manutenção conclui", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-13", "scenario": "19 linhas do escopo removidas", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-14", "scenario": "todos os gatilhos reabilitados após COMMIT", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-15", "scenario": "dados fora do escopo intactos (OS/programação/lote AR Bio)", "expected": "3", "actual": "3", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-16", "scenario": "registro: pre + committed com snapshot das 19 linhas", "expected": "2|9|true", "actual": "2|9|true", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-17", "scenario": "proteção reativa: DELETE comum em lote AR Bio continua bloqueado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-18", "scenario": "proteção reativa: movimentação nova continua append-only", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-19", "scenario": "repetição: no-op sem nova exclusão", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-20", "scenario": "repetição: dados fora do escopo e movimentação nova preservados", "expected": "4", "actual": "4", "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-21", "scenario": "registro extra fora do escopo: 10º checklist: aborta (scope_count_mismatch), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-22", "scenario": "movimentação extra no lote: aborta (movement_set), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-23", "scenario": "movimentação externa com origem na cadeia (RESTRICT): aborta (external_dependency:estoque_movimentacoes.movimentacao_origem_id), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-24", "scenario": "embalagem no lote: aborta (external_dependency:estoque_embalagens.lote_id), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-25", "scenario": "termo apontando o comprovante: aborta (external_dependency:entrega_termos.comprovante_id), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-26", "scenario": "item fiscal da entrega: aborta (external_dependency:fiscal_invoice_items.entrega_id), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-27", "scenario": "segunda CQ no lote: aborta (quality_set), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-28", "scenario": "lote com empresa (nunca atribuir a AR Bio/FSF): aborta (lote_link), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-29", "scenario": "comprovante congelado (1ª barreira: impressão digital): aborta (row_fingerprint_drift:entrega_comprovantes), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-30", "scenario": "comprovante com arquivo (1ª barreira: impressão digital): aborta (row_fingerprint_drift:entrega_comprovantes), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-31", "scenario": "callback não auditado novo: aborta (trigger_set_drift), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-32", "scenario": "definição de gatilho suspenso divergente: aborta (trigger_definition_drift:envase.trg_envase_material_imutavel), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-33", "scenario": "gatilho já desabilitado antes: aborta (trigger_not_enabled_before), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-34", "scenario": "regra DELETE na tabela: aborta (rule_present), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-35", "scenario": "entrega com recebível: aborta (entrega_state), 19 linhas e gatilhos preservados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-29b", "scenario": "comprovante congelado/com arquivo mesmo com pins atualizados: proof_state aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-30b", "scenario": "comprovante congelado/com arquivo mesmo com pins atualizados: proof_state aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-39", "scenario": "linha do manifesto alterada após captura: impressão digital aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-40", "scenario": "função de proteção enfraquecida (corpo divergente): pin md5 aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-41", "scenario": "RED da ordem v2.4: excluir comprovante isolado dispara UPDATE em entregas (SET NULL) e atinge gatilhos não auditados", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-36", "scenario": "session_replication_role != origin: aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-37", "scenario": "papel de API não executa", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"id": "CP-38", "scenario": "estático: sem DISABLE TRIGGER ALL, replication_role, CASCADE ou GUC", "expected": 0, "actual": 0, "status": "PASS", "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"}
+{"PASS": 45, "FAIL": 0}

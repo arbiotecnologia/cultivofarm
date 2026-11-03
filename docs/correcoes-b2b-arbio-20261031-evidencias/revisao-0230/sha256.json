@@ -1,0 +1,21 @@
+{
+  "consumer-revision.json": "5078ac26920ac9b77907df0506ffe8047062f0d028087e1b57513cefde20d2ec",
+  "price-decimal-oracle.json": "2042c52c371a24f3e5b0a0aef743f4c599366404281b600a037cac806ebec432",
+  "decimal_oracle.py": "770d6d282ee8f6790fb6d1bc9c7de07cb8d02ee92d401c4f70eda861bb791e8b",
+  "broad.json": "012ec5d10c8cdcab4fcc8625c2e0e5bc84e344c87aedb3d8d7d7c5f1a2741f46",
+  "broad.log": "734cd4fed080bbd8e399d619087f2ccad546e72d3603c292a26d0b09902a9c34",
+  "config-red.json": "231d042c8ac2d18cbe665cab57b0aefdb333e9739fc65ff627daa1b27b722e1a",
+  "config-red.log": "cad8c1276371ca1a62ae49acf8034a776e8ab4f6af69cb0d65e8a4432bb2722f",
+  "config-green.json": "72d0ec0562038f6b134c227a381478a27c4ca5028e923bc4032607de73c93860",
+  "config-green.log": "3587b6bdcbcc0cb96b55750210be119bbf018b49391980f8316dca20ec8d906b",
+  "session-current.json": "b96dd7312db914504dd54ca5dd9fb5fe47b87122d3e5d576679298c35e904d02",
+  "session-current.log": "d0162c8f3ff3c62bd78fe5bc9237c236da8c9f24363b7ec60823a02c340abb95",
+  "final.json": "83a20a38e5b85d93cd4134a8be3026539924ffeed4552e2de4b467a01ab998d7",
+  "final.log": "bd5312e3f33657c3e81ae084d16495c1af425759bfe57f73b02cc4f4e776da66",
+  "historical-rerun.json": "52ce65df2ba8dad12a5ac18f81e3f817467f30a4a6a77dd5e3a4b8933dbd9698",
+  "historical-rerun.log": "c021750efa07aee12d6c3cb413cbc50537c2fe6dff76ae5ffa66cc7c7074f164",
+  "commercial40-and-screen.json": "fa791a0b7ae42e7ce67c5006ee056958f9735e580d8af462a755eac9dfdc2776",
+  "commercial40-and-screen.log": "e124a26cd0b99461a1da4b8eb658e25cb5334ece510bfbeb26eb9a92ecc5faa1",
+  "matriz.json": "91aad9566fd4f3bd72ed9934a1b08eb608f4fb87e22a6bc8d8f21cf34c3b9881",
+  "matriz.csv": "f1c5d648de8dda6d8efdb2896b7d79e94c485ed8cbd25dcbc19220463ec946a6"
+}

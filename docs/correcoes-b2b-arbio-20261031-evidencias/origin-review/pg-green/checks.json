@@ -1,0 +1,37 @@
+[
+  {
+    "id": "ORIGIN-PG-001",
+    "scenario": "three generated rows reach projection",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS"
+  },
+  {
+    "id": "ORIGIN-PG-002",
+    "scenario": "financing snapshot mapped, not client amount",
+    "expected": true,
+    "actual": true,
+    "status": "PASS"
+  },
+  {
+    "id": "ORIGIN-PG-003",
+    "scenario": "late interest excludes financed breakdown",
+    "expected": true,
+    "actual": true,
+    "status": "PASS"
+  },
+  {
+    "id": "ORIGIN-PG-004",
+    "scenario": "foreign tenant cannot project title",
+    "expected": true,
+    "actual": true,
+    "status": "PASS"
+  },
+  {
+    "id": "ORIGIN-PG-005",
+    "scenario": "synthetic baseline principal10300 already generated",
+    "expected": 10300,
+    "actual": 10300.0,
+    "status": "PASS"
+  }
+]

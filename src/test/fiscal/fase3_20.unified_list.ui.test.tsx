@@ -84,7 +84,12 @@ vi.mock("@/components/fiscal/IbsCbsItemCard", () => ({
 }));
 
 import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
-const fiscalFence = vi.hoisted(() => ({ ready: true, canWrite: true, scope: "A/T", capture: () => () => fiscalFence.ready && fiscalFence.scope === "A/T" }));
+const fiscalFence = vi.hoisted(() => ({ ready: true, canWrite: true, canWriteOwnedProduct: false, scope: "A/T", capture: () => () => fiscalFence.ready && fiscalFence.scope === "A/T" }));
+const ownedGate = vi.hoisted(() => ({ on: false }));
+vi.mock("@/lib/fiscal/ownedProductFiscal", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@/lib/fiscal/ownedProductFiscal");
+  return { ...actual, get OWNED_PRODUCT_FISCAL_ENABLED() { return ownedGate.on; } };
+});
 vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => fiscalFence }));
 vi.mock("@/hooks/useProductFiscalAccess", () => ({ useProductFiscalAccess: () => fiscalFence }));
 
@@ -111,7 +116,7 @@ const MICRO_OWN_PROFILE = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(fiscalFence, { ready: true, canWrite: true, scope: "A/T" });
+  Object.assign(fiscalFence, { ready: true, canWrite: true, canWriteOwnedProduct: false, scope: "A/T" }); ownedGate.on = false;
   mockUseProductFiscalProfile.mockReturnValue({ data: null, isLoading: false, isFetching: false, isError: false, refetch: vi.fn() });
   mockUseAuth.mockReturnValue({ role: "administrador" });
   mockUseProductFiscalList.mockReturnValue({
@@ -140,27 +145,55 @@ beforeEach(() => {
 });
 
 describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21)", () => {
-  test("existing product drawer saves an empty draft without guessed tax codes", async () => {
+  test("tenant admin saves own product draft only via writer: reason + idempotency key, no guessed tax codes", async () => {
     const mutateAsync = vi.fn().mockResolvedValue({});
     mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
-    mockUseAuth.mockReturnValue({ role: "superadmin" });
-    renderWithProviders(<FiscalProdutos platformGlobal />);
+    ownedGate.on = true; fiscalFence.canWriteOwnedProduct = true;
+    renderWithProviders(<FiscalProdutos />);
     fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
+    fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
+    expect(mutateAsync).not.toHaveBeenCalled();   // motivo obrigatório (10–500)
+    fireEvent.change(screen.getByTestId("fiscal-produto-motivo"), { target: { value: "Classificação informada pela contabilidade" } });
     fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
     const input = mutateAsync.mock.calls[0][0];
     expect(input.productId).toBe("prod-A"); expect(input.current).toBeNull();
+    expect(input.reason).toBe("Classificação informada pela contabilidade");
+    expect(input.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
     expect(input.values.ncm).toBe(""); expect(input.values.cest).toBe("");
     expect(input.values.cfop_in_state).toBe(""); expect(input.values.icms_cst).toBe("");
   });
+  test("uncertain response keeps the same idempotency key on manual resubmit; success discards it", async () => {
+    const mutateAsync = vi.fn().mockRejectedValueOnce(new Error("fiscal_uncertain")).mockResolvedValue({});
+    mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
+    ownedGate.on = true; fiscalFence.canWriteOwnedProduct = true;
+    renderWithProviders(<FiscalProdutos />);
+    fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
+    fireEvent.change(screen.getByTestId("fiscal-produto-motivo"), { target: { value: "Classificação informada pela contabilidade" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole("form", { name: "Formulário de perfil fiscal" })).toBeInTheDocument());
+    fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2));
+    expect(mutateAsync.mock.calls[1][0].idempotencyKey).toBe(mutateAsync.mock.calls[0][0].idempotencyKey);
+  });
+  test("writer gate off: product stays read-only even for tenant admin with write role", () => {
+    fiscalFence.canWriteOwnedProduct = true;
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
+  });
+  test("Superadmin platform tab has no product fiscal writer (no global bypass)", () => {
+    mockUseAuth.mockReturnValue({ role: "superadmin" }); ownedGate.on = true;
+    renderWithProviders(<FiscalProdutos platformGlobal />);
+    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
+  });
   test("paused actor cannot submit existing product form", () => {
     const mutateAsync = vi.fn(); mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
-    mockUseAuth.mockReturnValue({ role: "superadmin" });
-    const view = renderWithProviders(<FiscalProdutos platformGlobal />);
+    ownedGate.on = true; fiscalFence.canWriteOwnedProduct = true;
+    const view = renderWithProviders(<FiscalProdutos />);
     fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
     fireEvent.click(screen.getByRole("button", { name: /Cancelar|Fechar/ }));
-    fiscalFence.ready = false; view.rerender(<FiscalProdutos platformGlobal />);
-    // Paused Superadmin: platform tab fails closed, no edit entry point remains.
+    fiscalFence.ready = false; view.rerender(<FiscalProdutos />);
     expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
     expect(screen.queryByRole("form", { name: "Formulário de perfil fiscal" })).toBeNull();
     expect(mutateAsync).not.toHaveBeenCalled();

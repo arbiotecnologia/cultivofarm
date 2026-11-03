@@ -1,0 +1,11 @@
+[
+ "Original package NOT installed live: owner column false, owned funcs absent, 13 products, 2 DRAFT profiles. ARBio config DRAFT, no accounting validation, nfe/nfse/production false.",
+ "Live product_fiscal_profiles triggers a00 statement/global a10 row require superadmin; reduced harness omits them. Tenant-owned writer positive is not proven until composition.",
+ "Live default public function privileges explicitly grant authenticated/service_role. Candidate REVOKE FROM PUBLIC,anon leaves authenticated default grant; test actual default ACL and revoke explicitly.",
+ "Live anon/authenticated have TRUNCATE and TRIGGER grants on fiscal profiles. No TRUNCATE guard captured. Audit local only; do not exercise on live.",
+ "Writer rechecks actor before profile FOR UPDATE, not immediately after potential wait. Reauthorize after all waits and prove concurrent revocation in Read Committed; no fake stable-stub proof.",
+ "PRE only counts four policies, does not pin contents. Must detect altered predicate with same count and correct foundation manifest (12 files, excludes separate07).",
+ "Plan promises IBS/CBS and own-profile screens/fertilizer creation, package only inactive helper18fields without IBS_CBS fields and UI remains disconnected. Document delivered vs pending; don't invent classification/unit decisions.",
+ "Independent TS review original11PASS4FAIL: arbitrary status, invalid February date, date-only, timezone-free receipts accepted. Local candidate status DRAFT/BLOCKED only and strict civil timestamp microseconds passes15. Preserve RED.",
+ "Original runbook says no anon/auth grants on catalog; live products has SELECT anon/auth. Capture actual privileges; don't transpose declared absence into installer assumptions."
+]

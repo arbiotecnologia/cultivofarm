@@ -1,0 +1,164 @@
+-- INACTIVE. Append-only allocations replace neither old links nor historical rows.
+CREATE FUNCTION platform_private.b2b_order_residual(p_order uuid) RETURNS numeric
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE po public.partner_orders; s platform_private.b2b_order_condition_snapshots; allocated numeric; total numeric;
+BEGIN
+ SELECT * INTO po FROM public.partner_orders WHERE id=p_order;
+ SELECT * INTO s FROM platform_private.b2b_order_condition_snapshots WHERE order_id=p_order;
+ total:=coalesce(s.financed_total,po.final_amount_with_interest);
+ IF total IS NULL OR total<0 OR total::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order) THEN
+  -- Legacy 1:1 can be netted only when the complete title is proven by the same projection.
+  IF s.order_id IS NOT NULL OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order)<>1 THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+  PERFORM public.rpc_receivable_money_projection_v1(l.receivable_id,0,1000) FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order;
+  IF NOT EXISTS(SELECT 1 FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id WHERE l.partner_order_id=p_order AND a.total_amount=total AND a.status<>'CANCELED') THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+  RETURN 0;
+ END IF;
+ IF po.receivable_generated AND s.order_id IS NULL THEN RAISE EXCEPTION 'CREDIT_LEGACY_ALLOCATION_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT coalesce(sum(x.principal+x.financed_interest),0) INTO allocated FROM platform_private.b2b_document_allocations x WHERE x.order_id=p_order AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=x.document_id);
+ IF allocated>total THEN RAISE EXCEPTION 'CREDIT_OVERALLOCATED' USING ERRCODE='23514'; END IF;
+ RETURN total-allocated;
+END $$;
+
+CREATE FUNCTION platform_private.b2b_credit_balances(p_partner uuid,p_exclude uuid DEFAULT NULL) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int;
+BEGIN
+ IF platform_private.b2b_credit_config_block(p_partner) IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ SELECT overdue_tolerance_days INTO tolerance FROM public.partner_financial_settings WHERE partner_id=p_partner AND active IS TRUE;
+ IF tolerance IS NULL OR tolerance<0 THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
+ FOR i IN SELECT s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE a.organization_id=org AND s.organization_id=org AND a.partner_id=p_partner AND a.status<>'CANCELED' AND s.status<>'CANCELED' LOOP
+  row:=platform_private.b2b_proven_money_row(i.id);
+  IF row IS NULL THEN RAISE EXCEPTION 'CREDIT_MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+  balance:=greatest((row->>'original_amount')::numeric+(row->>'interest_amount')::numeric-(row->>'financed_interest_amount')::numeric+(row->>'penalty_amount')::numeric-(row->>'discount_amount')::numeric-(row->>'received_amount')::numeric,0);
+  open_amount:=open_amount+balance;
+  IF i.due_date<CURRENT_DATE-tolerance THEN overdue:=overdue+balance; END IF;
+ END LOOP;
+ FOR po IN SELECT id,status::text AS status FROM public.partner_orders WHERE partner_id=p_partner AND id IS DISTINCT FROM p_exclude AND status::text IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','pendente','solicitado','em_analise_comercial','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens') LOOP
+  residual:=platform_private.b2b_order_residual(po.id);
+  IF po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue') THEN committed:=committed+residual; ELSE pending:=pending+residual; END IF;
+ END LOOP;
+ RETURN jsonb_build_object('saldo_em_aberto',open_amount,'saldo_vencido',overdue,'comprometido_nao_faturado',committed,'comprometido_pendente',pending);
+END $$;
+
+CREATE FUNCTION platform_private.b2b_allocate_document(p_document uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE d platform_private.b2b_authorized_documents; s platform_private.b2b_order_condition_snapshots; x platform_private.b2b_document_allocations;
+ org uuid; u uuid:=auth.uid(); it jsonb; accepted jsonb:='[]'; base jsonb; qty numeric; previous numeric; totalqty numeric; pr numeric; intr numeric; principal numeric:=0; financing numeric:=0; active_pr numeric; active_intr numeric;
+ tid uuid:=gen_random_uuid(); rows jsonb; final numeric; cfg jsonb; cal platform_private.holiday_calendars; customer uuid; category uuid; method_id uuid; item_net numeric; item_financing numeric;
+BEGIN
+ SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_document;
+ org:=platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF d.organization_id IS DISTINCT FROM org OR d.state IS DISTINCT FROM 'AUTHORIZED' THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_NOT_AUTHORIZED' USING ERRCODE='42501'; END IF;
+ -- Order row precedes shared credit, same as approval. Document lock follows order.
+ PERFORM 1 FROM public.partner_orders WHERE id=d.order_id FOR UPDATE;
+ PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:'||d.partner_id::text,0));
+ PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_document FOR SHARE;
+ PERFORM platform_private.b2b_integration_actor(d.partner_id,true);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF d.organization_id IS DISTINCT FROM org OR d.state IS DISTINCT FROM 'AUTHORIZED' THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_NOT_AUTHORIZED' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_cancellation_attestations c WHERE c.document_id=p_document) THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_CANCELED' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO s FROM platform_private.b2b_order_condition_snapshots WHERE order_id=d.order_id AND organization_id=org AND partner_id=d.partner_id;
+ IF NOT FOUND OR EXISTS(SELECT 1 FROM public.partner_order_financial_links l WHERE l.partner_order_id=d.order_id) THEN RAISE EXCEPTION 'B2B_ORDER_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT * INTO x FROM platform_private.b2b_document_allocations WHERE document_id=p_document;
+ IF FOUND THEN
+  IF x.source_digest IS DISTINCT FROM d.source_digest OR x.order_id IS DISTINCT FROM d.order_id OR x.organization_id IS DISTINCT FROM org OR x.items IS DISTINCT FROM d.items THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
+  IF EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=p_document) THEN RAISE EXCEPTION 'FISCAL_DOCUMENT_CANCELED' USING ERRCODE='PT409'; END IF;
+  RETURN jsonb_build_object('success',true,'document_id',p_document,'receivable_id',x.receivable_id,'replayed',true);
+ END IF;
+ IF jsonb_typeof(d.items) IS DISTINCT FROM 'array' OR jsonb_array_length(d.items)=0 OR (SELECT count(DISTINCT j->>'item_id') FROM jsonb_array_elements(d.items) j)<>jsonb_array_length(d.items) THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+ -- Subtotals must ALREADY be the accepted net item bases (as written by the
+ -- canonical cart). Never invent a discount allocation from aggregate totals.
+ IF (SELECT sum(i.subtotal) FROM public.partner_order_items i WHERE i.order_id=d.order_id) IS DISTINCT FROM s.principal
+ OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=d.order_id AND (i.subtotal IS NULL OR i.subtotal<0 OR i.quantidade IS NULL OR i.quantidade<=0))
+ THEN RAISE EXCEPTION 'FISCAL_NET_ITEM_BASE_UNPROVEN' USING ERRCODE='23514'; END IF;
+ FOR it IN SELECT j FROM jsonb_array_elements(d.items) j ORDER BY j->>'item_id' COLLATE "C" LOOP
+  IF jsonb_typeof(it->'quantity') IS DISTINCT FROM 'number' THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  qty:=(it->>'quantity')::numeric;
+  SELECT to_jsonb(i) INTO base FROM public.partner_order_items i WHERE i.id=(it->>'item_id')::uuid AND i.order_id=d.order_id;
+  IF base IS NULL OR qty<=0 OR qty::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  -- Item monetary base is the immutable order snapshot, never callback price.
+  IF NOT EXISTS(SELECT 1 FROM public.partner_orders po CROSS JOIN LATERAL jsonb_array_elements(po.internal_economic_snapshot->'items') b WHERE po.id=d.order_id AND b->>'id'=base->>'id' AND (b->>'quantidade')::numeric=(base->>'quantidade')::numeric AND (b->>'subtotal')::numeric=(base->>'subtotal')::numeric) THEN RAISE EXCEPTION 'FISCAL_ITEM_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+  totalqty:=(base->>'quantidade')::numeric;
+  SELECT coalesce(sum((j->>'quantity')::numeric),0) INTO previous FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.items) j WHERE a.order_id=d.order_id AND j->>'item_id'=it->>'item_id' AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id);
+  IF previous+qty>totalqty THEN RAISE EXCEPTION 'FISCAL_QUANTITY_OVERALLOCATED' USING ERRCODE='PT409'; END IF;
+  item_net:=(base->>'subtotal')::numeric;
+  -- Financing distribution is cumulative; final item absorbs cent residual deterministically.
+  SELECT round(s.financed_interest*sum(i.subtotal)/s.principal,2)-round(s.financed_interest*(sum(i.subtotal)-item_net)/s.principal,2) INTO item_financing FROM public.partner_order_items i WHERE i.order_id=d.order_id AND i.id<=(base->>'id')::uuid;
+  -- Quantity alone cannot reconstruct cents after a middle reversal. Retain
+  -- each item's money append-only and reconcile the ACTIVE monetary ledger.
+  IF EXISTS(SELECT 1 FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.items) j
+   WHERE a.order_id=d.order_id AND j->>'item_id'=it->>'item_id'
+   AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id)
+   AND (SELECT count(*) FROM jsonb_array_elements(a.item_money) m WHERE m->>'item_id'=it->>'item_id')<>1)
+  THEN RAISE EXCEPTION 'FISCAL_ITEM_MONEY_UNPROVEN' USING ERRCODE='23514'; END IF;
+  SELECT coalesce(sum((m->>'principal')::numeric),0),coalesce(sum((m->>'financed_interest')::numeric),0)
+   INTO active_pr,active_intr FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.item_money) m
+   WHERE a.order_id=d.order_id AND m->>'item_id'=it->>'item_id' AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id);
+  IF active_pr<0 OR active_pr>item_net OR active_intr<0 OR active_intr>item_financing THEN RAISE EXCEPTION 'FISCAL_ITEM_MONEY_UNPROVEN' USING ERRCODE='23514'; END IF;
+  pr:=CASE WHEN previous+qty=totalqty THEN item_net-active_pr ELSE least(item_net-active_pr,round(item_net*(previous+qty)/totalqty,2)-round(item_net*previous/totalqty,2)) END;
+  intr:=CASE WHEN previous+qty=totalqty THEN item_financing-active_intr ELSE least(item_financing-active_intr,round(item_financing*(previous+qty)/totalqty,2)-round(item_financing*previous/totalqty,2)) END;
+  principal:=principal+pr; financing:=financing+intr; accepted:=accepted||jsonb_build_array(jsonb_build_object('item_id',it->>'item_id','quantity',qty,'principal',pr,'financed_interest',intr));
+ END LOOP;
+ final:=principal+financing;
+ IF principal<=0 OR final>platform_private.b2b_order_residual(d.order_id) THEN RAISE EXCEPTION 'FISCAL_AMOUNT_OVERALLOCATED' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO cal FROM platform_private.holiday_calendars WHERE version=s.condition->>'calendar_version';
+ rows:=platform_private.b2b_schedule(principal,(s.condition->>'monthly_rate')::numeric,(s.condition->>'installment_count')::int,d.issue_date,(s.choice->>'payment_deadline_days')::int,cal);
+ -- Keep accepted order financing, even on partial documents: allocate breakdown cumulatively,
+ -- not a new interest contract. Due dates use issue date of THIS authorized document.
+ WITH r AS (SELECT j, (j->>'installment_number')::int n FROM jsonb_array_elements(rows) j), weights AS (
+ SELECT r.n,r.j,sum((o->>'principal_amount')::numeric) OVER(ORDER BY r.n) cp,
+ sum((o->>'interest_amount')::numeric) OVER(ORDER BY r.n) cf,(o->>'principal_amount')::numeric p,(o->>'interest_amount')::numeric f
+ FROM r JOIN LATERAL (SELECT o FROM jsonb_array_elements(s.rows) o WHERE (o->>'installment_number')::int=r.n) original ON true), dist AS (
+ SELECT n,j,round(principal*cp/s.principal,2)-round(principal*(cp-p)/s.principal,2) p,
+ CASE WHEN s.financed_interest=0 THEN 0 ELSE round(financing*cf/s.financed_interest,2)-round(financing*(cf-f)/s.financed_interest,2) END f FROM weights)
+ SELECT jsonb_agg(j||jsonb_build_object('amount',p+f,'principal_amount',p,'interest_amount',f) ORDER BY n) INTO rows FROM dist;
+ SELECT client_id INTO customer FROM public.partner_accounts WHERE id=d.partner_id AND commercial_owner_organization_id=org;
+ category:=(s.condition->>'category_id')::uuid; method_id:=(s.condition->>'payment_method_id')::uuid;
+ IF customer IS NULL OR category IS NULL OR method_id IS NULL OR NOT EXISTS(SELECT 1 FROM public.financial_categories WHERE id=category AND active AND upper(btrim(type))='RECEITA') OR NOT EXISTS(SELECT 1 FROM public.payment_methods WHERE id=method_id AND active) THEN RAISE EXCEPTION 'FINANCIAL_REFS_UNPROVEN' USING ERRCODE='23514'; END IF;
+ INSERT INTO platform_private.b2b_title_permits VALUES(txid_current(),u,org,tid,d.order_id,d.partner_id,customer,rows);
+ INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)
+ VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id);
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_title_permits WHERE transaction_id=txid_current() AND title_id=tid) THEN RAISE EXCEPTION 'B2B_TITLE_PERMIT_NOT_CONSUMED' USING ERRCODE='23514'; END IF;
+ INSERT INTO platform_private.b2b_document_allocations(document_id,organization_id,order_id,partner_id,receivable_id,source_digest,principal,financed_interest,items,item_money,rows) VALUES(d.id,org,d.order_id,d.partner_id,tid,d.source_digest,principal,financing,d.items,accepted,rows);
+ RETURN jsonb_build_object('success',true,'document_id',d.id,'receivable_id',tid,'principal',principal,'financed_interest',financing,'residual',platform_private.b2b_order_residual(d.order_id),'replayed',false);
+END $$;
+
+CREATE FUNCTION platform_private.b2b_reverse_allocation(p_document uuid,p_replacement uuid DEFAULT NULL) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE x platform_private.b2b_document_allocations; org uuid; d platform_private.b2b_authorized_documents;
+BEGIN
+ SELECT * INTO x FROM platform_private.b2b_document_allocations WHERE document_id=p_document;
+ org:=platform_private.b2b_integration_actor(x.partner_id,true); PERFORM platform_private.b2b_integration_dependencies();
+ PERFORM 1 FROM public.partner_orders WHERE id=x.order_id FOR UPDATE; PERFORM platform_private.b2b_integration_actor(x.partner_id,true);
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:'||x.partner_id::text,0)); PERFORM platform_private.b2b_integration_actor(x.partner_id,true);
+ IF x.organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'B2B_TENANT_DENIED' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=p_document) THEN
+  IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=p_document AND r.replacement_document_id IS NOT DISTINCT FROM p_replacement) THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
+  RETURN jsonb_build_object('success',true,'replayed',true);
+ END IF;
+ -- Paid or adjusted histories require independent reconciliation, never automatic cancellation.
+ PERFORM 1 FROM public.accounts_receivable_installments WHERE receivable_id=x.receivable_id ORDER BY id FOR UPDATE;
+ PERFORM platform_private.b2b_integration_actor(x.partner_id,true);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF EXISTS(SELECT 1 FROM public.receivable_payments p JOIN public.accounts_receivable_installments i ON i.id=p.installment_id WHERE i.receivable_id=x.receivable_id) THEN RAISE EXCEPTION 'FISCAL_PAID_RECONCILIATION_REQUIRED' USING ERRCODE='PT409'; END IF;
+ IF (SELECT count(*) FROM public.accounts_receivable_installments i WHERE i.receivable_id=x.receivable_id)<>jsonb_array_length(x.rows)
+ OR NOT EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=x.receivable_id AND a.status='OPEN' AND a.b2b_document_id=x.document_id AND a.total_amount=x.principal+x.financed_interest)
+ OR EXISTS(SELECT 1 FROM public.accounts_receivable_installments i WHERE i.receivable_id=x.receivable_id AND
+ (i.status<>'OPEN' OR i.received_amount IS DISTINCT FROM 0::numeric OR i.interest_amount IS DISTINCT FROM 0::numeric OR i.penalty_amount IS DISTINCT FROM 0::numeric OR i.discount_amount IS DISTINCT FROM 0::numeric
+ OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number AND (r->>'amount')::numeric=i.original_amount AND (r->>'due_date')::date=i.due_date)))
+ THEN RAISE EXCEPTION 'FISCAL_PAID_RECONCILIATION_REQUIRED' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_replacement AND organization_id=org AND order_id=x.order_id AND partner_id=x.partner_id AND state='AUTHORIZED';
+ IF p_replacement IS NOT NULL AND (NOT FOUND OR p_replacement=p_document OR EXISTS(SELECT 1 FROM platform_private.b2b_cancellation_attestations c WHERE c.document_id=p_replacement)) THEN RAISE EXCEPTION 'FISCAL_REPLACEMENT_INVALID' USING ERRCODE='23514'; END IF;
+ -- Cancellation ingestion itself remains an unproven dependency; no buyer callback accepted.
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_cancellation_attestations c WHERE c.document_id=p_document AND c.organization_id=org) THEN RAISE EXCEPTION 'FISCAL_CANCELLATION_UNPROVEN' USING ERRCODE='42501'; END IF;
+ INSERT INTO platform_private.b2b_allocation_reversals VALUES(p_document,p_replacement,x.source_digest,now());
+ UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id=x.receivable_id;
+ UPDATE public.accounts_receivable SET status='CANCELED' WHERE id=x.receivable_id;
+ IF p_replacement IS NOT NULL THEN PERFORM platform_private.b2b_allocate_document(p_replacement); END IF;
+ RETURN jsonb_build_object('success',true,'replayed',false);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_order_residual(uuid),platform_private.b2b_credit_balances(uuid,uuid),platform_private.b2b_allocate_document(uuid),platform_private.b2b_reverse_allocation(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;

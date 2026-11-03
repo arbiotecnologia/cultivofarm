@@ -35,11 +35,11 @@ describe("contenção de escrita do catálogo global", () => {
     "src/pages/configuracoes/ParametrosCQPage.tsx",
   ])("%s bloqueia antes de gravar", (f) => {
     const s = read(f);
-    const blocks = s.split("mutationFn").slice(1).filter((b) => /\.(insert|update|delete|upsert)\(|bulk_inserir_alvos/.test(b.slice(0, 1500)));
+    const blocks = s.split("mutationFn").slice(1).filter((b) => /\.(insert|update|delete|upsert)\(|bulk_inserir_alvos|saveTenantCatalogRoot\(/.test(b.slice(0, 2500)));
     expect(blocks.length).toBeGreaterThan(0);
     for (const b of blocks) {
       const guard = b.indexOf("assertGlobalCatalogWriteBlocked()");
-      const write = b.search(/\.(insert|update|delete|upsert)\(|bulk_inserir_alvos/);
+      const write = b.search(/\.(insert|update|delete|upsert)\(|bulk_inserir_alvos|saveTenantCatalogRoot\(/);
       expect(guard).toBeGreaterThan(-1);
       expect(guard).toBeLessThan(write);
     }

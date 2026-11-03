@@ -1,0 +1,205 @@
+[
+  {
+    "file": "/dev-server/src/test/financeiro/contasPagarBloco4.test.tsx",
+    "scenario": "(1) arquivo travado durante gravação, livre só em pendência ociosa pendência ociosa permite trocar o arquivo; durante o reenvio o campo trava",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAckDialog.test.tsx",
+    "scenario": "nunca usa window.confirm; diálogo cita o número e Voltar não chama RPC nem limpa carrinho",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAckDialog.test.tsx",
+    "scenario": "duplo clique em confirmar avança uma única vez com key/geração/pedido capturados",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAckDialog.test.tsx",
+    "scenario": "estado do servidor muda com o diálogo aberto (outra aba): não confirma geração errada",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAckDialog.test.tsx",
+    "scenario": "revogação/troca de contexto com o diálogo aberto nega o avanço",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAckDialog.test.tsx",
+    "scenario": "troca de papel com o diálogo aberto fecha sem avançar",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "resposta perdida + remontagem: reenvio idêntico reutiliza a MESMA chave",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "payload alterado após resultado incerto NÃO gera outra chave: envio bloqueado",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "pedido aceito com resposta tardia durante desmontagem: aviso, carrinho novo preservado e nova chave só após confirmação",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "rejeição conclusiva do servidor no primeiro envio descarta a tentativa",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "outro ator não herda a tentativa; logout NÃO libera a do ator original",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "sucesso tardio não apaga observação editada enquanto a RPC estava pendente",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "erro não conclusivo {\"code\":\"PGRST301\",\"message\":\"JWT expired\"} mantém a tentativa incerta",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx",
+    "scenario": "dois cliques no mesmo tick: a reserva síncrona bloqueia o segundo envio (1 RPC)",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "nunca encerra automaticamente após falha/timeout: só por clique",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "closed validado: mesma chave/parceiro na RPC, libera nova chave e envia o carrinho editado mantido",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "committed com schema válido: mostra número e navega pelo caminho canônico; não cria outro",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "committed sem número não é conclusivo: bloqueio preservado",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "committed com id inválido não é conclusivo: bloqueio preservado",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "in_progress não é conclusivo: bloqueio preservado",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "contrato desconhecido não é conclusivo: bloqueio preservado",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "vazio não é conclusivo: bloqueio preservado",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "erro PostgREST mantém bloqueio",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "duplo clique em verificar: uma única RPC",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "revogação durante a verificação: closed tardio NÃO libera e carrinho editado permanece",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "desmontagem durante a verificação: resposta antiga não libera; remontado continua bloqueado",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "troca de empresa durante a verificação: nada liberado para nenhum dos dois contextos",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoAttemptClosure.test.tsx",
+    "scenario": "logout e espera não descartam a tentativa; outro ator não a vê",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  },
+  {
+    "file": "/dev-server/src/test/pedidos/novoPedidoDeliveryDate.test.tsx",
+    "scenario": "data preenchida aparece no resumo e chega à RPC create_partner_order_secure; pós-sucesso mostra acompanhamento",
+    "historical": "failed",
+    "current": "passed",
+    "cause": "Not reproduced at identical assertions with maxWorkers=2; timing/resource hypothesis, individual truncated traces inconclusive"
+  }
+]

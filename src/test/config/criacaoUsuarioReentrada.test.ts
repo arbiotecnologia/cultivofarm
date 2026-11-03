@@ -26,9 +26,9 @@ function harness() {
   const mutation = { isPending: false, mutateAsync: invoke };
   const handler: () => Promise<void> = new Function(
     "createSubmitLock", "createUser", "newUser", "validateUserDraft",
-    "setCreateErros", "primeiroCampoInvalido", "setCreateResumo", "requestAnimationFrame", "campoRefs", "selectedClients", "primaryClient", "registrationKind", "createFence",
+    "setCreateErros", "primeiroCampoInvalido", "setCreateResumo", "requestAnimationFrame", "campoRefs", "selectedClients", "primaryClient", "registrationKind", "createFence", "verifiedClients",
     `${javascript}; return handleCriarUsuario;`,
-  )(lock, mutation, {}, validar, vi.fn(), primeiro, vi.fn(), vi.fn(), { current: {} }, [], null, "internal", { capture: () => () => true });
+  )(lock, mutation, {}, validar, vi.fn(), primeiro, vi.fn(), vi.fn(), { current: {} }, [], null, "internal", { capture: () => () => true }, []);
   return { handler, lock, invoke, mutation, primeiro };
 }
 

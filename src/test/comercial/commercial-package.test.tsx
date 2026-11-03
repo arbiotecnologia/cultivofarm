@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({ mutateAsync: vi.fn(), reset: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {} }));
 vi.mock('@tanstack/react-query', () => ({ useQuery: () => ({ data: [{ id: 'partner', razao_social: 'Parceiro' }] }) }));
 vi.mock('@/hooks/useSimulateB2BPaymentPlan', () => ({ useSimulateB2BPaymentPlan: () => mocks }));
-vi.mock('@/hooks/useCommercialPaymentPlans', () => ({ useCommercialPaymentPlans: () => ({ data: [{ id: 'plan', name: 'Plano', max_days: 0 }] }) }));
+vi.mock('@/hooks/usePaymentConditionCapability',()=>({usePaymentConditionCapability:()=>({data:{contract:'B2B_PAYMENT_CONDITION_V1'},isError:false})}));
+vi.mock('@/hooks/useCommercialPaymentPlans', () => ({ useCommercialPaymentPlans: () => ({ data: [{ id: 'plan', name: 'Plano', max_days: 0, payment_contract:'B2B_PAYMENT_CONDITION_V1',version:1,payment_methods:['pix'],payment_deadline_days:7,pricing_mode:'discount_from_base',installment_count:1,months_count:0,discount_percent:0,monthly_interest_percent:0 }] }) }));
 vi.mock('@/hooks/useCommercialConditions', async importOriginal => ({ ...await importOriginal<typeof import('@/hooks/useCommercialConditions')>(), usePlanAssignments: () => ({ data: [{ id: 'assignment', plan_id: 'plan', status: 'published', buyer_scope: 'partner', partner_id: 'partner', valid_from: '2020-01-01' }] }) }));
 vi.mock('@/hooks/useCatalogoUnificado', () => ({ useCatalogoUnificado: () => ({ data: [{ id: 'item', tipo: 'produto', nome: 'Produto', ativo: true, b2b_enabled: true, ficha_status: 'aprovado' }] }) }));
 vi.mock('@/components/ui/select', () => ({
@@ -17,7 +18,7 @@ import Simulator from '@/pages/comercial/SimuladorComercial';
 const form = { partner: 'p', plan: 'p', item: 'i', unit: 'hectare' as const, quantity: '1', volume: '', due: '' };
 const plan = { name: 'n', code: 'c', plan_type: 'cash', interest_type: 'none', pricing_mode: 'discount_from_base', discount_percent: 0, monthly_interest_percent: 0, max_days: 0, months_count: 0, installment_count: 1, requires_credit_approval: false, requires_guarantee: false, requires_financial_approval: false };
 const response = { quote_required: false, amounts: { table_amount: 10, discount_amount: 0, net_amount_after_discount: 10, financial_interest_amount: 0, final_amount: 10 }, schedule: [], warnings: [] };
-function complete() { const selects = screen.getAllByRole('combobox'); ['partner', 'plan', 'produto:item'].forEach((v, i) => fireEvent.change(selects[i], { target: { value: v } })); }
+function complete() { const selects = screen.getAllByRole('combobox'); ['partner', 'plan', 'produto:item'].forEach((v, i) => fireEvent.change(selects[i], { target: { value: v } })); fireEvent.change(selects.at(-1) as HTMLElement,{target:{value:'pix'}}); }
 beforeEach(() => vi.clearAllMocks());
 describe('simulador', () => {
  it.each(['0', '-1', 'Infinity', 'NaN', ''])('rejeita quantidade %s', quantity => expect(validateSimulation({ ...form, quantity }).quantity).toBeTruthy());

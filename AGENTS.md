@@ -24,6 +24,11 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Origin/partial/server candidates follow scripts/financial-price-generator-20261029/integration/AGENTS.md; local regressions use maxWorkers=2 with unchanged assertions/timeouts, and incomplete fiscal provenance stays deny-only — prevents resource saturation from masquerading as functional failure or synthetic release.
+- Receivable projections validate requested title and unique installment IDs before adoption; null KPI mode stays server-scoped and failed reads cannot authorize cached settlement — prevents foreign-target ACK without replacing RLS.
+- B2B local corrections use explicit money semantics and gated versioned payment contracts; historical evidence stays immutable and SQL runs only in disposable copies — prevents legacy rewrites and uninstalled writer dispatch.
+- This isolated copy gates App import with an exact homolog binding, deny-default transport containment and dedicated local Auth storage without preview broker; business writes, Edges, Storage, Realtime and external resources stay closed — prevents production access without relaxing server hardening.
+- Hosted scripts and historical production PRE/POST remain review-only; homolog requires exact catalog recapture, disposable recomposition and independent review, never blind install — preserves NO_GO and provenance.
 - Delivery release containment is unconditional before page orchestration, legacy hook writes, delivery stock movements and sibling physical-confirmation writers; only reviewed independent stock batches and scoped reads remain unchanged — prevents first-dispatch partial state without treating a browser lock as authority.
 - The runtime publication gate uses its focused Vitest configuration with real fetch/XHR forbidden; simulated transports never certify hosted authority — prevents accidental production tests.
 - Owner-order display classification belongs in the existing scoped contract module after envelope validation; deduplication never grants access — separates presentation from authority.
@@ -60,8 +65,8 @@
 - External users reuse receipts/provisioner, ACL closed — no fork.
 - External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.
 
-- Read nested AGENTS.md before edits — preserves review rules.
-- Current-base order reconciliation follows its nested review rules; independent wrapper release requires current-guard reproduction and never inherits composition readiness — prevents shipping an unproven lock patch with accounting dependencies.
+- Read nested AGENTS.md incl. src/lib — preserves review rules.
+- Order reconciliation follows nested rules; wrapper release needs current-guard reproduction, never composition readiness — prevents unproven lock patches.
 
 - Manual financial installment creation follows scripts/financial-installments-initial-20261024/AGENTS.md; custom schedules are validated and inserted once through server-private transaction context, never post-insert snapshot edits — preserves immutability.
 - Order entry guidance consumes existing layout capability/entitlement gates and links only to the canonical partner catalogue; commercial analysis never impersonates a buyer or mounts a new sale writer — clarifies access without activating contained operations.
@@ -96,4 +101,6 @@
 - Group/cancel: scripts/delivery-group-capability-20261030/AGENTS.md; exact capability before dispatch prevents early writes.
 - Tenant fences: scripts/{proof-select-tenant,delivery-evidence-tenant,produto-etiquetas-tenant,delivery-checklist-occurrence-authz}-20261030/AGENTS.md.
 - Label cancellation: scripts/label-cancel-closure-20261031/AGENTS.md; client/UI closed, reads kept — blocks tenant bypass.
+- Homolog alignment: scripts/homolog-alignment-20261102/AGENTS.md.
+- Original integration package: scripts/original-integration-20261102/AGENTS.md.
 - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.

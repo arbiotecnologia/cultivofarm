@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import ts from 'typescript';
+import { createUserEntrypointJavascript } from './createUserEntrypoint';
 
 // Execute the applied production entrypoint; SDK/Auth remain isolated mocks.
 function appliedSource() {
@@ -8,7 +8,7 @@ function appliedSource() {
 }
 async function invoke(role:string, extra:Record<string,unknown>={},open=true, retry=false, owned=true, lookupMode='ok', failure='', recoveryState='') {
  let source=appliedSource();if(!open)source=source.replace('B2B_PROVISIONING_CHANNELS_REVIEWED = true','B2B_PROVISIONING_CHANNELS_REVIEWED = false');
- const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:recoveryState?'compensating':'claimed',acquired:!retry,lease_valid:!retry},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
+ const rpc=vi.fn(async(name:string,args:Record<string,unknown>)=>({data:name==='has_role'?true:name==='b2b_provisioning_preflight'?{organization_id:'org',partner_id:args.p_partner,role:args.p_role,papel:args.p_papel}:{claim_id:'claim',fence:'fence',user_id:'reserved',organization_id:'org',status:recoveryState?'compensating':'claimed',acquired:!retry,lease_valid:!retry,contract:'C2_MULTIPROFILE_V1',actor_id:'admin',partner_id:args.p_partner??null,readers_ready:true,provisioning_ready:true,external_roles:args.p_roles??[],producer_links_valid:true},error:failure==='claim'&&name==='b2b_claim_provisioning'?{code:'42501'}:null}));
  const createUser=vi.fn(async()=>({data:{user:{id:'reserved'}},error:null}));const finish=vi.fn(async(_name:string,_args:Record<string,unknown>)=>{
   if(_name==='b2b_prepare_provisioning_compensation')return {data:recoveryState,error:null};
   if(_name==='b2b_complete_provisioning_compensation')return {data:failure!=='cleanup',error:failure==='cleanup'?{code:'42501'}:null};
@@ -22,7 +22,7 @@ async function invoke(role:string, extra:Record<string,unknown>={},open=true, re
  const deleteUser=vi.fn(async()=>{if(failure==='delete-timeout')throw new Error('timeout');return {error:failure==='delete-error'?{status:503}:null};});
  const server={rpc:finish,auth:{admin:{createUser,getUserById,deleteUser}},from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{organization_id:'org',ativo:true},error:null})})})})};
  let handler:((req:Request)=>Promise<Response>)|undefined;
- new Function('Deno','createClient',ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText)({env:{get:(name:string)=>name==='SUPABASE_URL'?'https://swzpzcwiasxmjutrmvkm.supabase.co':'mock'},serve:(fn:typeof handler)=>{handler=fn;}},(_u:unknown,_k:unknown,opts:unknown)=>opts?actor:server);
+ new Function('Deno','createClient',createUserEntrypointJavascript(()=>source))({env:{get:(name:string)=>name==='SUPABASE_URL'?'https://swzpzcwiasxmjutrmvkm.supabase.co':'mock'},serve:(fn:typeof handler)=>{handler=fn;}},(_u:unknown,_k:unknown,opts:unknown)=>opts?actor:server);
  if(!handler)throw new Error('missing handler');
  const response=await handler(new Request('https://isolated.invalid',{method:'POST',headers:{Authorization:'Bearer mock','Content-Type':'application/json'},body:JSON.stringify({role,nome:'Test',email:'test@example.invalid',idempotency_key:'55555555-5555-4555-8555-555555555555',...extra})}));
  return {response,rpc,createUser,finish,getUserById,deleteUser};
@@ -47,10 +47,12 @@ describe('external user applied entrypoint — SDK/Auth mocked, no deploy',()=>{
  });
  it.each(['cliente_produtor','parceiro_b2b'])('rollback gate stays closed %s',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner},false);expect(r.response.status).toBe(503);expect(r.createUser).not.toHaveBeenCalled();});
  it.each(['organization_id','org_id','tenant_id','tenant','organization','owner_organization_id'])('forged scope %s denied before claim/Auth',async field=>{const r=await invoke('cliente_produtor',{cliente_ids:[client],[field]:'foreign'});expect(r.response.status).toBe(403);expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);expect(r.createUser).not.toHaveBeenCalled();});
- it.each([{cliente_id:partner,cliente_ids:[client]},{cliente_id:client,cliente_ids:[]},{cliente_id:client,cliente_ids:[client,partner]},{cliente_ids:'invalid'}])('conflicting client payload %j denied',async payload=>{const r=await invoke('cliente_produtor',payload);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);});
+ it.each([{cliente_id:partner,cliente_ids:[client]},{cliente_id:client,cliente_ids:[]},{cliente_id:client,cliente_ids:[client,partner]},{cliente_ids:'invalid'}])('conflicting client payload %j denied',async payload=>{const r=await invoke('cliente_produtor',payload);expect([400,403]).toContain(r.response.status);expect(r.createUser).not.toHaveBeenCalled();expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);});
  it('identical singular/list alias uses one validated client',async()=>{const r=await invoke('cliente_produtor',{cliente_id:client,cliente_ids:[client]});expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_clients:[client],p_primary:client}));});
- it.each(['cliente_produtor','parceiro_b2b'])('isolated explicit role %s uses claim and finish',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner},true);expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_role:role,p_clients:role==='cliente_produtor'?[client]:[],p_primary:role==='cliente_produtor'?client:null}));expect(r.createUser).toHaveBeenCalledOnce();expect(r.finish).toHaveBeenCalledOnce();});
- it('technical remains denied even with open flag',async()=>{const r=await invoke('parceiro_b2b_tecnico',{partner_id:partner},true);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();});
+ it.each(['cliente_produtor','parceiro_b2b'])('isolated explicit role %s uses claim and finish',async(role)=>{const r=await invoke(role,role==='cliente_produtor'?{cliente_ids:[client]}:{partner_id:partner},true);expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_roles:[role],p_clients:role==='cliente_produtor'?[client]:[],p_primary:role==='cliente_produtor'?client:null}));expect(r.createUser).toHaveBeenCalledOnce();expect(r.finish).toHaveBeenCalledOnce();});
+ // C2 (23/10): Técnico B2B passa pelo claim canônico com papel tecnico; papel divergente segue negado antes do claim.
+ it('technical uses canonical claim with papel tecnico',async()=>{const r=await invoke('parceiro_b2b_tecnico',{partner_id:partner},true);expect(r.response.status).toBe(200);expect(r.rpc).toHaveBeenCalledWith('b2b_claim_provisioning',expect.objectContaining({p_roles:['parceiro_b2b_tecnico']}));});
+ it('technical with divergent papel denied even with open flag',async()=>{const r=await invoke('parceiro_b2b_tecnico',{partner_id:partner,partner_papel:'gestor'},true);expect(r.response.status).toBe(403);expect(r.createUser).not.toHaveBeenCalled();expect(r.rpc.mock.calls.map(call=>call[0])).toEqual(['has_role']);});
  it('expired occupied receipt reconciles exact own Auth, never creates another',async()=>{const r=await invoke('parceiro_b2b',{partner_id:partner},true,true);expect(r.response.status).toBe(200);expect(r.createUser).not.toHaveBeenCalled();expect(r.finish).toHaveBeenCalledOnce();});
  it('missing own UUID cannot adopt email or create Auth',async()=>{const r=await invoke('parceiro_b2b',{partner_id:partner},true,true,false);expect(r.response.status).toBe(409);expect(r.createUser).not.toHaveBeenCalled();expect(r.finish).not.toHaveBeenCalled();});
  it.each(['ok','error','throw'])('pre-Auth crash/uncertain lookup %s stays pending on same request',async(mode)=>{

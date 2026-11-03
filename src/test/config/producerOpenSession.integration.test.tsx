@@ -7,6 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useState } from 'react';
 const U='00000000-0000-4000-8000-000000000001', O='00000000-0000-4000-8000-000000000002', C='00000000-0000-4000-8000-000000000003', D='00000000-0000-4000-8000-000000000004';
 const s=vi.hoisted(()=>({gate:true,roles:['cliente_produtor'],org:'00000000-0000-4000-8000-000000000002',ids:['00000000-0000-4000-8000-000000000003'] as unknown, rowOrg:undefined as string|undefined, h15:0,hold:undefined as undefined|(()=>Promise<unknown>),late:undefined as undefined|(()=>Promise<unknown>),error:false}));
+// This historical suite targets the h15/RLS producer probe, not C2's envelope.
+// C2 current contracts remain covered separately; no runtime gate is modified.
+vi.mock('@/lib/authz/multiProfileContract',async importOriginal=>({...await importOriginal<typeof import('@/lib/authz/multiProfileContract')>(),isC2ExternalScope:()=>false}));
 function chain(result:()=>unknown){const q:Record<string,unknown>={};for(const n of ['select','eq','is','filter','in','not','neq','order','abortSignal'])q[n]=()=>q;q.maybeSingle=async()=>result();q.then=(f:(v:unknown)=>void)=>Promise.resolve(result()).then(f);return q;}
 vi.mock('@/lib/authz/authzEpochGate',()=>({AUTHZ_CACHE_FOUNDATION_ENABLED:true,COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: false, AUTHZ_CACHE_ROLLOUT_SCOPE:'b2b-context',FINANCIAL_CONTEXT_MONITOR_ENABLED:false,get PRODUCER_CONTEXT_MONITOR_ENABLED(){return s.gate;}}));
 vi.mock('@/lib/portalBroadcast',()=>({subscribePortalEvents:()=>()=>{},broadcastPortalEvent:()=>{}}));
@@ -34,7 +37,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
  rpc:(name:string)=>{const request=(async()=>{
   if(name==='h15_actor_organization'){s.h15++; const hold=s.hold;s.hold=undefined;return {data:hold?await hold():s.org,error:s.error?{}:null};}
   if(name==='get_cliente_ids_for_user')return {data:s.ids,error:null};
-  if(name==='get_my_available_portal_contexts')return {data:{available_contexts:[],has_technical_access:false,is_admin:false}};
+  if(name==='get_my_available_portal_contexts')return {data:{available_contexts:['producer'],has_technical_access:false,is_admin:false}};
   throw new Error('unexpected '+name);
  })();return Object.assign(request,{abortSignal:()=>request});},
  channel:()=>{const c={on:()=>c,subscribe:()=>c};return c;},removeChannel:()=>{}

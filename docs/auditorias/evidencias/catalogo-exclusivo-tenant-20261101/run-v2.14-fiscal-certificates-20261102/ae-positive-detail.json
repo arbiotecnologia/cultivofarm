@@ -1,0 +1,5 @@
+{
+ "synthetic_stubs_in_tx": "CREATE SCHEMA IF NOT EXISTS extensions; CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions; INSERT INTO public.etiqueta_templates(codigo,nome,largura_mm,altura_mm,ativo,versao) VALUES ('etiqueta-produto-principal','Etiqueta produto (fixture)',100,50,true,1);",
+ "embalagens_own": "{\"success\": true, \"warnings\": [], \"embalagens\": [{\"etiqueta_id\": null, \"embalagem_id\": \"2c4bf175-6af6-49b2-9576-f3f482877adf\", \"codigo_embalagem\": \"AR-EMB-000002\"}], \"total_embalagens\": 1}",
+ "etiqueta_own": "{\"success\": true, \"trace_url\": \"/rastrear-produto/332b00d0-f627-4823-b187-efd13f97b7f5\", \"cq_liberado\": false, \"etiqueta_id\": \"6fc11844-7d8b-4bd2-b7c0-57d09f677e69\", \"trace_token\": \"332b00d0-f627-4823-b187-efd13f97b7f5\", \"codigo_etiqueta\": \"AR-LB-000001\", \"qr_code_payload\": \"/rastrear-produto/332b00d0-f627-4823-b187-efd13f97b7f5\", \"template_versao\": \"etiqueta-produto-principal@v1\", \"validade_orige"
+}

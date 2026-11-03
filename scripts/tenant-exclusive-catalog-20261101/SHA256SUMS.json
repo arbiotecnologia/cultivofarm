@@ -1,0 +1,7 @@
+{
+ "00-pre-global.sql.review": "9e10e9fe0550dd647329b6d33db6d1fad023f85a9e2f45f2a901f65e5603fc66",
+ "01-migrate.sql.review": "b1ccce80d8a49cd34dc31d8e3d41e5322b942ab8c3da65b70287cad840bea032",
+ "02-chain-purge-maintenance.sql.review": "ded870f8447eb1682df9b5d202bf10a8b0085e96150f5f5cd122a5d4314c6242",
+ "homolog-clean/00-pre-global.homolog-clean.sql.review": "016211bf50e48cf441f9d7ecd8b1ff8a2fbb2400c25c43acdd00c91188aa5662",
+ "homolog-clean/01-migrate.homolog-clean.sql.review": "0a2177deef4c8dd24de278657a6db79efa3d6ca053053508a65c9407f5e9488c"
+}

@@ -49,7 +49,7 @@ import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 
 const VOLUME = { id: "vol-1", item_tipo: "produto", produto_id: state.partner, microrganismo_id: null,
   volume_ml: 1000, rotulo: "1 L", preco_brl: 10, moeda: "BRL", ativo: true, ordem: 1 };
-const PLAN = { id: "plan-1", name: "À vista", code: "CASH", description: null, plan_type: "cash",
+const PLAN = { payment_contract:'B2B_PAYMENT_CONDITION_V1',version:1,payment_methods:['pix'],payment_deadline_days:7,pricing_mode:'discount_from_base', id: "plan-1", name: "À vista", code: "CASH", description: null, plan_type: "cash",
   max_days: 0, months_count: 1, installment_count: 1, discount_percent: 0, monthly_interest_percent: 0,
   interest_type: "none", requires_credit_approval: false, requires_guarantee: false,
   requires_financial_approval: false, minimum_order_amount: null, sort_order: 1 };
@@ -70,6 +70,7 @@ beforeEach(() => {
     throw new Error(`Unexpected table read: ${table}`);
   });
   state.rpc.mockImplementation((name: string, args?: Record<string, unknown>) => {
+    if(name==='partner_payment_condition_capability_v1') return response({contract:'B2B_PAYMENT_CONDITION_V1',actor_id:state.actor,organization_id:state.tenant,partner_id:state.partner,simulate:true,create:true});
     if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
     const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
@@ -85,7 +86,7 @@ beforeEach(() => {
     }]);
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([PLAN]);
     if (name === "simulate_b2b_payment_plan_secure") return response({
-      partner_id: state.partner, pricing_mode: "discount_from_base", quote_required: false, cart_hash: "hash-1",
+      payment_choice: args?.p_payment_choice, partner_id: state.partner, pricing_mode: "discount_from_base", quote_required: false, cart_hash: "hash-1",
       payment_plan: { id: PLAN.id, name: PLAN.name, code: PLAN.code, pricing_mode: "discount_from_base", discount_percent: 0,
         monthly_interest_percent: 0, months_count: 1, installment_count: 1, requires_financial_approval: false,
         requires_credit_approval: false, requires_guarantee: false },
@@ -93,7 +94,7 @@ beforeEach(() => {
       schedule: [{ installment_number: 1, due_date: minDeliveryDateISO(), amount: 10, principal_amount: 10, interest_amount: 0 }],
       warnings: [],
     });
-    if (name === "create_partner_order_secure") return response({ id: "d4539dd9-b090-4433-9ed3-6f8f5d3e767b", numero: "PB-001029", total: 10 });
+    if (name === "create_partner_order_secure") return response({ payment_choice: args?.p_payment_choice, id: "d4539dd9-b090-4433-9ed3-6f8f5d3e767b", numero: "PB-001029", total: 10 });
     if (name === "get_my_commercial_orders_projection") return response({
       partner_id: state.partner,
       orders: [{ id: "d4539dd9-b090-4433-9ed3-6f8f5d3e767b", numero: "PB-001029", status: "em_analise_comercial", created_at: "2026-10-26T15:00:00+00:00" }],
@@ -128,6 +129,8 @@ it("data preenchida aparece no resumo e chega à RPC create_partner_order_secure
   expect(resumo.textContent).toBe(formatDateDisplay(date));
 
   fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
+  fireEvent.click(await screen.findByRole("combobox", {name:"Forma de pagamento"}));
+  fireEvent.click(await screen.findByRole("option", {name:"Pix"}));
   const submit = await screen.findByRole("button", { name: "Enviar pedido para análise" });
   await waitFor(() => expect(submit).toBeEnabled());
   fireEvent.click(submit);

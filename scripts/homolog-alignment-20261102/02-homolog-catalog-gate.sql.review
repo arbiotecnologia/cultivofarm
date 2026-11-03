@@ -1,0 +1,78 @@
+-- 02 GATE DO CATÁLOGO NA HOMOLOGAÇÃO — READ ONLY. Variante de instalação LIMPA (homolog), declarada; difere da de
+-- produção SOMENTE por aceitar ausentes os 25 wrappers/cores globais (fechados por ausência; se presentes, md5 obrigatório):
+--   * executar em seguida, sem alterar um byte: homolog-clean/00-pre-global.homolog-clean.sql.review sha256=016211bf50e48cf441f9d7ecd8b1ff8a2fbb2400c25c43acdd00c91188aa5662
+--                                              homolog-clean/01-migrate.homolog-clean.sql.review sha256=0a2177deef4c8dd24de278657a6db79efa3d6ca053053508a65c9407f5e9488c
+--   * 02-chain-purge-maintenance (produção) NÃO se aplica: os 19 ids não existem aqui; o PRE do catálogo confere contagem 0
+--     por id real (não há hash fingido). A prova do algoritmo 02 é só em PostgreSQL descartável com fixtures pinadas.
+--   * produtos homolog sem pai de tenant (sem lote/pedido/OS/visita) saem do catálogo com snapshot integral no ledger
+--     (algoritmo canônico 'global_removed'); fixtures próprias entram depois por tenant_product_save com JWT real.
+BEGIN TRANSACTION READ ONLY;
+DO $gate$ DECLARE v_fail text[] := ARRAY[]::text[]; v_n bigint; v_cron text; r record; BEGIN
+  -- 1. impressão digital: SOMENTE a homologação (empresas homolog presentes, nenhuma empresa de produção)
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = 'c809e74f-486b-44b2-b2f4-4088f53421bb') OR NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = 'dcf50a75-579a-4828-a0fc-1d8eadcb4b8a') THEN
+    v_fail := v_fail || 'not_homolog:homolog_orgs_absent'::text; END IF;
+  IF EXISTS (SELECT 1 FROM public.organizations WHERE id IN ('8eae2bc1-ad00-4402-9f57-564258e493ca','442444d9-263f-45d9-a991-a679498d06c3','4e537fd6-4632-4c70-a782-386dba3e8f9f','8f57c7dd-0557-4041-b401-7a00f7244626','007bb519-cba0-4704-be2c-cb93ad010048')) THEN v_fail := v_fail || 'not_homolog:production_org_present'::text; END IF;
+  IF current_setting('server_version_num')::int < 170000 THEN v_fail := v_fail || 'pg_version_below_17'::text; END IF;
+  -- trava homolog preservada (exatamente 1 gatilho habilitado)
+  IF (SELECT count(*) FROM pg_trigger WHERE tgname = 'a00_homolog_validation_no_receivable' AND NOT tgisinternal AND tgenabled <> 'D') <> 1 THEN
+    v_fail := v_fail || 'homolog_trava_missing_or_disabled'::text; END IF;
+  -- automações e fiscal desligados
+  IF to_regclass('cron.job') IS NOT NULL THEN
+    -- estado pinado: exatamente 7 jobs, todos inativos (nunca reativados/excluídos); hash fixado na TX
+    EXECUTE 'SELECT count(*) FROM cron.job' INTO v_n; IF v_n <> 7 THEN v_fail := v_fail || ('cron_jobs_count_drift:'||v_n); END IF;
+    EXECUTE 'SELECT count(*) FROM cron.job WHERE active IS DISTINCT FROM false' INTO v_n; IF v_n <> 0 THEN v_fail := v_fail || ('cron_jobs_active:'||v_n); END IF;
+    EXECUTE $c$SELECT md5(coalesce(string_agg(concat_ws('|',jobid,jobname,schedule,command,database,username,active),E'
+' ORDER BY jobid),'')) FROM cron.job$c$ INTO v_cron;
+    PERFORM set_config('homolog_align.cron_md5', v_cron, true);
+  ELSE v_fail := v_fail || 'cron_schema_absent_unexpected'::text; END IF;
+  IF to_regclass('public.company_fiscal_settings') IS NOT NULL THEN
+    EXECUTE 'SELECT count(*) FROM public.company_fiscal_settings WHERE nfe_enabled OR nfse_enabled OR production_enabled' INTO v_n;
+    IF v_n <> 0 THEN v_fail := v_fail || 'fiscal_enabled'::text; END IF; END IF;
+  -- estado ATUAL (03/11): 01 aplicado (ledger done), colunas access_* (06/delta do auditor), identidades 10 finais,
+  -- SMTP lane ausente, cron 7 inativos, fiscal 0, trava sem recebível ligada (fingerprint acima).
+  FOR r IN SELECT * FROM (VALUES ('access_operation_id','uuid'),
+  ('access_operation_kind','text'),
+  ('access_operation_status','text'),
+  ('access_requested_at','timestamp with time zone'),
+  ('access_expires_at','timestamp with time zone'),
+  ('access_valid_after','timestamp with time zone')) m(c, t) LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = to_regclass('public.platform_org_admin_invites') AND a.attname = r.c AND NOT a.attisdropped
+                     AND format_type(a.atttypid, a.atttypmod) = r.t AND NOT a.attnotnull AND NOT a.atthasdef) THEN
+      v_fail := v_fail || ('gate_invite_access_column:'||r.c); END IF;
+  END LOOP;
+  -- ledger consultado dinamicamente: a ausência da relação vira falha nomeada, não erro de parse
+  IF to_regclass('platform_private.homolog_identity_fixture_ledger') IS NULL THEN v_fail := v_fail || 'identity_fixtures_not_applied'::text;
+  ELSE
+    EXECUTE $q$SELECT count(DISTINCT step) FROM platform_private.homolog_identity_fixture_ledger
+               WHERE (step LIKE 'rh\_%\_to\_final' AND subject=$1) OR (step LIKE 't4\_%\_to\_final' AND subject=$2)
+                  OR (step='arbio_admin_invariant' AND subject=$3)$q$ INTO v_n USING '86a2b787-83e8-4274-934c-adc8440339cc'::uuid, '321e643b-e5c7-4b08-bf2d-be3aaaade53e'::uuid, 'c95f9261-a3bb-48f2-80e6-bb653e4b916f'::uuid;
+    IF v_n < 3 THEN v_fail := v_fail || 'identity_fixtures_not_applied'::text; END IF;
+  END IF;
+  IF (SELECT count(*) FROM public.profiles WHERE user_id='86a2b787-83e8-4274-934c-adc8440339cc' AND organization_id='dcf50a75-579a-4828-a0fc-1d8eadcb4b8a' AND cliente_id IS NULL AND ativo) <> 1
+     OR (SELECT coalesce(array_agg(role::text ORDER BY role::text),'{}') FROM public.user_roles WHERE user_id='86a2b787-83e8-4274-934c-adc8440339cc') <> ARRAY['administrador']
+     OR EXISTS (SELECT 1 FROM public.partner_users WHERE user_id='86a2b787-83e8-4274-934c-adc8440339cc') OR EXISTS (SELECT 1 FROM public.user_clientes WHERE user_id='86a2b787-83e8-4274-934c-adc8440339cc') THEN
+    v_fail := v_fail || 'identity_rh_not_final'::text; END IF;
+  IF (SELECT count(*) FROM public.profiles WHERE user_id='321e643b-e5c7-4b08-bf2d-be3aaaade53e' AND organization_id='c809e74f-486b-44b2-b2f4-4088f53421bb' AND cliente_id IS NULL AND ativo) <> 1
+     OR (SELECT coalesce(array_agg(role::text ORDER BY role::text),'{}') FROM public.user_roles WHERE user_id='321e643b-e5c7-4b08-bf2d-be3aaaade53e') <> ARRAY['parceiro_b2b']
+     OR (SELECT count(*) FROM public.partner_users WHERE user_id='321e643b-e5c7-4b08-bf2d-be3aaaade53e') <> 1
+     OR (SELECT count(*) FROM public.partner_users WHERE user_id='321e643b-e5c7-4b08-bf2d-be3aaaade53e' AND partner_id='e770d10e-5efc-46e3-9b03-fdd6b982a6f1' AND papel='gestor' AND revoked_at IS NULL AND tenant_id='c809e74f-486b-44b2-b2f4-4088f53421bb') <> 1
+     OR EXISTS (SELECT 1 FROM public.user_clientes WHERE user_id='321e643b-e5c7-4b08-bf2d-be3aaaade53e') THEN
+    v_fail := v_fail || 'identity_teste4_not_final'::text; END IF;
+  IF (SELECT count(*) FROM public.profiles WHERE user_id='c95f9261-a3bb-48f2-80e6-bb653e4b916f' AND organization_id='c809e74f-486b-44b2-b2f4-4088f53421bb' AND ativo) <> 1
+     OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id='c95f9261-a3bb-48f2-80e6-bb653e4b916f' AND role::text='administrador') THEN
+    v_fail := v_fail || 'identity_arbio_admin_changed'::text; END IF;
+  IF (SELECT count(*) FROM pg_proc WHERE proname = ANY(ARRAY['tenant_smtp_lane_enqueue_solicitacao','tenant_smtp_lane_log','tenant_smtp_lane_ready','tenant_smtp_lane_recipient','tenant_smtp_lane_source_reason']::text[]::name[])) <> 0 THEN v_fail := v_fail || 'smtp_lane_present'::text; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = 'c809e74f-486b-44b2-b2f4-4088f53421bb') OR EXISTS (SELECT 1 FROM public.organizations WHERE id IN ('8eae2bc1-ad00-4402-9f57-564258e493ca','442444d9-263f-45d9-a991-a679498d06c3','4e537fd6-4632-4c70-a782-386dba3e8f9f','8f57c7dd-0557-4041-b401-7a00f7244626','007bb519-cba0-4704-be2c-cb93ad010048')) THEN
+    v_fail := v_fail || 'not_homolog'::text; END IF;
+  IF to_regclass('platform_private.homolog_alignment_ledger') IS NULL OR NOT EXISTS (SELECT 1 FROM platform_private.homolog_alignment_ledger WHERE step='done')
+     OR NOT EXISTS (SELECT 1 FROM platform_private.homolog_alignment_ledger WHERE step='start' AND detail->>'input_sha256' = '799da8a507f085fd947d5f8eca09f3df9462097cde3fb6b44289eab5c0f35761') THEN
+    v_fail := v_fail || 'homolog_alignment_not_applied'::text; END IF;
+  IF to_regclass('platform_private.chain_purge_maintenance_ledger') IS NOT NULL THEN v_fail := v_fail || 'production_chain_purge_must_not_run_here'::text; END IF;
+  IF to_regclass('platform_private.tenant_catalog_migration_ledger') IS NOT NULL THEN v_fail := v_fail || 'catalog_already_applied'::text; END IF;
+  SELECT count(*) INTO v_n FROM public.produtos;
+  IF v_n <> 7 THEN v_fail := v_fail || ('homolog_products_not_7:'||v_n); END IF;
+  IF EXISTS (SELECT 1 FROM public.microrganismos) OR EXISTS (SELECT 1 FROM public.culturas) OR EXISTS (SELECT 1 FROM public.partner_orders)
+     OR EXISTS (SELECT 1 FROM public.entregas) OR EXISTS (SELECT 1 FROM public.fiscal_invoices) THEN v_fail := v_fail || 'homolog_inventory_changed'::text; END IF;
+  IF cardinality(v_fail) > 0 THEN RAISE EXCEPTION 'homolog_catalog_gate_failed' USING DETAIL = array_to_string(v_fail, ' | '); END IF;
+END $gate$;
+COMMIT;

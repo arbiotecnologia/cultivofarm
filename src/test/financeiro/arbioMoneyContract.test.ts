@@ -1,0 +1,14 @@
+import { expect, it } from 'vitest';
+import { calcularSaldoRecebivel } from '@/lib/financeiro/baixaRecebimento';
+import { saldoParcela, calcularKpisReceber } from '@/lib/financeiro/contasReceber';
+import { priceSchedule } from '@/lib/comercial/price';
+const financed = { original_amount: 10300, monetary_semantics: 'financed_total_v1' as const, financed_interest_amount: 300, interest_amount: 300 };
+it('legado principal10000 mais juros300 permanece10300', () => expect(calcularSaldoRecebivel({ original_amount: 10000, interest_amount: 300 })).toBe(10300));
+it('sem discriminator não reinterpreta histórico10300+300', () => expect(calcularSaldoRecebivel({ original_amount: 10300, interest_amount: 300 })).toBe(10600));
+it('financiado10300 com breakdown300 não duplica', () => expect(saldoParcela(financed)).toBe(10300));
+it('mora parcial desconto novos juros continuam aditivos', () => expect(calcularSaldoRecebivel({ ...financed, interest_amount: 400, penalty_amount: 200, discount_amount: 50, received_amount: 3000 })).toBe(7550));
+it('estorno devolve saldo sem perder financiamento', () => expect(calcularSaldoRecebivel({ ...financed, received_amount: 0 })).toBe(10300));
+it('replay de leitura não muda saldo nem dados', () => { const before = JSON.stringify(financed); expect(saldoParcela(financed)).toBe(saldoParcela(financed)); expect(JSON.stringify(financed)).toBe(before); });
+it('semântica incompleta bloqueia em vez de subtrair juros globais', () => expect(() => saldoParcela({ ...financed, financed_interest_amount: undefined })).toThrow());
+it('KPI segue saldo único e estorno caixa negativo', () => expect(calcularKpisReceber([{ ...financed, status: 'OPEN', due_date: '2026-11-03' }], [{ amount_received: -3000, payment_date: '2026-11-01' }], '2026-11-01')).toEqual({ aberto: 10300, vencido: 0, vence7: 10300, recebidoMes: -3000 }));
+it('Price fecha principal em centavos e juros sobre saldo', () => { const rows = priceSchedule(60000, 1.8, 3); expect(rows.map(r => r.original_amount)).toEqual([20724.28,20724.28,20724.28]); expect(rows[2].balance).toBe(0); expect(rows.reduce((s,r)=>s+Math.round(r.principal_amount*100),0)).toBe(6000000); });

@@ -1,0 +1,116 @@
+{"id": "SCH-2", "scenario": "104 funções LIVE carregadas byte-exatas", "expected": 0, "actual": 0, "status": "PASS", "kind": "PG_DISPOSABLE_LIVE_FUNCTION_BODIES"}
+{"id": "PRE-9", "scenario": "25 wrappers globais carregados com corpos LIVE e md5 capturado reproduzido (sem stub, sem drift)", "expected": "25|0|0", "actual": "25|0|0", "status": "PASS", "kind": "PG_DISPOSABLE_LIVE_FUNCTION_BODIES"}
+{"id": "PRE-9b", "scenario": "wrapper global alterado (drift real de corpo): PRE aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "SCH-1", "scenario": "esquema descartável carrega as 151 FKs reais com definições exatas", "expected": "151", "actual": "151", "status": "PASS", "kind": "PG_DISPOSABLE_REAL_FK_DEFS"}
+{"id": "PRE-1", "scenario": "PRE aprova estado com FKs reais (READ ONLY)", "expected": "OK", "actual": "OK", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-2", "scenario": "FK real nova para raiz (culturas) não mapeada aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-3", "scenario": "FK esperada ausente (drift) aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-4", "scenario": "coluna de pai usada na derivação ausente aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-5", "scenario": "instalação parcial em qualquer raiz detectada", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-6", "scenario": "único por expressão em raiz aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-7", "scenario": "FK de 2º nível (declaração->conjunto) exigida", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-8", "scenario": "drift de corpo em função consumidora capturada aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "DIV-1", "scenario": "cadeias de tenant divergentes (entrega ARB x lote FSF): aborta, sem COALESCE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "CHN-1", "scenario": "cadeia sem empresa ainda presente: migração aborta (manutenção 02 é pré-requisito)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-10", "scenario": "fiscal ligado aborta PRE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-11", "scenario": "guard de origem do recebível ausente aborta PRE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POST-1", "scenario": "injeção de falha: recebível marcado durante a migração aborta no POST", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-0", "scenario": "regra sem tenant referenciada por snapshot de pedido: aborta (não descarta)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-0b", "scenario": "aborto não deixa coluna/mapa (transação única)", "expected": "0|false", "actual": "0|false", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-1", "scenario": "migração transacional completa (regra órfã não referenciada descartada)", "expected": "OK", "actual": "OK", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-2", "scenario": "produtos: ARB {P1,P3,P4,P5} + FSF {P1,P3,P4} = 7; sem global", "expected": "7|0", "actual": "7|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-3", "scenario": "ARB tem 4 e FSF tem 3 produtos", "expected": "007bb519-cba0-4704-be2c-cb93ad010048:4,8f57c7dd-0557-4041-b401-7a00f7244626:3", "actual": "007bb519-cba0-4704-be2c-cb93ad010048:4,8f57c7dd-0557-4041-b401-7a00f7244626:3", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-4", "scenario": "empresas sem uso (CultivoFarm/Homolog/REFIL) começam com catálogo vazio", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-5", "scenario": "item do pedido do parceiro FSF -> cópia da AR Bio (vendedor), não do tenant FSF", "expected": "007bb519-cba0-4704-be2c-cb93ad010048", "actual": "007bb519-cba0-4704-be2c-cb93ad010048", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-6", "scenario": "lote/estoque do tenant FSF -> cópia FSF", "expected": "8f57c7dd-0557-4041-b401-7a00f7244626|8f57c7dd-0557-4041-b401-7a00f7244626", "actual": "8f57c7dd-0557-4041-b401-7a00f7244626|8f57c7dd-0557-4041-b401-7a00f7244626", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-6b", "scenario": "estoque do lote ARB reservado a cliente FSF -> dono do LOTE (ARB)", "expected": "007bb519-cba0-4704-be2c-cb93ad010048", "actual": "007bb519-cba0-4704-be2c-cb93ad010048", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-7", "scenario": "P1 tem cópias distintas ARB e FSF", "expected": "2", "actual": "2", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-8", "scenario": "componente/microrganismo da formulação no mesmo tenant do produto pai (2 cópias)", "expected": "2|0", "actual": "2|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-9", "scenario": "microrganismo M1 (lote ARB) copiado para ARB com product_id -> cópia ARB de P5", "expected": "1|0", "actual": "1|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-10", "scenario": "microrganismos: ARB {M1,M3} + FSF {M3}; M2 sem uso removido", "expected": "3", "actual": "3", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-11", "scenario": "culturas: C1 em ARB e FSF; C2 sem uso removida", "expected": "2", "actual": "2", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-12", "scenario": "sugestões de visita seguem a cultura por tenant (C1×2; C2 removida)", "expected": "2", "actual": "2", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-13", "scenario": "talhão FSF/ARB -> cultura do próprio tenant", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-14", "scenario": "visita derivada pelo talhão ARB -> cultura ARB", "expected": "007bb519-cba0-4704-be2c-cb93ad010048", "actual": "007bb519-cba0-4704-be2c-cb93ad010048", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-15", "scenario": "declaração de composição (FK 2º nível) copiada junto do conjunto por tenant", "expected": "2|2", "actual": "2|2", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-16", "scenario": "dossiê/snapshot/apresentação do M1 copiados para ARB; apresentação -> volume ARB", "expected": "1|1|1|007bb519-cba0-4704-be2c-cb93ad010048", "actual": "1|1|1|007bb519-cba0-4704-be2c-cb93ad010048", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-17", "scenario": "entrega sem tenant derivável: vínculo anulado e registrado (sem tenant inventado)", "expected": "1|1", "actual": "1|1", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-18", "scenario": "campanha e regra sem tenant descartadas com snapshot", "expected": "0|0|2", "actual": "0|0|2", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-19", "scenario": "triggers restaurados exatamente (selado O, snapshot O, desligado D)", "expected": "O|O|D", "actual": "O|O|D", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-20", "scenario": "imutabilidade do item selado volta a valer", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-21", "scenario": "códigos únicos por tenant (BX em ARB e FSF)", "expected": "2", "actual": "2", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-22", "scenario": "ownership NOT NULL nas 3 raízes", "expected": "NO,NO,NO", "actual": "NO,NO,NO", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-23", "scenario": "nenhuma FK repontada usou UPDATE genérico por organization_id (sem coluna no item de pedido)", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "OWN-1", "scenario": "formulações/volumes: dono explícito NOT NULL e igual ao dono do produto/micro", "expected": "0|0", "actual": "0|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "OWN-2", "scenario": "volume com produto de outra empresa negado (mesmo como owner do banco)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "OWN-3", "scenario": "dono de formulação imutável", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "OWN-4", "scenario": "microrganismos.product_id não anulado: vínculos apontam para produto do mesmo dono", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-25", "scenario": "item NF-e ARB -> cópia ARB do produto (sem FK; tenant = emitente)", "expected": "007bb519-cba0-4704-be2c-cb93ad010048", "actual": "007bb519-cba0-4704-be2c-cb93ad010048", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-26", "scenario": "item NFS-e (serviço) intacto", "expected": "00000000-0000-0000-0000-000000000059", "actual": "00000000-0000-0000-0000-000000000059", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-27", "scenario": "item NF-e FSF -> cópia FSF", "expected": "8f57c7dd-0557-4041-b401-7a00f7244626", "actual": "8f57c7dd-0557-4041-b401-7a00f7244626", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-28", "scenario": "snapshot fiscal JSON (chaves whitelist, sem id de catálogo) inalterado", "expected": "{\"ncm\": \"31010000\"}", "actual": "{\"ncm\": \"31010000\"}", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-29", "scenario": "sem geração: 0 recebíveis, 0 pedidos gerados, 7 origens bloqueantes, 3 settings auto preservados", "expected": "0|0|7|3", "actual": "0|0|7|3", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-30", "scenario": "guard de recebível bloqueia pedido existente após migração", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-12", "scenario": "todas as sobrecargas globais (>=59) sem EXECUTE para authenticated/anon", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-13", "scenario": "funções globais presentes no teste", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-1", "scenario": "admin ARB vê só produtos da ARB", "expected": "4|0", "actual": "4|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-2", "scenario": "usuário FSF (inclusive comprador B2B) não lê catálogo ARB", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-3", "scenario": "Superadmin sem tenant: zero linhas (sem bypass global)", "expected": "0|0|0", "actual": "0|0|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-4", "scenario": "anon negado em produtos", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-4b", "scenario": "anon negado em microrganismos", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-5", "scenario": "escrita direta em produtos negada (só RPC)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-6", "scenario": "escritor do catálogo global fechado no servidor", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-7", "scenario": "perfil fiscal (descendente) restrito ao tenant", "expected": "1", "actual": "1", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-8", "scenario": "microrganismo: escritor existente cria no PRÓPRIO tenant (dono derivado no servidor)", "expected": "007bb519-cba0-4704-be2c-cb93ad010048", "actual": "007bb519-cba0-4704-be2c-cb93ad010048", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-9", "scenario": "microrganismo com tenant alheio negado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-10", "scenario": "REFIL (empresa nova) vê catálogo vazio", "expected": "0|0|0", "actual": "0|0|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "ACL-11", "scenario": "apresentação regulatória visível só ao dono do dossiê", "expected": "1|0", "actual": "1|0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-1", "scenario": "admin ARB cria produto próprio", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-2", "scenario": "mesmo nome em outro tenant permitido", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-3", "scenario": "duplicado normalizado no mesmo tenant negado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-4", "scenario": "replay mesma chave devolve recibo", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-5", "scenario": "mesma chave, payload diferente negado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-6", "scenario": "outro tenant não altera", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-7", "scenario": "CAS obsoleto => PT409", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-8", "scenario": "CAS ausente negado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-9", "scenario": "tenant no payload proibido", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-10", "scenario": "valor negativo negado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-11", "scenario": "edição com CAS correto", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "TYP-1", "scenario": "criação com enum real tipo_produto (sem 42804)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "TYP-2", "scenario": "b2b_enabled omitido = false (default LIVE true não libera B2B)", "expected": "fungicida|false", "actual": "fungicida|false", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "TYP-3", "scenario": "enum inválido recusado (22P02)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "TYP-4", "scenario": "criação sem tipo recusada antes do INSERT", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "TYP-5", "scenario": "b2b_enabled null recusado (sem 23502)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "TYP-6", "scenario": "b2b_enabled true explícito aceito", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "TYP-7", "scenario": "UPDATE CASE com enum tipado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-12", "scenario": "arquivamento com CAS", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-13", "scenario": "lista padrão oculta arquivados (+2 TYP)", "expected": "6", "actual": "6", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-14", "scenario": "lista com arquivados (+2 TYP)", "expected": "7", "actual": "7", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-15", "scenario": "Superadmin negado pelo ator LIVE (sem bypass)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-16", "scenario": "membro sem papel gestor/admin negado pelo ator LIVE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-17", "scenario": "anon sem EXECUTE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-18", "scenario": "dono imutável (produtos)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-18b", "scenario": "dono imutável (culturas)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-19", "scenario": "auditoria imutável", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "RPC-20", "scenario": "auditoria registra create/update/archive", "expected": "archive,create,update", "actual": "archive,create,update", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-1", "scenario": "culturas: leitor (sem papel admin/gestor) lê o próprio tenant", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-2", "scenario": "culturas: leitor NÃO insere (RLS de escrita exige 'mutate')", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-3", "scenario": "culturas: leitor NÃO atualiza (0 linhas)", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-4", "scenario": "culturas: leitor NÃO exclui (0 linhas)", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-5", "scenario": "culturas: gestor FSF insere e dono é derivado do servidor (FSF)", "expected": "8f57c7dd-0557-4041-b401-7a00f7244626", "actual": "8f57c7dd-0557-4041-b401-7a00f7244626", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-6", "scenario": "culturas: gestor FSF não grava com dono AR Bio", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-7", "scenario": "culturas: gestor FSF não altera linhas AR Bio (invisíveis)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-8", "scenario": "culturas: Superadmin sem bypass", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-culturas-9", "scenario": "culturas: anon sem acesso", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-1", "scenario": "microrganismos: leitor (sem papel admin/gestor) lê o próprio tenant", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-2", "scenario": "microrganismos: leitor NÃO insere (RLS de escrita exige 'mutate')", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-3", "scenario": "microrganismos: leitor NÃO atualiza (0 linhas)", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-4", "scenario": "microrganismos: leitor NÃO exclui (0 linhas)", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-5", "scenario": "microrganismos: gestor FSF insere e dono é derivado do servidor (FSF)", "expected": "8f57c7dd-0557-4041-b401-7a00f7244626", "actual": "8f57c7dd-0557-4041-b401-7a00f7244626", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-6", "scenario": "microrganismos: gestor FSF não grava com dono AR Bio", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-7", "scenario": "microrganismos: gestor FSF não altera linhas AR Bio (invisíveis)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-8", "scenario": "microrganismos: Superadmin sem bypass", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-microrganismos-9", "scenario": "microrganismos: anon sem acesso", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POL-10", "scenario": "nenhuma policy FOR ALL nas raízes/descendentes do catálogo", "expected": "0", "actual": "22", "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-24", "scenario": "reexecução bloqueada pelo PRE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"PASS": 108, "FAIL": 7, "fks": 151, "tables": 59}

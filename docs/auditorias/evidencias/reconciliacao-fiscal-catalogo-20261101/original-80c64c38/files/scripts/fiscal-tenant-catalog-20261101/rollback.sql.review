@@ -1,0 +1,7 @@
+-- Rollback deny-only. NÃO remove policies restritivas (removê-las reabriria leitura entre empresas)
+-- nem recibos. Fecha o gate e revoga execução dos RPCs.
+BEGIN;
+UPDATE platform_private.owned_fiscal_gate SET enabled=false WHERE singleton;
+REVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_list(integer,integer) FROM PUBLIC, anon, authenticated;
+COMMIT;

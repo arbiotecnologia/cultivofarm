@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn(),
+    // Módulos importados fazem `supabase.rpc.bind(supabase)` no carregamento; o simulado nunca responde com dados.
+    rpc: vi.fn(async () => ({ data: null, error: { message: "rpc_not_mocked" } })),
   },
 }));
 

@@ -124,13 +124,18 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   },
   // Fase Fiscal 3.1 — Configuração fiscal da empresa. Admin edita;
   // gestor e financeiro somente leem. Demais perfis: bloqueado.
+  // Catálogo EXCLUSIVO por empresa (01/11/2026): cada tenant cadastra os próprios produtos.
+  // Servidor (tenant_product_*) deriva o tenant e decide a escrita; aqui só a visibilidade da tela.
+  "/configuracoes/produtos": {
+    administrador: "rw", gestor: "r", gestor_comercial: "r", financeiro: "r",
+  },
   "/configuracoes/fiscal/empresa": {
     administrador: "rw", gestor: "r", financeiro: "r",
   },
   // Rota unificada: nível canônico preservado para o editor de microrganismos
   // (RLS microorganism_fiscal_profiles_write: admin OU financeiro; gestor lê).
   // Perfis de PRODUTO são globais: na página o editor de produto é separado
-  // (canEditProduct) e só o Superadmin forte edita, dentro de /plataforma.
+  // (canEditProduct) e só o Superadmin forte edita, dentro do painel da plataforma.
   "/configuracoes/fiscal/produtos": {
     administrador: "rw", financeiro: "rw", gestor: "r",
   },

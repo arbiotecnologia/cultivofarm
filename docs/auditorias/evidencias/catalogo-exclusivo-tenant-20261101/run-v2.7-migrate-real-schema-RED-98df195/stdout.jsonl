@@ -1,0 +1,44 @@
+{"id": "SCH-2", "scenario": "104 funções LIVE carregadas byte-exatas", "expected": 0, "actual": 0, "status": "PASS", "kind": "PG_DISPOSABLE_LIVE_FUNCTION_BODIES"}
+{"id": "PRE-9", "scenario": "25 wrappers globais carregados com corpos LIVE e md5 capturado reproduzido (sem stub, sem drift)", "expected": "25|0|0", "actual": "25|0|0", "status": "PASS", "kind": "PG_DISPOSABLE_LIVE_FUNCTION_BODIES"}
+{"id": "PRE-9b", "scenario": "wrapper global alterado (drift real de corpo): PRE aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "SCH-1", "scenario": "esquema descartável carrega as 151 FKs reais com definições exatas", "expected": "151", "actual": "151", "status": "PASS", "kind": "PG_DISPOSABLE_REAL_FK_DEFS"}
+{"id": "PRE-1", "scenario": "PRE aprova estado com FKs reais (READ ONLY)", "expected": "OK", "actual": "ERR:ERROR:  tenant_catalog_pre_failed\nDETAIL:  unique_expr_or_partial:culturas_nome_ci_uidx | unique_expr_or_partial:microrganismos_codigo_uniq\nCONTEXT:  PL/pgSQL function inline_code_block line 56 at RAISE", "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-2", "scenario": "FK real nova para raiz (culturas) não mapeada aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-3", "scenario": "FK esperada ausente (drift) aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-4", "scenario": "coluna de pai usada na derivação ausente aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-5", "scenario": "instalação parcial em qualquer raiz detectada", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-6", "scenario": "índice único não pinado (expressão) em raiz aborta", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-7", "scenario": "FK de 2º nível (declaração->conjunto) exigida", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-8", "scenario": "drift de corpo em função consumidora capturada aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "DIV-1", "scenario": "cadeias de tenant divergentes (entrega ARB x lote FSF): aborta, sem COALESCE", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "CHN-1", "scenario": "cadeia sem empresa ainda presente: migração aborta (manutenção 02 é pré-requisito)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-10", "scenario": "fiscal ligado aborta PRE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "PRE-11", "scenario": "guard de origem do recebível ausente aborta PRE", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "POST-1", "scenario": "injeção de falha: recebível marcado durante a migração aborta no POST", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-0", "scenario": "regra sem tenant referenciada por snapshot de pedido: aborta (não descarta)", "expected": true, "actual": false, "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-0b", "scenario": "aborto não deixa coluna/mapa (transação única)", "expected": "0|false", "actual": "0|false", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "MIG-1", "scenario": "migração transacional completa (regra órfã não referenciada descartada)", "expected": "OK", "actual": "ERR:ERROR:  tenant_catalog_pre_failed\nDETAIL:  unique_expr_or_partial:culturas_nome_ci_uidx | unique_expr_or_partial:microrganismos_codigo_uniq\nCONTEXT:  PL/pgSQL function inline_code_block line 56 at RAISE", "status": "FAIL", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+REAL_SCHEMA {"enum_without_labels": [], "defaults_skipped": [], "sequences": ["partner_orders_numero_seq"], "index_fail": 0, "fk_fail": 0, "policy_fail": 90, "trigger_fail": 242, "grant_fail": 0, "seed": "OK", "trigger_unexecutable": 7, "policies_total": 232, "triggers_total": 255, "indexes_total": 379, "fks_total": 151}
+Traceback (most recent call last):
+  File "/dev-server/scripts/tenant-exclusive-catalog-20261101/test/harness_real.py", line 178, in <module>
+    run()
+    ~~~^^
+  File "/dev-server/scripts/tenant-exclusive-catalog-20261101/test/harness_real.py", line 165, in run
+    H.main()
+    ~~~~~~^^
+  File "/dev-server/scripts/tenant-exclusive-catalog-20261101/test/harness.py", line 303, in main
+    q("SELECT count(*)||'|'||count(*) FILTER (WHERE owner_organization_id IS NULL) FROM public.produtos"))
+    ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/tenant-exclusive-catalog-20261101/test/harness.py", line 262, in <lambda>
+    q = lambda s: pg.sql("RESET ROLE;\n" + s)
+                  ~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/tenant-exclusive-catalog-20261101/test/harness_real.py", line 138, in sql
+    return super().sql(s, ok)
+           ~~~~~~~~~~~^^^^^^^
+  File "/dev-server/scripts/tenant-exclusive-catalog-20261101/test/harness.py", line 39, in sql
+    if ok and r.returncode: raise RuntimeError(r.stderr[-3000:])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ERROR:  column "owner_organization_id" does not exist
+LINE 1: SELECT count(*)||'|'||count(*) FILTER (WHERE owner_organizat...
+                                                     ^
+

@@ -1,0 +1,562 @@
+[
+  {
+    "id": "INT-001",
+    "scenario": "legacy financial link unique preserved",
+    "expected": "t",
+    "actual": "t",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-002",
+    "scenario": "capability closed with candidate dependencies",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-003",
+    "scenario": "candidate no authenticated fiscal writer grant",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-004",
+    "scenario": "positive capability real candidate envelope",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-005",
+    "scenario": "Price cent per period total",
+    "expected": "62172.84",
+    "actual": "62172.84",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-006",
+    "scenario": "first nominal emission+30",
+    "expected": "2026-10-31",
+    "actual": "2026-10-31",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-007",
+    "scenario": "synthetic holiday next business day",
+    "expected": "2026-11-03",
+    "actual": "2026-11-03",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-008",
+    "scenario": "month clamp anchored nominal day",
+    "expected": "2026-11-30",
+    "actual": "2026-11-30",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-009",
+    "scenario": "reject unknown constructor",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-010",
+    "scenario": "reject unknown toString",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-011",
+    "scenario": "reject unknown __proto__",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-012",
+    "scenario": "reject unknown unknown",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-013",
+    "scenario": "choice rejects payment_condition_version1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-014",
+    "scenario": "choice rejects payment_deadline_days-1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-015",
+    "scenario": "choice rejects payment_condition_version0",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-016",
+    "scenario": "config rejects cash installments",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-017",
+    "scenario": "missing promissory config",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-018",
+    "scenario": "credit includes total interest before invoice",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-019",
+    "scenario": "first partial principal",
+    "expected": 20000,
+    "actual": 20000.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-020",
+    "scenario": "first partial financing",
+    "expected": 724.28,
+    "actual": 724.28,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-021",
+    "scenario": "partial residual with interest",
+    "expected": 41448.56,
+    "actual": 41448.56,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-022",
+    "scenario": "conversion no credit duplication",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-023",
+    "scenario": "replay exact title",
+    "expected": "35ff5ef0-f0db-4d03-8d63-1172a81367bc",
+    "actual": "35ff5ef0-f0db-4d03-8d63-1172a81367bc",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-024",
+    "scenario": "replay does not allocate twice",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-025",
+    "scenario": "allocation projection financed semantics",
+    "expected": "b2b_document_allocation_v1",
+    "actual": "b2b_document_allocation_v1",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-026",
+    "scenario": "payment reduces title only",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-027",
+    "scenario": "payment does not reopen order residual",
+    "expected": 41448.56,
+    "actual": 41448.56,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-028",
+    "scenario": "payment replay same id",
+    "expected": "f8939f01-4370-4ba2-8693-b367467d97b6",
+    "actual": "f8939f01-4370-4ba2-8693-b367467d97b6",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-029",
+    "scenario": "final partial residual zero",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-030",
+    "scenario": "three independent documents titles",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-031",
+    "scenario": "final credit total less confirmed payment",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-032",
+    "scenario": "over quantity transactional",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-033",
+    "scenario": "paid cancellation requires reconciliation",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-034",
+    "scenario": "cancel event absent cannot reverse",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-035",
+    "scenario": "cancel restores only allocated residual",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-036",
+    "scenario": "cancel preserved exposure not lost",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-037",
+    "scenario": "cancel retains allocation history",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-038",
+    "scenario": "replacement consumes restored residual",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-039",
+    "scenario": "cancel before allocation denies title",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-040",
+    "scenario": "document title identity update denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-041",
+    "scenario": "adjusted unpaid title cannot cancel",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-042",
+    "scenario": "unreconciled net item bases blocked",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-043",
+    "scenario": "legacy writer blocked",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-044",
+    "scenario": "old title writer without permit",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-045",
+    "scenario": "immutable b2b_condition_versions",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-046",
+    "scenario": "immutable b2b_order_condition_snapshots",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-047",
+    "scenario": "immutable b2b_document_allocations",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-048",
+    "scenario": "foreign tenant fiscal replay denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-049",
+    "scenario": "inactive actor fiscal replay denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-050",
+    "scenario": "real captured legacy missing writer audit blocks",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-051",
+    "scenario": "legacy original financed amount captured",
+    "expected": 10300,
+    "actual": 10300.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-052",
+    "scenario": "legacy financing not added twice",
+    "expected": 300,
+    "actual": 300.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-053",
+    "scenario": "legacy ledger separates financing and mora",
+    "expected": 310,
+    "actual": 310.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-054",
+    "scenario": "legacy captured recalc column only mora",
+    "expected": "10.00",
+    "actual": "10.00",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-055",
+    "scenario": "legacy balance principal financing mora less paid",
+    "expected": 10210,
+    "actual": 10210.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-056",
+    "scenario": "legacy foreign tenant denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-057",
+    "scenario": "legacy changed schedule rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-058",
+    "scenario": "legacy incompatible source rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-059",
+    "scenario": "legacy swapped target rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-060",
+    "scenario": "concurrent final allocation exactly one winner",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_REAL_SESSIONS_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-061",
+    "scenario": "concurrent loser overallocates atomically",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_REAL_SESSIONS_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-062",
+    "scenario": "concurrent allocation only one title",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-063",
+    "scenario": "captured simulation consumes canonical choice",
+    "expected": {
+      "payment_method": "boleto",
+      "payment_condition_version": 1,
+      "payment_deadline_days": 30
+    },
+    "actual": {
+      "payment_method": "boleto",
+      "payment_deadline_days": 30,
+      "payment_condition_version": 1
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-064",
+    "scenario": "simulation Price final real RPC",
+    "expected": 10362.14,
+    "actual": 10362.14,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-065",
+    "scenario": "simulation missing choice no legacy fallback",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-066",
+    "scenario": "simulation bad version",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-067",
+    "scenario": "null credit blocks capability transition",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-068",
+    "scenario": "create arbitrary hash no effects",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-069",
+    "scenario": "create includes concurrent exposure limit",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  }
+]

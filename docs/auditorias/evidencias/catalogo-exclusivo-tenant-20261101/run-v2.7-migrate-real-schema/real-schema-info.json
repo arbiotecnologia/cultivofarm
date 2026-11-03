@@ -1,0 +1,1994 @@
+{
+ "summary": {
+  "enum_without_labels": [],
+  "defaults_skipped": [],
+  "sequences": [
+   "partner_orders_numero_seq"
+  ],
+  "index_fail": 0,
+  "fk_fail": 0,
+  "policy_fail": 90,
+  "trigger_fail": 242,
+  "grant_fail": 0,
+  "seed": "OK",
+  "trigger_unexecutable": 7,
+  "policies_total": 232,
+  "triggers_total": 255,
+  "indexes_total": 379,
+  "fks_total": 151
+ },
+ "detail": {
+  "index_fail": [],
+  "fk_fail": [],
+  "policy_fail": [
+   [
+    "catalogo_volumes",
+    "catalog_volumes_sa_insert",
+    "ERR:ERROR:  function platform_private.platform_actor_access_ready(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "catalogo_volumes",
+    "catalog_volumes_sa_update",
+    "ERR:ERROR:  function platform_private.platform_actor_access_ready(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "commercial_campaign_products",
+    "campanhas_products_partner",
+    "ERR:ERROR:  relation \"commercial_campaign_partners\" does not exist"
+   ],
+   [
+    "commercial_campaigns",
+    "campanhas_cliente_select",
+    "ERR:ERROR:  relation \"commercial_campaign_clientes\" does not exist"
+   ],
+   [
+    "commercial_campaigns",
+    "campanhas_partner_select",
+    "ERR:ERROR:  relation \"commercial_campaign_partners\" does not exist"
+   ],
+   [
+    "organizations",
+    "b2b_organization_full_row_containment",
+    "ERR:ERROR:  function platform_private.b2b_organization_full_row_allowed() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "clientes",
+    "Clients read access",
+    "ERR:ERROR:  function can_user_access_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "commercial_condition_item_prices",
+    "ccip_admin_read",
+    "ERR:ERROR:  function platform_private.c2p1_item_allowed(uuid, uuid, text, uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type c"
+   ],
+   [
+    "commercial_payment_plan_assignments",
+    "cppa_admin_read",
+    "ERR:ERROR:  function platform_private.c2p1_assignment_allowed(text, uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "commercial_price_rules",
+    "cpr_internal_select",
+    "ERR:ERROR:  function platform_private.c2p1_assignment_allowed(text, uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "entregas",
+    "Cliente read own entregas",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_accounts",
+    "b2b_direct_partner_row_containment",
+    "ERR:ERROR:  function platform_private.b2b_direct_partner_row_allowed() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_accounts",
+    "d51_5_partner_accounts_tenant_guard",
+    "ERR:ERROR:  function platform_private.b2b_coherent_self_partner(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_accounts",
+    "partner_accounts_self_select",
+    "ERR:ERROR:  function platform_private.b2b_coherent_self_partner(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "accounts_receivable",
+    "accounts_receivable_insert_financial",
+    "ERR:ERROR:  function is_financial_staff(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "accounts_receivable",
+    "accounts_receivable_select_financial",
+    "ERR:ERROR:  function is_financial_staff(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "accounts_receivable",
+    "accounts_receivable_update_financial",
+    "ERR:ERROR:  function is_financial_staff(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "accounts_receivable",
+    "ar_partner_select_own_b2b",
+    "ERR:ERROR:  function platform_private.b2b_commercial_context() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "accounts_receivable",
+    "ar_producer_read",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "entrega_comprovantes",
+    "Cliente read own entrega_comprovantes",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "entrega_comprovantes",
+    "Consultor read linked entrega_comprovantes",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "entrega_comprovantes",
+    "Financeiro read entrega_comprovantes",
+    "ERR:ERROR:  function is_financial_staff(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "entrega_comprovantes",
+    "Staff manage entrega_comprovantes",
+    "ERR:ERROR:  function is_delivery_staff(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "estoque_embalagens",
+    "emb_select",
+    "ERR:ERROR:  function can_user_access_estoque_embalagem(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "estoque_embalagens",
+    "emb_update",
+    "ERR:ERROR:  function can_user_manage_estoque_embalagem(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "lotes",
+    "OnFarm scoped insert lotes",
+    "ERR:ERROR:  function fn_onfarm_scope_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "lotes",
+    "OnFarm scoped select lotes",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "lotes",
+    "OnFarm scoped update lotes",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "ordens_servico",
+    "Cliente read own ordens_servico",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "ordens_servico",
+    "OnFarm/Aplicador scoped read ordens_servico",
+    "ERR:ERROR:  function fn_onfarm_scope_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "ordens_servico_onfarm",
+    "Cliente read own ordens_servico_onfarm",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "ordens_servico_onfarm",
+    "OnFarm/Aplicador scoped read os_onfarm",
+    "ERR:ERROR:  function fn_onfarm_scope_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "ordens_servico_onfarm",
+    "d51_5_onfarm_tenant_guard",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "os_faturamento_base",
+    "ofb_producer_read_own",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "os_faturamento_base",
+    "ofb_staff_all",
+    "ERR:ERROR:  function is_financial_staff(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_orders",
+    "b2b_phase1_tenant_guard_delete",
+    "ERR:ERROR:  function platform_private.b2b_phase1_partner_visible(uuid, boolean) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_orders",
+    "b2b_phase1_tenant_guard_insert",
+    "ERR:ERROR:  function platform_private.b2b_phase1_partner_visible(uuid, boolean) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_orders",
+    "b2b_phase1_tenant_guard_select",
+    "ERR:ERROR:  function platform_private.b2b_phase1_partner_visible(uuid, boolean) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_orders",
+    "b2b_phase1_tenant_guard_update",
+    "ERR:ERROR:  function platform_private.b2b_phase1_partner_visible(uuid, boolean) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_orders",
+    "partner_orders_select",
+    "ERR:ERROR:  function get_user_partner_id() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "envase",
+    "OnFarm scoped insert envase",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "envase",
+    "OnFarm scoped select envase",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "envase",
+    "OnFarm scoped update envase",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "estoque_produto",
+    "OnFarm scoped insert estoque_produto",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "estoque_produto",
+    "OnFarm scoped select estoque_produto",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "estoque_produto",
+    "OnFarm scoped update estoque_produto",
+    "ERR:ERROR:  function fn_onfarm_scope_lote(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "estoque_produto",
+    "stock_p1_tenant_isolation",
+    "ERR:ERROR:  function stock_p1_lote_owned(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "fazendas",
+    "Fazendas read access",
+    "ERR:ERROR:  function can_user_access_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "produto_etiquetas",
+    "Read produto_etiquetas via access fn",
+    "ERR:ERROR:  function can_user_access_produto_etiqueta(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "produto_etiquetas",
+    "produto_etiquetas_tenant_root_r",
+    "ERR:ERROR:  function platform_private.produto_etiqueta_root_org_v1(uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid) does not exist\nHINT:  No function matches the given name and "
+   ],
+   [
+    "programacao_producao",
+    "OnFarm scoped select programacao",
+    "ERR:ERROR:  function fn_onfarm_scope_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "programacao_producao",
+    "OnFarm scoped update programacao",
+    "ERR:ERROR:  function fn_onfarm_scope_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "aprovacoes_tecnicas",
+    "Authorized roles manage technical approvals",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "aprovacoes_tecnicas",
+    "auth_select_aprovacoes",
+    "ERR:ERROR:  function can_user_access_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "aprovacoes_tecnicas",
+    "technical_approval_read_scope",
+    "ERR:ERROR:  function technical_child_read_scope(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_order_items",
+    "b2b_phase1_tenant_guard_delete",
+    "ERR:ERROR:  function platform_private.b2b_phase1_order_visible(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_order_items",
+    "b2b_phase1_tenant_guard_insert",
+    "ERR:ERROR:  function platform_private.b2b_phase1_order_visible(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_order_items",
+    "b2b_phase1_tenant_guard_select",
+    "ERR:ERROR:  function platform_private.b2b_phase1_order_visible(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_order_items",
+    "b2b_phase1_tenant_guard_update",
+    "ERR:ERROR:  function platform_private.b2b_phase1_order_visible(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_order_items",
+    "partner_order_items_select",
+    "ERR:ERROR:  function get_user_partner_id() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_product_prices",
+    "ppp_self_select",
+    "ERR:ERROR:  function get_user_partner_id() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_simulation_items",
+    "b2b_phase1_tenant_guard",
+    "ERR:ERROR:  function platform_private.b2b_phase1_simulation_visible(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_simulation_items",
+    "partner_simulation_items_select",
+    "ERR:ERROR:  function get_user_partner_id() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_simulations",
+    "b2b_phase1_tenant_guard",
+    "ERR:ERROR:  function platform_private.b2b_phase1_partner_visible(uuid, boolean) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_simulations",
+    "partner_simulations_insert",
+    "ERR:ERROR:  function get_user_partner_id() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_simulations",
+    "partner_simulations_select",
+    "ERR:ERROR:  function get_user_partner_id() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "partner_simulations",
+    "partner_simulations_update",
+    "ERR:ERROR:  function get_user_partner_id() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "portal_solicitacoes",
+    "Portal users can insert own requests",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "portal_solicitacoes",
+    "Portal users can read own requests",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "portal_solicitacoes",
+    "Portal users can update own requests",
+    "ERR:ERROR:  function get_cliente_ids_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "portal_solicitacoes",
+    "technical_request_tenant_isolation",
+    "ERR:ERROR:  function technical_refs_in_actor_tenant(uuid, uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor",
+    "Produtor decide sobre recomendacao aprovada",
+    "ERR:ERROR:  function can_user_access_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor",
+    "audit_a05_tenant_isolation",
+    "ERR:ERROR:  function h15_actor_organization() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor",
+    "registros_consultor_insert_hardened",
+    "ERR:ERROR:  function has_active_user_cliente_access(uuid, uuid, text[]) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor",
+    "registros_consultor_select_hardened",
+    "ERR:ERROR:  function can_user_access_cliente(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor",
+    "registros_consultor_update_hardened",
+    "ERR:ERROR:  function has_active_user_cliente_access(uuid, uuid, text[]) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor",
+    "technical_visit_refs_isolation",
+    "ERR:ERROR:  function technical_refs_in_actor_tenant(uuid, uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "talhoes",
+    "Talhoes read access",
+    "ERR:ERROR:  function can_user_access_fazenda(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "profiles",
+    "Tenant admins can update same organization profiles",
+    "ERR:ERROR:  function platform_private.is_tenant_admin_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "profiles",
+    "Tenant admins can view same organization profiles",
+    "ERR:ERROR:  function platform_private.is_tenant_admin_for_user(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "rc_recomendacoes_delete_hardened",
+    "ERR:ERROR:  function can_manage_technical_visit(uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "rc_recomendacoes_insert_hardened",
+    "ERR:ERROR:  function can_manage_technical_visit(uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "rc_recomendacoes_select_hardened",
+    "ERR:ERROR:  function can_view_technical_visit(uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "rc_recomendacoes_update_hardened",
+    "ERR:ERROR:  function can_manage_technical_visit(uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "technical_child_tenant_scope",
+    "ERR:ERROR:  function technical_child_read_scope(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "talhao_safras",
+    "Authenticated users can read talhao_safras",
+    "ERR:ERROR:  function can_user_access_fazenda(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "visitas_campo",
+    "technical_child_tenant_scope",
+    "ERR:ERROR:  function technical_child_read_scope(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "visitas_campo",
+    "visitas_campo_insert",
+    "ERR:ERROR:  function has_active_user_cliente_access(uuid, uuid, text[]) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "visitas_campo",
+    "visitas_campo_select",
+    "ERR:ERROR:  function is_active_visit_participant(uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "visitas_campo",
+    "visitas_campo_update",
+    "ERR:ERROR:  function has_active_user_cliente_access(uuid, uuid, text[]) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ]
+  ],
+  "trigger_fail": [
+   [
+    "catalogo_volumes",
+    "trg_catalogo_volumes_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "catalogo_volumes",
+    "trg_sync_catalogo_volumes_calc",
+    "sync_catalogo_volumes_calc()",
+    "ERR:ERROR:  function sync_catalogo_volumes_calc() does not exist"
+   ],
+   [
+    "catalogo_volumes",
+    "trg_zz_catalogo_volumes_sync_mestre",
+    "trg_catalogo_volumes_sync_mestre()",
+    "ERR:ERROR:  function trg_catalogo_volumes_sync_mestre() does not exist"
+   ],
+   [
+    "catalogo_volumes",
+    "trg_zzz_catalogo_volumes_touch_version",
+    "platform_private.catalog_touch_version()",
+    "ERR:ERROR:  function platform_private.catalog_touch_version() does not exist"
+   ],
+   [
+    "commercial_campaigns",
+    "trg_audit_campaigns",
+    "tg_commercial_audit()",
+    "ERR:ERROR:  function tg_commercial_audit() does not exist"
+   ],
+   [
+    "commercial_campaigns",
+    "trg_commercial_campaigns_updated",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "culturas",
+    "trg_culturas_block_delete_in_use",
+    "tg_culturas_block_delete_in_use()",
+    "ERR:ERROR:  function tg_culturas_block_delete_in_use() does not exist"
+   ],
+   [
+    "culturas",
+    "trg_culturas_stamp_desativacao",
+    "tg_culturas_stamp_desativacao()",
+    "ERR:ERROR:  function tg_culturas_stamp_desativacao() does not exist"
+   ],
+   [
+    "culturas",
+    "trg_zzz_culturas_touch_version",
+    "platform_private.catalog_touch_version()",
+    "ERR:ERROR:  function platform_private.catalog_touch_version() does not exist"
+   ],
+   [
+    "microrganismos",
+    "trg_sync_microorganism_pricing",
+    "sync_microorganism_pricing()",
+    "ERR:ERROR:  function sync_microorganism_pricing() does not exist"
+   ],
+   [
+    "microrganismos",
+    "trg_zzz_microrganismos_touch_version",
+    "platform_private.catalog_touch_version()",
+    "ERR:ERROR:  function platform_private.catalog_touch_version() does not exist"
+   ],
+   [
+    "organizations",
+    "a00_stock_envase_mutation_gate",
+    "platform_private.stock_envase_mutation_gate_v1()",
+    "ERR:ERROR:  function platform_private.stock_envase_mutation_gate_v1() does not exist"
+   ],
+   [
+    "organizations",
+    "trg_organizations_guard_status",
+    "organizations_guard_status()",
+    "ERR:ERROR:  function organizations_guard_status() does not exist"
+   ],
+   [
+    "produtos",
+    "produtos_catalog_family_label_validate",
+    "platform_private.catalog_family_label_validate()",
+    "ERR:ERROR:  function platform_private.catalog_family_label_validate() does not exist"
+   ],
+   [
+    "produtos",
+    "produtos_composicao_family_guard",
+    "platform_private.catalog_composition_family_guard()",
+    "ERR:ERROR:  function platform_private.catalog_composition_family_guard() does not exist"
+   ],
+   [
+    "produtos",
+    "update_produtos_updated_at",
+    "platform_private.catalog_touch_version()",
+    "ERR:ERROR:  function platform_private.catalog_touch_version() does not exist"
+   ],
+   [
+    "clientes",
+    "a00_stock_envase_mutation_gate",
+    "platform_private.stock_envase_mutation_gate_v1()",
+    "ERR:ERROR:  function platform_private.stock_envase_mutation_gate_v1() does not exist"
+   ],
+   [
+    "clientes",
+    "clientes_audit_trg",
+    "trg_clientes_audit()",
+    "ERR:ERROR:  function trg_clientes_audit() does not exist"
+   ],
+   [
+    "clientes",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "clientes",
+    "trg_set_codigo_cliente",
+    "set_codigo_cliente()",
+    "ERR:ERROR:  function set_codigo_cliente() does not exist"
+   ],
+   [
+    "clientes",
+    "update_clientes_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "commercial_condition_item_prices",
+    "c2p1_item_fence",
+    "platform_private.c2p1_item_fence()",
+    "ERR:ERROR:  function platform_private.c2p1_item_fence() does not exist"
+   ],
+   [
+    "commercial_condition_item_prices",
+    "trg_ccip_touch",
+    "tg_commercial_conditions_touch()",
+    "ERR:ERROR:  function tg_commercial_conditions_touch() does not exist"
+   ],
+   [
+    "commercial_condition_item_prices",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "commercial_payment_plan_assignments",
+    "c2p1_assignment_children_fence",
+    "platform_private.c2p1_assignment_children_fence()",
+    "ERR:ERROR:  function platform_private.c2p1_assignment_children_fence() does not exist"
+   ],
+   [
+    "commercial_payment_plan_assignments",
+    "c2p1_assignment_fence",
+    "platform_private.c2p1_assignment_fence()",
+    "ERR:ERROR:  function platform_private.c2p1_assignment_fence() does not exist"
+   ],
+   [
+    "commercial_payment_plan_assignments",
+    "trg_cppa_touch",
+    "tg_commercial_conditions_touch()",
+    "ERR:ERROR:  function tg_commercial_conditions_touch() does not exist"
+   ],
+   [
+    "commercial_payment_plans",
+    "trg_cpp_guard_financial",
+    "tg_cpp_guard_financial_immutability()",
+    "ERR:ERROR:  function tg_cpp_guard_financial_immutability() does not exist"
+   ],
+   [
+    "commercial_payment_plans",
+    "trg_cpp_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "commercial_price_rules",
+    "c2p1_rule_fence",
+    "platform_private.c2p1_rule_fence()",
+    "ERR:ERROR:  function platform_private.c2p1_rule_fence() does not exist"
+   ],
+   [
+    "commercial_price_rules",
+    "trg_commercial_price_rules_audit",
+    "tg_commercial_price_rules_audit()",
+    "ERR:ERROR:  function tg_commercial_price_rules_audit() does not exist"
+   ],
+   [
+    "commercial_price_rules",
+    "trg_commercial_price_rules_plan_mode",
+    "tg_commercial_price_rules_plan_mode_guard()",
+    "ERR:ERROR:  function tg_commercial_price_rules_plan_mode_guard() does not exist"
+   ],
+   [
+    "commercial_price_rules",
+    "trg_commercial_price_rules_producer_inert",
+    "tg_commercial_price_rules_producer_inert()",
+    "ERR:ERROR:  function tg_commercial_price_rules_producer_inert() does not exist"
+   ],
+   [
+    "commercial_price_rules",
+    "trg_commercial_price_rules_touch",
+    "tg_commercial_price_rules_touch()",
+    "ERR:ERROR:  function tg_commercial_price_rules_touch() does not exist"
+   ],
+   [
+    "cq_parametros_referencia",
+    "trg_cq_param_ref_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "entregas",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_entrega_marcar_cancelamento",
+    "fn_entrega_marcar_cancelamento()",
+    "ERR:ERROR:  function fn_entrega_marcar_cancelamento() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_entrega_sync_partner_order",
+    "trg_entrega_sync_partner_order_fn()",
+    "ERR:ERROR:  function trg_entrega_sync_partner_order_fn() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_h6c_entrega_ar_b2b_link",
+    "fn_h6c_entrega_ar_b2b_link()",
+    "ERR:ERROR:  function fn_h6c_entrega_ar_b2b_link() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_recalc_planning_from_entrega",
+    "tg_recalc_planning_from_entrega()",
+    "ERR:ERROR:  function tg_recalc_planning_from_entrega() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_refresh_esteira_entregas",
+    "_refresh_esteira_laboratorio_after_change()",
+    "ERR:ERROR:  function _refresh_esteira_laboratorio_after_change() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_sync_entrega_financial_status",
+    "fn_sync_entrega_financial_status()",
+    "ERR:ERROR:  function fn_sync_entrega_financial_status() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_validate_entrega_confirmacao",
+    "fn_validate_entrega_confirmacao()",
+    "ERR:ERROR:  function fn_validate_entrega_confirmacao() does not exist"
+   ],
+   [
+    "entregas",
+    "trg_validate_entrega_estoque",
+    "fn_validate_entrega_estoque()",
+    "ERR:ERROR:  function fn_validate_entrega_estoque() does not exist"
+   ],
+   [
+    "entregas",
+    "update_entregas_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "entregas",
+    "zz_delivery_mutation_closed",
+    "platform_private.delivery_mutation_guard_20261030()",
+    "ERR:ERROR:  function platform_private.delivery_mutation_guard_20261030() does not exist"
+   ],
+   [
+    "partner_accounts",
+    "commercial_partner_registration_guard",
+    "guard_commercial_partner_registration()",
+    "ERR:ERROR:  function guard_commercial_partner_registration() does not exist"
+   ],
+   [
+    "partner_accounts",
+    "trg_create_default_pfs",
+    "tg_create_default_pfs()",
+    "ERR:ERROR:  function tg_create_default_pfs() does not exist"
+   ],
+   [
+    "partner_accounts",
+    "trg_partner_accounts_audit",
+    "partner_audit_trigger()",
+    "ERR:ERROR:  function partner_audit_trigger() does not exist"
+   ],
+   [
+    "partner_accounts",
+    "trg_partner_accounts_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "partner_accounts",
+    "trg_recalc_partner_prices_on_default_change",
+    "recalc_partner_prices_on_default_change()",
+    "ERR:ERROR:  function recalc_partner_prices_on_default_change() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "a00_delivery_no_downstream",
+    "platform_private.delivery_no_downstream_20261030()",
+    "ERR:ERROR:  function platform_private.delivery_no_downstream_20261030() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "d51_5_validate_tenant_links",
+    "d51_5_validate_financial_tenant_links()",
+    "ERR:ERROR:  function d51_5_validate_financial_tenant_links() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "trg_ar_gen_installments",
+    "fn_generate_receivable_installments()",
+    "ERR:ERROR:  function fn_generate_receivable_installments() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "trg_ar_uat",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "trg_audit_ar",
+    "fn_financial_audit()",
+    "ERR:ERROR:  function fn_financial_audit() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "trg_h6_ar_snapshot",
+    "fn_h6_guard_title_snapshot()",
+    "ERR:ERROR:  function fn_h6_guard_title_snapshot() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "trg_h6d_ar_no_delete",
+    "fn_h6d_block_hard_delete()",
+    "ERR:ERROR:  function fn_h6d_block_hard_delete() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "accounts_receivable",
+    "trg_sync_b2b_financial_status",
+    "tg_sync_b2b_financial_status()",
+    "ERR:ERROR:  function tg_sync_b2b_financial_status() does not exist"
+   ],
+   [
+    "entrega_comprovantes",
+    "trg_entrega_assinatura_exigir_imagem_v1",
+    "fn_entrega_assinatura_exigir_imagem_v1()",
+    "ERR:ERROR:  function fn_entrega_assinatura_exigir_imagem_v1() does not exist"
+   ],
+   [
+    "entrega_comprovantes",
+    "trg_entrega_comprovante_exigir_arquivo_v1",
+    "fn_entrega_comprovante_exigir_arquivo_v1()",
+    "ERR:ERROR:  function fn_entrega_comprovante_exigir_arquivo_v1() does not exist"
+   ],
+   [
+    "entrega_comprovantes",
+    "trg_entrega_comprovante_preservar_encerrado_v1",
+    "fn_entrega_comprovante_preservar_encerrado_v1()",
+    "ERR:ERROR:  function fn_entrega_comprovante_preservar_encerrado_v1() does not exist"
+   ],
+   [
+    "entrega_comprovantes",
+    "trg_entrega_comprovantes_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "estoque_embalagens",
+    "trg_estoque_embalagens_updated",
+    "set_updated_at()",
+    "ERR:ERROR:  function set_updated_at() does not exist"
+   ],
+   [
+    "estoque_embalagens",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "lotes",
+    "a00_stock_envase_mutation_gate",
+    "platform_private.stock_envase_mutation_gate_v1()",
+    "ERR:ERROR:  function platform_private.stock_envase_mutation_gate_v1() does not exist"
+   ],
+   [
+    "lotes",
+    "aa_manual_lot_delete_v1",
+    "platform_private.guard_manual_lot_delete_v1()",
+    "ERR:ERROR:  function platform_private.guard_manual_lot_delete_v1() does not exist"
+   ],
+   [
+    "lotes",
+    "aa_manual_lot_write_fence_v1",
+    "platform_private.guard_manual_lot_write_v1()",
+    "ERR:ERROR:  function platform_private.guard_manual_lot_write_v1() does not exist"
+   ],
+   [
+    "lotes",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "lotes",
+    "trg_lab_lot_biological_only",
+    "platform_private.trg_lab_lot_biological_only()",
+    "ERR:ERROR:  function platform_private.trg_lab_lot_biological_only() does not exist"
+   ],
+   [
+    "lotes",
+    "trg_refresh_esteira_lotes",
+    "_refresh_esteira_laboratorio_after_change()",
+    "ERR:ERROR:  function _refresh_esteira_laboratorio_after_change() does not exist"
+   ],
+   [
+    "lotes",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "lotes",
+    "update_lotes_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "a00_stock_envase_mutation_gate",
+    "platform_private.stock_envase_mutation_gate_v1()",
+    "ERR:ERROR:  function platform_private.stock_envase_mutation_gate_v1() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "aa_guard_separate_approval",
+    "private.guard_os_separate_approval()",
+    "ERR:ERROR:  schema \"private\" does not exist"
+   ],
+   [
+    "ordens_servico",
+    "aa_manual_cq_parent_v1",
+    "platform_private.guard_manual_cq_parent_v1()",
+    "ERR:ERROR:  function platform_private.guard_manual_cq_parent_v1() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_check_os_item_ref",
+    "check_os_item_ref()",
+    "ERR:ERROR:  function check_os_item_ref() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_check_os_status_transition",
+    "check_os_status_transition()",
+    "ERR:ERROR:  function check_os_status_transition() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_comunicacao_os_pronto_retirada",
+    "_comunicacao_trg_os_pronto_retirada()",
+    "ERR:ERROR:  function _comunicacao_trg_os_pronto_retirada() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_create_programacao_on_os_insert",
+    "fn_create_programacao_on_os_classica_insert()",
+    "ERR:ERROR:  function fn_create_programacao_on_os_classica_insert() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_lab_os_biological_only",
+    "platform_private.trg_lab_os_biological_only()",
+    "ERR:ERROR:  function platform_private.trg_lab_os_biological_only() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_os_sync_partner_order",
+    "trg_os_sync_partner_order_fn()",
+    "ERR:ERROR:  function trg_os_sync_partner_order_fn() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_protect_os_structural_fields",
+    "tg_protect_os_structural_fields()",
+    "ERR:ERROR:  function tg_protect_os_structural_fields() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_recalc_planning_from_os",
+    "tg_recalc_planning_from_os()",
+    "ERR:ERROR:  function tg_recalc_planning_from_os() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_refresh_esteira_ordens_servico",
+    "_refresh_esteira_laboratorio_after_change()",
+    "ERR:ERROR:  function _refresh_esteira_laboratorio_after_change() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_set_numero_os_regular",
+    "set_numero_os_regular()",
+    "ERR:ERROR:  function set_numero_os_regular() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_sync_os_classica_downstream",
+    "fn_sync_os_classica_downstream()",
+    "ERR:ERROR:  function fn_sync_os_classica_downstream() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "trg_sync_planning_from_os",
+    "_sync_planning_from_os()",
+    "ERR:ERROR:  function _sync_planning_from_os() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "update_os_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "ordens_servico",
+    "zz_audit_separate_approval",
+    "private.guard_os_separate_approval()",
+    "ERR:ERROR:  schema \"private\" does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "aa_guard_separate_approval",
+    "private.guard_os_separate_approval()",
+    "ERR:ERROR:  schema \"private\" does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_auto_advance_solicitacao_os",
+    "auto_advance_solicitacao_on_os()",
+    "ERR:ERROR:  function auto_advance_solicitacao_on_os() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_check_os_onfarm_status_transition",
+    "check_os_status_transition()",
+    "ERR:ERROR:  function check_os_status_transition() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_comunicacao_os_onfarm_pronto_retirada",
+    "_comunicacao_trg_os_onfarm_pronto_retirada()",
+    "ERR:ERROR:  function _comunicacao_trg_os_onfarm_pronto_retirada() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_create_programacao_on_os_insert",
+    "fn_create_programacao_on_os_onfarm_insert()",
+    "ERR:ERROR:  function fn_create_programacao_on_os_onfarm_insert() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_lab_onfarm_biological_only",
+    "platform_private.trg_lab_os_biological_only()",
+    "ERR:ERROR:  function platform_private.trg_lab_os_biological_only() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_log_os_onfarm_status_change",
+    "log_os_onfarm_status_change()",
+    "ERR:ERROR:  function log_os_onfarm_status_change() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_refresh_esteira_ordens_servico_onfarm",
+    "_refresh_esteira_laboratorio_after_change()",
+    "ERR:ERROR:  function _refresh_esteira_laboratorio_after_change() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_set_numero_os",
+    "set_numero_os()",
+    "ERR:ERROR:  function set_numero_os() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "trg_sync_os_onfarm_downstream",
+    "sync_os_onfarm_downstream()",
+    "ERR:ERROR:  function sync_os_onfarm_downstream() does not exist"
+   ],
+   [
+    "ordens_servico_onfarm",
+    "zz_audit_separate_approval",
+    "private.guard_os_separate_approval()",
+    "ERR:ERROR:  schema \"private\" does not exist"
+   ],
+   [
+    "os_faturamento_base",
+    "a00_delivery_no_downstream",
+    "platform_private.delivery_no_downstream_20261030()",
+    "ERR:ERROR:  function platform_private.delivery_no_downstream_20261030() does not exist"
+   ],
+   [
+    "os_faturamento_base",
+    "tr_calc_os_faturamento_totals",
+    "fn_calc_os_faturamento_totals()",
+    "ERR:ERROR:  function fn_calc_os_faturamento_totals() does not exist"
+   ],
+   [
+    "os_faturamento_base",
+    "tr_os_faturamento_base_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "partner_orders",
+    "a00_delivery_order_transition_closed",
+    "platform_private.delivery_order_transition_guard_20261030()",
+    "ERR:ERROR:  function platform_private.delivery_order_transition_guard_20261030() does not exist"
+   ],
+   [
+    "partner_orders",
+    "partner_order_timeline_ins",
+    "trg_partner_order_timeline()",
+    "ERR:ERROR:  function trg_partner_order_timeline() does not exist"
+   ],
+   [
+    "partner_orders",
+    "partner_order_timeline_upd",
+    "trg_partner_order_timeline()",
+    "ERR:ERROR:  function trg_partner_order_timeline() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_00_b2b_internal_snapshot",
+    "platform_private.b2b_internal_order_snapshot_guard()",
+    "ERR:ERROR:  function platform_private.b2b_internal_order_snapshot_guard() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_audit_po_commercial",
+    "tg_audit_partner_order_commercial()",
+    "ERR:ERROR:  function tg_audit_partner_order_commercial() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_auto_b2b_receivable",
+    "tg_auto_b2b_receivable()",
+    "ERR:ERROR:  function tg_auto_b2b_receivable() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_b2b_guard_credit_approval_fields",
+    "fn_b2b_guard_credit_approval_fields()",
+    "ERR:ERROR:  function fn_b2b_guard_credit_approval_fields() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_b2b_plan_selectable_orders",
+    "tg_b2b_enforce_plan_selectable()",
+    "ERR:ERROR:  function tg_b2b_enforce_plan_selectable() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_block_partner_order_delete",
+    "tg_block_partner_order_delete()",
+    "ERR:ERROR:  function tg_block_partner_order_delete() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_block_partner_order_edit_after_op",
+    "tg_block_partner_order_edit_after_op()",
+    "ERR:ERROR:  function tg_block_partner_order_edit_after_op() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_notify_payment_terms_pending",
+    "tg_notify_payment_terms_pending()",
+    "ERR:ERROR:  function tg_notify_payment_terms_pending() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_partner_order_to_planning",
+    "trg_partner_order_to_planning_fn()",
+    "ERR:ERROR:  function trg_partner_order_to_planning_fn() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_partner_orders_audit",
+    "partner_orders_audit_trigger()",
+    "ERR:ERROR:  function partner_orders_audit_trigger() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_partner_orders_credit_guard",
+    "tg_partner_orders_credit_guard()",
+    "ERR:ERROR:  function tg_partner_orders_credit_guard() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_partner_orders_require_items",
+    "tg_partner_orders_require_items()",
+    "ERR:ERROR:  function tg_partner_orders_require_items() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_partner_orders_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_refresh_engagement",
+    "tg_refresh_engagement()",
+    "ERR:ERROR:  function tg_refresh_engagement() does not exist"
+   ],
+   [
+    "partner_orders",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "partner_orders",
+    "zz_c2_accounting_pending",
+    "platform_private.c2_accounting_pending_guard()",
+    "ERR:ERROR:  function platform_private.c2_accounting_pending_guard() does not exist"
+   ],
+   [
+    "partner_orders",
+    "zz_c2_external_final_state",
+    "platform_private.c2_external_final_state_guard()",
+    "ERR:ERROR:  function platform_private.c2_external_final_state_guard() does not exist"
+   ],
+   [
+    "envase",
+    "a01_envase_final_permit",
+    "platform_private.envase_insert_final_v1()",
+    "ERR:ERROR:  function platform_private.envase_insert_final_v1() does not exist"
+   ],
+   [
+    "envase",
+    "a01_envase_insert_permit",
+    "platform_private.envase_insert_guard_v1()",
+    "ERR:ERROR:  function platform_private.envase_insert_guard_v1() does not exist"
+   ],
+   [
+    "envase",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "envase",
+    "trg_envase_material_imutavel",
+    "fn_envase_material_imutavel()",
+    "ERR:ERROR:  function fn_envase_material_imutavel() does not exist"
+   ],
+   [
+    "envase",
+    "trg_refresh_esteira_envase",
+    "_refresh_esteira_laboratorio_after_change()",
+    "ERR:ERROR:  function _refresh_esteira_laboratorio_after_change() does not exist"
+   ],
+   [
+    "envase",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "envase",
+    "trg_validate_envase_cq",
+    "fn_validate_envase_cq()",
+    "ERR:ERROR:  function fn_validate_envase_cq() does not exist"
+   ],
+   [
+    "envase",
+    "trg_validate_envase_volume",
+    "fn_validate_envase_volume()",
+    "ERR:ERROR:  function fn_validate_envase_volume() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "a00_stock_envase_mutation_gate",
+    "platform_private.stock_envase_mutation_gate_v1()",
+    "ERR:ERROR:  function platform_private.stock_envase_mutation_gate_v1() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "a00_stock_p1_tenant_guard",
+    "platform_private.stock_p1_guard()",
+    "ERR:ERROR:  function platform_private.stock_p1_guard() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "a01_stock_final_permit",
+    "platform_private.envase_insert_final_v1()",
+    "ERR:ERROR:  function platform_private.envase_insert_final_v1() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "a01_stock_insert_permit",
+    "platform_private.envase_insert_guard_v1()",
+    "ERR:ERROR:  function platform_private.envase_insert_guard_v1() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "a02_stock_envase_reservation_root",
+    "platform_private.stock_envase_reservation_root_v1()",
+    "ERR:ERROR:  function platform_private.stock_envase_reservation_root_v1() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "trg_estoque_produto_guard",
+    "fn_estoque_produto_guard()",
+    "ERR:ERROR:  function fn_estoque_produto_guard() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "trg_log_estoque_insert",
+    "log_estoque_movimentacao()",
+    "ERR:ERROR:  function log_estoque_movimentacao() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "trg_log_estoque_update",
+    "log_estoque_movimentacao()",
+    "ERR:ERROR:  function log_estoque_movimentacao() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "trg_refresh_esteira_estoque",
+    "_refresh_esteira_laboratorio_after_change()",
+    "ERR:ERROR:  function _refresh_esteira_laboratorio_after_change() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "trg_validate_estoque_entrada",
+    "validate_estoque_entrada()",
+    "ERR:ERROR:  function validate_estoque_entrada() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "trg_validate_estoque_reserva",
+    "validate_estoque_reserva()",
+    "ERR:ERROR:  function validate_estoque_reserva() does not exist"
+   ],
+   [
+    "estoque_produto",
+    "update_estoque_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "fazendas",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "fazendas",
+    "update_fazendas_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "microorganism_crop_recommendations",
+    "trg_audit_micro_crops",
+    "log_catalog_change()",
+    "ERR:ERROR:  function log_catalog_change() does not exist"
+   ],
+   [
+    "microorganism_fiscal_profiles",
+    "trg_fiscal_audit_microorganism_fiscal_profiles",
+    "fiscal_audit_trigger_microorganism_profiles()",
+    "ERR:ERROR:  function fiscal_audit_trigger_microorganism_profiles() does not exist"
+   ],
+   [
+    "microorganism_fiscal_profiles",
+    "trg_microorganism_fiscal_profiles_updated_at",
+    "tg_microorganism_fiscal_profiles_updated_at()",
+    "ERR:ERROR:  function tg_microorganism_fiscal_profiles_updated_at() does not exist"
+   ],
+   [
+    "produto_etiquetas",
+    "trg_produto_etiquetas_snapshot_immutable",
+    "tg_produto_etiquetas_snapshot_immutable()",
+    "ERR:ERROR:  function tg_produto_etiquetas_snapshot_immutable() does not exist"
+   ],
+   [
+    "produto_etiquetas",
+    "trg_produto_etiquetas_updated_at",
+    "fn_produto_etiquetas_updated_at()",
+    "ERR:ERROR:  function fn_produto_etiquetas_updated_at() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "a00_stock_envase_mutation_gate",
+    "platform_private.stock_envase_mutation_gate_v1()",
+    "ERR:ERROR:  function platform_private.stock_envase_mutation_gate_v1() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "aa_manual_cq_parent_v1",
+    "platform_private.guard_manual_cq_parent_v1()",
+    "ERR:ERROR:  function platform_private.guard_manual_cq_parent_v1() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "aa_manual_program_binding_v1",
+    "platform_private.guard_manual_program_binding_v1()",
+    "ERR:ERROR:  function platform_private.guard_manual_program_binding_v1() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "trg_lab_programming_biological_only",
+    "platform_private.trg_lab_programming_biological_only()",
+    "ERR:ERROR:  function platform_private.trg_lab_programming_biological_only() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "trg_refresh_esteira_programacao",
+    "_refresh_esteira_laboratorio_after_change()",
+    "ERR:ERROR:  function _refresh_esteira_laboratorio_after_change() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "trg_validate_responsavel_producao",
+    "validate_responsavel_producao()",
+    "ERR:ERROR:  function validate_responsavel_producao() does not exist"
+   ],
+   [
+    "programacao_producao",
+    "update_programacao_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "catalogo_alvos",
+    "trg_catalogo_alvos_updated",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "microorganism_ncm_candidates",
+    "trg_regulatory_audit_microorganism_ncm_candidates",
+    "regulatory_audit_trigger()",
+    "ERR:ERROR:  function regulatory_audit_trigger() does not exist"
+   ],
+   [
+    "microorganism_ncm_candidates",
+    "trg_regulatory_candidate_publication_guard",
+    "fn_regulatory_candidate_publication_guard()",
+    "ERR:ERROR:  function fn_regulatory_candidate_publication_guard() does not exist"
+   ],
+   [
+    "microorganism_ncm_candidates",
+    "trg_regulatory_child_lock_microorganism_ncm_candidates",
+    "regulatory_block_published_child_edit()",
+    "ERR:ERROR:  function regulatory_block_published_child_edit() does not exist"
+   ],
+   [
+    "microorganism_ncm_candidates",
+    "trg_regulatory_ncm_source_guard",
+    "fn_regulatory_ncm_source_guard()",
+    "ERR:ERROR:  function fn_regulatory_ncm_source_guard() does not exist"
+   ],
+   [
+    "microorganism_regulatory_dossiers",
+    "trg_regulatory_audit_microorganism_regulatory_dossiers",
+    "regulatory_audit_trigger()",
+    "ERR:ERROR:  function regulatory_audit_trigger() does not exist"
+   ],
+   [
+    "microorganism_regulatory_dossiers",
+    "trg_regulatory_published_candidate_guard",
+    "fn_regulatory_published_candidate_guard()",
+    "ERR:ERROR:  function fn_regulatory_published_candidate_guard() does not exist"
+   ],
+   [
+    "microorganism_regulatory_dossiers",
+    "trg_regulatory_published_lock",
+    "regulatory_block_published_edit()",
+    "ERR:ERROR:  function regulatory_block_published_edit() does not exist"
+   ],
+   [
+    "microorganism_regulatory_dossiers",
+    "trg_regulatory_touch_microorganism_regulatory_dossiers",
+    "regulatory_touch_updated_at()",
+    "ERR:ERROR:  function regulatory_touch_updated_at() does not exist"
+   ],
+   [
+    "microorganism_regulatory_presentations",
+    "trg_regulatory_audit_microorganism_regulatory_presentations",
+    "regulatory_audit_trigger()",
+    "ERR:ERROR:  function regulatory_audit_trigger() does not exist"
+   ],
+   [
+    "microorganism_regulatory_presentations",
+    "trg_regulatory_child_lock_microorganism_regulatory_presentation",
+    "regulatory_block_published_child_edit()",
+    "ERR:ERROR:  function regulatory_block_published_child_edit() does not exist"
+   ],
+   [
+    "microorganism_regulatory_presentations",
+    "trg_regulatory_touch_microorganism_regulatory_presentations",
+    "regulatory_touch_updated_at()",
+    "ERR:ERROR:  function regulatory_touch_updated_at() does not exist"
+   ],
+   [
+    "microorganism_regulatory_publication_snapshots",
+    "trg_regulatory_audit_microorganism_regulatory_publication_snaps",
+    "regulatory_audit_trigger()",
+    "ERR:ERROR:  function regulatory_audit_trigger() does not exist"
+   ],
+   [
+    "microorganism_regulatory_publication_snapshots",
+    "trg_regulatory_snapshot_lock",
+    "regulatory_snapshot_immutable()",
+    "ERR:ERROR:  function regulatory_snapshot_immutable() does not exist"
+   ],
+   [
+    "microorganism_targets",
+    "trg_audit_micro_targets",
+    "log_catalog_change()",
+    "ERR:ERROR:  function log_catalog_change() does not exist"
+   ],
+   [
+    "microorganism_technical_profiles",
+    "trg_audit_micro_profile",
+    "log_catalog_change()",
+    "ERR:ERROR:  function log_catalog_change() does not exist"
+   ],
+   [
+    "microorganism_technical_profiles",
+    "trg_enforce_micro_approval",
+    "enforce_micro_profile_approval()",
+    "ERR:ERROR:  function enforce_micro_profile_approval() does not exist"
+   ],
+   [
+    "microorganism_technical_profiles",
+    "trg_micro_tp_updated_at",
+    "catalog_set_updated_at()",
+    "ERR:ERROR:  function catalog_set_updated_at() does not exist"
+   ],
+   [
+    "objetivos_visita_sugestoes",
+    "update_objetivos_visita_sugestoes_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "partner_order_items",
+    "trg_00_b2b_internal_snapshot",
+    "platform_private.b2b_internal_child_snapshot_guard()",
+    "ERR:ERROR:  function platform_private.b2b_internal_child_snapshot_guard() does not exist"
+   ],
+   [
+    "partner_order_items",
+    "trg_b2b_order_items_immutable",
+    "fn_b2b_guard_order_items_immutable()",
+    "ERR:ERROR:  function fn_b2b_guard_order_items_immutable() does not exist"
+   ],
+   [
+    "partner_order_items",
+    "trg_block_partner_order_items_after_op",
+    "tg_block_partner_order_items_after_op()",
+    "ERR:ERROR:  function tg_block_partner_order_items_after_op() does not exist"
+   ],
+   [
+    "partner_order_items",
+    "trg_partner_order_items_resolve_pending",
+    "tg_partner_order_items_resolve_pending()",
+    "ERR:ERROR:  function tg_partner_order_items_resolve_pending() does not exist"
+   ],
+   [
+    "partner_product_prices",
+    "trg_audit_ppp",
+    "tg_commercial_audit()",
+    "ERR:ERROR:  function tg_commercial_audit() does not exist"
+   ],
+   [
+    "partner_product_prices",
+    "trg_ppp_audit",
+    "partner_audit_trigger()",
+    "ERR:ERROR:  function partner_audit_trigger() does not exist"
+   ],
+   [
+    "partner_product_prices",
+    "trg_ppp_compute_final",
+    "partner_ppp_compute_final()",
+    "ERR:ERROR:  function partner_ppp_compute_final() does not exist"
+   ],
+   [
+    "partner_product_prices",
+    "trg_ppp_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "partner_product_prices",
+    "trg_set_current_price_table",
+    "tg_set_current_price_table()",
+    "ERR:ERROR:  function tg_set_current_price_table() does not exist"
+   ],
+   [
+    "partner_product_prices",
+    "trg_unique_current_price_table",
+    "tg_unique_current_price_table()",
+    "ERR:ERROR:  function tg_unique_current_price_table() does not exist"
+   ],
+   [
+    "partner_simulations",
+    "partner_simulations_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "partner_simulations",
+    "trg_notify_managers_on_simulation_sent",
+    "notify_managers_on_simulation_sent()",
+    "ERR:ERROR:  function notify_managers_on_simulation_sent() does not exist"
+   ],
+   [
+    "partner_simulations",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "portal_solicitacoes",
+    "a00_producer_request_mutation_guard",
+    "producer_request_mutation_guard()",
+    "ERR:ERROR:  function producer_request_mutation_guard() does not exist"
+   ],
+   [
+    "portal_solicitacoes",
+    "tenant_smtp_lane_solicitacao_atribuida",
+    "platform_private.tenant_smtp_lane_enqueue_solicitacao()",
+    "ERR:ERROR:  function platform_private.tenant_smtp_lane_enqueue_solicitacao() does not exist"
+   ],
+   [
+    "portal_solicitacoes",
+    "trg_comunicacao_solicitacao",
+    "_comunicacao_trg_portal_solicitacao()",
+    "ERR:ERROR:  function _comunicacao_trg_portal_solicitacao() does not exist"
+   ],
+   [
+    "portal_solicitacoes",
+    "trg_gen_numero_solicitacao",
+    "gen_numero_solicitacao()",
+    "ERR:ERROR:  function gen_numero_solicitacao() does not exist"
+   ],
+   [
+    "portal_solicitacoes",
+    "trg_notify_consultor_atribuido_op",
+    "notify_consultor_atribuido_op()",
+    "ERR:ERROR:  function notify_consultor_atribuido_op() does not exist"
+   ],
+   [
+    "portal_solicitacoes",
+    "trg_notify_consultor_confirmacao",
+    "notify_consultor_on_confirmacao_produtor()",
+    "ERR:ERROR:  function notify_consultor_on_confirmacao_produtor() does not exist"
+   ],
+   [
+    "portal_solicitacoes",
+    "trigger_validate_retorno_tecnico",
+    "validate_retorno_tecnico_consistency()",
+    "ERR:ERROR:  function validate_retorno_tecnico_consistency() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_auto_advance_solicitacao_registro",
+    "auto_advance_solicitacao_on_registro()",
+    "ERR:ERROR:  function auto_advance_solicitacao_on_registro() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_enforce_visit_immutability",
+    "enforce_visit_immutability()",
+    "ERR:ERROR:  function enforce_visit_immutability() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_notify_visita_finalizada",
+    "notify_visita_finalizada()",
+    "ERR:ERROR:  function notify_visita_finalizada() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_registros_consultor_pdf_status_default",
+    "set_pdf_status_default()",
+    "ERR:ERROR:  function set_pdf_status_default() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_saas_gate",
+    "_saas_trg_require_feature()",
+    "ERR:ERROR:  function _saas_trg_require_feature() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_set_codigo_visita",
+    "set_codigo_visita()",
+    "ERR:ERROR:  function set_codigo_visita() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_validate_registro_status",
+    "validate_registro_status_transition()",
+    "ERR:ERROR:  function validate_registro_status_transition() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "trg_visit_plan_preservation",
+    "platform_private.guard_visit_plan_preservation()",
+    "ERR:ERROR:  function platform_private.guard_visit_plan_preservation() does not exist"
+   ],
+   [
+    "registros_consultor",
+    "update_registros_consultor_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "talhoes",
+    "tenant_organization_guard",
+    "guard_tenant_organization_id()",
+    "ERR:ERROR:  function guard_tenant_organization_id() does not exist"
+   ],
+   [
+    "talhoes",
+    "update_talhoes_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "product_crop_recommendations",
+    "trg_audit_prod_crops",
+    "log_catalog_change()",
+    "ERR:ERROR:  function log_catalog_change() does not exist"
+   ],
+   [
+    "product_fiscal_profiles",
+    "trg_fiscal_audit_product_fiscal_profiles",
+    "fiscal_audit_trigger()",
+    "ERR:ERROR:  function fiscal_audit_trigger() does not exist"
+   ],
+   [
+    "product_target_recommendations",
+    "trg_audit_prod_targets",
+    "log_catalog_change()",
+    "ERR:ERROR:  function log_catalog_change() does not exist"
+   ],
+   [
+    "product_technical_profiles",
+    "trg_audit_prod_profile",
+    "log_catalog_change()",
+    "ERR:ERROR:  function log_catalog_change() does not exist"
+   ],
+   [
+    "product_technical_profiles",
+    "trg_enforce_product_approval",
+    "enforce_product_profile_approval()",
+    "ERR:ERROR:  function enforce_product_profile_approval() does not exist"
+   ],
+   [
+    "product_technical_profiles",
+    "trg_prod_tp_updated_at",
+    "catalog_set_updated_at()",
+    "ERR:ERROR:  function catalog_set_updated_at() does not exist"
+   ],
+   [
+    "produto_composicao_conjuntos",
+    "pcc_touch",
+    "platform_private.catalog_composition_touch()",
+    "ERR:ERROR:  function platform_private.catalog_composition_touch() does not exist"
+   ],
+   [
+    "produto_conformidade_perfis",
+    "trg_pcp_audit",
+    "tg_pcp_audit()",
+    "ERR:ERROR:  function tg_pcp_audit() does not exist"
+   ],
+   [
+    "produto_conformidade_perfis",
+    "trg_pcp_touch",
+    "tg_pcp_touch()",
+    "ERR:ERROR:  function tg_pcp_touch() does not exist"
+   ],
+   [
+    "profiles",
+    "a00_cf_user_gate",
+    "cf_user_guards_v1.acquire_gate()",
+    "ERR:ERROR:  function cf_user_guards_v1.acquire_gate() does not exist"
+   ],
+   [
+    "profiles",
+    "a00_cf_user_no_truncate",
+    "cf_user_guards_v1.block_truncate()",
+    "ERR:ERROR:  function cf_user_guards_v1.block_truncate() does not exist"
+   ],
+   [
+    "profiles",
+    "guard_profile_senha_provisoria",
+    "guard_profile_senha_provisoria()",
+    "ERR:ERROR:  function guard_profile_senha_provisoria() does not exist"
+   ],
+   [
+    "profiles",
+    "guard_profile_senha_ticket",
+    "guard_profile_senha_ticket()",
+    "ERR:ERROR:  function guard_profile_senha_ticket() does not exist"
+   ],
+   [
+    "profiles",
+    "guard_profile_sensitive_fields",
+    "guard_profile_sensitive_fields()",
+    "ERR:ERROR:  function guard_profile_sensitive_fields() does not exist"
+   ],
+   [
+    "profiles",
+    "h15_profile_organization_guard",
+    "h15_profile_organization_guard()",
+    "ERR:ERROR:  function h15_profile_organization_guard() does not exist"
+   ],
+   [
+    "profiles",
+    "trg_guard_profile_tenant_fields",
+    "guard_profile_tenant_fields()",
+    "ERR:ERROR:  function guard_profile_tenant_fields() does not exist"
+   ],
+   [
+    "profiles",
+    "trg_profiles_enforce_cliente",
+    "enforce_cliente_id_for_produtor()",
+    "ERR:ERROR:  function enforce_cliente_id_for_produtor() does not exist"
+   ],
+   [
+    "profiles",
+    "update_profiles_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "profiles",
+    "z99_cf_profile_stamp",
+    "cf_user_guards_v1.advance_stamp()",
+    "ERR:ERROR:  function cf_user_guards_v1.advance_stamp() does not exist"
+   ],
+   [
+    "profiles",
+    "z99_cf_require_admin",
+    "cf_user_guards_v1.require_admin()",
+    "ERR:ERROR:  function cf_user_guards_v1.require_admin() does not exist"
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "technical_content_editable",
+    "enforce_technical_content_editable()",
+    "ERR:ERROR:  function enforce_technical_content_editable() does not exist"
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "trg_lab_visit_recommendation_lock",
+    "platform_private.lab_visit_recommendation_lock()",
+    "ERR:ERROR:  function platform_private.lab_visit_recommendation_lock() does not exist"
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "update_registros_consultor_recomendacoes_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "talhao_safras",
+    "trg_sync_talhao_safra_atual",
+    "sync_talhao_safra_atual()",
+    "ERR:ERROR:  function sync_talhao_safra_atual() does not exist"
+   ],
+   [
+    "talhao_safras",
+    "update_talhao_safras_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ],
+   [
+    "visitas_campo",
+    "technical_content_editable",
+    "enforce_technical_content_editable()",
+    "ERR:ERROR:  function enforce_technical_content_editable() does not exist"
+   ],
+   [
+    "visitas_campo",
+    "trg_visitas_campo_guard",
+    "visitas_campo_guard()",
+    "ERR:ERROR:  function visitas_campo_guard() does not exist"
+   ],
+   [
+    "visitas_campo",
+    "trg_visitas_campo_updated_at",
+    "update_updated_at_column()",
+    "ERR:ERROR:  function update_updated_at_column() does not exist"
+   ]
+  ],
+  "grant_fail": [],
+  "seed": "OK",
+  "trigger_unexecutable": [
+   [
+    "microrganismos",
+    "trg_set_codigo_micro_ins",
+    "set_codigo_microrganismo()",
+    [
+     "public.prefixo_para_microrganismo"
+    ]
+   ],
+   [
+    "microrganismos",
+    "trg_set_codigo_micro_upd",
+    "set_codigo_microrganismo()",
+    [
+     "public.prefixo_para_microrganismo"
+    ]
+   ],
+   [
+    "produtos",
+    "trg_set_codigo_produto_ins",
+    "set_codigo_produto()",
+    [
+     "public.prefixo_para_produto"
+    ]
+   ],
+   [
+    "produtos",
+    "trg_set_codigo_produto_upd",
+    "set_codigo_produto()",
+    [
+     "public.prefixo_para_produto"
+    ]
+   ],
+   [
+    "programacao_producao",
+    "trg_notify_lab_on_programacao",
+    "fn_notify_lab_on_programacao()",
+    [
+     "platform_private.notification_source_org",
+     "platform_private.notification_user_ok",
+     "public.notificacoes_operacionais"
+    ]
+   ],
+   [
+    "produto_composicao_declaracoes",
+    "pcd_family_guard",
+    "platform_private.catalog_composition_row_guard()",
+    [
+     "platform_private.catalog_composition_type_allowed"
+    ]
+   ],
+   [
+    "registros_consultor_recomendacoes",
+    "trg_catalog_visit_reference_guard_current12",
+    "platform_private.catalog_visit_reference_guard_current12()",
+    [
+     "public._assert_visita_editavel",
+     "public.can_view_technical_visit"
+    ]
+   ]
+  ]
+ },
+ "defaults_skipped": []
+}

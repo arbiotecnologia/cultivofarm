@@ -1,0 +1,172 @@
+-- INACTIVE COMPOSITION; no hosted installation and no client grants.
+-- Requires existing Price/installments candidate and captured canonical order guards.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+CREATE TABLE platform_private.b2b_condition_versions (
+ organization_id uuid NOT NULL, plan_id uuid NOT NULL REFERENCES public.commercial_payment_plans(id), version int NOT NULL CHECK(version>0),
+ method text NOT NULL CHECK(method IN ('dinheiro','pix','cartao_debito','boleto','promissoria','cartao_credito')),
+ deadline_days int NOT NULL CHECK(deadline_days>=0), installment_count int NOT NULL CHECK(installment_count BETWEEN 1 AND 120),
+ monthly_rate numeric NOT NULL CHECK(monthly_rate>=0 AND monthly_rate::text NOT IN ('NaN','Infinity','-Infinity')),
+ approved_by uuid NOT NULL, approved_at timestamptz NOT NULL, configuration_approved boolean NOT NULL CHECK(configuration_approved),
+ calendar_version text NOT NULL REFERENCES platform_private.holiday_calendars(version), category_id uuid NOT NULL REFERENCES public.financial_categories(id), payment_method_id uuid NOT NULL REFERENCES public.payment_methods(id),
+ PRIMARY KEY(organization_id,plan_id,version,method),
+ CHECK(method NOT IN ('dinheiro','pix','cartao_debito') OR (installment_count=1 AND monthly_rate=0)),
+ CHECK(method<>'boleto' OR (installment_count<=3 AND deadline_days=30))
+);
+CREATE TABLE platform_private.b2b_condition_assignments (
+ organization_id uuid NOT NULL, partner_id uuid NOT NULL REFERENCES public.partner_accounts(id), plan_id uuid NOT NULL,
+ version int NOT NULL, method text NOT NULL, PRIMARY KEY(organization_id,partner_id,plan_id,version,method),
+ FOREIGN KEY(organization_id,plan_id,version,method) REFERENCES platform_private.b2b_condition_versions(organization_id,plan_id,version,method)
+);
+CREATE TABLE platform_private.b2b_order_condition_snapshots (
+ order_id uuid PRIMARY KEY REFERENCES public.partner_orders(id), organization_id uuid NOT NULL, partner_id uuid NOT NULL,
+ actor_id uuid NOT NULL, plan_id uuid NOT NULL, choice jsonb NOT NULL, condition jsonb NOT NULL, request_hash text NOT NULL,
+ rows jsonb NOT NULL, principal numeric NOT NULL, financed_interest numeric NOT NULL, financed_total numeric NOT NULL,
+ CHECK(principal>0 AND financed_interest>=0 AND financed_total=principal+financed_interest)
+);
+-- Private attestation is NOT a fiscal ingestion endpoint. No issuer populates it in this candidate.
+-- Production authority remains unproven: the dependency gate below always denies.
+CREATE TABLE platform_private.b2b_authorized_documents (
+ id uuid PRIMARY KEY, organization_id uuid NOT NULL, partner_id uuid NOT NULL, order_id uuid NOT NULL REFERENCES public.partner_orders(id),
+ kind text NOT NULL CHECK(kind IN ('NFE','NFSE')), issue_date date NOT NULL CHECK(isfinite(issue_date)),
+ event_key text NOT NULL, source_digest text NOT NULL CHECK(source_digest ~ '^[0-9a-f]{64}$'),
+ items jsonb NOT NULL, state text NOT NULL CHECK(state IN ('AUTHORIZED','CANCELED')),
+ UNIQUE(organization_id,kind,event_key)
+);
+CREATE TABLE platform_private.b2b_document_allocations (
+ document_id uuid PRIMARY KEY REFERENCES platform_private.b2b_authorized_documents(id), organization_id uuid NOT NULL,
+ order_id uuid NOT NULL REFERENCES public.partner_orders(id), partner_id uuid NOT NULL,
+ receivable_id uuid NOT NULL UNIQUE REFERENCES public.accounts_receivable(id), source_digest text NOT NULL,
+ principal numeric NOT NULL CHECK(principal>0), financed_interest numeric NOT NULL CHECK(financed_interest>=0),
+ items jsonb NOT NULL, item_money jsonb NOT NULL CHECK(jsonb_typeof(item_money)='array'), rows jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE platform_private.b2b_allocation_reversals (
+ document_id uuid PRIMARY KEY REFERENCES platform_private.b2b_document_allocations(document_id),
+ replacement_document_id uuid REFERENCES platform_private.b2b_authorized_documents(id), source_digest text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE platform_private.b2b_title_permits (
+ transaction_id bigint NOT NULL, actor_id uuid NOT NULL, organization_id uuid NOT NULL, title_id uuid NOT NULL,
+ order_id uuid NOT NULL, partner_id uuid NOT NULL, customer_id uuid NOT NULL, rows jsonb NOT NULL,
+ PRIMARY KEY(transaction_id,title_id)
+);
+CREATE TABLE platform_private.b2b_condition_retirements (
+ organization_id uuid NOT NULL, plan_id uuid NOT NULL, version int NOT NULL, method text NOT NULL,
+ PRIMARY KEY(organization_id,plan_id,version,method),
+ FOREIGN KEY(organization_id,plan_id,version,method) REFERENCES platform_private.b2b_condition_versions(organization_id,plan_id,version,method)
+);
+CREATE TABLE platform_private.b2b_cancellation_attestations (
+ document_id uuid PRIMARY KEY REFERENCES platform_private.b2b_authorized_documents(id), organization_id uuid NOT NULL,
+ event_key text NOT NULL, source_digest text NOT NULL CHECK(source_digest ~ '^[0-9a-f]{64}$'), UNIQUE(organization_id,event_key)
+);
+-- The captured active-title/order index is another 1:1 barrier. Keep it for all
+-- legacy rows; candidate documents gain their own unique fiscal identity.
+ALTER TABLE public.accounts_receivable ADD COLUMN b2b_document_id uuid REFERENCES platform_private.b2b_authorized_documents(id);
+CREATE UNIQUE INDEX b2b_one_title_per_document ON public.accounts_receivable(b2b_document_id) WHERE b2b_document_id IS NOT NULL;
+DROP INDEX public.ux_ar_one_active_per_b2b_order;
+CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable(origin_id) WHERE origin_type='B2B_ORDER' AND status<>'CANCELED' AND b2b_document_id IS NULL;
+CREATE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN RAISE EXCEPTION 'B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN' USING ERRCODE='42501'; END $$;
+
+CREATE FUNCTION platform_private.b2b_integration_actor(p_partner uuid, p_internal boolean DEFAULT false) RETURNS uuid
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE u uuid:=auth.uid(); org uuid:=public.h15_actor_organization(); owner_org uuid;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'B2B_READ_COMMITTED_REQUIRED' USING ERRCODE='0A000'; END IF;
+ IF u IS NULL OR org IS NULL THEN RAISE EXCEPTION 'B2B_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.c2_order_actor_scope(u,p_partner);
+ SELECT commercial_owner_organization_id INTO owner_org FROM public.partner_accounts WHERE id=p_partner AND ativo IS TRUE AND deleted_at IS NULL;
+ IF owner_org IS DISTINCT FROM org THEN RAISE EXCEPTION 'B2B_TENANT_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_internal AND (public.is_financial_staff(u) IS NOT TRUE
+  OR public.has_role(u,'parceiro_b2b'::public.app_role) OR public.has_role(u,'parceiro_b2b_tecnico'::public.app_role)
+  OR public.has_role(u,'cliente_produtor'::public.app_role)) THEN RAISE EXCEPTION 'B2B_INTERNAL_ONLY' USING ERRCODE='42501'; END IF;
+ RETURN org;
+END $$;
+
+CREATE FUNCTION platform_private.b2b_choice(p jsonb) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path='' AS $$
+DECLARE v numeric; d numeric;
+BEGIN
+ IF jsonb_typeof(p)<>'object' OR jsonb_typeof(p->'payment_method') IS DISTINCT FROM 'string'
+ OR p->>'payment_method' NOT IN ('dinheiro','pix','cartao_debito','boleto','promissoria','cartao_credito')
+ OR jsonb_typeof(p->'payment_condition_version') IS DISTINCT FROM 'number'
+ OR jsonb_typeof(p->'payment_deadline_days') IS DISTINCT FROM 'number' THEN RAISE EXCEPTION 'payment_choice_required' USING ERRCODE='23514'; END IF;
+ v:=(p->>'payment_condition_version')::numeric; d:=(p->>'payment_deadline_days')::numeric;
+ IF v<>trunc(v) OR v<1 OR v>2147483647 OR d<>trunc(d) OR d<0 OR d>36500 OR (p-ARRAY['payment_method','payment_condition_version','payment_deadline_days'])<>'{}'::jsonb THEN RAISE EXCEPTION 'payment_choice_required' USING ERRCODE='23514'; END IF;
+ RETURN jsonb_build_object('payment_method',p->>'payment_method','payment_condition_version',v::int,'payment_deadline_days',d::int);
+END $$;
+
+CREATE FUNCTION platform_private.b2b_resolve_condition(p_partner uuid,p_plan uuid,p_choice jsonb) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; c platform_private.b2b_condition_versions; choice jsonb;
+BEGIN
+ org:=platform_private.b2b_integration_actor(p_partner); choice:=platform_private.b2b_choice(p_choice);
+ SELECT v.* INTO c FROM platform_private.b2b_condition_versions v
+ JOIN platform_private.b2b_condition_assignments a USING(organization_id,plan_id,version,method)
+ JOIN public.commercial_payment_plans p ON p.id=v.plan_id AND p.active IS TRUE
+ WHERE a.partner_id=p_partner AND v.organization_id=org AND v.plan_id=p_plan
+ AND v.version=(choice->>'payment_condition_version')::int AND v.method=choice->>'payment_method'
+ AND v.deadline_days=(choice->>'payment_deadline_days')::int AND v.configuration_approved IS TRUE
+ AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_condition_retirements r WHERE (r.organization_id,r.plan_id,r.version,r.method)=(v.organization_id,v.plan_id,v.version,v.method));
+ IF NOT FOUND THEN RAISE EXCEPTION 'payment_condition_unavailable' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.c2_owner_order_guard(auth.uid(),p_partner,p_plan);
+ IF platform_private.b2b_credit_config_block(p_partner) IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='PT409'; END IF;
+ RETURN to_jsonb(c);
+END $$;
+
+CREATE FUNCTION public.partner_payment_condition_capability_v1(p_partner_id uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid;
+BEGIN
+ org:=platform_private.b2b_integration_actor(p_partner_id);
+ PERFORM platform_private.b2b_integration_dependencies();
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_condition_assignments a JOIN public.commercial_payment_plans p ON p.id=a.plan_id AND p.active WHERE a.organization_id=org AND a.partner_id=p_partner_id) THEN RAISE EXCEPTION 'payment_condition_unavailable' USING ERRCODE='PT409'; END IF;
+ RETURN jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','actor_id',auth.uid(),'organization_id',org,'partner_id',p_partner_id,'simulate',true,'create',true);
+END $$;
+
+CREATE FUNCTION platform_private.b2b_business_day(d date,c platform_private.holiday_calendars) RETURNS date
+LANGUAGE plpgsql IMMUTABLE SET search_path='' AS $$
+BEGIN
+ IF d IS NULL OR NOT isfinite(d) OR c.locality IS DISTINCT FROM 'Paracatu-MG' OR nullif(btrim(c.version),'') IS NULL
+ OR c.coverage_start IS NULL OR c.coverage_end IS NULL OR NOT isfinite(c.coverage_start) OR NOT isfinite(c.coverage_end)
+ OR c.coverage_end<c.coverage_start OR c.holidays IS NULL OR EXISTS(SELECT 1 FROM unnest(c.holidays) h WHERE h IS NULL OR NOT isfinite(h) OR h<c.coverage_start OR h>c.coverage_end)
+ THEN RAISE EXCEPTION 'CALENDAR_INVALID' USING ERRCODE='23514'; END IF;
+ LOOP
+  IF d<c.coverage_start OR d>c.coverage_end THEN RAISE EXCEPTION 'CALENDAR_COVERAGE_REQUIRED' USING ERRCODE='23514'; END IF;
+  IF extract(isodow FROM d)<6 AND NOT(d=ANY(c.holidays)) THEN RETURN d; END IF;
+  d:=d+1;
+ END LOOP;
+END $$;
+
+CREATE FUNCTION platform_private.b2b_schedule(principal numeric,rate numeric,n int,issue date,deadline int,cal platform_private.holiday_calendars)
+RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path='' AS $$
+DECLARE bal numeric; pmt numeric; intr numeric; amort numeric; amount numeric; first date; nom date; rows jsonb:='[]';
+BEGIN
+ IF principal IS NULL OR principal::text IN ('NaN','Infinity','-Infinity') OR principal<=0 OR principal<>round(principal,2)
+ OR rate IS NULL OR rate::text IN ('NaN','Infinity','-Infinity') OR rate<0 OR n IS NULL OR n NOT BETWEEN 1 AND 120
+ OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 THEN RAISE EXCEPTION 'SCHEDULE_INVALID' USING ERRCODE='23514'; END IF;
+ bal:=principal; first:=issue+deadline;
+ pmt:=round(CASE WHEN rate=0 THEN principal/n ELSE principal*(rate/100)/(1-power(1+rate/100,-n)) END,2);
+ FOR k IN 1..n LOOP
+  intr:=round(bal*rate/100,2); amount:=CASE WHEN k=n THEN bal+intr ELSE pmt END; amort:=amount-intr;
+  IF amort<0 THEN RAISE EXCEPTION 'SCHEDULE_INVALID' USING ERRCODE='23514'; END IF;
+  nom:=(first+make_interval(months=>k-1))::date;
+  rows:=rows||jsonb_build_array(jsonb_build_object('installment_number',k,'principal_amount',amort,'interest_amount',intr,'amount',amount,'nominal_due_date',nom,'due_date',platform_private.b2b_business_day(nom,cal),'received_amount',0));
+  bal:=bal-amort;
+ END LOOP;
+ IF bal<>0 THEN RAISE EXCEPTION 'SCHEDULE_RESIDUAL' USING ERRCODE='23514'; END IF;
+ RETURN rows;
+END $$;
+
+DO $$ DECLARE t text; BEGIN
+ FOREACH t IN ARRAY ARRAY['b2b_condition_versions','b2b_condition_assignments','b2b_order_condition_snapshots','b2b_authorized_documents','b2b_document_allocations','b2b_allocation_reversals','b2b_condition_retirements','b2b_cancellation_attestations'] LOOP
+  EXECUTE format('ALTER TABLE platform_private.%I ENABLE ROW LEVEL SECURITY',t);
+  EXECUTE format('REVOKE ALL ON platform_private.%I FROM PUBLIC,anon,authenticated,service_role',t);
+  EXECUTE format('CREATE TRIGGER immutable_update_delete BEFORE UPDATE OR DELETE ON platform_private.%I FOR EACH ROW EXECUTE FUNCTION platform_private.price_immutable()',t);
+  EXECUTE format('CREATE TRIGGER immutable_truncate BEFORE TRUNCATE ON platform_private.%I FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable()',t);
+ END LOOP;
+END $$;
+ALTER TABLE platform_private.b2b_title_permits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.partner_payment_condition_capability_v1(uuid),platform_private.b2b_integration_dependencies(),platform_private.b2b_integration_actor(uuid,boolean),platform_private.b2b_choice(jsonb),platform_private.b2b_resolve_condition(uuid,uuid,jsonb),platform_private.b2b_business_day(date,platform_private.holiday_calendars),platform_private.b2b_schedule(numeric,numeric,int,date,int,platform_private.holiday_calendars) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;

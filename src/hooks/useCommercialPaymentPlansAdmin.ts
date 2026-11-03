@@ -47,6 +47,7 @@ export interface PlanListFilters {
 }
 
 export interface PaymentPlanPayload {
+  amortization_type?: 'price' | 'generic';
   name: string;
   code: string;
   description?: string | null;

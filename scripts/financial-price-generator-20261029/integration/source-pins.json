@@ -1,0 +1,22 @@
+{
+  "capture_sha256": "33bbe2abe605544b38c56cef50ac05ebc6ee035b4d02c0daf1da1b295d3ad56d",
+  "functions": [
+    {
+      "name": "create_partner_order_secure",
+      "md5": "7ec41e17ca6cca8cd4ef1404a9edc936"
+    },
+    {
+      "name": "simulate_b2b_payment_plan_secure",
+      "md5": "37d4f45e388ed7b38f6f397b672629ee"
+    },
+    {
+      "name": "fn_b2b_credit_exposure",
+      "md5": "213ac31f3a30816ead75365b0d1fed18"
+    },
+    {
+      "name": "rpc_register_receivable_payment",
+      "md5": "db41f7e2cfcb196ef64536f62746f365"
+    }
+  ],
+  "candidate_sha256": "153e858bba9c6594720f40a07f75572c6add7983f1041ef6f46c4276a1941f59"
+}

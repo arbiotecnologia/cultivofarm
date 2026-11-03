@@ -1,0 +1,7 @@
+edad5cfec9e84e7575446a3c59b85ff15f202b4f5179253f9fcdebd01cf67b5e  00-pre-global.sql.review
+4ae28ca526ea42da800db6ed56391b25dec66560a50321fca33034e4f99f8d37  01-migrate.sql.review
+4aa452ba681c263e07e7aeb41fd99c7b78685791a97f9aabd1fd5a15b263d8a8  02-chain-purge-maintenance.sql.review
+bc5b79778a1c2f47c30d04d1e925b2744fff1090f0f3135a0ae59477839cf61e  build.py
+b5e362fc03a2632ffc5ca01ce55330be2bdc3d9cf939da632cf85e9343a4114c  test/chain_purge_harness.py
+c75cc4db24189929accf0d0246886b0f90c67b42d371e95ec53b5dc8cd208609  test/harness.py
+87b6f0a6168f234ba482f279d2e3b52b5108a4f6dc437b9b3cfce7d82c5a1de4  ../../docs/auditorias/evidencias/catalogo-exclusivo-tenant-20261101/chain-purge-input-20261101-1526/guards.json

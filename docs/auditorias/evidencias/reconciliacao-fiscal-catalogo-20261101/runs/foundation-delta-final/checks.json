@@ -1,0 +1,272 @@
+[
+ {
+  "id": "F-01:public.rpc_fiscal_draft_save",
+  "scenario": "definição live recriada reproduz o md5 live",
+  "expected": "224ab7944abd13190fe8ea1044216218",
+  "actual": "224ab7944abd13190fe8ea1044216218",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "F-01:public.rpc_cc_validate_matrix",
+  "scenario": "definição live recriada reproduz o md5 live",
+  "expected": "21ab73c3a6ed77512c1e93b3958bfb1c",
+  "actual": "21ab73c3a6ed77512c1e93b3958bfb1c",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "F-01:platform_private.catalog_tenant_set_visibility_core",
+  "scenario": "definição live recriada reproduz o md5 live",
+  "expected": "c890b49cf23d7cbfedf4cb12c1cd6d89",
+  "actual": "c890b49cf23d7cbfedf4cb12c1cd6d89",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "F-02",
+  "scenario": "PRE global aprovado em transação READ ONLY",
+  "expected": "OK",
+  "actual": "OK",
+  "status": "PASS",
+  "kind": "PG_SEAM_STUB_PIN"
+ },
+ {
+  "id": "F-03",
+  "scenario": "PRE não altera catálogo (pg_proc/pg_class/pg_attribute)",
+  "expected": "3361:460:3468",
+  "actual": "3361:460:3468",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "F-04",
+  "scenario": "transação READ ONLY do PRE recusa DDL",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "F-05",
+  "scenario": "drift silencioso (mesma contagem) num pin igual aborta o PRE",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_SEAM_STUB_PIN"
+ },
+ {
+  "id": "F-06",
+  "scenario": "drift do 13 detectado pelo PRE antes da primeira DDL",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "F-07",
+  "scenario": "sem aplicação parcial: owner_organization_id ausente após aborto",
+  "expected": "0",
+  "actual": "0",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "F-08",
+  "scenario": "PRE volta a aprovar após restaurar definição live",
+  "expected": "OK",
+  "actual": "OK",
+  "status": "PASS",
+  "kind": "PG_SEAM_STUB_PIN"
+ },
+ {
+  "id": "F-09",
+  "scenario": "dependência ausente aborta PRE",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-09",
+  "scenario": "guard original 09 aborta contra definição live",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_RED_EXPECTED"
+ },
+ {
+  "id": "RED-13",
+  "scenario": "guard original 13 aborta contra definição live",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_RED_EXPECTED"
+ },
+ {
+  "id": "RED-10",
+  "scenario": "guard original 10 (rpc_fiscal_draft_save) aborta contra live",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_RED_EXPECTED"
+ },
+ {
+  "id": "CF-09",
+  "scenario": "trocar só hash e aplicar corpo original perderia C2P1 — pós-guard aborta",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "CF-09b",
+  "scenario": "aborto preserva definição live (rollback)",
+  "expected": "21ab73c3a6ed77512c1e93b3958bfb1c",
+  "actual": "21ab73c3a6ed77512c1e93b3958bfb1c",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "GREEN-09",
+  "scenario": "reconciliado 09r aplica com pin live e pós-guard",
+  "expected": "OK",
+  "actual": "OK",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "GREEN-13",
+  "scenario": "reconciliado 13r aplica com pin live e pós-guard",
+  "expected": "OK",
+  "actual": "OK",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "GREEN-10",
+  "scenario": "seção rpc_fiscal_draft_save do 10r aplica com pin live e pós-guard",
+  "expected": "OK",
+  "actual": "OK",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B09-1",
+  "scenario": "matriz lista só globais (sem nomes/IDs privados)",
+  "expected": [
+   "00000000-0000-0000-0000-0000000000a1",
+   "00000000-0000-0000-0000-0000000000b1"
+  ],
+  "actual": [
+   "00000000-0000-0000-0000-0000000000a1",
+   "00000000-0000-0000-0000-0000000000b1"
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B09-2",
+  "scenario": "guard C2P1 atual preservado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B13-1",
+  "scenario": "item próprio (mesmo tenant) negado como não encontrado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B13-2",
+  "scenario": "microrganismo próprio negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B13-3",
+  "scenario": "global oculto com versão 1",
+  "expected": 1,
+  "actual": 1,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B13-4",
+  "scenario": "replay mesma chave devolve recibo",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B13-5",
+  "scenario": "versão obsoleta => PT409 preservado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B13-6",
+  "scenario": "SQLSTATE do conflito é PT409 (não 40001 do original)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B10-1",
+  "scenario": "rascunho fiscal com produto próprio como origem negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B10-2",
+  "scenario": "rascunho com produto global aceito",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B10-3",
+  "scenario": "versão obsoleta => PT409 preservado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B10-4",
+  "scenario": "versão NULL => PT409 (sem bypass CAS)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B10-5",
+  "scenario": "outro tenant negado por h15 atual",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "B10-6",
+  "scenario": "CAS correto incrementa versão",
+  "expected": 2,
+  "actual": 2,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ }
+]

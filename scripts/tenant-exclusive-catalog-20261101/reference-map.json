@@ -1,0 +1,1228 @@
+{
+ "version": 2,
+ "source": "live-readonly-20261101/fks.tsv (151 FKs, READ ONLY) — confirmado pelo PRE contra pg_constraint real",
+ "roots": [
+  "produtos",
+  "culturas",
+  "microrganismos"
+ ],
+ "root_links": [
+  [
+   "microrganismos",
+   "product_id",
+   "produtos"
+  ]
+ ],
+ "tenant_refs": [
+  {
+   "t": "catalog_tenant_visibility",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ],
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "tenant": "x.organization_id",
+   "unresolved": "discard"
+  },
+  {
+   "t": "commercial_condition_item_prices",
+   "cols": [
+    [
+     "product_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[((SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = x.partner_id))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.customer_id))::uuid])",
+   "unresolved": "discard"
+  },
+  {
+   "t": "commercial_price_rules",
+   "cols": [
+    [
+     "product_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[((SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = x.partner_id))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.customer_id))::uuid])",
+   "unresolved": "discard",
+   "referenced_by": [
+    [
+     "partner_order_items",
+     "price_rule_id_snapshot"
+    ],
+    [
+     "commercial_condition_item_prices",
+     "published_rule_id"
+    ]
+   ]
+  },
+  {
+   "t": "partner_product_prices",
+   "cols": [
+    [
+     "product_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = x.partner_id)",
+   "unresolved": "discard"
+  },
+  {
+   "t": "partner_simulation_items",
+   "cols": [
+    [
+     "product_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = (SELECT ps.partner_id FROM public.partner_simulations ps WHERE ps.id = x.simulation_id))",
+   "unresolved": "discard"
+  },
+  {
+   "t": "commercial_campaign_products",
+   "cols": [
+    [
+     "product_id",
+     "produtos"
+    ]
+   ],
+   "tenant": "NULL::uuid",
+   "unresolved": "discard",
+   "noid": true
+  },
+  {
+   "t": "partner_order_items",
+   "cols": [
+    [
+     "product_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = (SELECT po.partner_id FROM public.partner_orders po WHERE po.id = x.order_id))",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "entregas",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[(x.organization_id)::uuid, ((SELECT o.organization_id FROM public.ordens_servico o WHERE o.id = x.ordem_servico_id))::uuid, ((SELECT l.organization_id FROM public.lotes l WHERE l.id = x.lote_id))::uuid, ((SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = (SELECT po.partner_id FROM public.partner_orders po WHERE po.id = x.partner_order_id)))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "lotes",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[(x.organization_id)::uuid, ((SELECT pp.organization_id FROM public.programacao_producao pp WHERE pp.id = x.programacao_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "ordens_servico",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[(x.organization_id)::uuid, ((SELECT t.organization_id FROM public.talhoes t WHERE t.id = x.talhao_id))::uuid, ((SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = (SELECT po.partner_id FROM public.partner_orders po WHERE po.id = x.partner_order_id)))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))::uuid, ((SELECT fz.organization_id FROM public.fazendas fz WHERE fz.id = x.fazenda_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "programacao_producao",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[(x.organization_id)::uuid, ((SELECT o.organization_id FROM public.ordens_servico o WHERE o.id = x.ordem_servico_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "estoque_produto",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "(SELECT l.organization_id FROM public.lotes l WHERE l.id = x.lote_id)",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "estoque_embalagens",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "tenant": "(SELECT l.organization_id FROM public.lotes l WHERE l.id = x.lote_id)",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "produto_etiquetas",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[((SELECT l.organization_id FROM public.lotes l WHERE l.id = x.lote_id))::uuid, ((SELECT l.organization_id FROM public.estoque_embalagens eb JOIN public.lotes l ON l.id = eb.lote_id WHERE eb.id = x.embalagem_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "os_faturamento_base",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[((SELECT o.organization_id FROM public.ordens_servico o WHERE o.id = x.ordem_servico_id))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "ordens_servico_onfarm",
+   "cols": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ],
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[((SELECT t.organization_id FROM public.talhoes t WHERE t.id = x.talhao_id))::uuid, ((SELECT platform_private.tc_agree(ARRAY[(SELECT t.organization_id FROM public.talhoes t WHERE t.id = rc.talhao_id), (SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = rc.cliente_id), (SELECT fz.organization_id FROM public.fazendas fz WHERE fz.id = rc.fazenda_id)]) FROM public.registros_consultor rc WHERE rc.id = x.registro_consultor_id))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))::uuid, ((SELECT fz.organization_id FROM public.fazendas fz WHERE fz.id = x.fazenda_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "registros_consultor",
+   "cols": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[((SELECT t.organization_id FROM public.talhoes t WHERE t.id = x.talhao_id))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))::uuid, ((SELECT fz.organization_id FROM public.fazendas fz WHERE fz.id = x.fazenda_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "registros_consultor_recomendacoes",
+   "cols": [
+    [
+     "produto_biologico_sugerido_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "tenant": "(SELECT platform_private.tc_agree(ARRAY[(SELECT t.organization_id FROM public.talhoes t WHERE t.id = rc.talhao_id), (SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = rc.cliente_id), (SELECT fz.organization_id FROM public.fazendas fz WHERE fz.id = rc.fazenda_id)]) FROM public.registros_consultor rc WHERE rc.id = x.registro_consultor_id)",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "talhao_safras",
+   "cols": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "tenant": "(SELECT t.organization_id FROM public.talhoes t WHERE t.id = x.talhao_id)",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "talhoes",
+   "cols": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[(x.organization_id)::uuid, ((SELECT fz.organization_id FROM public.fazendas fz WHERE fz.id = x.fazenda_id))::uuid])",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "fiscal_invoice_items",
+   "cols": [
+    [
+     "source_item_id",
+     "produtos"
+    ]
+   ],
+   "nofk": true,
+   "where": "EXISTS (SELECT 1 FROM public.fiscal_invoices fi WHERE fi.id = x.fiscal_invoice_id AND fi.invoice_type = 'NFE') AND x.source_item_id IN (SELECT id FROM public.produtos)",
+   "tenant": "(SELECT fi.organization_id FROM public.fiscal_invoices fi WHERE fi.id = x.fiscal_invoice_id)",
+   "unresolved": "nullify"
+  },
+  {
+   "t": "visitas_campo",
+   "cols": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "tenant": "platform_private.tc_agree(ARRAY[((SELECT t.organization_id FROM public.talhoes t WHERE t.id = x.talhao_id))::uuid, ((SELECT platform_private.tc_agree(ARRAY[(SELECT t.organization_id FROM public.talhoes t WHERE t.id = rc.talhao_id), (SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = rc.cliente_id), (SELECT fz.organization_id FROM public.fazendas fz WHERE fz.id = rc.fazenda_id)]) FROM public.registros_consultor rc WHERE rc.id = x.registro_consultor_id))::uuid, ((SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))::uuid])",
+   "unresolved": "nullify"
+  }
+ ],
+ "descendants": [
+  {
+   "t": "product_fiscal_profiles",
+   "anchors": [
+    [
+     "product_id",
+     "produtos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "product_id",
+     "produtos"
+    ]
+   ]
+  },
+  {
+   "t": "product_technical_profiles",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ]
+  },
+  {
+   "t": "produto_conformidade_perfis",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ]
+  },
+  {
+   "t": "product_crop_recommendations",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "others": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ]
+  },
+  {
+   "t": "product_target_recommendations",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ]
+  },
+  {
+   "t": "produto_composicao_conjuntos",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ]
+  },
+  {
+   "t": "produto_composicao_declaracoes",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ]
+   ],
+   "others": [
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "anchor_fk_via": "produto_composicao_conjuntos",
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "cq_parametros_referencia",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "catalogo_volumes",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "formulacoes",
+   "anchors": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [
+    [
+     "component_insumo_id",
+     "produtos"
+    ]
+   ],
+   "parents": [],
+   "all_roots": [
+    [
+     "produto_id",
+     "produtos"
+    ],
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ],
+    [
+     "component_insumo_id",
+     "produtos"
+    ]
+   ]
+  },
+  {
+   "t": "microorganism_crop_recommendations",
+   "anchors": [
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "parents": [],
+   "all_roots": [
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ],
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ]
+  },
+  {
+   "t": "microorganism_fiscal_profiles",
+   "anchors": [
+    [
+     "microorganism_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "microorganism_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "microorganism_targets",
+   "anchors": [
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "microorganism_technical_profiles",
+   "anchors": [
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "microrganismo_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "microorganism_regulatory_dossiers",
+   "anchors": [
+    [
+     "microorganism_id",
+     "microrganismos"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "microorganism_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "microorganism_regulatory_publication_snapshots",
+   "anchors": [
+    [
+     "microorganism_id",
+     "microrganismos"
+    ]
+   ],
+   "parents": [
+    [
+     "dossier_id",
+     "microorganism_regulatory_dossiers",
+     true
+    ]
+   ],
+   "others": [],
+   "all_roots": [
+    [
+     "microorganism_id",
+     "microrganismos"
+    ]
+   ]
+  },
+  {
+   "t": "microorganism_regulatory_presentations",
+   "anchors": [],
+   "anchor_parent": [
+    "dossier_id",
+    "microorganism_regulatory_dossiers"
+   ],
+   "parents": [
+    [
+     "catalog_volume_id",
+     "catalogo_volumes",
+     false
+    ]
+   ],
+   "others": [],
+   "all_roots": []
+  },
+  {
+   "t": "microorganism_ncm_candidates",
+   "anchors": [],
+   "anchor_parent": [
+    "dossier_id",
+    "microorganism_regulatory_dossiers"
+   ],
+   "anchor_parent_nofk": true,
+   "others": [],
+   "parents": [],
+   "all_roots": []
+  },
+  {
+   "t": "objetivos_visita_sugestoes",
+   "anchors": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ],
+   "others": [],
+   "parents": [],
+   "all_roots": [
+    [
+     "cultura_id",
+     "culturas"
+    ]
+   ]
+  }
+ ],
+ "dep_columns": [
+  [
+   "microorganism_ncm_candidates",
+   "dossier_id"
+  ],
+  [
+   "microorganism_regulatory_dossiers",
+   "published_ncm_candidate_id"
+  ],
+  [
+   "partner_accounts",
+   "commercial_owner_organization_id"
+  ],
+  [
+   "partner_orders",
+   "partner_id"
+  ],
+  [
+   "partner_simulations",
+   "partner_id"
+  ],
+  [
+   "clientes",
+   "organization_id"
+  ],
+  [
+   "fazendas",
+   "organization_id"
+  ],
+  [
+   "talhoes",
+   "organization_id"
+  ],
+  [
+   "lotes",
+   "organization_id"
+  ],
+  [
+   "entregas",
+   "organization_id"
+  ],
+  [
+   "ordens_servico",
+   "organization_id"
+  ],
+  [
+   "programacao_producao",
+   "organization_id"
+  ],
+  [
+   "registros_consultor",
+   "talhao_id"
+  ],
+  [
+   "registros_consultor",
+   "cliente_id"
+  ],
+  [
+   "registros_consultor",
+   "fazenda_id"
+  ],
+  [
+   "os_faturamento_base",
+   "ordem_servico_id"
+  ],
+  [
+   "estoque_embalagens",
+   "lote_id"
+  ],
+  [
+   "fiscal_invoice_items",
+   "source_item_id"
+  ],
+  [
+   "fiscal_invoice_items",
+   "fiscal_invoice_id"
+  ],
+  [
+   "fiscal_invoices",
+   "invoice_type"
+  ],
+  [
+   "fiscal_invoices",
+   "organization_id"
+  ],
+  [
+   "partner_orders",
+   "internal_origin_snapshot"
+  ],
+  [
+   "partner_orders",
+   "c2_external_origin_snapshot"
+  ],
+  [
+   "partner_orders",
+   "receivable_generated"
+  ],
+  [
+   "partner_financial_settings",
+   "auto_generate_receivable"
+  ],
+  [
+   "company_fiscal_settings",
+   "nfe_enabled"
+  ],
+  [
+   "company_fiscal_settings",
+   "nfse_enabled"
+  ],
+  [
+   "company_fiscal_settings",
+   "production_enabled"
+  ]
+ ],
+ "expected_root_fks": [
+  [
+   "catalog_tenant_visibility",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "catalog_tenant_visibility",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "catalog_tenant_visibility",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "catalogo_volumes",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "catalogo_volumes",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "commercial_campaign_products",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "commercial_condition_item_prices",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "commercial_condition_item_prices",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "commercial_price_rules",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "commercial_price_rules",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "cq_parametros_referencia",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "cq_parametros_referencia",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "entregas",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "estoque_embalagens",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "estoque_produto",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "estoque_produto",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "formulacoes",
+   "component_insumo_id",
+   "produtos"
+  ],
+  [
+   "formulacoes",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "formulacoes",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "lotes",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "lotes",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "microorganism_crop_recommendations",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "microorganism_crop_recommendations",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "microorganism_fiscal_profiles",
+   "microorganism_id",
+   "microrganismos"
+  ],
+  [
+   "microorganism_regulatory_dossiers",
+   "microorganism_id",
+   "microrganismos"
+  ],
+  [
+   "microorganism_regulatory_publication_snapshots",
+   "microorganism_id",
+   "microrganismos"
+  ],
+  [
+   "microorganism_targets",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "microorganism_technical_profiles",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "microrganismos",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "objetivos_visita_sugestoes",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "ordens_servico",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "ordens_servico",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "ordens_servico_onfarm",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "ordens_servico_onfarm",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "ordens_servico_onfarm",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "os_faturamento_base",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "partner_order_items",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "partner_order_items",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "partner_product_prices",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "partner_product_prices",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "partner_simulation_items",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "partner_simulation_items",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "product_crop_recommendations",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "product_crop_recommendations",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "product_fiscal_profiles",
+   "product_id",
+   "produtos"
+  ],
+  [
+   "product_target_recommendations",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "product_technical_profiles",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "produto_composicao_conjuntos",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "produto_composicao_declaracoes",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "produto_conformidade_perfis",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "produto_etiquetas",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "programacao_producao",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "programacao_producao",
+   "produto_id",
+   "produtos"
+  ],
+  [
+   "registros_consultor",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "registros_consultor_recomendacoes",
+   "microrganismo_id",
+   "microrganismos"
+  ],
+  [
+   "registros_consultor_recomendacoes",
+   "produto_biologico_sugerido_id",
+   "produtos"
+  ],
+  [
+   "talhao_safras",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "talhoes",
+   "cultura_id",
+   "culturas"
+  ],
+  [
+   "visitas_campo",
+   "cultura_id",
+   "culturas"
+  ]
+ ],
+ "expected_parent_fks": [
+  [
+   "microorganism_regulatory_presentations",
+   "catalog_volume_id",
+   "catalogo_volumes"
+  ],
+  [
+   "microorganism_regulatory_presentations",
+   "dossier_id",
+   "microorganism_regulatory_dossiers"
+  ],
+  [
+   "microorganism_regulatory_publication_snapshots",
+   "dossier_id",
+   "microorganism_regulatory_dossiers"
+  ],
+  [
+   "produto_composicao_declaracoes",
+   "produto_id",
+   "produto_composicao_conjuntos"
+  ]
+ ],
+ "global_functions_closed": [
+  "change_global_volume",
+  "create_global_culture_core",
+  "create_global_microorganism_core",
+  "create_global_product_core",
+  "create_global_volume_core",
+  "global_product_fiscal_before_write",
+  "global_product_fiscal_ibs_save",
+  "global_product_fiscal_read_ready",
+  "global_product_fiscal_statement_gate",
+  "global_product_fiscal_write_ready",
+  "platform_create_global_culture",
+  "platform_create_global_microorganism",
+  "platform_create_global_product",
+  "platform_create_global_volume",
+  "platform_read_global_b2b_state",
+  "platform_read_global_culture_detail",
+  "platform_read_global_cultures",
+  "platform_read_global_item_volumes",
+  "platform_read_global_microorganism_detail",
+  "platform_read_global_microorganisms",
+  "platform_read_global_product_catalog",
+  "platform_read_global_product_catalog_by_family",
+  "platform_read_global_product_catalog_core",
+  "platform_read_global_product_composition",
+  "platform_read_global_product_metadata",
+  "platform_read_global_volume_detail",
+  "platform_set_global_b2b_enabled",
+  "platform_set_global_culture_status",
+  "platform_set_global_microorganism_status",
+  "platform_set_global_product_composition",
+  "platform_set_global_product_family",
+  "platform_set_global_product_status",
+  "platform_set_global_volume_status",
+  "platform_update_global_culture",
+  "platform_update_global_microorganism",
+  "platform_update_global_product_metadata",
+  "platform_update_global_volume",
+  "platform_wipe_global_product_catalog",
+  "read_global_b2b_state_core",
+  "read_global_culture_detail_core",
+  "read_global_cultures_core",
+  "read_global_item_volumes_core",
+  "read_global_microorganism_detail_core",
+  "read_global_microorganisms_core",
+  "read_global_product_catalog_by_family_core",
+  "read_global_product_composition_core",
+  "read_global_product_metadata_core",
+  "read_global_volume_detail_core",
+  "set_global_b2b_enabled_core",
+  "set_global_culture_status_core",
+  "set_global_microorganism_status_core",
+  "set_global_product_composition_core",
+  "set_global_product_family_core",
+  "set_global_product_status_core",
+  "set_global_volume_status_core",
+  "update_global_culture_core",
+  "update_global_microorganism_core",
+  "update_global_product_metadata_core",
+  "update_global_volume_core"
+ ],
+ "editable_fields": {
+  "nome": "text",
+  "codigo": "text",
+  "descricao": "text",
+  "tipo": "text",
+  "classe_catalogo": "text",
+  "familia_catalogo": "text",
+  "modo_acao": "text",
+  "modo_aplicacao": "text",
+  "funcao_completa": "text",
+  "e_insumo": "boolean",
+  "b2b_enabled": "boolean",
+  "dose_ml_ha": "numeric",
+  "estoque_minimo": "numeric",
+  "valor_dose_brl": "numeric",
+  "valor_ha_brl": "numeric",
+  "valor_litro_brl": "numeric"
+ }
+}

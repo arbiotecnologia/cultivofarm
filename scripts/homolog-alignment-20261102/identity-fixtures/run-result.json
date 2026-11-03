@@ -1,0 +1,546 @@
+{
+ "pass_": 34,
+ "fail": 0,
+ "checks": [
+  {
+   "id": "IDFX-GATE-RED fragmento de identidade do gate do catálogo recusa estado inicial",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-GATE fragmento de identidade do gate do catálogo aprova o estado final do 10",
+   "expected": "OK",
+   "actual": "OK",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-01 aplica estado alvo",
+   "expected": {
+    "rh_org": "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a",
+    "rh_roles": [
+     "administrador"
+    ],
+    "t4_org": "c809e74f-486b-44b2-b2f4-4088f53421bb",
+    "t4_roles": [
+     "parceiro_b2b"
+    ],
+    "t4_link": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+    "ad": "c809e74f-486b-44b2-b2f4-4088f53421bb:true",
+    "fsf_resp": "321e643b-e5c7-4b08-bf2d-be3aaaade53e"
+   },
+   "actual": {
+    "rh_org": "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a",
+    "rh_roles": [
+     "administrador"
+    ],
+    "t4_org": "c809e74f-486b-44b2-b2f4-4088f53421bb",
+    "t4_roles": [
+     "parceiro_b2b"
+    ],
+    "t4_link": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+    "ad": "c809e74f-486b-44b2-b2f4-4088f53421bb:true",
+    "fsf_resp": "321e643b-e5c7-4b08-bf2d-be3aaaade53e"
+   },
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-02 aviso responsável sem escrita em organizations",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-03 ledger antes/depois + invariância",
+   "expected": [
+    "arbio_admin_invariant",
+    "rh_initial_to_final",
+    "t4_initial_to_final",
+    "third_party_invariant"
+   ],
+   "actual": [
+    "arbio_admin_invariant",
+    "rh_initial_to_final",
+    "t4_initial_to_final",
+    "third_party_invariant"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-04 reexecução idempotente (no-op)",
+   "expected": [
+    {
+     "rh_org": "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a",
+     "rh_roles": [
+      "administrador"
+     ],
+     "t4_org": "c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "t4_roles": [
+      "parceiro_b2b"
+     ],
+     "t4_link": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "ad": "c809e74f-486b-44b2-b2f4-4088f53421bb:true",
+     "fsf_resp": "321e643b-e5c7-4b08-bf2d-be3aaaade53e"
+    },
+    "4"
+   ],
+   "actual": [
+    {
+     "rh_org": "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a",
+     "rh_roles": [
+      "administrador"
+     ],
+     "t4_org": "c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "t4_roles": [
+      "parceiro_b2b"
+     ],
+     "t4_link": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "ad": "c809e74f-486b-44b2-b2f4-4088f53421bb:true",
+     "fsf_resp": "321e643b-e5c7-4b08-bf2d-be3aaaade53e"
+    },
+    "4"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-05 guardas reais impedem autorreatribuição pós-correção",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-10 projeto errado (empresa de produção presente)",
+   "expected": [
+    "PRE:id de produção",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:id de produção",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-11 sem conta de parceiro FSF da AR Bio",
+   "expected": [
+    "PRE:conta de parceiro FSF",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:conta de parceiro FSF",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-12 conta ambígua",
+   "expected": [
+    "PRE:conta de parceiro FSF",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:conta de parceiro FSF",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-13 conta da FSF (não AR Bio) não serve",
+   "expected": [
+    "PRE:conta de parceiro FSF",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:conta de parceiro FSF",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-14 vínculo revogado do teste4 não é sobrescrito",
+   "expected": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-15 rh com papel inesperado",
+   "expected": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-16 admin AR Bio alterado",
+   "expected": [
+    "PRE:admin AR Bio fora do estado",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:admin AR Bio fora do estado",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-17 email Auth divergente",
+   "expected": [
+    "PRE:uid/email Auth divergente",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:uid/email Auth divergente",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-18 email não confirmado",
+   "expected": [
+    "PRE:email não confirmado",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:email não confirmado",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-19 teste4 com papel técnico",
+   "expected": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-22 mistura: teste4 admin + gestor",
+   "expected": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-23 mistura: teste4 papel final com empresa FSF",
+   "expected": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-24 teste4 com vínculo de cliente extra",
+   "expected": [
+    "PRE:teste4 com vínculos extras",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 com vínculos extras",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-25 rh com vínculo de cliente extra",
+   "expected": [
+    "PRE:rh com vínculos extras/inat",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:rh com vínculos extras/inat",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-26 rh final com papel a mais",
+   "expected": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-27 gate de statement de partner_users desabilitado",
+   "expected": [
+    "PRE:gate de statement em partner",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:gate de statement em partner",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-27b gate removido de partner_users",
+   "expected": [
+    "PRE:gate de statement em partner",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:gate de statement em partner",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-RED1 rh {administrador,financeiro} (inicial sem empresa)",
+   "expected": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-RED2 teste4 só {gestor}",
+   "expected": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-RED3 teste4 {parceiro_b2b,administrador}",
+   "expected": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-28 guarda de perfil desabilitada",
+   "expected": [
+    "PRE:guardas de perfil ausentes",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:guardas de perfil ausentes",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-29 teste4 final com vínculo técnico",
+   "expected": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:teste4 em estado não previs",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-PA1 conta única por CNPJ mas id diferente do confirmado",
+   "expected": [
+    "PRE:conta de parceiro FSF resolvida",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:conta de parceiro FSF resolvida",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-PA2 mesmo nome, CNPJ/vínculo divergentes não serve",
+   "expected": [
+    "PRE:conta de parceiro FSF da AR B",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:conta de parceiro FSF da AR B",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-20 rh em outra empresa",
+   "expected": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "actual": [
+    "PRE:rh em estado não previsto",
+    true,
+    "f"
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-21 conta identificada por partner_account_id",
+   "expected": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+   "actual": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  },
+  {
+   "id": "IDFX-30 writers concorrentes (com e sem gate: user_roles/partner_users/profiles/user_clientes) bloqueados",
+   "expected": [
+    true,
+    true,
+    true,
+    true,
+    0,
+    {
+     "rh_org": "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a",
+     "rh_roles": [
+      "administrador"
+     ],
+     "t4_org": "c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "t4_roles": [
+      "parceiro_b2b"
+     ],
+     "t4_link": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "ad": "c809e74f-486b-44b2-b2f4-4088f53421bb:true",
+     "fsf_resp": "321e643b-e5c7-4b08-bf2d-be3aaaade53e"
+    }
+   ],
+   "actual": [
+    true,
+    true,
+    true,
+    true,
+    0,
+    {
+     "rh_org": "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a",
+     "rh_roles": [
+      "administrador"
+     ],
+     "t4_org": "c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "t4_roles": [
+      "parceiro_b2b"
+     ],
+     "t4_link": "e770d10e-5efc-46e3-9b03-fdd6b982a6f1/gestor/c809e74f-486b-44b2-b2f4-4088f53421bb",
+     "ad": "c809e74f-486b-44b2-b2f4-4088f53421bb:true",
+     "fsf_resp": "321e643b-e5c7-4b08-bf2d-be3aaaade53e"
+    }
+   ],
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+  }
+ ]
+}

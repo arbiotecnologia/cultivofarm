@@ -17,7 +17,7 @@ const src = readFileSync(resolve(process.cwd(), "src/pages/VisitaTecnica.tsx"), 
 
 describe("H9-G 2B — salvamento canônico da visita", () => {
   it("inclui as notas rápidas no payload de observacoes_tecnicas", () => {
-    expect(src).toMatch(/observacoes_tecnicas:\s*\n?\s*serializeNotes\(/);
+    expect(src).toMatch(/observacoes_tecnicas:\s*preserveMonitoringPlan\([^,]+,\s*\n?\s*serializeNotes\(/);
   });
 
   it("expõe uma única ação canônica de salvar reutilizada pelos dois botões", () => {

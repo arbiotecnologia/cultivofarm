@@ -15,13 +15,17 @@ export function useApprovePartnerOrder() {
     }) => {
       const current = scope.capture();
       if (!current()) throw new Error("Contexto indisponível.");
-      const { error } = await supabase.rpc("approve_partner_order" as any, {
+      const { data, error } = await supabase.rpc("approve_partner_order" as any, {
         p_order_id: vars.order_id,
         p_approval_notes: vars.approval_notes ?? null,
         p_estimated_delivery_date: vars.estimated_delivery_date ?? null,
       });
       if (!current()) throw new Error("Contexto alterado.");
       if (error) throw error;
+      const ack = data as { success?: boolean; order_id?: string } | null;
+      // Captured approve_partner_order RETURNS void: null/error:null is valid.
+      // An explicit negative envelope remains a business failure, never a success.
+      if (ack?.success === false || (ack?.order_id != null && ack.order_id !== vars.order_id)) throw new Error('approval_ack_unconfirmed');
     },
     onSuccess: (_data, _variables, context) => {
       if (!context?.current()) return;

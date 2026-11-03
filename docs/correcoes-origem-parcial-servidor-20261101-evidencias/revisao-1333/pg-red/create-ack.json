@@ -1,0 +1,30 @@
+{
+  "id": "38d3c866-a6e6-4bff-97a9-1fdbb3b3ca5b",
+  "total": 10362.14,
+  "numero": "PB-000005",
+  "status": "em_analise_comercial",
+  "actor_id": "11111111-1111-4111-8111-111111111111",
+  "subtotal": 10000.0,
+  "cart_hash": "5cf01fcd7ae30a1b17c744031883680cfcf86185a42eeefabd896dd1237a5d73",
+  "partner_id": "00000000-0000-4000-8000-000000000700",
+  "final_amount": 10362.14,
+  "pricing_mode": "discount_from_base",
+  "table_amount": 10000.0,
+  "desconto_total": 0.0,
+  "payment_choice": {
+    "payment_method": "boleto",
+    "payment_deadline_days": 30,
+    "payment_condition_version": 1
+  },
+  "quote_required": false,
+  "discount_amount": 0.0,
+  "idempotency_key": "create-local",
+  "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "payment_terms_id": "3b8b85b8-a7fd-4a8c-96c6-417b786e6c93",
+  "credit_reason_code": "OK",
+  "credit_block_reason": null,
+  "financial_approval_status": "not_required",
+  "financial_interest_amount": 362.14,
+  "net_amount_after_discount": 10000.0,
+  "requires_financial_approval": false
+}

@@ -1,0 +1,656 @@
+{
+ "summary": {
+  "PASS": 81,
+  "FAIL": 0
+ },
+ "checks": [
+  {
+   "id": "CP-0",
+   "scenario": "83 gatilhos instalados verbatim da captura 02/11 (23 de DELETE; zero stubs)",
+   "expected": "83",
+   "actual": "83",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-0b",
+   "scenario": "pins LIVE (tgtype+definição+corpo) dos 83 gatilhos reproduzidos sem substituição",
+   "expected": "0",
+   "actual": "0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-0c",
+   "scenario": "nenhuma função de gatilho é stub",
+   "expected": "0",
+   "actual": "0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-1",
+   "scenario": "baseline: DELETE comum bloqueado pela proteção real (append-only)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-2",
+   "scenario": "baseline: DELETE comum bloqueado pela proteção real (ENVASE_IMUTAVEL)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-3",
+   "scenario": "baseline: DELETE comum bloqueado pela proteção real (DELIVERY_MUTATION_CLOSED)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-4",
+   "scenario": "baseline: DELETE comum bloqueado pela proteção real (CQ_MANUAL_REQUIRES_REVIEWED_RPC)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-5",
+   "scenario": "baseline: DELETE comum bloqueado pela proteção real (ESTQ_TENANT_FORBIDDEN)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-6",
+   "scenario": "baseline: DELETE comum bloqueado pela proteção real (MANUAL_LOT_DELETE_FORBIDDEN)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-7",
+   "scenario": "baseline: DELETE comum não removeu nada",
+   "expected": "19",
+   "actual": "19",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-8",
+   "scenario": "singleton do gate ocupado: aborta por lock_timeout no passo B (antes de tabelas/ledger)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-9",
+   "scenario": "rollback integral: 19 linhas presentes",
+   "expected": "19",
+   "actual": "19",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-10",
+   "scenario": "rollback integral: nenhum gatilho desabilitado",
+   "expected": "0",
+   "actual": "0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-11",
+   "scenario": "rollback integral: linhas fora do escopo idênticas",
+   "expected": "c452bcf3d6fdc283d74e99d8f14a3866",
+   "actual": "c452bcf3d6fdc283d74e99d8f14a3866",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-8b",
+   "scenario": "falha intermediária real (refresh_esteira após DELETE de entregas) aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-9b",
+   "scenario": "rollback após falha intermediária: 19 linhas, 0 gatilhos desabilitados, fora do escopo idêntico, sem ledger",
+   "expected": "19|0|True|0",
+   "actual": "19|0|True|0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-8c",
+   "scenario": "ordem gate→tabelas: DML concorrente recebe NOWAIT do gate real (sem deadlock); manutenção aborta por lock_timeout",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-12",
+   "scenario": "manutenção conclui",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-12b",
+   "scenario": "sucesso: todas as linhas fora do manifesto (todas as tabelas public) idênticas",
+   "expected": "c452bcf3d6fdc283d74e99d8f14a3866",
+   "actual": "c452bcf3d6fdc283d74e99d8f14a3866",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-12c",
+   "scenario": "sucesso: auxiliares removidos; ledger sem anon/authenticated/service_role",
+   "expected": "0|false|false|false",
+   "actual": "0|false|false|false",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-13",
+   "scenario": "19 linhas do escopo removidas",
+   "expected": "0",
+   "actual": "0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-14",
+   "scenario": "todos os gatilhos reabilitados após COMMIT",
+   "expected": "0",
+   "actual": "0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-15",
+   "scenario": "dados fora do escopo intactos (OS/programação/lote AR Bio)",
+   "expected": "3",
+   "actual": "3",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-16",
+   "scenario": "registro: pre + committed com snapshot das 19 linhas",
+   "expected": "2|9|true",
+   "actual": "2|9|true",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-17",
+   "scenario": "proteção reativa: DELETE comum em lote AR Bio continua bloqueado",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-18",
+   "scenario": "proteção reativa: movimentação nova continua append-only",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-19b",
+   "scenario": "repetição: linhas fora do escopo idênticas",
+   "expected": "a0a1759b15f8a23802805a9ecffd0a04",
+   "actual": "a0a1759b15f8a23802805a9ecffd0a04",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-19",
+   "scenario": "repetição: no-op sem nova exclusão",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-20",
+   "scenario": "repetição: dados fora do escopo e movimentação nova preservados",
+   "expected": "4",
+   "actual": "4",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-21",
+   "scenario": "registro extra fora do escopo: 10º checklist: aborta (scope_count_mismatch), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-22",
+   "scenario": "movimentação extra no lote: aborta (movement_set), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-23",
+   "scenario": "movimentação externa com origem na cadeia (RESTRICT): aborta (external_dependency:estoque_movimentacoes.movimentacao_origem_id), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-24",
+   "scenario": "embalagem no lote: aborta (external_dependency:estoque_embalagens.lote_id), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-25",
+   "scenario": "termo apontando o comprovante: aborta (external_dependency:entrega_termos.comprovante_id), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-26",
+   "scenario": "item fiscal da entrega: aborta (external_dependency:fiscal_invoice_items.entrega_id), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-27",
+   "scenario": "segunda CQ no lote: aborta (quality_set), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-28",
+   "scenario": "lote com empresa (nunca atribuir a AR Bio/FSF): aborta (lote_link), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-29",
+   "scenario": "comprovante congelado (1ª barreira: impressão digital): aborta (row_fingerprint_drift:entrega_comprovantes), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-30",
+   "scenario": "comprovante com arquivo (1ª barreira: impressão digital): aborta (row_fingerprint_drift:entrega_comprovantes), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-31",
+   "scenario": "callback não auditado novo: aborta (trigger_set_drift), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-32",
+   "scenario": "definição de gatilho suspenso divergente (mesmo tgtype, WHEN novo): aborta (trigger_definition_drift:envase.trg_envase_material_imutavel), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-32b",
+   "scenario": "eventos do gatilho suspenso alterados (só DELETE): tgtype divergente: aborta (trigger_type_drift:envase.trg_envase_material_imutavel), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-33",
+   "scenario": "gatilho já desabilitado antes: aborta (trigger_not_enabled_before), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-34",
+   "scenario": "regra DELETE na tabela: aborta (rule_present), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-35",
+   "scenario": "entrega com recebível: aborta (entrega_state), 19 linhas e gatilhos preservados",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-29b",
+   "scenario": "comprovante congelado/com arquivo mesmo com pins atualizados: proof_state aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-30b",
+   "scenario": "comprovante congelado/com arquivo mesmo com pins atualizados: proof_state aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-39",
+   "scenario": "linha do manifesto alterada após captura: impressão digital aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-40",
+   "scenario": "função de proteção enfraquecida (corpo divergente): pin md5 aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-41",
+   "scenario": "RED da ordem v2.4 com corpos reais: excluir comprovante isolado aplica SET NULL (UPDATE em entregas)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-36",
+   "scenario": "session_replication_role != origin: aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-37",
+   "scenario": "papel de API não executa (allowlist)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-50",
+   "scenario": "RED: candidato 8c6ea7f (82 pins) aborta trigger_set_drift:unexpected na realidade de 83 gatilhos",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-51",
+   "scenario": "RED: 8c6ea7f não acusa a linha colidente na varredura (só a FK RESTRICT do DELETE a detém depois)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-51b",
+   "scenario": "RED: 8c6ea7f com colisão em FK SET NULL conclui e MUTA linha externa (termo perde comprovante_id)",
+   "expected": "ok|0|NULL",
+   "actual": "ok|0|NULL",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-52c",
+   "scenario": "GREEN: mesma colisão em FK SET NULL detectada por par e nada muda",
+   "expected": "True|19|True",
+   "actual": "True|19|True",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-52",
+   "scenario": "GREEN: colisão UUID entre tabelas detectada por par (tabela,id)",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-52b",
+   "scenario": "colisão: rollback integral e fora do escopo idêntico",
+   "expected": "19|True",
+   "actual": "19|True",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-53",
+   "scenario": "colisão inversa: checklist com UUID de movimentação do manifesto não vira interno",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-54",
+   "scenario": "FK composta para tabela do escopo: rejeitada explicitamente",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-55",
+   "scenario": "FK com alvo diferente de id: rejeitada explicitamente",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-56",
+   "scenario": "ledger pré-existente com grants (service_role/authenticated/PUBLIC/papel extra): revogados, só o dono",
+   "expected": "OK|0|0",
+   "actual": "OK|0|0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-57",
+   "scenario": "default ACL que concederia service_role/anon: neutralizada e registrada no ledger",
+   "expected": "false|false|true",
+   "actual": "false|false|true",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-58",
+   "scenario": "ledger com dono fora da allowlist: aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-59",
+   "scenario": "superusuário fora da allowlist (current_user): aborta antes de DDL",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-60",
+   "scenario": "contexto JWT presente: aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-61",
+   "scenario": "auth.uid() não nulo: aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-62",
+   "scenario": "event trigger habilitado não pinado: aborta antes de qualquer DDL",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-63",
+   "scenario": "event trigger desabilitado não bloqueia e manutenção conclui",
+   "expected": "0",
+   "actual": "0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-E1",
+   "scenario": "6 event triggers reais (corpos LIVE) instalados: manutenção conclui e remove as 19 linhas",
+   "expected": "6/0",
+   "actual": "6/0",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-E2",
+   "scenario": "evttags divergentes (pgrst_ddl_watch limitado a CREATE TABLE) abortam antes de qualquer DDL, nada removido",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-E3",
+   "scenario": "tags de extensão ampliadas (issue_pg_net_access + ALTER TABLE) abortam antes de qualquer DDL, nada removido",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-E4",
+   "scenario": "corpo divergente (pgrst_drop_watch com comentário) aborta antes de qualquer DDL, nada removido",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-E5",
+   "scenario": "evtenabled divergente (ENABLE ALWAYS) aborta antes de qualquer DDL, nada removido",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-E6",
+   "scenario": "evtenabled REPLICA divergente aborta antes de qualquer DDL, nada removido",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-E7",
+   "scenario": "pinado desabilitado não dispara nem bloqueia; nenhum gatilho é desativado pela manutenção",
+   "expected": "0/O",
+   "actual": "0/O",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-64",
+   "scenario": "corpos/ACL de funções idênticos após COMMIT (prova externa ao script)",
+   "expected": "e334465bd663a1063f5945dba12ade69",
+   "actual": "e334465bd663a1063f5945dba12ade69",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-65",
+   "scenario": "linha fora do escopo nas tabelas do descarte (movimentação AR Bio) intacta após sucesso",
+   "expected": "2a8d8c1b1db2c0a3113c95a2504655c6",
+   "actual": "2a8d8c1b1db2c0a3113c95a2504655c6",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-66",
+   "scenario": "termo sem vínculo com id igual ao da entrega (colisão sem FK) permanece; manutenção conclui",
+   "expected": "0|1",
+   "actual": "0|1",
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-67",
+   "scenario": "termo vinculado à entrega (gatilho real 83º): dependência externa aborta",
+   "expected": true,
+   "actual": true,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  },
+  {
+   "id": "CP-38",
+   "scenario": "estático: sem DISABLE TRIGGER ALL, replication_role, CASCADE ou GUC",
+   "expected": 0,
+   "actual": 0,
+   "status": "PASS",
+   "kind": "PG_DISPOSABLE_CAPTURED_GUARDS"
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "PRE-2": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  not_homolog:production_org_present\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-3": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  not_homolog:homolog_orgs_absent\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-4": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  homolog_trava_missing_or_disabled\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-5": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  fiscal_enabled\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-6": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  cron_jobs_present:1\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-7": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  fn_drift_equal:public._assert_visita_editavel(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-8": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  fn_drift_divergent:public._comunicacao_publish_system_event(text,text,uuid,jsonb,text)\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-9": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  fn_unexpected_present:public.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-10": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  column_unexpected_present:produtos.familia_catalogo\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-11": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  table_unexpected_present:catalog_tenant_visibility\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-12": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  nullability_drift:envase.quantidade\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-13": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  already_aligned_or_partial:ledger_present\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-14": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  dep_type_missing:platform_private.tenant_smtp_dispatch_jobs\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-15": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  constraint_drift:partner_accounts.partner_accounts_comissao_range\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE",
+ "PRE-16": "ERR:ERROR:  homolog_alignment_pre_failed\nDETAIL:  envase_null_rows_block_not_null:1\nCONTEXT:  PL/pgSQL function inline_code_block line 1249 at RAISE"
+}

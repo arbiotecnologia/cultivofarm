@@ -1,0 +1,5 @@
+- Monetary semantics are explicit and versioned; absent discriminator preserves legacy principal-plus-interest, and financed interest is removed only from its declared breakdown — prevents silent historical reinterpretation.
+- Civil dates and ISO instants must validate calendar fields before parsing — prevents normalization of invalid inputs.
+- Price preview uses explicit amortization semantics, never infers the financing system from a generic compound plan — preserves unrelated commercial contracts.
+- Price rounds payment, interest and amortization to cents each period and settles the final residual; independent Decimal vectors are synthetic arithmetic controls, never commercial defaults — preserves exact schedule sums and zero final balance.
+- Operational receivable consumers require the canonical monetary-origin projection, tied to installment/title and immutable generator snapshot; missing projection blocks rather than guesses legacy semantics — prevents fake fixture-only authority.

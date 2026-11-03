@@ -66,6 +66,9 @@ beforeEach(() => {
       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: true, sheets_read: true },
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
+    // Read-only capability probe added by the B2B payment-condition work (usePaymentConditionCapability): the reviewed
+    // server function is NOT installed, so the honest local answer is PostgREST "function absent" — never a write.
+    if (name === "partner_payment_condition_capability_v1") return Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find public.partner_payment_condition_capability_v1" } });
     if (name === "log_my_access_denied_secure") return response(null);
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",

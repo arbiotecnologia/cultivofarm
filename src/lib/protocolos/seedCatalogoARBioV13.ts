@@ -179,7 +179,12 @@ export async function auditProdutosOrfaos(): Promise<ProdutosOrfaosAuditResult> 
  * Idempotente por `codigo` (upsert). Se algum microrganismo requerido não existir,
  * a função aborta antes de inserir/atualizar produtos.
  */
+const TENANT_EXCLUSIVE_SEED_DISABLED: boolean = true;
+
 export async function importCatalogoARBioV13(): Promise<SeedResult> {
+  // Catálogo exclusivo por empresa (01/11/2026): carga fixa com escrita direta desativada — o dono seria
+  // inferido pelo cliente (risco de gravar tudo em uma empresa). Cadastro só pelas RPCs por empresa.
+  if (TENANT_EXCLUSIVE_SEED_DISABLED) throw new Error("Carga fixa do catálogo desativada: use o cadastro da própria empresa.");
   // 1) resolver microrganismos por nome_cientifico
   const nomesCientificos = Array.from(
     new Set(SEED_PRODUTOS_AR_BIO_V13.flatMap((p) => p.composicao.map((c) => c.nome_cientifico))),

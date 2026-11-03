@@ -1,0 +1,10 @@
+[
+ {
+  "id": "RED-01",
+  "scenario": "original PRE sem fundação aborta",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE"
+ }
+]

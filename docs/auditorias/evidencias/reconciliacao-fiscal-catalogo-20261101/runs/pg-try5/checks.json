@@ -1,0 +1,818 @@
+[
+ {
+  "id": "RED-01",
+  "scenario": "original PRE sem fundação aborta",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_before_write()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_statement_gate()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_write_ready()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_read_ready()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.platform_actor_access_ready(uuid)",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.h15_actor_organization()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-fiscal_audit_trigger()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-policies",
+  "scenario": "stub policies == captura",
+  "expected": "product_fiscal_profiles_delete|DELETE|PERMISSIVE|authenticated|false|~\nproduct_fiscal_profiles_insert|INSERT|PERMISSIVE|authenticated|~|platform_private.global_product_fiscal_write_ready()\nproduct_fiscal_profiles_read|SELECT|PERMISSIVE|authenticated|platform_private.global_product_fiscal_read_ready()|~\nproduct_fiscal_profiles_update|UPDATE|PERMISSIVE|authenticated|platform_private.global_product_fiscal_write_ready()|platform_private.global_product_fiscal_write_ready()",
+  "actual": "product_fiscal_profiles_delete|DELETE|PERMISSIVE|authenticated|false|~\nproduct_fiscal_profiles_insert|INSERT|PERMISSIVE|authenticated|~|platform_private.global_product_fiscal_write_ready()\nproduct_fiscal_profiles_read|SELECT|PERMISSIVE|authenticated|platform_private.global_product_fiscal_read_ready()|~\nproduct_fiscal_profiles_update|UPDATE|PERMISSIVE|authenticated|platform_private.global_product_fiscal_write_ready()|platform_private.global_product_fiscal_write_ready()",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-grants",
+  "scenario": "stub grants == captura",
+  "expected": "anon:DELETE\nanon:INSERT\nanon:REFERENCES\nanon:SELECT\nanon:TRIGGER\nanon:TRUNCATE\nanon:UPDATE\nauthenticated:DELETE\nauthenticated:INSERT\nauthenticated:REFERENCES\nauthenticated:SELECT\nauthenticated:TRIGGER\nauthenticated:TRUNCATE\nauthenticated:UPDATE\nservice_role:DELETE\nservice_role:INSERT\nservice_role:REFERENCES\nservice_role:SELECT\nservice_role:TRIGGER\nservice_role:TRUNCATE\nservice_role:UPDATE",
+  "actual": "anon:DELETE\nanon:INSERT\nanon:REFERENCES\nanon:SELECT\nanon:TRIGGER\nanon:TRUNCATE\nanon:UPDATE\nauthenticated:DELETE\nauthenticated:INSERT\nauthenticated:REFERENCES\nauthenticated:SELECT\nauthenticated:TRIGGER\nauthenticated:TRUNCATE\nauthenticated:UPDATE\nservice_role:DELETE\nservice_role:INSERT\nservice_role:REFERENCES\nservice_role:SELECT\nservice_role:TRIGGER\nservice_role:TRUNCATE\nservice_role:UPDATE",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-default-acl",
+  "scenario": "stub default-acl == captura",
+  "expected": "anon=X/postgres,authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres",
+  "actual": "anon=X/postgres,authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-02",
+  "scenario": "original PRE detecta predicado alterado com mesma contagem",
+  "expected": false,
+  "actual": true,
+  "status": "FAIL",
+  "kind": "PG_DISPOSABLE_RED_EXPECTED_FAIL"
+ },
+ {
+  "id": "RED-03",
+  "scenario": "original: authenticated SEM EXECUTE no writer após install (default ACL real)",
+  "expected": false,
+  "actual": true,
+  "status": "FAIL",
+  "kind": "PG_DISPOSABLE_RED_EXPECTED_FAIL"
+ },
+ {
+  "id": "RED-04",
+  "scenario": "original: service_role sem EXECUTE nos helpers privados",
+  "expected": false,
+  "actual": false,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_RED_EXPECTED_FAIL"
+ },
+ {
+  "id": "RED-05",
+  "scenario": "original: admin A grava perfil próprio com a10 composto (positivo do harness reduzido)",
+  "expected": "ok",
+  "actual": "FISCAL_FORBIDDEN",
+  "status": "FAIL",
+  "kind": "PG_DISPOSABLE_RED_EXPECTED_FAIL"
+ },
+ {
+  "id": "G-01",
+  "scenario": "PRE sem fundação aborta",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-platform_private.global_product_fiscal_before_write()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-platform_private.global_product_fiscal_statement_gate()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-platform_private.global_product_fiscal_write_ready()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-platform_private.global_product_fiscal_read_ready()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-platform_private.platform_actor_access_ready(uuid)",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-platform_private.h15_actor_organization()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-fiscal_audit_trigger()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-policies",
+  "scenario": "stub policies == captura",
+  "expected": "product_fiscal_profiles_delete|DELETE|PERMISSIVE|authenticated|false|~\nproduct_fiscal_profiles_insert|INSERT|PERMISSIVE|authenticated|~|platform_private.global_product_fiscal_write_ready()\nproduct_fiscal_profiles_read|SELECT|PERMISSIVE|authenticated|platform_private.global_product_fiscal_read_ready()|~\nproduct_fiscal_profiles_update|UPDATE|PERMISSIVE|authenticated|platform_private.global_product_fiscal_write_ready()|platform_private.global_product_fiscal_write_ready()",
+  "actual": "product_fiscal_profiles_delete|DELETE|PERMISSIVE|authenticated|false|~\nproduct_fiscal_profiles_insert|INSERT|PERMISSIVE|authenticated|~|platform_private.global_product_fiscal_write_ready()\nproduct_fiscal_profiles_read|SELECT|PERMISSIVE|authenticated|platform_private.global_product_fiscal_read_ready()|~\nproduct_fiscal_profiles_update|UPDATE|PERMISSIVE|authenticated|platform_private.global_product_fiscal_write_ready()|platform_private.global_product_fiscal_write_ready()",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-grants",
+  "scenario": "stub grants == captura",
+  "expected": "anon:DELETE\nanon:INSERT\nanon:REFERENCES\nanon:SELECT\nanon:TRIGGER\nanon:TRUNCATE\nanon:UPDATE\nauthenticated:DELETE\nauthenticated:INSERT\nauthenticated:REFERENCES\nauthenticated:SELECT\nauthenticated:TRIGGER\nauthenticated:TRUNCATE\nauthenticated:UPDATE\nservice_role:DELETE\nservice_role:INSERT\nservice_role:REFERENCES\nservice_role:SELECT\nservice_role:TRIGGER\nservice_role:TRUNCATE\nservice_role:UPDATE",
+  "actual": "anon:DELETE\nanon:INSERT\nanon:REFERENCES\nanon:SELECT\nanon:TRIGGER\nanon:TRUNCATE\nanon:UPDATE\nauthenticated:DELETE\nauthenticated:INSERT\nauthenticated:REFERENCES\nauthenticated:SELECT\nauthenticated:TRIGGER\nauthenticated:TRUNCATE\nauthenticated:UPDATE\nservice_role:DELETE\nservice_role:INSERT\nservice_role:REFERENCES\nservice_role:SELECT\nservice_role:TRIGGER\nservice_role:TRUNCATE\nservice_role:UPDATE",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-FID-default-acl",
+  "scenario": "stub default-acl == captura",
+  "expected": "anon=X/postgres,authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres",
+  "actual": "anon=X/postgres,authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-02",
+  "scenario": "G-02 predicado alterado mesma contagem",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-03",
+  "scenario": "G-03 corpo a10 alterado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-04",
+  "scenario": "G-04 trigger desabilitado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-05",
+  "scenario": "G-05 ACL write_ready alterada",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-06",
+  "scenario": "G-06 default ACL alterada",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-07",
+  "scenario": "G-07 grant de tabela alterado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-08",
+  "scenario": "G-08 constraint de status alterada",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-09",
+  "scenario": "nenhum objeto criado após PRE abortado",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-10",
+  "scenario": "install + POST ok, gate desligado",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-anon-public.tenant_owned_product_fiscal_save",
+  "scenario": "anon sem EXECUTE public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-anon-public.tenant_owned_product_fiscal_list",
+  "scenario": "anon sem EXECUTE public.tenant_owned_product_fiscal_list(integer,integer)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-anon-platform_private.owned_fiscal_actor",
+  "scenario": "anon sem EXECUTE platform_private.owned_fiscal_actor(boolean)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-anon-platform_private.owned_fiscal_enabled",
+  "scenario": "anon sem EXECUTE platform_private.owned_fiscal_enabled()",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-authenticated-public.tenant_owned_product_fiscal_save",
+  "scenario": "authenticated sem EXECUTE public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-authenticated-public.tenant_owned_product_fiscal_list",
+  "scenario": "authenticated sem EXECUTE public.tenant_owned_product_fiscal_list(integer,integer)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-authenticated-platform_private.owned_fiscal_actor",
+  "scenario": "authenticated sem EXECUTE platform_private.owned_fiscal_actor(boolean)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-authenticated-platform_private.owned_fiscal_enabled",
+  "scenario": "authenticated sem EXECUTE platform_private.owned_fiscal_enabled()",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-service_role-public.tenant_owned_product_fiscal_save",
+  "scenario": "service_role sem EXECUTE public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-service_role-public.tenant_owned_product_fiscal_list",
+  "scenario": "service_role sem EXECUTE public.tenant_owned_product_fiscal_list(integer,integer)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-service_role-platform_private.owned_fiscal_actor",
+  "scenario": "service_role sem EXECUTE platform_private.owned_fiscal_actor(boolean)",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-11-service_role-platform_private.owned_fiscal_enabled",
+  "scenario": "service_role sem EXECUTE platform_private.owned_fiscal_enabled()",
+  "expected": "f",
+  "actual": "f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-12",
+  "scenario": "controle: função nova em public recebe default ACL authenticated (prova que default ACL é real)",
+  "expected": "t",
+  "actual": "t",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-13",
+  "scenario": "rerun recusado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-14",
+  "scenario": "gate desligado nega mesmo com GRANT local",
+  "expected": "owned_fiscal_forbidden",
+  "actual": "owned_fiscal_forbidden",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-15",
+  "scenario": "admin A cria DRAFT no próprio item pela via canônica (a00+a10 compostos)",
+  "expected": [
+   "DRAFT",
+   "a0000000-0000-4000-8000-00000000000a",
+   false
+  ],
+  "actual": [
+   "DRAFT",
+   "a0000000-0000-4000-8000-00000000000a",
+   false
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-16",
+  "scenario": "permissão consumida; auditoria fiscal registrou INSERT com ator A",
+  "expected": "0|1",
+  "actual": "0|1",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-17",
+  "scenario": "updated_at do recibo tem fuso e micros (formato servidor)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-18",
+  "scenario": "replay idempotente sem duplicar",
+  "expected": [
+   true,
+   "1"
+  ],
+  "actual": [
+   true,
+   "1"
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-19",
+  "scenario": "mesma chave outro payload PT409",
+  "expected": "owned_fiscal_key_conflict",
+  "actual": "owned_fiscal_key_conflict",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-20",
+  "scenario": "CAS ausente PT409",
+  "expected": "owned_fiscal_stale",
+  "actual": "owned_fiscal_stale",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-21",
+  "scenario": "CAS errado PT409",
+  "expected": "owned_fiscal_stale",
+  "actual": "owned_fiscal_stale",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-22",
+  "scenario": "CAS correto atualiza com token estritamente maior",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-23",
+  "scenario": "A não grava item de B",
+  "expected": "owned_fiscal_forbidden",
+  "actual": "owned_fiscal_forbidden",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-24",
+  "scenario": "A não grava item global pela RPC",
+  "expected": "owned_fiscal_forbidden",
+  "actual": "owned_fiscal_forbidden",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-25",
+  "scenario": "A update direto no próprio perfil: zero linhas alteradas (RLS) e nada muda",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-26",
+  "scenario": "A insert direto negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-27",
+  "scenario": "cliente não forja permissão privada",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-28",
+  "scenario": "SA não grava perfil de item próprio (permissão de outra transação não vale)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-29",
+  "scenario": "GUC forjada + ator A sem permissão não passa a10 (mesmo como dono da tabela)",
+  "expected": "FISCAL_FORBIDDEN",
+  "actual": "FISCAL_FORBIDDEN",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-30",
+  "scenario": "SA via RPC negado",
+  "expected": "owned_fiscal_forbidden",
+  "actual": "owned_fiscal_forbidden",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-31",
+  "scenario": "SA mantém escrita global e CAS servidor ignora timestamp do cliente",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-32",
+  "scenario": "admin de empresa não grava global",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-33",
+  "scenario": "global: ator não-SA negado por a10 mesmo sem RLS",
+  "expected": "FISCAL_FORBIDDEN",
+  "actual": "FISCAL_FORBIDDEN",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-34",
+  "scenario": "histórico inativo imutável",
+  "expected": "FISCAL_HISTORY_IMMUTABLE",
+  "actual": "FISCAL_HISTORY_IMMUTABLE",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-35",
+  "scenario": "gestor lê lista da própria empresa",
+  "expected": [
+   "a0000000-0000-4000-8000-00000000000a",
+   1
+  ],
+  "actual": [
+   "a0000000-0000-4000-8000-00000000000a",
+   1
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-36",
+  "scenario": "gestor não grava",
+  "expected": "owned_fiscal_forbidden",
+  "actual": "owned_fiscal_forbidden",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-37",
+  "scenario": "financeiro A grava (papel autorizado)",
+  "expected": false,
+  "actual": false,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-38",
+  "scenario": "B lista só os seus (sem perfil de A)",
+  "expected": [
+   "b0000000-0000-4000-8000-00000000000b",
+   null
+  ],
+  "actual": [
+   "b0000000-0000-4000-8000-00000000000b",
+   null
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-39",
+  "scenario": "B não lê perfil de A por SELECT direto",
+  "expected": "0",
+  "actual": "0",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-40",
+  "scenario": "B não reaproveita chave de A",
+  "expected": "owned_fiscal_key_conflict",
+  "actual": "owned_fiscal_key_conflict",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-41",
+  "scenario": "anon negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-42",
+  "scenario": "ator inativo negado",
+  "expected": "owned_fiscal_forbidden",
+  "actual": "owned_fiscal_forbidden",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-43",
+  "scenario": "snapshot de transação (REPEATABLE READ) negado",
+  "expected": "owned_fiscal_isolation_unsupported",
+  "actual": "owned_fiscal_isolation_unsupported",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-44",
+  "scenario": "profile_status no payload 22023",
+  "expected": "owned_fiscal_invalid",
+  "actual": "owned_fiscal_invalid",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-50",
+  "scenario": "controle: espera lock do perfil e grava sem revogação",
+  "expected": [
+   true,
+   false
+  ],
+  "actual": [
+   true,
+   false
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "G-51",
+  "scenario": "revogação de papel concorrente durante espera do lock do perfil",
+  "expected": [
+   true,
+   true
+  ],
+  "actual": [
+   true,
+   true
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "G-52",
+  "scenario": "desativação de profile em andamento: writer espera FOR SHARE e reautoriza (nega)",
+  "expected": [
+   true,
+   true
+  ],
+  "actual": [
+   true,
+   true
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "G-60",
+  "scenario": "rollback: negado, policies e recibos preservados",
+  "expected": [
+   true,
+   "7",
+   "4"
+  ],
+  "actual": [
+   true,
+   "7",
+   "4"
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "G-61",
+  "scenario": "fechamento inativo TRUNCATE/TRIGGER/REFERENCES (sem TRUNCATE real), fluxos mantidos",
+  "expected": "anon:INSERT=true,anon:REFERENCES=false,anon:SELECT=true,anon:TRIGGER=false,anon:TRUNCATE=false,anon:UPDATE=true,authenticated:INSERT=true,authenticated:REFERENCES=false,authenticated:SELECT=true,authenticated:TRIGGER=false,authenticated:TRUNCATE=false,authenticated:UPDATE=true",
+  "actual": "anon:INSERT=true,anon:REFERENCES=false,anon:SELECT=true,anon:TRIGGER=false,anon:TRUNCATE=false,anon:UPDATE=true,authenticated:INSERT=true,authenticated:REFERENCES=false,authenticated:SELECT=true,authenticated:TRIGGER=false,authenticated:TRUNCATE=false,authenticated:UPDATE=true",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_METADATA_ONLY"
+ },
+ {
+  "id": "MUT1-writer-sem-recheck-50",
+  "scenario": "controle: espera lock do perfil e grava sem revogação",
+  "expected": [
+   true,
+   false
+  ],
+  "actual": [
+   true,
+   false
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "MUT1-writer-sem-recheck-51",
+  "scenario": "revogação de papel concorrente durante espera do lock do perfil",
+  "expected": [
+   true,
+   true
+  ],
+  "actual": [
+   true,
+   true
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "MUT1-writer-sem-recheck-52",
+  "scenario": "desativação de profile em andamento: writer espera FOR SHARE e reautoriza (nega)",
+  "expected": [
+   true,
+   true
+  ],
+  "actual": [
+   false,
+   false
+  ],
+  "status": "FAIL",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "MUT2-writer-e-a10-sem-recheck-50",
+  "scenario": "controle: espera lock do perfil e grava sem revogação",
+  "expected": [
+   true,
+   false
+  ],
+  "actual": [
+   true,
+   false
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "MUT2-writer-e-a10-sem-recheck-51",
+  "scenario": "revogação de papel concorrente durante espera do lock do perfil",
+  "expected": [
+   true,
+   false
+  ],
+  "actual": [
+   true,
+   false
+  ],
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ },
+ {
+  "id": "MUT2-writer-e-a10-sem-recheck-52",
+  "scenario": "desativação de profile em andamento: writer espera FOR SHARE e reautoriza (nega)",
+  "expected": [
+   true,
+   true
+  ],
+  "actual": [
+   true,
+   false
+  ],
+  "status": "FAIL",
+  "kind": "PG_DISPOSABLE_CONCURRENCY_READ_COMMITTED"
+ }
+]

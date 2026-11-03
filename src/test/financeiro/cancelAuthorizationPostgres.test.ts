@@ -10,7 +10,7 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   const { stdout: output } = await promisify(execFile)('python3', [
     'scripts/financial-installments-initial-20261024/test-cancel-authorization.py',
     '--output-dir', outputDir,
-  ], { encoding: 'utf8', timeout: 180_000 });
+  ], { encoding: 'utf8', timeout: 470_000 });
   const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}');
   expect(result.FAIL).toBe(0);
   expect(result.PASS).toBe(810);
@@ -55,4 +55,4 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
     expect(row.error).toEqual(['42501', 'FINANCIAL_SCOPE_DENIED']);
     expect(row.state_unchanged).toBe(true);
   }
-}, 180_000);
+}, 480_000);

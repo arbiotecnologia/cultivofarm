@@ -1,0 +1,53 @@
+-- 06 HOMOLOG — colunas access_* de platform_org_admin_invites (dependência real de platform_actor_access_ready).
+-- JÁ APLICADO pelo auditor em vrlcdwmlytukrjezrrnf (align_homolog_invite_access_columns, 03/11): NÃO reaplicar lá.
+-- Registro revisável e idempotente para cópias homolog novas: só ADD COLUMN IF NOT EXISTS nullable sem default
+-- (= captura produção/homolog); nenhum dado, grant, função ou cron tocado.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+DO $ic$ DECLARE v_fail text[] := ARRAY[]::text[]; r record; v_n bigint; v_cron text; BEGIN
+  -- 1. impressão digital: SOMENTE a homologação (empresas homolog presentes, nenhuma empresa de produção)
+  IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = 'c809e74f-486b-44b2-b2f4-4088f53421bb') OR NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = 'dcf50a75-579a-4828-a0fc-1d8eadcb4b8a') THEN
+    v_fail := v_fail || 'not_homolog:homolog_orgs_absent'::text; END IF;
+  IF EXISTS (SELECT 1 FROM public.organizations WHERE id IN ('8eae2bc1-ad00-4402-9f57-564258e493ca','442444d9-263f-45d9-a991-a679498d06c3','4e537fd6-4632-4c70-a782-386dba3e8f9f','8f57c7dd-0557-4041-b401-7a00f7244626','007bb519-cba0-4704-be2c-cb93ad010048')) THEN v_fail := v_fail || 'not_homolog:production_org_present'::text; END IF;
+  IF current_setting('server_version_num')::int < 170000 THEN v_fail := v_fail || 'pg_version_below_17'::text; END IF;
+  -- trava homolog preservada (exatamente 1 gatilho habilitado)
+  IF (SELECT count(*) FROM pg_trigger WHERE tgname = 'a00_homolog_validation_no_receivable' AND NOT tgisinternal AND tgenabled <> 'D') <> 1 THEN
+    v_fail := v_fail || 'homolog_trava_missing_or_disabled'::text; END IF;
+  -- automações e fiscal desligados
+  IF to_regclass('cron.job') IS NOT NULL THEN
+    -- estado pinado: exatamente 7 jobs, todos inativos (nunca reativados/excluídos); hash fixado na TX
+    EXECUTE 'SELECT count(*) FROM cron.job' INTO v_n; IF v_n <> 7 THEN v_fail := v_fail || ('cron_jobs_count_drift:'||v_n); END IF;
+    EXECUTE 'SELECT count(*) FROM cron.job WHERE active IS DISTINCT FROM false' INTO v_n; IF v_n <> 0 THEN v_fail := v_fail || ('cron_jobs_active:'||v_n); END IF;
+    EXECUTE $c$SELECT md5(coalesce(string_agg(concat_ws('|',jobid,jobname,schedule,command,database,username,active),E'
+' ORDER BY jobid),'')) FROM cron.job$c$ INTO v_cron;
+    PERFORM set_config('homolog_align.cron_md5', v_cron, true);
+  ELSE v_fail := v_fail || 'cron_schema_absent_unexpected'::text; END IF;
+  IF to_regclass('public.company_fiscal_settings') IS NOT NULL THEN
+    EXECUTE 'SELECT count(*) FROM public.company_fiscal_settings WHERE nfe_enabled OR nfse_enabled OR production_enabled' INTO v_n;
+    IF v_n <> 0 THEN v_fail := v_fail || 'fiscal_enabled'::text; END IF; END IF;
+  IF to_regclass('public.platform_org_admin_invites') IS NULL THEN v_fail := v_fail || 'invite_table_missing'::text; END IF;
+  IF cardinality(v_fail) > 0 THEN RAISE EXCEPTION 'homolog_invite_cols_pre_failed' USING DETAIL = array_to_string(v_fail, ' | '); END IF;
+END $ic$;
+  ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_operation_id uuid;
+  ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_operation_kind text;
+  ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_operation_status text;
+  ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_requested_at timestamp with time zone;
+  ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_expires_at timestamp with time zone;
+  ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_valid_after timestamp with time zone;
+DO $icp$ DECLARE v_fail text[] := ARRAY[]::text[]; r record; BEGIN
+  FOR r IN SELECT * FROM (VALUES ('access_operation_id','uuid'),
+  ('access_operation_kind','text'),
+  ('access_operation_status','text'),
+  ('access_requested_at','timestamp with time zone'),
+  ('access_expires_at','timestamp with time zone'),
+  ('access_valid_after','timestamp with time zone')) m(c, t) LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = to_regclass('public.platform_org_admin_invites') AND a.attname = r.c AND NOT a.attisdropped
+                     AND format_type(a.atttypid, a.atttypmod) = r.t AND NOT a.attnotnull AND NOT a.atthasdef) THEN
+      v_fail := v_fail || ('post_invite_access_column:'||r.c); END IF;
+  END LOOP;
+  IF cardinality(v_fail) > 0 THEN RAISE EXCEPTION 'homolog_invite_cols_post_failed' USING DETAIL = array_to_string(v_fail, ' | '); END IF;
+  IF to_regclass('platform_private.homolog_alignment_ledger') IS NOT NULL THEN
+    INSERT INTO platform_private.homolog_alignment_ledger(step, detail) VALUES ('invite_access_columns', jsonb_build_object('columns', 6));
+  END IF;
+END $icp$;
+COMMIT;

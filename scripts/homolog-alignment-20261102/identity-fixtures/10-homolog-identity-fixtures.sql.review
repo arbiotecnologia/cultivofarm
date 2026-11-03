@@ -1,0 +1,187 @@
+-- =====================================================================================================
+-- 10 — CORREÇÃO ADMINISTRATIVA DE VÍNCULOS DE FIXTURES — EXCLUSIVO HOMOLOG (vrlcdwmlytukrjezrrnf)
+-- REVISÃO HUMANA ANTES DE APLICAR. Nunca em produção (swzpzcwiasxmjutrmvkm). Não executado por agentes.
+--
+-- Decisão do proprietário:
+--   * rh@refilinformatica.com.br (86a2b787-…, JÁ criado pelo Auth, email confirmado) -> administrador da FSF homolog;
+--   * teste4@refilinformatica.com.br (321e643b-…) -> comprador B2B da AR Bio (parceiro_b2b + partner_users gestor
+--     na conta de parceiro FSF cadastrada pela AR Bio); deixa de ser administrador da FSF;
+--   * admin AR Bio (c95f9261-…) só conferido.
+-- Sem convite, sem email, sem senha, sem escrita em auth.users/organizations, sem metadata/JWT de serviço fabricados.
+-- Efeito idêntico ao provisionamento canônico (org admin = organization_id + {administrador};
+-- comprador B2B = organization_id do vendedor + {parceiro_b2b} + partner_users gestor).
+--
+-- Concorrência (captura homolog 02/11): o gatilho de statement que chama cf_user_guards_v1.acquire_gate (UPDATE do
+-- singleton state, revision+1) existe SOMENTE em partner_users; profiles/user_roles/user_clientes NÃO passam pelo gate.
+-- Por isso: (1) gate singleton FOR UPDATE primeiro (serializa os writers que usam o gate); (2) LOCK TABLE das quatro
+-- tabelas de identidade em SHARE ROW EXCLUSIVE, em ordem alfabética fixa (bloqueia QUALQUER escrita concorrente,
+-- com ou sem gate, e mantém leituras); (3) linhas em ordem fixa; todo PRE roda após os locks. lock_timeout 5s:
+-- espera longa/deadlock aborta a transação inteira (fail-closed, nada gravado).
+-- Estados aceitos são EXATOS (inicial ou final por conta); qualquer mistura aborta antes da primeira escrita.
+-- Gatilhos reais permanecem habilitados (verificado). Ledger com snapshot completo antes/depois e prova de
+-- invariância de terceiros (hash de todas as demais linhas das tabelas de identidade).
+-- Executar como postgres (conector de manutenção), transação única.
+-- =====================================================================================================
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+
+CREATE TABLE IF NOT EXISTS platform_private.homolog_identity_fixture_ledger(
+  id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(), step text NOT NULL,
+  subject uuid, before jsonb, after jsonb);
+REVOKE ALL ON platform_private.homolog_identity_fixture_ledger FROM PUBLIC;
+DO $r$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon') THEN
+    EXECUTE 'REVOKE ALL ON platform_private.homolog_identity_fixture_ledger FROM anon, authenticated, service_role';
+  END IF; END $r$;
+
+CREATE OR REPLACE FUNCTION pg_temp.idfx_snap(u uuid) RETURNS jsonb LANGUAGE sql STABLE AS $s$
+  SELECT jsonb_build_object(
+    'profile',(SELECT to_jsonb(p) FROM public.profiles p WHERE p.user_id=u),
+    'roles',(SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.role::text),'[]') FROM public.user_roles r WHERE r.user_id=u),
+    'partner_users',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.id),'[]') FROM public.partner_users x WHERE x.user_id=u),
+    'user_clientes',(SELECT coalesce(jsonb_agg(to_jsonb(c) ORDER BY c.id),'[]') FROM public.user_clientes c WHERE c.user_id=u)) $s$;
+
+CREATE OR REPLACE FUNCTION pg_temp.idfx_third(ex uuid[]) RETURNS text LANGUAGE sql STABLE AS $s$
+  SELECT md5(concat_ws('|',
+    (SELECT md5(coalesce(string_agg(to_jsonb(p)::text,',' ORDER BY p.id),'')) FROM public.profiles p WHERE p.user_id <> ALL(ex)),
+    (SELECT md5(coalesce(string_agg(to_jsonb(r)::text,',' ORDER BY r.id),'')) FROM public.user_roles r WHERE r.user_id <> ALL(ex)),
+    (SELECT md5(coalesce(string_agg(to_jsonb(x)::text,',' ORDER BY x.id),'')) FROM public.partner_users x WHERE x.user_id <> ALL(ex)),
+    (SELECT md5(coalesce(string_agg(to_jsonb(c)::text,',' ORDER BY c.id),'')) FROM public.user_clientes c WHERE c.user_id <> ALL(ex)),
+    (SELECT md5(coalesce(string_agg(to_jsonb(o)::text,',' ORDER BY o.id),'')) FROM public.organizations o),
+    (SELECT md5(coalesce(string_agg(to_jsonb(a)::text,',' ORDER BY a.id),'')) FROM public.partner_accounts a))) $s$;
+
+DO $fx$
+DECLARE
+  c_arb   constant uuid := 'c809e74f-486b-44b2-b2f4-4088f53421bb';
+  c_fsf   constant uuid := 'dcf50a75-579a-4828-a0fc-1d8eadcb4b8a';
+  c_rh    constant uuid := '86a2b787-83e8-4274-934c-adc8440339cc';
+  c_t4    constant uuid := '321e643b-e5c7-4b08-bf2d-be3aaaade53e';
+  c_arbad constant uuid := 'c95f9261-a3bb-48f2-80e6-bb653e4b916f';
+  c_prod  constant uuid[] := ARRAY['007bb519-cba0-4704-be2c-cb93ad010048','8f57c7dd-0557-4041-b401-7a00f7244626']::uuid[]; -- AR Bio/FSF de PRODUÇÃO
+  v_fsf record; v_partner uuid; v_n int; v_rh text; v_t4 text; v_third text; v_snap_rh jsonb; v_snap_t4 jsonb; v_snap_ad jsonb;
+  v_roles text[]; v_pu int; v_uc int; v_org uuid; v_cli uuid; v_ativo boolean;
+BEGIN
+  IF current_user <> 'postgres' THEN RAISE EXCEPTION 'IDFX_PRE: executar como postgres (atual %)', current_user; END IF;
+  IF auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'IDFX_PRE: sessão com JWT de usuário'; END IF;
+
+  -- ---------- gatilhos reais presentes e habilitados (nunca desabilitados) ----------
+  IF to_regprocedure('cf_user_guards_v1.acquire_gate()') IS NULL THEN RAISE EXCEPTION 'IDFX_PRE: cf_user_guards_v1.acquire_gate ausente'; END IF;
+  SELECT count(*) INTO v_n FROM pg_trigger t
+   WHERE NOT t.tgisinternal AND t.tgenabled <> 'D' AND t.tgrelid='public.partner_users'::regclass
+     AND t.tgfoid = 'cf_user_guards_v1.acquire_gate()'::regprocedure AND (t.tgtype & 1) = 0;  -- statement-level
+  IF v_n < 1 THEN RAISE EXCEPTION 'IDFX_PRE: gate de statement em partner_users ausente/desabilitado'; END IF;
+  IF (SELECT count(*) FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgenabled <> 'D' AND t.tgrelid='public.profiles'::regclass
+       AND t.tgname IN ('guard_profile_sensitive_fields','h15_profile_organization_guard')) <> 2
+  THEN RAISE EXCEPTION 'IDFX_PRE: guardas de perfil ausentes/desabilitadas'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgenabled = 'D'
+       AND t.tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass))
+  THEN RAISE EXCEPTION 'IDFX_PRE: gatilho desabilitado nas tabelas de identidade'; END IF;
+
+  -- ---------- locks: gate -> 4 tabelas de identidade (ordem alfabética) -> linhas em ordem fixa ----------
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'IDFX_PRE: gate canônico indisponível'; END IF;
+  LOCK TABLE public.partner_users IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.profiles IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.user_clientes IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.user_roles IN SHARE ROW EXCLUSIVE MODE;
+  PERFORM 1 FROM public.organizations WHERE id IN (c_arb,c_fsf) ORDER BY id FOR SHARE;
+  PERFORM 1 FROM public.profiles WHERE user_id IN (c_arbad,c_rh,c_t4) ORDER BY user_id FOR UPDATE;
+  PERFORM 1 FROM public.partner_accounts WHERE commercial_owner_organization_id=c_arb ORDER BY id FOR SHARE;
+
+  -- ---------- fingerprint homolog (após locks) ----------
+  IF (SELECT count(*) FROM public.organizations WHERE id IN (c_arb,c_fsf)) <> 2 THEN RAISE EXCEPTION 'IDFX_PRE: empresas homolog ausentes'; END IF;
+  IF EXISTS (SELECT 1 FROM public.organizations WHERE id = ANY(c_prod)) THEN RAISE EXCEPTION 'IDFX_PRE: id de produção presente — projeto errado'; END IF;
+  SELECT * INTO v_fsf FROM public.organizations WHERE id = c_fsf;
+  IF (SELECT count(*) FROM auth.users WHERE (id,lower(email)) IN ((c_rh,'rh@refilinformatica.com.br'),
+        (c_t4,'teste4@refilinformatica.com.br'),(c_arbad,'arbiotecnologia@gmail.com'))) <> 3
+  THEN RAISE EXCEPTION 'IDFX_PRE: uid/email Auth divergente'; END IF;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id IN (c_rh,c_t4) AND email_confirmed_at IS NULL) THEN RAISE EXCEPTION 'IDFX_PRE: email não confirmado'; END IF;
+
+  -- ---------- admin AR Bio: conferência exata ----------
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE user_id=c_arbad AND ativo AND organization_id=c_arb)
+     OR NOT public.has_role(c_arbad,'administrador'::public.app_role)
+  THEN RAISE EXCEPTION 'IDFX_PRE: admin AR Bio fora do estado conferido'; END IF;
+
+  -- ---------- conta de parceiro FSF da AR Bio: cardinalidade exata ----------
+  SELECT count(*), min(pa.id::text)::uuid INTO v_n, v_partner FROM public.partner_accounts pa
+   WHERE pa.commercial_owner_organization_id = c_arb AND pa.ativo AND pa.deleted_at IS NULL
+     AND (pa.id = v_fsf.partner_account_id
+          OR (v_fsf.cnpj_normalizado IS NOT NULL AND regexp_replace(coalesce(pa.cnpj,''),'\D','','g') = v_fsf.cnpj_normalizado));
+  IF v_n <> 1 THEN
+    RAISE EXCEPTION 'IDFX_PRE: conta de parceiro FSF da AR Bio ausente ou ambígua (%). Cadastrar pelo fluxo canônico do admin AR Bio antes.', v_n;
+  END IF;
+  -- conta confirmada READ ONLY 02/11: FSF Agro (HOMOL) ativa, dona AR Bio — casada por vínculo/CNPJ acima, nunca por nome
+  IF v_partner IS DISTINCT FROM 'e770d10e-5efc-46e3-9b03-fdd6b982a6f1'::uuid THEN
+    RAISE EXCEPTION 'IDFX_PRE: conta de parceiro FSF resolvida (%) difere da confirmada e770d10e-…', v_partner; END IF;
+
+  -- ---------- rh: exatamente INICIAL ou FINAL ----------
+  SELECT count(*) INTO v_n FROM public.profiles WHERE user_id=c_rh;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'IDFX_PRE: profile rh cardinalidade %', v_n; END IF;
+  SELECT organization_id, cliente_id, ativo INTO v_org, v_cli, v_ativo FROM public.profiles WHERE user_id=c_rh;
+  SELECT coalesce(array_agg(role::text ORDER BY role::text),'{}') INTO v_roles FROM public.user_roles WHERE user_id=c_rh;
+  SELECT count(*) INTO v_pu FROM public.partner_users WHERE user_id=c_rh;
+  SELECT count(*) INTO v_uc FROM public.user_clientes WHERE user_id=c_rh;
+  IF v_ativo IS NOT TRUE OR v_cli IS NOT NULL OR v_pu <> 0 OR v_uc <> 0 THEN RAISE EXCEPTION 'IDFX_PRE: rh com vínculos extras/inativo'; END IF;
+  IF v_org IS NULL AND v_roles = '{}' THEN v_rh := 'initial';
+  ELSIF v_org = c_fsf AND v_roles = ARRAY['administrador'] THEN v_rh := 'final';
+  ELSE RAISE EXCEPTION 'IDFX_PRE: rh em estado não previsto (org %, papéis %)', v_org, v_roles; END IF;
+
+  -- ---------- teste4: exatamente INICIAL ou FINAL ----------
+  SELECT count(*) INTO v_n FROM public.profiles WHERE user_id=c_t4;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'IDFX_PRE: profile teste4 cardinalidade %', v_n; END IF;
+  SELECT organization_id, cliente_id, ativo INTO v_org, v_cli, v_ativo FROM public.profiles WHERE user_id=c_t4;
+  SELECT coalesce(array_agg(role::text ORDER BY role::text),'{}') INTO v_roles FROM public.user_roles WHERE user_id=c_t4;
+  SELECT count(*) INTO v_pu FROM public.partner_users WHERE user_id=c_t4;
+  SELECT count(*) INTO v_uc FROM public.user_clientes WHERE user_id=c_t4;
+  IF v_ativo IS NOT TRUE OR v_cli IS NOT NULL OR v_uc <> 0 THEN RAISE EXCEPTION 'IDFX_PRE: teste4 com vínculos extras/inativo'; END IF;
+  IF v_org = c_fsf AND v_roles = ARRAY['administrador'] AND v_pu = 0 THEN v_t4 := 'initial';
+  ELSIF v_org = c_arb AND v_roles = ARRAY['parceiro_b2b'] AND v_pu = 1
+        AND (SELECT count(*) FROM public.partner_users WHERE user_id=c_t4 AND partner_id=v_partner AND papel='gestor'
+              AND revoked_at IS NULL AND tenant_id=c_arb) = 1 THEN v_t4 := 'final';
+  ELSE RAISE EXCEPTION 'IDFX_PRE: teste4 em estado não previsto (org %, papéis %, vínculos %)', v_org, v_roles, v_pu; END IF;
+
+  IF v_fsf.responsavel_user_id = c_t4 THEN
+    RAISE NOTICE 'IDFX_INFO: responsável da FSF ainda é teste4; correção exige fluxo canônico com ticket (fora deste pacote)'; END IF;
+
+  -- ---------- snapshots ----------
+  v_snap_rh := pg_temp.idfx_snap(c_rh); v_snap_t4 := pg_temp.idfx_snap(c_t4); v_snap_ad := pg_temp.idfx_snap(c_arbad);
+  v_third := pg_temp.idfx_third(ARRAY[c_rh,c_t4]);
+  IF v_rh = 'final' AND v_t4 = 'final' THEN RAISE NOTICE 'IDFX_OK no-op (estado final já presente)'; RETURN; END IF;
+
+  -- ================= escrita (somente transições exatas) =================
+  IF v_rh = 'initial' THEN
+    UPDATE public.profiles SET organization_id=c_fsf WHERE user_id=c_rh;
+    INSERT INTO public.user_roles(user_id,role) VALUES (c_rh,'administrador'::public.app_role);
+  END IF;
+  IF v_t4 = 'initial' THEN
+    -- novo admin da FSF entra antes da saída do anterior (z99_cf_require_admin nunca vê zero)
+    DELETE FROM public.user_roles WHERE user_id=c_t4 AND role='administrador'::public.app_role;
+    UPDATE public.profiles SET organization_id=c_arb WHERE user_id=c_t4;
+    INSERT INTO public.user_roles(user_id,role) VALUES (c_t4,'parceiro_b2b'::public.app_role);
+    INSERT INTO public.partner_users(partner_id,user_id,papel,tenant_id) VALUES (v_partner,c_t4,'gestor',c_arb);
+  END IF;
+
+  -- ================= POST exato =================
+  IF pg_temp.idfx_snap(c_rh)->'profile'->>'organization_id' IS DISTINCT FROM c_fsf::text
+     OR (SELECT array_agg(role::text) FROM public.user_roles WHERE user_id=c_rh) IS DISTINCT FROM ARRAY['administrador']
+     OR EXISTS (SELECT 1 FROM public.partner_users WHERE user_id=c_rh) OR EXISTS (SELECT 1 FROM public.user_clientes WHERE user_id=c_rh)
+  THEN RAISE EXCEPTION 'IDFX_POST: rh'; END IF;
+  IF pg_temp.idfx_snap(c_t4)->'profile'->>'organization_id' IS DISTINCT FROM c_arb::text
+     OR (SELECT array_agg(role::text) FROM public.user_roles WHERE user_id=c_t4) IS DISTINCT FROM ARRAY['parceiro_b2b']
+     OR (SELECT count(*) FROM public.partner_users WHERE user_id=c_t4) <> 1
+     OR NOT EXISTS (SELECT 1 FROM public.partner_users WHERE user_id=c_t4 AND partner_id=v_partner AND papel='gestor' AND revoked_at IS NULL AND tenant_id=c_arb)
+     OR EXISTS (SELECT 1 FROM public.user_clientes WHERE user_id=c_t4)
+  THEN RAISE EXCEPTION 'IDFX_POST: teste4'; END IF;
+  IF pg_temp.idfx_snap(c_arbad) IS DISTINCT FROM v_snap_ad THEN RAISE EXCEPTION 'IDFX_POST: admin AR Bio alterado'; END IF;
+  IF pg_temp.idfx_third(ARRAY[c_rh,c_t4]) IS DISTINCT FROM v_third THEN RAISE EXCEPTION 'IDFX_POST: linhas de terceiros alteradas'; END IF;
+
+  INSERT INTO platform_private.homolog_identity_fixture_ledger(step,subject,before,after) VALUES
+    ('rh_'||v_rh||'_to_final',c_rh,v_snap_rh,pg_temp.idfx_snap(c_rh)),
+    ('t4_'||v_t4||'_to_final',c_t4,v_snap_t4,pg_temp.idfx_snap(c_t4)),
+    ('arbio_admin_invariant',c_arbad,v_snap_ad,pg_temp.idfx_snap(c_arbad)),
+    ('third_party_invariant',NULL,jsonb_build_object('hash',v_third),jsonb_build_object('hash',pg_temp.idfx_third(ARRAY[c_rh,c_t4])));
+  RAISE NOTICE 'IDFX_OK rh=% t4=%', v_rh, v_t4;
+END $fx$;
+
+COMMIT;

@@ -1,0 +1,117 @@
+-- INACTIVE: canonical proof reads existing immutable history, never rewrites it.
+CREATE FUNCTION platform_private.b2b_legacy_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE i public.accounts_receivable_installments; a public.accounts_receivable; po public.partner_orders;
+ org uuid:=public.h15_actor_organization(); sealed jsonb; sch jsonb; terms jsonb; audit jsonb;
+ financing numeric; principal numeric; late_interest numeric; received numeric; disc numeric; penalty numeric;
+BEGIN
+ SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=org;
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=org;
+ IF a.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN RETURN NULL; END IF;
+ SELECT * INTO po FROM public.partner_orders WHERE id=a.origin_id AND partner_id=a.partner_id;
+ sealed:=po.internal_economic_snapshot; terms:=sealed->'terms';
+ IF sealed IS NULL OR sealed->>'schema_version' IS DISTINCT FROM '1' OR sealed->>'sealed_by' IS NULL
+ OR coalesce(sealed->'origin'->>'organization_id',sealed->'origin'->>'creditor_organization_id') IS DISTINCT FROM org::text
+ OR sealed->'origin'->>'partner_id' IS DISTINCT FROM a.partner_id::text
+ OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=a.partner_id AND pa.commercial_owner_organization_id=org)
+ OR terms->>'id' IS DISTINCT FROM po.payment_terms_id::text OR terms->>'partner_order_id' IS DISTINCT FROM po.id::text
+ OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.partner_order_id=po.id AND l.receivable_id=a.id AND l.partner_id=a.partner_id)<>1
+ OR (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.receivable_id=a.id)<>1
+ OR EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=a.id)
+ OR EXISTS(SELECT 1 FROM platform_private.b2b_document_allocations x WHERE x.receivable_id=a.id)
+ THEN RAISE EXCEPTION 'B2B_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF jsonb_typeof(sealed->'schedule') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'B2B_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ IF (SELECT count(*) FROM jsonb_array_elements(sealed->'schedule') s WHERE (s->>'installment_number')::int=i.installment_number)<>1 THEN RAISE EXCEPTION 'B2B_LEGACY_SCHEDULE_AMBIGUOUS' USING ERRCODE='23514'; END IF;
+ SELECT s INTO sch FROM jsonb_array_elements(sealed->'schedule') s WHERE (s->>'installment_number')::int=i.installment_number;
+ IF (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=po.id AND s.payment_terms_id=po.payment_terms_id AND s.installment_number=i.installment_number AND s.receivable_installment_id=i.id)<>1
+ OR NOT EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.id=(sch->>'id')::uuid AND s.receivable_installment_id=i.id AND (to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'])=sch)
+ OR (SELECT count(*) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>(terms->>'installment_count')::int
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LINK_MISMATCH' USING ERRCODE='23514'; END IF;
+ -- Captured writer's immutable INSERT audit is required, not merely a current schedule match.
+ IF (SELECT count(*) FROM public.financial_audit_log f WHERE f.entity_type='accounts_receivable_installments' AND f.entity_id=i.id AND f.action='INSERT')<>1 THEN RAISE EXCEPTION 'B2B_LEGACY_WRITER_UNPROVEN' USING ERRCODE='23514'; END IF;
+ SELECT f.new_data INTO audit FROM public.financial_audit_log f WHERE f.entity_type='accounts_receivable_installments' AND f.entity_id=i.id AND f.action='INSERT';
+ financing:=(sch->>'interest_amount')::numeric; principal:=(sch->>'principal_amount')::numeric;
+ IF principal IS NULL OR financing IS NULL OR principal<0 OR financing<0 OR principal+financing IS DISTINCT FROM i.original_amount
+ OR i.original_amount IS DISTINCT FROM (sch->>'amount')::numeric OR i.due_date IS DISTINCT FROM (sch->>'due_date')::date
+ OR audit->>'receivable_id' IS DISTINCT FROM a.id::text OR audit->>'organization_id' IS DISTINCT FROM org::text
+ OR (audit->>'original_amount')::numeric IS DISTINCT FROM i.original_amount OR (audit->>'interest_amount')::numeric IS DISTINCT FROM financing
+ OR (terms->>'final_amount')::numeric IS DISTINCT FROM a.total_amount
+ OR (SELECT sum((s->>'amount')::numeric) FROM jsonb_array_elements(sealed->'schedule') s) IS DISTINCT FROM a.total_amount
+ THEN RAISE EXCEPTION 'B2B_LEGACY_WRITER_INCOMPATIBLE' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id AND p.organization_id IS DISTINCT FROM org)
+ OR EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id AND p.is_reversal AND NOT EXISTS(SELECT 1 FROM public.receivable_payments r WHERE r.id=p.reversed_payment_id AND r.installment_id=i.id AND r.organization_id=org AND NOT r.is_reversal))
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LEDGER_INCOMPATIBLE' USING ERRCODE='23514'; END IF;
+ SELECT coalesce(sum(p.interest_amount),0),coalesce(sum(p.amount_received),0),coalesce(sum(p.discount_amount),0),coalesce(sum(p.penalty_amount),0)
+ INTO late_interest,received,disc,penalty FROM public.receivable_payments p WHERE p.installment_id=i.id;
+ IF received IS DISTINCT FROM i.received_amount OR disc IS DISTINCT FROM i.discount_amount OR penalty IS DISTINCT FROM i.penalty_amount
+ OR (EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id) AND i.interest_amount IS DISTINCT FROM late_interest)
+ OR (NOT EXISTS(SELECT 1 FROM public.receivable_payments p WHERE p.installment_id=i.id) AND i.interest_amount IS DISTINCT FROM financing)
+ THEN RAISE EXCEPTION 'B2B_LEGACY_LEDGER_MISMATCH' USING ERRCODE='23514'; END IF;
+ RETURN to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',financing+late_interest,'financed_interest_amount',financing,
+ 'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','b2b_immutable_schedule_v1','installment_id',i.id,'receivable_id',a.id,'organization_id',org,'order_id',po.id,'schedule_id',sch->>'id','snapshot_principal',principal,'snapshot_interest',financing));
+END $$;
+
+CREATE FUNCTION platform_private.b2b_allocation_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE i public.accounts_receivable_installments; a public.accounts_receivable; x platform_private.b2b_document_allocations; row jsonb;
+BEGIN
+ SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=public.h15_actor_organization();
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=i.organization_id;
+ SELECT * INTO x FROM platform_private.b2b_document_allocations WHERE receivable_id=a.id AND organization_id=a.organization_id;
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ IF a.origin_type IS DISTINCT FROM 'B2B_ORDER' OR a.origin_id IS DISTINCT FROM x.order_id OR a.partner_id IS DISTINCT FROM x.partner_id OR a.b2b_document_id IS DISTINCT FROM x.document_id
+ OR (SELECT count(*) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>jsonb_array_length(x.rows)
+ OR (SELECT count(DISTINCT s.installment_number) FROM public.accounts_receivable_installments s WHERE s.receivable_id=a.id)<>jsonb_array_length(x.rows)
+ OR (SELECT sum((r->>'principal_amount')::numeric) FROM jsonb_array_elements(x.rows) r) IS DISTINCT FROM x.principal
+ OR (SELECT sum((r->>'interest_amount')::numeric) FROM jsonb_array_elements(x.rows) r) IS DISTINCT FROM x.financed_interest
+ OR NOT EXISTS(SELECT 1 FROM platform_private.b2b_authorized_documents d WHERE d.id=x.document_id AND d.organization_id=x.organization_id AND d.order_id=x.order_id AND d.partner_id=x.partner_id AND d.source_digest=x.source_digest AND d.state='AUTHORIZED')
+ OR EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=a.id)
+ OR (SELECT count(*) FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number)<>1
+ THEN RAISE EXCEPTION 'B2B_ALLOCATION_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+ SELECT r INTO row FROM jsonb_array_elements(x.rows) r WHERE (r->>'installment_number')::int=i.installment_number;
+ IF i.original_amount IS DISTINCT FROM (row->>'amount')::numeric OR i.due_date IS DISTINCT FROM (row->>'due_date')::date
+ OR i.original_amount IS DISTINCT FROM (row->>'principal_amount')::numeric+(row->>'interest_amount')::numeric
+ OR a.total_amount IS DISTINCT FROM x.principal+x.financed_interest
+ THEN RAISE EXCEPTION 'B2B_ALLOCATION_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+ RETURN to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',i.interest_amount+(row->>'interest_amount')::numeric,'financed_interest_amount',(row->>'interest_amount')::numeric,
+ 'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','b2b_document_allocation_v1','installment_id',i.id,'receivable_id',a.id,'organization_id',a.organization_id,'order_id',x.order_id,'document_id',x.document_id,'snapshot_principal',(row->>'principal_amount')::numeric,'snapshot_interest',(row->>'interest_amount')::numeric));
+END $$;
+
+-- Single origin resolver shared by projection and credit; no legacy fallback.
+CREATE FUNCTION platform_private.b2b_proven_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=public.h15_actor_organization(); i public.accounts_receivable_installments; row jsonb; r jsonb;
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT s.* INTO i FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE s.id=p_id AND s.organization_id=org AND a.organization_id=org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ row:=NULL;
+  IF EXISTS(SELECT 1 FROM platform_private.price_schedule_snapshots s WHERE s.receivable_id=i.receivable_id AND s.organization_id=org) THEN
+   IF EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=i.receivable_id AND a.origin_type='B2B_ORDER') THEN RAISE EXCEPTION 'MONEY_ORIGIN_MIXED' USING ERRCODE='23514'; END IF;
+   IF (SELECT count(*) FROM platform_private.price_schedule_snapshots s CROSS JOIN LATERAL jsonb_array_elements(s.rows) x WHERE s.receivable_id=i.receivable_id AND s.organization_id=org AND (x->>'installment_number')::int=i.installment_number)<>1 THEN RAISE EXCEPTION 'MONEY_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+   SELECT x INTO r FROM platform_private.price_schedule_snapshots s CROSS JOIN LATERAL jsonb_array_elements(s.rows) x WHERE s.receivable_id=i.receivable_id AND s.organization_id=org AND (x->>'installment_number')::int=i.installment_number;
+   IF i.original_amount IS DISTINCT FROM (r->>'amount')::numeric OR i.original_amount IS DISTINCT FROM (r->>'principal')::numeric+(r->>'interest')::numeric THEN RAISE EXCEPTION 'MONEY_ORIGIN_INVALID' USING ERRCODE='23514'; END IF;
+   row:=to_jsonb(i)||jsonb_build_object('monetary_semantics','financed_total_v1','interest_amount',i.interest_amount+(r->>'interest')::numeric,'financed_interest_amount',(r->>'interest')::numeric,'monetary_origin',jsonb_build_object('contract','RECEIVABLE_MONEY_V1','source','price_snapshot_v1','installment_id',i.id,'receivable_id',i.receivable_id,'organization_id',org,'snapshot_principal',(r->>'principal')::numeric,'snapshot_interest',(r->>'interest')::numeric));
+  ELSE
+   row:=platform_private.b2b_allocation_money_row(i.id);
+   IF row IS NULL THEN row:=platform_private.b2b_legacy_money_row(i.id); END IF;
+  END IF;
+  IF row IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+ RETURN row;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_proven_money_row(uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION public.rpc_receivable_money_projection_v1(p_receivable_id uuid DEFAULT NULL,p_offset int DEFAULT 0,p_limit int DEFAULT 1000)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=public.h15_actor_organization(); i record; row jsonb; r jsonb; result jsonb:='[]';
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_offset IS NULL OR p_offset<0 OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 1000 THEN RAISE EXCEPTION 'MONEY_ORIGIN_PAGE_INVALID' USING ERRCODE='23514'; END IF;
+ IF p_receivable_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=p_receivable_id AND a.organization_id=org) THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ FOR i IN SELECT s.* FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE s.organization_id=org AND a.organization_id=org AND (p_receivable_id IS NULL OR a.id=p_receivable_id) ORDER BY s.id OFFSET p_offset LIMIT p_limit LOOP
+  row:=platform_private.b2b_proven_money_row(i.id);
+  result:=result||jsonb_build_array(row);
+ END LOOP;
+ RETURN result;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_legacy_money_row(uuid),platform_private.b2b_allocation_money_row(uuid),public.rpc_receivable_money_projection_v1(uuid,int,int) FROM PUBLIC,anon,authenticated,service_role;

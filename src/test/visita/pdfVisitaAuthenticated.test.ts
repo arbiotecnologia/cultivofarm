@@ -2,6 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ReadableStream } from "node:stream/web";
 const mocks = vi.hoisted(() => ({ stream: vi.fn(), sign: vi.fn(), fetch: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { storage: { from: (b: string) => ({ download: (...a: unknown[]) => ({ asStream: () => mocks.stream(b, ...a) }), createSignedUrl: mocks.sign, createSignedUrls: mocks.sign }) } } }));
+// O bucket "consultor-arquivos" é lido pelo loader técnico canônico (POST autenticado à função dedicada, testado
+// à parte); aqui ele delega ao stream simulado com o mesmo bucket/caminho/signal para manter as asserções do PDF.
+vi.mock("@/lib/authz/loadTechnicalAttachment", () => ({
+  loadTechnicalAttachment: async (path: string, signal: AbortSignal) => {
+    const { data, error } = await mocks.stream("consultor-arquivos", path, {}, { signal, cache: "no-store" });
+    if (error || !data || signal.aborted) throw new Error("Documento indisponível");
+    const reader = data.getReader(); const chunks: Uint8Array[] = [];
+    for (;;) { const item = await reader.read(); if (item.done) break; chunks.push(item.value); }
+    return new Blob(chunks as BlobPart[], { type: "image/png" });
+  },
+}));
 import { generateVisitaPdf } from "@/lib/pdfVisita";
 const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="), c => c.charCodeAt(0));
 const ok = () => ({ data: new ReadableStream({ start(c) { c.enqueue(png); c.close(); } }), error: null });
