@@ -33,9 +33,9 @@ export function useSaveTenantProduct() {
   const scope = useStorageAccessScope("tenant-product-save");
   const actor = useStorageAccessScope("portal-query-actor");
   const delivery = useStorageAccessScope("entregas-operations");
-  const keyRef = useRef<{ scope: string; sig: string; key: string; compositionKey: string } | null>(null);
+  const keyRef = useRef<{ scope: string; sig: string; key: string; compositionKey: string; definitiveProductId?: string } | null>(null);
   const busy = useRef(false);
-  return useMutation({
+  const mutation = useMutation({
     retry: false,
     onMutate: () => ({ current: scope.capture(), actorScope: actor.scope, deliveryScope: delivery.scope }),
     mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null; composition?: Record<string, unknown>[] }) => {
@@ -66,14 +66,20 @@ export function useSaveTenantProduct() {
           const composition = await replaceTenantFormulacoes(supabase as never, ack.product_id, v.composition, ack.updated_at, attempt.compositionKey);
           if (!current()) throw new Error("catalog_context_changed");
           keyRef.current = null;
-          return { ...ack, updated_at: composition.updated_at, compositionError: undefined };
+          return { ...ack, updated_at: composition.updated_at, compositionError: undefined, compositionFailure: undefined };
         } catch (e) {
           if (!current()) throw new Error("catalog_context_changed");
-          return { ...ack, compositionError: `Produto salvo; composição não confirmada. Reconcilie a mesma tentativa antes de alterar o rascunho. ${(e as Error).message}` };
+          // Recusa explícita do servidor é definitiva; transporte/ACK inválido permanece incerto (replay da mesma chave).
+          const definitive = typeof (e as { serverCode?: unknown }).serverCode === "string";
+          attempt.definitiveProductId = definitive ? ack.product_id : undefined;
+          return { ...ack, compositionFailure: definitive ? "definitive" as const : "uncertain" as const,
+            compositionError: definitive
+              ? `Produto salvo; o servidor recusou a composição (a anterior foi mantida). ${(e as Error).message}`
+              : `Produto salvo; composição não confirmada. Reconcilie a mesma tentativa antes de alterar o rascunho. ${(e as Error).message}` };
         }
       }
       keyRef.current = null;
-      return { ...ack, compositionError: undefined };
+      return { ...ack, compositionError: undefined, compositionFailure: undefined };
       } finally { busy.current = false; }
     },
     onSuccess: (_ack, _vars, context) => {
@@ -81,6 +87,17 @@ export function useSaveTenantProduct() {
       return invalidateProductReads(qc, context.actorScope, context.deliveryScope);
     },
   });
+  /**
+   * Libera a intenção retida somente após recusa DEFINITIVA da composição do mesmo produto, no mesmo escopo.
+   * Tentativas incertas nunca são liberadas aqui: exigem replay da mesma chave.
+   */
+  const acknowledgeDefinitiveComposition = (productId: string) => {
+    const attempt = keyRef.current;
+    if (!attempt || attempt.scope !== scope.scope || attempt.definitiveProductId !== productId || busy.current) return false;
+    keyRef.current = null;
+    return true;
+  };
+  return { ...mutation, acknowledgeDefinitiveComposition };
 }
 
 export function useArchiveTenantProduct() {
