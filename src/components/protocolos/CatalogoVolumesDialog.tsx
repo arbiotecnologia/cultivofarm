@@ -138,7 +138,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
     mutationFn: async (v: CatalogoVolume) => {
       if (owned) {
         if (!ownedWritable || !v.updated_at) throw new Error("Apresentação própria sem versão confirmada.");
-        return tenantSave.mutateAsync({ id: v.id, productId: itemId, expectedUpdatedAt: v.updated_at,
+        return tenantSave.mutateAsync({ id: v.id, productId: itemId, expectedUpdatedAt: v.updated_at ?? null,
           payload: { volume_ml: v.volume_ml, rotulo: v.rotulo, preco_brl: v.preco_brl, ordem: v.ordem, ativo: v.ativo } });
       }
       assertGlobalCatalogWriteBlocked();

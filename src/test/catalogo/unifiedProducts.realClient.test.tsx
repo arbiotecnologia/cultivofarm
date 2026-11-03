@@ -73,7 +73,7 @@ it.each(["administrador", "gestor"])("%s cadastra, edita, arquiva e reativa no m
   await screen.findByText("Solo Editado");
   expect(rpcCalls("tenant_product_save")[1].p_expected_updated_at).toBe(stamp);
   fireEvent.click(screen.getByRole("checkbox", { name: "Mostrar arquivados" }));
-  fireEvent.click(screen.getByRole("button", { name: "Arquivar" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Arquivar" }));
   await screen.findByRole("button", { name: "Reativar" });
   fireEvent.click(screen.getByRole("button", { name: "Reativar" }));
   await screen.findByRole("button", { name: "Arquivar" });

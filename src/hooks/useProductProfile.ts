@@ -108,7 +108,7 @@ export function useProductProfile(produtoId: string | null | undefined) {
     enabled: !!produtoId,
     retry: false,
     queryFn: async () => {
-      if (!produtoId) throw new Error("Produit indisponível");
+      if (!produtoId) throw new Error("Produto indisponível");
       return fetchProductProfileBundle(supabase as any, produtoId);
     },
   });
