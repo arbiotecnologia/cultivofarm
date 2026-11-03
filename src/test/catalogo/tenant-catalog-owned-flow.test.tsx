@@ -6,7 +6,7 @@ const AR = "org-ar"; const FSF = "org-fsf";
 const db = { rows: [] as Array<Record<string, unknown>>, calls: [] as string[], seq: 0, readDelay: null as Promise<void> | null,
   writes: [] as Array<Record<string, unknown>>, writeDelay: null as Promise<void> | null, failComposition: false, uncertain: false,
   receipts: new Map<string, unknown>() };
-const auth = { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR }, loading: false, roles: ["administrador"] };
+const auth = { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, loading: false, roles: ["administrador"] };
 const toastFns = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastFns }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
@@ -21,6 +21,14 @@ function query(table: string) {
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc: (fn: string, args: Record<string, unknown>) => {
   const run = async () => {
     db.calls.push(fn);
+    if (fn === "tenant_product_list") return { data: db.rows.filter(r => r.entity === "produto" && r.owner_organization_id === auth.profile.organization_id && (args.p_include_archived || r.ativo)), error: null };
+    if (fn === "tenant_product_save") {
+      db.writes.push(args);
+      const row = db.rows.find(r => r.id === args.p_product_id);
+      if (!row || row.owner_organization_id !== auth.profile.organization_id) return { data: null, error: { code: "P0002", message: "not_found" } };
+      Object.assign(row, args.p_payload); row.updated_at = "2026-11-03T02:00:00Z";
+      return { data: { product_id: row.id, updated_at: row.updated_at, replayed: false }, error: null };
+    }
     if (fn === "tenant_catalog_owned_list") {
       const scopeAtRead = auth.profile.organization_id;
       if (db.readDelay) await db.readDelay;
@@ -84,7 +92,7 @@ async function confirm(reason = "motivo suficiente") {
 describe("culturas próprias na aba existente", () => {
   beforeEach(() => {
     Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
-    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR }, roles: ["administrador"] });
+    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, roles: ["administrador"] });
     Object.values(toastFns).forEach((fn) => fn.mockReset());
   });
 
@@ -165,7 +173,7 @@ describe("culturas próprias na aba existente", () => {
 describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
   beforeEach(() => {
     Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
-    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR }, roles: ["administrador"] });
+    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, roles: ["administrador"] });
   });
   it.each([
     ["produto", ProdutosTab, "Produto Local", { tipo: "solo", familia_catalogo: "biologico", classe_catalogo: "biofungicida" }],
@@ -175,9 +183,16 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
       owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z", ...extra });
     app(Component);
     expect(await screen.findByText(nome)).toBeTruthy();
-    fireEvent.click(screen.getByTitle("Editar item próprio"));
-    await waitFor(() => expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe(nome));
-    await submitDialog(nome + " editado");
+    if (entity === "produto") {
+      fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+      await waitFor(() => expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe(nome));
+      fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: nome + " editado" } });
+      fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+    } else {
+      fireEvent.click(screen.getByTitle("Editar item próprio"));
+      await waitFor(() => expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe(nome));
+      await submitDialog(nome + " editado");
+    }
     expect(await screen.findByText(nome + " editado")).toBeTruthy();
     expect(db.rows[0].descricao).toBe("Descrição fornecida");
   });
@@ -186,7 +201,7 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
 describe("salvamento único de identificação/composição", () => {
   beforeEach(() => {
     Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
-    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR }, roles: ["administrador"] });
+    Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, roles: ["administrador"] });
     Object.values(toastFns).forEach((fn) => fn.mockReset());
   });
   async function openDeclared() {
@@ -195,39 +210,32 @@ describe("salvamento único de identificação/composição", () => {
       declarations: [{ ordem: 1, tipo_componente: "ingrediente_ativo", microrganismo_id: null, componente_nome: "Fornecido", quantidade: 50,
         unidade: "g/L", base: "por_volume_produto", natureza: "concentracao_declarada" }] });
     const view = app(ProdutosTab);
-    await screen.findByText("Produto declarado"); fireEvent.click(screen.getByTitle("Editar item próprio"));
-    await waitFor(() => expect((screen.getByLabelText("Nome") as HTMLInputElement).value).toBe("Produto declarado"));
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição declarativa" }), { button: 0 });
-    fireEvent.click(screen.getByRole("tab", { name: "Composição declarativa" }));
-    await screen.findByDisplayValue("Fornecido");
+    await screen.findByText("Produto declarado"); fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+    await waitFor(() => expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe("Produto declarado"));
     return view;
   }
-  it("reabre declaração real e salva só composição, uma chamada, permitindo limpeza explícita", async () => {
+  it("declaração existente permanece intacta quando só identificação muda", async () => {
     await openDeclared();
-    fireEvent.click(screen.getByRole("button", { name: "Remover" }));
-    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "limpeza consciente" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
-    await waitFor(() => expect(toastFns.success).toHaveBeenCalledTimes(1));
+    const declarations = JSON.stringify(db.rows[0].declarations);
+    fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Identificação alterada" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+    await screen.findByText("Identificação alterada");
     expect(db.writes).toHaveLength(1);
-    expect(db.writes[0].p_payload).toEqual({ composition: { status: "rascunho", itens: [] } });
-    expect(db.rows[0].declarations).toEqual([]);
+    expect(db.writes[0].p_payload).not.toHaveProperty("composition");
+    expect(JSON.stringify(db.rows[0].declarations)).toBe(declarations);
+    expect(db.calls).not.toContain("tenant_catalog_formulacoes_replace");
+    expect(db.writes[0].p_expected_updated_at).toBe("2026-10-15T00:00:00Z");
   });
-  it("falha conjunta não grava metadata; retry idêntico conserva chave e edição gera outra", async () => {
+  it("mudança de composição declarativa incompatível recusa tudo antes do produto, sem salvar parcialmente", async () => {
     await openDeclared();
-    fireEvent.click(screen.getByRole("button", { name: "Remover" }));
-    db.failComposition = true;
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "Identificação" }), { button: 0 });
-    fireEvent.click(screen.getByRole("tab", { name: "Identificação" }));
-    await submitDialog("Identificação alterada");
-    await screen.findByRole("alert"); expect(db.rows[0].nome).toBe("Produto declarado");
-    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
-    await waitFor(() => expect(db.writes).toHaveLength(2));
-    expect(db.writes[0].p_idempotency_key).toBe(db.writes[1].p_idempotency_key);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Salvar" })).not.toBeDisabled());
-    db.failComposition = false;
-    await submitDialog("Alteração intencional");
-    await waitFor(() => expect(toastFns.success).toHaveBeenCalled());
-    expect(db.writes[2].p_idempotency_key).not.toBe(db.writes[1].p_idempotency_key);
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
+    await screen.findByText(/Composição declarativa preservada;/);
+    fireEvent.click(screen.getByRole("button", { name: /Microrganismo/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+    await waitFor(() => expect(toastFns.error).toHaveBeenCalledWith(expect.stringMatching(/nenhum dado foi salvo/)));
+    expect(db.writes).toHaveLength(0);
+    expect(db.rows[0].nome).toBe("Produto declarado");
+    expect(db.rows[0].declarations).toHaveLength(1);
   });
   it("resposta incerta após commit reutiliza recibo sem criar outra raiz", async () => {
     app(); await screen.findByText("Soja"); fireEvent.click(screen.getByRole("button", { name: /Cultura própria/ }));
