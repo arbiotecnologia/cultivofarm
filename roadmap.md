@@ -1,4 +1,5 @@
 ## 03/11 — Unificação Catálogo → Produtos (local, sem SQL/publicação)
+- [ ] Incorporar achado independente: manter gate Owned OFF e reconciliar parcial com formulário/tentativa exatos, sem novo produto.
 - [x] Unificar menu/redirect e cadastro com hooks scoped, sem writer global.
 - [x] Preservar composição/perfis/volumes; declarar campos não suportados e falhas parciais.
 - [x] Testar SDK/CRUD/roles/cache/consumidores locais e entregar patch portátil com evidências.

@@ -1,2 +1,3 @@
 - Product/composition saves confirm minimal returned IDs and cardinality before continuing; compensation remains best-effort and inconclusive reversal is critical — prevents false success without implying transactionality.
 - Product metadata and formulation replacement are sequential contracts; expose an uncertain/partial composition result, preserve unsupported declarations and never compensate or claim combined atomicity — prevents silent data loss.
+- Partial product saves retain the frozen input and dialog for explicit same-key reconciliation; never reset to a new-product form or allow a concurrent edit — prevents duplicate roots after a lost composition ACK.
