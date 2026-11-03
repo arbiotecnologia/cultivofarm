@@ -120,3 +120,20 @@ it('contexto não pronto oculta cache e recusa save/archive antes de REST', asyn
   expect(list.result.current.data).toBeUndefined();
   expect(state.fetch).not.toHaveBeenCalled();
 });
+it('P0002 HTTP500 em save/archive significa ausente no escopo, sem sucesso, retry ou invalidação', async () => {
+  state.fetch.mockImplementation(async () => json({ code: 'P0002', message: 'query returned no rows', details: null, hint: null }, 500));
+  const save = mount(useSaveTenantProduct); const archive = mount(useArchiveTenantProduct);
+  const saveInvalidation = vi.spyOn(save.client, 'invalidateQueries');
+  const archiveInvalidation = vi.spyOn(archive.client, 'invalidateQueries');
+  await act(async () => {
+    await expect(save.result.current.mutateAsync({ id: 'product-A', draft: { nome: 'Produto A' }, expectedUpdatedAt: stamp })).rejects.toThrow('Produto não encontrado na sua empresa.');
+    await expect(archive.result.current.mutateAsync({ id: 'product-A', archived: true, expectedUpdatedAt: stamp })).rejects.toThrow('Produto não encontrado na sua empresa.');
+  });
+  expect(state.fetch).toHaveBeenCalledTimes(2);
+  expect(request(0, 'tenant_product_save').p_expected_updated_at).toBe(stamp);
+  expect(request(1, 'tenant_product_set_archived').p_expected_updated_at).toBe(stamp);
+  expect(save.result.current.data).toBeUndefined();
+  expect(archive.result.current.data).toBeUndefined();
+  expect(saveInvalidation).not.toHaveBeenCalled();
+  expect(archiveInvalidation).not.toHaveBeenCalled();
+});

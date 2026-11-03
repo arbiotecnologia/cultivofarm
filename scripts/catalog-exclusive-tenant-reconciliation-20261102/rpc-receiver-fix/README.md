@@ -40,6 +40,16 @@ A busca também encontrou extrações sem bind em consumidores de outros domíni
 
 ## Limites e próximo passo independente
 
+### Complemento 03/11 01:27 — evidência externa HOMOLOG
+
+O auditor reportou FSF admin rh com organização dcf50a75, list sem AR Bio, save/archive com ID estrangeiro real e updated_at válido retornando P0002/HTTP500, registro intacto, e criação FSF com owner FSF pela UI isolada 37c2. São provas reais **reportadas**, não executadas novamente pelo agente; limitadas a esses cenários na homolog, sem certificação de produção ou todos os tenants.
+
+P0002 é tratado no contrato de produtos como **produto ausente no escopo atual**, não sucesso nem evidência isolada de vazamento. Um teste SDK real/fetch sintético reproduz HTTP500/P0002 em save/archive, sem retry, ACK ou invalidação. Nenhuma consulta adicional tenta descobrir o dono ou confirmar existência estrangeira; CAS/SQL e status HTTP permanecem intactos.
+
+A auditoria de cache original já migrou tenant-products ao wrapper que inclui identidade, empresa, papéis e época nos sufixos efetivos. Testes cobrem troca somente de ator, somente de empresa, cache preenchido, ABA e resposta atrasada; o prefixo exportado sem org é somente prefixo de invalidação, cujo predicate restringe o ator capturado.
+
+**Identificação visual ainda bloqueante:** o auditor reportou AR Bio em header/sidebar após login FSF/reload, apesar de organizations FSF correta. No original `AppSidebar.tsx` usa `useSystemConfig().config.nome_empresa` como brandTitle (marca global), não organizations; `usePortalBranding` também tem fallback global e query própria portal-branding. Isso oferece uma fonte distinta do cache tenant-products, mas não prova a causa na cópia isolada nem o cabeçalho exato sem reprodução. Nenhuma marca global foi alterada nem identificação de tenant substituída por inferência. O isolado deverá corrigir/provar a identidade visual antes de qualquer publicação; financeiro 9d3a9424 permanece preservado.
+
 Somente teste local, transporte sintético sem saída de rede. Header sintético prova montagem do transporte, não autorização JWT hosted. Nenhum SQL hosted, publicação, implantação, sessão real, emissão fiscal, cobrança ou SMTP. Catálogo continua NO-GO até revisão/POST/JWT reais.
 
 Após espelhar, o auditor testa `/configuracoes/produtos` em sessão real no isolado: listar, salvar edição com CAS observado, arquivar item autorizado, recusa backend, troca de conta/empresa e resposta atrasada. Não criar fixture de produção, não ampliar ACL nem aplicar SQL financeiro/fiscal para este patch.

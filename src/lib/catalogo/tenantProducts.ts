@@ -81,7 +81,7 @@ export function tenantProductErrorMessage(code: string | undefined, message: str
   if (m.includes("duplicate_name")) return "Já existe um produto com esse nome na sua empresa.";
   if (m.includes("version_conflict") || m.includes("cas_required")) return "O produto foi alterado por outra pessoa. Recarregue e tente de novo.";
   if (code === "42501" || m.includes("forbidden")) return "Você não tem permissão para gerenciar produtos desta empresa.";
-  if (m.includes("not_found")) return "Produto não encontrado na sua empresa.";
+  if (code === "P0002" || m.includes("not_found")) return "Produto não encontrado na sua empresa.";
   if (m.includes("tipo_required") || m.includes("tipo_invalid") || code === "22P02") return "Selecione um tipo de produto válido.";
   if (code === "PGRST202" || m.includes("Could not find the function")) return "Cadastro de produtos da empresa ainda não está disponível neste ambiente.";
   return "Não foi possível salvar o produto.";

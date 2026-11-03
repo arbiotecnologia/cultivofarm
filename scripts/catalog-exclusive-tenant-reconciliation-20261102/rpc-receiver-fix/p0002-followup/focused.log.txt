@@ -1,0 +1,11 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/tenantExclusiveCatalog.test.ts (8 tests) 11ms
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (11 tests) 557ms
+
+ Test Files  2 passed (2)
+      Tests  19 passed (19)
+   Start at  01:28:41
+   Duration  2.79s (transform 244ms, setup 264ms, collect 578ms, tests 567ms, environment 2.03s, prepare 334ms)
+
