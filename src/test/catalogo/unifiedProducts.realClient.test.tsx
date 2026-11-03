@@ -237,6 +237,7 @@ it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da compo
         compositionReceipts.add(args.p_idempotency_key); compositionCommits++;
         throw new Error("ACK perdido após composição");
       }
+      if (!compositionReceipts.has(args.p_idempotency_key)) { compositionReceipts.add(args.p_idempotency_key); compositionCommits++; }
       return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
     }
     if (name) throw new Error(`RPC inesperada ${name}`);
@@ -264,11 +265,13 @@ it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da compo
   expect(screen.getByRole("dialog")).toBeTruthy();
   expect(rpcCalls("tenant_product_save")).toHaveLength(1);
   expect(state.rows).toHaveLength(1);
+  expect(compositionCommits).toBe(failure === "resposta perdida" ? 1 : 0);
   fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
   expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
   expect(state.rows).toHaveLength(1);
+  expect(compositionCommits).toBe(1);
 });
 it("composição pendente bloqueia alteração de rascunho/novo INSERT antes de REST, mas permite replay exato", async () => {
   client(); let attempts = 0;
