@@ -1,0 +1,12 @@
+RPC,args,result,auth_execute,estado_final
+partner_order_journal_capability_v1,p_partner uuid,jsonb,True,ORIGINAL_PRESERVADO
+recover_partner_order_attempt_v1,"p_partner uuid, p_expected_key text DEFAULT NULL::text, p_expected_generation bigint DEFAULT NULL::bigint, p_advance boolean DEFAULT false, p_ack_order uuid DEFAULT NULL::uuid",jsonb,True,ORIGINAL_PRESERVADO
+rpc_associate_microorganism_fiscal_product,"p_microorganism_id uuid, p_product_id uuid DEFAULT NULL::uuid","TABLE(id uuid, product_id uuid)",False,CONTIDO_PRE_DISPATCH; GRANT_CLOSED
+partner_payment_condition_capability_v1,,,False,CANDIDATO_REMOVIDO
+tenant_product_list,,,False,CATALOGO01_PENDENTE_JWT_POST
+tenant_product_save,,,False,CATALOGO01_PENDENTE_JWT_POST
+tenant_product_set_archived,,,False,CATALOGO01_PENDENTE_JWT_POST
+tenant_catalog_root_save,,,False,CATALOGO01_PENDENTE_JWT_POST
+tenant_catalog_root_delete,,,False,CATALOGO01_PENDENTE_JWT_POST
+tenant_catalog_formulacoes_replace,,,False,CATALOGO01_PENDENTE_JWT_POST
+tenant_owned_product_fiscal_save,,,False,CATALOGO01_PENDENTE_JWT_POST
