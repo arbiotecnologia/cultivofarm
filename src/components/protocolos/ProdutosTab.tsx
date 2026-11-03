@@ -36,13 +36,7 @@ import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck
 import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
-import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItemControls";
-import { OwnedCatalogItemDialog } from "./OwnedCatalogItemDialog";
-import { OwnedCatalogConfirmDialog } from "./OwnedCatalogConfirmDialog";
 import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
-import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
-import { OwnedCatalogPagination } from "./OwnedCatalogPagination";
-import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
@@ -236,6 +230,7 @@ export function ProdutosTab() {
     id: "",
     updated_at: "" as string,
     codigo: "",
+    descricao: "",
     nome: "",
     tipo: "solo",
     dose_ml_ha: "",
@@ -244,7 +239,7 @@ export function ProdutosTab() {
     valor_dose_brl: "",
     valor_litro_brl: "",
     funcao_completa: "",
-    versao_catalogo: "v1.2",
+    versao_catalogo: "",
     ativo: true,
     b2b_enabled: false,
     e_insumo: false,
@@ -307,6 +302,7 @@ export function ProdutosTab() {
     const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (totalVolume > 0 ? totalVolume : null);
     const payload: any = {
       nome: form.nome,
+      descricao: form.descricao || null,
       codigo: codigoFinal,
       tipo: form.tipo as any,
       dose_ml_ha: doseMlHa,
@@ -359,6 +355,7 @@ export function ProdutosTab() {
       id: "",
       updated_at: "",
       codigo: "",
+      descricao: "",
       nome: "",
       tipo: "solo",
       dose_ml_ha: "",
@@ -367,7 +364,7 @@ export function ProdutosTab() {
       valor_dose_brl: "",
       valor_litro_brl: "",
       funcao_completa: "",
-      versao_catalogo: "v1.2",
+      versao_catalogo: "",
       ativo: true,
       b2b_enabled: false,
       e_insumo: false,
@@ -394,6 +391,7 @@ export function ProdutosTab() {
       id: p.id,
       updated_at: p.updated_at ?? "",
       codigo: p.codigo || "",
+      descricao: p.descricao || "",
       nome: p.nome,
       tipo: p.tipo,
       dose_ml_ha: p.dose_ml_ha?.toString() || "",
@@ -563,7 +561,7 @@ export function ProdutosTab() {
           <Input 
             placeholder="Buscar por código, nome ou função..." 
             value={search} 
-            onChange={(e) => { setSearch(e.target.value); setOwnedOffset(0); }}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
@@ -620,8 +618,8 @@ export function ProdutosTab() {
                         <p className="text-[10px] text-muted-foreground">Gerado automaticamente conforme o tipo. Você pode editar se necessário.</p>
                       </div>
                       <div className="space-y-2">
-                        <Label>Nome Comercial *</Label>
-                        <Input value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} placeholder="Ex: Solo 1" required />
+                        <Label htmlFor="produto-nome">Nome Comercial *</Label>
+                        <Input id="produto-nome" value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} placeholder="Ex: Solo 1" required />
                       </div>
                       <div className="space-y-2">
                         <Label>Tipo *</Label>
@@ -665,6 +663,7 @@ export function ProdutosTab() {
                       )}
                     </div>
 
+                    <div className="space-y-2"><Label htmlFor="produto-descricao">Descrição</Label><Textarea id="produto-descricao" value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} /></div>
                     <div className="space-y-2">
                       <Label>Função Agronômica Completa</Label>
                       <Textarea value={form.funcao_completa} onChange={(e) => setForm({...form, funcao_completa: e.target.value})} rows={2} placeholder="Descrição detalhada das funções do produto..." />
@@ -1000,7 +999,7 @@ export function ProdutosTab() {
                   <div className="font-medium flex items-center gap-2 flex-wrap">
                     {p.nome}
                     {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
-                    <CatalogOriginBadge item={p} />
+
                     <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />
                     {(p.formulacoes?.length || 0) > 0 && (
                       <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary bg-primary/5">Exclusivo</Badge>
@@ -1067,7 +1066,7 @@ export function ProdutosTab() {
                 <TableCell>
                   <VolumesChips
                     volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
-                    onAdd={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => setVolumesEdit(p) : undefined}
+                    onAdd={editor.canEdit ? () => setVolumesEdit(p) : undefined}
                   />
                 </TableCell>
                 <TableCell className="text-right font-mono-data">

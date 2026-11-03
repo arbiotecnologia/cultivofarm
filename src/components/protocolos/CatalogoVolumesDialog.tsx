@@ -1,6 +1,8 @@
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useRef, useState } from "react";
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { useTenantProductVolumes, useSaveTenantProductVolume } from "@/hooks/useTenantProductVolumes";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -45,11 +47,14 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
   const [novo, setNovo] = useState({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
   const [precoTocado, setPrecoTocado] = useState(false);
   const [reason, setReason] = useState("");
-  const ownedWritable = owned && itemTipo === "produto" && TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage;
+  const editor = useTenantCatalogEditor();
+  const tenantVolumes = useTenantProductVolumes(itemId, owned && open && itemTipo === "produto");
+  const tenantSave = useSaveTenantProductVolume();
+  const ownedWritable = owned && itemTipo === "produto" && editor.canEdit;
   const [ownedOffset, setOwnedOffset] = useState(0);
   const ownedDetail = useOwnedCatalogRead(itemTipo, { id: itemId, offset: ownedOffset, enabled: owned && open });
   const frozenScope = useRef("");
-  const scopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
+  const scopeKey = editor.scope;
 
   const globalRead = useQuery({
     queryKey: ["catalogo-volumes-item", itemTipo, itemId],
@@ -72,9 +77,9 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
     },
   });
 
-  const data = owned ? ownedDetail.data?.presentations as CatalogoVolume[] | undefined : globalRead.data;
-  const isLoading = owned ? ownedDetail.isLoading : globalRead.isLoading;
-  const readError = owned ? ownedDetail.error : globalRead.error;
+  const data = owned ? tenantVolumes.data : globalRead.data;
+  const isLoading = owned ? tenantVolumes.isLoading : globalRead.isLoading;
+  const readError = owned ? tenantVolumes.error : globalRead.error;
   useEffect(() => {
     if (open) { frozenScope.current = scopeKey; setOwnedOffset(0); }
     // Freeze scope only at opening; a new scope must close the dialog.
@@ -90,7 +95,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
   }, [open]);
 
   const invalidate = () => {
-    if (owned) return ownedDetail.refetch();
+    if (owned) return tenantVolumes.refetch();
     return Promise.all([qc.invalidateQueries({ queryKey: ["catalogo-volumes-item", itemTipo, itemId] }),
       qc.invalidateQueries({ queryKey: ["catalogo-volumes"] })]);
   };
@@ -112,9 +117,8 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       };
       if (owned) {
         if (!ownedWritable) throw new Error("Apresentações próprias ainda não estão disponíveis.");
-        return ownedMutation.mutateAsync({ operation: "create", parentId: itemId, presentationId: null, expectedUpdatedAt: null,
-          payload: { volume_ml: vol, rotulo: payload.rotulo, preco_brl: preco, ordem: payload.ordem }, reason,
-          idempotencyKey: crypto.randomUUID(), scopeKey: frozenScope.current });
+        return tenantSave.mutateAsync({ id: null, productId: itemId, expectedUpdatedAt: null,
+          payload: { volume_ml: vol, rotulo: payload.rotulo, preco_brl: preco, ordem: payload.ordem } });
       }
       assertGlobalCatalogWriteBlocked();
       const { error } = await supabase.from("catalogo_volumes" as any).insert(payload);
@@ -134,9 +138,8 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
     mutationFn: async (v: CatalogoVolume) => {
       if (owned) {
         if (!ownedWritable || !v.updated_at) throw new Error("Apresentação própria sem versão confirmada.");
-        return ownedMutation.mutateAsync({ operation: "update", parentId: itemId, presentationId: v.id, expectedUpdatedAt: v.updated_at,
-          payload: { volume_ml: v.volume_ml, rotulo: v.rotulo, preco_brl: v.preco_brl, ordem: v.ordem }, reason,
-          idempotencyKey: crypto.randomUUID(), scopeKey: frozenScope.current });
+        return tenantSave.mutateAsync({ id: v.id, productId: itemId, expectedUpdatedAt: v.updated_at,
+          payload: { volume_ml: v.volume_ml, rotulo: v.rotulo, preco_brl: v.preco_brl, ordem: v.ordem, ativo: v.ativo } });
       }
       assertGlobalCatalogWriteBlocked();
       const { error } = await supabase
@@ -159,8 +162,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
     mutationFn: async (volume: CatalogoVolume) => {
       if (owned) {
         if (!ownedWritable || !volume.updated_at) throw new Error("Apresentação própria sem versão confirmada.");
-        return ownedMutation.mutateAsync({ operation: "archive", parentId: itemId, presentationId: volume.id, expectedUpdatedAt: volume.updated_at,
-          payload: {}, reason, idempotencyKey: crypto.randomUUID(), scopeKey: frozenScope.current });
+        throw new Error("Exclusão não disponível. Desative o volume e salve para preservar o histórico.");
       }
       assertGlobalCatalogWriteBlocked();
       const { error } = await supabase.from("catalogo_volumes" as any).delete().eq("id", volume.id);
@@ -199,7 +201,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
               ? <>{itemNome} · apresentações comerciais próprias, com preço e histórico auditável.</>
               : TENANT_CAN_EDIT_GLOBAL_CATALOG
               ? <>{itemNome} · cadastre os volumes comerciais com preço — usados para o cliente comparar R$/L. Não confunda com envase (formato de entrega).</>
-              : <>{itemNome} · modo consulta: volumes comerciais do catálogo global, usados para comparar R$/L. Não confunda com envase (formato de entrega).</>}
+              : <>{itemNome} · modo consulta: volumes comerciais do catálogo, usados para comparar R$/L. Não confunda com envase (formato de entrega).</>}
           </DialogDescription>
         </DialogHeader>
 
@@ -225,15 +227,13 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground h-16 italic">Nenhum volume cadastrado.</TableCell></TableRow>
                 ) : data.map((v) => (
                   (TENANT_CAN_EDIT_GLOBAL_CATALOG || ownedWritable)
-                    ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={() => remove.mutate(v)} disabled={ownedWritable && (reason.trim().length < 10 || ownedMutation.isPending)} />
+                    ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={() => remove.mutate(v)} disabled={tenantSave.isPending} />
                     : <ReadOnlyVolumeRow key={v.id} v={v} />
                 ))}
               </TableBody>
             </Table>
           </div>
 
-          {owned && <div className="flex gap-2"><Button variant="outline" disabled={ownedOffset === 0 || ownedDetail.isFetching} onClick={() => setOwnedOffset(Math.max(0, ownedOffset - 50))}>Anterior</Button><Button variant="outline" disabled={!ownedDetail.data?.has_more || ownedDetail.isFetching} onClick={() => setOwnedOffset(ownedOffset + 50)}>Próxima</Button></div>}
-          {ownedWritable && <div className="space-y-1"><Label htmlFor="owned-volume-reason">Motivo</Label><Input id="owned-volume-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} /></div>}
           {(TENANT_CAN_EDIT_GLOBAL_CATALOG || ownedWritable) && (
           <div className="border rounded-md p-3 space-y-3 bg-muted/30">
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -281,7 +281,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
                   onChange={(e) => setNovo({ ...novo, ordem: e.target.value })} />
               </div>
               <div className="min-w-[140px]">
-                <Button type="button" className="w-full" onClick={() => create.mutate()} disabled={create.isPending || (ownedWritable && reason.trim().length < 10)}>
+                <Button type="button" className="w-full" onClick={() => create.mutate()} disabled={create.isPending || tenantSave.isPending}>
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
                 </Button>
               </div>
