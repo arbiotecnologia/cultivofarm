@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 
 const AR = "org-ar"; const FSF = "org-fsf";
 const db = { rows: [] as Array<Record<string, unknown>>, calls: [] as string[], seq: 0, readDelay: null as Promise<void> | null,
@@ -76,8 +77,8 @@ import { CulturasTab } from "@/pages/Protocolos";
 function requireRow(node: HTMLElement) { const row = node.closest("tr"); if (!row) throw new Error("Linha não encontrada"); return row; }
 function app(Component = CulturasTab) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  const rendered = render(<QueryClientProvider client={client}><Component /></QueryClientProvider>);
-  return { ...rendered, client, redraw: () => rendered.rerender(<QueryClientProvider client={client}><Component /></QueryClientProvider>) };
+  const rendered = render(<MemoryRouter><QueryClientProvider client={client}><Component /></QueryClientProvider></MemoryRouter>);
+  return { ...rendered, client, redraw: () => rendered.rerender(<MemoryRouter><QueryClientProvider client={client}><Component /></QueryClientProvider></MemoryRouter>) };
 }
 async function submitDialog(name: string, reason = "motivo suficiente") {
   fireEvent.change(await screen.findByLabelText("Nome"), { target: { value: name } });
