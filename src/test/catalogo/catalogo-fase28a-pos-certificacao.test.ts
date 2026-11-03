@@ -49,7 +49,7 @@ describe("FASE 28A — rotas do Catálogo preservadas", () => {
   it("navegação mantém o rótulo Catálogo e a rota legada", () => {
     const c = read(NAV);
     expect(c).toContain('label: "Catálogo"');
-    expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo"]');
+    expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo", "/configuracoes/produtos"]');
   });
 });
 

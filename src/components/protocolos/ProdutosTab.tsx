@@ -207,7 +207,6 @@ export async function carregarCatalogoProdutos(client: any): Promise<
 
 export function ProdutosTab() {
   
-  const { data: volumesCat } = useCatalogoVolumes();
   const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
   const [fichaProduto, setFichaProduto] = useState<Produto | null>(null);
   const [open, setOpen] = useState(false);
@@ -215,22 +214,21 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
-  const ownedCapability = useOwnedCatalogCapability();
   const [showArchived, setShowArchived] = useState(false);
-  const [ownedOffset, setOwnedOffset] = useState(0);
   const productList = useTenantProducts(showArchived);
   const details = useTenantProductDetails();
   const editor = useTenantCatalogEditor();
   const saveProduct = useSaveTenantProduct();
   const archiveProduct = useArchiveTenantProduct();
-  const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Produto | null }>({ open: false, item: null });
-  const [ownedConfirm, setOwnedConfirm] = useState<{ item: Produto; operation: "archive" | "restore" } | null>(null);
 
   const [form, setForm] = useState({
     id: "",
     updated_at: "" as string,
     codigo: "",
     descricao: "",
+    familia_catalogo: "",
+    classe_catalogo: "",
+    modo_acao: "",
     nome: "",
     tipo: "solo",
     dose_ml_ha: "",
@@ -266,7 +264,7 @@ export function ProdutosTab() {
   const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
   useEffect(() => {
     localGeneration.current += 1;
-    setOpen(false); resetForm(); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null);
+    setOpen(false); resetForm();
     setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
   }, [activeScopeKey]);
@@ -303,6 +301,9 @@ export function ProdutosTab() {
     const payload: any = {
       nome: form.nome,
       descricao: form.descricao || null,
+      familia_catalogo: form.familia_catalogo || null,
+      classe_catalogo: form.classe_catalogo || null,
+      modo_acao: form.modo_acao || null,
       codigo: codigoFinal,
       tipo: form.tipo as any,
       dose_ml_ha: doseMlHa,
@@ -321,6 +322,10 @@ export function ProdutosTab() {
 
 
     try {
+      const existing = items.find(p => p.id === form.id) as any;
+      if (composicaoTouched.current && (existing?.composition_status || existing?.declarations?.length)) {
+        throw new Error("Composição declarativa preservada. Sua edição não é suportada por este contrato; nenhum dado foi salvo.");
+      }
       if (composicaoTouched.current && form.composicao.some(row => (!row.microrganismo_id && !row.component_insumo_id) ||
         !Number.isFinite(Number(row.volume_ml)) || Number(row.volume_ml) < 0)) {
         throw new Error("Revise os componentes e os volumes da composição; nenhum dado foi salvo.");
@@ -356,6 +361,9 @@ export function ProdutosTab() {
       updated_at: "",
       codigo: "",
       descricao: "",
+      familia_catalogo: "",
+      classe_catalogo: "",
+      modo_acao: "",
       nome: "",
       tipo: "solo",
       dose_ml_ha: "",
@@ -392,6 +400,9 @@ export function ProdutosTab() {
       updated_at: p.updated_at ?? "",
       codigo: p.codigo || "",
       descricao: p.descricao || "",
+      familia_catalogo: (p as any).familia_catalogo || "",
+      classe_catalogo: (p as any).classe_catalogo || "",
+      modo_acao: (p as any).modo_acao || "",
       nome: p.nome,
       tipo: p.tipo,
       dose_ml_ha: p.dose_ml_ha?.toString() || "",
@@ -638,6 +649,11 @@ export function ProdutosTab() {
                       </div>
                     </div>
                     
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2"><Label>Família</Label><Select value={form.familia_catalogo || "pendente"} onValueChange={v => setForm({ ...form, familia_catalogo: v === "pendente" ? "" : v })}><SelectTrigger aria-label="Família"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="biologico">Biológico</SelectItem><SelectItem value="quimico">Químico</SelectItem><SelectItem value="fertilizante_adubo">Fertilizante/Adubo</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><Label htmlFor="produto-classe">Classe</Label><Input id="produto-classe" value={form.classe_catalogo} onChange={e => setForm({ ...form, classe_catalogo: e.target.value })} /></div>
+                      <div className="space-y-2"><Label htmlFor="produto-modo-acao">Modo de ação</Label><Input id="produto-modo-acao" value={form.modo_acao} onChange={e => setForm({ ...form, modo_acao: e.target.value })} /></div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/20 rounded border border-dashed">
                       <div className="flex items-center space-x-2">
                         <input 
@@ -788,6 +804,7 @@ export function ProdutosTab() {
                   </TabsContent>
 
                   <TabsContent value="composicao" className="space-y-4 min-h-[300px] sm:min-h-[400px]">
+                    {((items.find(p => p.id === form.id) as any)?.composition_status || (items.find(p => p.id === form.id) as any)?.declarations?.length) && <p role="alert">Composição declarativa preservada; edição indisponível neste contrato. Identificação e preços podem ser alterados sem substituí-la.</p>}
                     <div className="flex justify-between items-center mb-2">
                       <Label>Composição Técnica (Fórmula)</Label>
                       <div className="flex gap-2">

@@ -1,0 +1,44 @@
+$ vitest run src/test/catalogo/catalogFamilyRead.test.tsx src/test/catalogo/tenant-visibility-cache.integration.test.tsx src/test/catalogo/catalogo-errors.test.tsx src/test/catalogo/globalCatalogReadOnly.render.test.tsx src/test/catalogo/globalCatalogContainment.test.ts src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/protocolos/base-tecnica.rename.test.ts "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/tenant-visibility-cache.integration.test.tsx (6 tests) 446ms
+ ✓ src/test/catalogo/catalogFamilyRead.test.tsx (11 tests) 301ms
+stderr | src/test/catalogo/globalCatalogReadOnly.render.test.tsx > catálogo global somente consulta (render real, Administrador de empresa) > Produtos: não usa lista global nem oferece exclusão/DML global
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/globalCatalogReadOnly.render.test.tsx (6 tests) 801ms
+   ✓ catálogo global somente consulta (render real, Administrador de empresa) > Produtos: não usa lista global nem oferece exclusão/DML global  340ms
+stderr | src/test/catalogo/catalogo-errors.test.tsx > consultas atômicas > oculta KPIs na falha parcial e refaz todas as consultas no retry
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/catalogo-errors.test.tsx (11 tests) 197ms
+ ✓ src/test/catalogo/globalCatalogContainment.test.ts (16 tests) 18ms
+ ✓ src/test/protocolos/base-tecnica.rename.test.ts (8 tests) 13ms
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/catalogo/unifiedProducts.realClient.test.tsx (11 tests) 3595ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1771ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1757ms
+
+ Test Files  7 passed (7)
+      Tests  69 passed (69)
+   Start at  02:14:38
+   Duration  13.36s (transform 1.80s, setup 1.08s, collect 5.57s, tests 5.37s, environment 6.38s, prepare 918ms)
+

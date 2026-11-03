@@ -309,7 +309,7 @@ function EditableRow({ v, baseLitro, onSave, onDelete, disabled }: { v: Catalogo
       <TableCell>
         <div className="flex gap-0.5 justify-end">
           {dirty && <Button size="sm" variant="outline" className="h-7 px-1.5 text-[10px]" onClick={() => onSave(edit)} disabled={disabled}>Salvar</Button>}
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onDelete} disabled={disabled}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+          {onDelete && <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onDelete} disabled={disabled}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
         </div>
       </TableCell>
     </TableRow>
