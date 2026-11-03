@@ -5477,16 +5477,15 @@
     },
     {
       "path": "/configuracoes/produtos",
-      "line": 649,
+      "line": 648,
       "index": false,
       "components": [
-        "RoleGuard",
-        "ProdutosEmpresa"
+        "PreservedNavigate"
       ],
       "ancestors": [
         "ProtectedRoutes"
       ],
-      "redirect": null,
+      "redirect": "/base-tecnica?tab=produtos",
       "feature": null,
       "profiles": [
         "administrador",
@@ -5495,19 +5494,16 @@
         "gestor_comercial"
       ],
       "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
-      "navigation": [
-        "navigation:produtos-empresa:desktop"
-      ],
+      "navigation": [],
       "references": [
-        "src/config/navigation.ts",
-        "src/lib/permissions.ts",
-        "src/pages/configuracoes/ProdutosEmpresa.tsx"
+        "src/lib/permissions.ts"
       ],
-      "classification": 1,
-      "navigationJustification": "declarative navigation",
+      "classification": 7,
+      "navigationJustification": "legacy/index redirect; inspect target",
       "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
     },
+
     {
       "path": "/configuracoes/fiscal/produtos",
       "line": 650,
@@ -6413,12 +6409,6 @@
     {
       "id": "configuracoes",
       "route": "/configuracoes",
-      "source": "navigation",
-      "audience": "desktop"
-    },
-    {
-      "id": "produtos-empresa",
-      "route": "/configuracoes/produtos",
       "source": "navigation",
       "audience": "desktop"
     },
