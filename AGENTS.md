@@ -105,3 +105,6 @@
 - Homolog alignment: scripts/homolog-alignment-20261102/AGENTS.md.
 - Original integration package: scripts/original-integration-20261102/AGENTS.md.
 - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.
+
+- Tenant product CRUD lives only in Catálogo → Produtos; the legacy settings route redirects with preserved query/hash, and scoped canonical RPCs keep CAS/idempotency/late-ACK fences — prevents duplicate editors and global writer reactivation.
+- Product metadata and formulation replacement are sequential contracts; expose an uncertain/partial composition result, preserve unsupported declarations and never compensate or claim combined atomicity — prevents silent data loss.

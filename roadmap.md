@@ -1,7 +1,8 @@
 ## 03/11 — Unificação Catálogo → Produtos (local, sem SQL/publicação)
-- [ ] Unificar menu/redirect e cadastro com hooks scoped, sem writer global.
-- [ ] Preservar composição/perfis/volumes; declarar campos não suportados e falhas parciais.
-- [ ] Testar SDK/CRUD/roles/cache/consumidores e entregar patch portátil com evidências.
+- [x] Unificar menu/redirect e cadastro com hooks scoped, sem writer global.
+- [x] Preservar composição/perfis/volumes; declarar campos não suportados e falhas parciais.
+- [x] Testar SDK/CRUD/roles/cache/consumidores locais e entregar patch portátil com evidências.
+- [ ] Espelho/JWT/browser real e seleções operacionais completas: dependem da execução autorizada pelo auditor; sem produção nesta etapa.
 - Base aplicada c57bee895512e718694f8c746ad53139a024835a e exclusive_tenant_catalog_reviewed_v4 informadas pelo proprietário; não reaplicar. JWT bidirecional reportado PASS, não executado aqui; fiscal/SMTP/cron fechados preservados.
 
 ## 03/11 — Correção receiver ProdutosEmpresa (somente local)
