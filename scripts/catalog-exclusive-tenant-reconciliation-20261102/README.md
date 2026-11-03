@@ -1,5 +1,7 @@
 # Reconciliação local — catálogo exclusivo por empresa (2026-11-02)
 
+**Atualização03/11:** integração exata75972877 foi posteriormente separada pela revisão de escopo. Estado vigente e matriz produção: `scope-audit-20261103/README.md` e `MATRIZ.csv`. Runtime financeiro/comercial original9d3a9424 preservado; catálogo local mantido; publicação NO-GO. Texto abaixo é baseline histórico, não status atual.
+
 Status: **BASELINE / NO-GO**. Nenhuma escrita no banco, migration, publicação ou envio nesta rodada.
 Projeto canônico `a79bb3db-…`, banco `swzpzcwiasxmjutrmvkm` (bindingGuard intacto). Base local: `80c64c384`.
 Pacote de origem esperado: isolado `aec6d152-…`, commit `814c5bc` (NO-GO, testes em andamento) — **não recebido nem copiado**.

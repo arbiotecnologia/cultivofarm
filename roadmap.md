@@ -1,4 +1,10 @@
-## 03/11 — Integração LOCAL do export exato 75972877 sobre 9d3a9424
+## 03/11 — Revisão independente: catálogo isolado do financeiro
+- [x] Auditoria read-only canônica: capability de condições/projeção monetária ausentes; create/simulate sem p_payment_choice; matriz44linhas registrada.
+- [x] Restaurados16arquivos runtime financeiros/comerciais e17testes originais byte a byte da base9d3a9424. Candidatos e testes novos preservados fora de src; civilDate mantido por dependência do fiscal do catálogo.
+- [x] Financeiro original75/1127 PASS; baseline51/1019 PASS; regressão50/720 PASS; typecheck0/build automáticoOK. Primeira baseline interrompida por dependência civilDate omitida, corrigida e log preservado.
+- [ ] Publicação aguarda revisão MATRIZ.csv e JWT/POST catálogo pelo auditor; nenhum SQL financeiro/fiscal aplicado. Gates fiscais/SMTP não reabertos.
+
+## 03/11 — Integração LOCAL do export exato 75972877 sobre 9d3a9424 (histórico, supersedido pela separação acima)
 - [x] Hashes/caminhos/fontes/destinos e seis fusões conferidos; dry-run 770/0 erros, POST 770/0 erros; 31 keep +20 never intactos.
 - [x] Integrados 692 add /72 replace /6 merged exatos do export75972877; zero supabase/migrations, sem hosted/publicação/global anterior.
 - [x] 159 arquivos/2450 testes únicos PASS (baseline51=1019, consumers55=742, regressão50=720, seis PGdescartável=6); três testes da primeira rodada PG tiveram erro RPC do executor, preservado, e passaram em pool=forks. Typecheck0/build automáticoOK; diff/logs/hashes consolidados.
