@@ -2478,6 +2478,7 @@ export type Database = {
           microrganismo_id: string | null
           moeda: string
           ordem: number
+          owner_organization_id: string
           preco_brl: number
           preco_litro_brl: number | null
           produto_id: string | null
@@ -2495,6 +2496,7 @@ export type Database = {
           microrganismo_id?: string | null
           moeda?: string
           ordem?: number
+          owner_organization_id: string
           preco_brl?: number
           preco_litro_brl?: number | null
           produto_id?: string | null
@@ -2512,6 +2514,7 @@ export type Database = {
           microrganismo_id?: string | null
           moeda?: string
           ordem?: number
+          owner_organization_id?: string
           preco_brl?: number
           preco_litro_brl?: number | null
           produto_id?: string | null
@@ -2534,6 +2537,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_microorganism_fiscal_readiness"
             referencedColumns: ["microorganism_id"]
+          },
+          {
+            foreignKeyName: "catalogo_volumes_owner_organization_id_fkey"
+            columns: ["owner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "catalogo_volumes_produto_id_fkey"
@@ -4978,6 +4988,7 @@ export type Database = {
           descricao: string | null
           id: string
           nome: string
+          owner_organization_id: string
           updated_at: string
         }
         Insert: {
@@ -4988,6 +4999,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome: string
+          owner_organization_id?: string
           updated_at?: string
         }
         Update: {
@@ -4998,9 +5010,18 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome?: string
+          owner_organization_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "culturas_owner_organization_id_fkey"
+            columns: ["owner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_fiscal_profiles: {
         Row: {
@@ -10398,6 +10419,7 @@ export type Database = {
           e_volume_fixo: boolean | null
           id: string
           microrganismo_id: string
+          owner_organization_id: string
           produto_id: string
           proporcao: number | null
           unidade: string | null
@@ -10410,6 +10432,7 @@ export type Database = {
           e_volume_fixo?: boolean | null
           id?: string
           microrganismo_id: string
+          owner_organization_id: string
           produto_id: string
           proporcao?: number | null
           unidade?: string | null
@@ -10422,6 +10445,7 @@ export type Database = {
           e_volume_fixo?: boolean | null
           id?: string
           microrganismo_id?: string
+          owner_organization_id?: string
           produto_id?: string
           proporcao?: number | null
           unidade?: string | null
@@ -10448,6 +10472,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_microorganism_fiscal_readiness"
             referencedColumns: ["microorganism_id"]
+          },
+          {
+            foreignKeyName: "formulacoes_owner_organization_id_fkey"
+            columns: ["owner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "formulacoes_produto_id_fkey"
@@ -11466,6 +11497,7 @@ export type Database = {
           nome: string
           nome_cientifico: string | null
           observacoes: string | null
+          owner_organization_id: string
           preco_tabela: number | null
           producao_on_farm: boolean | null
           product_id: string | null
@@ -11491,6 +11523,7 @@ export type Database = {
           nome: string
           nome_cientifico?: string | null
           observacoes?: string | null
+          owner_organization_id?: string
           preco_tabela?: number | null
           producao_on_farm?: boolean | null
           product_id?: string | null
@@ -11516,6 +11549,7 @@ export type Database = {
           nome?: string
           nome_cientifico?: string | null
           observacoes?: string | null
+          owner_organization_id?: string
           preco_tabela?: number | null
           producao_on_farm?: boolean | null
           product_id?: string | null
@@ -11526,6 +11560,13 @@ export type Database = {
           valor_litro_brl?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "microrganismos_owner_organization_id_fkey"
+            columns: ["owner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "microrganismos_product_id_fkey"
             columns: ["product_id"]
@@ -16768,6 +16809,7 @@ export type Database = {
           modo_acao: string | null
           modo_aplicacao: string | null
           nome: string
+          owner_organization_id: string
           tipo: Database["public"]["Enums"]["tipo_produto"]
           updated_at: string
           valor_dose_brl: number | null
@@ -16791,6 +16833,7 @@ export type Database = {
           modo_acao?: string | null
           modo_aplicacao?: string | null
           nome: string
+          owner_organization_id: string
           tipo: Database["public"]["Enums"]["tipo_produto"]
           updated_at?: string
           valor_dose_brl?: number | null
@@ -16814,6 +16857,7 @@ export type Database = {
           modo_acao?: string | null
           modo_aplicacao?: string | null
           nome?: string
+          owner_organization_id?: string
           tipo?: Database["public"]["Enums"]["tipo_produto"]
           updated_at?: string
           valor_dose_brl?: number | null
@@ -16821,7 +16865,15 @@ export type Database = {
           valor_litro_brl?: number | null
           versao_catalogo?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "produtos_owner_organization_id_fkey"
+            columns: ["owner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -19216,6 +19268,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tenant_product_audit: {
+        Row: {
+          action: string
+          actor_id: string
+          after_state: Json
+          at: string
+          before_state: Json | null
+          id: number
+          organization_id: string
+          product_id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          after_state: Json
+          at?: string
+          before_state?: Json | null
+          id?: number
+          organization_id: string
+          product_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          after_state?: Json
+          at?: string
+          before_state?: Json | null
+          id?: number
+          organization_id?: string
+          product_id?: string
+        }
+        Relationships: []
+      }
+      tenant_product_receipts: {
+        Row: {
+          actor_id: string
+          created_at: string
+          idempotency_key: string
+          organization_id: string
+          payload_hash: string
+          product_id: string
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          idempotency_key: string
+          organization_id: string
+          payload_hash: string
+          product_id: string
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          idempotency_key?: string
+          organization_id?: string
+          payload_hash?: string
+          product_id?: string
+          result?: Json
+        }
+        Relationships: []
       }
       user_access_preferences: {
         Row: {
@@ -26174,6 +26289,15 @@ export type Database = {
         Returns: Json
       }
       tenant_admin_user_links: { Args: { p_user_ids: string[] }; Returns: Json }
+      tenant_catalog_formulacoes_replace: {
+        Args: {
+          p_expected_produto_updated_at: string
+          p_idempotency_key: string
+          p_items: Json
+          p_produto_id: string
+        }
+        Returns: Json
+      }
       tenant_catalog_hidden_ids: {
         Args: { p_entity_type: string }
         Returns: {
@@ -26188,6 +26312,25 @@ export type Database = {
           updated_at: string
           version: number
         }[]
+      }
+      tenant_catalog_root_delete: {
+        Args: {
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_root: string
+        }
+        Returns: Json
+      }
+      tenant_catalog_root_save: {
+        Args: {
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_payload: Json
+          p_root: string
+        }
+        Returns: Json
       }
       tenant_catalog_selection_page: {
         Args: {
@@ -26246,6 +26389,67 @@ export type Database = {
         Returns: Json
       }
       tenant_email_settings_scope: { Args: never; Returns: boolean }
+      tenant_owned_product_fiscal_save: {
+        Args: {
+          p_expected_updated_at: string
+          p_idempotency_key: string
+          p_product_id: string
+          p_reason: string
+          p_values: Json
+        }
+        Returns: Json
+      }
+      tenant_product_list: {
+        Args: { p_include_archived?: boolean }
+        Returns: {
+          ativo: boolean | null
+          b2b_enabled: boolean
+          classe_catalogo: string | null
+          codigo: string | null
+          created_at: string
+          descricao: string | null
+          dose_ml_ha: number | null
+          e_insumo: boolean | null
+          estoque_minimo: number | null
+          familia_catalogo: string | null
+          funcao_completa: string | null
+          id: string
+          modo_acao: string | null
+          modo_aplicacao: string | null
+          nome: string
+          owner_organization_id: string
+          tipo: Database["public"]["Enums"]["tipo_produto"]
+          updated_at: string
+          valor_dose_brl: number | null
+          valor_ha_brl: number | null
+          valor_litro_brl: number | null
+          versao_catalogo: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "produtos"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      tenant_product_save: {
+        Args: {
+          p_expected_updated_at: string
+          p_idempotency_key: string
+          p_payload: Json
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      tenant_product_set_archived: {
+        Args: {
+          p_archived: boolean
+          p_expected_updated_at: string
+          p_idempotency_key: string
+          p_product_id: string
+        }
+        Returns: Json
+      }
       tenant_smtp_activation_set: {
         Args: { p_active: boolean; p_version: number }
         Returns: Json
