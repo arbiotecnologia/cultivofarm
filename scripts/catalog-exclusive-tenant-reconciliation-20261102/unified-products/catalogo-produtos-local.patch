@@ -16,6 +16,68 @@ index c3d57e73e..368a4ccac 100644
  - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.
 +
 +- Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.
+diff --git a/docs/auditorias/auditoria-rotas-inventario-2026-10-07.json b/docs/auditorias/auditoria-rotas-inventario-2026-10-07.json
+index 694e9ad2b..12e55e63a 100644
+--- a/docs/auditorias/auditoria-rotas-inventario-2026-10-07.json
++++ b/docs/auditorias/auditoria-rotas-inventario-2026-10-07.json
+@@ -5477,16 +5477,15 @@
+     },
+     {
+       "path": "/configuracoes/produtos",
+-      "line": 649,
++      "line": 648,
+       "index": false,
+       "components": [
+-        "RoleGuard",
+-        "ProdutosEmpresa"
++        "PreservedNavigate"
+       ],
+       "ancestors": [
+         "ProtectedRoutes"
+       ],
+-      "redirect": null,
++      "redirect": "/base-tecnica?tab=produtos",
+       "feature": null,
+       "profiles": [
+         "administrador",
+@@ -5495,19 +5494,16 @@
+         "gestor_comercial"
+       ],
+       "profileBasis": "ACCESS_MAP candidates only; ancestor/tenant/link guards may further restrict",
+-      "navigation": [
+-        "navigation:produtos-empresa:desktop"
+-      ],
++      "navigation": [],
+       "references": [
+-        "src/config/navigation.ts",
+-        "src/lib/permissions.ts",
+-        "src/pages/configuracoes/ProdutosEmpresa.tsx"
++        "src/lib/permissions.ts"
+       ],
+-      "classification": 1,
+-      "navigationJustification": "declarative navigation",
++      "classification": 7,
++      "navigationJustification": "legacy/index redirect; inspect target",
+       "desktopMobileJustification": "Existing audience-specific portal/workspace registry preserved; desktop operational suite differs intentionally from field mobile tabs. Auth usability remains unverified.",
+       "verification": "STRUCTURAL_ONLY; Auth/URL/dados autenticados UNVERIFIED"
+     },
++
+     {
+       "path": "/configuracoes/fiscal/produtos",
+       "line": 650,
+@@ -6416,12 +6412,6 @@
+       "source": "navigation",
+       "audience": "desktop"
+     },
+-    {
+-      "id": "produtos-empresa",
+-      "route": "/configuracoes/produtos",
+-      "source": "navigation",
+-      "audience": "desktop"
+-    },
+     {
+       "id": "config-fiscal",
+       "route": "/configuracoes/fiscal/empresa",
 diff --git a/src/App.tsx b/src/App.tsx
 index b873ab1c0..8408c6c04 100644
 --- a/src/App.tsx
@@ -60,7 +122,7 @@ index c9114550c..fb5594e91 100644
      }).allowed &&
      isNavItemFeatureEnabled(item) &&
 diff --git a/src/components/protocolos/AGENTS.md b/src/components/protocolos/AGENTS.md
-index 7d734a289..06ef2f4b8 100644
+index 7d734a289..6cb422056 100644
 --- a/src/components/protocolos/AGENTS.md
 +++ b/src/components/protocolos/AGENTS.md
 @@ -1 +1,3 @@
@@ -68,8 +130,7 @@ index 7d734a289..06ef2f4b8 100644
 \ No newline at end of file
 +- Product/composition saves confirm minimal returned IDs and cardinality before continuing; compensation remains best-effort and inconclusive reversal is critical — prevents false success without implying transactionality.
 +- Product metadata and formulation replacement are sequential contracts; expose an uncertain/partial composition result, preserve unsupported declarations and never compensate or claim combined atomicity — prevents silent data loss.
-+- Partial product saves retain frozen input, visible composition and the confirmed product ID/version for explicit same-key reconciliation; never reset to a new-product form or allow a concurrent edit — prevents duplicate roots after a lost composition ACK.
-\ No newline at end of file
++- Partial product saves keep the confirmed product ID/version and an exportable draft: uncertain composition results allow exit but stay retained for same-key replay; explicit server refusals are acknowledged only after a fresh canonical read and reopen the same product at its fresh CAS version; scope change discards the draft — prevents duplicate roots and permanent lockout without claiming atomicity.
 diff --git a/src/components/protocolos/CatalogoVolumesDialog.tsx b/src/components/protocolos/CatalogoVolumesDialog.tsx
 index e3e09f331..9646312bc 100644
 --- a/src/components/protocolos/CatalogoVolumesDialog.tsx
@@ -339,7 +400,7 @@ index ed5531fc4..a7cfe5b69 100644
                <ReturnToReviewButton kind="produto" profileId={data.profile.id} onDone={refetch} />
              )}
 diff --git a/src/components/protocolos/ProdutosTab.tsx b/src/components/protocolos/ProdutosTab.tsx
-index a21b6ab85..e1c4726e9 100644
+index a21b6ab85..b715188be 100644
 --- a/src/components/protocolos/ProdutosTab.tsx
 +++ b/src/components/protocolos/ProdutosTab.tsx
 @@ -1,6 +1,13 @@
@@ -393,7 +454,7 @@ index a21b6ab85..e1c4726e9 100644
    const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
    const [fichaProduto, setFichaProduto] = useState<Produto | null>(null);
    const [open, setOpen] = useState(false);
-@@ -220,19 +217,26 @@ export function ProdutosTab() {
+@@ -220,19 +217,30 @@ export function ProdutosTab() {
    const savingRef = useRef(false);
    const [search, setSearch] = useState("");
    const [filterTipo, setFilterTipo] = useState("todos");
@@ -415,6 +476,10 @@ index a21b6ab85..e1c4726e9 100644
 +  const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
 +  const [partialMessage, setPartialMessage] = useState<string | null>(null);
 +  const [partialAck, setPartialAck] = useState<{ product_id: string; updated_at: string } | null>(null);
++  const [partialKind, setPartialKind] = useState<"definitive" | "uncertain" | null>(null);
++  const [partialExport, setPartialExport] = useState<string | null>(null);
++  const [reconciling, setReconciling] = useState(false);
++  const retainedForm = useRef<any>(null);
  
    const [form, setForm] = useState({
      id: "",
@@ -427,7 +492,7 @@ index a21b6ab85..e1c4726e9 100644
      nome: "",
      tipo: "solo",
      dose_ml_ha: "",
-@@ -241,7 +245,7 @@ export function ProdutosTab() {
+@@ -241,7 +249,7 @@ export function ProdutosTab() {
      valor_dose_brl: "",
      valor_litro_brl: "",
      funcao_completa: "",
@@ -436,7 +501,7 @@ index a21b6ab85..e1c4726e9 100644
      ativo: true,
      b2b_enabled: false,
      e_insumo: false,
-@@ -254,55 +258,44 @@ export function ProdutosTab() {
+@@ -254,55 +262,45 @@ export function ProdutosTab() {
        volume_ml: number;
        proporcao: number | null;
        e_volume_fixo: boolean;
@@ -471,9 +536,10 @@ index a21b6ab85..e1c4726e9 100644
      localGeneration.current += 1;
 -    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null);
 -    void fetch();
-+    retainedSave.current = null;
++    // Escopo mudou: descarta rascunho/exportação retidos (nunca reutilizados em outro ator/tenant).
++    retainedSave.current = null; retainedForm.current = null;
 +    setPartialMessage(null);
-+    setPartialAck(null);
++    setPartialAck(null); setPartialKind(null); setPartialExport(null); setReconciling(false);
 +    setOpen(false); resetForm();
 +    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
      return () => { localGeneration.current += 1; };
@@ -517,7 +583,7 @@ index a21b6ab85..e1c4726e9 100644
      if (savingRef.current) return;
      savingRef.current = true;
      setSaving(true);
-@@ -318,6 +311,10 @@ export function ProdutosTab() {
+@@ -318,6 +316,10 @@ export function ProdutosTab() {
      const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (totalVolume > 0 ? totalVolume : null);
      const payload: any = {
        nome: form.nome,
@@ -528,7 +594,7 @@ index a21b6ab85..e1c4726e9 100644
        codigo: codigoFinal,
        tipo: form.tipo as any,
        dose_ml_ha: doseMlHa,
-@@ -326,8 +323,7 @@ export function ProdutosTab() {
+@@ -326,8 +328,7 @@ export function ProdutosTab() {
        valor_dose_brl: form.valor_dose_brl ? Number(form.valor_dose_brl) : null,
        valor_litro_brl: form.valor_litro_brl ? Number(form.valor_litro_brl) : null,
        funcao_completa: form.funcao_completa || null,
@@ -538,7 +604,7 @@ index a21b6ab85..e1c4726e9 100644
        b2b_enabled: form.b2b_enabled,
        e_insumo: form.e_insumo,
        estoque_minimo: form.estoque_minimo ? Number(form.estoque_minimo) : 0,
-@@ -337,33 +333,38 @@ export function ProdutosTab() {
+@@ -337,44 +338,117 @@ export function ProdutosTab() {
  
  
      try {
@@ -569,20 +635,27 @@ index a21b6ab85..e1c4726e9 100644
 -        setOpen(false);
 -        resetForm();
 -        fetch();
--        return;
--      }
--      if (outcome.status === "error") {
--        toast.error(outcome.message || "Erro ao salvar produto");
 +        retainedSave.current = input;
++        const frozen = { ...form, id: ack.product_id, updated_at: ack.updated_at };
++        retainedForm.current = frozen;
 +        setPartialAck({ product_id: ack.product_id, updated_at: ack.updated_at });
-+        setForm(previous => ({ ...previous, id: ack.product_id, updated_at: ack.updated_at }));
++        setPartialKind(ack.compositionFailure === "definitive" ? "definitive" : "uncertain");
++        setPartialExport(JSON.stringify({
++          produto_id: ack.product_id, versao_confirmada_produto: ack.updated_at, nome: frozen.nome,
++          resultado_composicao: ack.compositionFailure === "definitive" ? "recusada_pelo_servidor" : "nao_confirmada",
++          composicao_rascunho: frozen.composicao.map(item => ({ ...item,
++            nome: item.microrganismo_id ? microrganismos.find(m => m.id === item.microrganismo_id)?.nome ?? null : items.find(p => p.id === item.component_insumo_id)?.nome ?? null })),
++        }, null, 2));
++        setForm(frozen);
 +        setPartialMessage(outcome.message ?? "Produto salvo; composição não confirmada.");
          return;
        }
+-      if (outcome.status === "error") {
+-        toast.error(outcome.message || "Erro ao salvar produto");
+-        return;
+-      }
 -
-+      retainedSave.current = null;
-+      setPartialMessage(null);
-+      setPartialAck(null);
++      clearPartial();
        toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
        setOpen(false);
        resetForm();
@@ -593,7 +666,68 @@ index a21b6ab85..e1c4726e9 100644
      } finally {
        savingRef.current = false;
        setSaving(false);
-@@ -375,6 +376,10 @@ export function ProdutosTab() {
+     }
+   };
+ 
++  const clearPartial = () => {
++    retainedSave.current = null; retainedForm.current = null;
++    setPartialMessage(null); setPartialAck(null); setPartialKind(null); setPartialExport(null);
++  };
++
++  const copyPartialDraft = async () => {
++    if (!partialExport) return;
++    try { await navigator.clipboard.writeText(partialExport); toast.success("Rascunho copiado."); }
++    catch { toast.error("Não foi possível copiar; selecione o texto do rascunho exportável."); }
++  };
++
++  /** Saída explícita com tentativa INCERTA: fecha o diálogo mas mantém intenção/chaves retidas para replay posterior. */
++  const leavePendingUncertain = () => {
++    if (partialKind !== "uncertain" || savingRef.current) return;
++    setOpen(false);
++  };
++  const resumePending = () => {
++    if (!retainedForm.current || savingRef.current) return;
++    setForm(retainedForm.current); setOpen(true);
++  };
++
++  /**
++   * Recusa DEFINITIVA: lê o produto de novo pelas leituras canônicas do tenant e só então reconhece o resultado e
++   * reabre a edição do MESMO produto com a versão fresca (CAS). Nunca desfaz o produto nem cria outro.
++   */
++  const returnToEditAfterDefinitive = async () => {
++    if (partialKind !== "definitive" || !partialAck || savingRef.current || reconciling) return;
++    const current = editor.capture();
++    const productId = partialAck.product_id;
++    setReconciling(true);
++    try {
++      const [list, det] = await Promise.all([productList.refetch(), details.refetch()]);
++      if (!current()) return;
++      const fresh = list.isSuccess && det.isSuccess ? (list.data ?? []).find(p => p.id === productId) : undefined;
++      if (!fresh || typeof fresh.updated_at !== "string" || !fresh.updated_at) {
++        toast.error("A leitura atual não confirmou o produto salvo. Nada foi alterado; tente novamente.");
++        return;
++      }
++      if (!saveProduct.acknowledgeDefinitiveComposition(productId)) {
++        toast.error("Não foi possível reconhecer o resultado neste contexto. Recarregue a página.");
++        return;
++      }
++      const micros = (det.data?.microorganisms ?? []) as unknown as Microrganismo[];
++      const microMap = new Map(micros.map(m => [m.id, m]));
++      const freshProduct = { ...fresh, formulacoes: (det.data?.formulas ?? []).filter(f => f.produto_id === productId)
++        .map(f => ({ ...f, microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined })) } as unknown as Produto;
++      retainedSave.current = null; retainedForm.current = null;
++      setPartialMessage(null); setPartialAck(null); setPartialKind(null);
++      // O rascunho recusado continua exportável na edição reaberta até o diálogo fechar.
++      handleEdit(freshProduct);
++      composicaoTouched.current = false;
++      if (fresh.updated_at !== partialAck.updated_at) toast.info("O produto mudou desde o salvamento; a versão atual foi carregada.");
++    } finally {
++      if (current()) setReconciling(false);
++    }
++  };
++
+   const resetForm = () => {
+     setForm({
        id: "",
        updated_at: "",
        codigo: "",
@@ -604,7 +738,7 @@ index a21b6ab85..e1c4726e9 100644
        nome: "",
        tipo: "solo",
        dose_ml_ha: "",
-@@ -383,7 +388,7 @@ export function ProdutosTab() {
+@@ -383,7 +457,7 @@ export function ProdutosTab() {
        valor_dose_brl: "",
        valor_litro_brl: "",
        funcao_completa: "",
@@ -613,7 +747,7 @@ index a21b6ab85..e1c4726e9 100644
        ativo: true,
        b2b_enabled: false,
        e_insumo: false,
-@@ -396,6 +401,7 @@ export function ProdutosTab() {
+@@ -396,6 +470,7 @@ export function ProdutosTab() {
  
  
    const handleEdit = (p: Produto) => {
@@ -621,7 +755,7 @@ index a21b6ab85..e1c4726e9 100644
      let dose = p.valor_dose_brl;
      let litro = p.valor_litro_brl;
      const ha = p.valor_ha_brl;
-@@ -410,6 +416,10 @@ export function ProdutosTab() {
+@@ -410,6 +485,10 @@ export function ProdutosTab() {
        id: p.id,
        updated_at: p.updated_at ?? "",
        codigo: p.codigo || "",
@@ -632,7 +766,7 @@ index a21b6ab85..e1c4726e9 100644
        nome: p.nome,
        tipo: p.tipo,
        dose_ml_ha: p.dose_ml_ha?.toString() || "",
-@@ -431,6 +441,7 @@ export function ProdutosTab() {
+@@ -431,6 +510,7 @@ export function ProdutosTab() {
          volume_ml: f.volume_ml,
          proporcao: f.proporcao,
          e_volume_fixo: f.e_volume_fixo
@@ -640,7 +774,7 @@ index a21b6ab85..e1c4726e9 100644
        })) || []
      });
  
-@@ -439,19 +450,6 @@ export function ProdutosTab() {
+@@ -439,19 +519,6 @@ export function ProdutosTab() {
      setOpen(true);
    };
  
@@ -660,7 +794,7 @@ index a21b6ab85..e1c4726e9 100644
    // Helpers for bidirectional pricing edits (shared util)
    const fmtNum = fmtNumStr;
    const numOrNull = numOrNullStr;
-@@ -483,14 +481,16 @@ export function ProdutosTab() {
+@@ -483,14 +550,16 @@ export function ProdutosTab() {
    const markComposicaoTouched = () => { composicaoTouched.current = true; };
  
    const addMicrorganismo = () => {
@@ -678,7 +812,7 @@ index a21b6ab85..e1c4726e9 100644
      markComposicaoTouched();
      setForm(prev => ({
        ...prev,
-@@ -499,6 +499,7 @@ export function ProdutosTab() {
+@@ -499,6 +568,7 @@ export function ProdutosTab() {
    };
  
    const removeMicrorganismo = (index: number) => {
@@ -686,7 +820,7 @@ index a21b6ab85..e1c4726e9 100644
      markComposicaoTouched();
      setForm(prev => ({
        ...prev,
-@@ -507,6 +508,7 @@ export function ProdutosTab() {
+@@ -507,6 +577,7 @@ export function ProdutosTab() {
    };
  
    const updateComposicao = (index: number, field: string, value: any) => {
@@ -694,7 +828,7 @@ index a21b6ab85..e1c4726e9 100644
      markComposicaoTouched();
      setForm(prev => {
        const newComp = [...prev.composicao];
-@@ -591,7 +593,7 @@ export function ProdutosTab() {
+@@ -591,7 +662,7 @@ export function ProdutosTab() {
            <Input 
              placeholder="Buscar por código, nome ou função..." 
              value={search} 
@@ -703,7 +837,7 @@ index a21b6ab85..e1c4726e9 100644
              className="pl-9"
            />
          </div>
-@@ -615,32 +617,32 @@ export function ProdutosTab() {
+@@ -615,32 +686,43 @@ export function ProdutosTab() {
              Exportar PDF
            </Button>
  
@@ -711,7 +845,7 @@ index a21b6ab85..e1c4726e9 100644
 -            <Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}>
 -              <Plus className="h-4 w-4 mr-1" />Produto próprio
 +          {editor.canEdit && (
-+            <Button size="sm" onClick={() => { resetForm(); composicaoTouched.current = false; setOpen(true); }}>
++            <Button size="sm" disabled={!!partialMessage} onClick={() => { resetForm(); setPartialExport(null); composicaoTouched.current = false; setOpen(true); }}>
 +              <Plus className="h-4 w-4 mr-1" />Novo produto
              </Button>
            )}
@@ -732,7 +866,11 @@ index a21b6ab85..e1c4726e9 100644
 -            </DialogTrigger>
 -            )}
 -            <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
-+          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
++          {!open && partialMessage && partialAck && <div role="status" className="w-full text-sm text-destructive flex flex-wrap items-center gap-2">
++            <span>Composição pendente do produto {partialAck.product_id}. Novas edições ficam bloqueadas até reconciliar.</span>
++            <Button type="button" size="sm" variant="outline" onClick={resumePending}>Retomar reconciliação</Button>
++          </div>}
++          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
 +            <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
                <DialogHeader>
 -                <DialogTitle>{form.id ? "Editar" : "Novo"} Produto Bioinsumo</DialogTitle>
@@ -743,14 +881,21 @@ index a21b6ab85..e1c4726e9 100644
 +                {partialMessage && <div role="alert" className="space-y-2 text-destructive">
 +                  <p>{partialMessage}</p>
 +                  {partialAck && <dl className="text-sm break-all"><dt>Produto salvo</dt><dd>{partialAck.product_id}</dd><dt>Versão confirmada do produto</dt><dd>{partialAck.updated_at}</dd></dl>}
-+                  <p>Composição pendente de confirmação. O rascunho foi mantido; reconcilie antes de alterar.</p>
++                  {partialKind === "definitive"
++                    ? <p>O servidor recusou esta composição de forma definitiva; repetir a mesma tentativa não muda o resultado. O produto continua salvo (não foi desfeito). Copie o rascunho se precisar e volte a editar o mesmo produto a partir da versão atual.</p>
++                    : <p>Composição pendente de confirmação. O rascunho foi mantido; reconcilie a mesma tentativa antes de alterar. Você pode sair e retomar depois nesta tela.</p>}
 +                  <ul className="text-sm">{form.composicao.map((item, index) => <li key={index}>{item.microrganismo_id ? microrganismos.find(m => m.id === item.microrganismo_id)?.nome ?? item.microrganismo_id : items.find(p => p.id === item.component_insumo_id)?.nome ?? item.component_insumo_id} · {item.volume_ml} mL{item.concentracao != null ? ` · ${item.concentracao} ${item.unidade ?? ""}` : ""}</li>)}</ul>
 +                </div>}
++                {partialExport && <details className="text-sm">
++                  <summary>Rascunho exportável da composição</summary>
++                  <textarea readOnly aria-label="Rascunho exportável" className="w-full h-32 font-mono text-xs border rounded p-2 bg-muted" value={partialExport} />
++                  <Button type="button" variant="outline" size="sm" onClick={copyPartialDraft}>Copiar rascunho</Button>
++                </details>}
 +                <fieldset disabled={saving || !!partialMessage} className="min-w-0">
                  <Tabs defaultValue="geral">
                    <TabsList className="grid w-full grid-cols-3 mb-4">
                      <TabsTrigger value="geral">Identificação</TabsTrigger>
-@@ -656,8 +658,8 @@ export function ProdutosTab() {
+@@ -656,8 +738,8 @@ export function ProdutosTab() {
                          <p className="text-[10px] text-muted-foreground">Gerado automaticamente conforme o tipo. Você pode editar se necessário.</p>
                        </div>
                        <div className="space-y-2">
@@ -761,7 +906,7 @@ index a21b6ab85..e1c4726e9 100644
                        </div>
                        <div className="space-y-2">
                          <Label>Tipo *</Label>
-@@ -672,10 +674,15 @@ export function ProdutosTab() {
+@@ -672,10 +754,15 @@ export function ProdutosTab() {
                        </div>
                        <div className="space-y-2">
                          <Label>Versão Catálogo</Label>
@@ -778,7 +923,7 @@ index a21b6ab85..e1c4726e9 100644
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/20 rounded border border-dashed">
                        <div className="flex items-center space-x-2">
                          <input 
-@@ -701,6 +708,7 @@ export function ProdutosTab() {
+@@ -701,6 +788,7 @@ export function ProdutosTab() {
                        )}
                      </div>
  
@@ -786,7 +931,7 @@ index a21b6ab85..e1c4726e9 100644
                      <div className="space-y-2">
                        <Label>Função Agronômica Completa</Label>
                        <Textarea value={form.funcao_completa} onChange={(e) => setForm({...form, funcao_completa: e.target.value})} rows={2} placeholder="Descrição detalhada das funções do produto..." />
-@@ -785,21 +793,19 @@ export function ProdutosTab() {
+@@ -785,21 +873,19 @@ export function ProdutosTab() {
                      </div>
  
                      <div className="border-t pt-4">
@@ -811,7 +956,7 @@ index a21b6ab85..e1c4726e9 100644
                              placeholder="Deixe em branco para remover"
                            />
                          </div>
-@@ -815,7 +821,7 @@ export function ProdutosTab() {
+@@ -815,7 +901,7 @@ export function ProdutosTab() {
                            <Label htmlFor="prod_b2b">Disponível no portal B2B</Label>
                          </div>
                          <div className="flex items-center gap-2">
@@ -820,7 +965,7 @@ index a21b6ab85..e1c4726e9 100644
                            <Label htmlFor="prod_ativo">Ativo</Label>
                          </div>
                        </div>
-@@ -827,6 +833,7 @@ export function ProdutosTab() {
+@@ -827,6 +913,7 @@ export function ProdutosTab() {
                    </TabsContent>
  
                    <TabsContent value="composicao" className="space-y-4 min-h-[300px] sm:min-h-[400px]">
@@ -828,7 +973,7 @@ index a21b6ab85..e1c4726e9 100644
                      <div className="flex justify-between items-center mb-2">
                        <Label>Composição Técnica (Fórmula)</Label>
                        <div className="flex gap-2">
-@@ -956,6 +963,7 @@ export function ProdutosTab() {
+@@ -956,6 +1043,7 @@ export function ProdutosTab() {
                                  type="button" 
                                  variant="ghost" 
                                  size="icon" 
@@ -836,7 +981,7 @@ index a21b6ab85..e1c4726e9 100644
                                  className="h-8 w-8 text-destructive"
                                  onClick={() => removeMicrorganismo(idx)}
                                >
-@@ -990,9 +998,10 @@ export function ProdutosTab() {
+@@ -990,9 +1078,13 @@ export function ProdutosTab() {
                      </div>
                    </TabsContent>
                  </Tabs>
@@ -844,11 +989,14 @@ index a21b6ab85..e1c4726e9 100644
  
                  <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-background border-t flex justify-end items-center gap-4 z-10">
 -                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar Produto"}</Button>
-+                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>
++                  {partialKind === "uncertain" && <Button type="button" variant="outline" disabled={saving} onClick={leavePendingUncertain}>Sair mantendo pendência</Button>}
++                  {partialKind === "definitive"
++                    ? <Button type="button" disabled={saving || reconciling} onClick={returnToEditAfterDefinitive}>{reconciling ? "Lendo versão atual..." : "Reconhecer e voltar à edição"}</Button>
++                    : <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>}
                  </div>
                </form>
              </DialogContent>
-@@ -1000,11 +1009,9 @@ export function ProdutosTab() {
+@@ -1000,11 +1092,9 @@ export function ProdutosTab() {
          </div>
        </div>
  
@@ -863,7 +1011,7 @@ index a21b6ab85..e1c4726e9 100644
        <div className="rounded-md border">
          <Table>
            <TableHeader>
-@@ -1032,7 +1039,7 @@ export function ProdutosTab() {
+@@ -1032,7 +1122,7 @@ export function ProdutosTab() {
                const safra: string | null = pAny.safra_referencia ?? null;
                const observacoes: string | null = pAny.observacoes ?? null;
                return (
@@ -872,7 +1020,7 @@ index a21b6ab85..e1c4726e9 100644
                  <TableCell>
                    {p.codigo && (
                      <div className="font-mono text-[10px] text-muted-foreground">{p.codigo}</div>
-@@ -1040,7 +1047,7 @@ export function ProdutosTab() {
+@@ -1040,7 +1130,7 @@ export function ProdutosTab() {
                    <div className="font-medium flex items-center gap-2 flex-wrap">
                      {p.nome}
                      {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
@@ -881,7 +1029,7 @@ index a21b6ab85..e1c4726e9 100644
                      <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />
                      {(p.formulacoes?.length || 0) > 0 && (
                        <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary bg-primary/5">Exclusivo</Badge>
-@@ -1106,8 +1113,8 @@ export function ProdutosTab() {
+@@ -1106,8 +1196,8 @@ export function ProdutosTab() {
                  </TableCell>
                  <TableCell>
                    <VolumesChips
@@ -892,7 +1040,7 @@ index a21b6ab85..e1c4726e9 100644
                    />
                  </TableCell>
                  <TableCell className="text-right font-mono-data">
-@@ -1182,23 +1189,15 @@ export function ProdutosTab() {
+@@ -1182,23 +1272,15 @@ export function ProdutosTab() {
                          </Tooltip>
                        </TooltipProvider>
                      )}
@@ -914,7 +1062,7 @@ index a21b6ab85..e1c4726e9 100644
 -                    />
 -                    )}
 +                    {editor.canEdit && <>
-+                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending} onClick={() => handleEdit(p)}>Editar</Button>
++                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending || !!partialMessage} onClick={() => handleEdit(p)}>Editar</Button>
 +                      <Button variant="ghost" size="sm" disabled={archiveProduct.isPending || !p.updated_at} onClick={async () => {
 +                        if (!p.updated_at) return;
 +                        const current = editor.capture();
@@ -925,7 +1073,7 @@ index a21b6ab85..e1c4726e9 100644
                    </div>
                  </TableCell>
                </TableRow>
-@@ -1228,28 +1227,6 @@ export function ProdutosTab() {
+@@ -1228,28 +1310,6 @@ export function ProdutosTab() {
          />
        )}
  
@@ -1248,7 +1396,7 @@ index 000000000..58792028b
 +}
 \ No newline at end of file
 diff --git a/src/hooks/useTenantProducts.ts b/src/hooks/useTenantProducts.ts
-index 24f8002e7..5982a6581 100644
+index 24f8002e7..d11f283fe 100644
 --- a/src/hooks/useTenantProducts.ts
 +++ b/src/hooks/useTenantProducts.ts
 @@ -3,6 +3,7 @@ import { useRef } from "react";
@@ -1264,10 +1412,11 @@ index 24f8002e7..5982a6581 100644
    const scope = useStorageAccessScope("tenant-product-save");
    const actor = useStorageAccessScope("portal-query-actor");
 -  const keyRef = useRef<{ sig: string; key: string } | null>(null);
+-  return useMutation({
 +  const delivery = useStorageAccessScope("entregas-operations");
-+  const keyRef = useRef<{ scope: string; sig: string; key: string; compositionKey: string } | null>(null);
++  const keyRef = useRef<{ scope: string; sig: string; key: string; compositionKey: string; definitiveProductId?: string } | null>(null);
 +  const busy = useRef(false);
-   return useMutation({
++  const mutation = useMutation({
      retry: false,
 -    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
 -    mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null }) => {
@@ -1291,7 +1440,7 @@ index 24f8002e7..5982a6581 100644
        const { data, error } = await rpc()("tenant_product_save", {
          p_product_id: v.id, p_payload: payload, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: keyRef.current.key,
        });
-@@ -50,12 +61,24 @@ export function useSaveTenantProduct() {
+@@ -50,36 +61,83 @@ export function useSaveTenantProduct() {
          throw new Error(tenantProductErrorMessage(error.code, error.message));
        }
        const ack = parseTenantProductAck(data, v.id);
@@ -1300,15 +1449,21 @@ index 24f8002e7..5982a6581 100644
 +          const composition = await replaceTenantFormulacoes(supabase as never, ack.product_id, v.composition, ack.updated_at, attempt.compositionKey);
 +          if (!current()) throw new Error("catalog_context_changed");
 +          keyRef.current = null;
-+          return { ...ack, updated_at: composition.updated_at, compositionError: undefined };
++          return { ...ack, updated_at: composition.updated_at, compositionError: undefined, compositionFailure: undefined };
 +        } catch (e) {
 +          if (!current()) throw new Error("catalog_context_changed");
-+          return { ...ack, compositionError: `Produto salvo; composição não confirmada. Reconcilie a mesma tentativa antes de alterar o rascunho. ${(e as Error).message}` };
++          // Recusa explícita do servidor é definitiva; transporte/ACK inválido permanece incerto (replay da mesma chave).
++          const definitive = typeof (e as { serverCode?: unknown }).serverCode === "string";
++          attempt.definitiveProductId = definitive ? ack.product_id : undefined;
++          return { ...ack, compositionFailure: definitive ? "definitive" as const : "uncertain" as const,
++            compositionError: definitive
++              ? `Produto salvo; o servidor recusou a composição (a anterior foi mantida). ${(e as Error).message}`
++              : `Produto salvo; composição não confirmada. Reconcilie a mesma tentativa antes de alterar o rascunho. ${(e as Error).message}` };
 +        }
 +      }
        keyRef.current = null;
 -      return ack;
-+      return { ...ack, compositionError: undefined };
++      return { ...ack, compositionError: undefined, compositionFailure: undefined };
 +      } finally { busy.current = false; }
      },
      onSuccess: (_ack, _vars, context) => {
@@ -1317,8 +1472,20 @@ index 24f8002e7..5982a6581 100644
 +      return invalidateProductReads(qc, context.actorScope, context.deliveryScope);
      },
    });
++  /**
++   * Libera a intenção retida somente após recusa DEFINITIVA da composição do mesmo produto, no mesmo escopo.
++   * Tentativas incertas nunca são liberadas aqui: exigem replay da mesma chave.
++   */
++  const acknowledgeDefinitiveComposition = (productId: string) => {
++    const attempt = keyRef.current;
++    if (!attempt || attempt.scope !== scope.scope || attempt.definitiveProductId !== productId || busy.current) return false;
++    keyRef.current = null;
++    return true;
++  };
++  return { ...mutation, acknowledgeDefinitiveComposition };
  }
-@@ -64,22 +87,40 @@ export function useArchiveTenantProduct() {
+ 
+ export function useArchiveTenantProduct() {
    const qc = useQueryClient();
    const scope = useStorageAccessScope("tenant-product-archive");
    const actor = useStorageAccessScope("portal-query-actor");
@@ -1364,6 +1531,20 @@ index 24f8002e7..5982a6581 100644
 +    (prefixes.includes(String(q.queryKey[0])) && q.queryKey.at(-2) === actorScope) ||
 +    (["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === deliveryScope) });
 +}
+diff --git a/src/lib/catalogo/tenantCatalogRoots.ts b/src/lib/catalogo/tenantCatalogRoots.ts
+index bf8f8f9d4..824f706d9 100644
+--- a/src/lib/catalogo/tenantCatalogRoots.ts
++++ b/src/lib/catalogo/tenantCatalogRoots.ts
+@@ -101,7 +101,8 @@ export async function replaceTenantFormulacoes(
+   const { data, error } = await client.rpc("tenant_catalog_formulacoes_replace", {
+     p_produto_id: produtoId, p_items: clean, p_expected_produto_updated_at: expectedProdutoUpdatedAt, p_idempotency_key: idempotencyKey,
+   });
+-  if (error) throw new Error(tenantCatalogErrorMessage(error.code, error.message));
++  // `serverCode` marca uma resposta explícita do servidor (recusa definitiva); exceções sem código são incertas.
++  if (error) throw Object.assign(new Error(tenantCatalogErrorMessage(error.code, error.message)), { serverCode: error.code || null });
+   const d = data as Record<string, unknown> | null;
+   if (!d || d.ok !== true || d.produto_id !== produtoId || typeof d.updated_at !== "string" || d.items !== clean.length) {
+     throw new Error("Resposta do servidor inválida");
 diff --git a/src/lib/permissions.ts b/src/lib/permissions.ts
 index dfbb41051..62f7004a6 100644
 --- a/src/lib/permissions.ts
@@ -1924,10 +2105,10 @@ index 4242ee9fb..73d11a139 100644
  import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
 diff --git a/src/test/catalogo/unifiedProducts.realClient.test.tsx b/src/test/catalogo/unifiedProducts.realClient.test.tsx
 new file mode 100644
-index 000000000..9bd3d2648
+index 000000000..e8151ba6d
 --- /dev/null
 +++ b/src/test/catalogo/unifiedProducts.realClient.test.tsx
-@@ -0,0 +1,327 @@
+@@ -0,0 +1,458 @@
 +import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 +import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 +import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -2064,7 +2245,9 @@ index 000000000..9bd3d2648
 +  const { result } = renderHook(useSaveTenantProduct, { wrapper });
 +  await act(async () => {
 +    const output = await result.current.mutateAsync({ id: "p1", expectedUpdatedAt: stamp, draft: { nome: "Solo" }, composition: [{ microrganismo_id: "m1", volume_ml: 200, concentracao: 3, unidade: "mL" }] });
-+    expect(output.compositionError).toMatch(/Produto salvo; composição não confirmada/);
++    // Expectativa revisada 03/11: recusa explícita do servidor passa a ser classificada como definitiva (não incerta).
++    expect(output.compositionError).toMatch(/Produto salvo; o servidor recusou a composição/);
++    expect(output.compositionFailure).toBe("definitive");
 +  });
 +  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toMatchObject({ p_produto_id: "p1", p_expected_produto_updated_at: stamp, p_items: [{ microrganismo_id: "m1", volume_ml: 200, concentracao: 3, unidade: "mL" }] });
 +  expect(state.fetch).toHaveBeenCalledTimes(2);
@@ -2147,7 +2330,8 @@ index 000000000..9bd3d2648
 +  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
 +  expect(state.rows).toHaveLength(1);
 +});
-+it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da composição mantém ACK/componentes e replay único", async failure => {
++// "recusa definitiva" foi movida para o teste dedicado de saída segura (não oferece mais replay idêntico).
++it.each(["resposta perdida"])("novo produto com %s da composição mantém ACK/componentes e replay único", async failure => {
 +  client(); let attempts = 0; let compositionCommits = 0; const compositionReceipts = new Set<string>(); const receipts = new Map<string, typeof ack>();
 +  state.fetch.mockImplementation(async (url, init) => {
 +    const name = String(url).split("/rpc/")[1];
@@ -2255,7 +2439,134 @@ index 000000000..9bd3d2648
 +  expect(qc.getQueryState(["receivables", actorScope, "request-A"])?.isInvalidated).toBe(false);
 +  ["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].forEach(p => { expect(qc.getQueryState([p, deliveryScope, deliveryScope])?.isInvalidated).toBe(true); expect(qc.getQueryState([p, "foreign", "foreign"])?.isInvalidated).toBe(false); });
 +});
-\ No newline at end of file
++function mountNewProductFlow(opts: { composition: () => Response | Promise<Response>; failListAfterPartial?: number }) {
++  const receipts = new Map<string, typeof ack>(); const ctl = { failList: 0, partial: false, inserts: 0 };
++  state.fetch.mockImplementation(async (url, init) => {
++    const name = String(url).split("/rpc/")[1];
++    if (name === "tenant_product_list") {
++      if (ctl.partial && ctl.failList > 0) { ctl.failList--; return json({ code: "XX000", message: "read_failed" }, 500); }
++      return json(state.rows);
++    }
++    if (name === "tenant_product_save") {
++      const args = JSON.parse(init.body);
++      if (!receipts.has(args.p_idempotency_key)) {
++        if (args.p_product_id === null) {
++          ctl.inserts++; state.rows.push({ id: "p1", owner_organization_id: state.tenant, ativo: true, tipo: "solo", updated_at: stamp, ...args.p_payload });
++          receipts.set(args.p_idempotency_key, ack);
++        } else {
++          expect(args.p_expected_updated_at).toBe(state.rows[0].updated_at);
++          Object.assign(state.rows[0], args.p_payload, { updated_at: "2026-11-03T02:00:00Z" });
++          receipts.set(args.p_idempotency_key, { product_id: "p1", updated_at: "2026-11-03T02:00:00Z", replayed: false });
++        }
++      }
++      return json(receipts.get(args.p_idempotency_key));
++    }
++    if (name === "tenant_catalog_formulacoes_replace") { ctl.partial = true; ctl.failList = opts.failListAfterPartial ?? 0; return opts.composition(); }
++    if (name) throw new Error(`RPC inesperada ${name}`);
++    if (String(url).includes("/microrganismos?")) return json([{ id: "m1", nome: "Bacillus preservado", codigo: "BIO-1", dose_ml_ha: 200 }]);
++    return json([]);
++  });
++  return ctl;
++}
++async function submitNewWithComponent() {
++  const view = render(<ProdutosTab />, { wrapper });
++  await screen.findByText("Nenhum produto encontrado");
++  fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
++  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial" } });
++  fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
++  fireEvent.click(await screen.findByRole("button", { name: "+ Microrganismo" }));
++  fireEvent.click(screen.getByRole("combobox", { name: "" }));
++  fireEvent.click(await screen.findByRole("option", { name: /Bacillus preservado/ }));
++  fireEvent.keyDown(screen.getByRole("option", { name: /Bacillus preservado/ }), { key: "Escape" });
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
++  return view;
++}
++
++it("recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca", async () => {
++  client();
++  const ctl = mountNewProductFlow({ composition: () => json({ code: "42501", message: "tenant_catalog_ref_foreign" }, 403) });
++  await submitNewWithComponent();
++  const back = await screen.findByRole("button", { name: "Reconhecer e voltar à edição" });
++  expect(screen.queryByRole("button", { name: "Reconciliar composição" })).toBeNull();
++  expect(screen.getByRole("alert").textContent).toContain("recusou esta composição de forma definitiva");
++  expect(screen.getByRole("alert").textContent).toContain("p1");
++  const exported = JSON.parse((screen.getByLabelText("Rascunho exportável") as HTMLTextAreaElement).value);
++  expect(exported).toMatchObject({ produto_id: "p1", versao_confirmada_produto: stamp, resultado_composicao: "recusada_pelo_servidor",
++    composicao_rascunho: [{ microrganismo_id: "m1", volume_ml: 200, nome: "Bacillus preservado" }] });
++  fireEvent.click(screen.getByRole("button", { name: "Close" }));
++  expect(screen.getByRole("dialog")).toBeTruthy();
++  // 1ª leitura fresca falha: nada é reconhecido, estado parcial e ID preservados.
++  await waitFor(() => expect(state.fetch.mock.calls.filter(([u]) => String(u).endsWith("tenant_product_list")).length).toBeGreaterThan(1));
++  const listsBefore = state.fetch.mock.calls.filter(([u]) => String(u).endsWith("tenant_product_list")).length;
++  ctl.failList = 1;
++  fireEvent.click(back);
++  await waitFor(() => expect(state.fetch.mock.calls.filter(([u]) => String(u).endsWith("tenant_product_list")).length).toBe(listsBefore + 1));
++  await waitFor(() => expect(screen.getByRole("button", { name: "Reconhecer e voltar à edição" }).matches(":disabled")).toBe(false));
++  expect(screen.getByRole("alert").textContent).toContain("p1");
++  expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
++  // 2ª leitura confirma o produto: edição do MESMO produto com versão fresca.
++  fireEvent.click(screen.getByRole("button", { name: "Reconhecer e voltar à edição" }));
++  await screen.findByRole("heading", { name: "Editar produto" });
++  expect(screen.queryByRole("alert")).toBeNull();
++  fireEvent.mouseDown(screen.getByRole("tab", { name: "Identificação" }), { button: 0, ctrlKey: false });
++  expect(((await screen.findByLabelText("Nome Comercial *")) as HTMLInputElement).value).toBe("Novo parcial");
++  expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
++  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial revisado" } });
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
++  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
++  const saves = rpcCalls("tenant_product_save");
++  expect(saves).toHaveLength(2);
++  expect(saves[1]).toMatchObject({ p_product_id: "p1", p_expected_updated_at: stamp });
++  expect(saves[1].p_idempotency_key).not.toBe(saves[0].p_idempotency_key);
++  expect(rpcCalls("tenant_catalog_formulacoes_replace")).toHaveLength(1);
++  expect(ctl.inserts).toBe(1); expect(state.rows).toHaveLength(1);
++  expect(state.rows[0].nome).toBe("Novo parcial revisado");
++});
++
++it("resposta perdida: saída explícita mantém pendência/chaves, bloqueia novas intenções e retomada faz replay único", async () => {
++  client(); let attempts = 0; let commits = 0; const keys = new Set<string>();
++  const ctl = mountNewProductFlow({ composition: async () => {
++    const args = rpcCalls("tenant_catalog_formulacoes_replace").at(-1);
++    if (!keys.has(args.p_idempotency_key)) { keys.add(args.p_idempotency_key); commits++; }
++    if (++attempts === 1) throw new Error("ACK perdido");
++    return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
++  } });
++  await submitNewWithComponent();
++  await screen.findByRole("button", { name: "Reconciliar composição" });
++  expect(screen.queryByRole("button", { name: "Reconhecer e voltar à edição" })).toBeNull();
++  expect(JSON.parse((screen.getByLabelText("Rascunho exportável") as HTMLTextAreaElement).value).resultado_composicao).toBe("nao_confirmada");
++  fireEvent.click(screen.getByRole("button", { name: "Sair mantendo pendência" }));
++  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
++  expect(screen.getByRole("status").textContent).toContain("p1");
++  expect(screen.getByRole("button", { name: "Novo produto" }).matches(":disabled")).toBe(true);
++  expect(screen.getByRole("button", { name: "Editar" }).matches(":disabled")).toBe(true);
++  fireEvent.click(screen.getByRole("button", { name: "Retomar reconciliação" }));
++  await screen.findByRole("button", { name: "Reconciliar composição" });
++  expect(screen.getByRole("alert").textContent).toContain("Bacillus preservado · 200 mL");
++  fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
++  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
++  expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
++  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
++  expect(ctl.inserts).toBe(1); expect(commits).toBe(1); expect(state.rows).toHaveLength(1);
++  expect(screen.queryByRole("status")).toBeNull();
++});
++
++it("troca de escopo descarta rascunho/exportação pendentes sem reutilizar em outro tenant", async () => {
++  client();
++  mountNewProductFlow({ composition: async () => { throw new Error("ACK perdido"); } });
++  const view = await submitNewWithComponent();
++  await screen.findByRole("button", { name: "Reconciliar composição" });
++  fireEvent.click(screen.getByRole("button", { name: "Sair mantendo pendência" }));
++  await screen.findByRole("button", { name: "Retomar reconciliação" });
++  const savesBefore = rpcCalls("tenant_product_save").length;
++  state.tenant = "org-B"; state.epoch = 1; state.rows = [];
++  view.rerender(<ProdutosTab />); // mesma montagem: o efeito de escopo deve limpar o estado retido
++  await waitFor(() => expect(screen.queryByRole("button", { name: "Retomar reconciliação" })).toBeNull());
++  expect(screen.queryByRole("button", { name: "Retomar reconciliação" })).toBeNull();
++  expect(screen.queryByLabelText("Rascunho exportável")).toBeNull();
++  expect(screen.getByRole("button", { name: "Novo produto" }).matches(":disabled")).toBe(false);
++  expect(rpcCalls("tenant_product_save")).toHaveLength(savesBefore);
++});
 diff --git a/src/test/protocolos/base-tecnica.rename.test.ts b/src/test/protocolos/base-tecnica.rename.test.ts
 index a42136870..75bf9fcf2 100644
 --- a/src/test/protocolos/base-tecnica.rename.test.ts
