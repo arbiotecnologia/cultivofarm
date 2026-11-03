@@ -1,0 +1,394 @@
+[
+ {
+  "id": "PRE-1",
+  "scenario": "PRE aprova estado sintético coerente (READ ONLY)",
+  "expected": "OK",
+  "actual": "OK",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "PRE-2",
+  "scenario": "FK real não mapeada aborta PRE",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "PRE-3",
+  "scenario": "instalação parcial detectada",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "PRE-4",
+  "scenario": "índice único por expressão aborta (não reescrito às cegas)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "PRE-5",
+  "scenario": "dependência canônica ausente aborta",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-0",
+  "scenario": "referência sem tenant (campanha) aborta migração inteira",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-0b",
+  "scenario": "aborto não deixa coluna/mapa (transação única)",
+  "expected": "0|false",
+  "actual": "0|false",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-1",
+  "scenario": "migração transacional completa",
+  "expected": "OK",
+  "actual": "OK",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-2",
+  "scenario": "cópias independentes: P1×2 (A,F), P3×1 (F), P4×2; sem global",
+  "expected": "5|0",
+  "actual": "5|0",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-3",
+  "scenario": "produto sem uso não recebe dono inventado (removido e registrado)",
+  "expected": "1",
+  "actual": "1",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-4",
+  "scenario": "item do pedido do parceiro FSF aponta para cópia da AR Bio (vendedor)",
+  "expected": "aaaaaaaa-0000-0000-0000-00000000000a",
+  "actual": "aaaaaaaa-0000-0000-0000-00000000000a",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-5",
+  "scenario": "lote/estoque do tenant FSF apontam para cópia FSF",
+  "expected": "ffffffff-0000-0000-0000-00000000000f|ffffffff-0000-0000-0000-00000000000f",
+  "actual": "ffffffff-0000-0000-0000-00000000000f|ffffffff-0000-0000-0000-00000000000f",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-6",
+  "scenario": "A e F com cópias distintas do mesmo produto antigo",
+  "expected": "2",
+  "actual": "2",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-7",
+  "scenario": "perfil fiscal copiado por tenant (1 ativo por cópia)",
+  "expected": "2",
+  "actual": "2",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-8",
+  "scenario": "componente da formulação no mesmo tenant do produto pai",
+  "expected": "0",
+  "actual": "0",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-9",
+  "scenario": "microrganismo global: referência anulada e registrada",
+  "expected": "0|1",
+  "actual": "0|1",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-10",
+  "scenario": "triggers restaurados exatamente (selado O, desligado D)",
+  "expected": "O|D",
+  "actual": "O|D",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-11",
+  "scenario": "imutabilidade do item selado volta a valer",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-12",
+  "scenario": "códigos únicos agora por tenant (BX existe em A e F)",
+  "expected": "2",
+  "actual": "2",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-13",
+  "scenario": "ownership NOT NULL",
+  "expected": "NO",
+  "actual": "NO",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-14",
+  "scenario": "políticas legadas substituídas",
+  "expected": "tenant_produtos_select",
+  "actual": "tenant_produtos_select",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "ACL-1",
+  "scenario": "admin A vê só produtos da A",
+  "expected": "2|0",
+  "actual": "2|0",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "ACL-2",
+  "scenario": "usuário FSF (inclusive comprador B2B) não lê catálogo da AR Bio diretamente",
+  "expected": "0",
+  "actual": "0",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "ACL-3",
+  "scenario": "Superadmin sem tenant: zero linhas (sem bypass global)",
+  "expected": "0",
+  "actual": "0",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "ACL-4",
+  "scenario": "anon negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "ACL-5",
+  "scenario": "escrita direta negada (só RPC)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "ACL-6",
+  "scenario": "escritor do catálogo global fechado no servidor",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "ACL-7",
+  "scenario": "descendente (perfil fiscal) restrito ao tenant",
+  "expected": "1",
+  "actual": "0",
+  "status": "FAIL",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-1",
+  "scenario": "admin A cria produto próprio",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-2",
+  "scenario": "mesmo nome em outro tenant permitido",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-3",
+  "scenario": "duplicado no mesmo tenant (normalizado) negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-4",
+  "scenario": "replay mesma chave devolve recibo",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-5",
+  "scenario": "mesma chave com payload diferente negada",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-6",
+  "scenario": "outro tenant não altera (não encontrado)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-7",
+  "scenario": "CAS obsoleto => PT409",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-8",
+  "scenario": "CAS ausente => PT409",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-9",
+  "scenario": "tenant no payload proibido",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-10",
+  "scenario": "valor negativo negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-11",
+  "scenario": "edição com CAS correto",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-12",
+  "scenario": "arquivamento com CAS",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-13",
+  "scenario": "lista padrão oculta arquivados",
+  "expected": "2",
+  "actual": "2",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-14",
+  "scenario": "lista com arquivados",
+  "expected": "3",
+  "actual": "3",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-15",
+  "scenario": "Superadmin sem tenant negado (sem bypass)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-16",
+  "scenario": "membro sem permissão de gestão negado",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-17",
+  "scenario": "anon sem EXECUTE",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-18",
+  "scenario": "dono imutável mesmo para owner/service",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-19",
+  "scenario": "auditoria imutável",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RPC-20",
+  "scenario": "auditoria registra create/update/archive",
+  "expected": "archive,create,update",
+  "actual": "archive,create,update",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "MIG-15",
+  "scenario": "reexecução bloqueada pelo PRE (sem dupla migração)",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"
+ }
+]

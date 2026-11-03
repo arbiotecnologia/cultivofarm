@@ -1,0 +1,67 @@
+{
+  "level": "DISPOSABLE_PG_COMPONENT_NOT_E2E",
+  "synthetic": [
+    "Auth/h15/staff",
+    "fiscal origin",
+    "accounting gate",
+    "settings harness"
+  ],
+  "checks": [
+    {
+      "id": "CFG-FIX-001",
+      "scenario": "NULL/nonfinite configuration credit_limit=NULL",
+      "expected": "limite_nao_definido",
+      "actual": "limite_nao_definido",
+      "status": "PASS",
+      "level": "DISPOSABLE_PG_SYNTHETIC_AUTH"
+    },
+    {
+      "id": "CFG-FIX-002",
+      "scenario": "NULL/nonfinite configuration credit_limit='NaN'",
+      "expected": "limite_nao_definido",
+      "actual": "limite_nao_definido",
+      "status": "PASS",
+      "level": "DISPOSABLE_PG_SYNTHETIC_AUTH"
+    },
+    {
+      "id": "CFG-FIX-003",
+      "scenario": "NULL/nonfinite configuration block_if_overdue=NULL",
+      "expected": "configuracao_financeira_incompleta",
+      "actual": "configuracao_financeira_incompleta",
+      "status": "PASS",
+      "level": "DISPOSABLE_PG_SYNTHETIC_AUTH"
+    },
+    {
+      "id": "CFG-FIX-004",
+      "scenario": "NULL/nonfinite configuration overdue_tolerance_days=NULL",
+      "expected": "configuracao_financeira_incompleta",
+      "actual": "configuracao_financeira_incompleta",
+      "status": "PASS",
+      "level": "DISPOSABLE_PG_SYNTHETIC_AUTH"
+    },
+    {
+      "id": "CFG-FIX-005",
+      "scenario": "NULL/nonfinite configuration credit_limit_action=NULL",
+      "expected": "configuracao_financeira_incompleta",
+      "actual": "configuracao_financeira_incompleta",
+      "status": "PASS",
+      "level": "DISPOSABLE_PG_SYNTHETIC_AUTH"
+    },
+    {
+      "id": "CFG-FIX-006",
+      "scenario": "NULL/nonfinite configuration credit_limit_action='unknown'",
+      "expected": "configuracao_financeira_incompleta",
+      "actual": "configuracao_financeira_incompleta",
+      "status": "PASS",
+      "level": "DISPOSABLE_PG_SYNTHETIC_AUTH"
+    },
+    {
+      "id": "CFG-FIX-007",
+      "scenario": "configured partner remains available",
+      "expected": "ALLOWED",
+      "actual": "ALLOWED",
+      "status": "PASS",
+      "level": "DISPOSABLE_PG_SYNTHETIC_AUTH"
+    }
+  ]
+}

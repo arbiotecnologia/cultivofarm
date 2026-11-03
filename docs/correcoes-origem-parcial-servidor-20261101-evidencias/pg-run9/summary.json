@@ -1,0 +1,12 @@
+{
+  "pass": 67,
+  "fail": 0,
+  "synthetic": [
+    "Auth/h15/roles",
+    "pricing and journal",
+    "sealed order/items",
+    "fiscal authorization/cancellation dependency bypass in harness only",
+    "calendar Paracatu+MG/national synthetic"
+  ],
+  "hosted": "NOT_RUN"
+}

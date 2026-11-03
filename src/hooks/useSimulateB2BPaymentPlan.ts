@@ -1,7 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { requirePaymentChoice, requirePaymentCapability, paymentChoicesEqual, type PaymentChoice } from '@/lib/comercial/paymentContract';
+import { useAuth } from './useAuth';
+import { useStorageAccessScope } from './useStorageAccessScope';
 
 export interface SimulateInput {
+  payment_choice?: PaymentChoice;
   partner_id: string;
   payment_plan_id: string;
   items: Array<{
@@ -39,6 +43,15 @@ export interface SimulateLine {
 }
 
 export interface SimulateResult {
+  payment_choice?: PaymentChoice;
+  /** Preview only; final fiscal dates are anchored to the authorized document's issue date. */
+  schedule_anchor?: {
+    kind: 'PROVISIONAL_ISSUE_DATE';
+    date: string;
+    calendar_version: string;
+    fiscal_due_dates_final: false;
+  };
+  first_due_date?: string | null;
   partner_id: string;
   /** Modo de precificação autoritativo do plano selecionado. */
   pricing_mode: PricingMode;
@@ -78,15 +91,30 @@ export interface SimulateResult {
 
 
 export function useSimulateB2BPaymentPlan() {
+  const { user, profile } = useAuth();
+  const scope = useStorageAccessScope('partner-payment-simulation');
   return useMutation({
     mutationFn: async (input: SimulateInput): Promise<SimulateResult> => {
+      const current = scope.capture();
+      let choice: PaymentChoice | undefined;
+      if (input.payment_choice) {
+        choice = requirePaymentChoice(input.payment_choice);
+        if (!current() || !user?.id || !profile?.organization_id) throw new Error('payment_contract_unavailable');
+        const capability = await (supabase as any).rpc('partner_payment_condition_capability_v1', { p_partner_id: input.partner_id });
+        if (capability.error || !current()) throw new Error('payment_contract_unavailable');
+        requirePaymentCapability(capability.data, user.id, profile.organization_id, input.partner_id);
+      }
       const { data, error } = await (supabase.rpc as any)("simulate_b2b_payment_plan_secure", {
         p_partner_id: input.partner_id,
         p_payment_plan_id: input.payment_plan_id,
         p_items: input.items,
         p_first_due_date: input.first_due_date ?? null,
+        ...(choice ? { p_payment_choice: choice } : {}),
       });
       if (error) throw error;
+      if (choice && (!current() || !paymentChoicesEqual(data?.payment_choice, choice) || data?.partner_id !== input.partner_id || data?.payment_plan?.id !== input.payment_plan_id
+        || (data?.organization_id != null && data.organization_id !== profile?.organization_id)
+        || (data?.actor_id != null && data.actor_id !== user?.id))) throw new Error('payment_simulation_ack_unconfirmed');
       return data as SimulateResult;
     },
   });

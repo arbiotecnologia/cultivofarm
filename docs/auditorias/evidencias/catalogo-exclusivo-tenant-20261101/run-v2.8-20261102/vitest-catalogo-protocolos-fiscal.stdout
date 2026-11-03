@@ -1,0 +1,2313 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/fiscal/fase3_11.static.test.ts (36 tests) 29ms
+ ✓ src/test/fiscal/fase3_16.static.test.ts (58 tests) 32ms
+ ✓ src/test/catalogo/tenant-catalog-ownership.test.ts (41 tests) 28ms
+ ✓ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (44 tests) 317ms
+ ✓ src/test/fiscal/fase3_8.static.test.ts (81 tests) 137ms
+ ✓ src/test/fiscal/fase3_17.static.test.ts (38 tests) 35ms
+stderr | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same confirmed probes retain the real modal DOM and cart without profile reload/cache reset
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/tenant-catalog-owned-flow.test.tsx (13 tests) 5821ms
+   ✓ culturas próprias na aba existente > criar, ver, reabrir/editar, arquivar, ver arquivado e restaurar sem recarregar  1160ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > produto próprio aparece, reabre com detalhe e persiste edição  713ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > microrganismo próprio aparece, reabre com detalhe e persiste edição  533ms
+   ✓ salvamento único de identificação/composição > reabre declaração real e salva só composição, uma chamada, permitindo limpeza explícita  763ms
+   ✓ salvamento único de identificação/composição > falha conjunta não grava metadata; retry idêntico conserva chave e edição gera outra  1513ms
+   ✓ salvamento único de identificação/composição > duplo clique não duplica e resposta antiga não aplica callbacks após AR→FSF→AR  350ms
+ ✓ src/test/fiscal/sinief49/staging/artifacts.static.test.ts (43 tests) 32ms
+ ✓ src/test/fiscal/fase3_5.static.test.ts (66 tests) 34ms
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same-identity token refresh hides old authority then restores cart choices and modal from fresh reads
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > effective revocation retires modal/cart; observed restoration never revives draft
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > real tenant change retires modal and cart
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx (14 tests) 9695ms
+   ✓ same confirmed probes retain the real modal DOM and cart without profile reload/cache reset  1245ms
+   ✓ same-vector context/partner/entitlement refetches preserve the actual modal and cart without cache clearing  774ms
+   ✓ a confirmed missing feature switches to Cliente comercial without a transport error  735ms
+   ✓ a confirmed missing capability switches to Cliente comercial without a transport error  664ms
+   ✓ focus/visibility revalidation still hides uncertain authority, even when the eventual vector is unchanged  663ms
+   ✓ BAC2-like missing volume stays blocked while a 1 L item uses the canonical dialog  329ms
+   ✓ deadline retires authority and a late healthy response cannot resurrect the modal  583ms
+   ✓ offline retires authority and a late healthy response cannot resurrect the modal  609ms
+   ✓ same-identity token refresh hides old authority then restores cart choices and modal from fresh reads  805ms
+   ✓ effective revocation retires modal/cart; observed restoration never revives draft  657ms
+   ✓ real partner change retires modal and cart  642ms
+   ✓ real tenant change retires modal and cart  840ms
+   ✓ observed A-B-A partner transitions never resurrect the A cart or modal  893ms
+stderr | src/test/fiscal/sinief49/phase32.test.tsx > Fase 3.2 · estados do catálogo no ProdutoPicker > exibe 'Buscando…' quando carregando
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at /dev-server/src/components/ui/badge.tsx:22:65
+    at p
+    at ItemProfileStatusLine (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:2275:34)
+    at div
+    at div
+    at div
+    at div
+    at /dev-server/src/components/ui/card.tsx:47:71
+    at div
+    at /dev-server/src/components/ui/card.tsx:7:64
+    at fieldset
+    at div
+    at SinefOperationsPanel (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:76:33)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+ ✓ src/test/fiscal/sinief49/phase32.test.tsx (17 tests) 1481ms
+ ✓ src/test/fiscal/fase3_7.static.test.ts (64 tests) 31ms
+ ✓ src/test/fiscal/fase3_9.static.test.ts (38 tests) 186ms
+ ✓ src/test/fiscal/fase3_4.static.test.ts (45 tests) 36ms
+ ✓ src/test/fiscal/verify-fiscal-types.test.ts (16 tests) 42ms
+stderr | src/test/fiscal/fase3_20.unified_list.ui.test.tsx > FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21) > existing product drawer saves an empty draft without guessed tax codes
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_20.unified_list.ui.test.tsx (11 tests) 1226ms
+   ✓ FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21) > existing product drawer saves an empty draft without guessed tax codes  507ms
+stderr | src/test/catalogo/ownerCatalogFilters.session.test.tsx > ready=true with pending query retains only filters, guarded=false
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_15.static.test.ts (24 tests) 37ms
+stderr | src/test/catalogo/ownerCatalogFilters.session.test.tsx > clears role changes during ready=true/pending even when old context returns
+No routes matched location "/sem-permissao" 
+No routes matched location "/sem-permissao" 
+No routes matched location "/sem-permissao" 
+
+ ✓ src/test/fiscal/fase3_3.static.test.ts (43 tests) 32ms
+ ✓ src/test/catalogo/ownerCatalogFilters.session.test.tsx (17 tests) 2875ms
+   ✓ ready=true with pending query retains only filters, guarded=false  454ms
+ ✓ src/test/fiscal/h7d.cofreSemSenha.test.ts (22 tests) 19ms
+ ✓ src/test/fiscal/companyMissingFields.test.ts (17 tests) 18ms
+ ✓ src/test/fiscal/fase_sinief1.migration.static.test.ts (14 tests) 27ms
+ ✓ src/test/fiscal/nfeXmlEngine.test.ts (26 tests) 38ms
+ ✓ src/test/fiscal/fase3_6.static.test.ts (49 tests) 25ms
+ ✓ src/test/catalogo/tenant-catalog-visibility.test.ts (21 tests) 36ms
+ ✓ src/test/fiscal/h7g.vinculoEvento.test.ts (23 tests) 21ms
+ ✓ src/test/fiscal/xmlEngineXercesRuntime.test.ts (14 tests) 593ms
+   ✓ validação normativa real contra o XSD oficial da NF-e > rejeita XML deliberadamente inválido (raiz inexistente)  315ms
+ ✓ src/test/catalogo/platformCatalogLabels.test.tsx (11 tests) 427ms
+stderr | src/test/catalogo/partnerOutletNovoPedido.test.tsx > real layout/guard/outlet/NovoPedido reaches its real catalogue hook with the parent's partner
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/h7f.transporteSefaz.test.ts (26 tests) 21ms
+ ✓ src/test/catalogo/partnerOutletNovoPedido.test.tsx (7 tests) 1612ms
+   ✓ real layout/guard/outlet/NovoPedido reaches its real catalogue hook with the parent's partner  544ms
+   ✓ revoked creation capability removes the real cart subtree without enabling another writer  363ms
+   ✓ real route replaces partner then tenant through current canonical projection without old product rows  450ms
+ ✓ src/test/fiscal/fase_h5_a.connectionsReadiness.test.ts (17 tests) 14ms
+ ✓ src/test/fiscal/sinief49/formAdapter.test.ts (13 tests) 19ms
+ ✓ src/test/catalogo/tenant-visibility-cache.integration.test.tsx (6 tests) 414ms
+ ✓ src/test/catalogo/c1bCatalog.test.tsx (16 tests) 1379ms
+   ✓ C1B inactive candidate canonical readers > actual grid consumes RPC projection, filters families and never mounts internal reader  483ms
+stderr | src/test/fiscal/fase3_1.ui.test.tsx > FiscalEmpresa — flag OFF (default) > admin vê estado de preparação, sem formulário
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase3_19_2.audit.test.ts (27 tests) 23ms
+ ✓ src/test/fiscal/fase3_1.ui.test.tsx (18 tests) 721ms
+   ✓ FiscalEmpresa — flag ON > administrador vê formulário editável e botão Salvar  301ms
+ ✓ src/test/fiscal/fase3_0_2a.static.test.ts (23 tests) 21ms
+ ✓ src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx (14 tests) 425ms
+ ✓ src/test/fiscal/fase3_19_4.audit.test.tsx (19 tests) 433ms
+ ✓ src/test/fiscal/fase3_10.orchestrator.test.ts (32 tests) 16ms
+ ✓ src/test/fiscal/productFiscalProfiles.session.test.tsx (10 tests) 415ms
+ ✓ src/test/fiscal/rtcOperationConcurrency.test.tsx (32 tests) 2037ms
+ ✓ src/test/fiscal/fase3_2.static.test.ts (34 tests) 25ms
+ ✓ src/test/fiscal/cnpjLookup.test.ts (17 tests) 32ms
+ ✓ src/test/fiscal/regulatorioContencao.test.tsx (18 tests) 621ms
+ ✓ src/test/fiscal/rtcCompanyCasHttp409.test.tsx (13 tests) 764ms
+ ✓ src/test/fiscal/nfeProcClosure.test.ts (18 tests) 20ms
+stderr | src/test/fiscal/CertificadoValidadeBanner.test.tsx > CertificadoValidadeBanner > sem companySettingsId => não renderiza
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/CertificadoValidadeBanner.test.tsx (13 tests) 148ms
+stderr | src/test/catalogo/tenant-visibility-toggle.test.tsx > TenantVisibilityToggle > envia a intenção congelada na abertura e exige motivo
+Warning: An update to TenantVisibilityToggle inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to TenantVisibilityToggle inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to TenantVisibilityToggle inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+
+stderr | src/test/catalogo/tenant-visibility-toggle.test.tsx > TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova
+Warning: An update to TenantVisibilityToggle inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+
+stderr | src/test/catalogo/tenant-visibility-toggle.test.tsx > TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+
+stderr | src/test/catalogo/tenant-visibility-toggle.test.tsx > TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova
+Warning: An update to TenantVisibilityToggle inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+
+stderr | src/test/catalogo/tenant-visibility-toggle.test.tsx > TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+
+stderr | src/test/catalogo/tenant-visibility-toggle.test.tsx > TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova
+Warning: An update to TenantVisibilityToggle inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+
+stderr | src/test/catalogo/tenant-visibility-toggle.test.tsx > TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:93:64
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:42:13
+    at /dev-server/src/components/ui/alert-dialog.tsx:14:78
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to FocusScope inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to Presence inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+Warning: An update to DismissableLayer inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:7:13)
+    at file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:53:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at AlertDialogPortal (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:34:11)
+    at /dev-server/src/components/ui/alert-dialog.tsx:24:78
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at AlertDialog (file:///dev-server/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:18:11)
+    at TenantVisibilityToggle (/dev-server/src/components/protocolos/TenantVisibilityControls.tsx:80:35)
+
+ ✓ src/test/catalogo/tenant-visibility-toggle.test.tsx (9 tests) 1203ms
+   ✓ TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova  481ms
+ ✓ src/test/fiscal/faseF2.regulatorio.test.ts (18 tests) 19ms
+ ✓ src/test/protocolos/fichas-cat09-cat10.test.ts (17 tests) 23ms
+stderr | src/test/fiscal/sinief49/ui.test.tsx > SinefOperationsPanel · visibilidade por papel > administrador vê o painel
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at /dev-server/src/components/ui/badge.tsx:22:65
+    at p
+    at ItemProfileStatusLine (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:2275:34)
+    at div
+    at div
+    at div
+    at div
+    at /dev-server/src/components/ui/card.tsx:47:71
+    at div
+    at /dev-server/src/components/ui/card.tsx:7:64
+    at fieldset
+    at div
+    at SinefOperationsPanel (/dev-server/src/components/fiscal/documentos/sinief49/SinefOperationsPanel.tsx:76:33)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+ ✓ src/test/fiscal/fiscal_labels_pt_br.test.ts (45 tests) 29ms
+ ✓ src/test/fiscal/sinief49/ui.test.tsx (11 tests) 404ms
+ ✓ src/test/fiscal/xmlEngineXsdSelftest.test.ts (14 tests) 17ms
+ ✓ src/test/fiscal/sinief49/sinief20.test.ts (13 tests) 16ms
+ ✓ src/test/fiscal/fase3_1.static.test.ts (35 tests) 32ms
+ ✓ src/test/fiscal/fase3_4.icms20.test.ts (10 tests) 14ms
+ ✓ src/test/fiscal/bloco5_service_profile_ibs_cbs.test.ts (13 tests) 14ms
+ ✓ src/test/fiscal/h7e.certHolderCnpj.test.ts (13 tests) 13ms
+ ✓ src/test/catalogo/ficha-ia-contract.test.ts (289 tests) 83ms
+stderr | src/test/fiscal/fiscalProdutos.platformUx.test.tsx > product (global) vs micro (canonical) edit split > administrador: route stays rw for micro; product read-only; micro editable
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fiscalProdutos.platformUx.test.tsx (7 tests) 585ms
+stderr | src/test/fiscal/fase_h4_a3.test.tsx > H4-A3 · Certificado A1 pendente (Central de Homologação) > sem certificado + showAllStates => renderiza pendente sem bloquear
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/fase_h4_a3.test.tsx (7 tests) 122ms
+ ✓ src/test/fiscal/fase_h5_a1.connectionsLinks.test.ts (9 tests) 11ms
+ ✓ src/test/fiscal/fiscalCatalogCombobox.test.tsx (7 tests) 622ms
+ ✓ src/test/catalogo/catalogLabelsPanelFlow.test.tsx (3 tests) 1039ms
+   ✓ painel de rótulos → leitor de exibição (fluxo real) > renomeação confirmada invalida o leitor sem invalidação manual  316ms
+   ✓ painel de rótulos → leitor de exibição (fluxo real) > PT409: sem nova escrita automática e revisão esperada só muda após ação do usuário  563ms
+ ✓ src/test/fiscal/h7m.smokesHomologacao.test.ts (12 tests) 17ms
+ ✓ src/test/fiscal/xmlEngineXsdBundle.test.ts (19 tests) 14ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_3_4.test.ts (17 tests) 14ms
+ ✓ src/test/fiscal/draftSaveCasClient.test.tsx (14 tests) 87ms
+stderr | src/test/catalogo/catalogLabelDisplay.test.tsx > exibição dinâmica de rótulos — leitores autorizados > renomeação na Gestão reflete no leitor após invalidação
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/catalogLabelDisplay.test.tsx (6 tests) 367ms
+ ✓ src/test/catalogo/catalogo-item-drawer.test.tsx (16 tests) 14ms
+ ✓ src/test/fiscal/h14PostAudit.test.ts (11 tests) 216ms
+ ✓ src/test/catalogo/catalogo-fase27e-certificacao-final.test.ts (17 tests) 17ms
+ ✓ src/test/fiscal/fase3_12.static.test.ts (34 tests) 19ms
+stderr | src/test/fiscal/useFiscalFieldFocus.test.tsx > useFiscalFieldFocus > aplica foco quando `campo` está presente e alvo existe, e consome o parâmetro
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/fiscal/useFiscalFieldFocus.test.tsx (9 tests) 126ms
+ ✓ src/test/fiscal/sinief49/crossCutting.test.ts (13 tests) 16ms
+stderr | src/test/catalogo/globalCatalogReadOnly.render.test.tsx > catálogo global somente consulta (render real, Administrador de empresa) > Produtos: lista sem Novo/Excluir e clique na linha não abre edição
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/globalCatalogReadOnly.render.test.tsx (6 tests) 1147ms
+   ✓ catálogo global somente consulta (render real, Administrador de empresa) > Produtos: lista sem Novo/Excluir e clique na linha não abre edição  654ms
+ ✓ src/test/catalogo/h3b-preco-canonico-fichas.test.ts (13 tests) 10ms
+ ✓ src/test/fiscal/invoice_items_state_guard.test.ts (17 tests) 12ms
+ ✓ src/test/fiscal/fase8.xsd.icms20.test.ts (3 tests) 125ms
+ ✓ src/test/catalogo/ficha-ia-client.test.ts (16 tests) 34ms
+ ✓ src/test/fiscal/sinief49/valueReduction.test.ts (6 tests) 11ms
+ ✓ src/test/fiscal/transportPersistenceSafety.test.ts (9 tests) 14ms
+ ✓ src/test/catalogo/catalogo-fase27b-useCatalogoUnificado.test.ts (13 tests) 11ms
+ ✓ src/test/fiscal/h7c.asn1Screen.test.ts (14 tests) 35ms
+ ✓ src/test/fiscal/rpc_financial_document_soft_delete.test.ts (10 tests) 10ms
+ ✓ src/test/fiscal/fase3_19_1.audit.test.ts (10 tests) 15ms
+ ✓ src/test/catalogo/catalogo-fase27d-renderizacao.test.ts (14 tests) 16ms
+ ❯ src/test/catalogo/globalCatalogContainment.test.ts (16 tests | 2 failed) 35ms
+   ✓ contenção de escrita do catálogo global > bloqueia sempre e capacidade de empresa é false 2ms
+   × contenção de escrita do catálogo global > src/hooks/useProductProfile.ts bloqueia antes de gravar 12ms
+     → expected 0 to be greater than 0
+   × contenção de escrita do catálogo global > src/hooks/useMicroorganismProfile.ts bloqueia antes de gravar 2ms
+     → expected 0 to be greater than 0
+   ✓ contenção de escrita do catálogo global > src/hooks/useCatalogSources.ts bloqueia antes de gravar 1ms
+   ✓ contenção de escrita do catálogo global > src/hooks/useCatalogTargetsCrops.ts bloqueia antes de gravar 1ms
+   ✓ contenção de escrita do catálogo global > src/hooks/useCatalogoAlvos.ts bloqueia antes de gravar 0ms
+   ✓ contenção de escrita do catálogo global > src/components/protocolos/CatalogoVolumesDialog.tsx bloqueia antes de gravar 1ms
+   ✓ contenção de escrita do catálogo global > src/components/visita/ProblemaSelector.tsx bloqueia antes de gravar 0ms
+   ✓ contenção de escrita do catálogo global > src/pages/configuracoes/ParametrosCQPage.tsx bloqueia antes de gravar 1ms
+   ✓ contenção de escrita do catálogo global > fichas não oferecem edição e micro removeu caminho B2B-only 1ms
+   ✓ contenção de escrita do catálogo global > RPCs de aprovação/retorno/versões param antes de chamar 1ms
+   ✓ guard Edge Superadmin ativo/readiness > aceita só has_role ativo E is_platform_superadmin 3ms
+   ✓ guard Edge Superadmin ativo/readiness > nega Superadmin inativo/sem readiness mesmo com user_roles 3ms
+   ✓ guard Edge Superadmin ativo/readiness > nega papel tenant e valores não booleanos 1ms
+   ✓ guard Edge Superadmin ativo/readiness > erro de RPC falha fechado 1ms
+   ✓ guard Edge Superadmin ativo/readiness > Edges usam o guard antes de service_role e não usam TECH_ROLES 1ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_2_6.test.ts (15 tests) 10ms
+ ✓ src/test/fiscal/cnpjAlpha.test.ts (13 tests) 17ms
+ ✓ src/test/catalogo/catalogFamilyRead.test.tsx (11 tests) 267ms
+ ✓ src/test/fiscal/fase3_19_5.canonical.test.ts (12 tests) 11ms
+ ✓ src/test/fiscal/fase3_20.migration.static.test.ts (9 tests) 16ms
+ ✓ src/test/fiscal/sinief49/deliveryRefusal.test.ts (6 tests) 13ms
+ ✓ src/test/catalogo/catalogo-fase26f.certificacao.test.ts (12 tests) 12ms
+ ✓ src/test/fiscal/h17Readiness.test.ts (15 tests) 19ms
+ ✓ src/test/fiscal/fase3_21.migration.static.test.ts (8 tests) 9ms
+ ✓ src/test/fiscal/rls/mask.sql.test.ts (2 tests | 1 skipped) 3ms
+ ✓ src/test/fiscal/xmlEngineCertificateStorage.test.ts (20 tests) 12ms
+stderr | src/test/catalogo/c1bFichas.test.tsx > type captured before await survives tab change without switching PDF generators
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/catalogo/c1bFichas.test.tsx (5 tests) 590ms
+ ✓ src/test/protocolos/productTechnicalProfileReadOnly.test.tsx (3 tests) 506ms
+stderr | src/test/fiscal/fase3_16_2c.ui.test.tsx > CertificadoDigitalSecao — modo somente leitura > exibe a seção mesmo sem canManageCertificates
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+
+stderr | src/test/fiscal/fase3_16_2c.ui.test.tsx > CertificadoDigitalSecao — modo somente leitura > não renderiza botões de escrita (revogar / upload / registrar)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+
+stderr | src/test/fiscal/fase3_16_2c.ui.test.tsx > CertificadoDigitalSecao — modo somente leitura > fingerprint é sempre mascarado, nunca renderizado integralmente
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+Warning: An update to OsCertificateCard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OsCertificateCard (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:700:30)
+    at div
+    at div
+    at div
+    at CertificadoDigitalSecao (/dev-server/src/components/fiscal/certificados/CertificadoDigitalSecao.tsx:140:36)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///dev-server/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+    at wrapper (/dev-server/src/test/helpers/renderWithProviders.tsx:28:24)
+
+ ✓ src/test/fiscal/fase3_16_2c.ui.test.tsx (4 tests) 322ms
+ ✓ src/test/fiscal/fase3_20_2.migration.static.test.ts (7 tests) 12ms
+ ✓ src/test/catalogo/h3c-fonte-canonica-preco.test.ts (10 tests) 10ms
+ ✓ src/test/fiscal/h7a.certificateRef.static.test.ts (6 tests) 8ms
+ ✓ src/test/catalogo/catalogo-fase28a-pos-certificacao.test.ts (11 tests) 15ms
+ ✓ src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts (7 tests) 26ms
+ ✓ src/test/catalogo/catalogo-fase27c-listagem-kpis.test.ts (11 tests) 8ms
+ ✓ src/test/fiscal/certificateExpiryStatus.test.ts (10 tests) 13ms
+ ✓ src/test/catalogo/h3-base-tecnica-catalogo.test.ts (9 tests) 12ms
+ ✓ src/test/fiscal/revoke_structural_privileges.test.ts (7 tests) 11ms
+stderr | src/test/fiscal/rls/harness.test.ts > Fase Fiscal 3.0.2-B.1 — Harness RLS > SKIP EXPLÍCITO — staging não provisionado (todas as envs ausentes)
+[fiscal-harness] SKIP: FISCAL_TEST_ENV/FISCAL_TEST_PROJECT_REF/PGURL_STAGING/PGREST_STAGING/PGREST_ANON_KEY/PGREST_SERVICE_ROLE_KEY ausentes — staging não provisionado
+
+ ✓ src/test/fiscal/rls/harness.test.ts (4 tests | 2 skipped) 9ms
+ ✓ src/test/fiscal/h7b.idempotencia.test.ts (9 tests) 11ms
+ ✓ src/test/fiscal/sinief49/staging/guard.test.ts (10 tests) 8ms
+stderr | src/test/catalogo/partnerOutletContext.test.tsx > canonical nested entitlement outlet preserves the exact partner context
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/partnerOutletContext.test.tsx (5 tests) 179ms
+ ✓ src/test/catalogo/catalogo-fase27a-fontes-canonicas.test.ts (14 tests) 14ms
+ ✓ src/test/catalogo/tenant-visibility-sql-candidate.test.ts (9 tests) 10ms
+ ✓ src/test/fiscal/fase3_19_6.canonical.test.ts (16 tests) 9ms
+ ✓ src/test/fiscal/fase3_21.resolver_micro.test.ts (6 tests) 8ms
+ ✓ src/test/fiscal/sinief49/staging/verifier.test.ts (4 tests) 17ms
+ ✓ src/test/fiscal/h7h.matrizStatusGuard.test.ts (14 tests) 9ms
+ ✓ src/test/fiscal/homologacao_customer_picker.test.ts (11 tests) 9ms
+ ✓ src/test/fiscal/fase3_10.static.test.ts (15 tests) 11ms
+ ✓ src/test/protocolos/microrganismos-tab-cat08.test.ts (6 tests) 25ms
+ ✓ src/test/catalogo/tenantExclusiveCatalog.test.ts (8 tests) 13ms
+ ✓ src/test/fiscal/bloco3_labels_pt_br.test.ts (4 tests) 10ms
+ ✓ src/test/fiscal/policyParityDiff.test.ts (6 tests) 11ms
+ ✓ src/test/protocolos/base-tecnica.rename.test.ts (8 tests) 16ms
+ ✓ src/test/protocolos/produtos-tab-cat06-cat07.test.ts (11 tests) 19ms
+ ❯ src/test/fiscal/h7j.deleteGuard.static.test.ts (7 tests | 1 failed) 51ms
+   ✓ H7j — guard de exclusão fiscal > apply cria trigger BEFORE DELETE com código de erro estável 11ms
+   ✓ H7j — guard de exclusão fiscal > guard é SECURITY DEFINER com search_path explícito e menor privilégio 2ms
+   ✓ H7j — guard de exclusão fiscal > revoga TRUNCATE de authenticated nas tabelas do documento fiscal 0ms
+   ✓ H7j — guard de exclusão fiscal > possui rollback, postcheck e runner fail-fast com guard de staging 1ms
+   ✓ H7j — guard de exclusão fiscal > mantém rascunho descartável (sem regressão de fluxo) 0ms
+   ✓ H7j — guard de exclusão fiscal > não referencia o projeto de produção em nenhum artefato H7j 3ms
+   × H7j — guard de exclusão fiscal > binding efetivo do cliente permanece no CultivoFarm autorizado 25ms
+     → expected '// This file is automatically generat…' to contain 'swzpzcwiasxmjutrmvkm'
+ ✓ src/test/fiscal/ownedProductFiscal.test.ts (16 tests) 21ms
+ ✓ src/test/fiscal/sinief49/effectiveSale.test.ts (6 tests) 14ms
+ ✓ src/test/fiscal/mask.test.ts (9 tests) 17ms
+ ✓ src/test/fiscal/sinief49/advancePayment.test.ts (6 tests) 10ms
+stderr | src/test/catalogo/catalogo-errors.test.tsx > consultas atômicas > oculta KPIs na falha parcial e refaz todas as consultas no retry
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/catalogo-errors.test.tsx (11 tests) 267ms
+ ✓ src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx (5 tests) 824ms
+   ✓ serviço global — página real com leitores simulados > administrador apenas consulta e não recebe editor IBS/CBS  385ms
+ ✓ src/test/fiscal/fase3_19_7.parity.test.ts (11 tests) 14ms
+ ✓ src/test/catalogo/formatUnidades.guard.test.ts (86 tests) 49ms
+ ✓ src/test/fiscal/sinief49/stockLoss.test.ts (6 tests) 14ms
+ ✓ src/test/fiscal/h7b.binding.static.test.ts (7 tests) 13ms
+ ✓ src/test/fiscal/fase3_20_2.rpc_associate_microorganism.test.ts (3 tests) 153ms
+ ✓ src/test/fiscal/fiscal_certificates_revoke_privileges.test.ts (5 tests) 10ms
+ ✓ src/test/fiscal/h7.sefazEndpoints.test.ts (9 tests) 19ms
+ ✓ src/test/fiscal/h7k.preflight.static.test.ts (8 tests) 8ms
+ ❯ src/test/fiscal/h7i.ingestaoCertificado.static.test.ts (4 tests | 1 failed) 203ms
+   ✓ H7i — ingestão segura do certificado A1 > gitignore cobre material criptográfico 3ms
+   ✓ H7i — ingestão segura do certificado A1 > nenhum arquivo de certificado está presente na árvore do projeto 179ms
+   ✓ H7i — ingestão segura do certificado A1 > upload trata a senha apenas em memória e nunca a retorna 1ms
+   × H7i — ingestão segura do certificado A1 > binding de frontend permanece no CultivoFarm autorizado 19ms
+     → expected '// This file is automatically generat…' to contain 'https://swzpzcwiasxmjutrmvkm.supabase…'
+ ✓ src/test/fiscal/h7e.corsAllowlist.static.test.ts (6 tests) 17ms
+ ✓ src/test/catalogo/formatUnidades.test.ts (10 tests) 52ms
+ ✓ src/test/catalogo/partnerFingerprint.test.ts (8 tests) 12ms
+ ✓ src/test/fiscal/sinief49/integration.static.test.ts (5 tests) 12ms
+ ✓ src/test/fiscal/sinief49/recipientNotFound.test.ts (4 tests) 9ms
+ ✓ src/test/catalogo/catalogLabelPt409.test.ts (4 tests) 7ms
+ ✓ src/test/fiscal/rls/harness.config.test.ts (4 tests) 7ms
+ ✓ src/test/protocolos/culturas.hardening.test.ts (7 tests) 22ms
+ ✓ src/test/fiscal/fase2_1.ui.test.tsx (5 tests) 12ms
+ ✓ src/test/fiscal/correcao_cirurgica_final.test.ts (5 tests) 11ms
+ ✓ src/test/fiscal/ownedProductFiscal.strictReceipt.review.test.ts (15 tests) 11ms
+ ✓ src/test/fiscal/companyCnaeFields.test.tsx (3 tests) 226ms
+ ✓ src/test/fiscal/rls_perfis_split_write.test.ts (6 tests) 7ms
+ ✓ src/test/fiscal/scanners.test.ts (4 tests) 603ms
+ ✓ src/test/fiscal/rls/runner.unit.test.ts (15 tests) 13ms
+ ✓ src/test/fiscal/rls_financial_documents_no_hard_delete.test.ts (6 tests) 8ms
+ ✓ src/test/protocolos/useCulturas.states.test.tsx (4 tests) 202ms
+ ✓ src/test/fiscal/h7l.selfTestAssinatura.static.test.ts (5 tests) 8ms
+ ✓ src/test/fiscal/sinief49/persistenceMapper.test.ts (4 tests) 11ms
+ ✓ src/test/fiscal/f42HarnessFixtures.static.test.ts (4 tests) 6ms
+ ✓ src/test/fiscal/fase3_19_1.cnpjInput.test.tsx (3 tests) 72ms
+ ✓ src/test/catalogo/catalogo-unificacao-fase29.test.ts (6 tests) 8ms
+ ✓ src/test/fiscal/h7k.certificadoAlertas.test.ts (17 tests) 9ms
+ ✓ src/test/fiscal/natureOperationCombobox.test.tsx (2 tests) 459ms
+ ✓ src/test/fiscal/fase_h5_a1.draftSave.test.ts (4 tests) 10ms
+ ✓ src/test/fiscal/fase_corretiva_bloco1.routes.test.ts (12 tests) 9ms
+ ✓ src/test/fiscal/revoke_anon_table_privileges.test.ts (4 tests) 8ms
+ ✓ src/test/fiscal/cnpjSharedParity.test.ts (13 tests) 13ms
+ ✓ src/test/fiscal/document_model_contract.test.ts (3 tests) 13ms
+ ✓ src/test/fiscal/fase2.contract.test.ts (6 tests) 12ms
+ ✓ src/test/fiscal/arbioSyntheticFiscal.audit.test.ts (4 tests) 16ms
+ ✓ src/test/fiscal/h12ServiceCalculationUi.test.ts (4 tests) 5ms
+ ✓ src/test/catalogo/safePartnerOrderDraft.test.ts (11 tests) 8ms
+stderr | src/test/protocolos/base-tecnica.redirect.test.tsx > Redirect /protocolos -> /base-tecnica (roteador real) > preserva query string e hash
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/protocolos/base-tecnica.redirect.test.tsx (3 tests) 50ms
+ ✓ src/test/protocolos/culturas.readonly.test.tsx (3 tests) 39ms
+ ✓ src/test/fiscal/productFiscalPreparation.test.ts (5 tests) 9ms
+ ✓ src/test/fiscal/sinief49/permissions.test.ts (4 tests) 8ms
+ ✓ src/test/protocolos/produtos-tab-cat05.test.ts (6 tests) 12ms
+ ✓ src/test/catalogo/ficha-ia-gemini-provider.static.test.ts (3 tests) 11ms
+ ✓ src/test/fiscal/fiscalXml.v96Cors.test.ts (5 tests) 19ms
+ ↓ src/test/fiscal/fase3_20_1.microorganism_product_resolver.test.tsx (1 test | 1 skipped)
+ ✓ src/test/catalogo/http409Conflicts.test.ts (2 tests) 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/globalCatalogContainment.test.ts > contenção de escrita do catálogo global > src/hooks/useProductProfile.ts bloqueia antes de gravar
+ FAIL  src/test/catalogo/globalCatalogContainment.test.ts > contenção de escrita do catálogo global > src/hooks/useMicroorganismProfile.ts bloqueia antes de gravar
+AssertionError: expected 0 to be greater than 0
+ ❯ src/test/catalogo/globalCatalogContainment.test.ts:39:27
+     37|     const s = read(f);
+     38|     const blocks = s.split("mutationFn").slice(1).filter((b) => /\.(in…
+     39|     expect(blocks.length).toBeGreaterThan(0);
+       |                           ^
+     40|     for (const b of blocks) {
+     41|       const guard = b.indexOf("assertGlobalCatalogWriteBlocked()");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/test/fiscal/h7i.ingestaoCertificado.static.test.ts > H7i — ingestão segura do certificado A1 > binding de frontend permanece no CultivoFarm autorizado
+AssertionError: expected '// This file is automatically generat…' to contain 'https://swzpzcwiasxmjutrmvkm.supabase…'
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- https://swzpzcwiasxmjutrmvkm.supabase.co[39m
+[31m+ // This file is automatically generated. Do not edit it directly.[39m
+[31m+ import { createClient } from '@supabase/supabase-js';[39m
+[31m+ import type { Database } from './cultivofarm.types';[39m
+[31m+ import { assertCanonicalSupabaseBinding } from './bindingGuard';[39m
+[31m+ import { closedRealtimeTransport, HOMOLOG_SESSION_KEY, isolatedAuthStorage, preparationFetch } from './homologPreparation';[39m
+[31m+[39m
+[31m+ export const SUPABASE_URL: string = "https://vrlcdwmlytukrjezrrnf.supabase.co";[39m
+[31m+ export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_aUdMby7WOpsZ9iEzplLffA_mxt3Yx3p";[39m
+[31m+[39m
+[31m+ assertCanonicalSupabaseBinding(SUPABASE_URL);[39m
+[31m+[39m
+[31m+ // Import the supabase client like this:[39m
+[31m+ // import { supabase } from "@/integrations/supabase/client";[39m
+[31m+[39m
+[31m+ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {[39m
+[31m+   global: { fetch: preparationFetch(globalThis.fetch.bind(globalThis)) },[39m
+[31m+   realtime: { transport: closedRealtimeTransport },[39m
+[31m+   auth: {[39m
+[31m+     storage: isolatedAuthStorage(localStorage),[39m
+[31m+     storageKey: HOMOLOG_SESSION_KEY,[39m
+[31m+     detectSessionInUrl: false,[39m
+[31m+     persistSession: true,[39m
+[31m+     autoRefreshToken: true,[39m
+[31m+   }[39m
+[31m+ });[39m
+
+ ❯ src/test/fiscal/h7i.ingestaoCertificado.static.test.ts:63:20
+     61|   it("binding de frontend permanece no CultivoFarm autorizado", () => {
+     62|     const client = read("src/integrations/supabase/client.ts");
+     63|     expect(client).toContain("https://swzpzcwiasxmjutrmvkm.supabase.co…
+       |                    ^
+     64|     expect(client).not.toContain("navfzbwgwzruipouyfnk");
+     65|     const toml = read("supabase/config.toml");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/test/fiscal/h7j.deleteGuard.static.test.ts > H7j — guard de exclusão fiscal > binding efetivo do cliente permanece no CultivoFarm autorizado
+AssertionError: expected '// This file is automatically generat…' to contain 'swzpzcwiasxmjutrmvkm'
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- swzpzcwiasxmjutrmvkm[39m
+[31m+ // This file is automatically generated. Do not edit it directly.[39m
+[31m+ import { createClient } from '@supabase/supabase-js';[39m
+[31m+ import type { Database } from './cultivofarm.types';[39m
+[31m+ import { assertCanonicalSupabaseBinding } from './bindingGuard';[39m
+[31m+ import { closedRealtimeTransport, HOMOLOG_SESSION_KEY, isolatedAuthStorage, preparationFetch } from './homologPreparation';[39m
+[31m+[39m
+[31m+ export const SUPABASE_URL: string = "https://vrlcdwmlytukrjezrrnf.supabase.co";[39m
+[31m+ export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_aUdMby7WOpsZ9iEzplLffA_mxt3Yx3p";[39m
+[31m+[39m
+[31m+ assertCanonicalSupabaseBinding(SUPABASE_URL);[39m
+[31m+[39m
+[31m+ // Import the supabase client like this:[39m
+[31m+ // import { supabase } from "@/integrations/supabase/client";[39m
+[31m+[39m
+[31m+ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {[39m
+[31m+   global: { fetch: preparationFetch(globalThis.fetch.bind(globalThis)) },[39m
+[31m+   realtime: { transport: closedRealtimeTransport },[39m
+[31m+   auth: {[39m
+[31m+     storage: isolatedAuthStorage(localStorage),[39m
+[31m+     storageKey: HOMOLOG_SESSION_KEY,[39m
+[31m+     detectSessionInUrl: false,[39m
+[31m+     persistSession: true,[39m
+[31m+     autoRefreshToken: true,[39m
+[31m+   }[39m
+[31m+ });[39m
+
+ ❯ src/test/fiscal/h7j.deleteGuard.static.test.ts:69:20
+     67|     // `.env` é regenerado pela plataforma; a verdade de runtime é o c…
+     68|     const client = read("src/integrations/supabase/client.ts");
+     69|     expect(client).toContain("swzpzcwiasxmjutrmvkm");
+       |                    ^
+     70|     expect(client).not.toContain("navfzbwgwzruipouyfnk");
+     71|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+
+ Test Files  3 failed | 184 passed | 1 skipped (188)
+      Tests  4 failed | 2923 passed | 4 skipped (2931)
+   Start at  16:53:47
+   Duration  215.63s (transform 8.13s, setup 30.75s, collect 49.00s, tests 45.14s, environment 199.49s, prepare 29.11s)
+

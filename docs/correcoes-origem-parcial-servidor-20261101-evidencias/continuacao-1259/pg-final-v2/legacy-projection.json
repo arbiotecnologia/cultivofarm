@@ -1,0 +1,34 @@
+{
+  "rows": [
+    {
+      "id": "c84bb3d2-9f47-4b93-b03d-7ffc5034e300",
+      "status": "OPEN",
+      "paid_at": null,
+      "due_date": "2026-12-01",
+      "created_at": "2026-11-01T13:09:45.806518+00:00",
+      "net_amount": 10300.0,
+      "receivable_id": "00000000-0000-4000-8000-000000000802",
+      "penalty_amount": 0.0,
+      "discount_amount": 0.0,
+      "interest_amount": 300.0,
+      "monetary_origin": {
+        "source": "b2b_immutable_schedule_v1",
+        "contract": "RECEIVABLE_MONEY_V1",
+        "order_id": "00000000-0000-4000-8000-000000000800",
+        "schedule_id": "00000000-0000-4000-8000-000000000803",
+        "receivable_id": "00000000-0000-4000-8000-000000000802",
+        "installment_id": "c84bb3d2-9f47-4b93-b03d-7ffc5034e300",
+        "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "snapshot_interest": 300.0,
+        "snapshot_principal": 10000.0
+      },
+      "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "original_amount": 10300.0,
+      "received_amount": 0.0,
+      "installment_number": 1,
+      "monetary_semantics": "financed_total_v1",
+      "financed_interest_amount": 300.0
+    }
+  ],
+  "synthetic": "INSERT writer audit supplied by owner fixture because capture lacks this trigger; not historical remediation"
+}

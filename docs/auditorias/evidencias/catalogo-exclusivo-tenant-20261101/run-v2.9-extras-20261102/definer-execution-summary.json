@@ -1,0 +1,93 @@
+{
+ "calls": 344,
+ "by_result": {
+  "DENIED": 164,
+  "ERROR": 60,
+  "BLOCKED_DEP": 90,
+  "OK_NOOP": 24,
+  "OK": 6
+ },
+ "blocked_dep_signatures": [
+  "fn_comprovante_entrega_montar_v1(uuid)",
+  "fn_fiscal_scenario_coverage()",
+  "get_partner_catalog_secure(uuid)",
+  "get_partner_catalog_tecnico_secure()",
+  "get_portal_cliente_b2b_order_detail_secure(uuid)",
+  "get_portal_cliente_b2b_simulation_detail_secure(uuid)",
+  "platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)",
+  "platform_private.storage1_application_allowed(text,text)",
+  "rpc_b2b_executive_dashboard()",
+  "rpc_fiscal_draft_save(uuid,jsonb,jsonb,integer)",
+  "rpc_fiscal_nfe_readiness_v1()",
+  "rpc_microorganism_regulatory_overview()",
+  "rpc_regulatory_dossier_ensure_draft(uuid)",
+  "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])"
+ ],
+ "executed_ok_signatures": [
+  "fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)",
+  "rpc_b2b_integrity_check()",
+  "rpc_commercial_simulator(uuid,uuid,numeric,numeric)"
+ ],
+ "aggregators": {
+  "fn_fiscal_scenario_coverage()": [
+   "anon:foreign:BLOCKED_DEP",
+   "gestor_arbio:foreign:BLOCKED_DEP",
+   "gestor_arbio:own:BLOCKED_DEP",
+   "gestor_fsf:foreign:BLOCKED_DEP",
+   "gestor_fsf:own:BLOCKED_DEP",
+   "leitor_fsf_b2b:foreign:BLOCKED_DEP",
+   "leitor_fsf_b2b:own:BLOCKED_DEP",
+   "superadmin:foreign:BLOCKED_DEP"
+  ],
+  "rpc_b2b_executive_dashboard()": [
+   "anon:foreign:DENIED",
+   "gestor_arbio:foreign:BLOCKED_DEP",
+   "gestor_arbio:own:BLOCKED_DEP",
+   "gestor_fsf:foreign:BLOCKED_DEP",
+   "gestor_fsf:own:BLOCKED_DEP",
+   "leitor_fsf_b2b:foreign:DENIED",
+   "leitor_fsf_b2b:own:DENIED",
+   "superadmin:foreign:DENIED"
+  ],
+  "rpc_b2b_integrity_check()": [
+   "anon:foreign:DENIED",
+   "gestor_arbio:foreign:OK",
+   "gestor_arbio:own:OK",
+   "gestor_fsf:foreign:OK",
+   "gestor_fsf:own:OK",
+   "leitor_fsf_b2b:foreign:DENIED",
+   "leitor_fsf_b2b:own:DENIED",
+   "superadmin:foreign:DENIED"
+  ],
+  "rpc_cc_validate_matrix(uuid,text,uuid,uuid)": [
+   "anon:foreign:DENIED",
+   "gestor_arbio:foreign:DENIED",
+   "gestor_arbio:own:DENIED",
+   "gestor_fsf:foreign:DENIED",
+   "gestor_fsf:own:DENIED",
+   "leitor_fsf_b2b:foreign:DENIED",
+   "leitor_fsf_b2b:own:DENIED",
+   "superadmin:foreign:DENIED"
+  ],
+  "rpc_fiscal_nfe_readiness_v1()": [
+   "anon:foreign:BLOCKED_DEP",
+   "gestor_arbio:foreign:BLOCKED_DEP",
+   "gestor_arbio:own:BLOCKED_DEP",
+   "gestor_fsf:foreign:BLOCKED_DEP",
+   "gestor_fsf:own:BLOCKED_DEP",
+   "leitor_fsf_b2b:foreign:BLOCKED_DEP",
+   "leitor_fsf_b2b:own:BLOCKED_DEP",
+   "superadmin:foreign:BLOCKED_DEP"
+  ],
+  "rpc_microorganism_regulatory_overview()": [
+   "anon:foreign:DENIED",
+   "gestor_arbio:foreign:BLOCKED_DEP",
+   "gestor_arbio:own:BLOCKED_DEP",
+   "gestor_fsf:foreign:BLOCKED_DEP",
+   "gestor_fsf:own:BLOCKED_DEP",
+   "leitor_fsf_b2b:foreign:DENIED",
+   "leitor_fsf_b2b:own:DENIED",
+   "superadmin:foreign:DENIED"
+  ]
+ }
+}

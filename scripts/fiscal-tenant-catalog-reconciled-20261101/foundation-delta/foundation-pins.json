@@ -1,0 +1,215 @@
+{
+ "project_ref": "swzpzcwiasxmjutrmvkm",
+ "status": "NO_GO",
+ "apply_authorized": false,
+ "comparisons": [
+  {
+   "file": "proposed-tenant-catalog-ownership-05-backend.sql",
+   "signature": "public.platform_wipe_global_product_catalog(uuid,text,uuid)",
+   "expected_original": "05bfc1751e785331e4b64d74a238a495",
+   "actual_live": "05bfc1751e785331e4b64d74a238a495",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-06-operational-readers.sql",
+   "signature": "public.fn_fiscal_scenario_coverage()",
+   "expected_original": "962230c786b2dbab9c62d090923e4810",
+   "actual_live": "962230c786b2dbab9c62d090923e4810",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-06-operational-readers.sql",
+   "signature": "public.rpc_fiscal_nfe_readiness_v1()",
+   "expected_original": "75487176d377f5bf096f658ad47587e4",
+   "actual_live": "75487176d377f5bf096f658ad47587e4",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-06-operational-readers.sql",
+   "signature": "public.rpc_microorganism_regulatory_overview()",
+   "expected_original": "a5763623af22befd1a60df8b04636e5d",
+   "actual_live": "a5763623af22befd1a60df8b04636e5d",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-09-commercial-matrix.sql",
+   "signature": "public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)",
+   "expected_original": "e3b94ad47b93b02c9717a6a694163552",
+   "actual_live": "21ab73c3a6ed77512c1e93b3958bfb1c",
+   "equal": false,
+   "resolution": "reconciled_minimal_delta"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.partner_apply_default_discount(uuid)",
+   "expected_original": "c33a667463b7f34840237ad9ba676761",
+   "actual_live": "c33a667463b7f34840237ad9ba676761",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.rpc_commercial_simulator(uuid, uuid, numeric, numeric)",
+   "expected_original": "4e324b1711f06bb556f050d8ea1aa8f0",
+   "actual_live": "4e324b1711f06bb556f050d8ea1aa8f0",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.fn_resolve_commercial_price(text, uuid, uuid, uuid, uuid, uuid, text, numeric, date, numeric)",
+   "expected_original": "0df0d9005d46b667db4433d3eae59e27",
+   "actual_live": "0df0d9005d46b667db4433d3eae59e27",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.fn_b2b_resolve_base_unit_price(uuid, uuid, uuid, text, numeric, date)",
+   "expected_original": "60651fe823452436d807b9b175c3865c",
+   "actual_live": "60651fe823452436d807b9b175c3865c",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.fn_resolve_b2b_cart(uuid, uuid, jsonb, date)",
+   "expected_original": "c8b4584475698835b786dacdf1e0fc14",
+   "actual_live": "c8b4584475698835b786dacdf1e0fc14",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "platform_private.b2b_save_technical_simulation(jsonb)",
+   "expected_original": "daad3c1554f370bb0456b4ea3afdeea7",
+   "actual_live": "daad3c1554f370bb0456b4ea3afdeea7",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.rpc_associate_microorganism_fiscal_product(uuid, uuid)",
+   "expected_original": "da0d679779e9d57558a3a203219b4afc",
+   "actual_live": "da0d679779e9d57558a3a203219b4afc",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.rpc_regulatory_dossier_ensure_draft(uuid)",
+   "expected_original": "56076bccafd27aa8c95473ac38e73422",
+   "actual_live": "56076bccafd27aa8c95473ac38e73422",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots.sql",
+   "signature": "public.rpc_fiscal_draft_save(uuid, jsonb, jsonb, integer)",
+   "expected_original": "5e364c8f67c92fb31ff9568310eb876c",
+   "actual_live": "224ab7944abd13190fe8ea1044216218",
+   "equal": false,
+   "resolution": "reconciled_minimal_delta"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-11-regulatory-presentations.sql",
+   "signature": "public.rpc_regulatory_presentation_upsert(uuid,integer,jsonb)",
+   "expected_original": "74f45dd67e9435a9876b0e2609e38954",
+   "actual_live": "74f45dd67e9435a9876b0e2609e38954",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-12-visit-selection.sql",
+   "signature": "public.rpc_upsert_recomendacao_visita(uuid,uuid,jsonb,integer)",
+   "expected_original": "42f87a90cb7d1be324b43bb3867b3a28",
+   "actual_live": "42f87a90cb7d1be324b43bb3867b3a28",
+   "equal": true,
+   "resolution": "unchanged"
+  },
+  {
+   "file": "proposed-tenant-catalog-ownership-13-visibility-target.sql",
+   "signature": "platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)",
+   "expected_original": "806751acb0477165ed863320ab24c6d0",
+   "actual_live": "c890b49cf23d7cbfedf4cb12c1cd6d89",
+   "equal": false,
+   "resolution": "reconciled_minimal_delta"
+  }
+ ],
+ "reconciled": {
+  "09": {
+   "file": "proposed-tenant-catalog-ownership-09-commercial-matrix-reconciled.sql.review",
+   "live_md5": "21ab73c3a6ed77512c1e93b3958bfb1c",
+   "original_expected": "e3b94ad47b93b02c9717a6a694163552",
+   "reconciled_body_md5_textual": "0a1ee9a8dbf2acb5f33d4a969d25942a",
+   "deltas": [
+    "     WHERE COALESCE(p.ativo,true)\n",
+    "     WHERE COALESCE(m.ativo,true)\n"
+   ]
+  },
+  "10": {
+   "file": "proposed-tenant-catalog-ownership-10-global-roots-reconciled.sql.review",
+   "live_md5": "224ab7944abd13190fe8ea1044216218",
+   "original_expected": "5e364c8f67c92fb31ff9568310eb876c",
+   "reconciled_body_md5_textual": "1d3530fc117f222558554c7bc3280703",
+   "deltas": [
+    "SELECT 1 FROM public.produtos pr WHERE pr.id = v_source_id)"
+   ]
+  },
+  "13": {
+   "file": "proposed-tenant-catalog-ownership-13-visibility-target-reconciled.sql.review",
+   "live_md5": "c890b49cf23d7cbfedf4cb12c1cd6d89",
+   "original_expected": "806751acb0477165ed863320ab24c6d0",
+   "reconciled_body_md5_textual": "c140bebc7505dec6e34c62806a8365da",
+   "deltas": [
+    "FROM public.produtos WHERE id=p_entity_id;",
+    "FROM public.microrganismos WHERE id=p_entity_id;",
+    "FROM public.culturas WHERE id=p_entity_id;"
+   ]
+  }
+ },
+ "manifest_order": [
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-02-readers.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-03-volumes-b2b.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-04-operational-containment.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-05-backend.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-06-operational-readers.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-08-owned-read.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-09-commercial-matrix.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-10-global-roots.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-11-regulatory-presentations.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-12-visit-selection.sql",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-13-visibility-target.sql"
+ ],
+ "original_manifest_sha256": {
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership.sql": "c80f2dde30d7c0579c5da94afd44e62c3ad77b79d03be13c44d98013bfbbf5cd",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-02-readers.sql": "68bb6e110b0320763832174b647c12174ee4d3edccc61c433aa690f1f2d1c57c",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-03-volumes-b2b.sql": "56c6a0dd5311d89d8a6cb520ea924fba5616c75a757999d2343f9e38534cd2a1",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-04-operational-containment.sql": "ccd735c5da2b77b620c4479887571e9b27e16930335df3b024520e71809c0c95",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-05-backend.sql": "7f7a6651e26c79c4ee5a5752e9a7d36304e8afe4fcbc8cbaf00a33ccd615acbf",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-06-operational-readers.sql": "98de5e5009b410f0d34a08b49bd078f3b41715632f5b3c88cbf6811c7d18bb2e",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-08-owned-read.sql": "b7d9c2ac2c296476fa4788c14ddbad953653b7d907bf0bb7b01149f7c1e80d7f",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-09-commercial-matrix.sql": "7daafeb8f4e70f0342d0c53e40c176a2084003710c6288649f39e66aff03eea6",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-10-global-roots.sql": "4c0ee9fe64dbfb518e77f144fda82f8ae95bffeeecc3cf7c248ef771076e1c48",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-11-regulatory-presentations.sql": "288a0645f1559b977217ca6282ead94bce6d99dd129e05b9d0274586670abc96",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-12-visit-selection.sql": "9238b893d0de2ab7c0743c7a05f5f2e8285f1ce5f3afa865d583f08d78f6d1ac",
+  "scripts/rbac-audit/proposed-tenant-catalog-ownership-13-visibility-target.sql": "52c0fe63c903475f92bf0a98cf4ab58caf23cb7c85c84df5e5ad2bcc21309066"
+ },
+ "original_sources_sha256": {
+  "proposed-tenant-catalog-ownership-09-commercial-matrix.sql": "7daafeb8f4e70f0342d0c53e40c176a2084003710c6288649f39e66aff03eea6",
+  "proposed-tenant-catalog-ownership-10-global-roots.sql": "4c0ee9fe64dbfb518e77f144fda82f8ae95bffeeecc3cf7c248ef771076e1c48",
+  "proposed-tenant-catalog-ownership-13-visibility-target.sql": "52c0fe63c903475f92bf0a98cf4ab58caf23cb7c85c84df5e5ad2bcc21309066"
+ },
+ "live_capture_sha256": "38630ef82ef55b1cfa7b8f3e4e0b47b95bae9f9f812d23c2b989456263dd254c",
+ "generated_sha256": {
+  "00-pre-global-foundation.sql.review": "597adedec7c01d80641e0b57f1344df9d1cc86f3550352b6078b31eb4add244f",
+  "proposed-tenant-catalog-ownership-09-commercial-matrix-reconciled.sql.review": "c04bf40996ed24a215d08d46957522c4bfcae27cb5941f82135f11e9b812cdec",
+  "proposed-tenant-catalog-ownership-10-global-roots-reconciled.sql.review": "b3fdb0fdfe7c7bdc166be329e633ea008e0f86310989d85019f10d7f436038f6",
+  "proposed-tenant-catalog-ownership-13-visibility-target-reconciled.sql.review": "85e62cf954dbd1003a268ecfeb2ce0ea64545f2532632ef084b8416b03f5987b"
+ }
+}

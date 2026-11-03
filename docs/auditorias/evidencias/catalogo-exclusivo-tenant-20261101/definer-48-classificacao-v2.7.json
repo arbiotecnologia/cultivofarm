@@ -1,0 +1,386 @@
+[
+ {
+  "signature": "platform_private.b2b_save_technical_simulation(jsonb)",
+  "live_md5": "daad3c1554f370bb0456b4ea3afdeea7",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "platform_private.catalog_tenant_selection_core(text,text,integer,integer,uuid[])",
+  "live_md5": "4bde839029b5c38d8cacadef823f7d4f",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "E_TENANT_OR_SELLER_SCOPED",
+  "decision": "MANTIDO: corpo usa ator/tenant ou vendedor do parceiro; após migração o dono do item = tenant/vendedor",
+  "evidence": "estático + harness v2 (seleção/visibilidade)"
+ },
+ {
+  "signature": "platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)",
+  "live_md5": "c890b49cf23d7cbfedf4cb12c1cd6d89",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "E_TENANT_OR_SELLER_SCOPED",
+  "decision": "MANTIDO: corpo usa ator/tenant ou vendedor do parceiro; após migração o dono do item = tenant/vendedor",
+  "evidence": "estático + harness v2 (seleção/visibilidade)"
+ },
+ {
+  "signature": "platform_private.catalog_visit_reference_guard_current12()",
+  "live_md5": "b1db3fdcbd99a7b778a888ef0207170c",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "C_TRIGGER_ON_ROW",
+  "decision": "MANTIDO: opera sobre NEW; set_codigo_* dependem de prefixo_para_* NÃO capturado (não executável no harness); proximo_codigo gera código por varredura global (revela só contagem) — reescrita por tenant PENDENTE",
+  "evidence": "trigger_unexecutable em real-schema-info.json"
+ },
+ {
+  "signature": "platform_private.catalog_volume_parent(text,uuid,boolean)",
+  "live_md5": "08f9568dd0b9527fcb661188eded1dde",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "INTERNAL_HELPER",
+  "decision": "MANTIDO: auxiliar privado chamado só por cores globais fechados",
+  "evidence": "estático"
+ },
+ {
+  "signature": "platform_private.lab_assert_manufacturable(uuid,uuid)",
+  "live_md5": "fe24f00acbffa9b6d71c84d0c4ff8eb4",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "platform_private.lab_item_is_manufacturable(uuid,uuid)",
+  "live_md5": "853595394240e8f2a61ac2d621118271",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "platform_private.manual_cq_v1(uuid,uuid,jsonb)",
+  "live_md5": "6fc63204f7075ab9e25ef26dfae2adef",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "platform_private.storage1_application_allowed(text,text)",
+  "live_md5": "daefb183522e2ee7f730e0db243f4823",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "_entrega_seed_checklist(uuid)",
+  "live_md5": "7824dfbb848b051e3b21c5bdc103e5b2",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "approve_microorganism_profile_with_audit(uuid,jsonb,boolean)",
+  "live_md5": "940360a262c38dfa0d83a8c267306408",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "approve_product_profile_with_audit(uuid,jsonb,boolean)",
+  "live_md5": "c7cb6cdb477bce028558ac52a69d451a",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)",
+  "live_md5": "60651fe823452436d807b9b175c3865c",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "fn_catalogo_preco_canonico(uuid,uuid,text,numeric)",
+  "live_md5": "fa5e890dc647392efc238460ac16d6a2",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "fn_comprovante_entrega_montar_v1(uuid)",
+  "live_md5": "980af5af82323994335bb21b6cb1f20d",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "fn_entrega_build_snapshot_v1(uuid)",
+  "live_md5": "8894facf7a2ccb32ceebb79f3d4a29be",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "fn_fiscal_scenario_coverage()",
+  "live_md5": "962230c786b2dbab9c62d090923e4810",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "D_GLOBAL_AGGREGATE",
+  "decision": "PENDENTE (NO_GO): lista/agrega sem filtro de dono; exige reescrita do corpo com tenant do ator",
+  "evidence": "estático"
+ },
+ {
+  "signature": "fn_notify_lab_on_programacao()",
+  "live_md5": "c910c1466bbc06328e3eb9f5b2b132ca",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "C_TRIGGER_ON_ROW",
+  "decision": "MANTIDO: opera sobre NEW; set_codigo_* dependem de prefixo_para_* NÃO capturado (não executável no harness); proximo_codigo gera código por varredura global (revela só contagem) — reescrita por tenant PENDENTE",
+  "evidence": "trigger_unexecutable em real-schema-info.json"
+ },
+ {
+  "signature": "get_partner_catalog_secure(uuid)",
+  "live_md5": "b5684d350603d1db77ab9f1db0f4b253",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "E_TENANT_OR_SELLER_SCOPED",
+  "decision": "MANTIDO: corpo usa ator/tenant ou vendedor do parceiro; após migração o dono do item = tenant/vendedor",
+  "evidence": "estático + harness v2 (seleção/visibilidade)"
+ },
+ {
+  "signature": "get_partner_catalog_secure(uuid,boolean)",
+  "live_md5": "1391adc2133b922e2dcea4b1d3e26820",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "E_TENANT_OR_SELLER_SCOPED",
+  "decision": "MANTIDO: corpo usa ator/tenant ou vendedor do parceiro; após migração o dono do item = tenant/vendedor",
+  "evidence": "estático + harness v2 (seleção/visibilidade)"
+ },
+ {
+  "signature": "get_partner_catalog_tecnico_secure()",
+  "live_md5": "ab84d6835dac4d19ee71c842bd2416a9",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "E_TENANT_OR_SELLER_SCOPED",
+  "decision": "MANTIDO: corpo usa ator/tenant ou vendedor do parceiro; após migração o dono do item = tenant/vendedor",
+  "evidence": "estático + harness v2 (seleção/visibilidade)"
+ },
+ {
+  "signature": "get_partner_catalog_tecnico_secure(boolean)",
+  "live_md5": "f682465d6ffbb145076cfd8d011f685e",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "E_TENANT_OR_SELLER_SCOPED",
+  "decision": "MANTIDO: corpo usa ator/tenant ou vendedor do parceiro; após migração o dono do item = tenant/vendedor",
+  "evidence": "estático + harness v2 (seleção/visibilidade)"
+ },
+ {
+  "signature": "get_portal_cliente_b2b_order_detail_secure(uuid)",
+  "live_md5": "2eee9e9e357b13749513908904ab83c1",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "get_portal_cliente_b2b_simulation_detail_secure(uuid)",
+  "live_md5": "e85c12bc847f7223b8bc8173ce444b63",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "get_production_planning_detail(uuid)",
+  "live_md5": "c81de10c333f11de30d829b1a69012d5",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)",
+  "live_md5": "0dce420a2309a03fb63ac1acbe100295",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "PLATFORM_GLOBAL_WRITER",
+  "decision": "CLOSED (REVOKE)",
+  "evidence": "PG real: FEN-13"
+ },
+ {
+  "signature": "proximo_codigo(text,text)",
+  "live_md5": "e061a6487d6d3d30436d9bd3ca0e2be1",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "C_TRIGGER_ON_ROW",
+  "decision": "MANTIDO: opera sobre NEW; set_codigo_* dependem de prefixo_para_* NÃO capturado (não executável no harness); proximo_codigo gera código por varredura global (revela só contagem) — reescrita por tenant PENDENTE",
+  "evidence": "trigger_unexecutable em real-schema-info.json"
+ },
+ {
+  "signature": "rpc_b2b_executive_dashboard()",
+  "live_md5": "b008fac79ad80669c8ad2de19f17892a",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "D_GLOBAL_AGGREGATE",
+  "decision": "PENDENTE (NO_GO): lista/agrega sem filtro de dono; exige reescrita do corpo com tenant do ator",
+  "evidence": "estático"
+ },
+ {
+  "signature": "rpc_b2b_integrity_check()",
+  "live_md5": "c8c678235a5123284cb2ed804b70dbdd",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "D_GLOBAL_AGGREGATE",
+  "decision": "PENDENTE (NO_GO): lista/agrega sem filtro de dono; exige reescrita do corpo com tenant do ator",
+  "evidence": "estático"
+ },
+ {
+  "signature": "rpc_cc_validate_matrix(uuid,text,uuid,uuid)",
+  "live_md5": "21ab73c3a6ed77512c1e93b3958bfb1c",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "D_GLOBAL_AGGREGATE",
+  "decision": "PENDENTE (NO_GO): valida matriz de plano/parceiro/cliente lendo preços do catálogo sem comparar o dono do plano; exige reescrita",
+  "evidence": "estático"
+ },
+ {
+  "signature": "rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)",
+  "live_md5": "ee9e7a45f7e81e2ba6e2a4e55ca10f78",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "rpc_commercial_simulator(uuid,uuid,numeric,numeric)",
+  "live_md5": "4e324b1711f06bb556f050d8ea1aa8f0",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "rpc_converter_visita_em_os(uuid,text)",
+  "live_md5": "b112888e28d8a5727df713e0ae7bcd1b",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "rpc_criar_embalagens_pos_envase(jsonb)",
+  "live_md5": "9d2769dbadaf3aa85afefba595e20b91",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "rpc_fiscal_draft_save(uuid,jsonb,jsonb,integer)",
+  "live_md5": "224ab7944abd13190fe8ea1044216218",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "rpc_fiscal_nfe_readiness_v1()",
+  "live_md5": "75487176d377f5bf096f658ad47587e4",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "D_GLOBAL_AGGREGATE",
+  "decision": "PENDENTE (NO_GO): lista/agrega sem filtro de dono; exige reescrita do corpo com tenant do ator",
+  "evidence": "estático"
+ },
+ {
+  "signature": "rpc_gerar_etiqueta_produto(jsonb)",
+  "live_md5": "814be9eb7435c3fced7ffad44b9fc3fe",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "rpc_get_comprovante_entrega_data(uuid,boolean)",
+  "live_md5": "1a10dbe4a354bb373e53ad91a7c4ab33",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "rpc_microorganism_regulatory_overview()",
+  "live_md5": "a5763623af22befd1a60df8b04636e5d",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "D_GLOBAL_AGGREGATE",
+  "decision": "PENDENTE (NO_GO): lista/agrega sem filtro de dono; exige reescrita do corpo com tenant do ator",
+  "evidence": "estático"
+ },
+ {
+  "signature": "rpc_programar_os_v1(uuid,text,date)",
+  "live_md5": "e374f0ba1698b37523b890dc91682eaf",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "rpc_regulatory_dossier_ensure_draft(uuid)",
+  "live_md5": "56076bccafd27aa8c95473ac38e73422",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])",
+  "live_md5": "0c102f7735a44ccba6ce1364b1f30c32",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "A_PARENT_GUARDED",
+  "decision": "MANTIDO: entrada é pai do tenant (entrega/lote/OS/pedido/visita/payload com ids de pais); catálogo alcançado só via FK repontada ao tenant do pai",
+  "evidence": "POST integridade por tenant (MIG/POST checks); sem execução positiva do corpo (dependências não capturadas)"
+ },
+ {
+  "signature": "set_codigo_microrganismo()",
+  "live_md5": "22f33bb511f309ada40f710d017fcdb5",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "C_TRIGGER_ON_ROW",
+  "decision": "MANTIDO: opera sobre NEW; set_codigo_* dependem de prefixo_para_* NÃO capturado (não executável no harness); proximo_codigo gera código por varredura global (revela só contagem) — reescrita por tenant PENDENTE",
+  "evidence": "trigger_unexecutable em real-schema-info.json"
+ },
+ {
+  "signature": "set_codigo_produto()",
+  "live_md5": "e5ef4aa8489889e7d20e03dc62b455ae",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "C_TRIGGER_ON_ROW",
+  "decision": "MANTIDO: opera sobre NEW; set_codigo_* dependem de prefixo_para_* NÃO capturado (não executável no harness); proximo_codigo gera código por varredura global (revela só contagem) — reescrita por tenant PENDENTE",
+  "evidence": "trigger_unexecutable em real-schema-info.json"
+ },
+ {
+  "signature": "tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])",
+  "live_md5": "13a76147ec7fc9be058ba3cda551cf08",
+  "previous_class": "REVIEW_DEFINER_TENANT_PRESENT",
+  "behavior_class": "E_TENANT_OR_SELLER_SCOPED",
+  "decision": "MANTIDO: corpo usa ator/tenant ou vendedor do parceiro; após migração o dono do item = tenant/vendedor",
+  "evidence": "estático + harness v2 (seleção/visibilidade)"
+ },
+ {
+  "signature": "trg_mestre_guard_preco_canonico()",
+  "live_md5": "598e4a9e1d0b7347bb719c5b04360b69",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "C_TRIGGER_ON_ROW",
+  "decision": "MANTIDO: opera sobre NEW; set_codigo_* dependem de prefixo_para_* NÃO capturado (não executável no harness); proximo_codigo gera código por varredura global (revela só contagem) — reescrita por tenant PENDENTE",
+  "evidence": "trigger_unexecutable em real-schema-info.json"
+ },
+ {
+  "signature": "update_microorganism_b2b_description(uuid,text)",
+  "live_md5": "2b756f4d9f2948f5c1ed053a2d14c7b2",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ },
+ {
+  "signature": "update_product_b2b_description(uuid,text)",
+  "live_md5": "2d21f5cb9bab76cfca01831e8726ec2d",
+  "previous_class": "REVIEW_DEFINER_READ_NO_TENANT_FILTER",
+  "behavior_class": "B_DIRECT_ID_INPUT",
+  "decision": "FENCED (invólucro + núcleo privado)",
+  "evidence": "PG real: FEN-1..15"
+ }
+]

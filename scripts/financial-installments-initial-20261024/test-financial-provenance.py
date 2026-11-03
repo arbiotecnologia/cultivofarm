@@ -13,7 +13,7 @@ def classify(line):
     return 'LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE' if "'execute'" in line else 'UNRESOLVED'
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--output-dir',type=Path);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--output-dir',type=Path);p.add_argument('--consumer-revision',type=Path);a=p.parse_args()
     out=a.output_dir or Path(tempfile.mkdtemp(prefix='financial-provenance-',dir='/tmp'))
     if a.output_dir:out.mkdir(parents=True,exist_ok=False)
     live=json.loads((H/'receivable-recursive-live-20261029.json').read_text());assert live['ref']=='swzpzcwiasxmjutrmvkm'
@@ -48,11 +48,17 @@ def main():
         t=next(t for t in live['relations'] if t['schema']=='public' and t['name']==name)
         check('dynamic target captured '+name,True,all(any(c['relation_oid']==t['oid'] and c['name']==column for c in live['columns']) for column in ['id','status']))
     current=json.loads((E/'consumers-current.json').read_text());prior=json.loads((E/'consumers-prior-inventory.json').read_text())
+    revision=json.loads(a.consumer_revision.read_text()) if a.consumer_revision else {}
+    check('revision paths known',True,set(revision).issubset({c['path'] for c in current}))
     check('17 consumer identities',True,len(current)==len(prior)==17)
     consumers=[]
     for c in current:
         previous=next(x for x in prior if x['path']==c['path']);actual=hashlib.md5((ROOT/c['path']).read_bytes()).hexdigest()
-        check('fingerprint '+c['path'],True,actual==c['current_md5']==c['md5']==previous['md5'])
+        check('historical identity '+c['path'],True,c['current_md5']==c['md5']==previous['md5'])
+        pin=revision.get(c['path'])
+        if pin:
+            check('revision ancestry '+c['path'],True,pin['historical_md5']==c['md5'] and bool(pin['reason']))
+        check('fingerprint '+c['path'],True,actual==(pin['current_md5'] if pin else c['current_md5']))
         assert c['proof']=='SOURCE_ONLY_NOT_END_TO_END' and c['scope']=='SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED'
         consumers.append(dict(path=c['path'],md5=actual,proof=c['proof'],scope=c['scope']))
     checks.append(dict(test='Consumer/BI external provenance',expected='End-to-end authority and semantics',actual='Source-only fingerprints',status='BLOCKED'))

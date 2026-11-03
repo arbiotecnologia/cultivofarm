@@ -20,6 +20,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuth } from "@/hooks/useAuth";
 import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
+import { OWNED_PRODUCT_FISCAL_ENABLED } from "@/lib/fiscal/ownedProductFiscal";
 import {
   useProductFiscalList,
   useProductFiscalReadiness,
@@ -55,6 +56,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -188,9 +190,10 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   const { role } = useAuth();
   const routeAccess = getAccessLevel(role, "/configuracoes/fiscal/produtos");
   const access = platformGlobal ? fiscalAccess.ready && fiscalAccess.canWrite ? "rw" : "none" : routeAccess;
-  // Produto global: somente Superadmin forte na plataforma. Microrganismo: permissão
+  // Produto PRÓPRIO da empresa (catálogo exclusivo): administrador/gestor do tenant, somente pelo writer canônico
+  // e só quando liberado (OWNED_PRODUCT_FISCAL_ENABLED); sem escrita global de Superadmin. Microrganismo: permissão
   // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.
-  const canEditProduct = platformGlobal && access === "rw" && fiscalAccess.ready && fiscalAccess.canWrite;
+  const canEditProduct = !platformGlobal && OWNED_PRODUCT_FISCAL_ENABLED && fiscalAccess.ready && fiscalAccess.canWriteOwnedProduct === true;
   const canEditMicro = !platformGlobal && routeAccess === "rw";
   // Plataforma: microrganismos globais exibidos SOMENTE em consulta; a escrita
   // continua na rota canônica da empresa até existir autoridade server-side própria.
@@ -921,10 +924,16 @@ function ProductEditDrawer({
     productRowToFormValues(null),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [reason, setReason] = useState("");
+  // chave de idempotência por tentativa: mantida após resposta incerta (reconciliação), descartada após
+  // confirmação/conflito ou quando o conteúdo enviado muda
+  const attempt = useRef<{ key: string; sig: string } | null>(null);
 
   useEffect(() => {
     setValues(productRowToFormValues(null));
     setErrors({});
+    setReason("");
+    attempt.current = null;
   }, [fence.scope]);
   useEffect(() => {
     if (profileQuery.data !== undefined) {
@@ -948,18 +957,35 @@ function ProductEditDrawer({
       toast({ title: "Verifique os campos", variant: "destructive" });
       return;
     }
+    const motive = reason.trim();
+    if (motive.length < 10 || motive.length > 500) {
+      setErrors({ reason: "Informe o motivo da alteração (10 a 500 caracteres)." });
+      return;
+    }
+    const sig = JSON.stringify([productId, profileQuery.data?.updated_at ?? null, parsed.data, motive]);
+    if (!attempt.current || attempt.current.sig !== sig) attempt.current = { key: crypto.randomUUID(), sig };
     try {
       submitLock.current = true;
       await save.mutateAsync({
         productId,
         current: profileQuery.data ?? null,
         values: parsed.data,
+        reason: motive,
+        idempotencyKey: attempt.current.key,
       });
+      attempt.current = null;
       if (!valid()) return;
-      toast({ title: "Perfil fiscal salvo." });
+      toast({ title: "Rascunho fiscal salvo.", description: "A classificação continua pendente de validação contábil." });
       onClose();
     } catch (err) {
+      const msg0 = err instanceof Error ? err.message : "unknown";
+      if (msg0 !== "fiscal_uncertain") attempt.current = null;
       if (!valid()) return;
+      if (msg0 === "fiscal_uncertain") {
+        toast({ title: "Gravação não confirmada", description: "Consulte o perfil antes de tentar de novo; a mesma tentativa será reaproveitada.", variant: "destructive" });
+        await profileQuery.refetch();
+        return;
+      }
       if (err instanceof OptimisticConflictError) {
         toast({
           title: "Conflito de atualização",
@@ -971,7 +997,8 @@ function ProductEditDrawer({
       }
       const msg = err instanceof Error ? err.message : "unknown";
       if (msg === "permission_denied") toast({ title: "Sem permissão para salvar", variant: "destructive" });
-      else if (msg === "duplicate_profile") toast({ title: "Perfil já existe", description: "Este produto já possui um perfil fiscal.", variant: "destructive" });
+      else if (msg === "fiscal_writer_disabled") toast({ title: "Edição fiscal de produto ainda não liberada", variant: "destructive" });
+      else if (msg === "fiscal_invalid") toast({ title: "Dados fiscais inválidos", variant: "destructive" });
       else toast({ title: "Não foi possível salvar", variant: "destructive" });
     } finally {
       submitLock.current = false;
@@ -993,6 +1020,14 @@ function ProductEditDrawer({
       testId="fiscal-drawer-produto"
       footer={
         <div className="mt-6" data-testid="fiscal-produtos-ibs-cbs">
+          {canEdit && (
+            <div className="mb-4 space-y-1">
+              <Label htmlFor="fiscal-produto-motivo">Motivo da alteração</Label>
+              <Textarea id="fiscal-produto-motivo" data-testid="fiscal-produto-motivo" value={reason} maxLength={500}
+                onChange={(e) => setReason(e.target.value)} placeholder="Ex.: classificação informada pela contabilidade" />
+              {errors.reason && <p className="text-sm text-destructive">{errors.reason}</p>}
+            </div>
+          )}
           <Alert className="mb-4">
             <AlertTitle>{preparation.stage === "incomplete_draft" ? "Rascunho incompleto" : preparation.stage === "inactive" ? "Perfil inativo" : preparation.stage === "accounting_pending" ? "Revisão contábil pendente" : preparation.stage === "unavailable" ? "Prontidão indisponível" : "Cadastro revisado; operação pendente"}</AlertTitle>
             <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>

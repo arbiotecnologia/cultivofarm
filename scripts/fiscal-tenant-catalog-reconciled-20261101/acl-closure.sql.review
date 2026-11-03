@@ -1,0 +1,24 @@
+-- Fechamento ACL INATIVO e separado (não faz parte do install). NÃO APLICAR sem autorização.
+-- Captura 01/11: anon/authenticated possuem TRUNCATE, TRIGGER e REFERENCES em product_fiscal_profiles
+-- (default ACL arwdDxtm). TRUNCATE ignora RLS e triggers de linha; nenhum guard de TRUNCATE foi capturado.
+-- Mantém SELECT/INSERT/UPDATE/DELETE (fluxos existentes governados por RLS + a00/a10; DELETE policy=false).
+-- Nunca exercitar TRUNCATE real — verificação somente por has_table_privilege.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+DO $pre$ BEGIN
+  IF NOT has_table_privilege('authenticated','public.product_fiscal_profiles','SELECT') THEN
+    RAISE EXCEPTION 'PRE: unexpected grants (re-capture first)'; END IF;
+END $pre$;
+REVOKE TRUNCATE, TRIGGER, REFERENCES ON public.product_fiscal_profiles FROM anon, authenticated;
+DO $post$ DECLARE r text; p text; BEGIN
+  FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
+    FOREACH p IN ARRAY ARRAY['TRUNCATE','TRIGGER','REFERENCES'] LOOP
+      IF has_table_privilege(r,'public.product_fiscal_profiles',p) THEN RAISE EXCEPTION 'POST: % still has %', r, p; END IF;
+    END LOOP;
+  END LOOP;
+  FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE'] LOOP
+    IF NOT has_table_privilege('authenticated','public.product_fiscal_profiles',p) THEN RAISE EXCEPTION 'POST: existing flow lost %', p; END IF;
+  END LOOP;
+END $post$;
+COMMIT;
+-- Reversão (somente se um fluxo legítimo comprovadamente depender): GRANT pontual registrado, nunca ALL.

@@ -1,0 +1,3 @@
+ERR:ERROR:  catalog_visibility_role_denied
+CONTEXT:  PL/pgSQL function platform_private.catalog_tenant_actor(text) line 27 at RAISE
+PL/pgSQL function public.tenant_product_save(uuid,jsonb,timestamp with time zone,uuid) line 6 at assignment

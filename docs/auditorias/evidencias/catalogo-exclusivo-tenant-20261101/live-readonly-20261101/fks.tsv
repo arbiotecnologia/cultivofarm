@@ -1,0 +1,151 @@
+catalog_tenant_visibility	culturas	catalog_tenant_visibility_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id) ON DELETE RESTRICT
+catalog_tenant_visibility	microrganismos	catalog_tenant_visibility_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE RESTRICT
+catalog_tenant_visibility	organizations	catalog_tenant_visibility_organization_id_fkey	FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE RESTRICT
+catalog_tenant_visibility	produtos	catalog_tenant_visibility_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE RESTRICT
+catalogo_volumes	microrganismos	catalogo_volumes_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+catalogo_volumes	produtos	catalogo_volumes_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+commercial_campaign_products	commercial_campaigns	commercial_campaign_products_campaign_id_fkey	FOREIGN KEY (campaign_id) REFERENCES commercial_campaigns(id) ON DELETE CASCADE
+commercial_campaign_products	produtos	commercial_campaign_products_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE CASCADE
+commercial_condition_item_prices	clientes	commercial_condition_item_prices_customer_id_fkey	FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE CASCADE
+commercial_condition_item_prices	commercial_payment_plan_assignments	commercial_condition_item_prices_assignment_id_fkey	FOREIGN KEY (assignment_id) REFERENCES commercial_payment_plan_assignments(id) ON DELETE CASCADE
+commercial_condition_item_prices	commercial_payment_plans	commercial_condition_item_prices_plan_id_fkey	FOREIGN KEY (plan_id) REFERENCES commercial_payment_plans(id) ON DELETE RESTRICT
+commercial_condition_item_prices	commercial_price_rules	commercial_condition_item_prices_published_rule_id_fkey	FOREIGN KEY (published_rule_id) REFERENCES commercial_price_rules(id) ON DELETE SET NULL
+commercial_condition_item_prices	microrganismos	commercial_condition_item_prices_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+commercial_condition_item_prices	partner_accounts	commercial_condition_item_prices_partner_id_fkey	FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE
+commercial_condition_item_prices	produtos	commercial_condition_item_prices_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE CASCADE
+commercial_price_rules	clientes	commercial_price_rules_customer_id_fkey	FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE CASCADE
+commercial_price_rules	commercial_payment_plans	commercial_price_rules_plan_id_fkey	FOREIGN KEY (plan_id) REFERENCES commercial_payment_plans(id) ON DELETE RESTRICT
+commercial_price_rules	microrganismos	commercial_price_rules_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+commercial_price_rules	partner_accounts	commercial_price_rules_partner_id_fkey	FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE
+commercial_price_rules	produtos	commercial_price_rules_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE CASCADE
+cq_parametros_referencia	auth.users	cq_parametros_referencia_created_by_fkey	FOREIGN KEY (created_by) REFERENCES auth.users(id)
+cq_parametros_referencia	microrganismos	cq_parametros_referencia_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+cq_parametros_referencia	produtos	cq_parametros_referencia_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+entregas	accounts_receivable	entregas_receivable_id_fkey	FOREIGN KEY (receivable_id) REFERENCES accounts_receivable(id) ON DELETE SET NULL
+entregas	auth.users	entregas_confirmado_por_fkey	FOREIGN KEY (confirmado_por) REFERENCES auth.users(id)
+entregas	auth.users	entregas_recebimento_confirmado_por_fkey	FOREIGN KEY (recebimento_confirmado_por) REFERENCES auth.users(id)
+entregas	auth.users	entregas_formulario_gerado_por_fkey	FOREIGN KEY (formulario_gerado_por) REFERENCES auth.users(id)
+entregas	auth.users	entregas_comprovante_anexado_por_fkey	FOREIGN KEY (comprovante_anexado_por) REFERENCES auth.users(id)
+entregas	auth.users	entregas_assinatura_digital_capturada_por_fkey	FOREIGN KEY (assinatura_digital_capturada_por) REFERENCES auth.users(id)
+entregas	clientes	entregas_cliente_id_fkey	FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+entregas	entrega_comprovantes	entregas_comprovante_id_fkey	FOREIGN KEY (comprovante_id) REFERENCES entrega_comprovantes(id) ON DELETE SET NULL
+entregas	entregas	entregas_reentrega_origem_id_fkey	FOREIGN KEY (reentrega_origem_id) REFERENCES entregas(id) ON DELETE SET NULL
+entregas	lotes	entregas_lote_id_fkey	FOREIGN KEY (lote_id) REFERENCES lotes(id) ON DELETE SET NULL
+entregas	ordens_servico	entregas_ordem_servico_id_fkey	FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)
+entregas	ordens_servico_onfarm	entregas_ordem_servico_onfarm_id_fkey	FOREIGN KEY (ordem_servico_onfarm_id) REFERENCES ordens_servico_onfarm(id)
+entregas	organizations	entregas_organization_id_fkey	FOREIGN KEY (organization_id) REFERENCES organizations(id)
+entregas	os_faturamento_base	entregas_os_faturamento_base_id_fkey	FOREIGN KEY (os_faturamento_base_id) REFERENCES os_faturamento_base(id)
+entregas	partner_orders	entregas_partner_order_id_fkey	FOREIGN KEY (partner_order_id) REFERENCES partner_orders(id) ON DELETE SET NULL
+entregas	produtos	entregas_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE SET NULL
+estoque_embalagens	clientes	fk_estoque_embalagens_cliente	FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+estoque_embalagens	entregas	fk_estoque_embalagens_entrega	FOREIGN KEY (entrega_id) REFERENCES entregas(id) ON DELETE SET NULL
+estoque_embalagens	envase	fk_estoque_embalagens_envase	FOREIGN KEY (envase_id) REFERENCES envase(id) ON DELETE SET NULL
+estoque_embalagens	fazendas	fk_estoque_embalagens_fazenda	FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE SET NULL
+estoque_embalagens	lotes	fk_estoque_embalagens_lote	FOREIGN KEY (lote_id) REFERENCES lotes(id) ON DELETE RESTRICT
+estoque_embalagens	produto_etiquetas	estoque_embalagens_etiqueta_id_fkey	FOREIGN KEY (etiqueta_id) REFERENCES produto_etiquetas(id) ON DELETE SET NULL
+estoque_embalagens	produtos	fk_estoque_embalagens_produto	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE SET NULL
+estoque_produto	clientes	estoque_produto_reservado_para_cliente_id_fkey	FOREIGN KEY (reservado_para_cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+estoque_produto	envase	estoque_produto_envase_id_fkey	FOREIGN KEY (envase_id) REFERENCES envase(id) ON DELETE SET NULL
+estoque_produto	lotes	estoque_produto_lote_id_fkey	FOREIGN KEY (lote_id) REFERENCES lotes(id)
+estoque_produto	microrganismos	estoque_produto_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+estoque_produto	partner_accounts	estoque_produto_reservado_para_partner_id_fkey	FOREIGN KEY (reservado_para_partner_id) REFERENCES partner_accounts(id) ON DELETE SET NULL
+estoque_produto	partner_orders	estoque_produto_reservado_para_partner_order_id_fkey	FOREIGN KEY (reservado_para_partner_order_id) REFERENCES partner_orders(id) ON DELETE SET NULL
+estoque_produto	produtos	estoque_produto_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id)
+formulacoes	microrganismos	formulacoes_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+formulacoes	produtos	formulacoes_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+formulacoes	produtos	formulacoes_component_insumo_id_fkey	FOREIGN KEY (component_insumo_id) REFERENCES produtos(id)
+lotes	microrganismos	lotes_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+lotes	organizations	lotes_organization_id_fkey	FOREIGN KEY (organization_id) REFERENCES organizations(id)
+lotes	produtos	lotes_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id)
+lotes	programacao_producao	lotes_programacao_id_fkey	FOREIGN KEY (programacao_id) REFERENCES programacao_producao(id)
+microorganism_crop_recommendations	culturas	microorganism_crop_recommendations_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id) ON DELETE SET NULL
+microorganism_crop_recommendations	microrganismos	microorganism_crop_recommendations_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+microorganism_fiscal_profiles	microrganismos	microorganism_fiscal_profiles_microorganism_id_fkey	FOREIGN KEY (microorganism_id) REFERENCES microrganismos(id) ON DELETE RESTRICT
+microorganism_regulatory_dossiers	microorganism_ncm_candidates	mrd_published_candidate_fk	FOREIGN KEY (published_ncm_candidate_id) REFERENCES microorganism_ncm_candidates(id) ON DELETE RESTRICT
+microorganism_regulatory_dossiers	microrganismos	microorganism_regulatory_dossiers_microorganism_id_fkey	FOREIGN KEY (microorganism_id) REFERENCES microrganismos(id) ON DELETE RESTRICT
+microorganism_regulatory_presentations	catalogo_volumes	microorganism_regulatory_presentations_catalog_volume_id_fkey	FOREIGN KEY (catalog_volume_id) REFERENCES catalogo_volumes(id) ON DELETE SET NULL
+microorganism_regulatory_presentations	microorganism_regulatory_dossiers	microorganism_regulatory_presentations_dossier_id_fkey	FOREIGN KEY (dossier_id) REFERENCES microorganism_regulatory_dossiers(id) ON DELETE CASCADE
+microorganism_regulatory_publication_snapshots	microorganism_regulatory_dossiers	microorganism_regulatory_publication_snapshots_dossier_id_fkey	FOREIGN KEY (dossier_id) REFERENCES microorganism_regulatory_dossiers(id) ON DELETE RESTRICT
+microorganism_regulatory_publication_snapshots	microrganismos	microorganism_regulatory_publication_snap_microorganism_id_fkey	FOREIGN KEY (microorganism_id) REFERENCES microrganismos(id) ON DELETE RESTRICT
+microorganism_targets	catalogo_alvos	microorganism_targets_catalogo_alvo_id_fkey	FOREIGN KEY (catalogo_alvo_id) REFERENCES catalogo_alvos(id) ON DELETE SET NULL
+microorganism_targets	microrganismos	microorganism_targets_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+microorganism_technical_profiles	microrganismos	microorganism_technical_profiles_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+microrganismos	produtos	microrganismos_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id) ON UPDATE CASCADE ON DELETE RESTRICT
+objetivos_visita_sugestoes	culturas	objetivos_visita_sugestoes_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id) ON DELETE CASCADE
+ordens_servico	clientes	ordens_servico_cliente_id_fkey	FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+ordens_servico	fazendas	ordens_servico_fazenda_id_fkey	FOREIGN KEY (fazenda_id) REFERENCES fazendas(id)
+ordens_servico	microrganismos	ordens_servico_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+ordens_servico	organizations	ordens_servico_organization_id_fkey	FOREIGN KEY (organization_id) REFERENCES organizations(id)
+ordens_servico	partner_order_items	ordens_servico_partner_order_item_id_fkey	FOREIGN KEY (partner_order_item_id) REFERENCES partner_order_items(id) ON DELETE SET NULL
+ordens_servico	partner_orders	ordens_servico_partner_order_id_fkey	FOREIGN KEY (partner_order_id) REFERENCES partner_orders(id) ON DELETE SET NULL
+ordens_servico	produtos	ordens_servico_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id)
+ordens_servico	talhoes	ordens_servico_talhao_id_fkey	FOREIGN KEY (talhao_id) REFERENCES talhoes(id)
+ordens_servico_onfarm	aprovacoes_tecnicas	ordens_servico_onfarm_aprovacao_id_fkey	FOREIGN KEY (aprovacao_id) REFERENCES aprovacoes_tecnicas(id)
+ordens_servico_onfarm	auth.users	ordens_servico_onfarm_created_by_fkey	FOREIGN KEY (created_by) REFERENCES auth.users(id)
+ordens_servico_onfarm	auth.users	ordens_servico_onfarm_consultor_responsavel_fkey	FOREIGN KEY (consultor_responsavel) REFERENCES auth.users(id)
+ordens_servico_onfarm	clientes	ordens_servico_onfarm_cliente_id_fkey	FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+ordens_servico_onfarm	culturas	ordens_servico_onfarm_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id)
+ordens_servico_onfarm	fazendas	ordens_servico_onfarm_fazenda_id_fkey	FOREIGN KEY (fazenda_id) REFERENCES fazendas(id)
+ordens_servico_onfarm	microrganismos	ordens_servico_onfarm_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+ordens_servico_onfarm	portal_solicitacoes	ordens_servico_onfarm_solicitacao_id_fkey	FOREIGN KEY (solicitacao_id) REFERENCES portal_solicitacoes(id)
+ordens_servico_onfarm	produtos	ordens_servico_onfarm_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id)
+ordens_servico_onfarm	registros_consultor	ordens_servico_onfarm_registro_consultor_id_fkey	FOREIGN KEY (registro_consultor_id) REFERENCES registros_consultor(id)
+ordens_servico_onfarm	talhoes	ordens_servico_onfarm_talhao_id_fkey	FOREIGN KEY (talhao_id) REFERENCES talhoes(id)
+os_faturamento_base	auth.users	os_faturamento_base_created_by_fkey	FOREIGN KEY (created_by) REFERENCES auth.users(id)
+os_faturamento_base	clientes	os_faturamento_base_cliente_id_fkey	FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+os_faturamento_base	produtos	os_faturamento_base_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id)
+partner_order_items	commercial_price_rules	poi_price_rule_snapshot_fk	FOREIGN KEY (price_rule_id_snapshot) REFERENCES commercial_price_rules(id) ON DELETE SET NULL
+partner_order_items	microrganismos	partner_order_items_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+partner_order_items	partner_orders	partner_order_items_order_id_fkey	FOREIGN KEY (order_id) REFERENCES partner_orders(id) ON DELETE CASCADE
+partner_order_items	produtos	partner_order_items_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id)
+partner_product_prices	microrganismos	partner_product_prices_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE
+partner_product_prices	partner_accounts	partner_product_prices_partner_id_fkey	FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE
+partner_product_prices	produtos	partner_product_prices_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id)
+partner_simulation_items	microrganismos	partner_simulation_items_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+partner_simulation_items	partner_simulations	partner_simulation_items_simulation_id_fkey	FOREIGN KEY (simulation_id) REFERENCES partner_simulations(id) ON DELETE CASCADE
+partner_simulation_items	produtos	partner_simulation_items_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id)
+product_crop_recommendations	culturas	product_crop_recommendations_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id) ON DELETE SET NULL
+product_crop_recommendations	produtos	product_crop_recommendations_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+product_fiscal_profiles	produtos	product_fiscal_profiles_product_id_fkey	FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE RESTRICT
+product_target_recommendations	catalogo_alvos	product_target_recommendations_catalogo_alvo_id_fkey	FOREIGN KEY (catalogo_alvo_id) REFERENCES catalogo_alvos(id) ON DELETE SET NULL
+product_target_recommendations	produtos	product_target_recommendations_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+product_technical_profiles	produtos	product_technical_profiles_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+produto_composicao_conjuntos	produtos	produto_composicao_conjuntos_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE RESTRICT
+produto_composicao_declaracoes	microrganismos	produto_composicao_declaracoes_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE RESTRICT
+produto_composicao_declaracoes	produto_composicao_conjuntos	produto_composicao_declaracoes_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produto_composicao_conjuntos(produto_id) ON DELETE RESTRICT
+produto_conformidade_perfis	produtos	produto_conformidade_perfis_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+produto_etiquetas	clientes	produto_etiquetas_cliente_id_fkey	FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+produto_etiquetas	entregas	produto_etiquetas_entrega_id_fkey	FOREIGN KEY (entrega_id) REFERENCES entregas(id) ON DELETE SET NULL
+produto_etiquetas	envase	produto_etiquetas_envase_id_fkey	FOREIGN KEY (envase_id) REFERENCES envase(id) ON DELETE SET NULL
+produto_etiquetas	estoque_embalagens	fk_produto_etiquetas_embalagem	FOREIGN KEY (embalagem_id) REFERENCES estoque_embalagens(id) ON DELETE SET NULL
+produto_etiquetas	estoque_embalagens	produto_etiquetas_embalagem_id_fkey	FOREIGN KEY (embalagem_id) REFERENCES estoque_embalagens(id) ON DELETE SET NULL
+produto_etiquetas	fazendas	produto_etiquetas_fazenda_id_fkey	FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE SET NULL
+produto_etiquetas	lotes	produto_etiquetas_lote_id_fkey	FOREIGN KEY (lote_id) REFERENCES lotes(id) ON DELETE SET NULL
+produto_etiquetas	produto_etiquetas	fk_produto_etiquetas_substituida_por	FOREIGN KEY (substituida_por_id) REFERENCES produto_etiquetas(id) ON DELETE SET NULL
+produto_etiquetas	produto_etiquetas	fk_produto_etiquetas_substitui	FOREIGN KEY (substitui_etiqueta_id) REFERENCES produto_etiquetas(id) ON DELETE SET NULL
+produto_etiquetas	produtos	produto_etiquetas_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE SET NULL
+programacao_producao	microrganismos	programacao_producao_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+programacao_producao	ordens_servico	programacao_producao_ordem_servico_id_fkey	FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id) ON DELETE CASCADE
+programacao_producao	ordens_servico_onfarm	programacao_producao_ordem_servico_onfarm_id_fkey	FOREIGN KEY (ordem_servico_onfarm_id) REFERENCES ordens_servico_onfarm(id)
+programacao_producao	organizations	programacao_producao_organization_id_fkey	FOREIGN KEY (organization_id) REFERENCES organizations(id)
+programacao_producao	produtos	programacao_producao_produto_id_fkey	FOREIGN KEY (produto_id) REFERENCES produtos(id)
+programacao_producao	profiles	programacao_producao_responsavel_id_fkey	FOREIGN KEY (responsavel_id) REFERENCES profiles(id) ON DELETE SET NULL
+registros_consultor	clientes	registros_consultor_cliente_id_fkey	FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+registros_consultor	culturas	registros_consultor_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id)
+registros_consultor	fazendas	registros_consultor_fazenda_id_fkey	FOREIGN KEY (fazenda_id) REFERENCES fazendas(id)
+registros_consultor	profiles	registros_consultor_consultor_profile_id_fkey	FOREIGN KEY (consultor_profile_id) REFERENCES profiles(id)
+registros_consultor	registros_consultor	registros_consultor_registro_origem_id_fkey	FOREIGN KEY (registro_origem_id) REFERENCES registros_consultor(id)
+registros_consultor	talhoes	registros_consultor_talhao_id_fkey	FOREIGN KEY (talhao_id) REFERENCES talhoes(id)
+registros_consultor_recomendacoes	microrganismos	registros_consultor_recomendacoes_microrganismo_id_fkey	FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id)
+registros_consultor_recomendacoes	produtos	registros_consultor_recomenda_produto_biologico_sugerido_i_fkey	FOREIGN KEY (produto_biologico_sugerido_id) REFERENCES produtos(id)
+registros_consultor_recomendacoes	registros_consultor	registros_consultor_recomendacoes_registro_consultor_id_fkey	FOREIGN KEY (registro_consultor_id) REFERENCES registros_consultor(id) ON DELETE CASCADE
+talhao_safras	culturas	talhao_safras_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id)
+talhao_safras	talhoes	talhao_safras_talhao_id_fkey	FOREIGN KEY (talhao_id) REFERENCES talhoes(id) ON DELETE CASCADE
+talhoes	culturas	talhoes_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id)
+talhoes	fazendas	talhoes_fazenda_id_fkey	FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE CASCADE
+talhoes	organizations	talhoes_organization_id_fkey	FOREIGN KEY (organization_id) REFERENCES organizations(id)
+talhoes	talhao_safras	talhoes_safra_atual_id_fkey	FOREIGN KEY (safra_atual_id) REFERENCES talhao_safras(id) ON DELETE SET NULL
+visitas_campo	clientes	visitas_campo_cliente_id_fkey	FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE RESTRICT
+visitas_campo	culturas	visitas_campo_cultura_id_fkey	FOREIGN KEY (cultura_id) REFERENCES culturas(id) ON DELETE SET NULL
+visitas_campo	registros_consultor	visitas_campo_registro_consultor_id_fkey	FOREIGN KEY (registro_consultor_id) REFERENCES registros_consultor(id) ON DELETE CASCADE
+visitas_campo	talhoes	visitas_campo_talhao_id_fkey	FOREIGN KEY (talhao_id) REFERENCES talhoes(id) ON DELETE SET NULL

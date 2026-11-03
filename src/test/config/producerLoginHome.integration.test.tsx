@@ -7,6 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const U = '00000000-0000-4000-8000-0000000000a1', O = '00000000-0000-4000-8000-0000000000a2', C = '00000000-0000-4000-8000-0000000000a3';
 const s = vi.hoisted(() => ({ roles: ['cliente_produtor'] as string[], active: true, org: '', ids: [] as string[], rows: [] as unknown[],
   ctx: [] as string[], ctxError: false, h15Error: false, h15Org: null as string | null, calls: {} as Record<string, number> }));
+// Historical producer login/h15 contract isolated from later C2 rollout.
+// Real producer probe/guards are retained; current C2 has separate tests.
+vi.mock('@/lib/authz/multiProfileContract',async importOriginal=>({...await importOriginal<typeof import('@/lib/authz/multiProfileContract')>(),isC2ExternalScope:()=>false}));
 function chain(result: () => unknown) { const q: Record<string, unknown> = {}; for (const n of ['select', 'eq', 'in', 'filter', 'order', 'abortSignal', 'not', 'is']) q[n] = () => q; q.maybeSingle = async () => result(); q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => Promise.resolve(result()).then(f, r); return q; }
 vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {

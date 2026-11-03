@@ -20,5 +20,9 @@ it("origem agronômica e reprogramação: PostgreSQL descartável/Auth sintétic
   for (const c of ["link visit without plan rejected PT409", "link malformed block (no end marker) rejected PT409", "link plan with null visit date rejected PT409",
     "link plan with 0 notices rejected PT409", "link plan with 2 notices rejected PT409", "link notice date divergent rejected PT409",
     "legacy origin without plan: reschedule rejected PT409", "rejected links left no receipts"]) expect(output).toContain("PASS " + c);
-  expect(output).toContain("TOTAL 87");
+  // O roteiro cresceu (87 → 103 cenários); exige-se o total reportado igual às linhas PASS, ≥ 87 e nenhuma falha.
+  const total = Number(/^TOTAL (\d+)$/m.exec(output)?.[1] ?? 0);
+  expect(total).toBeGreaterThanOrEqual(87);
+  expect(output.split("\n").filter(l => l.startsWith("PASS ")).length).toBe(total);
+  expect(output).not.toMatch(/^(FAIL|ERROR)/m);
 }, 120_000);

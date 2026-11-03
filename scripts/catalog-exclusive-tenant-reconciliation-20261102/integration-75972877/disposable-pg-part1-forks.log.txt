@@ -1,0 +1,16 @@
+$ vitest run src/test/financeiro/financialProvenanceOffline.test.ts src/test/monitoramento/agronomicOriginPostgres.test.ts "src/test/saas/c2-orders-origin-composition-postgres.test.ts" "--maxWorkers=2" "--minWorkers=1" "--pool=forks"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/monitoramento/agronomicOriginPostgres.test.ts (1 test) 9187ms
+   ✓ origem agronômica e reprogramação: PostgreSQL descartável/Auth sintética, duas ordens de revogação  9184ms
+ ✓ src/test/saas/c2-orders-origin-composition-postgres.test.ts (1 test) 40052ms
+   ✓ C2 external origin: captured chain, delivery billing denied and numeric blocker in disposable PostgreSQL  40049ms
+ ✓ src/test/financeiro/financialProvenanceOffline.test.ts (1 test) 224ms
+
+ Test Files  3 passed (3)
+      Tests  3 passed (3)
+   Start at  00:59:20
+   Duration  42.88s (transform 78ms, setup 353ms, collect 68ms, tests 49.46s, environment 2.07s, prepare 317ms)
+
+EXIT_CODE=0

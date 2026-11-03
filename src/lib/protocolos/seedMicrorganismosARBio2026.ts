@@ -53,7 +53,12 @@ export interface ImportResult {
  *    preservando `codigo`, `b2b_enabled`, `ativo`, fichas técnicas e demais campos manuais.
  *  - se não existe: insere com defaults e deixa o trigger `set_codigo_microrganismo` gerar `codigo`.
  */
+const TENANT_EXCLUSIVE_SEED_DISABLED: boolean = true;
+
 export async function importarMicrosARBio2026(): Promise<ImportResult> {
+  // Catálogo exclusivo por empresa (01/11/2026): carga fixa com escrita direta desativada — o dono seria
+  // inferido pelo cliente (risco de gravar tudo em uma empresa). Cadastro só pelas RPCs por empresa.
+  if (TENANT_EXCLUSIVE_SEED_DISABLED) throw new Error("Carga fixa do catálogo desativada: use o cadastro da própria empresa.");
   const { data: existing, error: fetchErr } = await supabase
     .from("microrganismos")
     .select("id,nome")

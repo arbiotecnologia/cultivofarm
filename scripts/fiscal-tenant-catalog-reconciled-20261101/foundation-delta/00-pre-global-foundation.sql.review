@@ -1,0 +1,56 @@
+-- 00 PRE GLOBAL da fundação ownership — NO_GO, NÃO APLICAR.
+-- Somente leitura: executa em transação READ ONLY; qualquer write falharia (25006).
+-- Valida TODAS as dependências/pins ANTES da primeira DDL do arquivo 01. Se qualquer item
+-- falhar, aborta sem nenhuma alteração. Pins = live READ ONLY 2026-11-01 (swzpzcwiasxmjutrmvkm).
+-- 17 pins: 14 iguais ao original, 3 reconciliados (09/10/13) com delta mínimo revisado.
+BEGIN TRANSACTION READ ONLY;
+DO $pre$
+DECLARE r record; v_fail text[] := ARRAY[]::text[]; v_md5 text;
+BEGIN
+  IF current_setting('transaction_read_only') <> 'on' THEN RAISE EXCEPTION 'pre_global_must_be_read_only'; END IF;
+  FOR r IN SELECT * FROM (VALUES
+    ('public.platform_wipe_global_product_catalog(uuid,text,uuid)', '05bfc1751e785331e4b64d74a238a495'),
+    ('public.fn_fiscal_scenario_coverage()', '962230c786b2dbab9c62d090923e4810'),
+    ('public.rpc_fiscal_nfe_readiness_v1()', '75487176d377f5bf096f658ad47587e4'),
+    ('public.rpc_microorganism_regulatory_overview()', 'a5763623af22befd1a60df8b04636e5d'),
+    ('public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)', '21ab73c3a6ed77512c1e93b3958bfb1c'),
+    ('public.partner_apply_default_discount(uuid)', 'c33a667463b7f34840237ad9ba676761'),
+    ('public.rpc_commercial_simulator(uuid, uuid, numeric, numeric)', '4e324b1711f06bb556f050d8ea1aa8f0'),
+    ('public.fn_resolve_commercial_price(text, uuid, uuid, uuid, uuid, uuid, text, numeric, date, numeric)', '0df0d9005d46b667db4433d3eae59e27'),
+    ('public.fn_b2b_resolve_base_unit_price(uuid, uuid, uuid, text, numeric, date)', '60651fe823452436d807b9b175c3865c'),
+    ('public.fn_resolve_b2b_cart(uuid, uuid, jsonb, date)', 'c8b4584475698835b786dacdf1e0fc14'),
+    ('platform_private.b2b_save_technical_simulation(jsonb)', 'daad3c1554f370bb0456b4ea3afdeea7'),
+    ('public.rpc_associate_microorganism_fiscal_product(uuid, uuid)', 'da0d679779e9d57558a3a203219b4afc'),
+    ('public.rpc_regulatory_dossier_ensure_draft(uuid)', '56076bccafd27aa8c95473ac38e73422'),
+    ('public.rpc_fiscal_draft_save(uuid, jsonb, jsonb, integer)', '224ab7944abd13190fe8ea1044216218'),
+    ('public.rpc_regulatory_presentation_upsert(uuid,integer,jsonb)', '74f45dd67e9435a9876b0e2609e38954'),
+    ('public.rpc_upsert_recomendacao_visita(uuid,uuid,jsonb,integer)', '42f87a90cb7d1be324b43bb3867b3a28'),
+    ('platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)', 'c890b49cf23d7cbfedf4cb12c1cd6d89')
+  ) AS t(sig, pin) LOOP
+    IF to_regprocedure(r.sig) IS NULL THEN v_fail := v_fail || ('missing:' || r.sig);
+    ELSE
+      v_md5 := md5(pg_get_functiondef(to_regprocedure(r.sig)));
+      IF v_md5 <> r.pin THEN v_fail := v_fail || ('drift:' || r.sig || ':' || v_md5); END IF;
+    END IF;
+  END LOOP;
+  -- Estado anterior auditado: fundação NÃO instalada. Presença parcial => abortar.
+  IF to_regprocedure('platform_private.catalog_ownership_enabled()') IS NOT NULL THEN
+    v_fail := v_fail || 'partial:catalog_ownership_enabled_present'::text; END IF;
+  IF EXISTS (SELECT 1 FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+             WHERE n.nspname='public' AND c.relname IN ('produtos','microrganismos','culturas')
+               AND a.attname='owner_organization_id' AND NOT a.attisdropped) THEN
+    v_fail := v_fail || 'partial:owner_organization_id_present'::text; END IF;
+  -- Dependências referenciadas pelos deltas reconciliados.
+  IF to_regprocedure('platform_private.c2p1_assignment_allowed(text,uuid,uuid)') IS NULL THEN v_fail := v_fail || 'dep:c2p1_assignment_allowed'::text; END IF;
+  IF to_regprocedure('platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)') IS NULL THEN v_fail := v_fail || 'dep:c2p1_item_allowed'::text; END IF;
+  IF to_regprocedure('platform_private.catalog_tenant_actor(text)') IS NULL THEN v_fail := v_fail || 'dep:catalog_tenant_actor'::text; END IF;
+  IF to_regprocedure('public.h15_company_access(uuid)') IS NULL THEN v_fail := v_fail || 'dep:h15_company_access'::text; END IF;
+  FOREACH v_md5 IN ARRAY ARRAY['produtos','microrganismos','culturas','commercial_condition_item_prices',
+      'catalog_tenant_visibility','catalog_tenant_visibility_ledger','fiscal_invoices','fiscal_invoice_items'] LOOP
+    IF to_regclass('public.' || v_md5) IS NULL THEN v_fail := v_fail || ('dep:table:' || v_md5); END IF;
+  END LOOP;
+  IF cardinality(v_fail) > 0 THEN
+    RAISE EXCEPTION 'ownership_pre_global_failed' USING DETAIL = array_to_string(v_fail, ' | ');
+  END IF;
+END $pre$;
+COMMIT;

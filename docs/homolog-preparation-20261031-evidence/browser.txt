@@ -1,0 +1,2 @@
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+{"url": "http://localhost:8080/auth", "checks": {"requestsBlocked": [true, true, true, true, true], "socketBlocked": true, "productionStorageIgnored": true, "homologSessionAbsent": true}, "externalAttemptsIntercepted": [{"origin": "vrlcdwmlytukrjezrrnf.supabase.co", "method": "GET"}, {"origin": "vrlcdwmlytukrjezrrnf.supabase.co", "method": "GET"}, {"origin": "vrlcdwmlytukrjezrrnf.supabase.co", "method": "GET"}], "pageErrors": []}

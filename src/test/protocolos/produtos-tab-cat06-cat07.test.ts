@@ -5,7 +5,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import {
-  saveProdutoComCompensacao,
+  saveProdutoTenant,
   carregarCatalogoProdutos,
 } from "@/components/protocolos/ProdutosTab";
 
@@ -52,194 +52,78 @@ const FORMULACOES_ANTERIORES = [
 ];
 const NOVAS = [{ produto_id: "p1", microrganismo_id: "m2", volume_ml: 200 }];
 
-describe("CAT-06 · integridade na edição de produto", () => {
-  it("falha ao inserir novas formulações tenta restaurar produto e composição anterior", async () => {
-    const { client, calls } = makeClient((c) => {
-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
-      if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
-      if (c.table === "formulacoes" && c.op === "insert" && c.payload === NOVAS)
-        return { data: null, error: { message: "insert falhou" } };
-      return successfulMutation(c);
-    });
+/**
+ * CAT-06 (v2.8, catálogo exclusivo por empresa): a compensação no cliente com escrita direta foi substituída
+ * pela RPC do produto + substituição atômica da composição no servidor. Os cenários de falha continuam
+ * cobertos: nenhum caminho devolve ok sem ACK do servidor e não existe escrita direta em tabela.
+ */
+function makeRpc(handler: (fn: string, args: any, index: number) => any) {
+  const calls: { fn: string; args: any }[] = [];
+  const client = {
+    rpc: (fn: string, args: any) => { const i = calls.length; calls.push({ fn, args }); return Promise.resolve(handler(fn, args, i)); },
+    from: () => { throw new Error("escrita/leitura direta proibida no salvamento"); },
+  };
+  return { client, calls };
+}
+const ACK = (id: string) => ({ data: { product_id: id, updated_at: "2026-11-02T10:00:00.000001+00:00", replayed: false }, error: null });
+const FORM_ACK = (id: string, n: number) => ({ data: { ok: true, produto_id: id, items: n, updated_at: "2026-11-02T10:00:00.000002+00:00" }, error: null });
+const BASE = { nome: "Produto X", tipo: "solo", codigo: null, versao_catalogo: "v1", ativo: true, b2b_enabled: false };
+const build = (id: string) => [{ produto_id: id, microrganismo_id: "m2", volume_ml: 200 }];
 
-    const out = await saveProdutoComCompensacao({
-      client,
-      produtoId: "p1",
-      payload: PAYLOAD,
-      buildFormulacoes: () => NOVAS,
-    });
-
+describe("CAT-06 · salvamento de produto por empresa", () => {
+  it("edição sem versão observada não envia nada", async () => {
+    const { client, calls } = makeRpc(() => ACK("p1"));
+    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: null, payload: BASE, buildFormulacoes: build });
     expect(out.status).toBe("error");
-    expect((out as any).message).toMatch(/composição/);
-    // restaurou o produto anterior
-    expect(calls.some((c) => c.table === "produtos" && c.op === "update" && c.payload === ANTERIOR)).toBe(true);
-    // removeu composição parcial e reinseriu o snapshot anterior
-    const idxDelete = calls.findIndex(
-      (c, i) => c.table === "formulacoes" && c.op === "delete" && i > calls.findIndex((x) => x.op === "insert"),
-    );
-    expect(idxDelete).toBeGreaterThan(-1);
-    expect(calls.some((c) => c.table === "formulacoes" && c.op === "insert" && c.payload === FORMULACOES_ANTERIORES)).toBe(true);
+    expect(calls).toHaveLength(0);
   });
-
-  it("falha do rollback devolve erro crítico", async () => {
-    const { client } = makeClient((c) => {
-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
-      if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
-      if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
-      if (c.table === "produtos" && c.op === "update" && c.payload === ANTERIOR)
-        return { data: null, error: { message: "rollback falhou" } };
-      return successfulMutation(c);
-    });
-
-    const out = await saveProdutoComCompensacao({
-      client,
-      produtoId: "p1",
-      payload: PAYLOAD,
-      buildFormulacoes: () => NOVAS,
-    });
-
-    expect(out.status).toBe("critical");
-    expect((out as any).message).toMatch(/contate o suporte/i);
-  });
-
-  it("não escreve nada quando o snapshot inicial falha", async () => {
-    const { client, calls } = makeClient((c) => {
-      if (c.table === "produtos" && c.op === "select") return { data: null, error: { message: "sem leitura" } };
-      return successfulMutation(c);
-    });
-    const out = await saveProdutoComCompensacao({
-      client,
-      produtoId: "p1",
-      payload: PAYLOAD,
-      buildFormulacoes: () => NOVAS,
-    });
-    expect(out.status).toBe("error");
-    expect(calls.every((c) => c.op === "select")).toBe(true);
-  });
-
-  it("produto novo: falha na composição apaga o produto criado", async () => {
-    const { client, calls } = makeClient((c) => {
-      if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
-      if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
-      return successfulMutation(c);
-    });
-    const out = await saveProdutoComCompensacao({
-      client,
-      produtoId: null,
-      payload: PAYLOAD,
-      buildFormulacoes: id => NOVAS.map(row => ({ ...row, produto_id: id })),
-    });
-    expect(out.status).toBe("error");
-    expect(calls.some((c) => c.table === "produtos" && c.op === "delete")).toBe(true);
-  });
-
-  it("produto novo: falha da exclusão compensatória vira erro crítico", async () => {
-    const { client } = makeClient((c) => {
-      if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
-      if (c.table === "formulacoes" && c.op === "insert") return { data: null, error: { message: "insert falhou" } };
-      if (c.table === "produtos" && c.op === "delete") return { data: null, error: { message: "delete falhou" } };
-      return successfulMutation(c);
-    });
-    const out = await saveProdutoComCompensacao({
-      client,
-      produtoId: null,
-      payload: PAYLOAD,
-      buildFormulacoes: id => NOVAS.map(row => ({ ...row, produto_id: id })),
-    });
-    expect(out.status).toBe("critical");
-  });
-
-  it("caminho feliz devolve ok", async () => {
-    const { client } = makeClient((c) => {
-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
-      if (c.table === "formulacoes" && c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
-      return successfulMutation(c);
-    });
-    const out = await saveProdutoComCompensacao({
-      client,
-      produtoId: "p1",
-      payload: PAYLOAD,
-      buildFormulacoes: () => NOVAS,
-    });
+  it("caminho feliz: produto com CAS e composição com o token devolvido", async () => {
+    const { client, calls } = makeRpc((fn, a) => fn === "tenant_product_save" ? ACK("p1") : FORM_ACK("p1", 1));
+    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
     expect(out).toEqual({ status: "ok", produtoId: "p1" });
+    expect(calls.map((c) => c.fn)).toEqual(["tenant_product_save", "tenant_catalog_formulacoes_replace"]);
+    expect(calls[0].args.p_expected_updated_at).toBe("T0");
+    expect(calls[1].args.p_expected_produto_updated_at).toBe("2026-11-02T10:00:00.000001+00:00");
+    expect(calls[1].args.p_items).toEqual([{ microrganismo_id: "m2", volume_ml: 200 }]);
   });
-});
-
-describe("confirmação de linhas e compensação", () => {
-  const run = async (handler: (c: Call & { index: number }) => any, novo = false) => {
-    const { client, calls } = makeClient(handler);
-    const build = vi.fn(id => [{ produto_id: id, volume_ml: 100 }]);
-    const out = await saveProdutoComCompensacao({ client, produtoId: novo ? null : "p1", payload: PAYLOAD, buildFormulacoes: build });
-    return { out, calls, build };
-  };
-  const baseline = (c: Call) => {
-    if (c.op === "select" && c.table === "produtos") return { data: ANTERIOR, error: null };
-    if (c.op === "select") return { data: FORMULACOES_ANTERIORES, error: null };
-    return successfulMutation(c);
-  };
-  it.each([[], [{ id: "outro" }], [{}], [{ id: "p1" }, { id: "p1" }]])("UPDATE sem linha/ID exato interrompe antes da composição: %j", async data => {
-    const { out, calls, build } = await run(c => c.op === "update" ? { data, error: null } : baseline(c));
+  it("payload sem empresa/campos fora do contrato; código vazio deixado ao servidor", async () => {
+    const { client, calls } = makeRpc((fn) => fn === "tenant_product_save" ? ACK("novo") : FORM_ACK("novo", 1));
+    await saveProdutoTenant({ client, produtoId: null, expectedUpdatedAt: null, payload: { ...BASE, owner_organization_id: "x" }, buildFormulacoes: build });
+    const body = calls[0].args.p_payload;
+    expect(body).not.toHaveProperty("owner_organization_id");
+    expect(body).not.toHaveProperty("versao_catalogo");
+    expect(body).not.toHaveProperty("ativo");
+    expect(body).not.toHaveProperty("codigo");
+    expect(calls[0].args.p_expected_updated_at).toBeNull();
+  });
+  it("falha do produto: composição não é enviada", async () => {
+    const { client, calls } = makeRpc(() => ({ data: null, error: { code: "PT409", message: "tenant_product_version_conflict" } }));
+    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
     expect(out.status).toBe("error");
-    expect(build).not.toHaveBeenCalled();
-    expect(calls.filter(c => c.table === "formulacoes" && c.op !== "select")).toHaveLength(0);
-  });
-  it.each([[], [{}], [{ id: "" }], [{ id: "a" }, { id: "b" }]])("INSERT sem ID/cardinalidade confiável é crítico: %j", async data => {
-    const { out, calls, build } = await run(() => ({ data, error: null }), true);
-    expect(out.status).toBe("critical");
-    expect(build).not.toHaveBeenCalled();
     expect(calls).toHaveLength(1);
   });
-  it("compensação UPDATE zero linhas é crítica sem nova exclusão da composição", async () => {
-    const { out, calls } = await run(c => {
-      if (c.op === "update" && c.payload === ANTERIOR) return { data: [], error: null };
-      if (c.op === "insert" && c.table === "formulacoes") return { data: [], error: null };
-      return baseline(c);
-    });
-    expect(out.status).toBe("critical");
-    expect(calls.filter(c => c.op === "delete")).toHaveLength(1);
-  });
-  it("DELETE composição zero quando snapshot tem uma linha não confirma sucesso", async () => {
-    const { out } = await run(c => c.op === "delete" ? { data: [], error: null } : baseline(c));
-    expect(out.status).toBe("critical");
-  });
-  it("compensação confiável restaura IDs e devolve erro, nunca ok", async () => {
-    const { out, calls } = await run(c => c.op === "insert" && c.payload !== FORMULACOES_ANTERIORES
-      ? { data: [], error: null } : baseline(c));
+  it("ACK de outro produto não confirma sucesso nem envia composição", async () => {
+    const { client, calls } = makeRpc(() => ACK("outro"));
+    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
     expect(out.status).toBe("error");
-    expect(calls.some(c => c.op === "insert" && c.payload === FORMULACOES_ANTERIORES)).toBe(true);
+    expect(calls).toHaveLength(1);
   });
-  it("INSERT composição com produto divergente não confirma sucesso", async () => {
-    const { out } = await run(c => c.op === "insert" && c.payload !== FORMULACOES_ANTERIORES
-      ? { data: [{ id: "f2", produto_id: "outro" }], error: null } : baseline(c));
-    expect(out.status).toBe("error");
+  it("falha da composição depois do produto: parcial honesto, nunca ok, sem compensação", async () => {
+    const { client, calls } = makeRpc((fn) => fn === "tenant_product_save" ? ACK("p1") : ({ data: null, error: { code: "42501", message: "tenant_catalog_ref_foreign:microrganismo_id" } }));
+    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
+    expect(out.status).toBe("partial");
+    expect(calls).toHaveLength(2);
   });
-  it("restauração da composição com zero linhas é crítica", async () => {
-    const { out } = await run(c => c.op === "insert" ? { data: [], error: null } : baseline(c));
-    expect(out.status).toBe("critical");
+  it("ACK de composição com contagem divergente é parcial", async () => {
+    const { client } = makeRpc((fn) => fn === "tenant_product_save" ? ACK("p1") : FORM_ACK("p1", 5));
+    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: build });
+    expect(out.status).toBe("partial");
   });
-  it("UPDATE com compensação ID divergente é crítico", async () => {
-    const { out } = await run(c => {
-      if (c.op === "update" && c.payload === ANTERIOR) return { data: [{ id: "outro" }], error: null };
-      if (c.op === "insert") return { data: [], error: null };
-      return baseline(c);
-    });
-    expect(out.status).toBe("critical");
-  });
-  it("composição vazia aceita DELETE de zero linhas quando snapshot também vazio", async () => {
-    const { client } = makeClient(c => {
-      if (c.table === "produtos" && c.op === "select") return { data: ANTERIOR, error: null };
-      if (c.table === "produtos") return { data: [{ id: "p1" }], error: null };
-      return { data: [], error: null };
-    });
-    expect(await saveProdutoComCompensacao({ client, produtoId: "p1", payload: PAYLOAD, buildFormulacoes: () => [] }))
-      .toEqual({ status: "ok", produtoId: "p1" });
-  });
-  it("DELETE compensatório do novo produto zero linhas é crítico", async () => {
-    const { out } = await run(c => {
-      if (c.table === "produtos" && c.op === "insert") return { data: [{ id: "novo-1" }], error: null };
-      return { data: [], error: null };
-    }, true);
-    expect(out.status).toBe("critical");
+  it("composição apontando para outro produto é parcial e não é enviada", async () => {
+    const { client, calls } = makeRpc(() => ACK("p1"));
+    const out = await saveProdutoTenant({ client, produtoId: "p1", expectedUpdatedAt: "T0", payload: BASE, buildFormulacoes: () => [{ produto_id: "p9", microrganismo_id: "m" }] });
+    expect(out.status).toBe("partial");
+    expect(calls).toHaveLength(1);
   });
 });
 

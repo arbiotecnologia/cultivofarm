@@ -1,0 +1,3647 @@
+[
+  {
+    "run": "pg-red",
+    "id": "INT-001",
+    "scenario": "legacy overload present and granted before fence",
+    "expected": "t",
+    "actual": "t",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-002",
+    "scenario": "legacy overload revoked public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-003",
+    "scenario": "legacy overload invocation denied public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-004",
+    "scenario": "legacy overload revoked public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-005",
+    "scenario": "legacy overload invocation denied public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-006",
+    "scenario": "external fiscal allocation denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-007",
+    "scenario": "external fiscal authorization insert denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-008",
+    "scenario": "external fiscal cancellation insert denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-009",
+    "scenario": "legacy financial link unique preserved",
+    "expected": "t",
+    "actual": "t",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-010",
+    "scenario": "capability closed with candidate dependencies",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-011",
+    "scenario": "candidate no authenticated fiscal writer grant",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-012",
+    "scenario": "positive capability real candidate envelope",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-013",
+    "scenario": "Price cent per period total",
+    "expected": "62172.84",
+    "actual": "62172.84",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-014",
+    "scenario": "first nominal emission+30",
+    "expected": "2026-10-31",
+    "actual": "2026-10-31",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-015",
+    "scenario": "synthetic holiday next business day",
+    "expected": "2026-11-03",
+    "actual": "2026-11-03",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-016",
+    "scenario": "month clamp anchored nominal day",
+    "expected": "2026-11-30",
+    "actual": "2026-11-30",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-017",
+    "scenario": "reject unknown constructor",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-018",
+    "scenario": "reject unknown toString",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-019",
+    "scenario": "reject unknown __proto__",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-020",
+    "scenario": "reject unknown unknown",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-021",
+    "scenario": "choice rejects payment_condition_version1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-022",
+    "scenario": "choice rejects payment_deadline_days-1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-023",
+    "scenario": "choice rejects payment_condition_version0",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-024",
+    "scenario": "config rejects cash installments",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-025",
+    "scenario": "missing promissory config",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-026",
+    "scenario": "credit includes total interest before invoice",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-027",
+    "scenario": "first partial principal",
+    "expected": 20000,
+    "actual": 20000.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-028",
+    "scenario": "first partial financing",
+    "expected": 724.28,
+    "actual": 724.28,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-029",
+    "scenario": "partial residual with interest",
+    "expected": 41448.56,
+    "actual": 41448.56,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-030",
+    "scenario": "conversion no credit duplication",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-031",
+    "scenario": "replay exact title",
+    "expected": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+    "actual": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-032",
+    "scenario": "replay does not allocate twice",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-033",
+    "scenario": "allocation projection financed semantics",
+    "expected": "b2b_document_allocation_v1",
+    "actual": "b2b_document_allocation_v1",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-034",
+    "scenario": "payment reduces title only",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-035",
+    "scenario": "payment does not reopen order residual",
+    "expected": 41448.56,
+    "actual": 41448.56,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-036",
+    "scenario": "payment replay same id",
+    "expected": "6b574fae-f3a1-4c20-9125-dc8f49587be5",
+    "actual": "6b574fae-f3a1-4c20-9125-dc8f49587be5",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-037",
+    "scenario": "final partial residual zero",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-038",
+    "scenario": "three independent documents titles",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-039",
+    "scenario": "final credit total less confirmed payment",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-040",
+    "scenario": "over quantity transactional",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-041",
+    "scenario": "paid cancellation requires reconciliation",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-042",
+    "scenario": "paid cancellation retains exact money and history",
+    "expected": {
+      "titles": [
+        {
+          "id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-12-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:33:58.184743+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-31",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000712",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "notes": null,
+          "status": "PARTIAL",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-10-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:33:57.599321+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-11-03",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000710",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-11-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:33:58.104657+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-01",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000711",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        }
+      ],
+      "original": 62172.84,
+      "received": 100.0,
+      "residual": 0.0,
+      "installments": [
+        {
+          "id": "0c8c491f-44a3-409f-ab4f-741451e52811",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "1d87d60c-0628-4302-82c5-692859d9116f",
+          "status": "PARTIAL",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 100.0,
+          "installment_number": 3
+        },
+        {
+          "id": "4c401af0-367c-45f2-89d1-7767c3f969fe",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-03-01",
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "508086a0-7d22-49fe-92a9-59f3c29c1adc",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-11-03",
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "76e03ae6-4d9b-431d-95c1-c9da6826b4c8",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-11-30",
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "b5b61cac-eded-4355-b942-561d3811b867",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-01",
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "c8c9125c-0a32-4099-8def-dffd1fa72fe3",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "d7b08db6-09dc-41b5-8ff4-973fe08b1c34",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "ebf86f4b-17f0-4186-b5ad-694a867caba1",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-01-01",
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        }
+      ]
+    },
+    "actual": {
+      "titles": [
+        {
+          "id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-12-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:33:58.184743+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-31",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000712",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "notes": null,
+          "status": "PARTIAL",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-10-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:33:57.599321+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-11-03",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000710",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-11-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:33:58.104657+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-01",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000711",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        }
+      ],
+      "original": 62172.84,
+      "received": 100.0,
+      "residual": 0.0,
+      "installments": [
+        {
+          "id": "0c8c491f-44a3-409f-ab4f-741451e52811",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "1d87d60c-0628-4302-82c5-692859d9116f",
+          "status": "PARTIAL",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 100.0,
+          "installment_number": 3
+        },
+        {
+          "id": "4c401af0-367c-45f2-89d1-7767c3f969fe",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-03-01",
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "508086a0-7d22-49fe-92a9-59f3c29c1adc",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-11-03",
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "76e03ae6-4d9b-431d-95c1-c9da6826b4c8",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-11-30",
+          "created_at": "2026-11-01T13:33:57.599321+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "78bd5039-0802-4253-abf6-00f94a92a7cc",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "b5b61cac-eded-4355-b942-561d3811b867",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-01",
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "c8c9125c-0a32-4099-8def-dffd1fa72fe3",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "d7b08db6-09dc-41b5-8ff4-973fe08b1c34",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:33:58.184743+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "330b686f-ced6-4bbb-b653-e7b1744d2d7c",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "ebf86f4b-17f0-4186-b5ad-694a867caba1",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-01-01",
+          "created_at": "2026-11-01T13:33:58.104657+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "e58698ee-b760-45a5-86ee-d8d0989240ad",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        }
+      ]
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-043",
+    "scenario": "cancel event absent cannot reverse",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-044",
+    "scenario": "cancel restores only allocated residual",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-045",
+    "scenario": "cancel preserved exposure not lost",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-046",
+    "scenario": "cancel retains allocation history",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-047",
+    "scenario": "cancel keeps original financed total",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-048",
+    "scenario": "cancel restores exact residual",
+    "expected": 20724.28,
+    "actual": 20724.28,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-049",
+    "scenario": "cancel retains confirmed received",
+    "expected": 100,
+    "actual": 100.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-050",
+    "scenario": "canceled title retains original amount",
+    "expected": 20724.28,
+    "actual": 20724.28,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-051",
+    "scenario": "replacement consumes restored residual",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-052",
+    "scenario": "replacement original unchanged",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-053",
+    "scenario": "replacement received unchanged",
+    "expected": 100,
+    "actual": 100.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-054",
+    "scenario": "replacement keeps canceled title and new identity",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-055",
+    "scenario": "cancel before allocation denies title",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-056",
+    "scenario": "document title identity update denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-057",
+    "scenario": "adjusted unpaid title cannot cancel",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-058",
+    "scenario": "unreconciled net item bases blocked",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-059",
+    "scenario": "legacy writer blocked",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-060",
+    "scenario": "old title writer without permit",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-061",
+    "scenario": "immutable b2b_condition_versions",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-062",
+    "scenario": "immutable b2b_order_condition_snapshots",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-063",
+    "scenario": "immutable b2b_document_allocations",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-064",
+    "scenario": "foreign tenant fiscal replay denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-065",
+    "scenario": "inactive actor fiscal replay denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-066",
+    "scenario": "real captured legacy missing writer audit blocks",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-067",
+    "scenario": "legacy original financed amount captured",
+    "expected": 10300,
+    "actual": 10300.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-068",
+    "scenario": "legacy financing not added twice",
+    "expected": 300,
+    "actual": 300.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-069",
+    "scenario": "legacy ledger separates financing and mora",
+    "expected": 310,
+    "actual": 310.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-070",
+    "scenario": "legacy captured recalc column only mora",
+    "expected": "10.00",
+    "actual": "10.00",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-071",
+    "scenario": "legacy balance principal financing mora less paid",
+    "expected": 10210,
+    "actual": 10210.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-072",
+    "scenario": "legacy foreign tenant denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-073",
+    "scenario": "legacy changed schedule rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-074",
+    "scenario": "legacy incompatible source rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-075",
+    "scenario": "legacy swapped target rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-076",
+    "scenario": "concurrent final allocation exactly one winner",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_REAL_SESSIONS_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-077",
+    "scenario": "concurrent loser overallocates atomically",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_REAL_SESSIONS_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-078",
+    "scenario": "concurrent allocation only one title",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-079",
+    "scenario": "cent installments False",
+    "expected": [
+      33.34,
+      33.33,
+      33.34
+    ],
+    "actual": [
+      33.34,
+      33.33,
+      33.34
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-080",
+    "scenario": "cent restored exact principal and interest False",
+    "expected": 33.33,
+    "actual": 33.33,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-081",
+    "scenario": "middle replacement accepted False",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-082",
+    "scenario": "middle replacement consumes exact residual False",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-083",
+    "scenario": "middle canceled allocation unchanged False",
+    "expected": "{\"rows\": [{\"amount\": 33.33, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.00, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 33.33, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000910\", \"principal\": 33.33, \"created_at\": \"2026-11-01T13:34:01.025702+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000931\", \"receivable_id\": \"ef69e008-7583-484b-baa5-6820777151ec\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.00}",
+    "actual": "{\"rows\": [{\"amount\": 33.33, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.00, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 33.33, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000910\", \"principal\": 33.33, \"created_at\": \"2026-11-01T13:34:01.025702+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000931\", \"receivable_id\": \"ef69e008-7583-484b-baa5-6820777151ec\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.00}",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-084",
+    "scenario": "replacement principal exact False",
+    "expected": 33.33,
+    "actual": 33.33,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-085",
+    "scenario": "replacement interest exact False",
+    "expected": 0.0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-086",
+    "scenario": "replacement per-item exact cents False",
+    "expected": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000911",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0
+      }
+    ],
+    "actual": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000911",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0.0
+      }
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-087",
+    "scenario": "opposite cancellation replaces atomically False",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-088",
+    "scenario": "opposite replacement residual zero False",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-089",
+    "scenario": "opposite replacement item money preserved False",
+    "expected": "[{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}]",
+    "actual": "[{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}]",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-090",
+    "scenario": "cent installments True",
+    "expected": [
+      50.01,
+      50.01,
+      50.01
+    ],
+    "actual": [
+      50.01,
+      50.01,
+      50.01
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-091",
+    "scenario": "cent restored exact principal and interest True",
+    "expected": 50.02,
+    "actual": 50.02,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-092",
+    "scenario": "middle replacement accepted True",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-093",
+    "scenario": "middle replacement consumes exact residual True",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-094",
+    "scenario": "middle canceled allocation unchanged True",
+    "expected": "{\"rows\": [{\"amount\": 50.02, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.01, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 50.01, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000920\", \"principal\": 50.01, \"created_at\": \"2026-11-01T13:34:02.007994+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.68, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000941\", \"receivable_id\": \"9324b6e6-ed87-4482-8090-40818e846b2f\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.01}",
+    "actual": "{\"rows\": [{\"amount\": 50.02, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.01, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 50.01, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000920\", \"principal\": 50.01, \"created_at\": \"2026-11-01T13:34:02.007994+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.68, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000941\", \"receivable_id\": \"9324b6e6-ed87-4482-8090-40818e846b2f\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.01}",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-095",
+    "scenario": "replacement principal exact True",
+    "expected": 50.01,
+    "actual": 50.01,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-096",
+    "scenario": "replacement interest exact True",
+    "expected": 0.01,
+    "actual": 0.01,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-097",
+    "scenario": "replacement per-item exact cents True",
+    "expected": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000921",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0.01
+      },
+      {
+        "item_id": "00000000-0000-4000-8000-000000000922",
+        "quantity": 1,
+        "principal": 16.68,
+        "financed_interest": 0
+      }
+    ],
+    "actual": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000921",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0.01
+      },
+      {
+        "item_id": "00000000-0000-4000-8000-000000000922",
+        "quantity": 1,
+        "principal": 16.68,
+        "financed_interest": 0.0
+      }
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-098",
+    "scenario": "opposite cancellation replaces atomically True",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-099",
+    "scenario": "opposite replacement residual zero True",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-100",
+    "scenario": "opposite replacement item money preserved True",
+    "expected": "[{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.67, \"financed_interest\": 0.01}]",
+    "actual": "[{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.67, \"financed_interest\": 0.01}]",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-101",
+    "scenario": "configured overdue tolerance day -1",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-102",
+    "scenario": "configured overdue tolerance day 0",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-103",
+    "scenario": "configured overdue tolerance day 3",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-104",
+    "scenario": "configured overdue tolerance day 5",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-105",
+    "scenario": "configured overdue tolerance day 6",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-106",
+    "scenario": "invalid tolerance blocks NULL",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-107",
+    "scenario": "invalid tolerance blocks -1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-108",
+    "scenario": "positive Price projection",
+    "expected": "price_snapshot_v1",
+    "actual": "price_snapshot_v1",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-109",
+    "scenario": "Price captured generator populated installment",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-110",
+    "scenario": "Price unknown origin credit denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-111",
+    "scenario": "Price foreign origin credit denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-112",
+    "scenario": "Price changed origin credit denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-113",
+    "scenario": "same partner Price accepted in credit",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-114",
+    "scenario": "Price credit counts financing once",
+    "expected": 100.03,
+    "actual": 100.03,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-115",
+    "scenario": "simulation first_due ACK equals accepted schedule",
+    "expected": "2026-12-14",
+    "actual": null,
+    "status": "FAIL",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-116",
+    "scenario": "simulation rate version not legacy",
+    "expected": 1.8,
+    "actual": 9,
+    "status": "FAIL",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-117",
+    "scenario": "simulation months version not legacy",
+    "expected": 3,
+    "actual": 9,
+    "status": "FAIL",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-118",
+    "scenario": "simulation accepted calendar not global pin",
+    "expected": "2026-12-01",
+    "actual": "2026-12-14",
+    "status": "FAIL",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-119",
+    "scenario": "simulation fiscal anchor explicitly provisional",
+    "expected": {
+      "kind": "PROVISIONAL_ISSUE_DATE",
+      "date": "2026-11-01",
+      "calendar_version": "synthetic-paracatu-2026-2027",
+      "fiscal_due_dates_final": false
+    },
+    "actual": null,
+    "status": "FAIL",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-120",
+    "scenario": "captured simulation consumes canonical choice",
+    "expected": {
+      "payment_method": "boleto",
+      "payment_condition_version": 1,
+      "payment_deadline_days": 30
+    },
+    "actual": {
+      "payment_method": "boleto",
+      "payment_deadline_days": 30,
+      "payment_condition_version": 1
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-121",
+    "scenario": "simulation Price final real RPC",
+    "expected": 10362.14,
+    "actual": 10362.14,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-122",
+    "scenario": "simulation missing choice no legacy fallback",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-123",
+    "scenario": "simulation bad version",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-124",
+    "scenario": "null credit blocks capability transition",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-125",
+    "scenario": "create arbitrary hash no effects",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-126",
+    "scenario": "create includes concurrent exposure limit",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-127",
+    "scenario": "create provisional anchor matches simulation",
+    "expected": null,
+    "actual": null,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-128",
+    "scenario": "create first due accepted business calendar",
+    "expected": "2026-12-01",
+    "actual": "None",
+    "status": "FAIL",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-129",
+    "scenario": "captured create canonical ACK",
+    "expected": {
+      "payment_method": "boleto",
+      "payment_condition_version": 1,
+      "payment_deadline_days": 30
+    },
+    "actual": {
+      "payment_method": "boleto",
+      "payment_deadline_days": 30,
+      "payment_condition_version": 1
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-130",
+    "scenario": "create valid quoted hash",
+    "expected": "5cf01fcd7ae30a1b17c744031883680cfcf86185a42eeefabd896dd1237a5d73",
+    "actual": "5cf01fcd7ae30a1b17c744031883680cfcf86185a42eeefabd896dd1237a5d73",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-131",
+    "scenario": "create replay same order",
+    "expected": "38d3c866-a6e6-4bff-97a9-1fdbb3b3ca5b",
+    "actual": "38d3c866-a6e6-4bff-97a9-1fdbb3b3ca5b",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-132",
+    "scenario": "create snapshot principal real consumer",
+    "expected": 10000,
+    "actual": 10000.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-133",
+    "scenario": "create snapshot financed total",
+    "expected": 10362.14,
+    "actual": 10362.14,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-red",
+    "id": "INT-134",
+    "scenario": "create no fiscal title before authorization",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-001",
+    "scenario": "legacy overload present and granted before fence",
+    "expected": "t",
+    "actual": "t",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-002",
+    "scenario": "legacy overload revoked public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-003",
+    "scenario": "legacy overload invocation denied public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-004",
+    "scenario": "legacy overload revoked public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-005",
+    "scenario": "legacy overload invocation denied public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-006",
+    "scenario": "external fiscal allocation denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-007",
+    "scenario": "external fiscal authorization insert denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-008",
+    "scenario": "external fiscal cancellation insert denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-009",
+    "scenario": "legacy financial link unique preserved",
+    "expected": "t",
+    "actual": "t",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-010",
+    "scenario": "capability closed with candidate dependencies",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-011",
+    "scenario": "candidate no authenticated fiscal writer grant",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-012",
+    "scenario": "positive capability real candidate envelope",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-013",
+    "scenario": "Price cent per period total",
+    "expected": "62172.84",
+    "actual": "62172.84",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-014",
+    "scenario": "first nominal emission+30",
+    "expected": "2026-10-31",
+    "actual": "2026-10-31",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-015",
+    "scenario": "synthetic holiday next business day",
+    "expected": "2026-11-03",
+    "actual": "2026-11-03",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-016",
+    "scenario": "month clamp anchored nominal day",
+    "expected": "2026-11-30",
+    "actual": "2026-11-30",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-017",
+    "scenario": "reject unknown constructor",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-018",
+    "scenario": "reject unknown toString",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-019",
+    "scenario": "reject unknown __proto__",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-020",
+    "scenario": "reject unknown unknown",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-021",
+    "scenario": "choice rejects payment_condition_version1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-022",
+    "scenario": "choice rejects payment_deadline_days-1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-023",
+    "scenario": "choice rejects payment_condition_version0",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-024",
+    "scenario": "config rejects cash installments",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-025",
+    "scenario": "missing promissory config",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-026",
+    "scenario": "credit includes total interest before invoice",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-027",
+    "scenario": "first partial principal",
+    "expected": 20000,
+    "actual": 20000.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-028",
+    "scenario": "first partial financing",
+    "expected": 724.28,
+    "actual": 724.28,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-029",
+    "scenario": "partial residual with interest",
+    "expected": 41448.56,
+    "actual": 41448.56,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-030",
+    "scenario": "conversion no credit duplication",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-031",
+    "scenario": "replay exact title",
+    "expected": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+    "actual": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-032",
+    "scenario": "replay does not allocate twice",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-033",
+    "scenario": "allocation projection financed semantics",
+    "expected": "b2b_document_allocation_v1",
+    "actual": "b2b_document_allocation_v1",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-034",
+    "scenario": "payment reduces title only",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-035",
+    "scenario": "payment does not reopen order residual",
+    "expected": 41448.56,
+    "actual": 41448.56,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-036",
+    "scenario": "payment replay same id",
+    "expected": "31d68f87-94c4-4e90-b6eb-3b22edd263ee",
+    "actual": "31d68f87-94c4-4e90-b6eb-3b22edd263ee",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-037",
+    "scenario": "final partial residual zero",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-038",
+    "scenario": "three independent documents titles",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-039",
+    "scenario": "final credit total less confirmed payment",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-040",
+    "scenario": "over quantity transactional",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-041",
+    "scenario": "paid cancellation requires reconciliation",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-042",
+    "scenario": "paid cancellation retains exact money and history",
+    "expected": {
+      "titles": [
+        {
+          "id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-11-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:34:34.544885+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-01",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000711",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "notes": null,
+          "status": "PARTIAL",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-10-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:34:34.166751+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-11-03",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000710",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-12-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:34:34.633131+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-31",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000712",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        }
+      ],
+      "original": 62172.84,
+      "received": 100.0,
+      "residual": 0.0,
+      "installments": [
+        {
+          "id": "1830f9b3-8c21-477e-bca1-d4bb78996b9c",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-01",
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "2b724c18-c832-4f60-8592-36b67e44c51c",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "36026d02-a7a3-4b83-9215-1a1084e07ba7",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "7bad4cad-9cc7-4228-9178-6742d15783ef",
+          "status": "PARTIAL",
+          "paid_at": null,
+          "due_date": "2026-11-03",
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 100.0,
+          "installment_number": 1
+        },
+        {
+          "id": "af9f809e-99ea-46df-b9ff-9a34733ec70d",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "bee4427a-410c-4045-909a-6075af5c4e99",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-11-30",
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "c78dc7a3-de01-42a6-a588-e264b0a1d4da",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "ed9e46bf-816b-4d0b-bda9-428e3c629a96",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-01-01",
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "f0d3c69d-8289-4df2-9698-c9dcbe482e52",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-03-01",
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        }
+      ]
+    },
+    "actual": {
+      "titles": [
+        {
+          "id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-11-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:34:34.544885+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-01",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000711",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "notes": null,
+          "status": "PARTIAL",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-10-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:34:34.166751+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-11-03",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000710",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        },
+        {
+          "id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "notes": null,
+          "status": "OPEN",
+          "origin_id": "00000000-0000-4000-8000-000000000703",
+          "boleto_url": null,
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "created_by": "11111111-1111-4111-8111-111111111111",
+          "issue_date": "2026-12-01",
+          "partner_id": "00000000-0000-4000-8000-000000000700",
+          "updated_at": "2026-11-01T13:34:34.633131+00:00",
+          "category_id": "44444444-4444-4444-8444-444444444444",
+          "customer_id": "33333333-3333-4333-8333-333333333333",
+          "description": "Documento fiscal autorizado \u2014 candidato interno",
+          "origin_type": "B2B_ORDER",
+          "pix_qr_code": null,
+          "total_amount": 20724.28,
+          "auto_generated": false,
+          "cost_center_id": null,
+          "first_due_date": "2026-12-31",
+          "pix_copia_cola": null,
+          "b2b_document_id": "00000000-0000-4000-8000-000000000712",
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "payment_gateway": null,
+          "reference_month": null,
+          "fiscal_policy_id": null,
+          "fiscal_access_key": null,
+          "fiscal_issue_date": null,
+          "installment_count": 3,
+          "payment_method_id": "22222222-2222-4222-8222-222222222222",
+          "external_payment_id": null,
+          "fiscal_exemption_id": null,
+          "fiscal_invoice_number": null,
+          "fiscal_invoice_status": "NOT_REQUIRED",
+          "recurring_template_id": null,
+          "fiscal_invoice_required": false,
+          "fiscal_requirement_source": null
+        }
+      ],
+      "original": 62172.84,
+      "received": 100.0,
+      "residual": 0.0,
+      "installments": [
+        {
+          "id": "1830f9b3-8c21-477e-bca1-d4bb78996b9c",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-01",
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "2b724c18-c832-4f60-8592-36b67e44c51c",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "36026d02-a7a3-4b83-9215-1a1084e07ba7",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 1
+        },
+        {
+          "id": "7bad4cad-9cc7-4228-9178-6742d15783ef",
+          "status": "PARTIAL",
+          "paid_at": null,
+          "due_date": "2026-11-03",
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 100.0,
+          "installment_number": 1
+        },
+        {
+          "id": "af9f809e-99ea-46df-b9ff-9a34733ec70d",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-12-31",
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "bee4427a-410c-4045-909a-6075af5c4e99",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2026-11-30",
+          "created_at": "2026-11-01T13:34:34.166751+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "6db97505-d6b5-4a11-bdc3-33c356e7a1b0",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "c78dc7a3-de01-42a6-a588-e264b0a1d4da",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-02-01",
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        },
+        {
+          "id": "ed9e46bf-816b-4d0b-bda9-428e3c629a96",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-01-01",
+          "created_at": "2026-11-01T13:34:34.544885+00:00",
+          "net_amount": 6908.09,
+          "receivable_id": "4cda12d2-edab-44fc-9462-bf1cf35e1975",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.09,
+          "received_amount": 0.0,
+          "installment_number": 2
+        },
+        {
+          "id": "f0d3c69d-8289-4df2-9698-c9dcbe482e52",
+          "status": "OPEN",
+          "paid_at": null,
+          "due_date": "2027-03-01",
+          "created_at": "2026-11-01T13:34:34.633131+00:00",
+          "net_amount": 6908.1,
+          "receivable_id": "90ff7079-0f5d-44f8-95a2-9d9b4b76030a",
+          "penalty_amount": 0.0,
+          "discount_amount": 0.0,
+          "interest_amount": 0.0,
+          "organization_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "original_amount": 6908.1,
+          "received_amount": 0.0,
+          "installment_number": 3
+        }
+      ]
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-043",
+    "scenario": "cancel event absent cannot reverse",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-044",
+    "scenario": "cancel restores only allocated residual",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-045",
+    "scenario": "cancel preserved exposure not lost",
+    "expected": 62072.84,
+    "actual": 62072.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-046",
+    "scenario": "cancel retains allocation history",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-047",
+    "scenario": "cancel keeps original financed total",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-048",
+    "scenario": "cancel restores exact residual",
+    "expected": 20724.28,
+    "actual": 20724.28,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-049",
+    "scenario": "cancel retains confirmed received",
+    "expected": 100,
+    "actual": 100.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-050",
+    "scenario": "canceled title retains original amount",
+    "expected": 20724.28,
+    "actual": 20724.28,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-051",
+    "scenario": "replacement consumes restored residual",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-052",
+    "scenario": "replacement original unchanged",
+    "expected": 62172.84,
+    "actual": 62172.84,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-053",
+    "scenario": "replacement received unchanged",
+    "expected": 100,
+    "actual": 100.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-054",
+    "scenario": "replacement keeps canceled title and new identity",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-055",
+    "scenario": "cancel before allocation denies title",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-056",
+    "scenario": "document title identity update denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-057",
+    "scenario": "adjusted unpaid title cannot cancel",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-058",
+    "scenario": "unreconciled net item bases blocked",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-059",
+    "scenario": "legacy writer blocked",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-060",
+    "scenario": "old title writer without permit",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-061",
+    "scenario": "immutable b2b_condition_versions",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-062",
+    "scenario": "immutable b2b_order_condition_snapshots",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-063",
+    "scenario": "immutable b2b_document_allocations",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-064",
+    "scenario": "foreign tenant fiscal replay denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-065",
+    "scenario": "inactive actor fiscal replay denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-066",
+    "scenario": "real captured legacy missing writer audit blocks",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-067",
+    "scenario": "legacy original financed amount captured",
+    "expected": 10300,
+    "actual": 10300.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-068",
+    "scenario": "legacy financing not added twice",
+    "expected": 300,
+    "actual": 300.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-069",
+    "scenario": "legacy ledger separates financing and mora",
+    "expected": 310,
+    "actual": 310.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-070",
+    "scenario": "legacy captured recalc column only mora",
+    "expected": "10.00",
+    "actual": "10.00",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-071",
+    "scenario": "legacy balance principal financing mora less paid",
+    "expected": 10210,
+    "actual": 10210.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-072",
+    "scenario": "legacy foreign tenant denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-073",
+    "scenario": "legacy changed schedule rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-074",
+    "scenario": "legacy incompatible source rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-075",
+    "scenario": "legacy swapped target rejected",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-076",
+    "scenario": "concurrent final allocation exactly one winner",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_REAL_SESSIONS_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-077",
+    "scenario": "concurrent loser overallocates atomically",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_REAL_SESSIONS_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-078",
+    "scenario": "concurrent allocation only one title",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-079",
+    "scenario": "cent installments False",
+    "expected": [
+      33.34,
+      33.33,
+      33.34
+    ],
+    "actual": [
+      33.34,
+      33.33,
+      33.34
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-080",
+    "scenario": "cent restored exact principal and interest False",
+    "expected": 33.33,
+    "actual": 33.33,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-081",
+    "scenario": "middle replacement accepted False",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-082",
+    "scenario": "middle replacement consumes exact residual False",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-083",
+    "scenario": "middle canceled allocation unchanged False",
+    "expected": "{\"rows\": [{\"amount\": 33.33, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.00, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 33.33, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000910\", \"principal\": 33.33, \"created_at\": \"2026-11-01T13:34:37.386465+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000931\", \"receivable_id\": \"e19cfbbb-ab2b-47a4-acdc-78a5d7146e88\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.00}",
+    "actual": "{\"rows\": [{\"amount\": 33.33, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.00, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 33.33, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000910\", \"principal\": 33.33, \"created_at\": \"2026-11-01T13:34:37.386465+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000931\", \"receivable_id\": \"e19cfbbb-ab2b-47a4-acdc-78a5d7146e88\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.00}",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-084",
+    "scenario": "replacement principal exact False",
+    "expected": 33.33,
+    "actual": 33.33,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-085",
+    "scenario": "replacement interest exact False",
+    "expected": 0.0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-086",
+    "scenario": "replacement per-item exact cents False",
+    "expected": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000911",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0
+      }
+    ],
+    "actual": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000911",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0.0
+      }
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-087",
+    "scenario": "opposite cancellation replaces atomically False",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-088",
+    "scenario": "opposite replacement residual zero False",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-089",
+    "scenario": "opposite replacement item money preserved False",
+    "expected": "[{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}]",
+    "actual": "[{\"item_id\": \"00000000-0000-4000-8000-000000000911\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}]",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-090",
+    "scenario": "cent installments True",
+    "expected": [
+      50.01,
+      50.01,
+      50.01
+    ],
+    "actual": [
+      50.01,
+      50.01,
+      50.01
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-091",
+    "scenario": "cent restored exact principal and interest True",
+    "expected": 50.02,
+    "actual": 50.02,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-092",
+    "scenario": "middle replacement accepted True",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-093",
+    "scenario": "middle replacement consumes exact residual True",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-094",
+    "scenario": "middle canceled allocation unchanged True",
+    "expected": "{\"rows\": [{\"amount\": 50.02, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.01, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 50.01, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000920\", \"principal\": 50.01, \"created_at\": \"2026-11-01T13:34:38.305797+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.68, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000941\", \"receivable_id\": \"4d6aeb5c-4b44-499d-b850-06904cd2be65\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.01}",
+    "actual": "{\"rows\": [{\"amount\": 50.02, \"due_date\": \"2026-12-01\", \"interest_amount\": 0.01, \"received_amount\": 0, \"nominal_due_date\": \"2026-12-01\", \"principal_amount\": 50.01, \"installment_number\": 1}], \"items\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1}], \"order_id\": \"00000000-0000-4000-8000-000000000920\", \"principal\": 50.01, \"created_at\": \"2026-11-01T13:34:38.305797+00:00\", \"item_money\": [{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.33, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.68, \"financed_interest\": 0.00}], \"partner_id\": \"00000000-0000-4000-8000-000000000700\", \"document_id\": \"00000000-0000-4000-8000-000000000941\", \"receivable_id\": \"4d6aeb5c-4b44-499d-b850-06904cd2be65\", \"source_digest\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"financed_interest\": 0.01}",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-095",
+    "scenario": "replacement principal exact True",
+    "expected": 50.01,
+    "actual": 50.01,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-096",
+    "scenario": "replacement interest exact True",
+    "expected": 0.01,
+    "actual": 0.01,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-097",
+    "scenario": "replacement per-item exact cents True",
+    "expected": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000921",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0.01
+      },
+      {
+        "item_id": "00000000-0000-4000-8000-000000000922",
+        "quantity": 1,
+        "principal": 16.68,
+        "financed_interest": 0
+      }
+    ],
+    "actual": [
+      {
+        "item_id": "00000000-0000-4000-8000-000000000921",
+        "quantity": 1,
+        "principal": 33.33,
+        "financed_interest": 0.01
+      },
+      {
+        "item_id": "00000000-0000-4000-8000-000000000922",
+        "quantity": 1,
+        "principal": 16.68,
+        "financed_interest": 0.0
+      }
+    ],
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-098",
+    "scenario": "opposite cancellation replaces atomically True",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-099",
+    "scenario": "opposite replacement residual zero True",
+    "expected": 0,
+    "actual": 0.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-100",
+    "scenario": "opposite replacement item money preserved True",
+    "expected": "[{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.67, \"financed_interest\": 0.01}]",
+    "actual": "[{\"item_id\": \"00000000-0000-4000-8000-000000000921\", \"quantity\": 1, \"principal\": 33.34, \"financed_interest\": 0.01}, {\"item_id\": \"00000000-0000-4000-8000-000000000922\", \"quantity\": 1, \"principal\": 16.67, \"financed_interest\": 0.01}]",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-101",
+    "scenario": "configured overdue tolerance day -1",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-102",
+    "scenario": "configured overdue tolerance day 0",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-103",
+    "scenario": "configured overdue tolerance day 3",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-104",
+    "scenario": "configured overdue tolerance day 5",
+    "expected": false,
+    "actual": false,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-105",
+    "scenario": "configured overdue tolerance day 6",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-106",
+    "scenario": "invalid tolerance blocks NULL",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-107",
+    "scenario": "invalid tolerance blocks -1",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-108",
+    "scenario": "positive Price projection",
+    "expected": "price_snapshot_v1",
+    "actual": "price_snapshot_v1",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-109",
+    "scenario": "Price captured generator populated installment",
+    "expected": 1,
+    "actual": 1,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-110",
+    "scenario": "Price unknown origin credit denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-111",
+    "scenario": "Price foreign origin credit denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-112",
+    "scenario": "Price changed origin credit denied",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-113",
+    "scenario": "same partner Price accepted in credit",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-114",
+    "scenario": "Price credit counts financing once",
+    "expected": 100.03,
+    "actual": 100.03,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-115",
+    "scenario": "simulation first_due ACK equals accepted schedule",
+    "expected": "2026-12-01",
+    "actual": "2026-12-01",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-116",
+    "scenario": "simulation rate version not legacy",
+    "expected": 1.8,
+    "actual": 1.8,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-117",
+    "scenario": "simulation months version not legacy",
+    "expected": 3,
+    "actual": 3,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-118",
+    "scenario": "simulation accepted calendar not global pin",
+    "expected": "2026-12-01",
+    "actual": "2026-12-01",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-119",
+    "scenario": "simulation fiscal anchor explicitly provisional",
+    "expected": {
+      "kind": "PROVISIONAL_ISSUE_DATE",
+      "date": "2026-11-01",
+      "calendar_version": "synthetic-paracatu-2026-2027",
+      "fiscal_due_dates_final": false
+    },
+    "actual": {
+      "date": "2026-11-01",
+      "kind": "PROVISIONAL_ISSUE_DATE",
+      "calendar_version": "synthetic-paracatu-2026-2027",
+      "fiscal_due_dates_final": false
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-120",
+    "scenario": "captured simulation consumes canonical choice",
+    "expected": {
+      "payment_method": "boleto",
+      "payment_condition_version": 1,
+      "payment_deadline_days": 30
+    },
+    "actual": {
+      "payment_method": "boleto",
+      "payment_deadline_days": 30,
+      "payment_condition_version": 1
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-121",
+    "scenario": "simulation Price final real RPC",
+    "expected": 10362.14,
+    "actual": 10362.14,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-122",
+    "scenario": "simulation missing choice no legacy fallback",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-123",
+    "scenario": "simulation bad version",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-124",
+    "scenario": "null credit blocks capability transition",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-125",
+    "scenario": "create arbitrary hash no effects",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-126",
+    "scenario": "create includes concurrent exposure limit",
+    "expected": true,
+    "actual": true,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-127",
+    "scenario": "create provisional anchor matches simulation",
+    "expected": {
+      "date": "2026-11-01",
+      "kind": "PROVISIONAL_ISSUE_DATE",
+      "calendar_version": "synthetic-paracatu-2026-2027",
+      "fiscal_due_dates_final": false
+    },
+    "actual": {
+      "date": "2026-11-01",
+      "kind": "PROVISIONAL_ISSUE_DATE",
+      "calendar_version": "synthetic-paracatu-2026-2027",
+      "fiscal_due_dates_final": false
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-128",
+    "scenario": "create first due accepted business calendar",
+    "expected": "2026-12-01",
+    "actual": "2026-12-01",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-129",
+    "scenario": "captured create canonical ACK",
+    "expected": {
+      "payment_method": "boleto",
+      "payment_condition_version": 1,
+      "payment_deadline_days": 30
+    },
+    "actual": {
+      "payment_method": "boleto",
+      "payment_deadline_days": 30,
+      "payment_condition_version": 1
+    },
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-130",
+    "scenario": "create valid quoted hash",
+    "expected": "73876baff2a1eee41f6cd6509cfc1c5a75562781a1619206374d32244cf7aa50",
+    "actual": "73876baff2a1eee41f6cd6509cfc1c5a75562781a1619206374d32244cf7aa50",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-131",
+    "scenario": "create replay same order",
+    "expected": "37b4db28-d2ea-47b3-b5cc-37577db4be28",
+    "actual": "37b4db28-d2ea-47b3-b5cc-37577db4be28",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-132",
+    "scenario": "create snapshot principal real consumer",
+    "expected": 10000,
+    "actual": 10000.0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-133",
+    "scenario": "create snapshot financed total",
+    "expected": 10362.14,
+    "actual": 10362.14,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "run": "pg-green",
+    "id": "INT-134",
+    "scenario": "create no fiscal title before authorization",
+    "expected": 0,
+    "actual": 0,
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  }
+]

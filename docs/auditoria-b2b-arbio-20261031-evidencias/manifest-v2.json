@@ -1,0 +1,197 @@
+[
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/selected-tests.txt",
+    "sha256": "065b3592c65a12c223bd1cbffb82530b2d85446e1692416434205877380a134b",
+    "bytes": 10524
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/existing-vitest.log",
+    "sha256": "60269d7f44a121b47d9850d222c9268079cc959c691c6fe48884aa27055eb788",
+    "bytes": 435898
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/existing-vitest.json",
+    "sha256": "ec0db016bb1d8da6ab3391fddd8e776e9f727c51cee7ff768222f762f0b34023",
+    "bytes": 1181926
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/extended-tests.txt",
+    "sha256": "46209965f4ebc487317a09b9cd26b5da43f9d15edc2b0ebefef5c9b918f4e70b",
+    "bytes": 3366
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/extended-vitest.log",
+    "sha256": "673f030e79556fcc712fc7ab8bcf082ddada2cf40f2231c8c3624798585c936e",
+    "bytes": 637780
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/extended-vitest.json",
+    "sha256": "cb1fca16e1b30b5367b3c9e22e60f791b23cb6de4ddfcd68d708af4b14f75c5e",
+    "bytes": 373753
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-monetary.log",
+    "sha256": "f2bccd029048f8a56054b35ec38d23842e3851214d6ba732c0638844e341aed4",
+    "bytes": 37
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-price.log",
+    "sha256": "77e2b61a60d9f7e0ee3840cd4eb0ffcfb60e15aac2de656b5aaaa9c76821a6e8",
+    "bytes": 21523
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-price.json",
+    "sha256": "aab1cc8508bfc71628f4dceea873ceabc66d30ea9a528780200a3eb02c6c0ec8",
+    "bytes": 134487
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-integrated.log",
+    "sha256": "ceec037c58198473a7c83bd124f853b41b63b2a0a3f47acaecd03a14df40ae71",
+    "bytes": 2671
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel.log",
+    "sha256": "0d14e58bcfbb67dab1f01f4358d1f9ad288c7b37c6b9a5a770fa31c2f8180475",
+    "bytes": 66
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-order-concurrency.log",
+    "sha256": "5d2c149c913dd57d5e2ed3e75f8c9299de671c8cc768e3032e819ef43dcc1598",
+    "bytes": 12905
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/new-reproductions.log",
+    "sha256": "763af40bc7e579488bedf744aa842af813bfda063683d1272d3cf34e930d74be",
+    "bytes": 6797
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/new-reproductions.json",
+    "sha256": "11044b26853dd86a57d28b2a3eea8d622a9695ba4e32b0917d2261fa26ccd0aa",
+    "bytes": 9292
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/contract-checks.log",
+    "sha256": "5cdc7d545af626ddd22ad8cf55e3d84338bf2d7e17690f3109f5bccf309bf5fc",
+    "bytes": 5539
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/contract-checks.json",
+    "sha256": "f3ea8d77321876484ec3e83d0ec44e6f9e5b86d5de35f64355a61d4c11634de9",
+    "bytes": 6584
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-initial-installments.log",
+    "sha256": "d9e4508e7c4af4b0f53ca477bd80c39be1e6bb50d82eb1edb078bb51f861c350",
+    "bytes": 1998
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-battery.log",
+    "sha256": "61a33e04d304a05ef8b149f4ed54caff88c99e9a6904eb7decd76e434d3ee228",
+    "bytes": 5592
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/audit-reproductions-final.log",
+    "sha256": "bc8f0e38e51af8e5357e710f68c4c796d6523067b38bb2fcf313b9cb94a6cc7e",
+    "bytes": 8064
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/audit-reproductions-final.json",
+    "sha256": "5a080426eca778e1b91a644d64739b26018ef49797bd00c56515a6608e3ec37a",
+    "bytes": 11611
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-os-stock-pipeline.log",
+    "sha256": "0a537ba19c81ae274d468e431f064de8c5a91250de4b36f2747f8cf0bd14796c",
+    "bytes": 8476
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/payment-update-2236.json",
+    "sha256": "fcb449aab7da5756c47fb946be86415a737f39b3e5b9331fb2e3c4152e8f3556",
+    "bytes": 21003
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/payment-update-2236.log",
+    "sha256": "d04317c707ee085c378610800d56239f644d1a5ea14461719d9948ea61e4dd92",
+    "bytes": 12026
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-monetary/red-green.json",
+    "sha256": "a79e45bb306bb1fec188a42a25da8b14e78bebc7a3774b9cb905b87fdf0e4b2a",
+    "bytes": 139040
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/deferred-settings-sandbox.diff",
+    "sha256": "bd7f9a295f22d85bf406071e289a441e21ad4fe94c0bddf612f768b29d3b57fc",
+    "bytes": 12976
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/parties-credit-sandbox.diff",
+    "sha256": "2c84922d8e4548e0031653708377b8f028641cb759144ee8daf50452d30c1604",
+    "bytes": 6044
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/parties-credit-captured-impl.txt",
+    "sha256": "0aa5150fb82dd7acbee5d121b3815873ef0d0f920c8e37529f5af47700c06925",
+    "bytes": 11442
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/rpc-captured.txt",
+    "sha256": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+    "bytes": 2868
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/rpc-offline-transformation.diff",
+    "sha256": "a125aadca9f98beb96e81f47f3df0481ff20791f6836b610b09cfa0618f11ef0",
+    "bytes": 2822
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/null-kind-only.diff",
+    "sha256": "072580b61f2c0524cb9f7ba9f1917273c6c9a76adb55b60337878cfef74ff3c4",
+    "bytes": 462
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/results.json",
+    "sha256": "7728aec92a6f7a38113ab36661e46a01cd2e4079623f8dee1e2df2d079759014",
+    "bytes": 431530
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-cancel/matrix.csv",
+    "sha256": "590e56e4f4d14c6d118238c4081bfa645d8bdc60a4365cdbc007a6163ae77b45",
+    "bytes": 245639
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-integrated/red-baseline-self-approval.txt",
+    "sha256": "b2fa8a64c1c5fea74b769c38cd111f21304cd4468c731835c26def51f7864ce5",
+    "bytes": 217
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-integrated/integrated-results.json",
+    "sha256": "50f3f5b7c1c418a1c8c2890bc54138e6a5c9c95276ebb8604af251579b1c4f9b",
+    "bytes": 12428
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-battery/execucao.json",
+    "sha256": "8c1423f39587d78a68786339ba27e082adc39c1a38f91fce95151d5eff636715",
+    "bytes": 459
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-battery/fixtures-decimal.json",
+    "sha256": "8ae652a2ac8f0ff506441705e2667a853054556008996f6a5d04cb3f3bdd0a7e",
+    "bytes": 5020
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-battery/matriz-financeira.csv",
+    "sha256": "0cb02f4410b6f3abcb70a96c462717eaa8f9c229217bfcee2d8dc7415f2ca23e",
+    "bytes": 10379
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-battery/resultados-pg.json",
+    "sha256": "a1c42844fc1bf22f656b9c2f240b1d5698ffe84ac08d4b59002437ef37f1f75a",
+    "bytes": 17452
+  },
+  {
+    "path": "docs/auditoria-b2b-arbio-20261031-evidencias/pg-battery/resumo.json",
+    "sha256": "58b3f491a1ab3ecc422b4c319d046ace926a150c4f343a4cc7080657c976cea7",
+    "bytes": 140
+  }
+]

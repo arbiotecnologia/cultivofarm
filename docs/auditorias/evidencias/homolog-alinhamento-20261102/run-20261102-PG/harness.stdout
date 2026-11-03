@@ -1,0 +1,51 @@
+{"id": "BASE-1", "scenario": "434 corpos de produção presentes com md5 exato antes da degradação", "expected": 0, "actual": 0, "status": "PASS", "kind": "PG_DISPOSABLE_REAL_BODIES"}
+{"id": "BASE-2", "scenario": "63 divergentes simuladas com md5 diferente do de produção", "expected": 63, "actual": 63, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-1", "scenario": "PRE aprova a linha de base homolog (READ ONLY)", "expected": "OK", "actual": "OK", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-2", "scenario": "PRE aborta: empresa de produção presente: não é homologação", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-3", "scenario": "PRE aborta: empresa homolog ausente", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-4", "scenario": "PRE aborta: trava homolog desligada", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-5", "scenario": "PRE aborta: fiscal ligado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-6", "scenario": "PRE aborta: cron com job", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-7", "scenario": "PRE aborta: função 'igual' com drift", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-8", "scenario": "PRE aborta: divergente fora do md5 homolog capturado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-9", "scenario": "PRE aborta: função ausente já presente (instalação parcial)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-10", "scenario": "PRE aborta: coluna ausente já presente", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-11", "scenario": "PRE aborta: tabela ausente já presente", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-12", "scenario": "PRE aborta: nulabilidade fora do capturado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-13", "scenario": "PRE aborta: ledger presente (reexecução)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-14", "scenario": "PRE aborta: tipo de argumento ausente", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-15", "scenario": "PRE aborta: constraint mesmo nome com definição diferente", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "PRE-16", "scenario": "linha legada de envase com NULL bloqueia o SET NOT NULL (contagem real)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ATM-1", "scenario": "falha injetada depois dos corpos: aborta", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ATM-2", "scenario": "aborto não deixa ledger/coluna/função (transação única)", "expected": "false|0|false", "actual": "false|0|false", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-1", "scenario": "alinhamento completo em uma transação, POST interno aprovado", "expected": "OK", "actual": "OK", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-2", "scenario": "459: 434 com md5 de produção, 25 globais seguem ausentes", "expected": "434|0|0", "actual": "434|0|0", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-3", "scenario": "colunas/nulabilidade: 1339 iguais à captura", "expected": "1339", "actual": "1339", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-4", "scenario": "232 policies capturadas exatas; permissiva legada removida; restritiva legada mantida", "expected": "232|0|1", "actual": "232|0|1", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-5", "scenario": "policy capturada com predicado divergente substituída e registrada no ledger", "expected": "1", "actual": "1", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-6", "scenario": "255 gatilhos capturados com definição exata; trava homolog mantida (fora da captura, registrada)", "expected": "255|1|1", "actual": "255|1|1", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-7", "scenario": "grant anon de escrita a mais em produtos revogado (grants = captura)", "expected": "false|false|false", "actual": "false|false|false", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-8", "scenario": "nenhuma das 230 funções instaladas executável por anon", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-9", "scenario": "funções criadas: authenticated só nas derivadas (front/policies/fecho INVOKER); demais fechadas", "expected": "31", "actual": "31", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-10", "scenario": "empresas e auth.users intactos (md5 antes = depois)", "expected": "c31c472a6c0583cac91fba006d9efea3|1d1e4b55ccafde90e54d92fe1bb55ebb", "actual": "c31c472a6c0583cac91fba006d9efea3|1d1e4b55ccafde90e54d92fe1bb55ebb", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-11", "scenario": "7 produtos homolog preservados pelo alinhamento", "expected": "7", "actual": "7", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-12", "scenario": "RLS ligada nas 3 tabelas criadas (sem policy de cliente: só service_role, como na captura)", "expected": "3|false", "actual": "3|false", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "ALN-13", "scenario": "reexecução do 01 aborta antes de qualquer DDL", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "RB-1", "scenario": "rollback restritivo executa (testado em transação revertida)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-0", "scenario": "gate homolog do catálogo aprovado após o alinhamento", "expected": "OK", "actual": "OK", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-0b", "scenario": "gate recusa homologação onde a manutenção 02 de produção tenha rodado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-0c", "scenario": "arquivos da variante limpa conferem com os hashes do gate", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-1", "scenario": "PRE de PRODUÇÃO recusa a homologação (25 globais ausentes) — variante é necessária e declarada", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-2", "scenario": "PRE da variante limpa aprova a homologação alinhada", "expected": "OK", "actual": "OK", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-3", "scenario": "migração da variante limpa aplicada (transação única)", "expected": "OK", "actual": "OK", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-4", "scenario": "7 produtos homolog sem pai de tenant saem com snapshot integral no ledger; nenhum reatribuído", "expected": "0|7", "actual": "0|7", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "CAT-5", "scenario": "snapshot do ledger contém os 7 ids originais", "expected": "7", "actual": "7", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+{"id": "JWTSIM-1", "scenario": "AR Bio em onboarding: escrita de catálogo negada pelo guard canônico (controle positivo exige onboarding concluído)", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "JWTSIM-2", "scenario": "administrador AR Bio (empresa ativa) cria produto próprio via tenant_product_save", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "JWTSIM-3", "scenario": "administrador FSF cria produto próprio", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "JWTSIM-4", "scenario": "donos derivados no servidor: 1 AR Bio + 1 FSF", "expected": "c809e74f-486b-44b2-b2f4-4088f53421bb:1,dcf50a75-579a-4828-a0fc-1d8eadcb4b8a:1", "actual": "c809e74f-486b-44b2-b2f4-4088f53421bb:1,dcf50a75-579a-4828-a0fc-1d8eadcb4b8a:1", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "JWTSIM-5", "scenario": "comprador (papel do teste4) não grava catálogo", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "JWTSIM-6", "scenario": "FSF não enxerga produto da AR Bio por RLS", "expected": "0", "actual": "0", "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "JWTSIM-7", "scenario": "INSERT direto do cliente em produtos negado", "expected": true, "actual": true, "status": "PASS", "kind": "PG_DISPOSABLE_SYNTHETIC_AUTH"}
+{"id": "JWTSIM-8", "scenario": "trava homolog sem recebível segue presente e ligada após o catálogo", "expected": "1", "actual": "1", "status": "PASS", "kind": "PG_DISPOSABLE_HOMOLOG_BASELINE_SIMULATED"}
+SUMMARY {"total": 50, "passed": 50, "failed": []}

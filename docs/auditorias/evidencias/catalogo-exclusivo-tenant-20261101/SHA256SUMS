@@ -1,0 +1,6 @@
+0882dc0f91c8f7e0596d3a88cc0c18498f0794244703bc779ba71b43d24bf8b9  docs/auditorias/evidencias/catalogo-exclusivo-tenant-20261101/vitest-baseline-d38bedc.json
+33c7d11b0b66b862b540fc2085e6f0d49ba1c4acab8ba73aaa2d8c31765b8bcf  docs/auditorias/evidencias/catalogo-exclusivo-tenant-20261101/vitest-catalogo-saas-config-nav.json
+efadfd9ee609ff9e5281c561464af6c6ff5e45afcf8002ed67845b51a35447f9  docs/auditorias/evidencias/catalogo-exclusivo-tenant-20261101/vitest-fiscal-financeiro-pedidos-comercial-homolog.json
+685e7d0292bcde4db7ae89b0cdcd0cefb286b846495a402d1b5e3f330450379d  docs/auditorias/evidencias/catalogo-exclusivo-tenant-20261101/vitest-rerun-after-icon-inventory.json
+e2609ca7f30ba7d3a985f06e0ce287032c207430220293eb2e62f513f24e7f92  scripts/tenant-exclusive-catalog-20261101/00-pre-global.sql.review
+838d32836e02ba2c47d4b0b04406bd10a713f09d2df4d0c2552d3e0f88db1587  scripts/tenant-exclusive-catalog-20261101/01-migrate.sql.review

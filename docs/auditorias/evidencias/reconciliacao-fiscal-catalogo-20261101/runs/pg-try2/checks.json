@@ -1,0 +1,66 @@
+[
+ {
+  "id": "RED-01",
+  "scenario": "original PRE sem fundação aborta",
+  "expected": true,
+  "actual": true,
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_before_write()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_statement_gate()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_write_ready()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.global_product_fiscal_read_ready()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.platform_actor_access_ready(uuid)",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-platform_private.h15_actor_organization()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ },
+ {
+  "id": "RED-FID-fiscal_audit_trigger()",
+  "scenario": "stub body == captured body",
+  "expected": "same",
+  "actual": "same",
+  "status": "PASS",
+  "kind": "PG_DISPOSABLE_CAPTURED_DEFS_SYNTHETIC_AUTH"
+ }
+]

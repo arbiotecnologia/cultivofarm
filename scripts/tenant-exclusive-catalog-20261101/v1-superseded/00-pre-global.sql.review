@@ -1,0 +1,45 @@
+-- 00 PRE GLOBAL — catálogo exclusivo por tenant. NO_GO. Somente leitura (READ ONLY).
+BEGIN TRANSACTION READ ONLY;
+DO $pre$
+DECLARE v_fail text[] := ARRAY[]::text[]; r record; v_n bigint;
+BEGIN
+  -- 1. FKs reais para produtos devem estar todas mapeadas (e vice-versa)
+  FOR r IN
+    SELECT c.conrelid::regclass::text AS rel, a.attname AS col
+      FROM pg_constraint c JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum = ANY(c.conkey)
+     WHERE c.contype='f' AND c.confrelid='public.produtos'::regclass
+  LOOP
+    IF NOT EXISTS (SELECT 1 FROM (VALUES ('entregas','produto_id','reference'),('lotes','produto_id','reference'),('ordens_servico','produto_id','reference'),('programacao_producao','produto_id','reference'),('catalog_tenant_visibility','produto_id','reference'),('commercial_condition_item_prices','product_id','reference'),('commercial_price_rules','product_id','reference'),('partner_product_prices','product_id','reference'),('partner_order_items','product_id','reference'),('partner_simulation_items','product_id','reference'),('estoque_produto','produto_id','reference'),('estoque_embalagens','produto_id','reference'),('produto_etiquetas','produto_id','reference'),('os_faturamento_base','produto_id','reference'),('ordens_servico_onfarm','produto_id','reference'),('registros_consultor_recomendacoes','produto_biologico_sugerido_id','reference'),('commercial_campaign_products','product_id','reference'),('product_fiscal_profiles','product_id','descendant'),('product_technical_profiles','produto_id','descendant'),('produto_composicao_conjuntos','produto_id','descendant'),('produto_conformidade_perfis','produto_id','descendant'),('product_crop_recommendations','produto_id','descendant'),('product_target_recommendations','produto_id','descendant'),('cq_parametros_referencia','produto_id','descendant'),('catalogo_volumes','produto_id','descendant'),('formulacoes','produto_id','descendant'),('formulacoes','component_insumo_id','reference'),('microrganismos','product_id','nullify')) m(t,c,k)
+                   WHERE ('public.'||m.t = r.rel OR m.t = r.rel) AND m.c = r.col) THEN
+      v_fail := v_fail || ('fk_unmapped:'||r.rel||'.'||r.col);
+    END IF;
+  END LOOP;
+  FOR r IN SELECT * FROM (VALUES ('entregas','produto_id','reference'),('lotes','produto_id','reference'),('ordens_servico','produto_id','reference'),('programacao_producao','produto_id','reference'),('catalog_tenant_visibility','produto_id','reference'),('commercial_condition_item_prices','product_id','reference'),('commercial_price_rules','product_id','reference'),('partner_product_prices','product_id','reference'),('partner_order_items','product_id','reference'),('partner_simulation_items','product_id','reference'),('estoque_produto','produto_id','reference'),('estoque_embalagens','produto_id','reference'),('produto_etiquetas','produto_id','reference'),('os_faturamento_base','produto_id','reference'),('ordens_servico_onfarm','produto_id','reference'),('registros_consultor_recomendacoes','produto_biologico_sugerido_id','reference'),('commercial_campaign_products','product_id','reference'),('product_fiscal_profiles','product_id','descendant'),('product_technical_profiles','produto_id','descendant'),('produto_composicao_conjuntos','produto_id','descendant'),('produto_conformidade_perfis','produto_id','descendant'),('product_crop_recommendations','produto_id','descendant'),('product_target_recommendations','produto_id','descendant'),('cq_parametros_referencia','produto_id','descendant'),('catalogo_volumes','produto_id','descendant'),('formulacoes','produto_id','descendant'),('formulacoes','component_insumo_id','reference'),('microrganismos','product_id','nullify')) m(t,c,k) LOOP
+    IF to_regclass('public.'||r.t) IS NULL THEN v_fail := v_fail || ('table_missing:'||r.t); CONTINUE; END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=('public.'||r.t)::regclass AND attname=r.c AND NOT attisdropped)
+      THEN v_fail := v_fail || ('column_missing:'||r.t||'.'||r.c); END IF;
+  END LOOP;
+  -- 2. estado anterior: catálogo exclusivo ainda não instalado e fundação opcional antiga ausente
+  IF EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid='public.produtos'::regclass AND attname='owner_organization_id' AND NOT attisdropped)
+    THEN v_fail := v_fail || 'partial:produtos.owner_organization_id'::text; END IF;
+  IF to_regclass('platform_private.tenant_catalog_product_map') IS NOT NULL THEN v_fail := v_fail || 'partial:map_present'::text; END IF;
+  IF to_regprocedure('public.tenant_product_save(uuid,jsonb,timestamptz,uuid)') IS NOT NULL THEN v_fail := v_fail || 'partial:rpc_present'::text; END IF;
+  -- 3. dependências canônicas
+  IF to_regprocedure('platform_private.catalog_tenant_actor(text)') IS NULL THEN v_fail := v_fail || 'dep:catalog_tenant_actor'::text; END IF;
+  IF to_regclass('public.organizations') IS NULL OR to_regclass('public.partner_accounts') IS NULL THEN v_fail := v_fail || 'dep:organizations/partner_accounts'::text; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid='public.partner_accounts'::regclass AND attname='commercial_owner_organization_id')
+    THEN v_fail := v_fail || 'dep:partner_accounts.commercial_owner_organization_id'::text; END IF;
+  -- 4. índices únicos de produtos por expressão/parciais não são reescritos automaticamente
+  FOR r IN SELECT i.indexrelid::regclass::text AS ix FROM pg_index i
+            WHERE i.indrelid='public.produtos'::regclass AND i.indisunique AND NOT i.indisprimary
+              AND (i.indexprs IS NOT NULL OR i.indpred IS NOT NULL) LOOP
+    v_fail := v_fail || ('unique_expr_or_partial:'||r.ix);
+  END LOOP;
+  -- 5. microrganismos.product_id precisa aceitar NULL para anulação registrada
+  IF EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid='public.microrganismos'::regclass AND attname='product_id' AND attnotnull)
+    THEN v_fail := v_fail || 'nullify_not_nullable:microrganismos.product_id'::text; END IF;
+  IF cardinality(v_fail) > 0 THEN
+    RAISE EXCEPTION 'tenant_catalog_pre_failed' USING DETAIL = array_to_string(v_fail, ' | ');
+  END IF;
+END $pre$;
+COMMIT;

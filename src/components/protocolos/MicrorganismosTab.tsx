@@ -38,6 +38,7 @@ import { supabase as sbClient } from "@/integrations/supabase/client";
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
 import { VolumesChips } from "./VolumesChips";
+import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
 import { gerarProximoCodigoMicro, ehCodigoAutomatico, PREFIXOS_MICRO } from "@/lib/protocolos/autoCodigo";
 
 /** CAT-08 · carga consistente: só aplica dados se ambas as consultas passarem. */
@@ -145,6 +146,7 @@ export function MicrorganismosTab() {
     preco_tabela: null as number | null,
     b2b_enabled: false,
     ativo: true,
+    updated_at: "" as string,
   });
 
   const fetch = async () => {
@@ -228,22 +230,11 @@ export function MicrorganismosTab() {
           ativo: form.ativo,
         };
 
-        let error;
-        if (form.id) {
-          const { error: err } = await (supabase as any)
-            .from("microrganismos")
-            .update(payload)
-            .eq("id", form.id);
-          error = err;
-        } else {
-          const { error: err } = await (supabase as any)
-            .from("microrganismos")
-            .insert([payload]);
-          error = err;
-        }
-
-        if (error) {
-          toast.error(error.message);
+        // Catálogo exclusivo por empresa: escrita só pela RPC (empresa do servidor, CAS e idempotência)
+        try {
+          await saveTenantCatalogRoot(supabase as any, "microrganismos", form.id || null, payload, form.id ? form.updated_at : null);
+        } catch (err: any) {
+          toast.error(err?.message || "Não foi possível salvar.");
           return;
         }
 
@@ -282,6 +273,7 @@ export function MicrorganismosTab() {
       preco_tabela: null,
       b2b_enabled: false,
       ativo: true,
+      updated_at: "",
     });
   };
 
@@ -307,6 +299,7 @@ export function MicrorganismosTab() {
       preco_tabela: m.preco_tabela,
       b2b_enabled: !!m.b2b_enabled,
       ativo: m.ativo ?? true,
+      updated_at: m.updated_at ?? "",
     });
     setOpen(true);
   };

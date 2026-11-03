@@ -32,16 +32,18 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   },
   rpc: (name: string) => {
     const request = (async () => {
-    if (name === "get_my_commercial_partner_context") {
-      state.contextCalls++;
-      const override = state.override; state.override = undefined;
-      return { data: override ? await override() : state.context, error: null };
-    }
+    if (name === "get_my_commercial_partner_context") return {data:state.context && typeof state.context==='object' ? {...state.context,contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,external_roles:state.roles,manager:state.roles.includes('parceiro_b2b'),technician:state.roles.includes('parceiro_b2b_tecnico')} : state.context,error:null};
     if (name === "get_my_commercial_partner_projection") {
       const ctx = state.context as Record<string, unknown> | null;
-      return { data: ctx ? { id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, papel: ctx.papel, mode: ctx.mode } : null };
+      return { data: ctx ? { id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, papel: ctx.papel, mode: ctx.mode,contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,external_roles:state.roles } : null };
     }
-    if (name === "get_my_available_portal_contexts") return { data: { available_contexts: ["b2b"], has_b2b_access: true, has_technical_access: false } };
+    if (name === "get_my_available_portal_contexts") {
+      state.contextCalls++;const override=state.override;state.override=undefined;
+      const raw=override?await override():state.context;
+      if(raw===null) return {data:{contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,ready:true,available_contexts:[],has_b2b_access:false,has_technical_access:false},error:null};
+      if(!raw || typeof raw!=='object' || Array.isArray(raw) || (raw as {papel?:string}).papel!==(state.roles[0]==='parceiro_b2b_tecnico'?'tecnico':'gestor')) return {data:raw,error:null};
+      return {data:{contract:'C2_MULTIPROFILE_V1',actor_id:U,tenant_id:O,ready:true,partner_id:(raw as {partner_id:string}).partner_id,available_contexts:state.roles.includes('parceiro_b2b')?['b2b']:['technical'],has_b2b_access:state.roles.includes('parceiro_b2b'),has_technical_access:state.roles.includes('parceiro_b2b_tecnico')},error:null};
+    }
     if (name === "get_partner_catalog_secure") return state.catalog();
     if (name === "b2b_read_simulations") return state.simulations();
     throw new Error(`unexpected RPC: ${name}`);
@@ -53,6 +55,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 vi.mock("@/lib/authz/authenticatedAttachment", () => ({ ATTACHMENT_LIMITS: { files: 24, totalBytes: 60 * 1024 * 1024 }, downloadAuthenticatedAttachment: (...args: unknown[]) => state.download(...args) }));
 import { AuthProvider } from "@/hooks/useAuth";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
+import { AppPortalGuard } from '@/components/guards/AppPortalGuard';
 import { CatalogFilterPreferencesProvider } from "@/components/catalogo/CatalogFilterPreferencesProvider";
 import { CatalogFilterMemoryContext } from "@/lib/catalogo/catalogFilterPreferences";
 import { usePartnerCatalog } from "@/hooks/usePartnerCatalog";
@@ -85,7 +88,7 @@ function Location() { return <output data-testid="url">{useLocation().pathname}<
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><AuthProvider><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><CatalogFilterPreferencesProvider><Location /><Routes>
-    <Route path="/portal-parceiro/*" element={<B2BRouteGuard><Data /></B2BRouteGuard>} />
+    <Route path="/portal-parceiro/*" element={state.roles[0]==='parceiro_b2b_tecnico'?<AppPortalGuard><Data /></AppPortalGuard>:<B2BRouteGuard><Data /></B2BRouteGuard>} />
     <Route path="/sem-permissao" element={<div>acesso negado</div>} />
   </Routes></CatalogFilterPreferencesProvider></MemoryRouter></AuthProvider></QueryClientProvider>);
   return client;
@@ -114,7 +117,8 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     const input = screen.getByRole("textbox", { name: "Preferência filtro" });
     fireEvent.change(input, { target: { value: "químicos" } });
     await tick(10_000);
-    expect(input.isConnected).toBe(false);
+    // Current monitor renews an identical fingerprint without remounting.
+    expect(input.isConnected).toBe(true);
     expect(screen.getByRole("textbox", { name: "Preferência filtro" })).toHaveValue("químicos");
     state.context = null; await tick(10_000); paused(client);
     expect(screen.queryByRole("textbox", { name: "Preferência filtro" })).toBeNull();
@@ -175,10 +179,10 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     await tick(10_000); paused(client); fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" })); await tick();
     expect(screen.getByText("portal aberto")).toBeTruthy();
   });
-  it("mesma tupla confirmada novamente retira cache e refaz leitura (não prova ABA server)", async () => {
-    setup(); await tick(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); await tick(10_000);
-    expect(screen.getByText("catálogo novo")).toBeTruthy(); expect(screen.queryByText("catálogo atual")).toBeNull();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned");
+  it("mesma tupla renova lease sem remontar; não prova ABA server", async () => {
+    setup(); await tick(); const calls=state.catalog.mock.calls.length;state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); await tick(10_000);
+    expect(screen.getByText("catálogo atual")).toBeTruthy(); expect(screen.queryByText("catálogo novo")).toBeNull();
+    expect(state.catalog).toHaveBeenCalledTimes(calls);expect(URL.revokeObjectURL).not.toHaveBeenCalled();
   });
   it("A→B→A observado refaz leituras; resposta A anterior não contamina A restaurado", async () => {
     let resolve: ((v: unknown) => void) | undefined;
@@ -200,8 +204,12 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     Object.defineProperty(document, "visibilityState", { value: "visible" }); act(() => window.dispatchEvent(new Event("focus"))); await tick();
     expect(screen.queryByText("portal aberto")).toBeNull(); resolve?.(ctx()); await tick(); expect(screen.getByText("portal aberto")).toBeTruthy();
   });
-  it.each([{ roles: ["cliente_produtor"] }, { roles: ["administrador"] }, { roles: ["parceiro_b2b", "administrador"] }, { roles: ["parceiro_b2b", "parceiro_b2b_tecnico"] }])("não inicia probe para roles $roles", async ({ roles }) => {
-    state.roles = roles; setup(); await tick(); await tick(30_000); expect(state.contextCalls).toBe(0);
+  it.each([{ roles: ["cliente_produtor"] }, { roles: ["administrador"] }, { roles: ["parceiro_b2b", "administrador"] }])("roles sem autoridade B2B não montam leitores $roles", async ({ roles }) => {
+    state.roles = roles; setup(); await tick(); await tick(30_000); expect(state.catalog).not.toHaveBeenCalled();expect(state.download).not.toHaveBeenCalled();
+  });
+  it('par externo C2 comprovado usa o monitor canônico sem inventar papéis',async()=>{
+    state.roles=['parceiro_b2b','parceiro_b2b_tecnico'];setup();await tick();await tick(10000);
+    expect(state.contextCalls).toBeGreaterThan(1);expect(screen.getByText('portal aberto')).toBeTruthy();
   });
   it("gate fechado não inicia monitor B2B", async () => { state.gate = false; setup(); await tick(); const calls = state.contextCalls; await tick(30_000); expect(state.contextCalls).toBe(calls); expect(screen.getByText("portal aberto")).toBeTruthy(); });
 });

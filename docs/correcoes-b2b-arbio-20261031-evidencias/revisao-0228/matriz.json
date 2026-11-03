@@ -1,0 +1,149 @@
+[
+  {
+    "id": "REV0228-001",
+    "scenario": "SDK real sob contenção homolog, transporte simulado insert, update, delete, RPC legado, Edge e upload não chegam ao transporte",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-002",
+    "scenario": "captured approval contract is void, not a mandatory success envelope",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-003",
+    "scenario": "captured B2B writer stores payment amount AND interest: unknown origin cannot be guessed",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-004",
+    "scenario": "characterization only: any financial link excludes the whole committed order; partial residual NOT implemented",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-005",
+    "scenario": "gerador PG→projeção→leitor→saldo/baixa/KPI usam mesmo valor",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-006",
+    "scenario": "origem ausente é visível e bloqueia operação, sem saldo zero/pago",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-007",
+    "scenario": "prova estrangeira/inválida installment_id bloqueia",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-008",
+    "scenario": "prova estrangeira/inválida receivable_id bloqueia",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-009",
+    "scenario": "prova estrangeira/inválida source bloqueia",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-010",
+    "scenario": "marcador sem prova não autoriza baixa",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-011",
+    "scenario": "RPC ausente não usa tabela/heurística de fallback",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-012",
+    "scenario": "mora explicitamente legada10300+100 permanece10400",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-013",
+    "scenario": "ACK negativo ou estrangeiro recusado 0",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-014",
+    "scenario": "ACK negativo ou estrangeiro recusado 1",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-015",
+    "scenario": "ACK positivo confirma aprovação sem repetir envio",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-016",
+    "scenario": "contrato capturado RETURNS void aceita data:null/error:null e relê sem repetir envio",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-017",
+    "scenario": "AUD-ACK-001 aprovação não deve adotar success:false sem erro de transporte (lacuna RED)",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-018",
+    "scenario": "AUD-ACK-002 erro explícito do servidor continua recusado sem efeitos de cache",
+    "status": "PASSED",
+    "evidence": "tests.json",
+    "kind": "LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION"
+  },
+  {
+    "id": "REV0228-PARTIAL",
+    "scenario": "Residual não faturado + títulos sem dupla contagem; alocação ausente",
+    "status": "BLOCKED",
+    "evidence": "../../correcoes-b2b-arbio-20261031.md",
+    "kind": "PENDING"
+  },
+  {
+    "id": "REV0228-ORIGIN",
+    "scenario": "Origem canônica do writer B2B legado ainda não implementada",
+    "status": "BLOCKED",
+    "evidence": "../../correcoes-b2b-arbio-20261031.md",
+    "kind": "PENDING"
+  },
+  {
+    "id": "REV0228-HOSTED",
+    "scenario": "Sem validação hospedada por restrição explícita",
+    "status": "NOT_RUN",
+    "evidence": "../../correcoes-b2b-arbio-20261031.md",
+    "kind": "PENDING"
+  }
+]

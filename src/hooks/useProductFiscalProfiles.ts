@@ -4,10 +4,8 @@
  * - Sem `any`, sem casts amplos.
  * - `.select(...)` seleciona SOMENTE colunas necessárias.
  * - Paginação server-side via `.range()`.
- * - Mutações separadas (create/update) — não usamos upsert porque a
- *   unicidade `product_id` não é garantida pelo contrato exposto em
- *   `types.ts` nesta fase.
- * - Concorrência otimista no UPDATE via `updated_at` prévio.
+ * - Escrita somente pelo RPC canônico `tenant_owned_product_fiscal_save`
+ *   (CAS por `updated_at`, chave de idempotência, sem escrita direta).
  * - Erro de RLS/permissão nunca se torna sucesso silencioso.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +20,12 @@ import {
   type ProductFiscalFormValues,
   type ProductFiscalRow,
 } from "@/lib/fiscal/productFiscalValidation";
+import {
+  OWNED_PRODUCT_FISCAL_ENABLED,
+  OwnedFiscalError,
+  saveOwnedProductFiscal,
+  type OwnedFiscalReceipt,
+} from "@/lib/fiscal/ownedProductFiscal";
 import {
   PRODUCT_FISCAL_PROFILE_STATUSES,
   isProductFiscalProfileStatus,
@@ -301,88 +305,59 @@ export class OptimisticConflictError extends Error {
   }
 }
 
-export function useSaveProductFiscalProfile() {
+/**
+ * Gravação da ficha fiscal de produto PRÓPRIO: somente pelo writer canônico `tenant_owned_product_fiscal_save`
+ * (empresa = dono imutável do produto no servidor, CAS por updated_at, recibo idempotente, status só DRAFT/BLOCKED).
+ * Nenhuma escrita direta na tabela. Resposta incerta preserva a chave para reconciliação, sem nova tentativa automática.
+ */
+export function useSaveProductFiscalProfile(enabled: boolean = OWNED_PRODUCT_FISCAL_ENABLED) {
   const qc = useQueryClient();
   const fence = useProductFiscalAccess("product-fiscal-save");
   const actor = useProductFiscalAccess("portal-query-actor");
   return useMutation<
-    ProductFiscalRow,
+    OwnedFiscalReceipt,
     Error,
     {
       productId: string;
       current: ProductFiscalRow | null;
       values: ProductFiscalFormValues;
+      reason: string;
+      idempotencyKey: string;
     }
   >({
-    mutationFn: async ({ productId, current, values }) => {
+    mutationFn: async ({ productId, current, values, reason, idempotencyKey }) => {
       const valid = fence.capture();
       const actorValid = actor.capture();
       const actorScope = actor.scope;
       const check = () => { if (!valid() || !actorValid()) throw new Error("fiscal_context_changed"); };
-      const invalidate = async () => {
-        check();
-        await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root,
-          predicate: query => query.queryKey.at(-2) === actorScope });
-        check();
-      };
       check();
-      if (!fence.canWrite) throw new Error("permission_denied");
+      if (!fence.canWriteOwnedProduct) throw new Error("permission_denied");
       values = productFiscalFormSchema.parse(values);
       if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at || current.is_active !== true))) throw new Error("fiscal_target_changed");
-      if (!current) {
-        // Verificação prévia: perfil pode existir de outra sessão.
-        const existing = await (supabase as any)
-          .from("product_fiscal_profiles")
-          .select("id")
-          .eq("product_id", productId)
-        .eq("is_active", true)
-          .maybeSingle();
+      const full = buildInsertPayload(productId, values) as Record<string, unknown>;
+      delete full.product_id;
+      const payload = current ? (buildUpdatePayload(values, current) as Record<string, unknown>) : full;
+      let receipt: OwnedFiscalReceipt;
+      try {
+        receipt = await saveOwnedProductFiscal(supabase as never, {
+          productId, expectedUpdatedAt: current ? current.updated_at : null, values: payload, reason, idempotencyKey,
+        }, enabled);
+      } catch (e) {
         check();
-        if (existing.error) {
-          if (isPermissionError(existing.error))
-            throw new Error("permission_denied");
-          throw new Error(existing.error.message);
+        if (e instanceof OwnedFiscalError) {
+          if (e.kind === "conflict") throw new OptimisticConflictError();
+          if (e.kind === "forbidden") throw new Error("permission_denied");
+          if (e.kind === "disabled") throw new Error("fiscal_writer_disabled");
+          if (e.kind === "invalid") throw new Error("fiscal_invalid");
+          throw new Error("fiscal_uncertain");
         }
-        if (existing.data) {
-          throw new Error("duplicate_profile");
-        }
-        const payload = buildInsertPayload(productId, values);
-        const { data, error } = await (supabase as any)
-          .from("product_fiscal_profiles")
-          .insert(payload as any)
-          .select("*")
-          .single();
-        check();
-        if (error) {
-          if (isPermissionError(error)) throw new Error("permission_denied");
-          throw new Error(error.message);
-        }
-        await invalidate();
-        return data;
+        throw new Error("fiscal_uncertain");
       }
-      const payload = buildUpdatePayload(values, current);
-      if (Object.keys(payload).length === 0) {
-        return current; // nada a atualizar
-      }
-      const { data, error } = await (supabase as any)
-        .from("product_fiscal_profiles")
-        .update(payload as any)
-        .eq("is_active", true)
-        .eq("id", current.id)
-        .eq("product_id", current.product_id)
-        .eq("updated_at", current.updated_at)
-        .select("*")
-        .maybeSingle();
       check();
-      if (error) {
-        if (isPermissionError(error)) throw new Error("permission_denied");
-        throw new Error(error.message);
-      }
-      if (!data) {
-        throw new OptimisticConflictError();
-      }
-      await invalidate();
-      return data;
+      await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root,
+        predicate: query => query.queryKey.at(-2) === actorScope });
+      check();
+      return receipt;
     },
   });
 }

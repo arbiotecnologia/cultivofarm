@@ -48,6 +48,7 @@ import {
 
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
 import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
+import { requireReceivableOrigin, MONEY_ORIGIN_MESSAGE } from '@/lib/financeiro/receivableOrigin';
 
 type Kind = "receivable" | "payable";
 
@@ -90,9 +91,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   });
   const settings = settingsQuery.data;
 
-  const acum = acumuladosParcela(installment);
+  let origemErro = false;
+  if (receber && installment) { try { requireReceivableOrigin(installment); } catch { origemErro = true; } }
+  const acum = acumuladosParcela(origemErro ? null : installment);
   const saldoInicial = receber
-    ? calcularSaldoRecebivel(installment)
+    ? origemErro ? NaN : calcularSaldoRecebivel(installment)
     : calcularSaldoPagavel(installment);
 
   useEffect(() => {
@@ -125,7 +128,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       } else {
         tentativaRef.current = null;
         setExigeConferencia(false);
-        setForm({ ...empty, amount: Math.max(0, saldoInicial) });
+        setForm({ ...empty, amount: origemErro ? 0 : Math.max(0, saldoInicial) });
         idempotencyRef.current = crypto.randomUUID();
       }
     } /* eslint-disable-line */
@@ -153,6 +156,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const save = useMutation({
     retry: false,
     mutationFn: async (vars?: { repetir?: boolean; token?: number; isCurrent?: () => boolean; journalUser?: string; journalInstallment?: string }) => {
+      if (receber && !pendente) requireReceivableOrigin(installment);
       const isCurrent = vars?.isCurrent ?? (() => false);
       if ((pendente || file) && !isCurrent()) throw new ErroBaixaLocal("Contexto da empresa inválido. Entre novamente.");
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
@@ -397,7 +401,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const multa = Number(form.penalty_amount) || 0;
   const valorBaixa = Number(form.amount) || 0;
   const saldoFinal = receber
-    ? calcularSaldoRecebivel(installment, form)
+    ? origemErro ? NaN : calcularSaldoRecebivel(installment, form)
     : calcularSaldoPagavel(installment, form);
   const saldoRestante = saldoFinal - valorBaixa;
 
@@ -410,7 +414,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   /** Handler único: adquire a guarda síncrona ANTES de disparar a mutação. */
   function iniciarEnvio(vars: { repetir?: boolean } = {}) {
-    if (enviandoRef.current) return;
+    if (enviandoRef.current || (origemErro && !pendente)) return;
     enviandoRef.current = true;
     const token = donoRef.current + 1;
     donoRef.current = token;
@@ -494,7 +498,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           </div>
         )}
 
-        {installment && (
+        {origemErro && <p role="alert" className="text-sm text-destructive">{MONEY_ORIGIN_MESSAGE}</p>}
+        {installment && !origemErro && (
           <div className="rounded-md border bg-muted/50 p-3 text-xs space-y-1">
             <p className="text-sm font-medium mb-1">Parcela #{installment.installment_number} · venc. {formatDateDisplay(installment.due_date + "T12:00:00")}</p>
             <div className="grid grid-cols-2 gap-x-3">
@@ -515,7 +520,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             {saldoRestante < -0.005 && <p className="text-destructive text-xs pt-1">⚠ Valor + ajustes excedem o saldo da parcela.</p>}
           </div>
         )}
-        <fieldset disabled={travado} className="grid grid-cols-2 gap-3">
+        <fieldset disabled={travado || origemErro} className="grid grid-cols-2 gap-3">
           <div><Label>Data</Label><Input type="date" value={form.payment_date} onChange={(e) => setForm({ ...form, payment_date: e.target.value })} /></div>
           <div>
             <Label>Valor *</Label>
@@ -598,7 +603,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             // Reenvio só exige arquivo (baixa já persistida, zero RPC de baixa).
             // Resultado incerto trava novo envio até conferência explícita.
             // Nova baixa: settings carregadas obrigatórias.
-            disabled={gravando || (pendente ? !file : journalFalha || exigeConferencia || settingsBloqueado)}
+            disabled={gravando || (pendente ? !file : origemErro || journalFalha || exigeConferencia || settingsBloqueado)}
           >
             {pendente ? "Reenviar comprovante" : "Confirmar"}
           </Button>

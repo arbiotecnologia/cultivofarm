@@ -18,7 +18,10 @@ CREATE FUNCTION platform_private.b2b_credit_config_block(p_partner uuid) RETURNS
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT CASE
     WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE) THEN 'configuracao_financeira_inativa'
-    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE AND s.credit_limit > 0) THEN 'limite_nao_definido'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE AND s.credit_limit > 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')) THEN 'limite_nao_definido'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE
+      AND s.overdue_tolerance_days IS NOT NULL AND s.overdue_tolerance_days >= 0
+      AND s.block_if_overdue IS NOT NULL AND s.credit_limit_action IN ('block','approval_required')) THEN 'configuracao_financeira_incompleta'
   END $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC;
 
@@ -41,6 +44,9 @@ BEGIN
        AND NEW.status = 'em_analise_comercial'
        AND OLD.status = 'aguardando_aprovacao_credito'
        AND NEW.total IS NOT DISTINCT FROM OLD.total THEN
+      IF NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest THEN
+        RAISE EXCEPTION 'CREDIT_APPROVAL_ECONOMICS_CHANGED' USING ERRCODE = 'PT409';
+      END IF;
       -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
       PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
       v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
@@ -53,6 +59,9 @@ BEGIN
     END IF;
 
     IF NEW.credit_approved_by IS NOT NULL AND OLD.credit_approved_by IS NULL THEN
+      IF NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest THEN
+        RAISE EXCEPTION 'CREDIT_APPROVAL_ECONOMICS_CHANGED' USING ERRCODE = 'PT409';
+      END IF;
       -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
       PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
       v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
@@ -68,6 +77,9 @@ BEGIN
        AND NEW.status = 'aprovado'
        AND OLD.status = 'em_analise_comercial'
        AND NEW.total IS NOT DISTINCT FROM OLD.total THEN
+      IF NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest THEN
+        RAISE EXCEPTION 'CREDIT_APPROVAL_ECONOMICS_CHANGED' USING ERRCODE = 'PT409';
+      END IF;
       -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
       PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
       v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
@@ -95,7 +107,7 @@ BEGIN
 
   -- CANDIDATE: configuracao financeira ausente/inativa ou limite nao definido bloqueia (fresh read after lock).
   v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
-  IF v_cfg = 'configuracao_financeira_inativa' THEN
+  IF v_cfg IS NOT NULL THEN
     NEW.status := 'aguardando_aprovacao_credito';
     NEW.credit_block_reason := v_cfg;
     RETURN NEW;
@@ -184,6 +196,7 @@ BEGIN
   v_cfg := platform_private.b2b_credit_config_block(v_partner);
   IF v_cfg = 'configuracao_financeira_inativa' THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INACTIVE' USING ERRCODE = 'PT409'; END IF;
   IF v_cfg = 'limite_nao_definido' THEN RAISE EXCEPTION 'CREDIT_NO_LIMIT_DEFINED' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg IS NOT NULL THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE = 'PT409'; END IF;
   v := public.fn_b2b_credit_exposure(v_partner, 0, NULL);
   IF (v->>'block_if_overdue')::boolean AND (v->>'tem_vencidos')::boolean THEN
     RAISE EXCEPTION 'CREDIT_OVERDUE_BLOCK' USING ERRCODE = 'PT409';

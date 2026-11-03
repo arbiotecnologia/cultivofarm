@@ -1,0 +1,918 @@
+{
+  "kind": "INDEPENDENT_PYTHON_DECIMAL_SYNTHETIC_NOT_COMMERCIAL",
+  "rounding": "ROUND_HALF_UP per period, last residual",
+  "vectors": [
+    {
+      "principal": "10000",
+      "monthly_percent": "0",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 1000000,
+          "interest_cents": 0,
+          "principal_cents": 1000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "0",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 500000,
+          "interest_cents": 0,
+          "principal_cents": 500000,
+          "balance_cents": 500000
+        },
+        {
+          "amount_cents": 500000,
+          "interest_cents": 0,
+          "principal_cents": 500000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "0",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 333333,
+          "interest_cents": 0,
+          "principal_cents": 333333,
+          "balance_cents": 666667
+        },
+        {
+          "amount_cents": 333333,
+          "interest_cents": 0,
+          "principal_cents": 333333,
+          "balance_cents": 333334
+        },
+        {
+          "amount_cents": 333334,
+          "interest_cents": 0,
+          "principal_cents": 333334,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "1.8",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 1018000,
+          "interest_cents": 18000,
+          "principal_cents": 1000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "1.8",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 513540,
+          "interest_cents": 18000,
+          "principal_cents": 495540,
+          "balance_cents": 504460
+        },
+        {
+          "amount_cents": 513540,
+          "interest_cents": 9080,
+          "principal_cents": 504460,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "1.8",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 345405,
+          "interest_cents": 18000,
+          "principal_cents": 327405,
+          "balance_cents": 672595
+        },
+        {
+          "amount_cents": 345405,
+          "interest_cents": 12107,
+          "principal_cents": 333298,
+          "balance_cents": 339297
+        },
+        {
+          "amount_cents": 345404,
+          "interest_cents": 6107,
+          "principal_cents": 339297,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "2",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 1020000,
+          "interest_cents": 20000,
+          "principal_cents": 1000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "2",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 515050,
+          "interest_cents": 20000,
+          "principal_cents": 495050,
+          "balance_cents": 504950
+        },
+        {
+          "amount_cents": 515049,
+          "interest_cents": 10099,
+          "principal_cents": 504950,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "2",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 346755,
+          "interest_cents": 20000,
+          "principal_cents": 326755,
+          "balance_cents": 673245
+        },
+        {
+          "amount_cents": 346755,
+          "interest_cents": 13465,
+          "principal_cents": 333290,
+          "balance_cents": 339955
+        },
+        {
+          "amount_cents": 346754,
+          "interest_cents": 6799,
+          "principal_cents": 339955,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "3.25",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 1032500,
+          "interest_cents": 32500,
+          "principal_cents": 1000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "3.25",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 524505,
+          "interest_cents": 32500,
+          "principal_cents": 492005,
+          "balance_cents": 507995
+        },
+        {
+          "amount_cents": 524505,
+          "interest_cents": 16510,
+          "principal_cents": 507995,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "10000",
+      "monthly_percent": "3.25",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 355231,
+          "interest_cents": 32500,
+          "principal_cents": 322731,
+          "balance_cents": 677269
+        },
+        {
+          "amount_cents": 355231,
+          "interest_cents": 22011,
+          "principal_cents": 333220,
+          "balance_cents": 344049
+        },
+        {
+          "amount_cents": 355231,
+          "interest_cents": 11182,
+          "principal_cents": 344049,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "0",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 6000000,
+          "interest_cents": 0,
+          "principal_cents": 6000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "0",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 3000000,
+          "interest_cents": 0,
+          "principal_cents": 3000000,
+          "balance_cents": 3000000
+        },
+        {
+          "amount_cents": 3000000,
+          "interest_cents": 0,
+          "principal_cents": 3000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "0",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 2000000,
+          "interest_cents": 0,
+          "principal_cents": 2000000,
+          "balance_cents": 4000000
+        },
+        {
+          "amount_cents": 2000000,
+          "interest_cents": 0,
+          "principal_cents": 2000000,
+          "balance_cents": 2000000
+        },
+        {
+          "amount_cents": 2000000,
+          "interest_cents": 0,
+          "principal_cents": 2000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "1.8",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 6108000,
+          "interest_cents": 108000,
+          "principal_cents": 6000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "1.8",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 3081241,
+          "interest_cents": 108000,
+          "principal_cents": 2973241,
+          "balance_cents": 3026759
+        },
+        {
+          "amount_cents": 3081241,
+          "interest_cents": 54482,
+          "principal_cents": 3026759,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "1.8",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 2072428,
+          "interest_cents": 108000,
+          "principal_cents": 1964428,
+          "balance_cents": 4035572
+        },
+        {
+          "amount_cents": 2072428,
+          "interest_cents": 72640,
+          "principal_cents": 1999788,
+          "balance_cents": 2035784
+        },
+        {
+          "amount_cents": 2072428,
+          "interest_cents": 36644,
+          "principal_cents": 2035784,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "2",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 6120000,
+          "interest_cents": 120000,
+          "principal_cents": 6000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "2",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 3090297,
+          "interest_cents": 120000,
+          "principal_cents": 2970297,
+          "balance_cents": 3029703
+        },
+        {
+          "amount_cents": 3090297,
+          "interest_cents": 60594,
+          "principal_cents": 3029703,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "2",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 2080528,
+          "interest_cents": 120000,
+          "principal_cents": 1960528,
+          "balance_cents": 4039472
+        },
+        {
+          "amount_cents": 2080528,
+          "interest_cents": 80789,
+          "principal_cents": 1999739,
+          "balance_cents": 2039733
+        },
+        {
+          "amount_cents": 2080528,
+          "interest_cents": 40795,
+          "principal_cents": 2039733,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "3.25",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 6195000,
+          "interest_cents": 195000,
+          "principal_cents": 6000000,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "3.25",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 3147030,
+          "interest_cents": 195000,
+          "principal_cents": 2952030,
+          "balance_cents": 3047970
+        },
+        {
+          "amount_cents": 3147029,
+          "interest_cents": 99059,
+          "principal_cents": 3047970,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "60000",
+      "monthly_percent": "3.25",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 2131386,
+          "interest_cents": 195000,
+          "principal_cents": 1936386,
+          "balance_cents": 4063614
+        },
+        {
+          "amount_cents": 2131386,
+          "interest_cents": 132067,
+          "principal_cents": 1999319,
+          "balance_cents": 2064295
+        },
+        {
+          "amount_cents": 2131385,
+          "interest_cents": 67090,
+          "principal_cents": 2064295,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "0",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 99,
+          "interest_cents": 0,
+          "principal_cents": 99,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "0",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 50,
+          "interest_cents": 0,
+          "principal_cents": 50,
+          "balance_cents": 49
+        },
+        {
+          "amount_cents": 49,
+          "interest_cents": 0,
+          "principal_cents": 49,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "0",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 33,
+          "interest_cents": 0,
+          "principal_cents": 33,
+          "balance_cents": 66
+        },
+        {
+          "amount_cents": 33,
+          "interest_cents": 0,
+          "principal_cents": 33,
+          "balance_cents": 33
+        },
+        {
+          "amount_cents": 33,
+          "interest_cents": 0,
+          "principal_cents": 33,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "1.8",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 101,
+          "interest_cents": 2,
+          "principal_cents": 99,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "1.8",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 51,
+          "interest_cents": 2,
+          "principal_cents": 49,
+          "balance_cents": 50
+        },
+        {
+          "amount_cents": 51,
+          "interest_cents": 1,
+          "principal_cents": 50,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "1.8",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 34,
+          "interest_cents": 2,
+          "principal_cents": 32,
+          "balance_cents": 67
+        },
+        {
+          "amount_cents": 34,
+          "interest_cents": 1,
+          "principal_cents": 33,
+          "balance_cents": 34
+        },
+        {
+          "amount_cents": 35,
+          "interest_cents": 1,
+          "principal_cents": 34,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "2",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 101,
+          "interest_cents": 2,
+          "principal_cents": 99,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "2",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 51,
+          "interest_cents": 2,
+          "principal_cents": 49,
+          "balance_cents": 50
+        },
+        {
+          "amount_cents": 51,
+          "interest_cents": 1,
+          "principal_cents": 50,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "2",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 34,
+          "interest_cents": 2,
+          "principal_cents": 32,
+          "balance_cents": 67
+        },
+        {
+          "amount_cents": 34,
+          "interest_cents": 1,
+          "principal_cents": 33,
+          "balance_cents": 34
+        },
+        {
+          "amount_cents": 35,
+          "interest_cents": 1,
+          "principal_cents": 34,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "3.25",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 102,
+          "interest_cents": 3,
+          "principal_cents": 99,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "3.25",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 52,
+          "interest_cents": 3,
+          "principal_cents": 49,
+          "balance_cents": 50
+        },
+        {
+          "amount_cents": 52,
+          "interest_cents": 2,
+          "principal_cents": 50,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "0.99",
+      "monthly_percent": "3.25",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 35,
+          "interest_cents": 3,
+          "principal_cents": 32,
+          "balance_cents": 67
+        },
+        {
+          "amount_cents": 35,
+          "interest_cents": 2,
+          "principal_cents": 33,
+          "balance_cents": 34
+        },
+        {
+          "amount_cents": 35,
+          "interest_cents": 1,
+          "principal_cents": 34,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "0",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 9999999,
+          "interest_cents": 0,
+          "principal_cents": 9999999,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "0",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 5000000,
+          "interest_cents": 0,
+          "principal_cents": 5000000,
+          "balance_cents": 4999999
+        },
+        {
+          "amount_cents": 4999999,
+          "interest_cents": 0,
+          "principal_cents": 4999999,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "0",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 3333333,
+          "interest_cents": 0,
+          "principal_cents": 3333333,
+          "balance_cents": 6666666
+        },
+        {
+          "amount_cents": 3333333,
+          "interest_cents": 0,
+          "principal_cents": 3333333,
+          "balance_cents": 3333333
+        },
+        {
+          "amount_cents": 3333333,
+          "interest_cents": 0,
+          "principal_cents": 3333333,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "1.8",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 10179999,
+          "interest_cents": 180000,
+          "principal_cents": 9999999,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "1.8",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 5135401,
+          "interest_cents": 180000,
+          "principal_cents": 4955401,
+          "balance_cents": 5044598
+        },
+        {
+          "amount_cents": 5135401,
+          "interest_cents": 90803,
+          "principal_cents": 5044598,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "1.8",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 3454047,
+          "interest_cents": 180000,
+          "principal_cents": 3274047,
+          "balance_cents": 6725952
+        },
+        {
+          "amount_cents": 3454047,
+          "interest_cents": 121067,
+          "principal_cents": 3332980,
+          "balance_cents": 3392972
+        },
+        {
+          "amount_cents": 3454045,
+          "interest_cents": 61073,
+          "principal_cents": 3392972,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "2",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 10199999,
+          "interest_cents": 200000,
+          "principal_cents": 9999999,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "2",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 5150495,
+          "interest_cents": 200000,
+          "principal_cents": 4950495,
+          "balance_cents": 5049504
+        },
+        {
+          "amount_cents": 5150494,
+          "interest_cents": 100990,
+          "principal_cents": 5049504,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "2",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 3467546,
+          "interest_cents": 200000,
+          "principal_cents": 3267546,
+          "balance_cents": 6732453
+        },
+        {
+          "amount_cents": 3467546,
+          "interest_cents": 134649,
+          "principal_cents": 3332897,
+          "balance_cents": 3399556
+        },
+        {
+          "amount_cents": 3467547,
+          "interest_cents": 67991,
+          "principal_cents": 3399556,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "3.25",
+      "count": 1,
+      "rows": [
+        {
+          "amount_cents": 10324999,
+          "interest_cents": 325000,
+          "principal_cents": 9999999,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "3.25",
+      "count": 2,
+      "rows": [
+        {
+          "amount_cents": 5245049,
+          "interest_cents": 325000,
+          "principal_cents": 4920049,
+          "balance_cents": 5079950
+        },
+        {
+          "amount_cents": 5245048,
+          "interest_cents": 165098,
+          "principal_cents": 5079950,
+          "balance_cents": 0
+        }
+      ]
+    },
+    {
+      "principal": "99999.99",
+      "monthly_percent": "3.25",
+      "count": 3,
+      "rows": [
+        {
+          "amount_cents": 3552309,
+          "interest_cents": 325000,
+          "principal_cents": 3227309,
+          "balance_cents": 6772690
+        },
+        {
+          "amount_cents": 3552309,
+          "interest_cents": 220112,
+          "principal_cents": 3332197,
+          "balance_cents": 3440493
+        },
+        {
+          "amount_cents": 3552309,
+          "interest_cents": 111816,
+          "principal_cents": 3440493,
+          "balance_cents": 0
+        }
+      ]
+    }
+  ]
+}

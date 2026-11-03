@@ -4,13 +4,11 @@
  * Não toca menus operacionais: esta rota vive fora do layout administrativo
  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
  */
-import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
 import { useState } from "react";
-import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare, Package } from "lucide-react";
+import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare } from "lucide-react";
 import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
 import PlataformaAdmins from "./PlataformaAdmins";
 import PlataformaEmpresas from "./PlataformaEmpresas";
-import { PlatformCatalogReadTab } from "@/components/plataforma/PlatformCatalogReadTab";
 import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
 import { VersaoComercialEditor } from "@/components/plataforma/VersaoComercialEditor";
 import { Button } from "@/components/ui/button";
@@ -103,8 +101,8 @@ const moeda = (valor: number | null, currency: string | null) => valor === null 
 
 export default function PlataformaHome() {
   const { signOut } = useAuth();
-  // `?catalogo=` (estado das abas do catálogo global) reabre a aba Catálogo; sem rota nova.
-  const [aba, setAba] = useState(() => new URLSearchParams(window.location.search).has("catalogo") ? "catalogo" : "planos");
+  // Catálogo global removido (catálogo exclusivo por empresa, 01/11/2026): sem aba nem `?catalogo=`.
+  const [aba, setAba] = useState("planos");
   const [organizacaoEmContexto, setOrganizacaoEmContexto] = useState<string | null>(null);
   const planos = usePlanosSaaS();
   const versoes = useVersoesPlanosSaaS();
@@ -182,14 +180,7 @@ export default function PlataformaHome() {
               <History className="mr-2 h-4 w-4" aria-hidden="true" />
               Histórico
             </TabsTrigger>
-            <TabsTrigger value="catalogo">
-              <Package className="mr-2 h-4 w-4" aria-hidden="true" />
-              Catálogo
-            </TabsTrigger>
-            <TabsTrigger value="fiscal-produtos">Perfis fiscais de produtos</TabsTrigger>
           </TabsList>
-          <TabsContent value="catalogo"><PlatformCatalogReadTab /></TabsContent>
-          <TabsContent value="fiscal-produtos"><FiscalProdutos platformGlobal /></TabsContent>
 
           {/* PLANOS ------------------------------------------------------- */}
           <TabsContent value="planos" className="space-y-4">

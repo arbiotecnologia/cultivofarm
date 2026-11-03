@@ -5,6 +5,17 @@ import { StrictMode, type ReactNode } from "react";
 const mocks = vi.hoisted(() => ({ stream: vi.fn(), sign: vi.fn() }));
 const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["cliente_produtor"], loading: false, authzReady: true, authzEpoch: 0 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
+// "consultor-arquivos" é lido pelo loader técnico dedicado; aqui ele delega ao mesmo stream simulado do SDK
+// (mesma assinatura signal/no-store), para que o teste continue exercendo os fences do hook.
+vi.mock("@/lib/authz/loadTechnicalAttachment", () => ({
+  loadTechnicalAttachment: async (path: string, signal: AbortSignal) => {
+    const { data, error } = await mocks.stream(path, {}, { signal, cache: "no-store" });
+    if (error || !data || signal.aborted) throw new Error("attachment_unavailable");
+    const reader = data.getReader(); const chunks: Uint8Array[] = [];
+    for (;;) { const item = await reader.read(); if (signal.aborted) throw new Error("attachment_unavailable"); if (item.done) break; chunks.push(item.value); }
+    return new Blob(chunks as BlobPart[]);
+  },
+}));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { storage: { from: () => ({ download: (...args: unknown[]) => ({ asStream: () => mocks.stream(...args) }), createSignedUrls: mocks.sign }) } } }));
 import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
 import { ATTACHMENT_LIMITS, downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";

@@ -1,0 +1,32 @@
+{
+  "src/components/financeiro/BaixaDialog.tsx": {
+    "historical_md5": "8681cb83a6fae198c0a1a68695c6a2f8",
+    "current_md5": "a5b264ce695f6ea3256ee3f7c178e903",
+    "reason": "Corre\u00e7\u00f5es locais aprovadas: prova origem e escolha pagamento; leitura expl\u00edcita. Source-only, nunca prova operacional."
+  },
+  "src/pages/financeiro/ContasReceber.tsx": {
+    "historical_md5": "13829ec5cef5ac66091a66278202311a",
+    "current_md5": "e4339ca72204dd1d40622ca5c5dc4dc3",
+    "reason": "Corre\u00e7\u00f5es locais aprovadas: prova origem e escolha pagamento; leitura expl\u00edcita. Source-only, nunca prova operacional."
+  },
+  "src/components/financeiro/ContaDrawer.tsx": {
+    "historical_md5": "ac8945ae0ba9a9dc661b411ba0cbead0",
+    "current_md5": "35d33e9b53513699e3cce12eb2925818",
+    "reason": "Corre\u00e7\u00f5es locais aprovadas: prova origem e escolha pagamento; leitura expl\u00edcita. Source-only, nunca prova operacional."
+  },
+  "src/lib/financeiro/baixaRecebimento.ts": {
+    "historical_md5": "0db165a97b5f796caa1ceda73787b83e",
+    "current_md5": "79821815c7b7caee7941d18a7b17eaa8",
+    "reason": "Corre\u00e7\u00f5es locais aprovadas: prova origem e escolha pagamento; leitura expl\u00edcita. Source-only, nunca prova operacional."
+  },
+  "src/lib/financeiro/contasReceber.ts": {
+    "historical_md5": "0ebfd180cca33a5c18e78012eaf56782",
+    "current_md5": "29c30687c010ba10d310917d311d5167",
+    "reason": "Corre\u00e7\u00f5es locais aprovadas: prova origem e escolha pagamento; leitura expl\u00edcita. Source-only, nunca prova operacional."
+  },
+  "src/hooks/useDeliveryFinanceReconciliation.ts": {
+    "historical_md5": "a8fac0db1d11083375bab059354311c1",
+    "current_md5": "045be9c926880c8434219495bf9f0dfc",
+    "reason": "Corre\u00e7\u00f5es locais aprovadas: prova origem e escolha pagamento; leitura expl\u00edcita. Source-only, nunca prova operacional."
+  }
+}

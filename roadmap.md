@@ -1,3 +1,9 @@
+## 03/11 — Integração LOCAL do export exato 75972877 sobre 9d3a9424
+- [x] Hashes/caminhos/fontes/destinos e seis fusões conferidos; dry-run 770/0 erros, POST 770/0 erros; 31 keep +20 never intactos.
+- [x] Integrados 692 add /72 replace /6 merged exatos do export75972877; zero supabase/migrations, sem hosted/publicação/global anterior.
+- [x] 159 arquivos/2450 testes únicos PASS (baseline51=1019, consumers55=742, regressão50=720, seis PGdescartável=6); três testes da primeira rodada PG tiveram erro RPC do executor, preservado, e passaram em pool=forks. Typecheck0/build automáticoOK; diff/logs/hashes consolidados.
+- [ ] Produção catálogo permanece NO-GO: aguarda JWT real e POST do banco pelo auditor; emissão fiscal/SMTP/cobranças não habilitados, nenhum navegador autenticado certificado.
+
 ## 01/11 09:50 — Perfis fiscais de todo o catálogo
 - [x] Pacote revisável catálogo próprio fiscal (scripts/fiscal-tenant-catalog-20261101): 26/26 PG descartável, 16/16 Vitest, typecheck 0; não aplicado.
 - [x] Global: lista por família + microrganismos (consulta); 2014 testes fiscais PASS.

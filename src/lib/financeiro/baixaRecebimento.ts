@@ -10,7 +10,10 @@
  * A semântica de contas a pagar NÃO é tratada aqui.
  */
 
-export interface ParcelaReceber {
+import { additionalInterest, type ReceivableMoney } from './receivableMoney';
+import { isCivilDate } from '@/lib/comercial/civilDate';
+
+export interface ParcelaReceber extends ReceivableMoney {
   original_amount?: unknown;
   received_amount?: unknown;
   interest_amount?: unknown;
@@ -48,7 +51,7 @@ export function acumuladosParcela(p: ParcelaReceber | null | undefined): Acumula
   return {
     original: g(p?.original_amount),
     recebido: g(p?.received_amount),
-    juros: g(p?.interest_amount),
+    juros: additionalInterest(p ?? {}),
     multa: g(p?.penalty_amount),
     desconto: g(p?.discount_amount),
   };
@@ -69,11 +72,7 @@ export function calcularSaldoRecebivel(p: ParcelaReceber | null | undefined, aju
 
 /** Data civil YYYY-MM-DD real (rejeita 2026-02-30). */
 export function dataCivilValida(valor: unknown): boolean {
-  if (typeof valor !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
-  const [y, m, d] = valor.split("-").map(Number);
-  if (m < 1 || m > 12 || d < 1) return false;
-  const dias = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return d <= dias;
+  return isCivilDate(valor);
 }
 
 export interface EntradaValidacaoBaixa {

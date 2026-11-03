@@ -1,0 +1,105 @@
+signature,md5,definer,search_path_fixed,roots_touched,roots_written,tenant_terms,superadmin_terms,classification
+platform_private.b2b_save_technical_simulation(jsonb),daad3c1554f370bb0456b4ea3afdeea7,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+platform_private.catalog_composition_row_guard(),3e9492073fafdb012ce2b2636e6bb066,False,True,produtos,,False,False,INVOKER_RLS_INHERITS
+platform_private.catalog_tenant_actor(text),5e0ce9cc9122f1c21d76e29a13de8b59,True,True,,,True,True,INDIRECT_DESCENDANT_ONLY
+platform_private.catalog_tenant_hidden_ids_core(text),9e4b4e53faee7b610b382d982b749d65,True,True,,,True,False,INDIRECT_DESCENDANT_ONLY
+"platform_private.catalog_tenant_read_visibility_core(text,uuid[])",8dab707c49a804e9c69f25c7f1625b77,True,True,,,True,False,INDIRECT_DESCENDANT_ONLY
+"platform_private.catalog_tenant_selection_core(text,text,integer,integer,uuid[])",4bde839029b5c38d8cacadef823f7d4f,True,True,produtos;microrganismos;culturas,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+"platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)",c890b49cf23d7cbfedf4cb12c1cd6d89,True,True,produtos;microrganismos;culturas,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+platform_private.catalog_tenant_visibility_ledger_immutable(),abdad8e4542a94aa532496d05a74dd97,False,True,,,True,False,INDIRECT_DESCENDANT_ONLY
+platform_private.catalog_visit_reference_guard_current12(),b1db3fdcbd99a7b778a888ef0207170c,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+"platform_private.catalog_volume_assert_row(uuid,text,uuid)",ad3752e8f8ac664eefadd409b67ef90a,True,True,,,False,False,INDIRECT_DESCENDANT_ONLY
+"platform_private.catalog_volume_parent(text,uuid,boolean)",08f9568dd0b9527fcb661188eded1dde,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"platform_private.catalog_volume_preview_token(uuid,text,uuid,jsonb,text,timestamp with time zone,text,uuid,jsonb)",2eaad379952d685d3b02eab8c3d4dc15,True,True,,,False,False,INDIRECT_DESCENDANT_ONLY
+platform_private.catalog_volume_row(uuid),892e124ebaac8203728ce8573ac0279b,True,True,,,False,False,INDIRECT_DESCENDANT_ONLY
+"platform_private.change_global_volume(text,uuid,timestamp with time zone,jsonb,boolean,text,text,uuid)",36d8ee1abbfb64d95d64bd84ff0b864c,True,True,,,False,False,CLOSE_GLOBAL
+"platform_private.create_global_microorganism_core(jsonb,text,uuid)",69b01d045a358bd8405dd3111248381c,True,True,microrganismos,microrganismos,False,False,CLOSE_GLOBAL
+"platform_private.create_global_product_core(jsonb,text,uuid)",e09129b948fdc2a8974d62df1ca9c7f2,True,True,produtos;microrganismos,produtos,False,False,CLOSE_GLOBAL
+"platform_private.create_global_volume_core(text,uuid,jsonb,text,uuid)",cffda97cc2ef6f12459acd34b22216fd,True,True,,,False,False,CLOSE_GLOBAL
+platform_private.global_product_fiscal_before_write(),db436eb02fc46a11bd407be80599f5c1,True,True,,,False,False,CLOSE_GLOBAL
+"platform_private.global_product_fiscal_ibs_save(uuid,jsonb,text)",366d6bb9e6cd506a48e3e99257eb4e22,True,True,,,False,False,CLOSE_GLOBAL
+platform_private.global_product_fiscal_read_ready(),a33cee569e8264365f8913105b3366f7,True,True,,,False,True,CLOSE_GLOBAL
+platform_private.global_product_fiscal_statement_gate(),1d4d1107af4e543d67b117cca13cccb5,True,True,,,False,False,CLOSE_GLOBAL
+platform_private.global_product_fiscal_write_ready(),e08e5b579051e2866745cfbf27550320,True,True,,,False,True,CLOSE_GLOBAL
+"platform_private.lab_assert_manufacturable(uuid,uuid)",fe24f00acbffa9b6d71c84d0c4ff8eb4,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"platform_private.lab_item_is_manufacturable(uuid,uuid)",853595394240e8f2a61ac2d621118271,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"platform_private.manual_cq_v1(uuid,uuid,jsonb)",6fc63204f7075ab9e25ef26dfae2adef,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+"platform_private.platform_read_global_product_catalog_core(text,integer,integer)",473a099696d4ff02eaf59dda58e1b233,True,True,produtos,,False,True,CLOSE_GLOBAL
+"platform_private.read_global_b2b_state_core(text,uuid)",9f514955bd5fa65a433547590e3c8536,True,True,produtos;microrganismos,,False,False,CLOSE_GLOBAL
+"platform_private.read_global_item_volumes_core(text,uuid,integer,integer)",6e2f7bfcd5020bc07ed35e781b6bfcfd,True,True,,,False,False,CLOSE_GLOBAL
+platform_private.read_global_microorganism_detail_core(uuid),6178944c94c9e9e1225e6c59224554ec,True,True,microrganismos,,False,False,CLOSE_GLOBAL
+"platform_private.read_global_microorganisms_core(text,integer,integer,boolean)",9f63a20b604e8f023de51eaa6ff039d8,True,True,microrganismos,,False,False,CLOSE_GLOBAL
+"platform_private.read_global_product_catalog_by_family_core(text,text,text,integer,integer)",799a965509da4ec11ee3a85a8fea06c1,True,True,produtos,,False,False,CLOSE_GLOBAL
+"platform_private.read_global_product_composition_core(uuid,integer,integer)",25422d890db3b5b205b0a11788e92279,True,True,produtos;microrganismos,,False,False,CLOSE_GLOBAL
+platform_private.read_global_product_metadata_core(uuid),5d5fc5eaa31508277cc646729fe82ac1,True,True,produtos,,False,False,CLOSE_GLOBAL
+"platform_private.set_global_b2b_enabled_core(text,uuid,timestamp with time zone,boolean,text,uuid)",73419bcd860ca8b0ac4f50dd32a8ec3f,True,True,produtos;microrganismos,produtos;microrganismos,False,False,CLOSE_GLOBAL
+"platform_private.set_global_microorganism_status_core(uuid,timestamp with time zone,boolean,text,uuid)",67ac2e0995c7c44acc68bdd050d569ec,True,True,microrganismos,microrganismos,False,False,CLOSE_GLOBAL
+"platform_private.set_global_product_composition_core(uuid,timestamp with time zone,text,jsonb,text,uuid)",d03d2a8cb5ce0ca2aa65ef60b0ad245a,True,True,produtos;microrganismos,produtos,False,False,CLOSE_GLOBAL
+"platform_private.set_global_product_family_core(uuid,timestamp with time zone,text,text,text,uuid)",85227393c057898bf46538057cc0917f,True,True,produtos,produtos,False,False,CLOSE_GLOBAL
+"platform_private.set_global_product_status_core(uuid,timestamp with time zone,boolean,text,uuid)",f74965cdacc9ecc433df4c5d36f5fbd2,True,True,produtos,produtos,False,False,CLOSE_GLOBAL
+"platform_private.storage1_application_allowed(text,text)",daefb183522e2ee7f730e0db243f4823,True,True,produtos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+"platform_private.update_global_microorganism_core(uuid,timestamp with time zone,jsonb,text,uuid)",9747855384fea9dbd1f16ad2e07e9bb9,True,True,microrganismos,microrganismos,False,False,CLOSE_GLOBAL
+"platform_private.update_global_product_metadata_core(uuid,timestamp with time zone,jsonb,text,uuid)",7cf0e86bbd40ad9050ea5117afd16efd,True,True,produtos,produtos,False,False,CLOSE_GLOBAL
+_entrega_seed_checklist(uuid),7824dfbb848b051e3b21c5bdc103e5b2,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"approve_microorganism_profile_with_audit(uuid,jsonb,boolean)",940360a262c38dfa0d83a8c267306408,True,True,microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"approve_product_profile_with_audit(uuid,jsonb,boolean)",c7cb6cdb477bce028558ac52a69d451a,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)",60651fe823452436d807b9b175c3865c,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"fn_catalogo_litro_canonico(uuid,uuid)",96242cdebadd271f0b60d60c444c3fb5,True,True,,,False,False,INDIRECT_DESCENDANT_ONLY
+"fn_catalogo_preco_canonico(uuid,uuid,text,numeric)",fa5e890dc647392efc238460ac16d6a2,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"fn_catalogo_sync_mestre_preco(uuid,uuid)",098f437d25a696d9c4142740a58829e6,True,True,produtos;microrganismos,produtos;microrganismos,False,False,REWRITE_TENANT_WRITER
+fn_comprovante_entrega_montar_v1(uuid),980af5af82323994335bb21b6cb1f20d,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+fn_entrega_build_snapshot_v1(uuid),8894facf7a2ccb32ceebb79f3d4a29be,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"fn_fin_dashboard_kpis(date,date)",664443768c3602fc24d8f46481fafce4,False,True,produtos,,False,False,INVOKER_RLS_INHERITS
+"fn_fiscal_item_profile_gate_eval(text,text,boolean,text,timestamp with time zone,text,text,text,text,text,text,text,text,text,text,text,text,jsonb)",724f157f38bfbe2e032463aa3b0b6eeb,False,True,microrganismos,,False,False,INVOKER_RLS_INHERITS
+fn_fiscal_scenario_coverage(),962230c786b2dbab9c62d090923e4810,True,True,microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+fn_notify_lab_on_programacao(),c910c1466bbc06328e3eb9f5b2b132ca,True,True,produtos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+"fn_resolve_b2b_cart(uuid,uuid,jsonb,date)",c8b4584475698835b786dacdf1e0fc14,False,True,produtos;microrganismos,,False,False,INVOKER_RLS_INHERITS
+"fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)",0df0d9005d46b667db4433d3eae59e27,False,True,produtos;microrganismos,,False,False,INVOKER_RLS_INHERITS
+generate_production_orders_from_partner(uuid),2c75352712438df1558a3f5453e67da0,True,True,,,False,False,INDIRECT_DESCENDANT_ONLY
+get_financial_alerts(date),3ff948f9a2c4175addc31ae9e71c39af,False,True,produtos,,False,False,INVOKER_RLS_INHERITS
+"get_financial_dashboard_summary(date,date,uuid,uuid,uuid)",f0ee19eefed682c2bd82751b9e5e1be9,False,True,produtos,,False,False,INVOKER_RLS_INHERITS
+get_partner_catalog_secure(uuid),b5684d350603d1db77ab9f1db0f4b253,True,True,produtos;microrganismos,,True,True,REVIEW_DEFINER_TENANT_PRESENT
+"get_partner_catalog_secure(uuid,boolean)",1391adc2133b922e2dcea4b1d3e26820,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+get_partner_catalog_tecnico_secure(),ab84d6835dac4d19ee71c842bd2416a9,True,True,produtos;microrganismos,,True,True,REVIEW_DEFINER_TENANT_PRESENT
+get_partner_catalog_tecnico_secure(boolean),f682465d6ffbb145076cfd8d011f685e,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+get_portal_cliente_b2b_order_detail_secure(uuid),2eee9e9e357b13749513908904ab83c1,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+get_portal_cliente_b2b_simulation_detail_secure(uuid),e85c12bc847f7223b8bc8173ce444b63,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+get_production_planning_detail(uuid),c81de10c333f11de30d829b1a69012d5,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+partner_apply_default_discount(uuid),c33a667463b7f34840237ad9ba676761,False,True,produtos,,False,False,INVOKER_RLS_INHERITS
+partner_simulation_items_fill_snapshots(),c9d9239c3d1d0fd2b3e14f618e2ede7c,False,True,produtos;microrganismos,,False,False,INVOKER_RLS_INHERITS
+"platform_create_global_product(jsonb,text,uuid)",6335cdcfc5806c34ea87c532f93d0d0d,False,True,,,False,False,CLOSE_GLOBAL
+"platform_read_global_product_catalog(text,integer,integer)",622eca2b662108ab40aa086d3b0f0b72,False,True,,,False,False,CLOSE_GLOBAL
+"platform_read_global_product_catalog_by_family(text,text,text,integer,integer)",82a09014f71edf6697c017ed3ed03895,False,True,,,False,False,CLOSE_GLOBAL
+"platform_read_global_product_composition(uuid,integer,integer)",8faa12496c4e7ef82ae2633792dc67e3,False,True,,,False,False,CLOSE_GLOBAL
+platform_read_global_product_metadata(uuid),ce97afe52d2cfbc4fb86f838ce59cac2,False,True,,,False,False,CLOSE_GLOBAL
+"platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)",0dce420a2309a03fb63ac1acbe100295,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"platform_set_global_product_composition(uuid,timestamp with time zone,text,jsonb,text,uuid)",32913526c826c890e07946a303b76633,False,True,,,False,False,CLOSE_GLOBAL
+"platform_set_global_product_family(uuid,timestamp with time zone,text,text,text,uuid)",9f3d74fc898944514574360d091bb1ff,False,True,,,False,False,CLOSE_GLOBAL
+"platform_set_global_product_status(uuid,timestamp with time zone,boolean,text,uuid)",d09fca1734cef43feb588c4d9ccf9e89,False,True,,,False,False,CLOSE_GLOBAL
+"platform_update_global_product_metadata(uuid,timestamp with time zone,jsonb,text,uuid)",67378393044b0288b8cc01a097a6acdd,False,True,,,False,False,CLOSE_GLOBAL
+"platform_wipe_global_product_catalog(uuid,text,uuid)",05bfc1751e785331e4b64d74a238a495,True,True,produtos,,False,True,CLOSE_GLOBAL
+"proximo_codigo(text,text)",e061a6487d6d3d30436d9bd3ca0e2be1,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_associate_microorganism_fiscal_product(uuid,uuid)",da0d679779e9d57558a3a203219b4afc,True,True,produtos;microrganismos,microrganismos,False,False,REWRITE_TENANT_WRITER
+rpc_b2b_executive_dashboard(),b008fac79ad80669c8ad2de19f17892a,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+rpc_b2b_integrity_check(),c8c678235a5123284cb2ed804b70dbdd,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_cc_validate_matrix(uuid,text,uuid,uuid)",21ab73c3a6ed77512c1e93b3958bfb1c,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)",ee9e7a45f7e81e2ba6e2a4e55ca10f78,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+"rpc_commercial_simulator(uuid,uuid,numeric,numeric)",4e324b1711f06bb556f050d8ea1aa8f0,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_converter_visita_em_os(uuid,text)",b112888e28d8a5727df713e0ae7bcd1b,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+rpc_criar_embalagens_pos_envase(jsonb),9d2769dbadaf3aa85afefba595e20b91,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_fiscal_draft_save(uuid,jsonb,jsonb,integer)",224ab7944abd13190fe8ea1044216218,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+rpc_fiscal_nfe_readiness_v1(),75487176d377f5bf096f658ad47587e4,True,True,microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+rpc_gerar_etiqueta_produto(jsonb),814be9eb7435c3fced7ffad44b9fc3fe,True,True,produtos;microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_get_comprovante_entrega_data(uuid,boolean)",1a10dbe4a354bb373e53ad91a7c4ab33,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+rpc_microorganism_regulatory_overview(),a5763623af22befd1a60df8b04636e5d,True,True,microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_partner_commercial_history(uuid,date,date)",633f20a19e559c22c8c6e5ccafee2767,True,True,,,False,False,INDIRECT_DESCENDANT_ONLY
+"rpc_programar_os_v1(uuid,text,date)",e374f0ba1698b37523b890dc91682eaf,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+rpc_regulatory_dossier_ensure_draft(uuid),56076bccafd27aa8c95473ac38e73422,True,True,microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])",0c102f7735a44ccba6ce1364b1f30c32,True,True,produtos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+set_codigo_microrganismo(),22f33bb511f309ada40f710d017fcdb5,True,True,microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+set_codigo_produto(),e5ef4aa8489889e7d20e03dc62b455ae,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+sync_product_pricing(),521100dd184dfe1f05feb68764bca5ec,False,True,,,False,False,INDIRECT_DESCENDANT_ONLY
+"tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])",13a76147ec7fc9be058ba3cda551cf08,True,True,produtos;microrganismos,,True,False,REVIEW_DEFINER_TENANT_PRESENT
+trg_mestre_guard_preco_canonico(),598e4a9e1d0b7347bb719c5b04360b69,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"update_microorganism_b2b_description(uuid,text)",2b756f4d9f2948f5c1ed053a2d14c7b2,True,True,microrganismos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER
+"update_product_b2b_description(uuid,text)",2d21f5cb9bab76cfca01831e8726ec2d,True,True,produtos,,False,False,REVIEW_DEFINER_READ_NO_TENANT_FILTER

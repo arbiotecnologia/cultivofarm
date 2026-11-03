@@ -1,0 +1,2917 @@
+{
+  "production_ref": "swzpzcwiasxmjutrmvkm",
+  "homolog_ref": "vrlcdwmlytukrjezrrnf",
+  "functions": [
+    {
+      "signature": "_assert_visita_editavel(uuid)",
+      "expected_md5": "0ba13111bddb095f943233f9a84f25fc",
+      "actual_md5": "0ba13111bddb095f943233f9a84f25fc"
+    },
+    {
+      "signature": "_comunicacao_publish_system_event(text,text,uuid,jsonb,text)",
+      "expected_md5": "d09be07e0c3ab8b93b5898aa7940afbf",
+      "actual_md5": "5af7d7428822f58e8776d1aef7adf1f6"
+    },
+    {
+      "signature": "_comunicacao_trg_os_onfarm_pronto_retirada()",
+      "expected_md5": "caf0ea8a3b74b13ea6fdccd00c7d17aa",
+      "actual_md5": "caf0ea8a3b74b13ea6fdccd00c7d17aa"
+    },
+    {
+      "signature": "_comunicacao_trg_os_pronto_retirada()",
+      "expected_md5": "b0340dbc6fa5c5f880f0881ad845cb52",
+      "actual_md5": "b0340dbc6fa5c5f880f0881ad845cb52"
+    },
+    {
+      "signature": "_comunicacao_trg_portal_solicitacao()",
+      "expected_md5": "9c7b762fd575862e38408d9a1a2dba7a",
+      "actual_md5": "9c7b762fd575862e38408d9a1a2dba7a"
+    },
+    {
+      "signature": "_entrega_seed_checklist(uuid)",
+      "expected_md5": "7824dfbb848b051e3b21c5bdc103e5b2",
+      "actual_md5": "7824dfbb848b051e3b21c5bdc103e5b2"
+    },
+    {
+      "signature": "_fiscal_rtc_assert_payload(jsonb,text)",
+      "expected_md5": "a8999ff9ce25f2973b926a2fcd42265e",
+      "actual_md5": "a8999ff9ce25f2973b926a2fcd42265e"
+    },
+    {
+      "signature": "_notify_role(app_role,text,text,text,text)",
+      "expected_md5": "e056d90a03ab1ec7ea7e8b6fdee7b594",
+      "actual_md5": "f7696dba2cacbb471b66267b390f9a89"
+    },
+    {
+      "signature": "_refresh_esteira_laboratorio_after_change()",
+      "expected_md5": "2f361c1fd9de578cf45796d82f3754e0",
+      "actual_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "signature": "_saas_trg_require_feature()",
+      "expected_md5": "13ed48832f81cbb35434688ca35fda4b",
+      "actual_md5": "13ed48832f81cbb35434688ca35fda4b"
+    },
+    {
+      "signature": "_saas_user_has_feature(uuid,text)",
+      "expected_md5": "501dd958e117d2df8a4d38f6bcbeed04",
+      "actual_md5": "501dd958e117d2df8a4d38f6bcbeed04"
+    },
+    {
+      "signature": "_sync_planning_from_os()",
+      "expected_md5": "0e79d2c5c352a41f147a62bb1ae5afe4",
+      "actual_md5": "0e79d2c5c352a41f147a62bb1ae5afe4"
+    },
+    {
+      "signature": "approve_microorganism_profile_with_audit(uuid,jsonb,boolean)",
+      "expected_md5": "940360a262c38dfa0d83a8c267306408",
+      "actual_md5": "940360a262c38dfa0d83a8c267306408"
+    },
+    {
+      "signature": "approve_product_profile_with_audit(uuid,jsonb,boolean)",
+      "expected_md5": "c7cb6cdb477bce028558ac52a69d451a",
+      "actual_md5": "c7cb6cdb477bce028558ac52a69d451a"
+    },
+    {
+      "signature": "auth.jwt()",
+      "expected_md5": "20054548ba2003f61a6bcb472175700b",
+      "actual_md5": "20054548ba2003f61a6bcb472175700b"
+    },
+    {
+      "signature": "auth.uid()",
+      "expected_md5": "ea3b41bf29e2ad573067939329aa088e",
+      "actual_md5": "ea3b41bf29e2ad573067939329aa088e"
+    },
+    {
+      "signature": "auto_advance_solicitacao_on_os()",
+      "expected_md5": "aa083b710f910bda03723dc95ae37ff0",
+      "actual_md5": "aa083b710f910bda03723dc95ae37ff0"
+    },
+    {
+      "signature": "auto_advance_solicitacao_on_registro()",
+      "expected_md5": "adb2f6e43a8142f649b424c8076071da",
+      "actual_md5": "b01b3190e09b3da5c401a5ec7dd4377a"
+    },
+    {
+      "signature": "b2b_phase1_order_visible(uuid)",
+      "expected_md5": "8812508716f279a88e3d5a31b15621d8",
+      "actual_md5": null
+    },
+    {
+      "signature": "b2b_phase1_partner_visible(uuid,boolean)",
+      "expected_md5": "6b3defc01a66040146562c60ad224f03",
+      "actual_md5": null
+    },
+    {
+      "signature": "b2b_phase1_simulation_visible(uuid)",
+      "expected_md5": "f52a7c7e4659060c0ba50893a01b05cb",
+      "actual_md5": null
+    },
+    {
+      "signature": "b2b_save_technical_simulation(jsonb)",
+      "expected_md5": "7615960c752978e95e865443c277d461",
+      "actual_md5": null
+    },
+    {
+      "signature": "can_manage_catalog_tecnico(uuid)",
+      "expected_md5": "62b899022e664e3746489d515ad8aaa6",
+      "actual_md5": "38808c2631a80764488bc4963d90b954"
+    },
+    {
+      "signature": "can_manage_technical_visit(uuid,uuid)",
+      "expected_md5": "d95c2c2b34af117d467d7d4b2b775002",
+      "actual_md5": "d13fe02d8e9159e7229f8640be51633c"
+    },
+    {
+      "signature": "can_user_access_aplicacao(uuid)",
+      "expected_md5": "04067ba43cea3eed845a1fd3735061e0",
+      "actual_md5": null
+    },
+    {
+      "signature": "can_user_access_cliente(uuid,uuid)",
+      "expected_md5": "4e0c374caa04bb9bf9fac9cc4e6723f1",
+      "actual_md5": "c0acb1dcd7f0b183f9500f4c264c1fa1"
+    },
+    {
+      "signature": "can_user_access_cliente(uuid)",
+      "expected_md5": "4c2eaf7ab10e204e7ad57d41cb418554",
+      "actual_md5": "4c2eaf7ab10e204e7ad57d41cb418554"
+    },
+    {
+      "signature": "can_user_access_estoque_embalagem(uuid)",
+      "expected_md5": "d435a0228d1b5b56029153f3ac6549a1",
+      "actual_md5": "d435a0228d1b5b56029153f3ac6549a1"
+    },
+    {
+      "signature": "can_user_access_fazenda(uuid)",
+      "expected_md5": "8c8d0dfd80fa05e0be30cc5ed95bb400",
+      "actual_md5": "8c8d0dfd80fa05e0be30cc5ed95bb400"
+    },
+    {
+      "signature": "can_user_access_produto_etiqueta(uuid)",
+      "expected_md5": "3461b265f7b3ee93b9c9e90cfc1a7438",
+      "actual_md5": "3461b265f7b3ee93b9c9e90cfc1a7438"
+    },
+    {
+      "signature": "can_user_create_aplicacao_for_cliente(uuid)",
+      "expected_md5": "b83a0bc8906b5e9f68ac6b7c9338d703",
+      "actual_md5": null
+    },
+    {
+      "signature": "can_user_manage_aplicacao(uuid)",
+      "expected_md5": "b8f4c49dd9b13d4aeecef0e6c76c105a",
+      "actual_md5": null
+    },
+    {
+      "signature": "can_user_manage_estoque_embalagem(uuid)",
+      "expected_md5": "23d59e58411846b1300957a96f35a66a",
+      "actual_md5": "23d59e58411846b1300957a96f35a66a"
+    },
+    {
+      "signature": "can_view_catalog_internal(uuid)",
+      "expected_md5": "b04164dd8464d16f52cb69e7bcf83de7",
+      "actual_md5": "b04164dd8464d16f52cb69e7bcf83de7"
+    },
+    {
+      "signature": "can_view_technical_visit(uuid,uuid)",
+      "expected_md5": "e15341289ee33e1912adf63d4076b620",
+      "actual_md5": "b794a1b0e47383ddce206ab9238b41de"
+    },
+    {
+      "signature": "catalog_set_updated_at()",
+      "expected_md5": "fb190552f11c13546aa101005f83bbb8",
+      "actual_md5": "fb190552f11c13546aa101005f83bbb8"
+    },
+    {
+      "signature": "cf_user_guards_v1.acquire_gate()",
+      "expected_md5": "b0dd9a14d5fd799a40df0975baf4c5a6",
+      "actual_md5": "1f26021e202b2177be5cbca74499f012"
+    },
+    {
+      "signature": "cf_user_guards_v1.advance_stamp()",
+      "expected_md5": "ce295ff5799d306ad81578047cd9bff5",
+      "actual_md5": null
+    },
+    {
+      "signature": "cf_user_guards_v1.block_truncate()",
+      "expected_md5": "a919901eb1e045461a5bc6e4da178624",
+      "actual_md5": "2120d930ff5da74fb667bd71c3053fc4"
+    },
+    {
+      "signature": "cf_user_guards_v1.require_admin()",
+      "expected_md5": "ec8e7077521cdee212be924bfb400e8a",
+      "actual_md5": null
+    },
+    {
+      "signature": "check_os_item_ref()",
+      "expected_md5": "d059f0014afe15e9d9405fc54a478f2e",
+      "actual_md5": "d059f0014afe15e9d9405fc54a478f2e"
+    },
+    {
+      "signature": "check_os_status_transition()",
+      "expected_md5": "8dc2c40052b006e51b1defc0284a09e6",
+      "actual_md5": "2d8943f04d81812054bfe166fc65a2a0"
+    },
+    {
+      "signature": "d51_5_validate_financial_tenant_links()",
+      "expected_md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+      "actual_md5": "f470a25ba7e65b366c62ad3ac8aa3112"
+    },
+    {
+      "signature": "enforce_cliente_id_for_produtor()",
+      "expected_md5": "ecad56badcb2120f7048fad7519f76f4",
+      "actual_md5": "ecad56badcb2120f7048fad7519f76f4"
+    },
+    {
+      "signature": "enforce_micro_profile_approval()",
+      "expected_md5": "aefdfd0aeb40e3dc9a0fc6da99c18b2e",
+      "actual_md5": "aefdfd0aeb40e3dc9a0fc6da99c18b2e"
+    },
+    {
+      "signature": "enforce_product_profile_approval()",
+      "expected_md5": "6dc74ef968128a92eb702ac51f41d6c2",
+      "actual_md5": "6dc74ef968128a92eb702ac51f41d6c2"
+    },
+    {
+      "signature": "enforce_technical_content_editable()",
+      "expected_md5": "eb4e8d56cde229056c4730f9742a8f4b",
+      "actual_md5": null
+    },
+    {
+      "signature": "enforce_visit_immutability()",
+      "expected_md5": "8a6a92bb748f745526ed163ec52464aa",
+      "actual_md5": "60d33b3def7f14e79ee922a05196c607"
+    },
+    {
+      "signature": "fiscal_audit_trigger_microorganism_profiles()",
+      "expected_md5": "0c99f8290fca3c0f03db5c79635c1f58",
+      "actual_md5": "0c99f8290fca3c0f03db5c79635c1f58"
+    },
+    {
+      "signature": "fiscal_audit_trigger()",
+      "expected_md5": "5083ccb4946ee883c08011bfafce4513",
+      "actual_md5": "5083ccb4946ee883c08011bfafce4513"
+    },
+    {
+      "signature": "fiscal_json_has_sensitive_key(jsonb)",
+      "expected_md5": "991212f0782b13912479621951f5a5f4",
+      "actual_md5": "991212f0782b13912479621951f5a5f4"
+    },
+    {
+      "signature": "fiscal_rtc_has_sensitive_key(jsonb)",
+      "expected_md5": "f9d886384a9da1b36df850f6e63fa3ce",
+      "actual_md5": "f9d886384a9da1b36df850f6e63fa3ce"
+    },
+    {
+      "signature": "fiscal_validate_snapshot_keys(jsonb,text[],text)",
+      "expected_md5": "1ddc4a1b6e4bd8a4a4ac8f301cbfef19",
+      "actual_md5": "1ddc4a1b6e4bd8a4a4ac8f301cbfef19"
+    },
+    {
+      "signature": "fn_authz_uid_scope_ok(uuid)",
+      "expected_md5": "00a9a4d4a075d756d312d69778493b39",
+      "actual_md5": "3c3bae6efbb29c1cb20e3aa0fe91d9a0"
+    },
+    {
+      "signature": "fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "expected_md5": "213ac31f3a30816ead75365b0d1fed18",
+      "actual_md5": "029da9a2855ec9af0afb9e49391336aa"
+    },
+    {
+      "signature": "fn_b2b_guard_credit_approval_fields()",
+      "expected_md5": "8902498ed09c4c5804b1749ee0c31cd7",
+      "actual_md5": "8902498ed09c4c5804b1749ee0c31cd7"
+    },
+    {
+      "signature": "fn_b2b_guard_order_items_immutable()",
+      "expected_md5": "bc1c4dca3a9f5a247a3c098dcbe1c06f",
+      "actual_md5": null
+    },
+    {
+      "signature": "fn_b2b_order_billing_eligibility(uuid)",
+      "expected_md5": "db977875e15ea49ce10fb3e5388d7dfb",
+      "actual_md5": "db977875e15ea49ce10fb3e5388d7dfb"
+    },
+    {
+      "signature": "fn_b2b_order_priceable(uuid)",
+      "expected_md5": "e8681bc3e8f87d86189a371a919cb3b9",
+      "actual_md5": "e8681bc3e8f87d86189a371a919cb3b9"
+    },
+    {
+      "signature": "fn_b2b_plan_referenced(uuid)",
+      "expected_md5": "3323ef065f4c3f3911a09a13c03cb3f3",
+      "actual_md5": "3323ef065f4c3f3911a09a13c03cb3f3"
+    },
+    {
+      "signature": "fn_b2b_plan_selectable(uuid,timestamp with time zone)",
+      "expected_md5": "4cb833a3eae76cbebce920f34cd5d5ce",
+      "actual_md5": "4cb833a3eae76cbebce920f34cd5d5ce"
+    },
+    {
+      "signature": "fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)",
+      "expected_md5": "60651fe823452436d807b9b175c3865c",
+      "actual_md5": "60651fe823452436d807b9b175c3865c"
+    },
+    {
+      "signature": "fn_b2b_status_is_approved_or_later(partner_order_status)",
+      "expected_md5": "8fed429cd642c9eaa431f8bbfa320931",
+      "actual_md5": "8fed429cd642c9eaa431f8bbfa320931"
+    },
+    {
+      "signature": "fn_b2b_status_is_operational(partner_order_status)",
+      "expected_md5": "1b397fd4f651c103e6eddcc3e140a86e",
+      "actual_md5": "1b397fd4f651c103e6eddcc3e140a86e"
+    },
+    {
+      "signature": "fn_calc_os_faturamento_totals()",
+      "expected_md5": "7eab3220c30097c1ea7cebc8921d297a",
+      "actual_md5": "7eab3220c30097c1ea7cebc8921d297a"
+    },
+    {
+      "signature": "fn_catalogo_litro_canonico(uuid,uuid)",
+      "expected_md5": "96242cdebadd271f0b60d60c444c3fb5",
+      "actual_md5": null
+    },
+    {
+      "signature": "fn_catalogo_preco_canonico(uuid,uuid,text,numeric)",
+      "expected_md5": "fa5e890dc647392efc238460ac16d6a2",
+      "actual_md5": "fa5e890dc647392efc238460ac16d6a2"
+    },
+    {
+      "signature": "fn_catalogo_sync_mestre_preco(uuid,uuid)",
+      "expected_md5": "098f437d25a696d9c4142740a58829e6",
+      "actual_md5": null
+    },
+    {
+      "signature": "fn_cc_can_prepare(uuid)",
+      "expected_md5": "439d9c28f69029b9c71fddbef1054e57",
+      "actual_md5": "439d9c28f69029b9c71fddbef1054e57"
+    },
+    {
+      "signature": "fn_cockpit_assert_b2b_liberado(uuid)",
+      "expected_md5": "65859c6036077da399e15bc4ba6cbdfc",
+      "actual_md5": "65859c6036077da399e15bc4ba6cbdfc"
+    },
+    {
+      "signature": "fn_cockpit_assert_operador_origem(text)",
+      "expected_md5": "ec7bd47943764dc4bfda9cdbea2cf283",
+      "actual_md5": "ec7bd47943764dc4bfda9cdbea2cf283"
+    },
+    {
+      "signature": "fn_cockpit_ctx_programacao(uuid)",
+      "expected_md5": "d39da56ff10ae7b0ecf6d438b981f2f0",
+      "actual_md5": "d39da56ff10ae7b0ecf6d438b981f2f0"
+    },
+    {
+      "signature": "fn_cockpit_is_gestor()",
+      "expected_md5": "ba163f110a2552850fdfebc8f01a2419",
+      "actual_md5": "ba163f110a2552850fdfebc8f01a2419"
+    },
+    {
+      "signature": "fn_cockpit_norm_origem(text)",
+      "expected_md5": "701ba8da92fc3df9ea0e5270ab5e74b2",
+      "actual_md5": "701ba8da92fc3df9ea0e5270ab5e74b2"
+    },
+    {
+      "signature": "fn_comprovante_entrega_montar_v1(uuid)",
+      "expected_md5": "980af5af82323994335bb21b6cb1f20d",
+      "actual_md5": "980af5af82323994335bb21b6cb1f20d"
+    },
+    {
+      "signature": "fn_conformidade_perfil_vigente(uuid,text)",
+      "expected_md5": "fef6e00b12727f04683121f07fc60c91",
+      "actual_md5": "fef6e00b12727f04683121f07fc60c91"
+    },
+    {
+      "signature": "fn_create_programacao_on_os_classica_insert()",
+      "expected_md5": "27b31332cebda532e2d99d9547f9b67c",
+      "actual_md5": "27b31332cebda532e2d99d9547f9b67c"
+    },
+    {
+      "signature": "fn_create_programacao_on_os_onfarm_insert()",
+      "expected_md5": "0916100603e4252bb91492fa2d2127cd",
+      "actual_md5": "55d57b6e698b48ccf6673978980400b4"
+    },
+    {
+      "signature": "fn_cultura_em_uso(uuid)",
+      "expected_md5": "09914f45444b2f6df26a150b98647c28",
+      "actual_md5": "09914f45444b2f6df26a150b98647c28"
+    },
+    {
+      "signature": "fn_entrega_assinatura_exigir_imagem_v1()",
+      "expected_md5": "5f67fed54d10983086f5917f8c196403",
+      "actual_md5": null
+    },
+    {
+      "signature": "fn_entrega_build_snapshot_v1(uuid)",
+      "expected_md5": "8894facf7a2ccb32ceebb79f3d4a29be",
+      "actual_md5": "fb087adc845a1239ca272d93209ec5fd"
+    },
+    {
+      "signature": "fn_entrega_comprovante_exigir_arquivo_v1()",
+      "expected_md5": "19c6b819e64f2afddb15bbdd94b47b56",
+      "actual_md5": null
+    },
+    {
+      "signature": "fn_entrega_comprovante_preservar_encerrado_v1()",
+      "expected_md5": "7834a80a6bfdf2126cf93b2a8a74ec02",
+      "actual_md5": null
+    },
+    {
+      "signature": "fn_entrega_marcar_cancelamento()",
+      "expected_md5": "0f82b9b7144ad77a4495418d679ea292",
+      "actual_md5": "7eff341d5cbdde7d88bae6c18a83dda6"
+    },
+    {
+      "signature": "fn_envase_material_imutavel()",
+      "expected_md5": "9e9464bcd54c17b31aae731785be3162",
+      "actual_md5": "a1b1200dfba57684958a8ea94e7afe66"
+    },
+    {
+      "signature": "fn_estoque_ctx_force(jsonb)",
+      "expected_md5": "6a820e57ff63adbe5924831fbcefbc8d",
+      "actual_md5": "6a820e57ff63adbe5924831fbcefbc8d"
+    },
+    {
+      "signature": "fn_estoque_ctx_read()",
+      "expected_md5": "25bba24bf824b91b59dd48523be85769",
+      "actual_md5": "25bba24bf824b91b59dd48523be85769"
+    },
+    {
+      "signature": "fn_estoque_pode_operar(uuid,text)",
+      "expected_md5": "d0d1e37b39e6f9f814c832ec63a540dd",
+      "actual_md5": "d0d1e37b39e6f9f814c832ec63a540dd"
+    },
+    {
+      "signature": "fn_estoque_produto_guard()",
+      "expected_md5": "fdb38c8e1a6497600c914104bf32c3d3",
+      "actual_md5": "fdb38c8e1a6497600c914104bf32c3d3"
+    },
+    {
+      "signature": "fn_fin_dashboard_kpis(date,date)",
+      "expected_md5": "664443768c3602fc24d8f46481fafce4",
+      "actual_md5": "6d2cdd171062bfa1f7300cc4974b2ba9"
+    },
+    {
+      "signature": "fn_financial_audit()",
+      "expected_md5": "46f777c2020ff9a059a80ae6dab4bd12",
+      "actual_md5": "46f777c2020ff9a059a80ae6dab4bd12"
+    },
+    {
+      "signature": "fn_fiscal_apply_tax_v2(fiscal_tax_rules,jsonb)",
+      "expected_md5": "20b88d1c68b51e0fdc1d1775ad87422c",
+      "actual_md5": "20b88d1c68b51e0fdc1d1775ad87422c"
+    },
+    {
+      "signature": "fn_fiscal_apportion_v1(numeric,numeric[])",
+      "expected_md5": "2b2de76c31b71da7bc92bc346141457a",
+      "actual_md5": "2b2de76c31b71da7bc92bc346141457a"
+    },
+    {
+      "signature": "fn_fiscal_can_read_internal(uuid)",
+      "expected_md5": "f15b14bf9652457a16637541f77d11d2",
+      "actual_md5": "caf9301d2c7b701fdd92f875769a000e"
+    },
+    {
+      "signature": "fn_fiscal_company_crt()",
+      "expected_md5": "90e4fededc2ee1191eab08a4ad74a05f",
+      "actual_md5": "90e4fededc2ee1191eab08a4ad74a05f"
+    },
+    {
+      "signature": "fn_fiscal_digits(text)",
+      "expected_md5": "8480172e90be48afd7ec1eb7bfb4fbc1",
+      "actual_md5": "8480172e90be48afd7ec1eb7bfb4fbc1"
+    },
+    {
+      "signature": "fn_fiscal_item_base(jsonb,jsonb)",
+      "expected_md5": "7164dbed5381034b10d8e4d0905cacb4",
+      "actual_md5": "7164dbed5381034b10d8e4d0905cacb4"
+    },
+    {
+      "signature": "fn_fiscal_item_profile_gate_eval(text,text,boolean,text,timestamp with time zone,text,text,text,text,text,text,text,text,text,text,text,text,jsonb)",
+      "expected_md5": "724f157f38bfbe2e032463aa3b0b6eeb",
+      "actual_md5": "724f157f38bfbe2e032463aa3b0b6eeb"
+    },
+    {
+      "signature": "fn_fiscal_official_url_allowlisted(text)",
+      "expected_md5": "fa95dff4f5443634124e1188a09af64f",
+      "actual_md5": "fa95dff4f5443634124e1188a09af64f"
+    },
+    {
+      "signature": "fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)",
+      "expected_md5": "8bb99a3c335b5f9876d99d988dcf94b0",
+      "actual_md5": "8bb99a3c335b5f9876d99d988dcf94b0"
+    },
+    {
+      "signature": "fn_fiscal_resolve_operation(text,text,text,text,boolean,text,text,text,text,date)",
+      "expected_md5": "4f19ec26d83cb97697c5a653ae35966c",
+      "actual_md5": "4f19ec26d83cb97697c5a653ae35966c"
+    },
+    {
+      "signature": "fn_fiscal_resolve_tax_rule(text,text,text,text,text,text,boolean,text,date)",
+      "expected_md5": "42b607ae0ce732c37c43b82396890f76",
+      "actual_md5": "42b607ae0ce732c37c43b82396890f76"
+    },
+    {
+      "signature": "fn_fiscal_round(numeric)",
+      "expected_md5": "7d46db334603ca5c15a9dab7bf360399",
+      "actual_md5": "7d46db334603ca5c15a9dab7bf360399"
+    },
+    {
+      "signature": "fn_fiscal_rule_validate_synthetic(text,fiscal_tax_rules,jsonb)",
+      "expected_md5": "5b859ec464bcee84d66d1c66745c1f3d",
+      "actual_md5": "5b859ec464bcee84d66d1c66745c1f3d"
+    },
+    {
+      "signature": "fn_fiscal_scenario_coverage()",
+      "expected_md5": "962230c786b2dbab9c62d090923e4810",
+      "actual_md5": "962230c786b2dbab9c62d090923e4810"
+    },
+    {
+      "signature": "fn_fiscal_tax_input_valid(jsonb)",
+      "expected_md5": "a67b3c264d2b6233fbc06edf86e19240",
+      "actual_md5": "a67b3c264d2b6233fbc06edf86e19240"
+    },
+    {
+      "signature": "fn_generate_receivable_installments()",
+      "expected_md5": "f632f15c9f46cb9889082fc533a27ea1",
+      "actual_md5": "9c6ef883bb4a97928a5179bc63e9ca31"
+    },
+    {
+      "signature": "fn_gtin_is_valid(text)",
+      "expected_md5": "238a0a5ef663ac51c273b2b80de4df11",
+      "actual_md5": "238a0a5ef663ac51c273b2b80de4df11"
+    },
+    {
+      "signature": "fn_h6_guard_title_snapshot()",
+      "expected_md5": "d9cc5c95f837de9d77cec2159e24bbf9",
+      "actual_md5": "d9cc5c95f837de9d77cec2159e24bbf9"
+    },
+    {
+      "signature": "fn_h6c_entrega_ar_b2b_link()",
+      "expected_md5": "9d9cdca4e82d515557c0cdd151f1d077",
+      "actual_md5": "9d9cdca4e82d515557c0cdd151f1d077"
+    },
+    {
+      "signature": "fn_h6d_block_hard_delete()",
+      "expected_md5": "5c07dd23a0c9355c3fe11811004b0381",
+      "actual_md5": "5c07dd23a0c9355c3fe11811004b0381"
+    },
+    {
+      "signature": "fn_h6d_hard_delete_allowed()",
+      "expected_md5": "5b3578ac073dafb1f0455ebfaa5c123a",
+      "actual_md5": "5b3578ac073dafb1f0455ebfaa5c123a"
+    },
+    {
+      "signature": "fn_microorganism_regulatory_facts(uuid)",
+      "expected_md5": "71c50a1385374b578fb20ddb75bc8049",
+      "actual_md5": "37ecd1f1c4e36e2769831f474e8d5fba"
+    },
+    {
+      "signature": "fn_notify_lab_on_programacao()",
+      "expected_md5": "c910c1466bbc06328e3eb9f5b2b132ca",
+      "actual_md5": "43b36cff7290a71b99aabe1eedbb27c7"
+    },
+    {
+      "signature": "fn_onfarm_scope_cliente(uuid)",
+      "expected_md5": "99913124b02d905ce09ab04ffcff8230",
+      "actual_md5": "99913124b02d905ce09ab04ffcff8230"
+    },
+    {
+      "signature": "fn_onfarm_scope_lote(uuid)",
+      "expected_md5": "e10a4e58f17599a970f925b4eec070d5",
+      "actual_md5": "e10a4e58f17599a970f925b4eec070d5"
+    },
+    {
+      "signature": "fn_produto_etiquetas_updated_at()",
+      "expected_md5": "a079e72993956dee9deb31463b475875",
+      "actual_md5": "a079e72993956dee9deb31463b475875"
+    },
+    {
+      "signature": "fn_regulatory_can_prepare(uuid)",
+      "expected_md5": "0d4011f262d5595e42c520f8b32f9858",
+      "actual_md5": "cc073ff6e44e6374aacca996f960838c"
+    },
+    {
+      "signature": "fn_regulatory_can_read(uuid)",
+      "expected_md5": "c3ad1c00121c629e2b683b9aeb8818b7",
+      "actual_md5": "037164c0436f842523a16f479a025b32"
+    },
+    {
+      "signature": "fn_regulatory_candidate_publication_guard()",
+      "expected_md5": "c97062dfecdc0f3bf5b1a26d079dcfe5",
+      "actual_md5": "c97062dfecdc0f3bf5b1a26d079dcfe5"
+    },
+    {
+      "signature": "fn_regulatory_ncm_source_guard()",
+      "expected_md5": "e6b51dafe11e50e326d497481300f668",
+      "actual_md5": "e6b51dafe11e50e326d497481300f668"
+    },
+    {
+      "signature": "fn_regulatory_published_candidate_guard()",
+      "expected_md5": "9367d596bf3f6604fc7c5ff566bd13bd",
+      "actual_md5": "9367d596bf3f6604fc7c5ff566bd13bd"
+    },
+    {
+      "signature": "fn_resolve_b2b_cart(uuid,uuid,jsonb,date)",
+      "expected_md5": "c8b4584475698835b786dacdf1e0fc14",
+      "actual_md5": "c8b4584475698835b786dacdf1e0fc14"
+    },
+    {
+      "signature": "fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)",
+      "expected_md5": "0df0d9005d46b667db4433d3eae59e27",
+      "actual_md5": "0df0d9005d46b667db4433d3eae59e27"
+    },
+    {
+      "signature": "fn_sync_entrega_financial_status()",
+      "expected_md5": "829616d1d23271f7678059d8e34fcb1e",
+      "actual_md5": "829616d1d23271f7678059d8e34fcb1e"
+    },
+    {
+      "signature": "fn_sync_os_classica_downstream()",
+      "expected_md5": "06e64b76968f91e19f03b24363ac610a",
+      "actual_md5": "06e64b76968f91e19f03b24363ac610a"
+    },
+    {
+      "signature": "fn_validate_entrega_confirmacao()",
+      "expected_md5": "6add438d185c91379d436dc90d1e7617",
+      "actual_md5": "6add438d185c91379d436dc90d1e7617"
+    },
+    {
+      "signature": "fn_validate_entrega_estoque()",
+      "expected_md5": "2c2412690cf8c52121a5aed8cdd34436",
+      "actual_md5": "2c2412690cf8c52121a5aed8cdd34436"
+    },
+    {
+      "signature": "fn_validate_envase_cq()",
+      "expected_md5": "fc4a739dc17d709d70102885c115112f",
+      "actual_md5": "fc4a739dc17d709d70102885c115112f"
+    },
+    {
+      "signature": "fn_validate_envase_volume()",
+      "expected_md5": "22092b56a46fbfc3a95718900a4e8201",
+      "actual_md5": "9d2f0ba3df89e211bee4bb7b85f0804b"
+    },
+    {
+      "signature": "gen_numero_solicitacao()",
+      "expected_md5": "599a70e26ac8d043045b7cb4c4c7e1d9",
+      "actual_md5": "599a70e26ac8d043045b7cb4c4c7e1d9"
+    },
+    {
+      "signature": "generate_b2b_receivable_secure_impl(uuid)",
+      "expected_md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+      "actual_md5": "e9ba4a6bb5e9af0b40f4ba9a37579f21"
+    },
+    {
+      "signature": "generate_b2b_receivable_secure(uuid)",
+      "expected_md5": "c49cc7ccedbcb28cba9b816b7e47c521",
+      "actual_md5": "48c004aec0068883b0a36359b3e2c74f"
+    },
+    {
+      "signature": "generate_production_orders_from_partner(uuid)",
+      "expected_md5": "2c75352712438df1558a3f5453e67da0",
+      "actual_md5": "68ca411c80fb9a191fdd55f65e171fc8"
+    },
+    {
+      "signature": "gerar_codigo_lote(integer)",
+      "expected_md5": "194703302cf0400c10d6d0dda2468d5d",
+      "actual_md5": "8bb7c0302d3596bcd5b9971821561404"
+    },
+    {
+      "signature": "gerar_codigo_visita(integer)",
+      "expected_md5": "5ccec17bfe18cd6c70f79f56cb048dd4",
+      "actual_md5": "5ccec17bfe18cd6c70f79f56cb048dd4"
+    },
+    {
+      "signature": "get_cliente_ids_for_user(uuid)",
+      "expected_md5": "c80d5900692d960f649d0a9f7850fe2c",
+      "actual_md5": "ea744e4ab05120bac5bec44f439b919a"
+    },
+    {
+      "signature": "get_financial_alerts(date)",
+      "expected_md5": "3ff948f9a2c4175addc31ae9e71c39af",
+      "actual_md5": "d5b9fd19d88d167666b9760b3f82cb4b"
+    },
+    {
+      "signature": "get_financial_dashboard_summary(date,date,uuid,uuid,uuid)",
+      "expected_md5": "f0ee19eefed682c2bd82751b9e5e1be9",
+      "actual_md5": "01fad806556d1177c2dc40d11d41c74c"
+    },
+    {
+      "signature": "get_partner_catalog_secure(uuid,boolean)",
+      "expected_md5": "1391adc2133b922e2dcea4b1d3e26820",
+      "actual_md5": null
+    },
+    {
+      "signature": "get_partner_catalog_secure(uuid)",
+      "expected_md5": "b5684d350603d1db77ab9f1db0f4b253",
+      "actual_md5": "4c8798e1567434a25b3fa9c9052f8759"
+    },
+    {
+      "signature": "get_partner_catalog_tecnico_secure()",
+      "expected_md5": "ab84d6835dac4d19ee71c842bd2416a9",
+      "actual_md5": "f1b68ffa8664b2655225eb298140860b"
+    },
+    {
+      "signature": "get_partner_catalog_tecnico_secure(boolean)",
+      "expected_md5": "f682465d6ffbb145076cfd8d011f685e",
+      "actual_md5": null
+    },
+    {
+      "signature": "get_portal_cliente_b2b_order_detail_secure(uuid)",
+      "expected_md5": "2eee9e9e357b13749513908904ab83c1",
+      "actual_md5": "1de99ff32844e8c30a6de840af9d03ff"
+    },
+    {
+      "signature": "get_portal_cliente_b2b_simulation_detail_secure(uuid)",
+      "expected_md5": "e85c12bc847f7223b8bc8173ce444b63",
+      "actual_md5": "eedda29f646341e6396c3685caf2e2e0"
+    },
+    {
+      "signature": "get_production_planning_detail(uuid)",
+      "expected_md5": "c81de10c333f11de30d829b1a69012d5",
+      "actual_md5": "c81de10c333f11de30d829b1a69012d5"
+    },
+    {
+      "signature": "get_user_partner_id()",
+      "expected_md5": "b334c3a454ebc4233d3b9e0d0a700d78",
+      "actual_md5": "77822b0ef57e42bfe9cd7075265402aa"
+    },
+    {
+      "signature": "guard_commercial_partner_registration()",
+      "expected_md5": "f60abac756fb4f371d6fccbb133dc2af",
+      "actual_md5": null
+    },
+    {
+      "signature": "guard_profile_senha_provisoria()",
+      "expected_md5": "e38505f726490b064e61d9aa4e3be5a7",
+      "actual_md5": "e38505f726490b064e61d9aa4e3be5a7"
+    },
+    {
+      "signature": "guard_profile_senha_ticket()",
+      "expected_md5": "bb9ea2f95f8f151ebd4b97c2a2e747b7",
+      "actual_md5": "bb9ea2f95f8f151ebd4b97c2a2e747b7"
+    },
+    {
+      "signature": "guard_profile_sensitive_fields()",
+      "expected_md5": "1c2ad8d0ef38ea66866f8b85d3acb109",
+      "actual_md5": null
+    },
+    {
+      "signature": "guard_profile_tenant_fields()",
+      "expected_md5": "bd6d513d936f5c5fb0490b5d1d2f9f1d",
+      "actual_md5": "bd6d513d936f5c5fb0490b5d1d2f9f1d"
+    },
+    {
+      "signature": "guard_tenant_organization_id()",
+      "expected_md5": "d01a740c1e3e02407131d2b9228bf658",
+      "actual_md5": "d01a740c1e3e02407131d2b9228bf658"
+    },
+    {
+      "signature": "h15_active_company()",
+      "expected_md5": "78dc1f60878c972cd2b5370cbaa2f664",
+      "actual_md5": "78dc1f60878c972cd2b5370cbaa2f664"
+    },
+    {
+      "signature": "h15_actor_organization()",
+      "expected_md5": "55edafec08bcc84a00f1526c14334a2c",
+      "actual_md5": "9750a4b1eb1285facc46d4544bccfc30"
+    },
+    {
+      "signature": "h15_company_access(uuid)",
+      "expected_md5": "c7a0e73d86584b70ee874a6397b1dbf4",
+      "actual_md5": "c7a0e73d86584b70ee874a6397b1dbf4"
+    },
+    {
+      "signature": "h15_invoice_access(uuid)",
+      "expected_md5": "14c030513bcea4c30a9453547bdd8231",
+      "actual_md5": "14c030513bcea4c30a9453547bdd8231"
+    },
+    {
+      "signature": "h15_profile_organization_guard()",
+      "expected_md5": "43be4da16aae664a48fa4c73315b4420",
+      "actual_md5": "43be4da16aae664a48fa4c73315b4420"
+    },
+    {
+      "signature": "h15_require_invoice(uuid)",
+      "expected_md5": "275c84bb4620950d8c69dc88f8ad44f8",
+      "actual_md5": "275c84bb4620950d8c69dc88f8ad44f8"
+    },
+    {
+      "signature": "h15_require_staff()",
+      "expected_md5": "6e0776133908e6857bf1829329256ad5",
+      "actual_md5": "6e0776133908e6857bf1829329256ad5"
+    },
+    {
+      "signature": "h15_user_organization(uuid)",
+      "expected_md5": "ff3688c33c7211b6c3fe60447a7728ac",
+      "actual_md5": "ff3688c33c7211b6c3fe60447a7728ac"
+    },
+    {
+      "signature": "has_active_user_cliente_access(uuid,uuid,text[])",
+      "expected_md5": "e099f51d128620e5a68cc3e9001dd976",
+      "actual_md5": "00ff74e51a618a7bfcdaa120cde79935"
+    },
+    {
+      "signature": "has_role(uuid,app_role)",
+      "expected_md5": "4d90e93d521a4819d9085f28d742030f",
+      "actual_md5": "fd5998f0c0e49bb5d81754023ce27270"
+    },
+    {
+      "signature": "insert_partner_catalog_access_log_internal(text,uuid,uuid,uuid,uuid,uuid,uuid,jsonb)",
+      "expected_md5": "6a7914784606c07f57e8162404135061",
+      "actual_md5": "6a7914784606c07f57e8162404135061"
+    },
+    {
+      "signature": "is_active_visit_participant(uuid,uuid)",
+      "expected_md5": "bdabf4f458528a91d385d738bfcf3f90",
+      "actual_md5": "e48af007bb19b732ff1fc550379067c8"
+    },
+    {
+      "signature": "is_delivery_staff(uuid)",
+      "expected_md5": "aa500abecc84ca8c901753c519f36fa1",
+      "actual_md5": "9fdee02a92bf4311e47455e64f51f05c"
+    },
+    {
+      "signature": "is_financial_staff(uuid)",
+      "expected_md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "actual_md5": "21cd7f1619a15961ba7ccbec44e250ec"
+    },
+    {
+      "signature": "is_operational_staff(uuid)",
+      "expected_md5": "f4b093c506cb05d39aa466bae94a6df8",
+      "actual_md5": "d04f3a83589e607e241a6d835d7d1c9d"
+    },
+    {
+      "signature": "is_platform_superadmin(uuid)",
+      "expected_md5": "3dfe79d976821244d9b7a7f893d765f2",
+      "actual_md5": "3dfe79d976821244d9b7a7f893d765f2"
+    },
+    {
+      "signature": "is_technical_visit_editable_status(text)",
+      "expected_md5": "c326c1a060bf6cd91fedcbca2aa99f15",
+      "actual_md5": "c326c1a060bf6cd91fedcbca2aa99f15"
+    },
+    {
+      "signature": "is_valid_b2b_partner_user(uuid,uuid)",
+      "expected_md5": "0bb0dea04be8ca84c66db7ca6329876c",
+      "actual_md5": "7b17274fb6dce728741a2a9c77710a76"
+    },
+    {
+      "signature": "is_visit_responsible(uuid,uuid)",
+      "expected_md5": "e356cc48a0f2e7588d38a1c1b2dba489",
+      "actual_md5": "d1970709609d98fc48c5d0f8af09fb57"
+    },
+    {
+      "signature": "log_catalog_change()",
+      "expected_md5": "b4099f0d780e8b7af56356d6dea0e6fe",
+      "actual_md5": "b4099f0d780e8b7af56356d6dea0e6fe"
+    },
+    {
+      "signature": "log_estoque_movimentacao()",
+      "expected_md5": "45dcb6afde3b37528b972cc018e5162a",
+      "actual_md5": "333dcb5a97f697f4f3b86d1a24f6851e"
+    },
+    {
+      "signature": "log_os_onfarm_status_change()",
+      "expected_md5": "cd6e103f87d34097f10802febcc02a51",
+      "actual_md5": "cd6e103f87d34097f10802febcc02a51"
+    },
+    {
+      "signature": "lote_volume_envasado(uuid)",
+      "expected_md5": "06d444c44f19b6569053c76b3122dcef",
+      "actual_md5": "06d444c44f19b6569053c76b3122dcef"
+    },
+    {
+      "signature": "mask_sensitive_jsonb(jsonb)",
+      "expected_md5": "6da55c2319c5978bf706c5779ddd32e4",
+      "actual_md5": "6da55c2319c5978bf706c5779ddd32e4"
+    },
+    {
+      "signature": "notify_consultor_atribuido_op()",
+      "expected_md5": "e443c3aa804bfe5bf6c54181bb0021f7",
+      "actual_md5": "e443c3aa804bfe5bf6c54181bb0021f7"
+    },
+    {
+      "signature": "notify_consultor_on_confirmacao_produtor()",
+      "expected_md5": "f3b93a119f117f9c5569d8e8bf2899b3",
+      "actual_md5": "f3b93a119f117f9c5569d8e8bf2899b3"
+    },
+    {
+      "signature": "notify_managers_on_simulation_sent()",
+      "expected_md5": "45e577d434ab2deff58748ac86ce865f",
+      "actual_md5": "45e577d434ab2deff58748ac86ce865f"
+    },
+    {
+      "signature": "notify_visita_finalizada()",
+      "expected_md5": "705fbe0d0c1f2f3ea7ded00d55120de4",
+      "actual_md5": "705fbe0d0c1f2f3ea7ded00d55120de4"
+    },
+    {
+      "signature": "organizations_guard_status()",
+      "expected_md5": "1c2241052d227831f625b909eb606bda",
+      "actual_md5": "1c2241052d227831f625b909eb606bda"
+    },
+    {
+      "signature": "partner_apply_default_discount(uuid)",
+      "expected_md5": "c33a667463b7f34840237ad9ba676761",
+      "actual_md5": "29cea38d199ab11b5ac02288cc017b51"
+    },
+    {
+      "signature": "partner_audit_trigger()",
+      "expected_md5": "3b8aa711642b2d6fd5b739a21d36e4ba",
+      "actual_md5": "3b8aa711642b2d6fd5b739a21d36e4ba"
+    },
+    {
+      "signature": "partner_order_has_production(uuid)",
+      "expected_md5": "0cfac18049e90c5427ada9d11ab2c2c4",
+      "actual_md5": "0cfac18049e90c5427ada9d11ab2c2c4"
+    },
+    {
+      "signature": "partner_orders_audit_trigger()",
+      "expected_md5": "df139ef01591892436854b7f8c82f2db",
+      "actual_md5": "df139ef01591892436854b7f8c82f2db"
+    },
+    {
+      "signature": "partner_ppp_compute_final()",
+      "expected_md5": "1b0e5dbfdc7dee0ffb17a38927960bc2",
+      "actual_md5": "1b0e5dbfdc7dee0ffb17a38927960bc2"
+    },
+    {
+      "signature": "partner_simulation_items_fill_snapshots()",
+      "expected_md5": "c9d9239c3d1d0fd2b3e14f618e2ede7c",
+      "actual_md5": "c9d9239c3d1d0fd2b3e14f618e2ede7c"
+    },
+    {
+      "signature": "platform_create_global_culture(jsonb,text,uuid)",
+      "expected_md5": "9cbc1ca85ea4f0d9ef54f9da7e1b086b",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_create_global_microorganism(jsonb,text,uuid)",
+      "expected_md5": "7702b59d1742e6d80fb5b54baa7cd510",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_create_global_product(jsonb,text,uuid)",
+      "expected_md5": "6335cdcfc5806c34ea87c532f93d0d0d",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_create_global_volume(text,uuid,jsonb,text,uuid)",
+      "expected_md5": "a613835e48e4ea3b7cb3c2ea6bba8072",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.assert_b2b_partner_scope(uuid,uuid)",
+      "expected_md5": "f86f43f9d9ad3ed97b840fcc02c79476",
+      "actual_md5": "f86f43f9d9ad3ed97b840fcc02c79476"
+    },
+    {
+      "signature": "platform_private.b2b_actor_scope(uuid)",
+      "expected_md5": "c3f2997746f24bc2efd15db5c0ccc862",
+      "actual_md5": "c85cb35201682c3c86b9a327d24c8482"
+    },
+    {
+      "signature": "platform_private.b2b_coherent_self_partner(uuid)",
+      "expected_md5": "56d8f1e84bbf889eb2d3f990c3ed1162",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_commercial_context()",
+      "expected_md5": "2f1063f00281c4ca78dcebaab81a9446",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_direct_partner_row_allowed()",
+      "expected_md5": "8967832dbfa4ee782c4c063ca5e1e3d4",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
+      "expected_md5": "6bbb61aa5899b18d13ac55d4f76f45e1",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_internal_child_snapshot_guard()",
+      "expected_md5": "f9fcfca4588854d927f7f9a1bdbe4de7",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_internal_commercial_actor()",
+      "expected_md5": "6555396c4f8fe914177d2ccfc3891279",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_internal_order_snapshot_guard()",
+      "expected_md5": "9cad2aaa995277b913f8b40816fea504",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_internal_origin_valid(jsonb)",
+      "expected_md5": "70a7c317765a4888b38e8bf277ded7d3",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_organization_full_row_allowed()",
+      "expected_md5": "48c06c94d9c0e4de2ad8d99d5280a99b",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_owner_internal_order_readable(uuid)",
+      "expected_md5": "262f21fdf51d0a1056508e19830b5519",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_owner_internal_partner_readable(uuid)",
+      "expected_md5": "fa72ca18fc673cb4a5ff4867e65137cd",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_phase1_order_visible(uuid)",
+      "expected_md5": "8504f07fbc3a7975accf919f386d00eb",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+      "expected_md5": "915f516e605af7cc14584e2e762a2661",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_phase1_simulation_visible(uuid)",
+      "expected_md5": "9968732c1c5b90713377464950bae32a",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.b2b_save_technical_simulation(jsonb)",
+      "expected_md5": "daad3c1554f370bb0456b4ea3afdeea7",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c1b_catalog_visibility_scope(uuid)",
+      "expected_md5": "cefe53f36d7fab8572575548cfb4ab7c",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_accounting_pending_guard()",
+      "expected_md5": "669b19490a7a9700f0158db4b31885ad",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)",
+      "expected_md5": "05938c5e9abf096d560e57aad10af69f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_external_final_state_guard()",
+      "expected_md5": "3f1a5a6b11161bd8204293a8c64371e2",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
+      "expected_md5": "999e5e9fd9887595e252523fb2142726",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_external_origin_contract_valid(jsonb)",
+      "expected_md5": "369fd07cd9c659b87941b9a3bf972868",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_internal_order_target_reason(uuid,uuid)",
+      "expected_md5": "07d7c9002cbfe17497c9ee4a92d5a928",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_owner_order_create_allowed(uuid,uuid)",
+      "expected_md5": "5f0a08d1d4f8d8c5a7ae58e24c71071e",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2_producer_links(uuid,uuid)",
+      "expected_md5": "881cdf48a5b20df4d93e42ef1edf1bee",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_assignment_allowed(text,uuid,uuid)",
+      "expected_md5": "ecada72965cd1042fc1502b37864ab42",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_assignment_children_fence()",
+      "expected_md5": "a75201d8046e4bb09005ac3c39a5f1db",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_assignment_fence()",
+      "expected_md5": "4db90f14719c84a327a190f0d91a4d44",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_internal_actor(app_role[])",
+      "expected_md5": "97bab97591a9f662bad7b1ccf837bfcd",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)",
+      "expected_md5": "0e303620d70fa5d9d8b5c6702ee8526f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_item_fence()",
+      "expected_md5": "b15f84985a3bb51d60f3f1128455bf8d",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_rule_fence()",
+      "expected_md5": "397723e1a28d19c5bf43939e135f1919",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.c2p1_settings_allowed(uuid,boolean)",
+      "expected_md5": "57baa5fd657952d9383ad0c422c1d028",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_composition_family_guard()",
+      "expected_md5": "38be87cad410f38c63a49f47461cac30",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_composition_row_guard()",
+      "expected_md5": "3e9492073fafdb012ce2b2636e6bb066",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_composition_touch()",
+      "expected_md5": "6dc6e64559ece6e7a12789d79c537c12",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_composition_type_allowed(text,text)",
+      "expected_md5": "5de1a1b51543865311c0fda702233d3f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_culture_normalize(jsonb,boolean)",
+      "expected_md5": "40b200ca55e58250026a49c5a494c5b6",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)",
+      "expected_md5": "7cc756c36ac07b90ab95ae005c3c3a79",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_entity_replay(uuid,text,jsonb,text,uuid)",
+      "expected_md5": "bc194d354de83bb0a362bddd0ceb66e6",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_family_label_check(text,text)",
+      "expected_md5": "de5ea169ab903a959a55741a23c88ade",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_family_label_validate()",
+      "expected_md5": "79784d2858d4b83ff650d82b7eee3c45",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_metadata_require_actor()",
+      "expected_md5": "a8cdc918cd6506c2a04acf3a91af3e2b",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_micro_normalize(jsonb,boolean)",
+      "expected_md5": "e8bbfde530a1bf38ad9741687c3e2496",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_tenant_actor(text)",
+      "expected_md5": "5e0ce9cc9122f1c21d76e29a13de8b59",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_tenant_hidden_ids_core(text)",
+      "expected_md5": "9e4b4e53faee7b610b382d982b749d65",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_tenant_read_visibility_core(text,uuid[])",
+      "expected_md5": "8dab707c49a804e9c69f25c7f1625b77",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_tenant_selection_core(text,text,integer,integer,uuid[])",
+      "expected_md5": "4bde839029b5c38d8cacadef823f7d4f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)",
+      "expected_md5": "c890b49cf23d7cbfedf4cb12c1cd6d89",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_tenant_visibility_ledger_immutable()",
+      "expected_md5": "abdad8e4542a94aa532496d05a74dd97",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_touch_version()",
+      "expected_md5": "37728459aa7afb365686338c4aaa0d57",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_visit_reference_guard_current12()",
+      "expected_md5": "b1db3fdcbd99a7b778a888ef0207170c",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_assert_row(uuid,text,uuid)",
+      "expected_md5": "ad3752e8f8ac664eefadd409b67ef90a",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_dec(jsonb)",
+      "expected_md5": "e01946894a6a6c045828a7fcdfb46ff3",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_normalize(jsonb,boolean)",
+      "expected_md5": "c8bba935881996925dc295ae650ed92a",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_parent(text,uuid,boolean)",
+      "expected_md5": "08f9568dd0b9527fcb661188eded1dde",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_preview_token(uuid,text,uuid,jsonb,text,timestamp with time zone,text,uuid,jsonb)",
+      "expected_md5": "2eaad379952d685d3b02eab8c3d4dc15",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_pricing(jsonb)",
+      "expected_md5": "b458e1d6e3f6eb61c6d3ced9e6191aff",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_row(uuid)",
+      "expected_md5": "892e124ebaac8203728ce8573ac0279b",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.catalog_volume_settle(text,uuid,jsonb,boolean,boolean,boolean,text)",
+      "expected_md5": "b82bbf25e0294e0bc18730934f002011",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.change_global_volume(text,uuid,timestamp with time zone,jsonb,boolean,text,text,uuid)",
+      "expected_md5": "36d8ee1abbfb64d95d64bd84ff0b864c",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.create_global_culture_core(jsonb,text,uuid)",
+      "expected_md5": "f3afe74a3384cb741570ec77004dc494",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.create_global_microorganism_core(jsonb,text,uuid)",
+      "expected_md5": "69b01d045a358bd8405dd3111248381c",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.create_global_product_core(jsonb,text,uuid)",
+      "expected_md5": "e09129b948fdc2a8974d62df1ca9c7f2",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.create_global_volume_core(text,uuid,jsonb,text,uuid)",
+      "expected_md5": "cffda97cc2ef6f12459acd34b22216fd",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.current_user_organization_id()",
+      "expected_md5": "8da1a59de9d58041148b4544ebfbd0a2",
+      "actual_md5": "8da1a59de9d58041148b4544ebfbd0a2"
+    },
+    {
+      "signature": "platform_private.delivery_actor_20261030(text)",
+      "expected_md5": "c6da1f5d9581a0c290e5e27e4605682c",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.delivery_mutation_guard_20261030()",
+      "expected_md5": "8fa73fc045c51addd05576597ecd4c88",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.delivery_no_downstream_20261030()",
+      "expected_md5": "95e0e5a84ef511cd72d7807351f61cf4",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.delivery_order_transition_guard_20261030()",
+      "expected_md5": "c6a1ddec57760c482e2eff3fc21ea25d",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.delivery_proof_actor_20261030()",
+      "expected_md5": "8057d63bba307eb7839202c46fd8a6d1",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.entitlements_for_user(uuid)",
+      "expected_md5": "7f4ec7facaebbdf35444dd490fdebe56",
+      "actual_md5": "7f4ec7facaebbdf35444dd490fdebe56"
+    },
+    {
+      "signature": "platform_private.envase_insert_final_v1()",
+      "expected_md5": "7837c5852e37159d826875babf9da228",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.envase_insert_guard_v1()",
+      "expected_md5": "c150d00c4e0258ddcf4f7e2f86f53170",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.global_product_fiscal_before_write()",
+      "expected_md5": "db436eb02fc46a11bd407be80599f5c1",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.global_product_fiscal_ibs_save(uuid,jsonb,text)",
+      "expected_md5": "366d6bb9e6cd506a48e3e99257eb4e22",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.global_product_fiscal_read_ready()",
+      "expected_md5": "a33cee569e8264365f8913105b3366f7",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.global_product_fiscal_statement_gate()",
+      "expected_md5": "1d4d1107af4e543d67b117cca13cccb5",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.global_product_fiscal_write_ready()",
+      "expected_md5": "e08e5b579051e2866745cfbf27550320",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.guard_manual_cq_parent_v1()",
+      "expected_md5": "bf7c5e95e182062c054edc21157c0622",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.guard_manual_lot_delete_v1()",
+      "expected_md5": "0d490a2910e7fb63dd50fd4c86e1cf0f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.guard_manual_lot_write_v1()",
+      "expected_md5": "4eab765e76ca79f16a7dd481887496d9",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.guard_manual_program_binding_v1()",
+      "expected_md5": "7c168ffa9393207fb3388c9546c19d05",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.guard_visit_plan_preservation()",
+      "expected_md5": "618797b75f8c6b962dc70c0841c84de1",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.h15_actor_organization()",
+      "expected_md5": "64e10608403238a41a9baf92857ca881",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.has_role(uuid,app_role)",
+      "expected_md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.has_ticket(text,uuid)",
+      "expected_md5": "29adae3347e8a5ff23327fa86fceb54b",
+      "actual_md5": "29adae3347e8a5ff23327fa86fceb54b"
+    },
+    {
+      "signature": "platform_private.is_same_tenant_user(uuid)",
+      "expected_md5": "311bae91946bd96880a64fbc4960d0ee",
+      "actual_md5": "311bae91946bd96880a64fbc4960d0ee"
+    },
+    {
+      "signature": "platform_private.is_tenant_admin_for_user(uuid)",
+      "expected_md5": "6f548278ad7a8fc39e83cad7c0101de2",
+      "actual_md5": "6f548278ad7a8fc39e83cad7c0101de2"
+    },
+    {
+      "signature": "platform_private.lab_assert_manufacturable(uuid,uuid)",
+      "expected_md5": "fe24f00acbffa9b6d71c84d0c4ff8eb4",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.lab_item_is_manufacturable(uuid,uuid)",
+      "expected_md5": "853595394240e8f2a61ac2d621118271",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.lab_partner_order_authorized(uuid)",
+      "expected_md5": "2da1396633da6f073916054073d5c907",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.lab_visit_recommendation_lock()",
+      "expected_md5": "07a2434e96123541c4d15fcfe577a534",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.manual_cq_v1(uuid,uuid,jsonb)",
+      "expected_md5": "6fc63204f7075ab9e25ef26dfae2adef",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.notification_source_org(text,uuid)",
+      "expected_md5": "6853303eccf9c8824c353143d6bcb6c1",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.notification_user_ok(uuid,uuid)",
+      "expected_md5": "dadfd39f1fd16c94549dc77e99dd6fa4",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.platform_actor_access_ready(uuid)",
+      "expected_md5": "048249c0c2106c3761e26eacb8d0de84",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.platform_read_global_product_catalog_core(text,integer,integer)",
+      "expected_md5": "473a099696d4ff02eaf59dda58e1b233",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.producer_commercial_client_scope(uuid)",
+      "expected_md5": "49b8329ce232670c1560f0683b913a26",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)",
+      "expected_md5": "f83753b70fb4f05d5bd8ae705b1ef3f3",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_b2b_state_core(text,uuid)",
+      "expected_md5": "9f514955bd5fa65a433547590e3c8536",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_culture_detail_core(uuid)",
+      "expected_md5": "b0902a002109c6aacf797d7f32526acf",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_cultures_core(text,integer,integer)",
+      "expected_md5": "3db0904a47ad8d829b4f1d49f284456c",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_item_volumes_core(text,uuid,integer,integer)",
+      "expected_md5": "6e2f7bfcd5020bc07ed35e781b6bfcfd",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_microorganism_detail_core(uuid)",
+      "expected_md5": "6178944c94c9e9e1225e6c59224554ec",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_microorganisms_core(text,integer,integer,boolean)",
+      "expected_md5": "9f63a20b604e8f023de51eaa6ff039d8",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_product_catalog_by_family_core(text,text,text,integer,integer)",
+      "expected_md5": "799a965509da4ec11ee3a85a8fea06c1",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_product_composition_core(uuid,integer,integer)",
+      "expected_md5": "25422d890db3b5b205b0a11788e92279",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_product_metadata_core(uuid)",
+      "expected_md5": "5d5fc5eaa31508277cc646729fe82ac1",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.read_global_volume_detail_core(uuid)",
+      "expected_md5": "382661e5fa912bb766f335b046a3d157",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.set_global_b2b_enabled_core(text,uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "73419bcd860ca8b0ac4f50dd32a8ec3f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.set_global_culture_status_core(uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "0c327bf2cfc6be928288fcd3b97ac30f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.set_global_microorganism_status_core(uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "67ac2e0995c7c44acc68bdd050d569ec",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.set_global_product_composition_core(uuid,timestamp with time zone,text,jsonb,text,uuid)",
+      "expected_md5": "d03d2a8cb5ce0ca2aa65ef60b0ad245a",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.set_global_product_family_core(uuid,timestamp with time zone,text,text,text,uuid)",
+      "expected_md5": "85227393c057898bf46538057cc0917f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.set_global_product_status_core(uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "f74965cdacc9ecc433df4c5d36f5fbd2",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.set_global_volume_status_core(uuid,timestamp with time zone,boolean,text,text,uuid)",
+      "expected_md5": "02499237c347ffef633258238c546035",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.stock_envase_complete_v1(uuid,uuid,uuid,text)",
+      "expected_md5": "a071f20ac774524e570d67b702d659d9",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.stock_envase_mutation_gate_v1()",
+      "expected_md5": "fd66c95c67366e613d886ac4e6a4f9f7",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.stock_envase_reservation_root_v1()",
+      "expected_md5": "52563977f17f3ea8026c1a33c03dc619",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text)",
+      "expected_md5": "ec2e42ad952205514b78ed311c5ae919",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.stock_motor_actor(text)",
+      "expected_md5": "6dfbaa7283b963cb78f19ccdf13ecd9f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.stock_p1_guard()",
+      "expected_md5": "ad87685f4b7bc87bd8cc3f41f283966d",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.stock_p1_lote_owned(uuid)",
+      "expected_md5": "a06f69d41e1f1f996c3c37de6e5c69fb",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.storage1_application_allowed(text,text)",
+      "expected_md5": "daefb183522e2ee7f730e0db243f4823",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.tenant_smtp_lane_enqueue_solicitacao()",
+      "expected_md5": "f771a868ff324b1ce72308f04756e0b4",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.tenant_smtp_lane_log(platform_private.tenant_smtp_dispatch_jobs,text,text,uuid)",
+      "expected_md5": "5f87ae61140f53a753f050f381780566",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.tenant_smtp_lane_ready(uuid)",
+      "expected_md5": "7a212e400fdb645960198e5159b27ea5",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.tenant_smtp_lane_recipient(uuid,uuid)",
+      "expected_md5": "c64dd74c292aed440c843c2833c8bd0e",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.tenant_smtp_lane_source_reason(uuid,uuid,uuid,uuid)",
+      "expected_md5": "2da5309c2b447af194929c86f4befd99",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.trg_lab_lot_biological_only()",
+      "expected_md5": "58abf38671745d272abeb923ee866083",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.trg_lab_os_biological_only()",
+      "expected_md5": "75b55313502aecaf7226cd0a235f1a4f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.trg_lab_programming_biological_only()",
+      "expected_md5": "d253b17831afaacef106b5c5e1efbb29",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.update_global_culture_core(uuid,timestamp with time zone,jsonb,text,uuid)",
+      "expected_md5": "5ca15b5b3c6994dee970d0ef9a510dcf",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.update_global_microorganism_core(uuid,timestamp with time zone,jsonb,text,uuid)",
+      "expected_md5": "9747855384fea9dbd1f16ad2e07e9bb9",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.update_global_product_metadata_core(uuid,timestamp with time zone,jsonb,text,uuid)",
+      "expected_md5": "7cf0e86bbd40ad9050ea5117afd16efd",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_private.update_global_volume_core(uuid,timestamp with time zone,jsonb,text,text,uuid)",
+      "expected_md5": "ac2ef12fc61f917b738b0872f7efc101",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_b2b_state(text,uuid)",
+      "expected_md5": "b8781d48dc085b49b3409d8194b34c7f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_culture_detail(uuid)",
+      "expected_md5": "5a5f7593e9d1f41ec988c7ab1473f488",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_cultures(text,integer,integer)",
+      "expected_md5": "6dd19aa3380a33ee365215f0fff5ce0f",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_item_volumes(text,uuid,integer,integer)",
+      "expected_md5": "17c5cfb70962f6c39a03366cf60c37de",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_microorganism_detail(uuid)",
+      "expected_md5": "339dbbe36cd28e6637650ef6a48884c5",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_microorganisms(text,integer,integer,boolean)",
+      "expected_md5": "8ac8a7787c16ea23303e8faa7a5a812e",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_product_catalog_by_family(text,text,text,integer,integer)",
+      "expected_md5": "82a09014f71edf6697c017ed3ed03895",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_product_catalog(text,integer,integer)",
+      "expected_md5": "622eca2b662108ab40aa086d3b0f0b72",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_product_composition(uuid,integer,integer)",
+      "expected_md5": "8faa12496c4e7ef82ae2633792dc67e3",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_product_metadata(uuid)",
+      "expected_md5": "ce97afe52d2cfbc4fb86f838ce59cac2",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_read_global_volume_detail(uuid)",
+      "expected_md5": "fb30f46442fe681d06c43d18a22abcb8",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "0dce420a2309a03fb63ac1acbe100295",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_global_b2b_enabled(text,uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "ccf343d3ba95ad2b6b76cd062d6a8b96",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_global_culture_status(uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "c186bd8a8f0f4500505841bf33144bfe",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_global_microorganism_status(uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "1138754d01035ba8e2dfafa740f488e6",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_global_product_composition(uuid,timestamp with time zone,text,jsonb,text,uuid)",
+      "expected_md5": "32913526c826c890e07946a303b76633",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_global_product_family(uuid,timestamp with time zone,text,text,text,uuid)",
+      "expected_md5": "9f3d74fc898944514574360d091bb1ff",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_global_product_status(uuid,timestamp with time zone,boolean,text,uuid)",
+      "expected_md5": "d09fca1734cef43feb588c4d9ccf9e89",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_set_global_volume_status(uuid,timestamp with time zone,boolean,text,text,uuid)",
+      "expected_md5": "b4271d590c41d645ee8b0411b0646bbb",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_update_global_culture(uuid,timestamp with time zone,jsonb,text,uuid)",
+      "expected_md5": "bce75cf79297f0f864e1ce9bf3fc8296",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_update_global_microorganism(uuid,timestamp with time zone,jsonb,text,uuid)",
+      "expected_md5": "d678d4ff7332f90a235430ef3014d664",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_update_global_product_metadata(uuid,timestamp with time zone,jsonb,text,uuid)",
+      "expected_md5": "67378393044b0288b8cc01a097a6acdd",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_update_global_volume(uuid,timestamp with time zone,jsonb,text,text,uuid)",
+      "expected_md5": "85806c9d67d0896b07e834b7082c4364",
+      "actual_md5": null
+    },
+    {
+      "signature": "platform_wipe_global_product_catalog(uuid,text,uuid)",
+      "expected_md5": "05bfc1751e785331e4b64d74a238a495",
+      "actual_md5": "05bfc1751e785331e4b64d74a238a495"
+    },
+    {
+      "signature": "prefixo_para_microrganismo(text)",
+      "expected_md5": "6450668db364eb7984537c9dfbab7e84",
+      "actual_md5": "6450668db364eb7984537c9dfbab7e84"
+    },
+    {
+      "signature": "prefixo_para_produto(text)",
+      "expected_md5": "34edabae8b60058d6a4f6db35398d715",
+      "actual_md5": "34edabae8b60058d6a4f6db35398d715"
+    },
+    {
+      "signature": "private.guard_os_separate_approval()",
+      "expected_md5": "f00397fe862e611fbfa0eba3911d95c6",
+      "actual_md5": null
+    },
+    {
+      "signature": "producer_request_mutation_guard()",
+      "expected_md5": "5618a1a45b96707373bca29a140b6499",
+      "actual_md5": null
+    },
+    {
+      "signature": "proximo_codigo(text,text)",
+      "expected_md5": "e061a6487d6d3d30436d9bd3ca0e2be1",
+      "actual_md5": "e061a6487d6d3d30436d9bd3ca0e2be1"
+    },
+    {
+      "signature": "recalc_partner_order_production(uuid)",
+      "expected_md5": "6b46438f25454fd1c239aa4963496309",
+      "actual_md5": "6b46438f25454fd1c239aa4963496309"
+    },
+    {
+      "signature": "recalc_partner_prices_on_default_change()",
+      "expected_md5": "127917c3a793e927e217159e4fbf3122",
+      "actual_md5": "127917c3a793e927e217159e4fbf3122"
+    },
+    {
+      "signature": "refresh_esteira_laboratorio()",
+      "expected_md5": "bbb2e580bfc6ffddfa833f950c38e0f3",
+      "actual_md5": "bbb2e580bfc6ffddfa833f950c38e0f3"
+    },
+    {
+      "signature": "refresh_partner_engagement(uuid)",
+      "expected_md5": "7a52c5469fe62d326971e29c26a7e476",
+      "actual_md5": "7a52c5469fe62d326971e29c26a7e476"
+    },
+    {
+      "signature": "regulatory_audit_trigger()",
+      "expected_md5": "59b30cd1a282db6f87891f8446292604",
+      "actual_md5": "59b30cd1a282db6f87891f8446292604"
+    },
+    {
+      "signature": "regulatory_block_published_child_edit()",
+      "expected_md5": "6aed13556be5082f64bb5a2406285385",
+      "actual_md5": "6aed13556be5082f64bb5a2406285385"
+    },
+    {
+      "signature": "regulatory_block_published_edit()",
+      "expected_md5": "ce66e5181be49bbcbcbe02d93328b080",
+      "actual_md5": "ce66e5181be49bbcbcbe02d93328b080"
+    },
+    {
+      "signature": "regulatory_snapshot_immutable()",
+      "expected_md5": "81e07c9dc93f20573f9a6a8decccb3eb",
+      "actual_md5": "81e07c9dc93f20573f9a6a8decccb3eb"
+    },
+    {
+      "signature": "regulatory_touch_updated_at()",
+      "expected_md5": "3e32ca31780e1a81e0687d9e0bb14044",
+      "actual_md5": "3e32ca31780e1a81e0687d9e0bb14044"
+    },
+    {
+      "signature": "rpc_associate_microorganism_fiscal_product(uuid,uuid)",
+      "expected_md5": "da0d679779e9d57558a3a203219b4afc",
+      "actual_md5": "da0d679779e9d57558a3a203219b4afc"
+    },
+    {
+      "signature": "rpc_b2b_carteira_kpis(date,date)",
+      "expected_md5": "4bf332fe6af936cb1afd0e566bb186a0",
+      "actual_md5": "4bf332fe6af936cb1afd0e566bb186a0"
+    },
+    {
+      "signature": "rpc_b2b_executive_dashboard()",
+      "expected_md5": "b008fac79ad80669c8ad2de19f17892a",
+      "actual_md5": "b008fac79ad80669c8ad2de19f17892a"
+    },
+    {
+      "signature": "rpc_b2b_integrity_check()",
+      "expected_md5": "c8c678235a5123284cb2ed804b70dbdd",
+      "actual_md5": "83af2c10eef5d5f0e9219198d567a4a2"
+    },
+    {
+      "signature": "rpc_b2b_revenue_forecast(uuid)",
+      "expected_md5": "d1ec2f714516e3c45d8b608405405939",
+      "actual_md5": "d1ec2f714516e3c45d8b608405405939"
+    },
+    {
+      "signature": "rpc_cc_validate_matrix(uuid,text,uuid,uuid)",
+      "expected_md5": "21ab73c3a6ed77512c1e93b3958bfb1c",
+      "actual_md5": "e3b94ad47b93b02c9717a6a694163552"
+    },
+    {
+      "signature": "rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)",
+      "expected_md5": "ee9e7a45f7e81e2ba6e2a4e55ca10f78",
+      "actual_md5": "cdefc1420fe2d2999d939067284f9a12"
+    },
+    {
+      "signature": "rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)",
+      "expected_md5": "65ecc1f718a7eeb0b52d18d91191da50",
+      "actual_md5": "c21738b4fc05bded47e5330454fe6182"
+    },
+    {
+      "signature": "rpc_commercial_simulator(uuid,uuid,numeric,numeric)",
+      "expected_md5": "4e324b1711f06bb556f050d8ea1aa8f0",
+      "actual_md5": "4e324b1711f06bb556f050d8ea1aa8f0"
+    },
+    {
+      "signature": "rpc_converter_visita_em_os(uuid,text)",
+      "expected_md5": "b112888e28d8a5727df713e0ae7bcd1b",
+      "actual_md5": "6675a28b561d19b5a4314c5c9d125b4b"
+    },
+    {
+      "signature": "rpc_criar_embalagens_pos_envase(jsonb)",
+      "expected_md5": "9d2769dbadaf3aa85afefba595e20b91",
+      "actual_md5": "9d2769dbadaf3aa85afefba595e20b91"
+    },
+    {
+      "signature": "rpc_fiscal_draft_save(uuid,jsonb,jsonb,integer)",
+      "expected_md5": "224ab7944abd13190fe8ea1044216218",
+      "actual_md5": "71d96ef75040412cc406048ce6574871"
+    },
+    {
+      "signature": "rpc_fiscal_nfe_readiness_v1()",
+      "expected_md5": "75487176d377f5bf096f658ad47587e4",
+      "actual_md5": "8e976df4052bd905df5d033675415bb5"
+    },
+    {
+      "signature": "rpc_gerar_etiqueta_produto(jsonb)",
+      "expected_md5": "814be9eb7435c3fced7ffad44b9fc3fe",
+      "actual_md5": "814be9eb7435c3fced7ffad44b9fc3fe"
+    },
+    {
+      "signature": "rpc_get_comprovante_entrega_data(uuid,boolean)",
+      "expected_md5": "1a10dbe4a354bb373e53ad91a7c4ab33",
+      "actual_md5": "1a10dbe4a354bb373e53ad91a7c4ab33"
+    },
+    {
+      "signature": "rpc_microorganism_regulatory_overview()",
+      "expected_md5": "a5763623af22befd1a60df8b04636e5d",
+      "actual_md5": "a5763623af22befd1a60df8b04636e5d"
+    },
+    {
+      "signature": "rpc_partner_commercial_history(uuid,date,date)",
+      "expected_md5": "633f20a19e559c22c8c6e5ccafee2767",
+      "actual_md5": "633f20a19e559c22c8c6e5ccafee2767"
+    },
+    {
+      "signature": "rpc_programar_os_v1(uuid,text,date)",
+      "expected_md5": "e374f0ba1698b37523b890dc91682eaf",
+      "actual_md5": null
+    },
+    {
+      "signature": "rpc_regulatory_dossier_ensure_draft(uuid)",
+      "expected_md5": "56076bccafd27aa8c95473ac38e73422",
+      "actual_md5": "56076bccafd27aa8c95473ac38e73422"
+    },
+    {
+      "signature": "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])",
+      "expected_md5": "0c102f7735a44ccba6ce1364b1f30c32",
+      "actual_md5": null
+    },
+    {
+      "signature": "saas_has_feature(text)",
+      "expected_md5": "e7d40a5065b1eb989a75089c7743e58c",
+      "actual_md5": "e7d40a5065b1eb989a75089c7743e58c"
+    },
+    {
+      "signature": "send_partner_simulation_to_manager_secure(uuid)",
+      "expected_md5": "657ff43a6cedaeaf4d4be3dceb6bacd9",
+      "actual_md5": "1a6ae312dc0103d1e1755639bce2e63e"
+    },
+    {
+      "signature": "set_codigo_cliente()",
+      "expected_md5": "cc90bd60f9cb2e62e96d495861b0434d",
+      "actual_md5": "cc90bd60f9cb2e62e96d495861b0434d"
+    },
+    {
+      "signature": "set_codigo_microrganismo()",
+      "expected_md5": "22f33bb511f309ada40f710d017fcdb5",
+      "actual_md5": "22f33bb511f309ada40f710d017fcdb5"
+    },
+    {
+      "signature": "set_codigo_produto()",
+      "expected_md5": "e5ef4aa8489889e7d20e03dc62b455ae",
+      "actual_md5": "e5ef4aa8489889e7d20e03dc62b455ae"
+    },
+    {
+      "signature": "set_codigo_visita()",
+      "expected_md5": "568ea47bed05a2c09a611757a3d0fd9d",
+      "actual_md5": "568ea47bed05a2c09a611757a3d0fd9d"
+    },
+    {
+      "signature": "set_numero_os_regular()",
+      "expected_md5": "e132d714014a46dfbe38670920182ef0",
+      "actual_md5": "e132d714014a46dfbe38670920182ef0"
+    },
+    {
+      "signature": "set_numero_os()",
+      "expected_md5": "b8c7e3437577cc46eedb5c5c17746647",
+      "actual_md5": "b8c7e3437577cc46eedb5c5c17746647"
+    },
+    {
+      "signature": "set_pdf_status_default()",
+      "expected_md5": "f3145aa1d30803411cab0368188567f8",
+      "actual_md5": "f3145aa1d30803411cab0368188567f8"
+    },
+    {
+      "signature": "set_updated_at()",
+      "expected_md5": "c2cb4ce18c3937410b91c3c0b5a389c7",
+      "actual_md5": "c2cb4ce18c3937410b91c3c0b5a389c7"
+    },
+    {
+      "signature": "stock_p1_lote_owned(uuid)",
+      "expected_md5": "c276c7826319a6c2058e0c239a1a5954",
+      "actual_md5": null
+    },
+    {
+      "signature": "storage1_application_allowed(text,text)",
+      "expected_md5": "126a48c5d7c91563a2f253c2272e50fd",
+      "actual_md5": null
+    },
+    {
+      "signature": "storage1_path_strict(text)",
+      "expected_md5": "94164fa3b90088b0a1f16ac465a635d4",
+      "actual_md5": null
+    },
+    {
+      "signature": "sync_catalogo_volumes_calc()",
+      "expected_md5": "7362f1a8a53acdebba899a7e5524aecf",
+      "actual_md5": "7362f1a8a53acdebba899a7e5524aecf"
+    },
+    {
+      "signature": "sync_microorganism_pricing()",
+      "expected_md5": "bc44c7f7e2b0bd488a62cceffad36645",
+      "actual_md5": "0ff289938b9eb1084f73678319904f2f"
+    },
+    {
+      "signature": "sync_os_onfarm_downstream()",
+      "expected_md5": "f5ba706828f4c157a55a8d594b5c1848",
+      "actual_md5": "f5ba706828f4c157a55a8d594b5c1848"
+    },
+    {
+      "signature": "sync_product_pricing()",
+      "expected_md5": "521100dd184dfe1f05feb68764bca5ec",
+      "actual_md5": "4f5e460bd038eea758e7336bbdb11236"
+    },
+    {
+      "signature": "sync_talhao_safra_atual()",
+      "expected_md5": "74c8e2033db8d91520891ab600b1325c",
+      "actual_md5": "74c8e2033db8d91520891ab600b1325c"
+    },
+    {
+      "signature": "technical_actor_ready(uuid)",
+      "expected_md5": "b5d0994b6eb976b14122cd2a1ec798cf",
+      "actual_md5": null
+    },
+    {
+      "signature": "technical_child_read_scope(uuid)",
+      "expected_md5": "220b06fa2e634b7ea23df04cbd473c5e",
+      "actual_md5": null
+    },
+    {
+      "signature": "technical_client_link(uuid,uuid,text[])",
+      "expected_md5": "1df7b9983b8dac1af06b9108eb32e7f0",
+      "actual_md5": null
+    },
+    {
+      "signature": "technical_refs_in_actor_tenant(uuid,uuid,uuid)",
+      "expected_md5": "1d178d4acb1439a16600cab10b63f29e",
+      "actual_md5": null
+    },
+    {
+      "signature": "tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])",
+      "expected_md5": "13a76147ec7fc9be058ba3cda551cf08",
+      "actual_md5": null
+    },
+    {
+      "signature": "tg_audit_partner_order_commercial()",
+      "expected_md5": "b537eb6807fbfc48b43b59d49ef7297a",
+      "actual_md5": "b537eb6807fbfc48b43b59d49ef7297a"
+    },
+    {
+      "signature": "tg_auto_b2b_receivable()",
+      "expected_md5": "0f679538fe394924b140e54938a3bb9e",
+      "actual_md5": "0b11150214b3bded49e1a7e1a4b0e80e"
+    },
+    {
+      "signature": "tg_b2b_enforce_plan_selectable()",
+      "expected_md5": "3477a02b069c20ae3e1c832ecca6b1e7",
+      "actual_md5": "3477a02b069c20ae3e1c832ecca6b1e7"
+    },
+    {
+      "signature": "tg_block_partner_order_delete()",
+      "expected_md5": "55b4f2fa662f1d14dbbb663cb475d6a6",
+      "actual_md5": "55b4f2fa662f1d14dbbb663cb475d6a6"
+    },
+    {
+      "signature": "tg_block_partner_order_edit_after_op()",
+      "expected_md5": "2884dea0a9efa9ab7badac6bd8b5e46c",
+      "actual_md5": "2884dea0a9efa9ab7badac6bd8b5e46c"
+    },
+    {
+      "signature": "tg_block_partner_order_items_after_op()",
+      "expected_md5": "6e7c1a8ac409cf64442396d48f73abb5",
+      "actual_md5": "6e7c1a8ac409cf64442396d48f73abb5"
+    },
+    {
+      "signature": "tg_commercial_audit()",
+      "expected_md5": "59f38730b9f37102cbf2ed4bd44a7e00",
+      "actual_md5": "59f38730b9f37102cbf2ed4bd44a7e00"
+    },
+    {
+      "signature": "tg_commercial_conditions_touch()",
+      "expected_md5": "e573921e5debcc13930a325e1a986c6a",
+      "actual_md5": "e573921e5debcc13930a325e1a986c6a"
+    },
+    {
+      "signature": "tg_commercial_price_rules_audit()",
+      "expected_md5": "3d644370c3ca3a154c3b5f2ac06faa0b",
+      "actual_md5": "3d644370c3ca3a154c3b5f2ac06faa0b"
+    },
+    {
+      "signature": "tg_commercial_price_rules_plan_mode_guard()",
+      "expected_md5": "96504996cf8141227757807e33b33055",
+      "actual_md5": "96504996cf8141227757807e33b33055"
+    },
+    {
+      "signature": "tg_commercial_price_rules_producer_inert()",
+      "expected_md5": "d17634b9bbe99dacc0338c1cc173d573",
+      "actual_md5": "d17634b9bbe99dacc0338c1cc173d573"
+    },
+    {
+      "signature": "tg_commercial_price_rules_touch()",
+      "expected_md5": "3287ab9869a5dc8a27ae0a6173c6914f",
+      "actual_md5": "3287ab9869a5dc8a27ae0a6173c6914f"
+    },
+    {
+      "signature": "tg_cpp_guard_financial_immutability()",
+      "expected_md5": "e3f5caab4c5a1ef8767817598ba916d8",
+      "actual_md5": "e3f5caab4c5a1ef8767817598ba916d8"
+    },
+    {
+      "signature": "tg_create_default_pfs()",
+      "expected_md5": "756e5d24883fa387054b4385a232cfcf",
+      "actual_md5": "756e5d24883fa387054b4385a232cfcf"
+    },
+    {
+      "signature": "tg_culturas_block_delete_in_use()",
+      "expected_md5": "595048c41c3a64f6f42a0099d448c78d",
+      "actual_md5": "595048c41c3a64f6f42a0099d448c78d"
+    },
+    {
+      "signature": "tg_culturas_stamp_desativacao()",
+      "expected_md5": "767abfe7df36cad3a477571f75739fe1",
+      "actual_md5": "767abfe7df36cad3a477571f75739fe1"
+    },
+    {
+      "signature": "tg_microorganism_fiscal_profiles_updated_at()",
+      "expected_md5": "260a78582dec436d178b04f26b726b05",
+      "actual_md5": "260a78582dec436d178b04f26b726b05"
+    },
+    {
+      "signature": "tg_notify_payment_terms_pending()",
+      "expected_md5": "671f9cb3a245cfccc30a27c16172d802",
+      "actual_md5": "671f9cb3a245cfccc30a27c16172d802"
+    },
+    {
+      "signature": "tg_partner_order_items_resolve_pending()",
+      "expected_md5": "2e80e713bc0fe3785e1008405a0d02a3",
+      "actual_md5": "2e80e713bc0fe3785e1008405a0d02a3"
+    },
+    {
+      "signature": "tg_partner_orders_credit_guard()",
+      "expected_md5": "b24a3c30910832e8b14456d912a67589",
+      "actual_md5": "b24a3c30910832e8b14456d912a67589"
+    },
+    {
+      "signature": "tg_partner_orders_require_items()",
+      "expected_md5": "2b756289555b287255876e635a516c9a",
+      "actual_md5": "2b756289555b287255876e635a516c9a"
+    },
+    {
+      "signature": "tg_pcp_audit()",
+      "expected_md5": "d056c19c5406b0a767f9cf52c817fcff",
+      "actual_md5": "d056c19c5406b0a767f9cf52c817fcff"
+    },
+    {
+      "signature": "tg_pcp_touch()",
+      "expected_md5": "e37278962ad556f5fd8db55585562d45",
+      "actual_md5": "e37278962ad556f5fd8db55585562d45"
+    },
+    {
+      "signature": "tg_produto_etiquetas_snapshot_immutable()",
+      "expected_md5": "dfa0d503e58e4127594518d42170a22c",
+      "actual_md5": "dfa0d503e58e4127594518d42170a22c"
+    },
+    {
+      "signature": "tg_protect_os_structural_fields()",
+      "expected_md5": "8c9c5436e1f0091706a4ff17c9f365fa",
+      "actual_md5": "8c9c5436e1f0091706a4ff17c9f365fa"
+    },
+    {
+      "signature": "tg_recalc_planning_from_entrega()",
+      "expected_md5": "9f7c032ef8df2cae0097b8a24ee4016f",
+      "actual_md5": "9f7c032ef8df2cae0097b8a24ee4016f"
+    },
+    {
+      "signature": "tg_recalc_planning_from_os()",
+      "expected_md5": "ac8746e2c142d33bfb9e4f3c6d5daf6d",
+      "actual_md5": "ac8746e2c142d33bfb9e4f3c6d5daf6d"
+    },
+    {
+      "signature": "tg_refresh_engagement()",
+      "expected_md5": "87b1de282cdc198d0898cdc5ca08a4c4",
+      "actual_md5": "87b1de282cdc198d0898cdc5ca08a4c4"
+    },
+    {
+      "signature": "tg_set_current_price_table()",
+      "expected_md5": "fede7c96e58322ecad3496ff6a87fb7a",
+      "actual_md5": "fede7c96e58322ecad3496ff6a87fb7a"
+    },
+    {
+      "signature": "tg_sync_b2b_financial_status()",
+      "expected_md5": "e636fcf74c5e1c7c8037d5a17f525c27",
+      "actual_md5": "e636fcf74c5e1c7c8037d5a17f525c27"
+    },
+    {
+      "signature": "tg_unique_current_price_table()",
+      "expected_md5": "9f17f26e10afff5f4b201124f168fe88",
+      "actual_md5": "9f17f26e10afff5f4b201124f168fe88"
+    },
+    {
+      "signature": "trg_catalogo_volumes_sync_mestre()",
+      "expected_md5": "3d2962d4186239559d3f0a4cf4a8d445",
+      "actual_md5": null
+    },
+    {
+      "signature": "trg_clientes_audit()",
+      "expected_md5": "83d97f405d434f6ad48557ec91ae40c7",
+      "actual_md5": "83d97f405d434f6ad48557ec91ae40c7"
+    },
+    {
+      "signature": "trg_entrega_sync_partner_order_fn()",
+      "expected_md5": "e8fb9e9512db8d1cfb801e37f63ee497",
+      "actual_md5": "e8fb9e9512db8d1cfb801e37f63ee497"
+    },
+    {
+      "signature": "trg_mestre_guard_preco_canonico()",
+      "expected_md5": "598e4a9e1d0b7347bb719c5b04360b69",
+      "actual_md5": null
+    },
+    {
+      "signature": "trg_os_sync_partner_order_fn()",
+      "expected_md5": "d219a4922c0c6d2a464175dc61bdf5a3",
+      "actual_md5": "6684080e5556c041e6709543ee7af8e0"
+    },
+    {
+      "signature": "trg_partner_order_timeline()",
+      "expected_md5": "833de323eb590a831924d5a5fcb490bd",
+      "actual_md5": "833de323eb590a831924d5a5fcb490bd"
+    },
+    {
+      "signature": "trg_partner_order_to_planning_fn()",
+      "expected_md5": "e5915037d03892fffc5d388595cba685",
+      "actual_md5": "e5915037d03892fffc5d388595cba685"
+    },
+    {
+      "signature": "update_microorganism_b2b_description(uuid,text)",
+      "expected_md5": "2b756f4d9f2948f5c1ed053a2d14c7b2",
+      "actual_md5": "2b756f4d9f2948f5c1ed053a2d14c7b2"
+    },
+    {
+      "signature": "update_product_b2b_description(uuid,text)",
+      "expected_md5": "2d21f5cb9bab76cfca01831e8726ec2d",
+      "actual_md5": "2d21f5cb9bab76cfca01831e8726ec2d"
+    },
+    {
+      "signature": "update_updated_at_column()",
+      "expected_md5": "b1930ed5bca3be839f783c6202ab8147",
+      "actual_md5": "b1930ed5bca3be839f783c6202ab8147"
+    },
+    {
+      "signature": "validate_catalog_approval_checklist(text,jsonb,boolean,boolean,boolean)",
+      "expected_md5": "389196c85b1f340534d09bb1eb59109b",
+      "actual_md5": "389196c85b1f340534d09bb1eb59109b"
+    },
+    {
+      "signature": "validate_estoque_entrada()",
+      "expected_md5": "9e24938a8d716a02ba023c9fb7ce24e9",
+      "actual_md5": "9e24938a8d716a02ba023c9fb7ce24e9"
+    },
+    {
+      "signature": "validate_estoque_reserva()",
+      "expected_md5": "9bdbd6bc6fc957993bbdff466db6ef22",
+      "actual_md5": "9bdbd6bc6fc957993bbdff466db6ef22"
+    },
+    {
+      "signature": "validate_registro_status_transition()",
+      "expected_md5": "870ae079971d1802edfbd5d526c34f4f",
+      "actual_md5": "9422d12659db59149a04b2bdd2757a9a"
+    },
+    {
+      "signature": "validate_responsavel_producao()",
+      "expected_md5": "443795794c2cb18b295239a0c81021c6",
+      "actual_md5": "443795794c2cb18b295239a0c81021c6"
+    },
+    {
+      "signature": "validate_retorno_tecnico_consistency()",
+      "expected_md5": "899217cc0ebaf09a2cf4c5948ea6604f",
+      "actual_md5": "899217cc0ebaf09a2cf4c5948ea6604f"
+    },
+    {
+      "signature": "visitas_campo_guard()",
+      "expected_md5": "f69455b72d067d0d96fab74987b4cc4e",
+      "actual_md5": "55177f9db09a4d749c200a1801888249"
+    }
+  ],
+  "columns": {
+    "expected_count": 1339,
+    "actual_count": 1299,
+    "diffs": [
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "organization_id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "organization_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "entity_type",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "entity_type",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "produto_id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "produto_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "microrganismo_id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "microrganismo_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "cultura_id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "cultura_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "hidden",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "hidden",
+          "data_type": "boolean",
+          "udt_name": "bool",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "version",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "version",
+          "data_type": "integer",
+          "udt_name": "int4",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "reason",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "reason",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "updated_by",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "updated_by",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "created_at",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      },
+      {
+        "table_name": "catalog_tenant_visibility",
+        "column_name": "updated_at",
+        "kind": "missing",
+        "expected": {
+          "table_name": "catalog_tenant_visibility",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      },
+      {
+        "table_name": "culturas",
+        "column_name": "updated_at",
+        "kind": "missing",
+        "expected": {
+          "table_name": "culturas",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      },
+      {
+        "table_name": "microrganismos",
+        "column_name": "updated_at",
+        "kind": "missing",
+        "expected": {
+          "table_name": "microrganismos",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      },
+      {
+        "table_name": "produtos",
+        "column_name": "familia_catalogo",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produtos",
+          "column_name": "familia_catalogo",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produtos",
+        "column_name": "classe_catalogo",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produtos",
+          "column_name": "classe_catalogo",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "clientes",
+        "column_name": "marca_nome",
+        "kind": "missing",
+        "expected": {
+          "table_name": "clientes",
+          "column_name": "marca_nome",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "clientes",
+        "column_name": "marca_logo_url",
+        "kind": "missing",
+        "expected": {
+          "table_name": "clientes",
+          "column_name": "marca_logo_url",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "clientes",
+        "column_name": "marca_cor_primaria",
+        "kind": "missing",
+        "expected": {
+          "table_name": "clientes",
+          "column_name": "marca_cor_primaria",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "cq_parametros_referencia",
+        "column_name": "microrganismo_id",
+        "kind": "changed",
+        "expected": {
+          "table_name": "cq_parametros_referencia",
+          "column_name": "microrganismo_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        "actual": {
+          "table_name": "cq_parametros_referencia",
+          "column_name": "microrganismo_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "partner_accounts",
+        "column_name": "marca_nome",
+        "kind": "missing",
+        "expected": {
+          "table_name": "partner_accounts",
+          "column_name": "marca_nome",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "partner_accounts",
+        "column_name": "marca_logo_url",
+        "kind": "missing",
+        "expected": {
+          "table_name": "partner_accounts",
+          "column_name": "marca_logo_url",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "partner_accounts",
+        "column_name": "marca_cor_primaria",
+        "kind": "missing",
+        "expected": {
+          "table_name": "partner_accounts",
+          "column_name": "marca_cor_primaria",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "partner_orders",
+        "column_name": "internal_origin_snapshot",
+        "kind": "missing",
+        "expected": {
+          "table_name": "partner_orders",
+          "column_name": "internal_origin_snapshot",
+          "data_type": "jsonb",
+          "udt_name": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "partner_orders",
+        "column_name": "internal_economic_snapshot",
+        "kind": "missing",
+        "expected": {
+          "table_name": "partner_orders",
+          "column_name": "internal_economic_snapshot",
+          "data_type": "jsonb",
+          "udt_name": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "partner_orders",
+        "column_name": "c2_external_origin_snapshot",
+        "kind": "missing",
+        "expected": {
+          "table_name": "partner_orders",
+          "column_name": "c2_external_origin_snapshot",
+          "data_type": "jsonb",
+          "udt_name": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "envase",
+        "column_name": "volume_por_unidade",
+        "kind": "changed",
+        "expected": {
+          "table_name": "envase",
+          "column_name": "volume_por_unidade",
+          "data_type": "numeric",
+          "udt_name": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        "actual": {
+          "table_name": "envase",
+          "column_name": "volume_por_unidade",
+          "data_type": "numeric",
+          "udt_name": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "envase",
+        "column_name": "quantidade",
+        "kind": "changed",
+        "expected": {
+          "table_name": "envase",
+          "column_name": "quantidade",
+          "data_type": "integer",
+          "udt_name": "int4",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        "actual": {
+          "table_name": "envase",
+          "column_name": "quantidade",
+          "data_type": "integer",
+          "udt_name": "int4",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "portal_solicitacoes",
+        "column_name": "client_uuid",
+        "kind": "missing",
+        "expected": {
+          "table_name": "portal_solicitacoes",
+          "column_name": "client_uuid",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_conjuntos",
+        "column_name": "produto_id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_conjuntos",
+          "column_name": "produto_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_conjuntos",
+        "column_name": "status",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_conjuntos",
+          "column_name": "status",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_conjuntos",
+        "column_name": "created_at",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_conjuntos",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      },
+      {
+        "table_name": "produto_composicao_conjuntos",
+        "column_name": "updated_at",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_conjuntos",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      },
+      {
+        "table_name": "produto_composicao_conjuntos",
+        "column_name": "updated_by",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_conjuntos",
+          "column_name": "updated_by",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "produto_id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "produto_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "ordem",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "ordem",
+          "data_type": "smallint",
+          "udt_name": "int2",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "tipo_componente",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "tipo_componente",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "microrganismo_id",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "microrganismo_id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "componente_nome",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "componente_nome",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "quantidade",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "quantidade",
+          "data_type": "numeric",
+          "udt_name": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "unidade",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "unidade",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "base",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "base",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "natureza",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "natureza",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      },
+      {
+        "table_name": "produto_composicao_declaracoes",
+        "column_name": "created_at",
+        "kind": "missing",
+        "expected": {
+          "table_name": "produto_composicao_declaracoes",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      }
+    ]
+  },
+  "plan": "ALINHAMENTO PARA PROVA AUTENTICADA — SOMENTE HOMOLOGAÇÃO\n\nDestino: vrlcdwmlytukrjezrrnf, PostgreSQL 17.11. Não é produção.\nInventário READ ONLY:254 tabelas públicas,1073funçõespublic/platform_private,7produtos,0microrganismos,0culturas,0pedidos,0entregas,0notasfiscais.\nOrganizações:\n- AR Bio HOMOL: c809e74f-486b-44b2-b2f4-4088f53421bb, onboarding, ativo=true.\n- FSF HOMOL: dcf50a75-579a-4828-a0fc-1d8eadcb4b8a, ativa, ativo=true.\nOs IDs não são os de produção. Nunca copiar default tenant ou reatribuir produtos por nome.\n\nDiferenças de base antes do catálogo:\n- Das459assinaturasreferenciadas:204corposiguais,192ausentes,63divergentes.\n- Das1339colunasdas59tabelas:42ausentes,3diferençasdenulabilidade;1299colunasnarespostahomolog(inclui2extras).\n- Sem owner_organization_id nascinco raízes.\n- Arquivos:homolog-function-diff-20261102.json e homolog-columns-diff-20261102.json.\n\nPreparação técnica necessária:\n1. Gerar pacote exclusivo de alinhamento de homologação, testado em banco descartável com baseline homolog. Reaproveitar migrações do repositório quando corresponderem aos hashes atuais; não aplicar cegamente todas as migrações históricas.\n2. Preservar Auth/usuários/empresas e dados fora do escopo. Nenhum DROP SCHEMA ou reset genérico. Recriar apenas estruturas e definições necessárias com controles de drift, ACL/RLS e dependências, sem ativar workers/SMTP/fiscal.\n3. Preparar fixtures próprias de homologação, com manifesto e tenant correto. O descarte de19IDs deprodução não deve ser executado na homologação: provar esse algoritmo no banco descartável; a variante de instalação limpa do catálogo precisa ser identificada, gerada e testada separadamente do remapeamento da produção.\n4. Ajustar AR Bio HOMOL para estado de teste elegível somente pelos fluxos/guardas canônicos, não por bypass. Catalogo usa empresa ativa; onboarding bloquearia controles positivos.\n5. Manter binding exclusivo e bloqueio de rede/automação. Preparar via limitada para os RPCs revisados de teste, nunca liberação geral de escrita.\n6. Rodar preflight e testes positivos/negativos com JWT real; confirmar controle direto, RPCs DEFINER, cache e troca de sessão. Não declarar prova autenticada com SET ROLE/helper simulado.\n\nContas:\nHá duas contas Auth de homologação: arbiotecnologia@gmail.com e teste4@refilinformatica.com.br. Não há rh@refilinformatica.com.br nesta captura.\nDecisão humana vigente: teste4 é comprador B2B da AR Bio, não administrador FSF. Não usar essa conta como controle positivo de tenant FSF, mesmo se alguma preparação histórica a tiver vinculado assim.\nO administrador FSF solicitado é rh@refilinformatica.com.br (e renato_cunha22@hotmail.com no tenant de produção). Preparar criação/login pelo fluxo Auth canônico da homologação, sem SQL direto em auth.users nem reutilizar senhas/tokens de produção. Intervenção humana para senha/login somente quando o ambiente estiver tecnicamente pronto.\n\nStatus: pacote de alinhamento ainda NÃO aplicado. Produção permanece intacta nesta rodada. A prova de homologação é temporária: após catálogo aprovado/aplicado, voltar ao banco correto de produção conforme pedido do usuário.\n"
+}

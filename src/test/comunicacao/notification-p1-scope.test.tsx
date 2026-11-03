@@ -103,7 +103,10 @@ describe("P1 structural containment (not remote runtime)", () => {
     expect(hook).toContain("requestGeneration === generation.current && liveScope.current === scope && !abort.signal.aborted");
     expect(hook).toContain('if (!current()) return;');
     expect(hook).toContain('ready && resolvedScope === scope');
-    expect(hook).toContain("${STORAGE_KEY}:${scope}");
+    // Preferência local escopada por identidade/organização/papéis (preferenceScope), nunca chave global.
+    expect(hook).toContain("${STORAGE_KEY}:${preferenceScope}");
+    expect(hook).toContain('const preferenceScope = JSON.stringify([user?.id ?? "", organizationId ?? "", [...roles].sort()]);');
+    expect(hook).not.toMatch(/localStorage\.(get|set|remove)Item\(STORAGE_KEY[,)]/);
     expect(hook).toContain('.filter("organization_id", "eq", organizationId)');
   });
 });

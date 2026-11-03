@@ -34,7 +34,8 @@ describe("D51.5 P0-D — frontend alinhado ao ACCESS_MAP", () => {
   });
 
   it("não oferece envase complementar a perfil somente leitura", () => {
-    expect(envase).toContain('canWrite(role, "/envase")');
-    expect(envase).toContain("canManage && lotesComplementares.length > 0");
+    // A página atual é somente consulta (EnvaseConsulta): nenhuma ação de envase complementar nem escrita é montada.
+    expect(envase).toContain("<EnvaseConsulta key={session.scope} />");
+    expect(envase).not.toMatch(/lotesComplementares|\.rpc\(|\.insert\(|\.update\(|\.delete\(|useMutation/);
   });
 });

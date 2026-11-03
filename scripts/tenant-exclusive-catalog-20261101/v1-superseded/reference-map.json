@@ -1,0 +1,193 @@
+{
+ "source": "src/integrations/supabase/types.ts (FKs declaradas) — confirmado pelo PRE contra pg_constraint real",
+ "refs": [
+  {
+   "t": "entregas",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "x.organization_id"
+  },
+  {
+   "t": "lotes",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "x.organization_id"
+  },
+  {
+   "t": "ordens_servico",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "x.organization_id"
+  },
+  {
+   "t": "programacao_producao",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "x.organization_id"
+  },
+  {
+   "t": "catalog_tenant_visibility",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "x.organization_id"
+  },
+  {
+   "t": "commercial_condition_item_prices",
+   "c": "product_id",
+   "kind": "reference",
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = x.partner_id)"
+  },
+  {
+   "t": "commercial_price_rules",
+   "c": "product_id",
+   "kind": "reference",
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = x.partner_id)"
+  },
+  {
+   "t": "partner_product_prices",
+   "c": "product_id",
+   "kind": "reference",
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = x.partner_id)"
+  },
+  {
+   "t": "partner_order_items",
+   "c": "product_id",
+   "kind": "reference",
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = (SELECT po.partner_id FROM public.partner_orders po WHERE po.id = x.order_id))"
+  },
+  {
+   "t": "partner_simulation_items",
+   "c": "product_id",
+   "kind": "reference",
+   "tenant": "(SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = (SELECT ps.partner_id FROM public.partner_simulations ps WHERE ps.id = x.simulation_id))"
+  },
+  {
+   "t": "estoque_produto",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "COALESCE((SELECT l.organization_id FROM public.lotes l WHERE l.id = x.lote_id), (SELECT pa.commercial_owner_organization_id FROM public.partner_accounts pa WHERE pa.id = x.reservado_para_partner_id))"
+  },
+  {
+   "t": "estoque_embalagens",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "COALESCE((SELECT l.organization_id FROM public.lotes l WHERE l.id = x.lote_id), (SELECT e.organization_id FROM public.entregas e WHERE e.id = x.entrega_id), (SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))"
+  },
+  {
+   "t": "produto_etiquetas",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "COALESCE((SELECT l.organization_id FROM public.lotes l WHERE l.id = x.lote_id), (SELECT e.organization_id FROM public.entregas e WHERE e.id = x.entrega_id), (SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))"
+  },
+  {
+   "t": "os_faturamento_base",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "COALESCE((SELECT os.organization_id FROM public.ordens_servico os WHERE os.id = x.ordem_servico_id), (SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id))"
+  },
+  {
+   "t": "ordens_servico_onfarm",
+   "c": "produto_id",
+   "kind": "reference",
+   "tenant": "(SELECT cl.organization_id FROM public.clientes cl WHERE cl.id = x.cliente_id)"
+  },
+  {
+   "t": "registros_consultor_recomendacoes",
+   "c": "produto_biologico_sugerido_id",
+   "kind": "reference",
+   "tenant": "(SELECT cl.organization_id FROM public.registros_consultor rc JOIN public.clientes cl ON cl.id = rc.cliente_id WHERE rc.id = x.registro_consultor_id)"
+  },
+  {
+   "t": "commercial_campaign_products",
+   "c": "product_id",
+   "kind": "reference",
+   "tenant": "NULL::uuid"
+  },
+  {
+   "t": "product_fiscal_profiles",
+   "c": "product_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "product_technical_profiles",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "produto_composicao_conjuntos",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "produto_conformidade_perfis",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "product_crop_recommendations",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "product_target_recommendations",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "cq_parametros_referencia",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "catalogo_volumes",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "formulacoes",
+   "c": "produto_id",
+   "kind": "descendant"
+  },
+  {
+   "t": "formulacoes",
+   "c": "component_insumo_id",
+   "kind": "reference",
+   "tenant": "(SELECT p.owner_organization_id FROM public.produtos p WHERE p.id = x.produto_id)"
+  },
+  {
+   "t": "microrganismos",
+   "c": "product_id",
+   "kind": "nullify"
+  }
+ ],
+ "global_functions_closed": [
+  "platform_create_global_product",
+  "platform_read_global_product_catalog",
+  "platform_read_global_product_catalog_by_family",
+  "platform_read_global_product_composition",
+  "platform_read_global_product_metadata",
+  "platform_set_global_product_composition",
+  "platform_set_global_product_family",
+  "platform_set_global_product_status",
+  "platform_update_global_product_metadata",
+  "platform_wipe_global_product_catalog"
+ ],
+ "editable_fields": {
+  "nome": "text",
+  "codigo": "text",
+  "descricao": "text",
+  "tipo": "text",
+  "classe_catalogo": "text",
+  "familia_catalogo": "text",
+  "modo_acao": "text",
+  "modo_aplicacao": "text",
+  "funcao_completa": "text",
+  "e_insumo": "boolean",
+  "b2b_enabled": "boolean",
+  "dose_ml_ha": "numeric",
+  "estoque_minimo": "numeric",
+  "valor_dose_brl": "numeric",
+  "valor_ha_brl": "numeric",
+  "valor_litro_brl": "numeric"
+ }
+}

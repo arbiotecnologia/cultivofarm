@@ -44,7 +44,8 @@ describe("product (global) vs micro (canonical) edit split", () => {
   });
   test("Superadmin platform tab: products AND global micros listed; micro read-only; no regulatory flow", () => {
     m.role = "superadmin"; m.write = true; renderWithProviders(<FiscalProdutos platformGlobal />);
-    expect(screen.getByRole("button", { name: /perfil fiscal de INS-4/ }).getAttribute("aria-label")).toBe("Editar perfil fiscal de INS-4");
+    // catálogo exclusivo por empresa: sem writer global de Superadmin para ficha fiscal de produto
+    expect(screen.getByRole("button", { name: /perfil fiscal de INS-4/ }).getAttribute("aria-label")).toBe("Ver perfil fiscal de INS-4");
     expect(screen.queryByTestId("regulatorio-micro")).toBeNull(); expect(m.regulatory).not.toHaveBeenCalled();
     expect(screen.getByRole("combobox", { name: "Filtrar por tipo de item" })).toBeInTheDocument();
     expect(screen.getByTestId("row-micro:micro-1")).toBeInTheDocument();

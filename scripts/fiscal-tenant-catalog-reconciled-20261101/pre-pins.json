@@ -1,0 +1,58 @@
+{
+ "constraints": [
+  "CHECK ((NOT fiscal_rtc_has_sensitive_key(ibs_cbs_configuration)))",
+  "CHECK ((jsonb_typeof(ibs_cbs_configuration) = 'object'::text))",
+  "CHECK ((profile_status = ANY (ARRAY['DRAFT'::text, 'PENDING_ACCOUNTING'::text, 'VALIDATED'::text, 'BLOCKED'::text, 'NOT_FISCALLY_SOLD'::text])))",
+  "FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE RESTRICT",
+  "PRIMARY KEY (id)"
+ ],
+ "default_acl": [
+  "anon=X/postgres",
+  "authenticated=X/postgres",
+  "postgres=X/postgres",
+  "service_role=X/postgres"
+ ],
+ "functions": {
+  "fiscal_audit_trigger()": "5083ccb4946ee883c08011bfafce4513",
+  "platform_private.global_product_fiscal_before_write()": "db436eb02fc46a11bd407be80599f5c1",
+  "platform_private.global_product_fiscal_read_ready()": "a33cee569e8264365f8913105b3366f7",
+  "platform_private.global_product_fiscal_statement_gate()": "1d4d1107af4e543d67b117cca13cccb5",
+  "platform_private.global_product_fiscal_write_ready()": "e08e5b579051e2866745cfbf27550320",
+  "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
+  "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84"
+ },
+ "grants": [
+  "anon:DELETE",
+  "anon:INSERT",
+  "anon:REFERENCES",
+  "anon:SELECT",
+  "anon:TRIGGER",
+  "anon:TRUNCATE",
+  "anon:UPDATE",
+  "authenticated:DELETE",
+  "authenticated:INSERT",
+  "authenticated:REFERENCES",
+  "authenticated:SELECT",
+  "authenticated:TRIGGER",
+  "authenticated:TRUNCATE",
+  "authenticated:UPDATE",
+  "service_role:DELETE",
+  "service_role:INSERT",
+  "service_role:REFERENCES",
+  "service_role:SELECT",
+  "service_role:TRIGGER",
+  "service_role:TRUNCATE",
+  "service_role:UPDATE"
+ ],
+ "policies": [
+  "product_fiscal_profiles_delete|DELETE|PERMISSIVE|authenticated|false|~",
+  "product_fiscal_profiles_insert|INSERT|PERMISSIVE|authenticated|~|platform_private.global_product_fiscal_write_ready()",
+  "product_fiscal_profiles_read|SELECT|PERMISSIVE|authenticated|platform_private.global_product_fiscal_read_ready()|~",
+  "product_fiscal_profiles_update|UPDATE|PERMISSIVE|authenticated|platform_private.global_product_fiscal_write_ready()|platform_private.global_product_fiscal_write_ready()"
+ ],
+ "triggers": [
+  "CREATE TRIGGER a00_global_product_fiscal_gate BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH STATEMENT EXECUTE FUNCTION platform_private.global_product_fiscal_statement_gate()",
+  "CREATE TRIGGER a10_global_product_fiscal_authorize BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION platform_private.global_product_fiscal_before_write()",
+  "CREATE TRIGGER trg_fiscal_audit_product_fiscal_profiles AFTER INSERT OR DELETE OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION fiscal_audit_trigger()"
+ ]
+}

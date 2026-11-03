@@ -1,0 +1,26 @@
+[
+  {
+    "id": "INT-001",
+    "scenario": "legacy financial link unique preserved",
+    "expected": "t",
+    "actual": "t",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-002",
+    "scenario": "capability closed with candidate dependencies",
+    "expected": true,
+    "actual": false,
+    "status": "FAIL",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  },
+  {
+    "id": "INT-003",
+    "scenario": "candidate no authenticated fiscal writer grant",
+    "expected": "f",
+    "actual": "f",
+    "status": "PASS",
+    "kind": "PG_COMPONENT_CAPTURED_FINANCE_SYNTHETIC_AUTH"
+  }
+]

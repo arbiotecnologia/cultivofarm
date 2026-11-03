@@ -1,0 +1,13 @@
+-- Rollback deny-only do candidato reconciliado. NÃO APLICAR sem autorização.
+-- Não remove policies restritivas, recibos nem a tabela de permissões; não restaura o corpo antigo
+-- de a10 (o ramo próprio sem permissão já nega; o ramo global é o corpo capturado). Fecha gate e EXECUTE.
+BEGIN;
+UPDATE platform_private.owned_fiscal_gate SET enabled=false WHERE singleton;
+DELETE FROM platform_private.owned_fiscal_write_permits;
+REVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.tenant_owned_product_fiscal_list(integer,integer) FROM PUBLIC, anon, authenticated, service_role;
+DO $post$ BEGIN
+  IF has_function_privilege('authenticated','public.tenant_owned_product_fiscal_save(uuid,timestamptz,jsonb,text,uuid)','EXECUTE')
+     OR (SELECT enabled FROM platform_private.owned_fiscal_gate) THEN RAISE EXCEPTION 'POST rollback: not closed'; END IF;
+END $post$;
+COMMIT;

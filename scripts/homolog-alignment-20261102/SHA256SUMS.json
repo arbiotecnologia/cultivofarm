@@ -1,0 +1,11 @@
+{
+ "00-homolog-pre.sql.review": "34b9c2e00fb8581595cd781285b2d69b1ef0af28a28b6b17e4d369706add7a4f",
+ "01-homolog-align.sql.review": "ea07e5f7597fbdcd6356ef1b7a18dd5bd5d838997744291601c02e6464b5df03",
+ "02-homolog-catalog-gate.sql.review": "b808d07a59f4dad15b8cce06f5b1fc1756cd490623a93c3cd3bd9e7bcba35e8b",
+ "03-homolog-readiness-probe.sql.review": "6086ab7a509f99d48520fa60952c197e8ef7607e221ded24a07af051e693d4b6",
+ "04-client-destructive-acl-hardening.sql.review": "eb20007021512e879bb4f1ca9d4f0fbe23521c3a71127c0b31b406b53d461da6",
+ "05-client-destructive-acl-probe.sql.review": "e7879fca3b1213e429a9ad89e321879040db9b2deb735bdb762bca207e63945b",
+ "06-homolog-invite-access-columns.sql.review": "00c8b739ce8a398082d463413e7e16e6663c11492a84bb44f0e9876936889823",
+ "09-homolog-align-rollback-deny.sql.review": "fa01495407033e79b88bd9850930bc606b1abd93adbe1db57283a92f598f5629",
+ "manifest.json": "c03069eb8cff57859ed90edb1b58d9d0ef10e3d46fbc14593a4a64247a44b50f"
+}

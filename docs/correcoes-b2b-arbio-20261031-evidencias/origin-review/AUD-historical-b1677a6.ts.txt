@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'vitest';
+import { calcularSaldoRecebivel } from '@/lib/financeiro/baixaRecebimento';
+import { saldoParcela } from '@/lib/financeiro/contasReceber';
+import { validateSimulation } from '@/lib/comercial/validation';
+import { preview } from '@/pages/comercial/CommercialPaymentPlansPage';
+import type { PaymentPlanPayload } from '@/hooks/useCommercialPaymentPlansAdmin';
+
+// Audit reproductions only: no runtime changes, no writer, no invented contract rate.
+// 1.8%/40% below are recovered from the existing inactive active_candidate policy.
+const plan: PaymentPlanPayload = {
+  name: 'AUDIT LOCAL ONLY', code: 'AUDIT LOCAL ONLY', plan_type: 'short_term', max_days: 90,
+  months_count: 3, installment_count: 3, discount_percent: 40, monthly_interest_percent: 1.8,
+  interest_type: 'compound', pricing_mode: 'discount_from_base', requires_credit_approval: false,
+  requires_guarantee: false, requires_financial_approval: false,
+};
+
+describe('31/10 AR Bio audit: unresolved current contract failures (kept RED)', () => {
+  it('AUD-FIN-001 saldo não deve cobrar duas vezes juros já incluídos no valor financiado', () => {
+    // Captured generator inserts original_amount=10300 and financing breakdown=300.
+    expect(calcularSaldoRecebivel({ original_amount: 10300, interest_amount: 300, received_amount: 0 })).toBe(10300);
+  });
+  it('AUD-FIN-002 KPI precisa ler o mesmo saldo financiado sem duplicar os juros do snapshot', () => {
+    expect(saldoParcela({ original_amount: 10300, interest_amount: 300, received_amount: 0 })).toBe(10300);
+  });
+  it('AUD-VAL-001 simulador deve rejeitar data civil inexistente em vez de normalizar 30 de fevereiro', () => {
+    const errors = validateSimulation({ partner: 'local', plan: 'local', item: 'local', unit: 'litro', quantity: '1', volume: '', due: '2026-02-30' }, true);
+    expect(errors.due).toBeDefined();
+  });
+  it('AUD-VAL-002 simulador deve rejeitar timestamp no campo de vencimento civil', () => {
+    const errors = validateSimulation({ partner: 'local', plan: 'local', item: 'local', unit: 'litro', quantity: '1', volume: '', due: '2026-10-31T12:00:00Z' }, true);
+    expect(errors.due).toBeDefined();
+  });
+  it('AUD-CROSS-001 preview genérico não representa Price sobre saldo da candidata AR Bio', () => {
+    // Existing Decimal/Fraction Price candidate: 60000 net, 3x =20724.28/20724.28/20724.29.
+    // This assertion intentionally exposes incompatibility; generic compound is not globally forbidden.
+    expect(Math.round((preview(plan, 100000)?.final ?? NaN) * 100)).toBe(6217285);
+  });
+});
+
+describe('31/10 AR Bio audit: positive and validation controls', () => {
+  it('AUD-CTRL-001 mora monetária e pagamento parcial mantêm semântica distinta do financiamento', () => {
+    expect(calcularSaldoRecebivel({ original_amount: 10300, received_amount: 3000, interest_amount: 100, penalty_amount: 200, discount_amount: 50 })).toBe(7550);
+  });
+  it.each(['0', '-1', 'NaN', 'Infinity'])('AUD-CTRL-002 quantidade %s não permite simulação', quantity => {
+    expect(validateSimulation({ partner: 'local', plan: 'local', item: 'local', unit: 'litro', quantity, volume: '', due: '2026-10-31' }).quantity).toBeDefined();
+  });
+  it('AUD-CTRL-003 data civil válida permanece aceita', () => {
+    expect(validateSimulation({ partner: 'local', plan: 'local', item: 'local', unit: 'litro', quantity: '1', volume: '', due: '2026-10-31' }, true).due).toBeUndefined();
+  });
+});

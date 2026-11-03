@@ -1,0 +1,34 @@
+{
+ "copia_isolada_paralelo": {
+  "total": 10788,
+  "passed": 10776,
+  "failed": 6,
+  "failed_files": [
+   "test/financeiro/cancelAuthorizationPostgres.test.ts",
+   "test/saas/c2-credit-numeric-postgres.test.ts",
+   "test/saas/c2-current-base-reconciliation-postgres.test.ts",
+   "test/saas/c2-final-integrated-manual-postgres.test.ts",
+   "test/saas/c2-final-integrated-postgres.test.ts",
+   "test/saas/c2-order-concurrency-postgres.test.ts"
+  ]
+ },
+ "copia_isolada_postgres_serial": {
+  "total": 33,
+  "passed": 33,
+  "failed": 0,
+  "failed_files": []
+ },
+ "original_mais_pacote_paralelo_sem_pg": {
+  "total": 10663,
+  "passed": 10657,
+  "failed": 0,
+  "failed_files": []
+ },
+ "original_mais_pacote_postgres_serial": {
+  "total": 33,
+  "passed": 33,
+  "failed": 0,
+  "failed_files": []
+ },
+ "nota": "As 6 falhas da execução paralela da cópia isolada são estouros de tempo de testes PostgreSQL sob carga; os mesmos 33 passam em série. Typecheck do original+pacote rc=0."
+}

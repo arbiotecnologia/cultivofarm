@@ -1,0 +1,4 @@
+- Audit artifacts and tests only; never edit operational code, invoke hosted connections, deploy, publish or weaken preparation containment — preserves the owner's offline scope.
+- Rerun historical generators only in a clean temporary copy and preserve every result, including failures; label exact captured SQL, synthetic seams and inactive transformations separately — prevents rewriting historical evidence or certifying hosted authority.
+- Contract rates come from existing versioned sources, never fabricated defaults; recovered inactive policies remain unproven for production — prevents an audit fixture from granting commercial authority.
+- Commercial audit revisions append uniquely identified evidence rows and classify superseded expectations without changing original outcomes; future fiscal acceptance criteria remain NOT_RUN until exercised against the canonical contract — prevents historical erasure and simulated release claims.

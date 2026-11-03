@@ -1,0 +1,343 @@
+{
+ "summary": {
+  "enum_without_labels": [],
+  "defaults_skipped": [],
+  "sequences": [
+   "partner_orders_numero_seq"
+  ],
+  "index_fail": 0,
+  "fk_fail": 0,
+  "policy_fail": 0,
+  "trigger_fail": 0,
+  "grant_fail": 0,
+  "seed": "OK",
+  "extras_tables_fail": 0,
+  "extras_stub_cols_removed": {},
+  "extras_notnull_fail": 0,
+  "extras_constraint_fail": 8,
+  "extras_policy_fail": 10,
+  "extras_view_fail": 1,
+  "extras_skipped": {},
+  "extras_unresolved_enums": 0,
+  "extras_enums_from_generated_types": 8,
+  "extras_pk_stub_renamed": 4,
+  "synthetic_types_tables": 116,
+  "helpers_loaded": 348,
+  "helpers_fail": 0,
+  "helpers_md5_mismatch": 0,
+  "stubs_replaced": 7,
+  "identity_stubs_reinstalled": 5,
+  "check_fail": 0,
+  "checks_active": 158,
+  "checks_total": 158,
+  "extras_constraint_same_stub": 1,
+  "agg_views_installed": 1,
+  "extras_constraints_active": 294,
+  "extras_policies_active": 150,
+  "trigger_missing_deps": 4,
+  "policies_total": 232,
+  "triggers_total": 255,
+  "indexes_total": 320,
+  "fks_total": 151,
+  "legacy_state_injections": [
+   "DIV-1:entregas",
+   "CHN-1:ordens_servico",
+   "POST-1:partner_orders",
+   "MIG-0:commercial_price_rules+partner_order_items"
+  ]
+ },
+ "detail": {
+  "index_fail": [],
+  "fk_fail": [],
+  "policy_fail": [],
+  "trigger_fail": [],
+  "grant_fail": [],
+  "seed": "OK",
+  "extras_tables_fail": [],
+  "extras_stub_cols_removed": {},
+  "extras_notnull_fail": [],
+  "extras_constraint_fail": [
+   [
+    "accounts_payable_cost_center_id_fkey",
+    "ERR:ERROR:  there is no unique constraint matching given keys for referenced table \"financial_cost_centers\""
+   ],
+   [
+    "accounts_payable_recurring_template_id_fkey",
+    "ERR:ERROR:  there is no unique constraint matching given keys for referenced table \"recurring_financial_templates\""
+   ],
+   [
+    "comunicacao_outbox_rule_id_fkey",
+    "ERR:ERROR:  there is no unique constraint matching given keys for referenced table \"comunicacao_regras\""
+   ],
+   [
+    "comunicacao_outbox_template_id_fkey",
+    "ERR:ERROR:  there is no unique constraint matching given keys for referenced table \"comunicacao_templates\""
+   ],
+   [
+    "fop_ufs_domain",
+    "ERR:ERROR:  function fn_fiscal_uf_ibge_code(text) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "organization_subscriptions_plan_id_fkey",
+    "ERR:ERROR:  relation \"saas_plans\" does not exist"
+   ],
+   [
+    "receivable_payments_bank_account_id_fkey",
+    "ERR:ERROR:  there is no unique constraint matching given keys for referenced table \"bank_accounts\""
+   ],
+   [
+    "saas_plan_versions_plan_id_fkey",
+    "ERR:ERROR:  relation \"saas_plans\" does not exist"
+   ]
+  ],
+  "extras_policy_fail": [
+   [
+    "public.communication_tenant_email_settings:tenant_email_read",
+    "ERR:ERROR:  function platform_private.tenant_email_actor_org() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "public.communication_tenant_email_settings:tenant_email_fence",
+    "ERR:ERROR:  function platform_private.tenant_email_actor_org() does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "public.commercial_audit_log:c2p1_rule_audit_guard",
+    "ERR:ERROR:  function platform_private.c2p1_rule_log_allowed(text, uuid, jsonb, jsonb) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type c"
+   ],
+   [
+    "public.financial_audit_log:financial_audit_source_tenant_scope",
+    "ERR:ERROR:  column source.organization_id does not exist"
+   ],
+   [
+    "public.estoque_movimentacoes:stock_p1_mov_tenant_isolation",
+    "ERR:ERROR:  function stock_p1_movement_owned(uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "public.fiscal_audit_log:fiscal_audit_log_read",
+    "ERR:ERROR:  function h15_fiscal_audit_access(text, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "public.notificacoes_operacionais:notification_p1_op_isolation",
+    "ERR:ERROR:  function platform_private.notification_p1_visible(uuid, text, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "public.portal_notificacoes:notification_p1_portal_isolation",
+    "ERR:ERROR:  function platform_private.notification_p1_visible(uuid, text, uuid, uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type c"
+   ],
+   [
+    "public.registros_consultor_status_log:rcsl_insert_scoped",
+    "ERR:ERROR:  function can_user_access_registro_consultor(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ],
+   [
+    "public.registros_consultor_status_log:rcsl_select_scoped",
+    "ERR:ERROR:  function can_user_access_registro_consultor(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+   ]
+  ],
+  "extras_view_fail": [
+   [
+    "mv_esteira_laboratorio",
+    "ERR:ERROR:  relation \"_src_vw_esteira_laboratorio\" does not exist\nLINE 60:    FROM _src_vw_esteira_laboratorio WITH NO DATA;\n                 ^"
+   ]
+  ],
+  "extras_skipped": {},
+  "extras_unresolved_enums": [],
+  "extras_enums_from_generated_types": [
+   "access_level_tecnico:captured",
+   "comunicacao_canal:captured",
+   "comunicacao_evento_status:captured",
+   "comunicacao_outbox_status:captured",
+   "production_planning_status:captured",
+   "resultado_cq:captured",
+   "saas_subscription_status:captured",
+   "tipo_notificacao_portal:captured"
+  ],
+  "extras_pk_stub_renamed": [
+   "users_pkey:same_name",
+   "state_pkey:same_name",
+   "company_fiscal_settings_pkey:same_name",
+   "partner_financial_settings_pkey:same_name"
+  ],
+  "synthetic_types_tables": [
+   "_fiscal_hml_context",
+   "_fiscal_hml_inventory",
+   "_fiscal_staging_marker",
+   "_motor_b2b_pre_phase1_snapshot",
+   "agenda_sync_log",
+   "ai_refresh_jobs",
+   "alertas_acoes",
+   "alertas_agronomicos",
+   "alertas_execucoes",
+   "alertas_leituras",
+   "alertas_notificacao_config",
+   "alertas_notificacao_destinatarios",
+   "alertas_notificacoes",
+   "alertas_operacionais",
+   "alertas_regras",
+   "alertas_resumos",
+   "alertas_sla_config",
+   "alertas_sla_eventos",
+   "aplicacao_emails",
+   "aplicacao_evidencias",
+   "aplicacao_evidencias_vinculos",
+   "arquivos",
+   "audit_senha_log",
+   "auditoria_duplicidade",
+   "bank_accounts",
+   "bi_filtro_config",
+   "bi_refresh_audit",
+   "bi_user_preferences",
+   "catalog_access_events",
+   "catalogo_problemas",
+   "cliente_contatos",
+   "cliente_documentos",
+   "clima_dados",
+   "cockpit_alertas_reconhecidos",
+   "commercial_campaign_clientes",
+   "commercial_campaign_partners",
+   "commercial_condition_audit_log",
+   "communication_provider_settings",
+   "communication_provider_settings_audit",
+   "communication_provider_settings_rate_limit",
+   "comunicacao_audit_log",
+   "comunicacao_consent_log",
+   "comunicacao_dlq_replay_audit",
+   "comunicacao_inapp_dispatch",
+   "comunicacao_preferencias",
+   "comunicacao_provider_receipts",
+   "comunicacao_regras",
+   "comunicacao_templates",
+   "configuracoes_sistema",
+   "customer_fiscal_profiles",
+   "entrega_checklist",
+   "entrega_conferencia_itens",
+   "entrega_etiquetas",
+   "entrega_ocorrencias",
+   "entrega_reconciliacoes",
+   "entrega_termos",
+   "estoque_embalagem_movimentacoes",
+   "estoque_movimentacoes_orfaos_backup",
+   "estoque_politicas",
+   "etiqueta_templates",
+   "executivo_relatorio_eventos",
+   "executivo_relatorios",
+   "executivo_user_preferences",
+   "ficha_tecnica_versoes",
+   "financial_cost_centers",
+   "financial_documents",
+   "financial_governance_audit_log",
+   "financial_governance_rules",
+   "financial_inconsistency_alerts",
+   "financial_receipts",
+   "financial_report_exports",
+   "financial_settings",
+   "fiscal_certificate_material",
+   "fiscal_certificates",
+   "fiscal_events",
+   "fiscal_idempotency_keys",
+   "fiscal_invoice_item_references",
+   "fiscal_invoice_references",
+   "fiscal_matrix_load_ledger",
+   "fiscal_stock_loss_contexts",
+   "fiscal_tax_rules",
+   "hml_b2b_e2e_evidence",
+   "hml_fixture_registry",
+   "microorganism_regulatory_checklist",
+   "microorganism_regulatory_documents",
+   "monitoramento_avisos",
+   "partner_catalog_access_logs",
+   "partner_contacts",
+   "partner_documents",
+   "partner_order_idempotency",
+   "partner_order_message_attachments",
+   "partner_order_messages",
+   "partner_order_sla_config",
+   "partner_order_templates",
+   "partner_risk_scores",
+   "payable_payments",
+   "produto_etiqueta_consultas",
+   "produto_etiqueta_eventos",
+   "push_subscriptions",
+   "recomendacao_comentarios",
+   "recurring_financial_templates",
+   "recurring_generation_log",
+   "registros_consultor_arquivos",
+   "registros_consultor_pdf_versions",
+   "regulatory_storage_cleanup_queue",
+   "reservas_auditoria",
+   "service_fiscal_profiles",
+   "sla_configuracoes",
+   "solicitacoes_atribuicoes",
+   "solicitacoes_timeline",
+   "sync_log",
+   "user_access_preferences",
+   "user_context_access_logs",
+   "visita_diagnosticos",
+   "visitas_checkin",
+   "visitas_logs"
+  ],
+  "helpers_loaded": 348,
+  "helpers_fail": [],
+  "helpers_md5_mismatch": [],
+  "stubs_replaced": [
+   "platform_private.has_role(uuid,app_role)",
+   "can_manage_catalog_tecnico(uuid)",
+   "can_view_catalog_internal(uuid)",
+   "generate_b2b_receivable_secure(uuid)",
+   "has_role(uuid,app_role)",
+   "is_platform_superadmin(uuid)",
+   "_saas_user_has_feature(uuid,text)"
+  ],
+  "identity_stubs_reinstalled": [
+   "platform_private.has_role(uuid,app_role)",
+   "platform_private.h15_actor_organization()",
+   "is_platform_superadmin(uuid)",
+   "_saas_user_has_feature(uuid,text)",
+   "platform_private.entitlements_for_user(uuid)"
+  ],
+  "check_fail": [],
+  "checks_active": 158,
+  "checks_total": 158,
+  "extras_constraint_same_stub": [
+   "state_singleton_check"
+  ],
+  "agg_views_installed": [
+   "v_microorganism_fiscal_readiness"
+  ],
+  "extras_constraints_active": 294,
+  "extras_policies_active": 150,
+  "trigger_missing_deps": [
+   [
+    "ordens_servico",
+    "aa_guard_separate_approval",
+    "private.guard_os_separate_approval()",
+    [
+     "private.assert_os_approval_scope"
+    ]
+   ],
+   [
+    "ordens_servico",
+    "zz_audit_separate_approval",
+    "private.guard_os_separate_approval()",
+    [
+     "private.assert_os_approval_scope"
+    ]
+   ],
+   [
+    "ordens_servico_onfarm",
+    "aa_guard_separate_approval",
+    "private.guard_os_separate_approval()",
+    [
+     "private.assert_os_approval_scope"
+    ]
+   ],
+   [
+    "ordens_servico_onfarm",
+    "zz_audit_separate_approval",
+    "private.guard_os_separate_approval()",
+    [
+     "private.assert_os_approval_scope"
+    ]
+   ]
+  ]
+ },
+ "defaults_skipped": []
+}

@@ -20,7 +20,11 @@ describe("D51.5 P1 sistêmico — configuração global", () => {
   });
 
   it("não aceita deep-link da aparência para usuário tenant", () => {
-    expect(settingsPage).toContain('tabParam === "aparencia" && isPlatformSuperadmin');
+    // A resolução da aba foi extraída para configuracoesTabs; a página só passa isPlatformSuperadmin.
+    const tabs = readFileSync("src/lib/configuracoes/configuracoesTabs.ts", "utf8");
+    expect(settingsPage).toContain("resolveConfiguracoesTab(tabParam, { isAdmin, canFin, canMeuPlano, isPlatformSuperadmin })");
+    expect(tabs).toContain('tabParam === "aparencia" && perms.isPlatformSuperadmin');
+    expect(tabs).not.toMatch(/CONFIGURACOES_OPEN_TABS = \[[^\]]*"aparencia"/);
     expect(settingsPage).not.toContain('["perfil", "empresa", "aparencia", "catalogos"');
   });
 

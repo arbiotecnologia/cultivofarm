@@ -1,0 +1,1026 @@
+[
+ {
+  "audit": {
+   "columns": [
+    {
+     "column": "id",
+     "table": "company_fiscal_settings",
+     "type": "uuid"
+    },
+    {
+     "column": "is_active",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "legal_name",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "trade_name",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "cnpj",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "state_registration",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "municipal_registration",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "tax_regime",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "crt",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "primary_cnae",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "additional_cnaes",
+     "table": "company_fiscal_settings",
+     "type": "ARRAY"
+    },
+    {
+     "column": "fiscal_email",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "phone",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "postal_code",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "street",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "number",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "complement",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "neighborhood",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "city",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "municipality_ibge_code",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "state",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "country_code",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "nfe_series",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "nfse_series",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "fiscal_provider",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "fiscal_environment",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "nfe_enabled",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "nfse_enabled",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "production_enabled",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "configuration_status",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "accounting_validated_at",
+     "table": "company_fiscal_settings",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "accounting_validated_by",
+     "table": "company_fiscal_settings",
+     "type": "uuid"
+    },
+    {
+     "column": "created_at",
+     "table": "company_fiscal_settings",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "updated_at",
+     "table": "company_fiscal_settings",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "created_by",
+     "table": "company_fiscal_settings",
+     "type": "uuid"
+    },
+    {
+     "column": "updated_by",
+     "table": "company_fiscal_settings",
+     "type": "uuid"
+    },
+    {
+     "column": "nfe_configuration",
+     "table": "company_fiscal_settings",
+     "type": "jsonb"
+    },
+    {
+     "column": "nfse_configuration",
+     "table": "company_fiscal_settings",
+     "type": "jsonb"
+    },
+    {
+     "column": "nfe_provider",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "nfse_provider",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "nfe_credential_ref",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "nfse_credential_ref",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "certificate_ref",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "webhook_ref",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "configuration_notes",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "configuration_version",
+     "table": "company_fiscal_settings",
+     "type": "integer"
+    },
+    {
+     "column": "last_validation_at",
+     "table": "company_fiscal_settings",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "last_validation_status",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "last_validation_summary",
+     "table": "company_fiscal_settings",
+     "type": "jsonb"
+    },
+    {
+     "column": "rtc_configuration",
+     "table": "company_fiscal_settings",
+     "type": "jsonb"
+    },
+    {
+     "column": "nfe_series_number",
+     "table": "company_fiscal_settings",
+     "type": "integer"
+    },
+    {
+     "column": "nfe_environment_code",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "uf_accreditations",
+     "table": "company_fiscal_settings",
+     "type": "jsonb"
+    },
+    {
+     "column": "pis_cofins_regime",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "ipi_taxpayer",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "icms_st_responsible",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "fcp_applicable",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "difal_responsible",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "rtc_scaffolding_enabled",
+     "table": "company_fiscal_settings",
+     "type": "boolean"
+    },
+    {
+     "column": "nfe_readiness_status",
+     "table": "company_fiscal_settings",
+     "type": "text"
+    },
+    {
+     "column": "nfe_readiness_checked_at",
+     "table": "company_fiscal_settings",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "nfe_readiness_pendencies",
+     "table": "company_fiscal_settings",
+     "type": "jsonb"
+    },
+    {
+     "column": "sefaz_homologation_at",
+     "table": "company_fiscal_settings",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "sefaz_homologation_evidence",
+     "table": "company_fiscal_settings",
+     "type": "jsonb"
+    },
+    {
+     "column": "organization_id",
+     "table": "company_fiscal_settings",
+     "type": "uuid"
+    },
+    {
+     "column": "id",
+     "table": "product_fiscal_profiles",
+     "type": "uuid"
+    },
+    {
+     "column": "product_id",
+     "table": "product_fiscal_profiles",
+     "type": "uuid"
+    },
+    {
+     "column": "is_active",
+     "table": "product_fiscal_profiles",
+     "type": "boolean"
+    },
+    {
+     "column": "fiscal_description",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "commercial_unit",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "taxable_unit",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "ncm",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "cest",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "origin_code",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "cfop_in_state",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "cfop_interstate",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "icms_cst",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "icms_csosn",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "pis_cst",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "cofins_cst",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "ipi_cst",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "gtin",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "taxable_gtin",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "tax_benefit_code",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "approximate_tax_source",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "profile_status",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "accounting_notes",
+     "table": "product_fiscal_profiles",
+     "type": "text"
+    },
+    {
+     "column": "accounting_validated_at",
+     "table": "product_fiscal_profiles",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "accounting_validated_by",
+     "table": "product_fiscal_profiles",
+     "type": "uuid"
+    },
+    {
+     "column": "created_at",
+     "table": "product_fiscal_profiles",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "updated_at",
+     "table": "product_fiscal_profiles",
+     "type": "timestamp with time zone"
+    },
+    {
+     "column": "created_by",
+     "table": "product_fiscal_profiles",
+     "type": "uuid"
+    },
+    {
+     "column": "updated_by",
+     "table": "product_fiscal_profiles",
+     "type": "uuid"
+    },
+    {
+     "column": "ibs_cbs_configuration",
+     "table": "product_fiscal_profiles",
+     "type": "jsonb"
+    }
+   ],
+   "functions": [
+    {
+     "acl": [
+      "postgres=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_actor(p_mode text)\n RETURNS uuid\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_claims jsonb := NULLIF(current_setting('request.jwt.claims', true), '')::jsonb;\n  v_org uuid;\nBEGIN\n  IF v_uid IS NULL OR v_claims IS NULL OR v_claims->>'role' IS DISTINCT FROM 'authenticated'\n     OR (v_claims->>'sub') IS DISTINCT FROM v_uid::text\n     OR NULLIF(v_claims->>'exp','') IS NULL OR (v_claims->>'exp') !~ '^[0-9]{1,12}$'\n     OR to_timestamp((v_claims->>'exp')::bigint) <= now()\n     OR (NULLIF(v_claims->>'iat','') IS NOT NULL AND ((v_claims->>'iat') !~ '^[0-9]{1,12}$'\n         OR to_timestamp((v_claims->>'iat')::bigint) > now() + interval '60 seconds')) THEN\n    RAISE EXCEPTION 'catalog_visibility_auth_required' USING ERRCODE='42501';\n  END IF;\n  IF public.is_platform_superadmin(v_uid) THEN\n    RAISE EXCEPTION 'catalog_visibility_platform_actor_denied' USING ERRCODE='42501';\n  END IF;\n  v_org := platform_private.h15_actor_organization();\n  IF v_org IS NULL OR NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa') THEN\n    RAISE EXCEPTION 'catalog_visibility_tenant_unavailable' USING ERRCODE='42501';\n  END IF;\n  IF p_mode IN ('mutate','read_catalog','read_management') AND NOT public._saas_user_has_feature(v_uid, 'catalogo_precos') THEN\n    RAISE EXCEPTION 'catalog_visibility_feature_unavailable' USING ERRCODE='42501';\n  END IF;\n  IF p_mode='mutate' THEN\n    IF NOT (platform_private.has_role(v_uid,'administrador'::public.app_role) OR platform_private.has_role(v_uid,'gestor'::public.app_role)) THEN\n      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;\n  ELSIF p_mode='read_catalog' THEN\n    IF NOT public.can_view_catalog_internal(v_uid) THEN\n      RAISE EXCEPTION 'catalog_visibility_role_denied' USING ERRCODE='42501'; END IF;\n  ELSIF p_mode NOT IN ('read_management','read_selection_cultura','read_prefs') OR p_mode IS NULL THEN\n    RAISE EXCEPTION 'catalog_visibility_mode_invalid' USING ERRCODE='22023';\n  END IF;\n  RETURN v_org;\nEND; $function$\n",
+     "md5": "5e0ce9cc9122f1c21d76e29a13de8b59",
+     "name": "catalog_tenant_actor",
+     "schema": "platform_private",
+     "signature": "platform_private.catalog_tenant_actor(text)"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION public.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.h15_actor_organization(); $function$\n",
+     "md5": "55edafec08bcc84a00f1526c14334a2c",
+     "name": "h15_actor_organization",
+     "schema": "public",
+     "signature": "h15_actor_organization()"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n",
+     "md5": "64e10608403238a41a9baf92857ca881",
+     "name": "h15_actor_organization",
+     "schema": "platform_private",
+     "signature": "platform_private.h15_actor_organization()"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)\n AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));\n$function$\n",
+     "md5": "048249c0c2106c3761e26eacb8d0de84",
+     "name": "platform_actor_access_ready",
+     "schema": "platform_private",
+     "signature": "platform_private.platform_actor_access_ready(uuid)"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION public.platform_create_global_product(p_payload jsonb, p_reason text, p_idempotency_key uuid)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT platform_private.create_global_product_core(p_payload,p_reason,p_idempotency_key);\n$function$\n",
+     "md5": "6335cdcfc5806c34ea87c532f93d0d0d",
+     "name": "platform_create_global_product",
+     "schema": "public",
+     "signature": "platform_create_global_product(jsonb,text,uuid)"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION public.platform_set_global_product_family(p_id uuid, p_expected_updated_at timestamp with time zone, p_familia text, p_classe text, p_reason text, p_idempotency_key uuid)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$ SELECT platform_private.set_global_product_family_core(p_id,p_expected_updated_at,p_familia,p_classe,p_reason,p_idempotency_key) $function$\n",
+     "md5": "9f3d74fc898944514574360d091bb1ff",
+     "name": "platform_set_global_product_family",
+     "schema": "public",
+     "signature": "platform_set_global_product_family(uuid,timestamp with time zone,text,text,text,uuid)"
+    }
+   ],
+   "grants": [
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "INSERT",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "SELECT",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "YES"
+    },
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "UPDATE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "DELETE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRUNCATE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "REFERENCES",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRIGGER",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "INSERT",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "SELECT",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "YES"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "UPDATE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "DELETE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRUNCATE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "REFERENCES",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRIGGER",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "INSERT",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "SELECT",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "YES"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "UPDATE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "DELETE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRUNCATE",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "REFERENCES",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRIGGER",
+     "table_catalog": "postgres",
+     "table_name": "product_fiscal_profiles",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "anon",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "SELECT",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "YES"
+    },
+    {
+     "grantee": "authenticated",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "SELECT",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "YES"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "INSERT",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "SELECT",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "YES"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "UPDATE",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "DELETE",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRUNCATE",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "REFERENCES",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    },
+    {
+     "grantee": "service_role",
+     "grantor": "postgres",
+     "is_grantable": "NO",
+     "privilege_type": "TRIGGER",
+     "table_catalog": "postgres",
+     "table_name": "produtos",
+     "table_schema": "public",
+     "with_hierarchy": "NO"
+    }
+   ],
+   "policies": [
+    {
+     "cmd": "DELETE",
+     "permissive": "PERMISSIVE",
+     "policyname": "product_fiscal_profiles_delete",
+     "qual": "false",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "product_fiscal_profiles",
+     "with_check": null
+    },
+    {
+     "cmd": "INSERT",
+     "permissive": "PERMISSIVE",
+     "policyname": "product_fiscal_profiles_insert",
+     "qual": null,
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "product_fiscal_profiles",
+     "with_check": "platform_private.global_product_fiscal_write_ready()"
+    },
+    {
+     "cmd": "SELECT",
+     "permissive": "PERMISSIVE",
+     "policyname": "product_fiscal_profiles_read",
+     "qual": "platform_private.global_product_fiscal_read_ready()",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "product_fiscal_profiles",
+     "with_check": null
+    },
+    {
+     "cmd": "UPDATE",
+     "permissive": "PERMISSIVE",
+     "policyname": "product_fiscal_profiles_update",
+     "qual": "platform_private.global_product_fiscal_write_ready()",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "product_fiscal_profiles",
+     "with_check": "platform_private.global_product_fiscal_write_ready()"
+    },
+    {
+     "cmd": "DELETE",
+     "permissive": "RESTRICTIVE",
+     "policyname": "d51_5_catalog_global_mutation_delete",
+     "qual": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "produtos",
+     "with_check": null
+    },
+    {
+     "cmd": "INSERT",
+     "permissive": "RESTRICTIVE",
+     "policyname": "d51_5_catalog_global_mutation_insert",
+     "qual": null,
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "produtos",
+     "with_check": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))"
+    },
+    {
+     "cmd": "UPDATE",
+     "permissive": "RESTRICTIVE",
+     "policyname": "d51_5_catalog_global_mutation_update",
+     "qual": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "produtos",
+     "with_check": "(has_role(auth.uid(), 'superadmin'::app_role) AND is_platform_superadmin(auth.uid()))"
+    },
+    {
+     "cmd": "SELECT",
+     "permissive": "PERMISSIVE",
+     "policyname": "produtos_b2b_read",
+     "qual": "((platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b_tecnico'::app_role)) AND (ativo = true) AND (COALESCE(b2b_enabled, false) = true))",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "produtos",
+     "with_check": null
+    },
+    {
+     "cmd": "SELECT",
+     "permissive": "PERMISSIVE",
+     "policyname": "produtos_select_internal",
+     "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'tecnico_agronomo'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'aplicador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role))",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "produtos",
+     "with_check": null
+    },
+    {
+     "cmd": "SELECT",
+     "permissive": "PERMISSIVE",
+     "policyname": "produtos_select_platform_fiscal_superadmin",
+     "qual": "platform_private.global_product_fiscal_write_ready()",
+     "roles": [
+      "authenticated"
+     ],
+     "schemaname": "public",
+     "tablename": "produtos",
+     "with_check": null
+    }
+   ],
+   "rls": [
+    {
+     "force": false,
+     "rls": true,
+     "table": "product_fiscal_profiles"
+    },
+    {
+     "force": false,
+     "rls": true,
+     "table": "produtos"
+    }
+   ],
+   "triggers": [
+    {
+     "definition": "CREATE TRIGGER produtos_catalog_family_label_validate BEFORE INSERT OR UPDATE OF familia_catalogo, classe_catalogo ON public.produtos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_family_label_validate()",
+     "table": "produtos"
+    },
+    {
+     "definition": "CREATE TRIGGER produtos_composicao_family_guard BEFORE UPDATE OF familia_catalogo ON public.produtos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_composition_family_guard()",
+     "table": "produtos"
+    },
+    {
+     "definition": "CREATE TRIGGER trg_set_codigo_produto_ins BEFORE INSERT ON public.produtos FOR EACH ROW EXECUTE FUNCTION set_codigo_produto()",
+     "table": "produtos"
+    },
+    {
+     "definition": "CREATE TRIGGER trg_set_codigo_produto_upd BEFORE UPDATE OF codigo ON public.produtos FOR EACH ROW EXECUTE FUNCTION set_codigo_produto()",
+     "table": "produtos"
+    },
+    {
+     "definition": "CREATE TRIGGER trg_sync_product_pricing BEFORE INSERT OR UPDATE ON public.produtos FOR EACH ROW EXECUTE FUNCTION sync_product_pricing()",
+     "table": "produtos"
+    },
+    {
+     "definition": "CREATE TRIGGER trg_zz_produtos_guard_preco BEFORE INSERT OR UPDATE ON public.produtos FOR EACH ROW EXECUTE FUNCTION trg_mestre_guard_preco_canonico()",
+     "table": "produtos"
+    },
+    {
+     "definition": "CREATE TRIGGER update_produtos_updated_at BEFORE UPDATE ON public.produtos FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_touch_version()",
+     "table": "produtos"
+    },
+    {
+     "definition": "CREATE TRIGGER a00_global_product_fiscal_gate BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH STATEMENT EXECUTE FUNCTION platform_private.global_product_fiscal_statement_gate()",
+     "table": "product_fiscal_profiles"
+    },
+    {
+     "definition": "CREATE TRIGGER a10_global_product_fiscal_authorize BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION platform_private.global_product_fiscal_before_write()",
+     "table": "product_fiscal_profiles"
+    },
+    {
+     "definition": "CREATE TRIGGER trg_fiscal_audit_product_fiscal_profiles AFTER INSERT OR DELETE OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION fiscal_audit_trigger()",
+     "table": "product_fiscal_profiles"
+    }
+   ]
+  }
+ }
+]

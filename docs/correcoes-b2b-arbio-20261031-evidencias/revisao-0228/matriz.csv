@@ -1,0 +1,22 @@
+id,scenario,status,evidence,kind
+REV0228-001,"SDK real sob contenção homolog, transporte simulado insert, update, delete, RPC legado, Edge e upload não chegam ao transporte",PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-002,"captured approval contract is void, not a mandatory success envelope",PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-003,captured B2B writer stores payment amount AND interest: unknown origin cannot be guessed,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-004,characterization only: any financial link excludes the whole committed order; partial residual NOT implemented,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-005,gerador PG→projeção→leitor→saldo/baixa/KPI usam mesmo valor,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-006,"origem ausente é visível e bloqueia operação, sem saldo zero/pago",PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-007,prova estrangeira/inválida installment_id bloqueia,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-008,prova estrangeira/inválida receivable_id bloqueia,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-009,prova estrangeira/inválida source bloqueia,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-010,marcador sem prova não autoriza baixa,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-011,RPC ausente não usa tabela/heurística de fallback,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-012,mora explicitamente legada10300+100 permanece10400,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-013,ACK negativo ou estrangeiro recusado 0,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-014,ACK negativo ou estrangeiro recusado 1,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-015,ACK positivo confirma aprovação sem repetir envio,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-016,contrato capturado RETURNS void aceita data:null/error:null e relê sem repetir envio,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-017,AUD-ACK-001 aprovação não deve adotar success:false sem erro de transporte (lacuna RED),PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-018,AUD-ACK-002 erro explícito do servidor continua recusado sem efeitos de cache,PASSED,tests.json,LOCAL_MOCK_OR_CAPTURE_CHARACTERIZATION
+REV0228-PARTIAL,Residual não faturado + títulos sem dupla contagem; alocação ausente,BLOCKED,../../correcoes-b2b-arbio-20261031.md,PENDING
+REV0228-ORIGIN,Origem canônica do writer B2B legado ainda não implementada,BLOCKED,../../correcoes-b2b-arbio-20261031.md,PENDING
+REV0228-HOSTED,Sem validação hospedada por restrição explícita,NOT_RUN,../../correcoes-b2b-arbio-20261031.md,PENDING

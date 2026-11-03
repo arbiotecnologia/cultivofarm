@@ -1,0 +1,14 @@
+-- 03 PROBE HOMOLOG — READ ONLY. Estado para a etapa JWT/navegador (nenhuma escrita, nenhuma senha).
+BEGIN TRANSACTION READ ONLY;
+SELECT 'org' k, id::text, status, ativo::text FROM public.organizations WHERE id IN ('c809e74f-486b-44b2-b2f4-4088f53421bb', 'dcf50a75-579a-4828-a0fc-1d8eadcb4b8a')
+UNION ALL SELECT 'auth_user', u.id::text, u.email, (u.email_confirmed_at IS NOT NULL)::text FROM auth.users u
+  WHERE lower(u.email) IN ('arbiotecnologia@gmail.com', 'teste4@refilinformatica.com.br', 'rh@refilinformatica.com.br')
+UNION ALL SELECT 'profile', p.user_id::text, p.organization_id::text, p.ativo::text FROM public.profiles p
+  JOIN auth.users u ON u.id = p.user_id WHERE lower(u.email) IN ('arbiotecnologia@gmail.com', 'teste4@refilinformatica.com.br', 'rh@refilinformatica.com.br')
+UNION ALL SELECT 'role', r.user_id::text, r.role::text, NULL FROM public.user_roles r
+  JOIN auth.users u ON u.id = r.user_id WHERE lower(u.email) IN ('arbiotecnologia@gmail.com', 'teste4@refilinformatica.com.br', 'rh@refilinformatica.com.br')
+UNION ALL SELECT 'partner_user', pu.user_id::text, pu.partner_id::text, pa.commercial_owner_organization_id::text FROM public.partner_users pu
+  JOIN public.partner_accounts pa ON pa.id = pu.partner_id JOIN auth.users u ON u.id = pu.user_id
+  WHERE lower(u.email) = 'teste4@refilinformatica.com.br'
+UNION ALL SELECT 'catalog_products', owner_organization_id::text, count(*)::text, NULL FROM public.produtos GROUP BY owner_organization_id;
+COMMIT;

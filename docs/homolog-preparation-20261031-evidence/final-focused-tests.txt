@@ -1,0 +1,16 @@
+$ vitest run --config src/test/config/runtimeGate.vitest.config.ts src/test/config/homolog-preparation.test.ts src/test/config/homolog-sdk.test.ts src/test/config/connection-binding.static.test.ts src/test/config/binding-gate.integration.test.ts src/test/config/pwa-binding-hardening.test.ts src/test/config/fiscal-binding.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/config/connection-binding.static.test.ts (9 tests) 13ms
+ ✓ src/test/config/pwa-binding-hardening.test.ts (15 tests) 23ms
+ ✓ src/test/config/homolog-preparation.test.ts (50 tests) 61ms
+ ✓ src/test/config/homolog-sdk.test.ts (1 test) 49ms
+ ✓ src/test/config/fiscal-binding.test.ts (5 tests) 9ms
+ ✓ src/test/config/binding-gate.integration.test.ts (4 tests) 183ms
+
+ Test Files  6 passed (6)
+      Tests  84 passed (84)
+   Start at  22:07:13
+   Duration  4.17s (transform 352ms, setup 1.67s, collect 677ms, tests 337ms, environment 11.56s, prepare 4.33s)
+

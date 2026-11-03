@@ -1,0 +1,424 @@
+-- ============================================================================================
+-- 02 — MANUTENÇÃO LIMITADA: descarte da cadeia de TESTE SEM EMPRESA (decisão do proprietário 01/11/2026)
+-- GERADO por build.py a partir de maint_template.sql + pins LIVE do pacote consolidado (não editar o .review).
+-- CANDIDATO .review — NÃO EXECUTADO em banco hospedado. Executar SOMENTE após revisão, como owner das tabelas,
+-- ANTES de 00-pre-global/01-migrate (cujo PRE exige a cadeia ausente).
+--
+-- Escopo fechado (IDs/contagens exatos; qualquer divergência aborta tudo):
+--   raízes: OS 4a5af44d…, programação 8896d700…, lote cd49ce12…, envase bca8a46a…, estoque 000cd77c…, entrega 20d66f88…
+--   filhos: 9 entrega_checklist (por entrega_id), 1 comprovante cee1b253… (gerado, sem arquivo/snapshot),
+--           2 movimentações 619cde9e…/3f40d033…, 1 CQ 51cf7c0c…  => 19 linhas
+-- Garantias:
+--   * uma transação; locks ACCESS EXCLUSIVE nas 11 tabelas antes de qualquer validação;
+--   * sem CASCADE, sem DISABLE TRIGGER ALL, sem session_replication_role, sem GUC/JWT falso;
+--   * apenas 8 gatilhos nominais (pin da definição exata) são suspensos e reabilitados no MESMO TX;
+--     gates de estoque, refresh da esteira, checklist e comprovante permanecem ATIVOS;
+--   * conjunto completo dos 83 gatilhos das 11 tabelas (nome+tgtype+definição+corpo md5) exatamente o capturado
+--     em 02/11/2026 (captura-manutencao-20261102.json); sem regras; event triggers só se pinados (lista vazia => aborta);
+--   * papel executor em allowlist (postgres/supabase_admin), sem JWT (auth.uid() NULL, claims vazias);
+--   * ordem de locks igual ao gate: singleton cf_user_guards_v1.state FOR UPDATE primeiro, depois as 11 tabelas;
+--   * varredura FK pareada por (tabela,id) do manifesto, alvo FK = id do pai; FK composta ou alvo != id => aborta;
+--   * POST: linhas fora do escopo (11 tabelas + filhas por FK), corpos de funções, ACL/RLS/policies idênticos ao PRE;
+--   * prova antes do COMMIT: catálogo de gatilhos idêntico ao snapshot inicial; nenhum desabilitado;
+--   * repetição: registro concluído + cadeia ausente => nada excluído; ausência sem registro aborta;
+--   * nenhum bypass persistente: só o registro privado de auditoria é criado.
+-- ============================================================================================
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '120s';
+
+-- A. pré-voo ANTES de qualquer DDL (CREATE TABLE/ALTER TABLE disparam event triggers)
+DO $pre$
+DECLARE allowed constant text[] := ARRAY['postgres','supabase_admin']::text[];
+        evt_pins constant jsonb := '[{"evtname": "issue_graphql_placeholder", "evtevent": "sql_drop", "evtenabled": "O", "evttags": ["DROP EXTENSION"], "function_signature": "set_graphql_placeholder()", "function_md5": "8da9dff6b2ae47498209d341acaeb60b"}, {"evtname": "issue_pg_cron_access", "evtevent": "ddl_command_end", "evtenabled": "O", "evttags": ["CREATE EXTENSION"], "function_signature": "grant_pg_cron_access()", "function_md5": "53a44336da0ac1dd62d89dbd988e6d1d"}, {"evtname": "issue_pg_graphql_access", "evtevent": "ddl_command_end", "evtenabled": "O", "evttags": ["CREATE EXTENSION"], "function_signature": "grant_pg_graphql_access()", "function_md5": "4e6d7efe4aed1b3b92063b648aa7a0cf"}, {"evtname": "issue_pg_net_access", "evtevent": "ddl_command_end", "evtenabled": "O", "evttags": ["CREATE EXTENSION"], "function_signature": "grant_pg_net_access()", "function_md5": "1d06ef4fb47bb0ab6e6f8818a62013bb"}, {"evtname": "pgrst_ddl_watch", "evtevent": "ddl_command_end", "evtenabled": "O", "evttags": null, "function_signature": "pgrst_ddl_watch()", "function_md5": "afaad7193dcf8f81e728d2bedb85e43e"}, {"evtname": "pgrst_drop_watch", "evtevent": "sql_drop", "evtenabled": "O", "evttags": null, "function_signature": "pgrst_drop_watch()", "function_md5": "4357772baf5cfcd5c6d7049585b3a537"}]'::jsonb; r record;
+        v_uid text;
+BEGIN
+  IF current_setting('session_replication_role') <> 'origin' THEN RAISE EXCEPTION 'maint:replication_role_not_origin'; END IF;
+  IF NOT (current_user::text = ANY(allowed)) OR NOT (session_user::text = ANY(allowed)) THEN
+    RAISE EXCEPTION 'maint:role_not_allowlisted:%/%', current_user, session_user; END IF;
+  IF coalesce(nullif(current_setting('request.jwt.claims', true),''),'{}') NOT IN ('{}','null')
+     OR nullif(current_setting('request.jwt.claim.sub', true),'') IS NOT NULL
+     OR nullif(current_setting('request.jwt.claim.role', true),'') IS NOT NULL THEN RAISE EXCEPTION 'maint:jwt_context_present'; END IF;
+  IF to_regprocedure('auth.uid()') IS NOT NULL THEN
+    EXECUTE 'SELECT auth.uid()::text' INTO v_uid;
+    IF v_uid IS NOT NULL THEN RAISE EXCEPTION 'maint:auth_uid_not_null'; END IF;
+  END IF;
+  -- event triggers: TODO gatilho de evento não desabilitado precisa coincidir com o pin completo
+  -- (nome, evento, evtenabled, evttags ordenadas/NULL, assinatura da função, md5 do corpo); desconhecido aborta.
+  -- Nunca desativa event triggers: apenas audita a composição revisada.
+  FOR r IN SELECT e.evtname::text AS evtname, e.evtevent::text AS evtevent, e.evtenabled::text AS evtenabled,
+                  CASE WHEN e.evttags IS NULL THEN 'null'::jsonb ELSE (SELECT jsonb_agg(t ORDER BY t) FROM unnest(e.evttags) t) END AS tags,
+                  p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' AS sig, md5(pg_get_functiondef(e.evtfoid)) AS fmd5
+           FROM pg_event_trigger e JOIN pg_proc p ON p.oid=e.evtfoid WHERE e.evtenabled <> 'D' LOOP
+    IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(evt_pins) q WHERE q->>'evtname'=r.evtname AND q->>'evtevent'=r.evtevent
+                   AND q->>'evtenabled'=r.evtenabled AND coalesce(q->'evttags','null'::jsonb)=r.tags
+                   AND q->>'function_signature'=r.sig AND q->>'function_md5'=r.fmd5) THEN
+      RAISE EXCEPTION 'maint:event_trigger_unreviewed:%:%:%:%', r.evtname, r.evtevent, r.evtenabled, r.tags; END IF;
+  END LOOP;
+  IF to_regclass('cf_user_guards_v1.state') IS NULL THEN RAISE EXCEPTION 'maint:gate_singleton_missing'; END IF;
+END $pre$;
+
+-- B. ordem de locks do gate de estoque: singleton primeiro (espera limitada), depois tabelas
+SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+DO $g$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_locks l WHERE l.locktype='transactionid' AND l.pid=pg_backend_pid() AND l.granted) THEN
+    RAISE EXCEPTION 'maint:gate_singleton_not_locked'; END IF;
+END $g$;
+
+-- C. registro privado: ACL somente do dono (allowlist); default ACL registrado; qualquer outro beneficiário é revogado e reprovado
+CREATE TABLE IF NOT EXISTS platform_private.chain_purge_maintenance_ledger(
+  id bigserial PRIMARY KEY, purge_key text NOT NULL, step text NOT NULL, detail jsonb NOT NULL,
+  at timestamptz NOT NULL DEFAULT clock_timestamp());
+DO $r$
+DECLARE allowed constant text[] := ARRAY['postgres','supabase_admin']::text[]; g record; rl text;
+BEGIN
+  IF NOT ((SELECT pg_get_userbyid(relowner)::text FROM pg_class WHERE oid='platform_private.chain_purge_maintenance_ledger'::regclass) = ANY(allowed)) THEN
+    RAISE EXCEPTION 'maint:ledger_owner_not_allowlisted'; END IF;
+  EXECUTE 'REVOKE ALL ON platform_private.chain_purge_maintenance_ledger FROM PUBLIC';
+  EXECUTE 'REVOKE ALL ON SEQUENCE platform_private.chain_purge_maintenance_ledger_id_seq FROM PUBLIC';
+  FOREACH rl IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname=rl) THEN
+      EXECUTE format('REVOKE ALL ON platform_private.chain_purge_maintenance_ledger FROM %I', rl);
+      EXECUTE format('REVOKE ALL ON SEQUENCE platform_private.chain_purge_maintenance_ledger_id_seq FROM %I', rl);
+    END IF;
+  END LOOP;
+  FOR g IN SELECT DISTINCT c.oid::regclass::text AS obj, c.relkind, a.grantee FROM pg_class c, aclexplode(c.relacl) a
+            WHERE c.oid IN ('platform_private.chain_purge_maintenance_ledger'::regclass,'platform_private.chain_purge_maintenance_ledger_id_seq'::regclass)
+              AND a.grantee <> c.relowner LOOP
+    EXECUTE format('REVOKE ALL ON %s %s FROM %s', CASE g.relkind WHEN 'S' THEN 'SEQUENCE' ELSE 'TABLE' END, g.obj,
+                   CASE g.grantee WHEN 0 THEN 'PUBLIC' ELSE quote_ident(pg_get_userbyid(g.grantee)) END);
+  END LOOP;
+  IF EXISTS (SELECT 1 FROM pg_class c, aclexplode(c.relacl) a
+              WHERE c.oid IN ('platform_private.chain_purge_maintenance_ledger'::regclass,'platform_private.chain_purge_maintenance_ledger_id_seq'::regclass)
+                AND a.grantee <> c.relowner) THEN RAISE EXCEPTION 'maint:ledger_acl_not_owner_only'; END IF;
+  FOREACH rl IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname=rl)
+       AND has_table_privilege(rl,'platform_private.chain_purge_maintenance_ledger','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') THEN
+      RAISE EXCEPTION 'maint:ledger_privilege_leak:%', rl; END IF;
+  END LOOP;
+END $r$;
+
+LOCK TABLE public.entrega_checklist, public.entrega_comprovantes, public.entrega_termos, public.entregas,
+           public.estoque_movimentacoes, public.estoque_produto, public.envase, public.controle_qualidade,
+           public.lotes, public.programacao_producao, public.ordens_servico IN ACCESS EXCLUSIVE MODE;
+
+-- D. auxiliares TEMPORÁRIOS (removidos antes do COMMIT; sem EXECUTE para ninguém além do dono)
+CREATE FUNCTION platform_private.__maint_rows_digest(p_rel text) RETURNS text LANGUAGE plpgsql SET search_path = '' AS $f$
+DECLARE v text; v_short text := split_part(p_rel, '.', 2); has_id boolean;
+BEGIN
+  v_short := trim(both '"' from v_short);
+  has_id := EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid=p_rel::regclass AND a.attname='id' AND NOT a.attisdropped AND a.atttypid='uuid'::regtype);
+  IF has_id THEN
+    EXECUTE format('SELECT md5(coalesce(string_agg(md5(to_jsonb(x)::text), '','' ORDER BY x.id::text), '''')) FROM %s x
+                     WHERE NOT EXISTS (SELECT 1 FROM pg_temp.tc_maint_manifest m WHERE m.rel=$1 AND m.id=x.id)', p_rel) INTO v USING v_short;
+  ELSE
+    EXECUTE format('SELECT md5(coalesce(string_agg(h, '','' ORDER BY h), '''')) FROM (SELECT md5(to_jsonb(x)::text) h FROM %s x) s', p_rel) INTO v;
+  END IF;
+  RETURN v;
+END $f$;
+CREATE FUNCTION platform_private.__maint_meta_digest(p_tables text[]) RETURNS jsonb LANGUAGE sql SET search_path = '' AS $f$
+  SELECT jsonb_build_object(
+    'functions', (SELECT md5(string_agg(p.oid::regprocedure::text || ':' || md5(CASE WHEN p.prokind IN ('f','p') THEN pg_catalog.pg_get_functiondef(p.oid) ELSE p.prosrc END)
+                                         || ':' || coalesce(p.proacl::text,''), ',' ORDER BY p.oid::regprocedure::text))
+                    FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+                   WHERE n.nspname IN ('public','platform_private','cf_user_guards_v1','auth') AND p.prokind IN ('f','p')
+                     AND p.proname NOT LIKE '\_\_maint\_%'),
+    'tables', (SELECT jsonb_object_agg(c.relname, jsonb_build_object('acl', coalesce(c.relacl::text,''), 'rls', c.relrowsecurity, 'force', c.relforcerowsecurity,
+                   'policies', (SELECT md5(coalesce(string_agg(pl.polname::text||':'||pl.polcmd::text||':'||pl.polpermissive::text||':'||coalesce(pg_catalog.pg_get_expr(pl.polqual,pl.polrelid),'')
+                                ||':'||coalesce(pg_catalog.pg_get_expr(pl.polwithcheck,pl.polrelid),''), ',' ORDER BY pl.polname),'')) FROM pg_catalog.pg_policy pl WHERE pl.polrelid=c.oid)))
+                 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname = ANY(p_tables)));
+$f$;
+REVOKE ALL ON FUNCTION platform_private.__maint_rows_digest(text), platform_private.__maint_meta_digest(text[]) FROM PUBLIC;
+
+DO $maint$
+DECLARE
+  k constant text := 'chain-sem-empresa-20261101';
+  c_os constant uuid := '4a5af44d-ea5a-4810-8b99-ea601fad8547';
+  c_pp constant uuid := '8896d700-5697-4346-9970-c76373cfb232';
+  c_lt constant uuid := 'cd49ce12-9d06-459c-b874-3c8d3a275423';
+  c_ev constant uuid := 'bca8a46a-77a8-435c-ae67-b0ece207d91a';
+  c_ep constant uuid := '000cd77c-506c-4cdf-b2bd-7233aff8efeb';
+  c_en constant uuid := '20d66f88-b3dd-4a6f-93ac-6ecf03c7468d';
+  c_pr constant uuid := 'cee1b253-be2e-4f62-8b56-0ea15d8e4ec6';
+  c_cq constant uuid := '51cf7c0c-be1b-4007-8882-a26a5399a2a0';
+  c_mv constant uuid[] := ARRAY['619cde9e-3199-4b3a-bb35-de4bc2f9132c','3f40d033-36f0-4dc2-bf01-750f10433fb6']::uuid[];
+  scope_tables constant text[] := ARRAY['entrega_checklist','entrega_comprovantes','entrega_termos','entregas','estoque_movimentacoes',
+    'estoque_produto','envase','controle_qualidade','lotes','programacao_producao','ordens_servico'];
+  -- 8 gatilhos suspensos (nomes); definições/funções conferidas pelos pins md5 abaixo
+  susp constant text[] := ARRAY['controle_qualidade|aa_manual_cq_write_fence_v1','controle_qualidade|trg_cq_resultado_imutavel',
+    'estoque_movimentacoes|trg_estoque_mov_append_only','entregas|zz_delivery_mutation_closed','envase|trg_envase_material_imutavel',
+    'estoque_produto|a00_stock_p1_tenant_guard','estoque_produto|trg_estoque_produto_guard','lotes|aa_manual_lot_delete_v1'];
+  c_ck constant uuid[] := ARRAY['24e8477a-e6f7-4309-b421-f4d6a4099a0d','64d44336-a748-4491-85e8-eea7a290b5d6','7a685c34-4553-422e-83ce-66d3a5589f55','968b8014-6c72-4589-b343-51edc85d9327','9daa1bfc-1b12-478e-a565-0e13fc0ecdb8','b1c45816-a912-4624-ac3b-dd313bfec78b','c4b7f6db-c7a9-437e-a0fb-0042d39b3d38','e29b89a6-f826-433f-bdf0-ef8cf1afbabe','f8cd717a-ca2e-4414-a65e-71342b34f967']::uuid[];
+  scope_tables_q text[];
+  v_ck uuid[]; v_out_before jsonb; v_out_after jsonb; v_meta_before jsonb; v_meta_after jsonb; v_fk_rels text[]; v_found text[]; v_n bigint; v_present bigint; v_done boolean; v_rows jsonb; v_before jsonb; v_after jsonb;
+  r record; s text; p text[]; v_guard int := 0;
+BEGIN
+  IF current_setting('session_replication_role') <> 'origin' THEN RAISE EXCEPTION 'maint:replication_role_not_origin'; END IF;
+  scope_tables_q := ARRAY(SELECT 'public.'||quote_ident(x) FROM unnest(scope_tables) x);
+
+  -- 0. idempotência / repetição
+  SELECT (SELECT count(*) FROM public.ordens_servico WHERE id=c_os)+(SELECT count(*) FROM public.programacao_producao WHERE id=c_pp)
+        +(SELECT count(*) FROM public.lotes WHERE id=c_lt)+(SELECT count(*) FROM public.envase WHERE id=c_ev)
+        +(SELECT count(*) FROM public.estoque_produto WHERE id=c_ep)+(SELECT count(*) FROM public.entregas WHERE id=c_en)
+        +(SELECT count(*) FROM public.entrega_comprovantes WHERE id=c_pr)+(SELECT count(*) FROM public.controle_qualidade WHERE id=c_cq)
+        +(SELECT count(*) FROM public.estoque_movimentacoes WHERE id=ANY(c_mv))
+        +(SELECT count(*) FROM public.entrega_checklist WHERE entrega_id=c_en) INTO v_present;
+  v_done := EXISTS (SELECT 1 FROM platform_private.chain_purge_maintenance_ledger WHERE purge_key=k AND step='committed');
+  IF v_done AND v_present = 0 THEN
+    INSERT INTO platform_private.chain_purge_maintenance_ledger(purge_key,step,detail) VALUES (k,'replay_noop',jsonb_build_object('deleted',0));
+    RAISE NOTICE 'maint:already_purged_noop'; RETURN;
+  END IF;
+  IF v_done THEN RAISE EXCEPTION 'maint:ledger_committed_but_rows_present:%', v_present; END IF;
+  IF v_present <> 19 THEN RAISE EXCEPTION 'maint:scope_count_mismatch:expected_19_got_%', v_present; END IF;
+
+  -- 1. callbacks: conjunto EXATO dos 83 gatilhos capturados (md5 de pg_get_triggerdef e pg_get_functiondef), todos 'O', sem regras
+  CREATE TEMP TABLE tc_maint_trg_pins(rel text, tgname text, tgtype int, tmd5 text, fmd5 text) ON COMMIT DROP;
+  INSERT INTO tc_maint_trg_pins VALUES ('controle_qualidade','a00_stock_envase_mutation_gate',62,'9b36afda966111ae9dc02b4f9aad7fe7','fd66c95c67366e613d886ac4e6a4f9f7'),
+    ('controle_qualidade','aa_manual_cq_write_fence_v1',31,'8106f4c0e400fd45483c03fb84c14615','4c9738cabaf11d8ac59a4ac0e58abfa4'),
+    ('controle_qualidade','tenant_organization_guard',23,'fbda8e1210df667a8564df9596c49419','d01a740c1e3e02407131d2b9228bf658'),
+    ('controle_qualidade','trg_cq_aprovado_avanca_os',21,'b4b8a2cbb2ffd5b312deb5e882940d06','5b1905b8fc743e1181904db931b165f9'),
+    ('controle_qualidade','trg_cq_autoria_servidor',23,'02bf76495bc4ec649b6fe7a2d85bab6d','329913a20fa9284bd794a034ca4cdfd0'),
+    ('controle_qualidade','trg_cq_resultado_imutavel',27,'fa8aa6b82e448b44cdee9c92eac51b37','1ffd8093e77aa56a8814ed6e292ef299'),
+    ('controle_qualidade','trg_refresh_esteira_cq',28,'95223a55115997f10569fcdd9b2eeff3','2f361c1fd9de578cf45796d82f3754e0'),
+    ('controle_qualidade','trg_saas_gate',23,'bc79fed4d33e1999b35951d520f15cda','13ed48832f81cbb35434688ca35fda4b'),
+    ('entrega_termos','trg_entrega_termos_immutability',27,'677ac0840d84db14bf8a2ba8935345f7','8bc4994d70b9e6c431d86a2262a93668'),
+    ('estoque_movimentacoes','a00_stock_p1_movement_guard',7,'880f6cce8c3cd25150fa42285d6a907c','f8b5d6828da2db8151b1490f364ef585'),
+    ('estoque_movimentacoes','trg_estoque_mov_append_only',27,'ab81f1d53533672a2c8e33609edc53ae','a7aae92122f2ba24edffa1b79ce389ac'),
+    ('entrega_checklist','trg_checklist_estado_editavel_v1',31,'7cc370abb95477edf69a4ec9edd482b3','c603588b1819328e2f39e56ebc51e7f4'),
+    ('entrega_comprovantes','trg_entrega_assinatura_exigir_imagem_v1',23,'3a66c11bd5685584ec1bbe0353512309','5f67fed54d10983086f5917f8c196403'),
+    ('entrega_comprovantes','trg_entrega_comprovante_exigir_arquivo_v1',23,'40ded0c9228c9fb5e05f3939ee1ca45f','19c6b819e64f2afddb15bbdd94b47b56'),
+    ('entrega_comprovantes','trg_entrega_comprovante_preservar_encerrado_v1',27,'7a857a71060516d399eb6203c9fef20e','7834a80a6bfdf2126cf93b2a8a74ec02'),
+    ('entrega_comprovantes','trg_entrega_comprovantes_updated_at',19,'c156efb93b3a036815f14f93c6ba180d','b1930ed5bca3be839f783c6202ab8147'),
+    ('entregas','tenant_organization_guard',23,'e31b380e57c3b3f8b4f6fc1d8cf248ad','d01a740c1e3e02407131d2b9228bf658'),
+    ('entregas','trg_entrega_marcar_cancelamento',23,'d13e3256a54cf4e17debb4ec7b8638bb','0f82b9b7144ad77a4495418d679ea292'),
+    ('entregas','trg_entrega_sync_partner_order',21,'4b5dddd5a3f44ba4f503611a874cf36a','e8fb9e9512db8d1cfb801e37f63ee497'),
+    ('entregas','trg_h6c_entrega_ar_b2b_link',17,'0d0a8f52d829b4a104dec94ef2c9a5a2','9d9cdca4e82d515557c0cdd151f1d077'),
+    ('entregas','trg_recalc_planning_from_entrega',21,'853f736a4aae41528df0443a291c6a95','9f7c032ef8df2cae0097b8a24ee4016f'),
+    ('entregas','trg_refresh_esteira_entregas',28,'dc76b87c9dede86faca4df13bcd34081','2f361c1fd9de578cf45796d82f3754e0'),
+    ('entregas','trg_sync_entrega_financial_status',23,'e26cf792c402a13df8ec28ecbc575150','829616d1d23271f7678059d8e34fcb1e'),
+    ('entregas','trg_validate_entrega_confirmacao',23,'59c9ca1108a6cdcc733768eb8543d211','6add438d185c91379d436dc90d1e7617'),
+    ('entregas','trg_validate_entrega_estoque',7,'e0e67211e0c23d8b8e087dbcd603227b','2c2412690cf8c52121a5aed8cdd34436'),
+    ('entregas','update_entregas_updated_at',19,'19435f65b748504be75226f61758f6c5','b1930ed5bca3be839f783c6202ab8147'),
+    ('entregas','zz_delivery_mutation_closed',31,'975a3e423aafd74b5dbd20cb78109916','8fa73fc045c51addd05576597ecd4c88'),
+    ('estoque_produto','a00_stock_envase_mutation_gate',62,'051253c0588615c8c30348122229ab80','fd66c95c67366e613d886ac4e6a4f9f7'),
+    ('estoque_produto','a00_stock_p1_tenant_guard',31,'e1cc1a525988857265187adfc70c14d4','ad87685f4b7bc87bd8cc3f41f283966d'),
+    ('estoque_produto','a01_stock_final_permit',5,'bb2ebb16735b13fed407e3ced3c0b96b','7837c5852e37159d826875babf9da228'),
+    ('estoque_produto','a01_stock_insert_permit',7,'aaf12d1e8be20b073f4cde3335b15b1a','c150d00c4e0258ddcf4f7e2f86f53170'),
+    ('estoque_produto','a02_stock_envase_reservation_root',23,'5398c95bb233ebfe9c630ed4eb555db4','52563977f17f3ea8026c1a33c03dc619'),
+    ('estoque_produto','trg_estoque_produto_guard',27,'e35d79a2de1eb2809428561b8f350160','fdb38c8e1a6497600c914104bf32c3d3'),
+    ('estoque_produto','trg_log_estoque_insert',5,'111903adef450b1bfcc08083bed65aa4','45dcb6afde3b37528b972cc018e5162a'),
+    ('estoque_produto','trg_log_estoque_update',17,'a24cac9212e305618cf1dd1d7a26f461','45dcb6afde3b37528b972cc018e5162a'),
+    ('estoque_produto','trg_refresh_esteira_estoque',28,'d3c5cc0eff95a3c809d593a0623e5e4a','2f361c1fd9de578cf45796d82f3754e0'),
+    ('estoque_produto','trg_validate_estoque_entrada',7,'00cedc0c318f3b1162732002c7fcb491','9e24938a8d716a02ba023c9fb7ce24e9'),
+    ('estoque_produto','trg_validate_estoque_reserva',19,'cb7bbb9c52749bd7bcd424365f0271b2','9bdbd6bc6fc957993bbdff466db6ef22'),
+    ('estoque_produto','update_estoque_updated_at',19,'bc3d4c1ef9e8dcdd968aff59056dba16','b1930ed5bca3be839f783c6202ab8147'),
+    ('envase','a01_envase_final_permit',5,'a297c2334d996e85973ec55c1e171748','7837c5852e37159d826875babf9da228'),
+    ('envase','a01_envase_insert_permit',7,'1b5e99e1e0003e623ba286fd627633d1','c150d00c4e0258ddcf4f7e2f86f53170'),
+    ('envase','tenant_organization_guard',23,'e30858857e27a8aa1a87e750990b2180','d01a740c1e3e02407131d2b9228bf658'),
+    ('envase','trg_envase_material_imutavel',27,'fd6ccd45471d69e7cc6852ee2c5bbd70','9e9464bcd54c17b31aae731785be3162'),
+    ('envase','trg_refresh_esteira_envase',28,'dead21147ea211f4d725ded0221ac520','2f361c1fd9de578cf45796d82f3754e0'),
+    ('envase','trg_saas_gate',23,'d0406d5b2bd7a5742f0ad907fb9f2a0d','13ed48832f81cbb35434688ca35fda4b'),
+    ('envase','trg_validate_envase_cq',7,'e198b2cdbb8b07c6a1251dd2924234f5','fc4a739dc17d709d70102885c115112f'),
+    ('envase','trg_validate_envase_volume',7,'25fe9cf24e5b718c88f1143de6c86764','22092b56a46fbfc3a95718900a4e8201'),
+    ('lotes','a00_stock_envase_mutation_gate',62,'d2cb3f9c52f27d051c35088b7a75c4cc','fd66c95c67366e613d886ac4e6a4f9f7'),
+    ('lotes','aa_manual_lot_delete_v1',11,'0b44789d22bb43bb5bf5b95009a0d43d','0d490a2910e7fb63dd50fd4c86e1cf0f'),
+    ('lotes','aa_manual_lot_write_fence_v1',23,'5e87cf2bf932d0e7e95d3054f006ec1d','4eab765e76ca79f16a7dd481887496d9'),
+    ('lotes','tenant_organization_guard',23,'413773b6e8c7dcb256c52e2cb905fbe6','d01a740c1e3e02407131d2b9228bf658'),
+    ('lotes','trg_lab_lot_biological_only',23,'ff9801851de8f994d2297adbcbf4d30a','58abf38671745d272abeb923ee866083'),
+    ('lotes','trg_refresh_esteira_lotes',28,'76dcf0a090e1d48a2bf8f1a0cd04004e','2f361c1fd9de578cf45796d82f3754e0'),
+    ('lotes','trg_saas_gate',23,'f7f6e80ebe8b4e6e85d9c0b1472bd77d','13ed48832f81cbb35434688ca35fda4b'),
+    ('lotes','update_lotes_updated_at',19,'58b32d1aad06fbea342b06b8197f3a71','b1930ed5bca3be839f783c6202ab8147'),
+    ('ordens_servico','a00_stock_envase_mutation_gate',62,'0001addca21fad009465978a9bdca510','fd66c95c67366e613d886ac4e6a4f9f7'),
+    ('ordens_servico','aa_guard_separate_approval',23,'2e019b844aaf2d28436ad1a03fe5faaa','f00397fe862e611fbfa0eba3911d95c6'),
+    ('ordens_servico','aa_manual_cq_parent_v1',19,'25b9eae736a4ba5b4471b65fe0363475','bf7c5e95e182062c054edc21157c0622'),
+    ('ordens_servico','tenant_organization_guard',23,'0fd72b73104f95457abe14d581f15f48','d01a740c1e3e02407131d2b9228bf658'),
+    ('ordens_servico','trg_check_os_item_ref',23,'8ea5b9b7c3549f6e049c24f5a5dbb0f2','d059f0014afe15e9d9405fc54a478f2e'),
+    ('ordens_servico','trg_check_os_status_transition',19,'82d049b59674a061071b4bc3394de9af','8dc2c40052b006e51b1defc0284a09e6'),
+    ('ordens_servico','trg_comunicacao_os_pronto_retirada',17,'7b1a4f0e9e2e67b7e8f607c1f839c75d','b0340dbc6fa5c5f880f0881ad845cb52'),
+    ('ordens_servico','trg_create_programacao_on_os_insert',5,'d4b36308d5b41a1091c9094c9e8dcbbe','27b31332cebda532e2d99d9547f9b67c'),
+    ('ordens_servico','trg_lab_os_biological_only',23,'17c31f9a5a91777687a289f1b0113984','75b55313502aecaf7226cd0a235f1a4f'),
+    ('ordens_servico','trg_os_sync_partner_order',17,'c11471756d7a4da24499784632a1c6de','d219a4922c0c6d2a464175dc61bdf5a3'),
+    ('ordens_servico','trg_protect_os_structural_fields',19,'e12da697522ef4cd28fb1f79d8147920','8c9c5436e1f0091706a4ff17c9f365fa'),
+    ('ordens_servico','trg_recalc_planning_from_os',17,'cd161c0ffce06e58621e5c510015ae6e','ac8746e2c142d33bfb9e4f3c6d5daf6d'),
+    ('ordens_servico','trg_refresh_esteira_ordens_servico',28,'5914569d0e0c14ad22f4bebe9da2d071','2f361c1fd9de578cf45796d82f3754e0'),
+    ('ordens_servico','trg_saas_gate',23,'e4de04a88952a827a9f91a096a418bbd','13ed48832f81cbb35434688ca35fda4b'),
+    ('ordens_servico','trg_set_numero_os_regular',7,'47fad17578d66a1d11ef4bdce7b9a0ae','e132d714014a46dfbe38670920182ef0'),
+    ('ordens_servico','trg_sync_os_classica_downstream',17,'f5612d04cd81617ca7436c0c11ea19a8','06e64b76968f91e19f03b24363ac610a'),
+    ('ordens_servico','trg_sync_planning_from_os',21,'ec0c8f2d65dea57cefbecebcb6298fc8','0e79d2c5c352a41f147a62bb1ae5afe4'),
+    ('ordens_servico','update_os_updated_at',19,'4fa57329f279421fc8e1bd90d2e3ed90','b1930ed5bca3be839f783c6202ab8147'),
+    ('ordens_servico','zz_audit_separate_approval',17,'c63c3d3a66fec2ff26df670c96a615ea','f00397fe862e611fbfa0eba3911d95c6'),
+    ('programacao_producao','a00_stock_envase_mutation_gate',62,'598eb162c046970537d36fac1816b884','fd66c95c67366e613d886ac4e6a4f9f7'),
+    ('programacao_producao','aa_manual_cq_parent_v1',19,'afec50e5b76ed4e4626b055ff9460ed3','bf7c5e95e182062c054edc21157c0622'),
+    ('programacao_producao','aa_manual_program_binding_v1',19,'272738e640a27fc48a254da32af1daf8','7c168ffa9393207fb3388c9546c19d05'),
+    ('programacao_producao','tenant_organization_guard',23,'24d3b62dc0e4d7f1a599965b4dd580e3','d01a740c1e3e02407131d2b9228bf658'),
+    ('programacao_producao','trg_lab_programming_biological_only',23,'9d5bfe34e9f5aa0b3aa0e68305ce4d78','d253b17831afaacef106b5c5e1efbb29'),
+    ('programacao_producao','trg_notify_lab_on_programacao',5,'ed58050c301c2be089de965a4a1490bf','c910c1466bbc06328e3eb9f5b2b132ca'),
+    ('programacao_producao','trg_refresh_esteira_programacao',28,'fa1098fbf18e5a4b1dcc8150073d9422','2f361c1fd9de578cf45796d82f3754e0'),
+    ('programacao_producao','trg_validate_responsavel_producao',23,'cb8eabea69612dc8b7522aefb2da690b','443795794c2cb18b295239a0c81021c6'),
+    ('programacao_producao','update_programacao_updated_at',19,'69f46d61e49cd3c82a6c891707778bc8','b1930ed5bca3be839f783c6202ab8147');
+  IF EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+              WHERE n.nspname='public' AND c.relname=ANY(scope_tables) AND NOT t.tgisinternal
+                AND NOT EXISTS (SELECT 1 FROM tc_maint_trg_pins p WHERE p.rel=c.relname AND p.tgname=t.tgname)) THEN
+    RAISE EXCEPTION 'maint:trigger_set_drift:unexpected'; END IF;
+  FOR r IN SELECT p.*, t.oid AS toid, t.tgfoid, t.tgenabled, t.tgtype AS live_type FROM tc_maint_trg_pins p
+             LEFT JOIN pg_trigger t ON t.tgrelid=('public.'||p.rel)::regclass AND t.tgname=p.tgname AND NOT t.tgisinternal LOOP
+    IF r.toid IS NULL THEN RAISE EXCEPTION 'maint:trigger_set_drift:missing:%.%', r.rel, r.tgname; END IF;
+    IF r.tgenabled <> 'O' THEN RAISE EXCEPTION 'maint:trigger_not_enabled_before:%.%', r.rel, r.tgname; END IF;
+    IF r.live_type <> r.tgtype THEN RAISE EXCEPTION 'maint:trigger_type_drift:%.%', r.rel, r.tgname; END IF;
+    IF md5(pg_get_triggerdef(r.toid)) <> r.tmd5 THEN RAISE EXCEPTION 'maint:trigger_definition_drift:%.%', r.rel, r.tgname; END IF;
+    IF md5(pg_get_functiondef(r.tgfoid)) <> r.fmd5 THEN RAISE EXCEPTION 'maint:trigger_function_drift:%.%', r.rel, r.tgname; END IF;
+  END LOOP;
+  IF EXISTS (SELECT 1 FROM pg_rewrite w JOIN pg_class c ON c.oid=w.ev_class JOIN pg_namespace n ON n.oid=c.relnamespace
+              WHERE n.nspname='public' AND c.relname=ANY(scope_tables) AND w.rulename <> '_RETURN') THEN
+    RAISE EXCEPTION 'maint:rule_present'; END IF;
+  FOREACH s IN ARRAY susp LOOP p := string_to_array(s, '|');
+    IF NOT EXISTS (SELECT 1 FROM tc_maint_trg_pins WHERE rel=p[1] AND tgname=p[2]) THEN RAISE EXCEPTION 'maint:suspended_not_pinned:%', s; END IF;
+  END LOOP;
+  SELECT jsonb_agg(jsonb_build_object('rel',t.tgrelid::regclass::text,'name',t.tgname,'enabled',t.tgenabled,'foid',t.tgfoid::regprocedure::text,
+         'type',t.tgtype,'def',pg_get_triggerdef(t.oid)) ORDER BY t.tgrelid::regclass::text, t.tgname) INTO v_before
+    FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+   WHERE n.nspname='public' AND c.relname=ANY(scope_tables) AND NOT t.tgisinternal;
+
+  -- 2. revalidação exata de vínculos e estado (sob os locks)
+  IF NOT EXISTS (SELECT 1 FROM public.ordens_servico WHERE id=c_os AND organization_id IS NULL) THEN RAISE EXCEPTION 'maint:os_not_tenantless'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.programacao_producao WHERE id=c_pp AND organization_id IS NULL AND ordem_servico_id=c_os) THEN RAISE EXCEPTION 'maint:programacao_link'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.lotes WHERE id=c_lt AND organization_id IS NULL AND programacao_id=c_pp) THEN RAISE EXCEPTION 'maint:lote_link'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.envase WHERE id=c_ev AND lote_id=c_lt AND organization_id IS NULL) THEN RAISE EXCEPTION 'maint:envase_link'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.estoque_produto WHERE id=c_ep AND lote_id=c_lt AND envase_id=c_ev) THEN RAISE EXCEPTION 'maint:estoque_link'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.entregas WHERE id=c_en AND organization_id IS NULL AND lote_id=c_lt AND ordem_servico_id=c_os
+                  AND receivable_id IS NULL AND partner_order_id IS NULL AND reentrega_origem_id IS NULL
+                  AND status::text <> 'cancelada' AND coalesce(comprovante_status::text,'') NOT IN ('confirmado','dispensado')) THEN
+    RAISE EXCEPTION 'maint:entrega_state'; END IF;
+  SELECT array_agg(id ORDER BY id) INTO v_ck FROM public.entrega_checklist WHERE entrega_id=c_en;
+  IF v_ck IS DISTINCT FROM (SELECT array_agg(x ORDER BY x) FROM unnest(c_ck) x) THEN RAISE EXCEPTION 'maint:checklist_set'; END IF;
+  -- impressão digital de CADA uma das 19 linhas (md5(to_jsonb(linha)::text), manifesto LIVE)
+  FOR r IN SELECT * FROM (VALUES ('ordens_servico','4a5af44d-ea5a-4810-8b99-ea601fad8547','4a95f9d51fe7324e590ee821c1d32149'),('programacao_producao','8896d700-5697-4346-9970-c76373cfb232','dccf355bf74abb296eb11320c83f1c79'),('lotes','cd49ce12-9d06-459c-b874-3c8d3a275423','aba260505aa3d49f123c9c1169e670e3'),('envase','bca8a46a-77a8-435c-ae67-b0ece207d91a','a48c51fccc711a04f200e0791d6ec038'),('estoque_produto','000cd77c-506c-4cdf-b2bd-7233aff8efeb','0c1a052173a564454cd51e69fcb72947'),('entregas','20d66f88-b3dd-4a6f-93ac-6ecf03c7468d','0ca7565b51476f4e07399400368b3bc8'),('entrega_checklist','24e8477a-e6f7-4309-b421-f4d6a4099a0d','292217c7bbe5cd1b484020044755ee1f'),('entrega_checklist','64d44336-a748-4491-85e8-eea7a290b5d6','4dff28ca9a47aef874b599f8dd6b6db3'),('entrega_checklist','7a685c34-4553-422e-83ce-66d3a5589f55','f947de2bc7ed5e7c3adf89f7b76b7920'),('entrega_checklist','968b8014-6c72-4589-b343-51edc85d9327','2f7b00f6f7abd64e194239d77394fd39'),('entrega_checklist','9daa1bfc-1b12-478e-a565-0e13fc0ecdb8','df3230cd8f1e41e1dd874481caf36404'),('entrega_checklist','b1c45816-a912-4624-ac3b-dd313bfec78b','bd06ca5ae69326d6999b124e19577df9'),('entrega_checklist','c4b7f6db-c7a9-437e-a0fb-0042d39b3d38','4470b013200f5f66ddf8bfc4af0a4911'),('entrega_checklist','e29b89a6-f826-433f-bdf0-ef8cf1afbabe','7ea35e24fe7f90251ed586ea3b3df75e'),('entrega_checklist','f8cd717a-ca2e-4414-a65e-71342b34f967','3b720c78c42492898b504e925e3c8b04'),('entrega_comprovantes','cee1b253-be2e-4f62-8b56-0ea15d8e4ec6','fdaf6c0a9f28246a2456ee3cb3af2f15'),('controle_qualidade','51cf7c0c-be1b-4007-8882-a26a5399a2a0','ccc1d985fe8b699f500d7d05d163bd03'),('estoque_movimentacoes','3f40d033-36f0-4dc2-bf01-750f10433fb6','d33b2f5dc642f61845ce8de978fb4b3a'),('estoque_movimentacoes','619cde9e-3199-4b3a-bb35-de4bc2f9132c','edd38f868e580c50ea4a496b7d87c937')) m(t, id, fp) LOOP
+    EXECUTE format('SELECT md5(to_jsonb(x)::text) FROM public.%I x WHERE x.id = $1', r.t) INTO s USING r.id::uuid;
+    IF s IS DISTINCT FROM r.fp THEN RAISE EXCEPTION 'maint:row_fingerprint_drift:%:%', r.t, r.id; END IF;
+  END LOOP;
+  IF (SELECT count(*) FROM public.entrega_comprovantes WHERE entrega_id=c_en) <> 1
+     OR NOT EXISTS (SELECT 1 FROM public.entrega_comprovantes x WHERE x.id=c_pr AND x.entrega_id=c_en AND x.status::text='gerado'
+                     AND NOT coalesce(x.metadata ? 'comprovante_snapshot_v1', false)
+                     AND NOT EXISTS (SELECT 1 FROM jsonb_each_text(to_jsonb(x)) e WHERE (e.key LIKE '%path%' OR e.key LIKE '%arquivo%' OR e.key LIKE 'assinatura_digital%') AND e.value IS NOT NULL)) THEN
+    RAISE EXCEPTION 'maint:proof_state'; END IF;
+  IF (SELECT array_agg(id ORDER BY id) FROM public.estoque_movimentacoes WHERE lote_id=c_lt OR estoque_produto_id=c_ep)
+     IS DISTINCT FROM (SELECT array_agg(x ORDER BY x) FROM unnest(c_mv) x) THEN RAISE EXCEPTION 'maint:movement_set'; END IF;
+  IF (SELECT array_agg(id) FROM public.controle_qualidade WHERE lote_id=c_lt) IS DISTINCT FROM ARRAY[c_cq] THEN RAISE EXCEPTION 'maint:quality_set'; END IF;
+  IF EXISTS (SELECT 1 FROM public.entregas WHERE id<>c_en AND (lote_id=c_lt OR ordem_servico_id=c_os OR comprovante_id=c_pr)) THEN RAISE EXCEPTION 'maint:foreign_entrega'; END IF;
+
+  -- 3. manifesto (tabela,id) e varredura FK PAREADA: só é interna a linha filha cujo par (tabela_filha,id) está no manifesto;
+  --    o valor referenciado precisa estar no manifesto DA TABELA-ALVO da FK. FK composta ou alvo != id aborta.
+  CREATE TEMP TABLE tc_maint_manifest(rel text NOT NULL, id uuid NOT NULL, PRIMARY KEY(rel,id)) ON COMMIT DROP;
+  INSERT INTO tc_maint_manifest VALUES ('ordens_servico',c_os),('programacao_producao',c_pp),('lotes',c_lt),('envase',c_ev),
+    ('estoque_produto',c_ep),('entregas',c_en),('entrega_comprovantes',c_pr),('controle_qualidade',c_cq);
+  INSERT INTO tc_maint_manifest SELECT 'estoque_movimentacoes', x FROM unnest(c_mv) x;
+  INSERT INTO tc_maint_manifest SELECT 'entrega_checklist', x FROM unnest(v_ck) x;
+  IF (SELECT count(*) FROM tc_maint_manifest) <> 19 THEN RAISE EXCEPTION 'maint:manifest_size'; END IF;
+  FOR r IN SELECT k2.conname, k2.conrelid, k2.confrelid, cardinality(k2.conkey) AS nk FROM pg_constraint k2
+            WHERE k2.contype='f' AND k2.confrelid IN (SELECT ('public.'||t)::regclass FROM unnest(scope_tables) t) LOOP
+    IF r.nk <> 1 THEN RAISE EXCEPTION 'maint:composite_fk_unsupported:%.%', r.conrelid::regclass, r.conname; END IF;
+  END LOOP;
+  FOR r IN SELECT k2.conname, k2.conrelid::regclass AS rel, cn.nspname AS cns, cc.relname AS crel, pc.relname AS prel, a.attname AS col, pa.attname AS pcol,
+                  EXISTS (SELECT 1 FROM pg_attribute ia WHERE ia.attrelid=k2.conrelid AND ia.attname='id' AND NOT ia.attisdropped AND ia.atttypid='uuid'::regtype) AS child_has_id
+             FROM pg_constraint k2
+             JOIN pg_class cc ON cc.oid=k2.conrelid JOIN pg_namespace cn ON cn.oid=cc.relnamespace
+             JOIN pg_class pc ON pc.oid=k2.confrelid
+             JOIN pg_attribute a ON a.attrelid=k2.conrelid AND a.attnum=k2.conkey[1]
+             JOIN pg_attribute pa ON pa.attrelid=k2.confrelid AND pa.attnum=k2.confkey[1]
+            WHERE k2.contype='f' AND k2.confrelid IN (SELECT ('public.'||t)::regclass FROM unnest(scope_tables) t) LOOP
+    IF r.pcol <> 'id' THEN RAISE EXCEPTION 'maint:fk_target_not_id_unsupported:%.%', r.rel, r.conname; END IF;
+    v_fk_rels := array_append(v_fk_rels, quote_ident(r.cns)||'.'||quote_ident(r.crel));
+    IF r.cns = 'public' AND r.child_has_id THEN
+      EXECUTE format('SELECT count(*) FROM %s x WHERE x.%I IN (SELECT m.id FROM tc_maint_manifest m WHERE m.rel=$1)
+                        AND NOT EXISTS (SELECT 1 FROM tc_maint_manifest m2 WHERE m2.rel=$2 AND m2.id=x.id)', r.rel, r.col)
+        INTO v_n USING r.prel, r.crel;
+    ELSE
+      EXECUTE format('SELECT count(*) FROM %s x WHERE x.%I IN (SELECT m.id FROM tc_maint_manifest m WHERE m.rel=$1)', r.rel, r.col)
+        INTO v_n USING r.prel;
+    END IF;
+    IF v_n > 0 THEN RAISE EXCEPTION 'maint:external_dependency:%.%=%', r.rel, r.col, v_n; END IF;
+  END LOOP;
+
+  -- 3b. invariância: impressão digital de TODAS as linhas fora do manifesto (11 tabelas + filhas por FK) e metadados
+  SELECT jsonb_object_agg(rel, h) INTO v_out_before FROM (
+    SELECT q.rel, platform_private.__maint_rows_digest(q.rel) AS h FROM (SELECT DISTINCT unnest(scope_tables_q || v_fk_rels) rel) q) z;
+  v_meta_before := platform_private.__maint_meta_digest(scope_tables);
+
+  -- 4. snapshot integral das 19 linhas
+  SELECT jsonb_build_object(
+    'checklist',(SELECT jsonb_agg(to_jsonb(x)) FROM public.entrega_checklist x WHERE x.entrega_id=c_en),
+    'comprovante',(SELECT to_jsonb(x) FROM public.entrega_comprovantes x WHERE x.id=c_pr),
+    'entrega',(SELECT to_jsonb(x) FROM public.entregas x WHERE x.id=c_en),
+    'movimentacoes',(SELECT jsonb_agg(to_jsonb(x)) FROM public.estoque_movimentacoes x WHERE x.id=ANY(c_mv)),
+    'estoque',(SELECT to_jsonb(x) FROM public.estoque_produto x WHERE x.id=c_ep),
+    'envase',(SELECT to_jsonb(x) FROM public.envase x WHERE x.id=c_ev),
+    'cq',(SELECT to_jsonb(x) FROM public.controle_qualidade x WHERE x.id=c_cq),
+    'lote',(SELECT to_jsonb(x) FROM public.lotes x WHERE x.id=c_lt),
+    'programacao',(SELECT to_jsonb(x) FROM public.programacao_producao x WHERE x.id=c_pp),
+    'os',(SELECT to_jsonb(x) FROM public.ordens_servico x WHERE x.id=c_os)) INTO v_rows;
+  INSERT INTO platform_private.chain_purge_maintenance_ledger(purge_key,step,detail)
+  VALUES (k,'pre',jsonb_build_object('rows',v_rows,'triggers_before',v_before,'out_of_scope_digest',v_out_before,'meta_digest',v_meta_before,
+          'event_triggers',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',evtname,'event',evtevent)),'[]') FROM pg_event_trigger WHERE evtenabled<>'D'),
+          'default_acl',(SELECT coalesce(jsonb_agg(jsonb_build_object('ns',defaclnamespace::regnamespace::text,'type',defaclobjtype,'acl',defaclacl::text)),'[]')
+                           FROM pg_default_acl WHERE defaclnamespace IN (0,'platform_private'::regnamespace)),
+          'executor',jsonb_build_object('current_user',current_user,'session_user',session_user)));
+
+  -- 5. suspensão nominal (somente os 8 gatilhos pinados; mesma transação, sob ACCESS EXCLUSIVE)
+  FOREACH s IN ARRAY susp LOOP p := string_to_array(s,'|');
+    EXECUTE format('ALTER TABLE public.%I DISABLE TRIGGER %I', p[1], p[2]); END LOOP;
+
+  -- 6. exclusões por ID exato, filhos primeiro; cada uma confere a contagem afetada
+  DELETE FROM public.entrega_checklist WHERE id=ANY(v_ck) AND entrega_id=c_en; GET DIAGNOSTICS v_n=ROW_COUNT; IF v_n<>9 THEN RAISE EXCEPTION 'maint:del_checklist:%',v_n; END IF;
+  -- comprovante + entrega no MESMO comando: as ações FK (SET NULL entregas.comprovante_id / checagem entrega_id) rodam
+  -- ao fim do comando, quando a entrega já não existe => nenhum gatilho de UPDATE de entregas é disparado
+  WITH dp AS (DELETE FROM public.entrega_comprovantes WHERE id=c_pr AND entrega_id=c_en RETURNING 1),
+       de AS (DELETE FROM public.entregas WHERE id=c_en RETURNING 1)
+  SELECT (SELECT count(*) FROM dp)*10 + (SELECT count(*) FROM de) INTO v_n;
+  IF v_n <> 11 THEN RAISE EXCEPTION 'maint:del_proof_entrega:%', v_n; END IF;
+  WHILE EXISTS (SELECT 1 FROM public.estoque_movimentacoes WHERE id=ANY(c_mv)) LOOP
+    v_guard := v_guard + 1; IF v_guard > 3 THEN RAISE EXCEPTION 'maint:movement_cycle'; END IF;
+    DELETE FROM public.estoque_movimentacoes m WHERE m.id=ANY(c_mv)
+       AND NOT EXISTS (SELECT 1 FROM public.estoque_movimentacoes o WHERE o.movimentacao_origem_id=m.id AND o.id<>m.id);
+  END LOOP;
+  DELETE FROM public.estoque_produto WHERE id=c_ep; GET DIAGNOSTICS v_n=ROW_COUNT; IF v_n<>1 THEN RAISE EXCEPTION 'maint:del_estoque'; END IF;
+  DELETE FROM public.envase WHERE id=c_ev; GET DIAGNOSTICS v_n=ROW_COUNT; IF v_n<>1 THEN RAISE EXCEPTION 'maint:del_envase'; END IF;
+  DELETE FROM public.controle_qualidade WHERE id=c_cq; GET DIAGNOSTICS v_n=ROW_COUNT; IF v_n<>1 THEN RAISE EXCEPTION 'maint:del_cq'; END IF;
+  DELETE FROM public.lotes WHERE id=c_lt; GET DIAGNOSTICS v_n=ROW_COUNT; IF v_n<>1 THEN RAISE EXCEPTION 'maint:del_lote'; END IF;
+  DELETE FROM public.programacao_producao WHERE id=c_pp; GET DIAGNOSTICS v_n=ROW_COUNT; IF v_n<>1 THEN RAISE EXCEPTION 'maint:del_programacao'; END IF;
+  DELETE FROM public.ordens_servico WHERE id=c_os; GET DIAGNOSTICS v_n=ROW_COUNT; IF v_n<>1 THEN RAISE EXCEPTION 'maint:del_os'; END IF;
+
+  -- 7. restauração e prova antes do COMMIT
+  FOREACH s IN ARRAY susp LOOP p := string_to_array(s,'|');
+    EXECUTE format('ALTER TABLE public.%I ENABLE TRIGGER %I', p[1], p[2]); END LOOP;
+  SELECT jsonb_agg(jsonb_build_object('rel',t.tgrelid::regclass::text,'name',t.tgname,'enabled',t.tgenabled,'foid',t.tgfoid::regprocedure::text,
+         'type',t.tgtype,'def',pg_get_triggerdef(t.oid)) ORDER BY t.tgrelid::regclass::text, t.tgname) INTO v_after
+    FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+   WHERE n.nspname='public' AND c.relname=ANY(scope_tables) AND NOT t.tgisinternal;
+  IF v_after IS DISTINCT FROM v_before THEN RAISE EXCEPTION 'post:trigger_catalog_not_restored'; END IF;
+  IF current_setting('session_replication_role') <> 'origin' THEN RAISE EXCEPTION 'post:replication_role'; END IF;
+  SELECT (SELECT count(*) FROM public.ordens_servico WHERE id=c_os)+(SELECT count(*) FROM public.programacao_producao WHERE id=c_pp)
+        +(SELECT count(*) FROM public.lotes WHERE id=c_lt)+(SELECT count(*) FROM public.envase WHERE id=c_ev)
+        +(SELECT count(*) FROM public.estoque_produto WHERE id=c_ep)+(SELECT count(*) FROM public.entregas WHERE id=c_en)
+        +(SELECT count(*) FROM public.entrega_comprovantes WHERE id=c_pr)+(SELECT count(*) FROM public.controle_qualidade WHERE id=c_cq)
+        +(SELECT count(*) FROM public.estoque_movimentacoes WHERE id=ANY(c_mv))
+        +(SELECT count(*) FROM public.entrega_checklist WHERE id=ANY(v_ck)) INTO v_present;
+  IF v_present <> 0 THEN RAISE EXCEPTION 'post:rows_remaining:%', v_present; END IF;
+  SELECT jsonb_object_agg(rel, h) INTO v_out_after FROM (
+    SELECT q.rel, platform_private.__maint_rows_digest(q.rel) AS h FROM (SELECT DISTINCT unnest(scope_tables_q || v_fk_rels) rel) q) z;
+  IF v_out_after IS DISTINCT FROM v_out_before THEN RAISE EXCEPTION 'post:out_of_scope_rows_changed'; END IF;
+  v_meta_after := platform_private.__maint_meta_digest(scope_tables);
+  IF v_meta_after IS DISTINCT FROM v_meta_before THEN RAISE EXCEPTION 'post:functions_acl_policies_changed'; END IF;
+  INSERT INTO platform_private.chain_purge_maintenance_ledger(purge_key,step,detail)
+  VALUES (k,'committed',jsonb_build_object('deleted',19,'triggers_restored',true,'out_of_scope_invariant',true,'meta_invariant',true));
+END $maint$;
+DROP FUNCTION platform_private.__maint_rows_digest(text);
+DROP FUNCTION platform_private.__maint_meta_digest(text[]);
+DO $z$ BEGIN
+  IF to_regprocedure('platform_private.__maint_rows_digest(text)') IS NOT NULL OR to_regprocedure('platform_private.__maint_meta_digest(text[])') IS NOT NULL
+     OR EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+                 WHERE n.nspname='public' AND NOT t.tgisinternal AND t.tgenabled <> 'O'
+                   AND c.relname IN ('entrega_checklist','entrega_comprovantes','entrega_termos','entregas','estoque_movimentacoes',
+                     'estoque_produto','envase','controle_qualidade','lotes','programacao_producao','ordens_servico')) THEN
+    RAISE EXCEPTION 'post:helpers_or_triggers_not_restored'; END IF;
+END $z$;
+COMMIT;

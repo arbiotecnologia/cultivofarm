@@ -1,0 +1,17 @@
+$ vitest run src/test/financeiro/cancelAuthorizationPostgres.test.ts "src/test/saas/c2-final-integrated-manual-postgres.test.ts" "src/test/saas/c2-order-concurrency-postgres.test.ts" "--maxWorkers=2" "--minWorkers=1" "--pool=forks"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 69066ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  69065ms
+ ✓ src/test/saas/c2-final-integrated-manual-postgres.test.ts (1 test) 93629ms
+   ✓ integrates reconciled origin, receipt lock order and the LIVE manual installments correction  93628ms
+ ✓ src/test/saas/c2-order-concurrency-postgres.test.ts (1 test) 99585ms
+   ✓ serializes canonical orders and billing with two real local PostgreSQL connections  99584ms
+
+ Test Files  3 passed (3)
+      Tests  3 passed (3)
+   Start at  00:56:02
+   Duration  197.16s (transform 159ms, setup 486ms, collect 130ms, tests 262.28s, environment 3.06s, prepare 465ms)
+
+EXIT_CODE=0

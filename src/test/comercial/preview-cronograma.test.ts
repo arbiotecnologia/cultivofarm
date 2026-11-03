@@ -22,6 +22,10 @@ const base: PaymentPlanPayload = {
 } as unknown as PaymentPlanPayload;
 
 describe("Preview do cronograma — parâmetros financeiros", () => {
+  it('composto genérico legítimo não é reinterpretado como Price', () => {
+    expect(Math.round((preview(base)?.final ?? NaN)*100)).toBe(9272025);
+    expect(Math.round((preview({...base,amortization_type:'price'})?.final ?? NaN)*100)).not.toBe(9272025);
+  });
   it("calcula quando todos os parâmetros são válidos", () => {
     const r = preview(base)!;
     expect(r).not.toBeNull();

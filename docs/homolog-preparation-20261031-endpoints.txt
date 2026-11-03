@@ -1,0 +1,52 @@
+src/pwa/registerSW.ts:137:  if (!("serviceWorker" in navigator)) return false;
+src/pwa/registerSW.ts:140:    const registrations = await navigator.serviceWorker.getRegistrations();
+src/pwa/registerSW.ts:190:  if (!("serviceWorker" in navigator) || isPreviewOrDevelopment()) return;
+src/pwa/registerSW.ts:192:    await navigator.serviceWorker.register(PUSH_SW_URL, { scope: "/" });
+src/hooks/usePushSubscription.ts:15:  const isSupported = "serviceWorker" in navigator && "PushManager" in window;
+src/hooks/usePushSubscription.ts:24:    void navigator.serviceWorker.getRegistration("/").then(async (registration) => {
+src/components/visita/roteiro/RoteiroEvento.tsx:103:              href={`https://www.google.com/maps?q=${evento.gps.lat},${evento.gps.lng}`}
+src/hooks/useAuthenticatedBlobUrls.ts:16: * Downloads attachments through the canonical authenticated SDK fetch (Storage RLS
+src/components/visita/EvidenciasTabs.tsx:199:      : `https://www.google.com/maps?q=${lat},${lng}`;
+src/components/comercial/ParceiroB2BFormDialog.tsx:250:      const resp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${raw}`, {
+src/components/comercial/ParceiroB2BFormDialog.tsx:638:                <Input value={form.site ?? ""} onChange={(e) => set("site", e.target.value)} placeholder="https://..." />
+src/lib/authz/loadTechnicalAttachment.ts:9:  if (SUPABASE_URL !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || signal.aborted) throw unavailable();
+src/lib/authz/loadFinancialDocument.ts:9:  if (SUPABASE_URL !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || signal.aborted) throw unavailable();
+src/lib/authz/loadClientDocument.ts:7:  if (SUPABASE_URL !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || signal.aborted) throw unavailable();
+src/lib/authz/loadClientDocument.ts:32:    const response = await step(() => fetch(`${SUPABASE_URL}/functions/v1/download-client-document`, {
+src/components/talhoes/HistoricoTalhao.tsx:409:                            <div className="flex items-center gap-1 text-[10px] text-primary font-medium hover:underline cursor-pointer" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`, '_blank')}>
+src/components/solicitacoes/TimelineAtendimento.tsx:142:                    href={`https://www.google.com/maps?q=${ev.gps.lat},${ev.gps.lng}`}
+src/lib/comprovanteEntregaPdf.ts:287:    const res = await fetch(url, { mode: "cors" });
+src/lib/api/viacep.ts:18:  const response = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+src/components/protocolos/catalog/SourceFormDialog.tsx:160:              placeholder="https://..."
+src/lib/api/brasilapi.ts:43:  const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+src/integrations/supabase/homologPreparation.ts:59:  if ('serviceWorker' in navigator) {
+src/integrations/supabase/homologPreparation.ts:60:    const controlled = Boolean(navigator.serviceWorker.controller);
+src/integrations/supabase/homologPreparation.ts:61:    const registrations = await navigator.serviceWorker.getRegistrations();
+src/integrations/supabase/homologPreparation.ts:66:    navigator.serviceWorker.register = () => Promise.reject(new Error('HOMOLOG_PREPARATION_BLOCKED'));
+src/integrations/supabase/homologPreparation.ts:71:  if (typeof EventSource !== 'undefined') window.EventSource = ClosedRealtimeTransport as unknown as typeof EventSource;
+src/integrations/supabase/homologPreparation.ts:74:  if (typeof navigator.sendBeacon === 'function') navigator.sendBeacon = () => false;
+src/integrations/supabase/client.ts:7:export const SUPABASE_URL: string = "https://vrlcdwmlytukrjezrrnf.supabase.co";
+src/components/protocolos/ProdutosTab.tsx:347:    void fetch();
+src/components/protocolos/ProdutosTab.tsx:426:      fetch();
+src/components/protocolos/ProdutosTab.tsx:1297:        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
+src/components/protocolos/ProdutosTab.tsx:1310:        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
+src/integrations/supabase/bindingGuard.ts:4:export const CANONICAL_SUPABASE_URL = `https://${CANONICAL_SUPABASE_HOST}` as const;
+src/components/clientes/ClienteFormTabs.tsx:179:      const resp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`, {
+src/lib/fiscal/cnpjLookup.ts:96:const BRASILAPI_CNPJ_URL = "https://brasilapi.com.br/api/cnpj/v1";
+src/lib/fiscal/cnpjLookup.ts:153:    resp = await fetch(`${BRASILAPI_CNPJ_URL}/${clean}`, { signal: ctrl.signal });
+src/components/protocolos/MicrorganismosTab.tsx:168:    void fetch();
+src/components/protocolos/MicrorganismosTab.tsx:253:        await fetch();
+src/components/protocolos/MicrorganismosTab.tsx:787:        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
+src/components/protocolos/MicrorganismosTab.tsx:800:        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
+src/lib/geo.ts:124:  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+src/lib/geo.ts:131:  return `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+src/lib/geo.ts:139:  return `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+src/components/fazendas/TalhoesFazendaTab.tsx:266:                    placeholder="https://maps.google.com/..."
+src/lib/entregas/termoPdfDownload.ts:43:    const res = await bounded(fetch(`${base}/functions/v1/entrega-termo-pdf`, {
+src/components/agenda/MapaVisitaPopover.tsx:29:    ? `https://maps.google.com/?q=${s.fazendas.latitude},${s.fazendas.longitude}`
+src/lib/pdf/arBioHeader.ts:15:    const res = await fetch(logoUrl);
+src/pages/ConsultorTecnico.tsx:171:      const response = await fetch(url);
+src/pages/Talhoes.tsx:258:                      placeholder="https://maps.google.com/..."
+src/pages/app/MobileCheckin.tsx:304:              href={`https://www.google.com/maps?q=${gps.lat},${gps.lng}`}
+src/pages/configuracoes/ComunicacaoConfigTab.tsx:461:    const resp = await fetch(url, {
+src/pages/configuracoes/ComunicacaoConfigTab.tsx:1139:            Integração oficial da Meta via <a href="https://developers.facebook.com/docs/whatsapp/cloud-api" target="_blank" rel="noreferrer" className="underline">WhatsApp Cloud API</a>.

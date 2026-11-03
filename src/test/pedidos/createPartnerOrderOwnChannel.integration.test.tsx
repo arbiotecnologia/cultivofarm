@@ -26,6 +26,7 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.f
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     rpc: (name: string) => {
+      if(name==='partner_payment_condition_capability_v1') return Promise.resolve({data:{contract:'B2B_PAYMENT_CONDITION_V1',actor_id:state.auth.user?.id,organization_id:state.auth.profile.organization_id,partner_id:PARTNER,simulate:true,create:true},error:null});
       if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
       if (name === "get_my_commercial_orders_projection") {
         state.reads += 1;
@@ -42,7 +43,7 @@ import { useMyCommercialOrders } from "@/hooks/useMyCommercialOrders";
 import { useCreatePartnerOrder } from "@/hooks/useCreatePartnerOrder";
 
 const PARTNER = "33333333-3333-4333-8333-333333333333";
-const INPUT = {
+const INPUT = { payment_method:'pix' as const,payment_condition_version:1,payment_deadline_days:7,
   partner_id: PARTNER,
   items: [{ item_id: "i1", item_tipo: "produto" as const, product_id: "p1", nome: "INS4", quantidade: 1, preco_unitario: 1, desconto_percentual: 0, subtotal: 1, unidade_pedido: "litro" as const }],
   expected_cart_hash: "hash-ok",
@@ -92,7 +93,7 @@ describe("canal próprio integrado com defaults de produção", () => {
     act(() => { screen.getByRole("button", { name: "enviar" }).click(); });
     await waitFor(() => expect(state.pendingCreate).toHaveLength(1));
     state.serverOrders = [...state.serverOrders, { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", status: "em_analise_comercial", created_at: "2026-10-26T16:00:00+00:00" }];
-    await act(async () => { state.pendingCreate[0]({ data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 1 }, error: null }); });
+    await act(async () => { state.pendingCreate[0]({ data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 1, payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null }); });
     // invalidateQueries com refetchType "active" NÃO relê enquanto o leitor está desmontado.
     expect(state.reads).toBe(1);
     cat.unmount();
@@ -129,7 +130,7 @@ describe("canal próprio integrado com defaults de produção", () => {
     state.auth = { ...state.auth, user: { id: "B" }, profile: { ...state.auth.profile, user_id: "B", organization_id: "OB" } };
     cat.rerender(<CatalogPage />);
     const readsBefore = state.reads;
-    await act(async () => { state.pendingCreate[0]({ data: { id: "x", numero: "PB-X", total: 1 }, error: null }); });
+    await act(async () => { state.pendingCreate[0]({ data: { id: "x", numero: "PB-X", total: 1, payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null }); });
     cat.unmount();
     // Remonta como B: fence muda, query de B é nova; sucesso tardio de A não invalidou nada.
     render(<OrdersList />, { wrapper: wrap(qc) });

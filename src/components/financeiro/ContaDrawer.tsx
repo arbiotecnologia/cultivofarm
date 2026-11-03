@@ -18,6 +18,7 @@ import { HistoricoTab } from "./HistoricoTab";
 import { Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { readProvenReceivables, MONEY_ORIGIN_MESSAGE } from '@/lib/financeiro/receivableOrigin';
 
 type Kind = "receivable" | "payable";
 
@@ -50,6 +51,8 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
     queryKey: ["fin-inst", kind, contaId],
     enabled: !!contaId,
     queryFn: async () => {
+      if (!contaId) throw new Error(MONEY_ORIGIN_MESSAGE);
+      if (kind === 'receivable') return readProvenReceivables(supabase as any, contaId);
       const { data, error } = await supabase.from(instTable as any).select("*").eq(fkCol, contaId!).order("installment_number");
       if (error) throw error; return data as any[];
     },
@@ -65,7 +68,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
   });
 
   const isReceivable = kind === "receivable";
-  const resumoR = resumoSaldoReceber(installments);
+  const resumoR = resumoSaldoReceber(isReceivable ? installments : []);
   const resumoP = resumoSaldoPagar(installments);
   // Ajustes acumulados e saldo seguem a MESMA fórmula dos KPIs em ambos os ramos.
   const resumo = isReceivable
@@ -87,7 +90,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
             <SheetTitle>{isReceivable ? "Conta a Receber" : "Conta a Pagar"}</SheetTitle>
           </SheetHeader>
           <div className="mt-6 flex flex-col items-start gap-2 text-sm text-destructive">
-            <span>Não foi possível carregar os dados da conta.</span>
+            <span>{isReceivable && instErro ? MONEY_ORIGIN_MESSAGE : 'Não foi possível carregar os dados da conta.'}</span>
             <Button size="sm" variant="outline" onClick={() => { refetchConta(); refetchInst(); }}>
               Tentar novamente
             </Button>

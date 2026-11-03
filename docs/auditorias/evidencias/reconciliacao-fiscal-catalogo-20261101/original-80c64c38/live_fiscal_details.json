@@ -1,0 +1,341 @@
+[
+ {
+  "audit": {
+   "constraints": [
+    "CHECK ((NOT fiscal_rtc_has_sensitive_key(ibs_cbs_configuration)))",
+    "CHECK ((jsonb_typeof(ibs_cbs_configuration) = 'object'::text))",
+    "PRIMARY KEY (id)",
+    "FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE RESTRICT",
+    "CHECK ((profile_status = ANY (ARRAY['DRAFT'::text, 'PENDING_ACCOUNTING'::text, 'VALIDATED'::text, 'BLOCKED'::text, 'NOT_FISCALLY_SOLD'::text])))"
+   ],
+   "default_acl": [
+    {
+     "acl": [
+      "postgres=X/supabase_admin",
+      "anon=X/supabase_admin",
+      "authenticated=X/supabase_admin",
+      "service_role=X/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "public",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=arwdDxtm/supabase_admin",
+      "anon=arwdDxtm/supabase_admin",
+      "authenticated=arwdDxtm/supabase_admin",
+      "service_role=arwdDxtm/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "public",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "anon=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+     ],
+     "owner": "postgres",
+     "schema": "public",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=arwdDxtm/postgres",
+      "anon=arwdDxtm/postgres",
+      "authenticated=arwdDxtm/postgres",
+      "service_role=arwdDxtm/postgres"
+     ],
+     "owner": "postgres",
+     "schema": "public",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X*/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "extensions",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "extensions",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X/supabase_admin",
+      "anon=X/supabase_admin",
+      "authenticated=X/supabase_admin",
+      "service_role=X/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "graphql_public",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=arwdDxtm/supabase_admin",
+      "anon=arwdDxtm/supabase_admin",
+      "authenticated=arwdDxtm/supabase_admin",
+      "service_role=arwdDxtm/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "graphql_public",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X/supabase_admin",
+      "anon=X/supabase_admin",
+      "authenticated=X/supabase_admin",
+      "service_role=X/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "graphql",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=arwdDxtm/supabase_admin",
+      "anon=arwdDxtm/supabase_admin",
+      "authenticated=arwdDxtm/supabase_admin",
+      "service_role=arwdDxtm/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "graphql",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X/supabase_auth_admin",
+      "dashboard_user=X/supabase_auth_admin"
+     ],
+     "owner": "supabase_auth_admin",
+     "schema": "auth",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=arwdDxtm/supabase_auth_admin",
+      "dashboard_user=arwdDxtm/supabase_auth_admin"
+     ],
+     "owner": "supabase_auth_admin",
+     "schema": "auth",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "anon=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+     ],
+     "owner": "postgres",
+     "schema": "storage",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=arwdDxtm/postgres",
+      "anon=arwdDxtm/postgres",
+      "authenticated=arwdDxtm/postgres",
+      "service_role=arwdDxtm/postgres"
+     ],
+     "owner": "postgres",
+     "schema": "storage",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X*/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "cron",
+     "type": "f"
+    },
+    {
+     "acl": [
+      "postgres=a*r*w*d*D*x*t*m*/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "cron",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=a*r*wdDxtm/supabase_admin",
+      "dashboard_user=arwdDxtm/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "realtime",
+     "type": "r"
+    },
+    {
+     "acl": [
+      "postgres=X/supabase_admin",
+      "dashboard_user=X/supabase_admin"
+     ],
+     "owner": "supabase_admin",
+     "schema": "realtime",
+     "type": "f"
+    }
+   ],
+   "families": [
+    {
+     "count": 2,
+     "familia_catalogo": "biologico",
+     "tipo": "inoculante"
+    },
+    {
+     "count": 1,
+     "familia_catalogo": "biologico",
+     "tipo": "solubilizador"
+    },
+    {
+     "count": 2,
+     "familia_catalogo": "biologico",
+     "tipo": "fungicida"
+    },
+    {
+     "count": 1,
+     "familia_catalogo": "quimico",
+     "tipo": "inseticida"
+    },
+    {
+     "count": 1,
+     "familia_catalogo": "fertilizante_adubo",
+     "tipo": "solo"
+    },
+    {
+     "count": 2,
+     "familia_catalogo": null,
+     "tipo": "solo"
+    },
+    {
+     "count": 1,
+     "familia_catalogo": "biologico",
+     "tipo": "solo"
+    },
+    {
+     "count": 2,
+     "familia_catalogo": "biologico",
+     "tipo": "inseticida"
+    },
+    {
+     "count": 1,
+     "familia_catalogo": null,
+     "tipo": "inseticida"
+    }
+   ],
+   "fiscal_tables": [
+    "company_fiscal_settings",
+    "customer_fiscal_profiles",
+    "fiscal_operation_policies",
+    "fiscal_rtc_layout_support",
+    "fiscal_environment_marker",
+    "fiscal_protocoled_documents",
+    "fiscal_invoices",
+    "fiscal_matrix_load_ledger",
+    "fiscal_number_reservations",
+    "fiscal_stock_loss_contexts",
+    "fiscal_xml_runs",
+    "fiscal_xsd_registry",
+    "fiscal_certificate_material",
+    "fiscal_reference_catalogs",
+    "fiscal_reference_entries",
+    "fiscal_audit_log",
+    "fiscal_calculation_runs",
+    "fiscal_certificates",
+    "fiscal_document_series",
+    "fiscal_events",
+    "fiscal_idempotency_keys",
+    "fiscal_invoice_item_references",
+    "fiscal_invoice_items",
+    "fiscal_invoice_references",
+    "fiscal_official_sources",
+    "fiscal_requirement_exemptions",
+    "fiscal_rule_sod_overrides",
+    "fiscal_sefaz_transmissions",
+    "fiscal_tax_rules",
+    "microorganism_fiscal_profiles",
+    "product_fiscal_profiles",
+    "service_fiscal_profiles",
+    "v_customer_fiscal_readiness",
+    "v_fiscal_certificate_readiness",
+    "v_fiscal_company_readiness",
+    "v_fiscal_document_reconciliation_pending",
+    "v_fiscal_nfe_emitter_readiness",
+    "v_fiscal_nfe_recipient_readiness",
+    "v_fiscal_nfe_rule_coverage",
+    "v_fiscal_sefaz_event_state",
+    "v_microorganism_fiscal_readiness",
+    "v_product_fiscal_readiness",
+    "v_service_fiscal_readiness"
+   ],
+   "functions": [
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION public.fiscal_audit_trigger()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_actor uuid;\n  v_allowed text[] := ARRAY[\n    'company_fiscal_settings','product_fiscal_profiles','service_fiscal_profiles',\n    'customer_fiscal_profiles','fiscal_invoices','fiscal_invoice_items',\n    'fiscal_events','fiscal_idempotency_keys',\n    'fiscal_operation_policies','fiscal_tax_rules','fiscal_document_series',\n    'fiscal_number_reservations','fiscal_rule_sod_overrides','fiscal_calculation_runs'\n  ];\nBEGIN\n  IF NOT (TG_TABLE_NAME = ANY(v_allowed)) THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  BEGIN v_actor := auth.uid(); EXCEPTION WHEN OTHERS THEN v_actor := NULL; END;\n  IF TG_OP = 'INSERT' THEN\n    INSERT INTO public.fiscal_audit_log(table_name, record_id, action, changed_by, new_values)\n    VALUES (TG_TABLE_NAME, NEW.id, 'INSERT', v_actor, public.mask_sensitive_jsonb(to_jsonb(NEW)));\n    RETURN NEW;\n  ELSIF TG_OP = 'UPDATE' THEN\n    INSERT INTO public.fiscal_audit_log(table_name, record_id, action, changed_by, old_values, new_values)\n    VALUES (TG_TABLE_NAME, NEW.id, 'UPDATE', v_actor,\n            public.mask_sensitive_jsonb(to_jsonb(OLD)), public.mask_sensitive_jsonb(to_jsonb(NEW)));\n    RETURN NEW;\n  ELSIF TG_OP = 'DELETE' THEN\n    INSERT INTO public.fiscal_audit_log(table_name, record_id, action, changed_by, old_values)\n    VALUES (TG_TABLE_NAME, OLD.id, 'DELETE', v_actor, public.mask_sensitive_jsonb(to_jsonb(OLD)));\n    RETURN OLD;\n  END IF;\n  RETURN NULL;\nEND $function$\n",
+     "name": "fiscal_audit_trigger",
+     "signature": "fiscal_audit_trigger()",
+     "volatility": "v"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_before_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF NOT platform_private.global_product_fiscal_write_ready() THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;\n IF TG_OP='UPDATE' THEN\n  IF OLD.is_active IS NOT TRUE THEN RAISE EXCEPTION 'FISCAL_HISTORY_IMMUTABLE' USING ERRCODE='42501'; END IF;\n  IF NEW.product_id IS DISTINCT FROM OLD.product_id OR NEW.id IS DISTINCT FROM OLD.id THEN RAISE EXCEPTION 'FISCAL_IDENTITY_IMMUTABLE'; END IF;\n  -- Server-owned CAS token for ALL direct editor and IBS/CBS updates.\n  -- Strictly newer even inside one transaction; caller timestamps are ignored.\n  -- The existing AFTER fiscal audit observes this token in the same transaction.\n  NEW.updated_at:=greatest(clock_timestamp(),OLD.updated_at+interval '1 microsecond');\n ELSE NEW.updated_at:=clock_timestamp(); END IF;\n RETURN NEW;\nEND $function$\n",
+     "name": "global_product_fiscal_before_write",
+     "signature": "platform_private.global_product_fiscal_before_write()",
+     "volatility": "v"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_read_ready()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT auth.uid() IS NOT NULL AND platform_private.platform_actor_access_ready(auth.uid()) AND\n (public.is_platform_superadmin(auth.uid()) OR platform_private.has_role(auth.uid(),'administrador') OR platform_private.has_role(auth.uid(),'gestor') OR platform_private.has_role(auth.uid(),'financeiro'));\n$function$\n",
+     "name": "global_product_fiscal_read_ready",
+     "signature": "platform_private.global_product_fiscal_read_ready()",
+     "volatility": "s"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_statement_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF TG_WHEN<>'BEFORE' OR TG_LEVEL<>'STATEMENT' OR TG_OP NOT IN ('INSERT','UPDATE') OR TG_RELID<>'public.product_fiscal_profiles'::regclass THEN RAISE EXCEPTION 'invalid_fiscal_guard_context' USING ERRCODE='42501'; END IF;\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;\n PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n RETURN NULL;\nEND $function$\n",
+     "name": "global_product_fiscal_statement_gate",
+     "signature": "platform_private.global_product_fiscal_statement_gate()",
+     "volatility": "v"
+    },
+    {
+     "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres"
+     ],
+     "definition": "CREATE OR REPLACE FUNCTION platform_private.global_product_fiscal_write_ready()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT auth.uid() IS NOT NULL AND platform_private.platform_actor_access_ready(auth.uid()) AND public.is_platform_superadmin(auth.uid());\n$function$\n",
+     "name": "global_product_fiscal_write_ready",
+     "signature": "platform_private.global_product_fiscal_write_ready()",
+     "volatility": "s"
+    }
+   ],
+   "profile_statuses": [
+    {
+     "count": 2,
+     "profile_status": "DRAFT"
+    }
+   ]
+  }
+ }
+]

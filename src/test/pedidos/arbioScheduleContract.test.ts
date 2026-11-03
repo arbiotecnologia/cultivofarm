@@ -1,0 +1,12 @@
+import { expect, it } from 'vitest';
+import { paymentSchedule, type HolidayCalendar } from '@/lib/comercial/paymentSchedule';
+import { strictInstant } from '@/lib/comercial/civilDate';
+const calendar: HolidayCalendar = {locality:'Paracatu-MG',version:'local-synthetic',coverage_start:'2026-01-01',coverage_end:'2027-12-31',holidays:['2026-11-02','2026-10-31','2026-12-25']};
+const cash = {payment_method:'pix' as const,payment_condition_version:1,payment_deadline_days:0};
+it('à vista D+0 em feriado avança sem juros ou liquidação',()=>{const row=paymentSchedule(cash,10000,0,1,'2026-11-02',calendar)[0];expect(row.due_date).toBe('2026-11-03');expect(row.received_amount).toBe(0);expect(row.original_amount).toBe(10000);});
+it('D+7 é contado da emissão tardia não da entrega ou geração',()=>{expect(paymentSchedule({...cash,payment_deadline_days:7},10000,0,1,'2026-11-10',calendar)[0].nominal_due_date).toBe('2026-11-17');});
+it('boleto NF+30 clamp deriva sempre do primeiro nominal',()=>{const rows=paymentSchedule({payment_method:'boleto',payment_condition_version:1,payment_deadline_days:30},10000,1.8,3,'2026-12-01',calendar);expect(rows.map(r=>r.nominal_due_date)).toEqual(['2026-12-31','2027-01-31','2027-02-28']);});
+it('replay de preview preserva datas e valores não pagamento',()=>{expect(paymentSchedule(cash,10000,0,1,'2026-11-03',calendar)).toEqual(paymentSchedule(cash,10000,0,1,'2026-11-03',calendar));});
+it.each(['2026-02-30','2026-11-03T25:00:00Z','2026-02-30T12:00:00Z'])('data inválida %s negada',value=>expect(Number.isFinite(strictInstant(value))).toBe(false));
+it('calendário sem cobertura não tem fallback',()=>expect(()=>paymentSchedule(cash,10000,0,1,'2028-01-01',calendar)).toThrow());
+it('Pix duas parcelas negado',()=>expect(()=>paymentSchedule(cash,10000,0,2,'2026-11-03',calendar)).toThrow());

@@ -4,6 +4,8 @@
  * Empresa vem do servidor (dono imutável do item); nunca enviada pelo cliente.
  * Dados retornados nunca autorizam nada: o servidor reautoriza toda escrita.
  */
+import { isCivilDate } from "@/lib/comercial/civilDate";
+
 export const OWNED_PRODUCT_FISCAL_ENABLED = false as const;
 
 export const OWNED_FISCAL_FIELDS = [
@@ -42,9 +44,29 @@ export function normalizeOwnedFiscalValues(input: Record<string, unknown>): Owne
   return out;
 }
 
+/** Único status que o writer canônico pode devolver (nunca promove para VALIDATED). */
+export const OWNED_FISCAL_RECEIPT_STATUSES = ["DRAFT", "BLOCKED"] as const;
+export type OwnedFiscalReceiptStatus = (typeof OWNED_FISCAL_RECEIPT_STATUSES)[number];
+
+/**
+ * timestamptz do servidor: data civil real, hora válida, até 6 frações e fuso obrigatório.
+ * Aceita a forma ISO (T) e a forma textual do PostgreSQL (espaço, offset +HH ou +HH:MM).
+ */
+export function isStrictServerTimestamp(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const m = value.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(Z|[+-]\d{2}(?::?\d{2})?)$/);
+  if (!m || !isCivilDate(m[1])) return false;
+  if (Number(m[2]) > 23 || Number(m[3]) > 59 || Number(m[4]) > 59) return false;
+  if (m[5] !== "Z") {
+    const off = m[5].slice(1).replace(":", "");
+    if (Number(off.slice(0, 2)) > 15 || (off.length > 2 && Number(off.slice(2, 4)) > 59)) return false;
+  }
+  return true;
+}
+
 export interface OwnedFiscalReceipt {
   product_id: string; profile_id: string; organization_id: string;
-  profile_status: string; updated_at: string; idempotency_key: string; idempotent: boolean;
+  profile_status: OwnedFiscalReceiptStatus; updated_at: string; idempotency_key: string; idempotent: boolean;
 }
 
 /** ACK exato: qualquer divergência é incerta (mantém chave para reconciliação, sem nova tentativa automática). */
@@ -54,8 +76,8 @@ export function parseOwnedFiscalReceipt(data: unknown, expected: { productId: st
     || r.product_id !== expected.productId || r.idempotency_key !== expected.idempotencyKey
     || typeof r.profile_id !== "string" || !UUID.test(r.profile_id)
     || typeof r.organization_id !== "string" || !UUID.test(r.organization_id)
-    || typeof r.profile_status !== "string" || r.profile_status === "VALIDATED"
-    || typeof r.updated_at !== "string" || Number.isNaN(Date.parse(r.updated_at))
+    || !(OWNED_FISCAL_RECEIPT_STATUSES as readonly unknown[]).includes(r.profile_status)
+    || !isStrictServerTimestamp(r.updated_at)
     || typeof r.idempotent !== "boolean") {
     throw new OwnedFiscalError("uncertain", "Resposta do servidor não confirmada; consulte antes de tentar de novo.");
   }

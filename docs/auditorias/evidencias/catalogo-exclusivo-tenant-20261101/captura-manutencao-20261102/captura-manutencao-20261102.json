@@ -1,0 +1,1019 @@
+{
+  "triggers": [
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "a00_stock_envase_mutation_gate",
+      "tgtype": 62,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.controle_qualidade FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()",
+      "trigger_md5": "9b36afda966111ae9dc02b4f9aad7fe7",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_envase_mutation_gate_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\n SET lock_timeout TO '3s'\nAS $function$\nBEGIN\n IF TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_OP NOT IN ('INSERT','UPDATE','DELETE','TRUNCATE')\n OR TG_RELID NOT IN ('public.organizations'::regclass,'public.organization_subscriptions'::regclass,'public.saas_plan_versions'::regclass,'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass,'public.organization_feature_overrides'::regclass,'public.clientes'::regclass,'public.programacao_producao'::regclass,'public.ordens_servico'::regclass,'public.lotes'::regclass,'public.controle_qualidade'::regclass,'public.estoque_produto'::regclass) THEN RAISE EXCEPTION 'ENVASE_GATE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;\n -- Existing upstream RPCs can prelock business rows before their first DML.\n -- Never wait here while owning those rows: reject contention atomically instead\n -- of closing the singleton/business-row deadlock cycle.\n PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n RETURN NULL;\nEND $function$\n",
+      "function_md5": "fd66c95c67366e613d886ac4e6a4f9f7"
+    },
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "aa_manual_cq_write_fence_v1",
+      "tgtype": 31,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER aa_manual_cq_write_fence_v1 BEFORE INSERT OR DELETE OR UPDATE ON public.controle_qualidade FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_cq_write_v1()",
+      "trigger_md5": "8106f4c0e400fd45483c03fb84c14615",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_write_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE cid uuid; lid uuid; p public.programacao_producao%ROWTYPE; org uuid;\nBEGIN\n lid:=CASE WHEN TG_OP='DELETE' THEN OLD.lote_id ELSE NEW.lote_id END;\n SELECT pp.* INTO p FROM public.programacao_producao pp JOIN public.lotes l ON l.programacao_id=pp.id WHERE l.id=lid;\n IF p.ordem_servico_id IS NOT NULL OR p.id IS NULL OR (TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM public.lotes l JOIN public.programacao_producao pp ON pp.id=l.programacao_id WHERE l.id=OLD.lote_id AND pp.ordem_servico_id IS NOT NULL)) THEN\n  org:=platform_private.h15_actor_organization();\n  IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'CQ_MANUAL_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;\n  IF auth.uid() IS NULL OR org IS NULL OR public.technical_actor_ready(auth.uid()) IS NOT TRUE\n   OR p.organization_id IS DISTINCT FROM org OR NEW.organization_id IS DISTINCT FROM org\n   OR p.ordem_servico_onfarm_id IS NOT NULL OR NEW.resultado IS NULL\n   OR NEW.responsavel IS DISTINCT FROM 'DADOS FICTICIOS SEM VALOR COMERCIAL'\n   OR NEW.responsavel_id IS DISTINCT FROM (SELECT id FROM public.profiles WHERE user_id=auth.uid() AND ativo AND organization_id=org)\n   OR NOT EXISTS(SELECT 1 FROM public.lotes l JOIN public.ordens_servico o ON o.id=p.ordem_servico_id JOIN public.clientes c ON c.id=o.cliente_id\n     WHERE l.id=lid AND l.organization_id=org AND o.organization_id=org AND c.organization_id=org AND o.status::text='em_cq' AND l.status::text='aguardando_cq')\n   OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_insert_v1' AND target=NEW.id)\n   THEN RAISE EXCEPTION 'CQ_MANUAL_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;\n END IF;\n RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;\nEND $function$\n",
+      "function_md5": "4c9738cabaf11d8ac59a4ac0e58abfa4"
+    },
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "tenant_organization_guard",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.controle_qualidade FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+      "trigger_md5": "fbda8e1210df667a8564df9596c49419",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "d01a740c1e3e02407131d2b9228bf658"
+    },
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "trg_cq_aprovado_avanca_os",
+      "tgtype": 21,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_cq_aprovado_avanca_os AFTER INSERT OR UPDATE ON public.controle_qualidade FOR EACH ROW EXECUTE FUNCTION fn_cq_aprovado_avanca_os()",
+      "trigger_md5": "b4b8a2cbb2ffd5b312deb5e882940d06",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_cq_aprovado_avanca_os()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_prog_id uuid;\n  v_os_onfarm_id uuid;\n  v_os_id uuid;\nBEGIN\n  IF EXISTS(SELECT 1 FROM public.lotes l JOIN public.programacao_producao p ON p.id=l.programacao_id WHERE l.id=NEW.lote_id AND p.ordem_servico_id IS NOT NULL) THEN RETURN NEW; END IF;\n  IF NEW.resultado::text <> 'aprovado' THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT programacao_id INTO v_prog_id FROM public.lotes WHERE id = NEW.lote_id;\n  IF v_prog_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT ordem_servico_onfarm_id, ordem_servico_id\n    INTO v_os_onfarm_id, v_os_id\n    FROM public.programacao_producao\n    WHERE id = v_prog_id;\n\n  -- Mirror status on programacao and lote\n  UPDATE public.programacao_producao SET status = 'aprovado' WHERE id = v_prog_id;\n  UPDATE public.lotes SET status = 'aprovado' WHERE id = NEW.lote_id;\n\n  -- Advance OS On-Farm if it is at em_producao or em_cq\n  IF v_os_onfarm_id IS NOT NULL THEN\n    UPDATE public.ordens_servico_onfarm\n      SET status = 'envase'\n      WHERE id = v_os_onfarm_id\n        AND status::text IN ('em_producao','em_cq');\n  END IF;\n\n  -- Advance legacy OS if it is at em_producao or em_cq\n  IF v_os_id IS NOT NULL THEN\n    UPDATE public.ordens_servico\n      SET status = 'envase'\n      WHERE id = v_os_id\n        AND status::text IN ('em_producao','em_cq');\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "5b1905b8fc743e1181904db931b165f9"
+    },
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "trg_cq_autoria_servidor",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_cq_autoria_servidor BEFORE INSERT OR UPDATE ON public.controle_qualidade FOR EACH ROW EXECUTE FUNCTION fn_cq_autoria_servidor()",
+      "trigger_md5": "02bf76495bc4ec649b6fe7a2d85bab6d",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_cq_autoria_servidor()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_profile uuid;\nBEGIN\n  -- Sem excecao por GUC: autoria e imutabilidade valem em todas as chamadas.\n  IF TG_OP = 'INSERT' THEN\n    IF v_uid IS NOT NULL THEN\n      SELECT id INTO v_profile FROM public.profiles WHERE user_id = v_uid LIMIT 1;\n      IF v_profile IS NOT NULL THEN\n        IF NEW.responsavel_id IS NOT NULL AND NEW.responsavel_id IS DISTINCT FROM v_profile THEN\n          RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: responsavel_id informado (%) difere do perfil do usuario autenticado.', NEW.responsavel_id\n            USING ERRCODE = 'check_violation';\n        END IF;\n        NEW.responsavel_id := v_profile;\n      ELSIF NEW.responsavel_id IS NOT NULL THEN\n        RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: usuario autenticado sem perfil nao pode informar responsavel_id.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN NEW;\n  END IF;\n\n  IF NEW.responsavel_id IS DISTINCT FROM OLD.responsavel_id THEN\n    RAISE EXCEPTION 'CQ_AUTORIA_IMUTAVEL: responsavel_id da analise % nao pode ser alterado.', OLD.id\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.created_at IS DISTINCT FROM OLD.created_at\n     OR NEW.seq IS DISTINCT FROM OLD.seq\n     OR NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN\n    RAISE EXCEPTION 'CQ_TRILHA_IMUTAVEL: created_at/seq/lote_id da analise % nao podem ser alterados.', OLD.id\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "329913a20fa9284bd794a034ca4cdfd0"
+    },
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "trg_cq_resultado_imutavel",
+      "tgtype": 27,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_cq_resultado_imutavel BEFORE DELETE OR UPDATE ON public.controle_qualidade FOR EACH ROW EXECUTE FUNCTION fn_cq_resultado_imutavel()",
+      "trigger_md5": "fa8aa6b82e448b44cdee9c92eac51b37",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_cq_resultado_imutavel()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nBEGIN\n  -- Sem excecao por GUC: autoria e imutabilidade valem em todas as chamadas.\n  IF TG_OP = 'DELETE' THEN\n    IF OLD.resultado IS NOT NULL THEN\n      RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: análise % do lote % já possui resultado final (%) e não pode ser excluída. Registre uma nova análise (reanálise) para o mesmo lote.',\n        OLD.id, OLD.lote_id, OLD.resultado USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN OLD;\n  END IF;\n\n  -- transição inicial (pendente -> resultado final) continua permitida\n  IF OLD.resultado IS NULL THEN\n    IF NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN\n      RAISE EXCEPTION 'CQ_LOTE_IMUTAVEL: não é permitido mover a análise de CQ para outro lote.'\n        USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NEW;\n  END IF;\n\n  IF NEW.resultado      IS DISTINCT FROM OLD.resultado\n     OR NEW.lote_id        IS DISTINCT FROM OLD.lote_id\n     OR NEW.responsavel_id IS DISTINCT FROM OLD.responsavel_id\n     OR NEW.responsavel    IS DISTINCT FROM OLD.responsavel\n     OR NEW.data_analise   IS DISTINCT FROM OLD.data_analise\n     OR NEW.created_at     IS DISTINCT FROM OLD.created_at\n     OR NEW.seq            IS DISTINCT FROM OLD.seq\n     OR NEW.ph             IS DISTINCT FROM OLD.ph\n     OR NEW.aparencia      IS DISTINCT FROM OLD.aparencia\n     OR NEW.odor           IS DISTINCT FROM OLD.odor\n     OR NEW.concentracao   IS DISTINCT FROM OLD.concentracao\n     OR NEW.contaminacao   IS DISTINCT FROM OLD.contaminacao\n  THEN\n    RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: a análise % do lote % já foi finalizada (%). Registre uma NOVA análise (reanálise) para o mesmo lote em vez de sobrescrever o histórico.',\n      OLD.id, OLD.lote_id, OLD.resultado USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "1ffd8093e77aa56a8814ed6e292ef299"
+    },
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "trg_refresh_esteira_cq",
+      "tgtype": 28,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_refresh_esteira_cq AFTER INSERT OR DELETE OR UPDATE ON public.controle_qualidade FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()",
+      "trigger_md5": "95223a55115997f10569fcdd9b2eeff3",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "function_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "table_name": "controle_qualidade",
+      "tgname": "trg_saas_gate",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.controle_qualidade FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('lotes_qualidade')",
+      "trigger_md5": "bc79fed4d33e1999b35951d520f15cda",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usuário ativo e empresa são obrigatórios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+      "function_md5": "13ed48832f81cbb35434688ca35fda4b"
+    },
+    {
+      "table_name": "entrega_termos",
+      "tgname": "trg_entrega_termos_immutability",
+      "tgtype": 27,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_entrega_termos_immutability BEFORE DELETE OR UPDATE ON public.entrega_termos FOR EACH ROW EXECUTE FUNCTION tg_entrega_termos_immutability()",
+      "trigger_md5": "677ac0840d84db14bf8a2ba8935345f7",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.tg_entrega_termos_immutability()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF OLD.status <> 'rascunho' THEN\n      RAISE EXCEPTION 'termo_imutavel: documento % nao pode ser excluido', OLD.id\n        USING ERRCODE = 'raise_exception';\n    END IF;\n    RETURN OLD;\n  END IF;\n\n  IF OLD.status IN ('assinado','cancelado','substituido') THEN\n    IF NEW.snapshot IS DISTINCT FROM OLD.snapshot\n       OR NEW.snapshot_hash IS DISTINCT FROM OLD.snapshot_hash\n       OR NEW.versao IS DISTINCT FROM OLD.versao\n       OR NEW.template_versao IS DISTINCT FROM OLD.template_versao\n       OR NEW.entrega_id IS DISTINCT FROM OLD.entrega_id\n       OR NEW.recebedor_nome IS DISTINCT FROM OLD.recebedor_nome\n       OR NEW.recebedor_documento IS DISTINCT FROM OLD.recebedor_documento\n       OR NEW.assinatura_hash IS DISTINCT FROM OLD.assinatura_hash\n       OR NEW.assinado_em IS DISTINCT FROM OLD.assinado_em\n       OR NEW.assinado_por IS DISTINCT FROM OLD.assinado_por\n       OR NEW.cobertura IS DISTINCT FROM OLD.cobertura THEN\n      RAISE EXCEPTION 'termo_imutavel: documento assinado nao pode ser alterado'\n        USING ERRCODE = 'raise_exception';\n    END IF;\n    -- PDF só pode ser gravado uma vez por versão\n    IF OLD.pdf_path IS NOT NULL AND NEW.pdf_path IS DISTINCT FROM OLD.pdf_path THEN\n      RAISE EXCEPTION 'termo_pdf_imutavel: ja existe PDF ativo para esta versao'\n        USING ERRCODE = 'raise_exception';\n    END IF;\n    IF OLD.status <> 'assinado' AND NEW.status <> OLD.status THEN\n      RAISE EXCEPTION 'termo_estado_terminal: transicao % -> % proibida', OLD.status, NEW.status\n        USING ERRCODE = 'raise_exception';\n    END IF;\n  END IF;\n\n  NEW.updated_at := now();\n  RETURN NEW;\nEND $function$\n",
+      "function_md5": "8bc4994d70b9e6c431d86a2262a93668"
+    },
+    {
+      "table_name": "estoque_movimentacoes",
+      "tgname": "a00_stock_p1_movement_guard",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER a00_stock_p1_movement_guard BEFORE INSERT ON public.estoque_movimentacoes FOR EACH ROW EXECUTE FUNCTION platform_private.stock_p1_movement_guard()",
+      "trigger_md5": "880f6cce8c3cd25150fa42285d6a907c",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_p1_movement_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ DECLARE v_org uuid:=public.h15_actor_organization(); v_lote uuid; v_ref uuid;\nBEGIN\nIF auth.uid() IS NULL OR v_org IS NULL THEN RAISE EXCEPTION 'ESTQ_MOV_TENANT_FORBIDDEN' USING ERRCODE='42501'; END IF;\nSELECT e.lote_id INTO v_lote FROM public.estoque_produto e WHERE e.id=NEW.estoque_produto_id;\nIF v_lote IS NULL OR NOT platform_private.stock_p1_lote_owned(v_lote) THEN RAISE EXCEPTION 'ESTQ_MOV_TENANT_FORBIDDEN' USING ERRCODE='42501'; END IF;\n-- Only a new ledger row may inherit its verified stock's lote, never organization or legacy backfill.\nIF NEW.lote_id IS NULL THEN NEW.lote_id:=v_lote; END IF;\nIF NEW.lote_id IS DISTINCT FROM v_lote THEN RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\nIF NEW.cliente_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=NEW.cliente_id AND c.organization_id=v_org) THEN RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\nIF NEW.os_id IS NOT NULL THEN\n IF NEW.os_tipo IN ('manual','b2b') THEN SELECT o.organization_id INTO v_ref FROM public.ordens_servico o WHERE o.id=NEW.os_id;\n ELSIF NEW.os_tipo IN ('onfarm','on_farm') THEN SELECT c.organization_id INTO v_ref FROM public.ordens_servico_onfarm o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=NEW.os_id;\n ELSE RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n IF v_ref IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\nEND IF;\nIF NEW.movimentacao_origem_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes m WHERE m.id=NEW.movimentacao_origem_id AND m.estoque_produto_id=NEW.estoque_produto_id AND m.lote_id=NEW.lote_id) THEN RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\nIF NEW.referencia_id IS NOT NULL THEN\n IF NEW.referencia_tipo='entrega' THEN\n  IF NOT EXISTS(SELECT 1 FROM public.entregas e WHERE e.id=NEW.referencia_id AND e.organization_id=v_org AND (e.lote_id IS NULL OR e.lote_id=NEW.lote_id) AND (NEW.cliente_id IS NULL OR e.cliente_id=NEW.cliente_id)) THEN RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n ELSIF NEW.referencia_tipo IN ('estoque','estoque_produto') THEN\n  IF NEW.referencia_id IS DISTINCT FROM NEW.estoque_produto_id THEN RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n ELSIF NEW.referencia_tipo IN ('os','ordem_servico') THEN\n  IF NEW.os_id IS NULL OR NEW.referencia_id IS DISTINCT FROM NEW.os_id THEN RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n ELSE RAISE EXCEPTION 'ESTQ_MOV_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;\nEND IF;\nRETURN NEW;\nEND $function$\n",
+      "function_md5": "f8b5d6828da2db8151b1490f364ef585"
+    },
+    {
+      "table_name": "estoque_movimentacoes",
+      "tgname": "trg_estoque_mov_append_only",
+      "tgtype": 27,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_estoque_mov_append_only BEFORE DELETE OR UPDATE ON public.estoque_movimentacoes FOR EACH ROW EXECUTE FUNCTION fn_ledger_append_only()",
+      "trigger_md5": "ab81f1d53533672a2c8e33609edc53ae",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_ledger_append_only()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'estoque_movimentacoes e append-only: % nao permitido', TG_OP\n    USING ERRCODE = '42501';\nEND;\n$function$\n",
+      "function_md5": "a7aae92122f2ba24edffa1b79ce389ac"
+    },
+    {
+      "table_name": "entrega_checklist",
+      "tgname": "trg_checklist_estado_editavel_v1",
+      "tgtype": 31,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_checklist_estado_editavel_v1 BEFORE INSERT OR DELETE OR UPDATE ON public.entrega_checklist FOR EACH ROW EXECUTE FUNCTION fn_entrega_evidencia_estado_editavel_v1()",
+      "trigger_md5": "7cc370abb95477edf69a4ec9edd482b3",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_evidencia_estado_editavel_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog'\nAS $function$\nDECLARE v_id uuid; v_status text; v_comp_status text;\nBEGIN\n IF TG_OP='UPDATE' AND NEW.entrega_id IS DISTINCT FROM OLD.entrega_id THEN\n  RAISE EXCEPTION USING ERRCODE='23514',MESSAGE='Não é permitido transferir evidências entre entregas.';\n END IF;\n IF TG_OP='DELETE' THEN v_id:=OLD.entrega_id; ELSE v_id:=NEW.entrega_id; END IF;\n SELECT e.status,e.comprovante_status INTO v_status,v_comp_status\n FROM public.entregas e WHERE e.id=v_id FOR SHARE;\n IF NOT FOUND THEN\n  RAISE EXCEPTION USING ERRCODE='23514',MESSAGE='Entrega não encontrada ou sem acesso.';\n END IF;\n IF v_status='cancelada' OR v_comp_status IN ('confirmado','dispensado') THEN\n  RAISE EXCEPTION USING ERRCODE='23514',MESSAGE='As evidências desta entrega estão encerradas e não podem ser alteradas.';\n END IF;\n IF TG_OP='DELETE' THEN RETURN OLD; END IF;\n RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "c603588b1819328e2f39e56ebc51e7f4"
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "tgname": "trg_entrega_assinatura_exigir_imagem_v1",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_entrega_assinatura_exigir_imagem_v1 BEFORE INSERT OR UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION fn_entrega_assinatura_exigir_imagem_v1()",
+      "trigger_md5": "3a66c11bd5685584ec1bbe0353512309",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_assinatura_exigir_imagem_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog'\nAS $function$\nBEGIN\n IF NEW.assinatura_tipo='digital_tela' AND NEW.assinatura_digital_png_path IS NULL THEN\n  RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='A assinatura digital exige uma imagem armazenada.';\n END IF;\n IF NEW.assinatura_digital_png_path IS NOT NULL AND NOT EXISTS (\n  SELECT 1 FROM storage.objects o\n  WHERE o.bucket_id='entrega-documentos' AND o.name=NEW.assinatura_digital_png_path\n ) THEN\n  RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Imagem da assinatura não encontrada ou sem acesso no armazenamento.';\n END IF;\n RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "5f67fed54d10983086f5917f8c196403"
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "tgname": "trg_entrega_comprovante_exigir_arquivo_v1",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_entrega_comprovante_exigir_arquivo_v1 BEFORE INSERT OR UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION fn_entrega_comprovante_exigir_arquivo_v1()",
+      "trigger_md5": "40ded0c9228c9fb5e05f3939ee1ca45f",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_comprovante_exigir_arquivo_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog'\nAS $function$\nBEGIN\n  IF NEW.arquivo_path IS NULL THEN\n    IF NEW.assinatura_tipo = 'fisica_anexada' THEN\n      RAISE EXCEPTION USING ERRCODE = '23514',\n        MESSAGE = 'O comprovante físico exige um arquivo anexado.';\n    END IF;\n    RETURN NEW;\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1 FROM storage.objects AS o\n    WHERE o.bucket_id = 'entrega-documentos'\n      AND o.name = NEW.arquivo_path\n  ) THEN\n    RAISE EXCEPTION USING ERRCODE = '23514',\n      MESSAGE = 'Arquivo do comprovante não encontrado ou sem acesso no armazenamento.';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "19c6b819e64f2afddb15bbdd94b47b56"
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "tgname": "trg_entrega_comprovante_preservar_encerrado_v1",
+      "tgtype": 27,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_entrega_comprovante_preservar_encerrado_v1 BEFORE DELETE OR UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION fn_entrega_comprovante_preservar_encerrado_v1()",
+      "trigger_md5": "7a857a71060516d399eb6203c9fef20e",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_comprovante_preservar_encerrado_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog'\nAS $function$\nDECLARE\n v_operacionais text[]:=ARRAY['updated_at','metadata','qr_code_path','qr_code_generated_at','validation_public_enabled','validation_expires_at','validation_url'];\n v_campo text;\nBEGIN\n IF TG_OP='DELETE' THEN\n  IF OLD.status='confirmado' OR OLD.metadata ? 'comprovante_snapshot_v1' THEN\n   RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Comprovante encerrado não pode ser excluído.';\n  END IF;\n  RETURN OLD;\n END IF;\n IF OLD.status='confirmado' AND\n   (to_jsonb(NEW)-v_operacionais) IS DISTINCT FROM (to_jsonb(OLD)-v_operacionais) THEN\n  RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Dados do comprovante confirmado não podem ser alterados.';\n END IF;\n IF OLD.metadata ? 'comprovante_snapshot_v1' THEN\n  IF NEW.id IS DISTINCT FROM OLD.id OR NEW.entrega_id IS DISTINCT FROM OLD.entrega_id THEN\n   RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Vínculo do comprovante congelado não pode ser alterado.';\n  END IF;\n  FOREACH v_campo IN ARRAY ARRAY['comprovante_snapshot_v1','comprovante_snapshot_hash','comprovante_numero'] LOOP\n   IF NEW.metadata->v_campo IS DISTINCT FROM OLD.metadata->v_campo THEN\n    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Conteúdo do comprovante congelado não pode ser alterado.';\n   END IF;\n  END LOOP;\n END IF;\n RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "7834a80a6bfdf2126cf93b2a8a74ec02"
+    },
+    {
+      "table_name": "entrega_comprovantes",
+      "tgname": "trg_entrega_comprovantes_updated_at",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_entrega_comprovantes_updated_at BEFORE UPDATE ON public.entrega_comprovantes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "trigger_md5": "c156efb93b3a036815f14f93c6ba180d",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "function_md5": "b1930ed5bca3be839f783c6202ab8147"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "tenant_organization_guard",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+      "trigger_md5": "e31b380e57c3b3f8b4f6fc1d8cf248ad",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "d01a740c1e3e02407131d2b9228bf658"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_entrega_marcar_cancelamento",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_entrega_marcar_cancelamento BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION fn_entrega_marcar_cancelamento()",
+      "trigger_md5": "d13e3256a54cf4e17debb4ec7b8638bb",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_marcar_cancelamento()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF NEW.status::text='cancelada' AND (TG_OP='INSERT' OR OLD.status::text IS DISTINCT FROM 'cancelada') THEN\n  UPDATE platform_private.delivery_context_20261030 SET consumed=true\n   WHERE txid=pg_catalog.txid_current() AND actor=auth.uid() AND organization_id=NEW.organization_id\n    AND action='cancel' AND target=NEW.id AND consumed=false;\n  IF NOT FOUND THEN RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_EXIGE_RPC' USING ERRCODE='42501'; END IF;\n  NEW.cancelada_em:=COALESCE(NEW.cancelada_em,pg_catalog.now()); NEW.cancelada_por:=auth.uid();\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "0f82b9b7144ad77a4495418d679ea292"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_entrega_sync_partner_order",
+      "tgtype": 21,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_entrega_sync_partner_order AFTER INSERT OR UPDATE OF status ON public.entregas FOR EACH ROW EXECUTE FUNCTION trg_entrega_sync_partner_order_fn()",
+      "trigger_md5": "4b5dddd5a3f44ba4f503611a874cf36a",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.trg_entrega_sync_partner_order_fn()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_partner_order_id uuid;\n  v_total int; v_delivered int;\nBEGIN\n  SELECT os.partner_order_id INTO v_partner_order_id\n    FROM public.ordens_servico os WHERE os.id = COALESCE(NEW.ordem_servico_id, OLD.ordem_servico_id);\n  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;\n\n  SELECT COUNT(*), COUNT(*) FILTER (WHERE e.status = 'entregue')\n    INTO v_total, v_delivered\n    FROM public.entregas e\n    JOIN public.ordens_servico os ON os.id = e.ordem_servico_id\n   WHERE os.partner_order_id = v_partner_order_id;\n\n  IF v_total > 0 AND v_delivered = v_total THEN\n    UPDATE public.partner_orders SET status = 'entregue', updated_at = now()\n      WHERE id = v_partner_order_id AND status <> 'entregue';\n    UPDATE public.production_planning SET status = 'entregue', updated_at = now()\n      WHERE partner_order_id = v_partner_order_id;\n    INSERT INTO public.production_timeline_events (partner_order_id, event_type, meta)\n    VALUES (v_partner_order_id, 'entrega_realizada', jsonb_build_object('total', v_total));\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "function_md5": "e8fb9e9512db8d1cfb801e37f63ee497"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_h6c_entrega_ar_b2b_link",
+      "tgtype": 17,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_h6c_entrega_ar_b2b_link AFTER UPDATE OF receivable_id ON public.entregas FOR EACH ROW EXECUTE FUNCTION fn_h6c_entrega_ar_b2b_link()",
+      "trigger_md5": "0d0a8f52d829b4a104dec94ef2c9a5a2",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_h6c_entrega_ar_b2b_link()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_po public.partner_orders%ROWTYPE;\n  v_settings record;\nBEGIN\n  IF NEW.receivable_id IS NULL\n     OR NEW.partner_order_id IS NULL\n     OR NEW.receivable_id IS NOT DISTINCT FROM OLD.receivable_id THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT * INTO v_po FROM public.partner_orders WHERE id = NEW.partner_order_id FOR UPDATE;\n  IF NOT FOUND THEN RETURN NEW; END IF;\n\n  -- 1) o recebível passa a pertencer ao parceiro (entra em saldo_em_aberto)\n  UPDATE public.accounts_receivable\n     SET partner_id = v_po.partner_id\n   WHERE id = NEW.receivable_id AND partner_id IS DISTINCT FROM v_po.partner_id;\n\n  -- 2) vínculo financeiro canônico (idempotente: unique em partner_order_id)\n  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = v_po.partner_id;\n  INSERT INTO public.partner_order_financial_links(\n    partner_order_id, partner_id, receivable_id, financial_status, billing_trigger, created_by)\n  VALUES (v_po.id, v_po.partner_id, NEW.receivable_id, 'gerado',\n          COALESCE(v_settings.billing_trigger, 'entrega'), NEW.billing_generated_by)\n  ON CONFLICT (partner_order_id) DO NOTHING;\n\n  -- 3) pedido deixa de ser \"comprometido não faturado\"\n  UPDATE public.partner_orders\n     SET financial_status = 'gerado',\n         receivable_generated = true,\n         receivable_generated_at = COALESCE(receivable_generated_at, now()),\n         receivable_generated_by = COALESCE(receivable_generated_by, NEW.billing_generated_by)\n   WHERE id = v_po.id AND COALESCE(receivable_generated,false) = false;\n\n  RETURN NEW;\nEND\n$function$\n",
+      "function_md5": "9d9cdca4e82d515557c0cdd151f1d077"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_recalc_planning_from_entrega",
+      "tgtype": 21,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_recalc_planning_from_entrega AFTER INSERT OR UPDATE OF status ON public.entregas FOR EACH ROW EXECUTE FUNCTION tg_recalc_planning_from_entrega()",
+      "trigger_md5": "853f736a4aae41528df0443a291c6a95",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.tg_recalc_planning_from_entrega()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_po uuid;\nBEGIN\n  IF NEW.ordem_servico_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT l.partner_order_id INTO v_po\n    FROM public.production_order_link l\n   WHERE l.ordem_servico_id = NEW.ordem_servico_id\n   LIMIT 1;\n\n  IF v_po IS NOT NULL THEN\n    PERFORM public.recalc_partner_order_production(v_po);\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "9f7c032ef8df2cae0097b8a24ee4016f"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_refresh_esteira_entregas",
+      "tgtype": 28,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_refresh_esteira_entregas AFTER INSERT OR DELETE OR UPDATE ON public.entregas FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()",
+      "trigger_md5": "dc76b87c9dede86faca4df13bcd34081",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "function_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_sync_entrega_financial_status",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_sync_entrega_financial_status BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION fn_sync_entrega_financial_status()",
+      "trigger_md5": "e26cf792c402a13df8ec28ecbc575150",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_sync_entrega_financial_status()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- bloqueia troca de receivable_id já vinculado\n  IF TG_OP = 'UPDATE'\n     AND OLD.receivable_id IS NOT NULL\n     AND NEW.receivable_id IS DISTINCT FROM OLD.receivable_id THEN\n    RAISE EXCEPTION 'Esta entrega já possui faturamento gerado e não pode ser alterada.'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  -- vinculou receivable agora => BILLED\n  IF (TG_OP = 'INSERT' AND NEW.receivable_id IS NOT NULL)\n     OR (TG_OP = 'UPDATE' AND OLD.receivable_id IS NULL AND NEW.receivable_id IS NOT NULL) THEN\n    NEW.financial_status := 'BILLED';\n    NEW.billing_generated_at := COALESCE(NEW.billing_generated_at, now());\n    NEW.billing_generated_by := COALESCE(NEW.billing_generated_by, auth.uid());\n  END IF;\n\n  -- entrega cancelada\n  IF NEW.status::text = 'cancelada' THEN\n    NEW.financial_status := 'CANCELED';\n  END IF;\n\n  -- valida NOT_BILLABLE\n  IF NEW.financial_status = 'NOT_BILLABLE'\n     AND (NEW.not_billable_reason IS NULL OR length(trim(NEW.not_billable_reason)) = 0) THEN\n    RAISE EXCEPTION 'Informe o motivo para marcar a entrega como sem cobrança.'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  -- default quando não definido\n  IF NEW.financial_status IS NULL THEN\n    NEW.financial_status := 'PENDING_BILLING';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n",
+      "function_md5": "829616d1d23271f7678059d8e34fcb1e"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_validate_entrega_confirmacao",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_validate_entrega_confirmacao BEFORE INSERT OR UPDATE OF status, recebido_por_nome, confirmado_por, entregue_em ON public.entregas FOR EACH ROW EXECUTE FUNCTION fn_validate_entrega_confirmacao()",
+      "trigger_md5": "59c9ca1108a6cdcc733768eb8543d211",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_validate_entrega_confirmacao()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_anexos int;\nBEGIN\n  IF NEW.status::text = 'entregue'\n     AND (TG_OP = 'INSERT' OR OLD.status::text IS DISTINCT FROM 'entregue') THEN\n\n    IF TG_OP = 'UPDATE' AND OLD.status::text = 'cancelada' THEN\n      RAISE EXCEPTION 'Não é possível confirmar uma entrega cancelada.'\n        USING ERRCODE = 'check_violation';\n    END IF;\n\n    IF COALESCE(TRIM(NEW.recebido_por_nome), '') = '' THEN\n      RAISE EXCEPTION 'Informe o nome de quem recebeu a entrega.'\n        USING ERRCODE = 'check_violation';\n    END IF;\n\n    IF NEW.confirmado_por IS NULL THEN\n      RAISE EXCEPTION 'A entrega precisa ser confirmada por um usuário autenticado.'\n        USING ERRCODE = 'check_violation';\n    END IF;\n\n    IF NEW.entregue_em IS NULL THEN\n      NEW.entregue_em := now();\n    END IF;\n\n    IF NEW.comprovante_entrega_obrigatorio THEN\n      SELECT count(*) INTO v_anexos\n        FROM public.entrega_documentos\n        WHERE entrega_id = NEW.id;\n      IF v_anexos = 0 THEN\n        RAISE EXCEPTION 'É obrigatório anexar pelo menos um comprovante para confirmar esta entrega.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "6add438d185c91379d436dc90d1e7617"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "trg_validate_entrega_estoque",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_validate_entrega_estoque BEFORE INSERT ON public.entregas FOR EACH ROW EXECUTE FUNCTION fn_validate_entrega_estoque()",
+      "trigger_md5": "e0e67211e0c23d8b8e087dbcd603227b",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_validate_entrega_estoque()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_estoque_id uuid;\n  v_qtd_fisica_disponivel numeric;\n  v_qtd_reservada_os numeric;\n  v_qtd_ja_entregue_lote_os numeric;\n  v_lote_codigo text;\nBEGIN\n  -- Se a entrega já está sendo criada/atualizada como cancelada, não validar saldo\n  IF NEW.status::text = 'cancelada' THEN\n    RETURN NEW;\n  END IF;\n\n  v_estoque_id := NEW.estoque_produto_id;\n\n  IF v_estoque_id IS NULL THEN\n    RAISE EXCEPTION 'ID do estoque não informado na entrega.' USING ERRCODE = 'check_violation';\n  END IF;\n\n  SELECT \n    ep.quantidade, \n    ep.quantidade_reservada,\n    l.codigo_lote\n  INTO \n    v_qtd_fisica_disponivel, \n    v_qtd_reservada_os,\n    v_lote_codigo\n  FROM public.estoque_produto ep\n  JOIN public.lotes l ON l.id = ep.lote_id\n  WHERE ep.id = v_estoque_id;\n\n  -- Acumula somente entregas válidas (ignora canceladas)\n  SELECT COALESCE(SUM(quantidade_entregue), 0)\n  INTO v_qtd_ja_entregue_lote_os\n  FROM public.entregas\n  WHERE estoque_produto_id = v_estoque_id \n    AND ordem_servico_id = NEW.ordem_servico_id\n    AND id <> NEW.id\n    AND status::text <> 'cancelada';\n\n  IF NEW.quantidade_entregue > v_qtd_fisica_disponivel THEN\n    RAISE EXCEPTION 'Saldo físico insuficiente no lote %. Disponível: %, Solicitado: %.',\n      v_lote_codigo, v_qtd_fisica_disponivel, NEW.quantidade_entregue\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  IF (v_qtd_ja_entregue_lote_os + NEW.quantidade_entregue) > v_qtd_reservada_os THEN\n    RAISE EXCEPTION 'Quantidade excede o saldo reservado para esta Ordem de Serviço no lote %. Reservado total: %, Já entregue: %, Saldo restante: %.',\n      v_lote_codigo, v_qtd_reservada_os, v_qtd_ja_entregue_lote_os, (v_qtd_reservada_os - v_qtd_ja_entregue_lote_os)\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "2c2412690cf8c52121a5aed8cdd34436"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "update_entregas_updated_at",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER update_entregas_updated_at BEFORE UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "trigger_md5": "19435f65b748504be75226f61758f6c5",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "function_md5": "b1930ed5bca3be839f783c6202ab8147"
+    },
+    {
+      "table_name": "entregas",
+      "tgname": "zz_delivery_mutation_closed",
+      "tgtype": 31,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER zz_delivery_mutation_closed BEFORE INSERT OR DELETE OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_mutation_guard_20261030()",
+      "trigger_md5": "975a3e423aafd74b5dbd20cb78109916",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.delivery_mutation_guard_20261030()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE c platform_private.delivery_context_20261030%ROWTYPE; v_org uuid;\n v_proof text[]:=ARRAY['comprovante_status','assinatura_tipo','recebedor_nome','recebedor_documento','recebedor_cargo','recebedor_telefone','comprovante_anexado_em','comprovante_anexado_por','assinatura_digital_capturada_em','assinatura_digital_capturada_por','comprovante_id','formulario_gerado_em','formulario_gerado_por','validation_token','validation_hash','updated_at'];\nBEGIN\n IF TG_OP='DELETE' THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;\n SELECT * INTO c FROM platform_private.delivery_context_20261030\n WHERE txid=pg_catalog.txid_current() AND actor=auth.uid();\n IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;\n IF c.action='proof' THEN\n  v_org:=platform_private.delivery_proof_actor_20261030();\n  IF TG_OP='UPDATE' AND c.mutation='proof' AND c.organization_id=v_org AND NEW.id=c.target AND OLD.id=c.target\n  AND OLD.organization_id=v_org AND NEW.organization_id=v_org\n  AND OLD.partner_order_id IS NULL AND NEW.partner_order_id IS NULL\n  AND OLD.ordem_servico_onfarm_id IS NULL AND NEW.ordem_servico_onfarm_id IS NULL\n  AND NEW.status=OLD.status AND NEW.receivable_id IS NOT DISTINCT FROM OLD.receivable_id\n  AND (pg_catalog.to_jsonb(NEW)-v_proof) IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-v_proof) THEN\n   UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;\n   RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501';\n END IF;\n v_org:=platform_private.delivery_actor_20261030(c.action);\n IF c.organization_id IS DISTINCT FROM v_org OR NEW.organization_id IS DISTINCT FROM v_org\n OR NEW.partner_order_id IS NOT NULL OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL\n THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;\n IF c.action='group' AND TG_OP='INSERT' AND c.mutation='create' AND c.delivery IS NULL\n AND NEW.ordem_servico_id=c.target AND NEW.estoque_produto_id=c.item AND NEW.status::text='separado' THEN\n  UPDATE platform_private.delivery_context_20261030 SET delivery=NEW.id,mutation='decorate' WHERE txid=c.txid;\n ELSIF c.action='group' AND TG_OP='UPDATE' AND c.mutation='decorate' AND NEW.id=c.delivery\n AND OLD.id=c.delivery AND NEW.ordem_servico_id=c.target AND NEW.estoque_produto_id=c.item\n AND NEW.organization_id=OLD.organization_id AND NEW.status=OLD.status THEN\n  UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;\n ELSIF c.action='cancel' AND TG_OP='UPDATE' AND c.mutation='cancel' AND NEW.id=c.target AND OLD.id=c.target\n AND OLD.organization_id=v_org AND NEW.status::text='cancelada' AND NEW.financial_status='CANCELED'\n AND (pg_catalog.to_jsonb(NEW)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status'])\n IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status']) THEN\n  UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;\n ELSE RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "8fa73fc045c51addd05576597ecd4c88"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "a00_stock_envase_mutation_gate",
+      "tgtype": 62,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.estoque_produto FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()",
+      "trigger_md5": "051253c0588615c8c30348122229ab80",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_envase_mutation_gate_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\n SET lock_timeout TO '3s'\nAS $function$\nBEGIN\n IF TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_OP NOT IN ('INSERT','UPDATE','DELETE','TRUNCATE')\n OR TG_RELID NOT IN ('public.organizations'::regclass,'public.organization_subscriptions'::regclass,'public.saas_plan_versions'::regclass,'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass,'public.organization_feature_overrides'::regclass,'public.clientes'::regclass,'public.programacao_producao'::regclass,'public.ordens_servico'::regclass,'public.lotes'::regclass,'public.controle_qualidade'::regclass,'public.estoque_produto'::regclass) THEN RAISE EXCEPTION 'ENVASE_GATE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;\n -- Existing upstream RPCs can prelock business rows before their first DML.\n -- Never wait here while owning those rows: reject contention atomically instead\n -- of closing the singleton/business-row deadlock cycle.\n PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n RETURN NULL;\nEND $function$\n",
+      "function_md5": "fd66c95c67366e613d886ac4e6a4f9f7"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "a00_stock_p1_tenant_guard",
+      "tgtype": 31,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER a00_stock_p1_tenant_guard BEFORE INSERT OR DELETE OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.stock_p1_guard()",
+      "trigger_md5": "e1cc1a525988857265187adfc70c14d4",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_p1_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n v_org uuid := public.h15_actor_organization();\n v_ref uuid;\n v_lote public.lotes%ROWTYPE;\nBEGIN\n IF auth.uid() IS NULL OR v_org IS NULL THEN\n  RAISE EXCEPTION 'ESTQ_TENANT_FORBIDDEN' USING ERRCODE='42501';\n END IF;\n IF TG_OP IN ('UPDATE','DELETE') AND NOT platform_private.stock_p1_lote_owned(OLD.lote_id) THEN\n  RAISE EXCEPTION 'ESTQ_TENANT_FORBIDDEN' USING ERRCODE='42501';\n END IF;\n IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n IF NOT platform_private.stock_p1_lote_owned(NEW.lote_id) THEN\n  RAISE EXCEPTION 'ESTQ_TENANT_FORBIDDEN' USING ERRCODE='42501';\n END IF;\n SELECT * INTO v_lote FROM public.lotes WHERE id=NEW.lote_id;\n -- Explicit lote ownership is required; parent references never assign ownership.\n IF v_lote.programacao_id IS NOT NULL AND NOT EXISTS (\n  SELECT 1 FROM public.programacao_producao p\n   WHERE p.id=v_lote.programacao_id AND p.organization_id=v_org\n ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n IF NEW.envase_id IS NOT NULL AND NOT EXISTS (\n  SELECT 1 FROM public.envase e WHERE e.id=NEW.envase_id\n   AND e.lote_id=NEW.lote_id AND e.organization_id=v_org\n ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n IF NEW.reservado_para_cliente_id IS NOT NULL AND NOT EXISTS (\n  SELECT 1 FROM public.clientes c WHERE c.id=NEW.reservado_para_cliente_id AND c.organization_id=v_org\n ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n IF NEW.reservado_para_partner_id IS NOT NULL AND NOT coalesce(public.b2b_phase1_partner_visible(NEW.reservado_para_partner_id,false),false) THEN\n  RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501';\n END IF;\n IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT EXISTS (\n  SELECT 1 FROM public.partner_orders o WHERE o.id=NEW.reservado_para_partner_order_id\n    AND o.partner_id=NEW.reservado_para_partner_id\n    AND public.b2b_phase1_order_visible(o.id)\n ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n IF NEW.reservado_para_os_id IS NOT NULL THEN\n  IF NEW.reservado_para_os_tipo IN ('onfarm','on_farm') THEN\n   SELECT c.organization_id INTO v_ref FROM public.ordens_servico_onfarm o\n    JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=NEW.reservado_para_os_id;\n  ELSIF NEW.reservado_para_os_tipo IN ('manual','b2b') THEN\n   SELECT o.organization_id INTO v_ref FROM public.ordens_servico o WHERE o.id=NEW.reservado_para_os_id;\n  ELSE\n   RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501';\n  END IF;\n  IF v_ref IS DISTINCT FROM v_org THEN\n   RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501';\n  END IF;\n END IF;\n RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "ad87685f4b7bc87bd8cc3f41f283966d"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "a01_stock_final_permit",
+      "tgtype": 5,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER a01_stock_final_permit AFTER INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1()",
+      "trigger_md5": "bb2ebb16735b13fed407e3ced3c0b96b",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.envase_insert_final_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE p platform_private.envase_insert_permits_v1%ROWTYPE;\nBEGIN\n DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted RETURNING * INTO p;\n IF FOUND THEN\n  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')\n   OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;\n ELSIF TG_TABLE_NAME='envase' THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISSING' USING ERRCODE='42501';\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "7837c5852e37159d826875babf9da228"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "a01_stock_insert_permit",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1()",
+      "trigger_md5": "aaf12d1e8be20b073f4cde3335b15b1a",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.envase_insert_guard_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE p platform_private.envase_insert_permits_v1%ROWTYPE; c record; parent public.estoque_produto%ROWTYPE; a jsonb; org uuid;\nBEGIN\n IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;\n UPDATE platform_private.envase_insert_permits_v1 SET admitted=true WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted=false RETURNING * INTO p;\n IF FOUND THEN\n  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')\n   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;\n  RETURN NEW;\n END IF;\n -- Preserve ONLY the installed canonical partial reservation semantics under\n -- its private txid/actor/parent context, not an invented envase permit.\n IF TG_TABLE_NAME='estoque_produto' THEN\n  SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();\n  IF FOUND AND c.ctx->>'acao'='reserva' AND c.item IS NOT NULL AND NEW.id<>c.item THEN\n   SELECT * INTO parent FROM public.estoque_produto WHERE id=c.item;\n   a:=c.ctx->'reserve_args'; org:=platform_private.stock_motor_actor('reserva');\n   IF parent.status::text='disponivel' AND NEW.status::text='reservado' AND NEW.quantidade>0 AND NEW.quantidade<parent.quantidade\n    AND NEW.quantidade_reservada=NEW.quantidade AND NEW.lote_id=parent.lote_id\n    AND NEW.envase_id IS NOT DISTINCT FROM parent.envase_id AND NEW.produto_id IS NOT DISTINCT FROM parent.produto_id AND NEW.microrganismo_id IS NOT DISTINCT FROM parent.microrganismo_id\n    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade\n    AND NEW.reservado_para_os_id::text IS NOT DISTINCT FROM a->>'os_id' AND NEW.reservado_para_os_tipo IS NOT DISTINCT FROM a->>'os_tipo'\n    AND NEW.reservado_para_cliente_id::text IS NOT DISTINCT FROM a->>'cliente_id'\n    AND NEW.reservado_para_partner_id::text IS NOT DISTINCT FROM a->>'partner_id' AND NEW.reservado_para_partner_order_id::text IS NOT DISTINCT FROM a->>'partner_order_id'\n    AND NEW.observacao_reserva IS NOT DISTINCT FROM a->>'observacao'\n    AND EXISTS(SELECT 1 FROM public.lotes WHERE id=parent.lote_id AND organization_id=org) THEN RETURN NEW; END IF;\n  END IF;\n END IF;\n RAISE EXCEPTION 'ENVASE_INSERT_CLOSED' USING ERRCODE='42501';\nEND $function$\n",
+      "function_md5": "c150d00c4e0258ddcf4f7e2f86f53170"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "a02_stock_envase_reservation_root",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER a02_stock_envase_reservation_root BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.stock_envase_reservation_root_v1()",
+      "trigger_md5": "5398c95bb233ebfe9c630ed4eb555db4",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_envase_reservation_root_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE p public.programacao_producao%ROWTYPE; l public.lotes%ROWTYPE; o public.ordens_servico%ROWTYPE;\nBEGIN\n IF NEW.status::text<>'reservado' OR NEW.reservado_para_os_tipo IS DISTINCT FROM 'manual' THEN RETURN NEW; END IF;\n IF TG_OP='UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status AND NEW.lote_id IS NOT DISTINCT FROM OLD.lote_id AND NEW.reservado_para_os_id IS NOT DISTINCT FROM OLD.reservado_para_os_id THEN RETURN NEW; END IF;\n SELECT * INTO o FROM public.ordens_servico WHERE id=NEW.reservado_para_os_id;\n SELECT * INTO p FROM public.programacao_producao WHERE ordem_servico_id=o.id;\n IF NOT FOUND THEN RETURN NEW; END IF;\n SELECT * INTO l FROM public.lotes WHERE id=NEW.lote_id;\n IF o.status::text NOT IN ('em_cq','envase','pronto_entrega') OR l.programacao_id IS DISTINCT FROM p.id OR l.organization_id IS DISTINCT FROM o.organization_id OR p.organization_id IS DISTINCT FROM o.organization_id\n OR NEW.produto_id IS DISTINCT FROM p.produto_id OR NEW.microrganismo_id IS DISTINCT FROM p.microrganismo_id OR NEW.reservado_para_cliente_id IS DISTINCT FROM o.cliente_id\n OR (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=o.id)<>1 THEN RAISE EXCEPTION 'ENVASE_RESERVATION_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "52563977f17f3ea8026c1a33c03dc619"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "trg_estoque_produto_guard",
+      "tgtype": 27,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_estoque_produto_guard BEFORE DELETE OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION fn_estoque_produto_guard()",
+      "trigger_md5": "e35d79a2de1eb2809428561b8f350160",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_estoque_produto_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_ctx jsonb := public.fn_estoque_ctx_read();\nBEGIN\n  IF v_ctx IS NULL OR v_ctx->>'origem' IS NULL THEN\n    RAISE EXCEPTION 'estoque_produto so pode ser alterado pelo motor canonico (rpc_estoque_operar_v1)'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;\nEND;\n$function$\n",
+      "function_md5": "fdb38c8e1a6497600c914104bf32c3d3"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "trg_log_estoque_insert",
+      "tgtype": 5,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_log_estoque_insert AFTER INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION log_estoque_movimentacao()",
+      "trigger_md5": "111903adef450b1bfcc08083bed65aa4",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.log_estoque_movimentacao()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_ctx jsonb := public.fn_estoque_ctx_read();\n  v_acao text;\n  v_dir text;\n  v_usuario uuid;\n  v_old_status text;\n  v_new_status text;\n  v_qtd numeric;\n  v_mudou boolean;\n  v_key text := v_ctx->>'idempotency_key';\n  v_meta jsonb := COALESCE(v_ctx->'metadata', '{}'::jsonb);\n  v_seq int;\nBEGIN\n  -- Uma operação do motor pode tocar mais de uma linha (reserva parcial).\n  -- O lançamento principal fica com a chave da operação; os complementares\n  -- recebem chave derivada determinística e são marcados como desdobramento.\n  IF v_key IS NOT NULL THEN\n    SELECT count(*) INTO v_seq\n      FROM public.estoque_movimentacoes\n     WHERE idempotency_key = v_key OR left(idempotency_key,length(v_key)+1) = v_key || '#';\n    IF v_seq > 0 THEN\n      v_meta := v_meta || jsonb_build_object('desdobramento', true, 'operacao_key', v_key);\n      v_key := v_key || '#' || v_seq::text;\n    END IF;\n  END IF;\n\n  IF TG_OP = 'INSERT' THEN\n    INSERT INTO public.estoque_movimentacoes\n      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,\n       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n       volume_anterior, volume_posterior, unidade, direcao,\n       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,\n       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)\n    VALUES (\n      NEW.id,\n      COALESCE(v_ctx->>'acao', 'entrada'),\n      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,\n      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),\n      0, COALESCE(NEW.quantidade, 0),\n      0, COALESCE(NEW.quantidade_reservada, 0),\n      0, COALESCE(NEW.volume_total, 0),\n      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',\n      COALESCE(v_ctx->>'origem', 'trigger'),\n      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,\n      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',\n      (v_ctx->>'movimentacao_origem_id')::uuid,\n      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n      v_meta\n    );\n    RETURN NEW;\n  END IF;\n\n  v_mudou := (OLD.status IS DISTINCT FROM NEW.status)\n          OR (COALESCE(OLD.quantidade,0) IS DISTINCT FROM COALESCE(NEW.quantidade,0))\n          OR (COALESCE(OLD.quantidade_reservada,0) IS DISTINCT FROM COALESCE(NEW.quantidade_reservada,0))\n          OR (COALESCE(OLD.volume_total,0) IS DISTINCT FROM COALESCE(NEW.volume_total,0));\n  IF NOT v_mudou THEN RETURN NEW; END IF;\n\n  v_old_status := OLD.status::text;\n  v_new_status := NEW.status::text;\n\n  v_acao := COALESCE(v_ctx->>'acao', CASE\n    WHEN v_new_status = 'reservado'  AND v_old_status = 'expedido'  THEN 'estorno_expedicao'\n    WHEN v_new_status = 'reservado'  AND v_old_status <> 'reservado' THEN 'reserva'\n    WHEN v_new_status = 'expedido'   AND v_old_status <> 'expedido'  THEN 'expedicao'\n    WHEN v_new_status = 'estornado'                                  THEN 'estorno_expedicao'\n    WHEN v_old_status = 'reservado'  AND v_new_status = 'disponivel' THEN 'cancelamento_reserva'\n    WHEN v_old_status = v_new_status THEN 'ajuste'\n    ELSE 'edicao'\n  END);\n\n  v_dir := COALESCE(v_ctx->>'direcao', CASE\n    WHEN COALESCE(NEW.quantidade,0) > COALESCE(OLD.quantidade,0) THEN 'entrada'\n    WHEN COALESCE(NEW.quantidade,0) < COALESCE(OLD.quantidade,0) THEN 'saida'\n    WHEN v_acao IN ('expedicao','descarte','perda','consumo','entrega') THEN 'saida'\n    WHEN v_acao IN ('estorno_expedicao','devolucao') THEN 'entrada'\n    ELSE 'neutro'\n  END);\n\n  v_usuario := COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid,\n    CASE WHEN v_new_status = 'expedido' THEN NEW.expedido_por ELSE NEW.reservado_por END);\n\n  v_qtd := NULLIF(ABS(COALESCE(NEW.quantidade,0) - COALESCE(OLD.quantidade,0)), 0);\n  IF v_qtd IS NULL THEN\n    v_qtd := NULLIF(ABS(COALESCE(NEW.quantidade_reservada,0) - COALESCE(OLD.quantidade_reservada,0)), 0);\n  END IF;\n  IF v_qtd IS NULL THEN\n    v_qtd := NULLIF(COALESCE(NEW.quantidade_reservada, NEW.quantidade, 0), 0);\n  END IF;\n\n  INSERT INTO public.estoque_movimentacoes\n    (estoque_produto_id, acao, quantidade, status_anterior, status_novo,\n     os_id, os_tipo, cliente_id, lote_id, usuario_id, observacao,\n     saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n     volume_anterior, volume_posterior, unidade, direcao,\n     origem, referencia_tipo, referencia_id, motivo,\n     idempotency_key, request_fingerprint, movimentacao_origem_id, metadata)\n  VALUES (\n    NEW.id, v_acao, v_qtd, v_old_status, v_new_status,\n    NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n    NEW.lote_id, v_usuario, COALESCE(v_ctx->>'observacao', NEW.observacao_reserva),\n    COALESCE(OLD.quantidade,0), COALESCE(NEW.quantidade,0),\n    COALESCE(OLD.quantidade_reservada,0), COALESCE(NEW.quantidade_reservada,0),\n    COALESCE(OLD.volume_total,0), COALESCE(NEW.volume_total,0),\n    COALESCE(v_ctx->>'unidade','un'), v_dir,\n    COALESCE(v_ctx->>'origem','trigger'),\n    v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid, v_ctx->>'motivo',\n    v_key, v_ctx->>'request_fingerprint',\n    (v_ctx->>'movimentacao_origem_id')::uuid,\n    v_meta\n  );\n\n  IF v_acao = 'reserva' THEN\n    INSERT INTO public.notificacoes_operacionais (usuario_id, tipo, titulo, mensagem, link)\n    SELECT ur.user_id, 'nova_reserva', 'Nova reserva de estoque',\n           'Item reservado aguardando expedição.', '/estoque'\n      FROM public.user_roles ur JOIN public.profiles pr ON pr.user_id=ur.user_id AND pr.ativo IS TRUE JOIN public.lotes l ON l.id=NEW.lote_id AND l.organization_id=pr.organization_id JOIN public.organizations o ON o.id=pr.organization_id AND o.ativo IS TRUE WHERE ur.role = 'administrativo'::app_role AND l.organization_id IS NOT NULL;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "45dcb6afde3b37528b972cc018e5162a"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "trg_log_estoque_update",
+      "tgtype": 17,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_log_estoque_update AFTER UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION log_estoque_movimentacao()",
+      "trigger_md5": "a24cac9212e305618cf1dd1d7a26f461",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.log_estoque_movimentacao()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_ctx jsonb := public.fn_estoque_ctx_read();\n  v_acao text;\n  v_dir text;\n  v_usuario uuid;\n  v_old_status text;\n  v_new_status text;\n  v_qtd numeric;\n  v_mudou boolean;\n  v_key text := v_ctx->>'idempotency_key';\n  v_meta jsonb := COALESCE(v_ctx->'metadata', '{}'::jsonb);\n  v_seq int;\nBEGIN\n  -- Uma operação do motor pode tocar mais de uma linha (reserva parcial).\n  -- O lançamento principal fica com a chave da operação; os complementares\n  -- recebem chave derivada determinística e são marcados como desdobramento.\n  IF v_key IS NOT NULL THEN\n    SELECT count(*) INTO v_seq\n      FROM public.estoque_movimentacoes\n     WHERE idempotency_key = v_key OR left(idempotency_key,length(v_key)+1) = v_key || '#';\n    IF v_seq > 0 THEN\n      v_meta := v_meta || jsonb_build_object('desdobramento', true, 'operacao_key', v_key);\n      v_key := v_key || '#' || v_seq::text;\n    END IF;\n  END IF;\n\n  IF TG_OP = 'INSERT' THEN\n    INSERT INTO public.estoque_movimentacoes\n      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,\n       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n       volume_anterior, volume_posterior, unidade, direcao,\n       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,\n       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)\n    VALUES (\n      NEW.id,\n      COALESCE(v_ctx->>'acao', 'entrada'),\n      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,\n      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),\n      0, COALESCE(NEW.quantidade, 0),\n      0, COALESCE(NEW.quantidade_reservada, 0),\n      0, COALESCE(NEW.volume_total, 0),\n      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',\n      COALESCE(v_ctx->>'origem', 'trigger'),\n      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,\n      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',\n      (v_ctx->>'movimentacao_origem_id')::uuid,\n      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n      v_meta\n    );\n    RETURN NEW;\n  END IF;\n\n  v_mudou := (OLD.status IS DISTINCT FROM NEW.status)\n          OR (COALESCE(OLD.quantidade,0) IS DISTINCT FROM COALESCE(NEW.quantidade,0))\n          OR (COALESCE(OLD.quantidade_reservada,0) IS DISTINCT FROM COALESCE(NEW.quantidade_reservada,0))\n          OR (COALESCE(OLD.volume_total,0) IS DISTINCT FROM COALESCE(NEW.volume_total,0));\n  IF NOT v_mudou THEN RETURN NEW; END IF;\n\n  v_old_status := OLD.status::text;\n  v_new_status := NEW.status::text;\n\n  v_acao := COALESCE(v_ctx->>'acao', CASE\n    WHEN v_new_status = 'reservado'  AND v_old_status = 'expedido'  THEN 'estorno_expedicao'\n    WHEN v_new_status = 'reservado'  AND v_old_status <> 'reservado' THEN 'reserva'\n    WHEN v_new_status = 'expedido'   AND v_old_status <> 'expedido'  THEN 'expedicao'\n    WHEN v_new_status = 'estornado'                                  THEN 'estorno_expedicao'\n    WHEN v_old_status = 'reservado'  AND v_new_status = 'disponivel' THEN 'cancelamento_reserva'\n    WHEN v_old_status = v_new_status THEN 'ajuste'\n    ELSE 'edicao'\n  END);\n\n  v_dir := COALESCE(v_ctx->>'direcao', CASE\n    WHEN COALESCE(NEW.quantidade,0) > COALESCE(OLD.quantidade,0) THEN 'entrada'\n    WHEN COALESCE(NEW.quantidade,0) < COALESCE(OLD.quantidade,0) THEN 'saida'\n    WHEN v_acao IN ('expedicao','descarte','perda','consumo','entrega') THEN 'saida'\n    WHEN v_acao IN ('estorno_expedicao','devolucao') THEN 'entrada'\n    ELSE 'neutro'\n  END);\n\n  v_usuario := COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid,\n    CASE WHEN v_new_status = 'expedido' THEN NEW.expedido_por ELSE NEW.reservado_por END);\n\n  v_qtd := NULLIF(ABS(COALESCE(NEW.quantidade,0) - COALESCE(OLD.quantidade,0)), 0);\n  IF v_qtd IS NULL THEN\n    v_qtd := NULLIF(ABS(COALESCE(NEW.quantidade_reservada,0) - COALESCE(OLD.quantidade_reservada,0)), 0);\n  END IF;\n  IF v_qtd IS NULL THEN\n    v_qtd := NULLIF(COALESCE(NEW.quantidade_reservada, NEW.quantidade, 0), 0);\n  END IF;\n\n  INSERT INTO public.estoque_movimentacoes\n    (estoque_produto_id, acao, quantidade, status_anterior, status_novo,\n     os_id, os_tipo, cliente_id, lote_id, usuario_id, observacao,\n     saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n     volume_anterior, volume_posterior, unidade, direcao,\n     origem, referencia_tipo, referencia_id, motivo,\n     idempotency_key, request_fingerprint, movimentacao_origem_id, metadata)\n  VALUES (\n    NEW.id, v_acao, v_qtd, v_old_status, v_new_status,\n    NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n    NEW.lote_id, v_usuario, COALESCE(v_ctx->>'observacao', NEW.observacao_reserva),\n    COALESCE(OLD.quantidade,0), COALESCE(NEW.quantidade,0),\n    COALESCE(OLD.quantidade_reservada,0), COALESCE(NEW.quantidade_reservada,0),\n    COALESCE(OLD.volume_total,0), COALESCE(NEW.volume_total,0),\n    COALESCE(v_ctx->>'unidade','un'), v_dir,\n    COALESCE(v_ctx->>'origem','trigger'),\n    v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid, v_ctx->>'motivo',\n    v_key, v_ctx->>'request_fingerprint',\n    (v_ctx->>'movimentacao_origem_id')::uuid,\n    v_meta\n  );\n\n  IF v_acao = 'reserva' THEN\n    INSERT INTO public.notificacoes_operacionais (usuario_id, tipo, titulo, mensagem, link)\n    SELECT ur.user_id, 'nova_reserva', 'Nova reserva de estoque',\n           'Item reservado aguardando expedição.', '/estoque'\n      FROM public.user_roles ur JOIN public.profiles pr ON pr.user_id=ur.user_id AND pr.ativo IS TRUE JOIN public.lotes l ON l.id=NEW.lote_id AND l.organization_id=pr.organization_id JOIN public.organizations o ON o.id=pr.organization_id AND o.ativo IS TRUE WHERE ur.role = 'administrativo'::app_role AND l.organization_id IS NOT NULL;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "45dcb6afde3b37528b972cc018e5162a"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "trg_refresh_esteira_estoque",
+      "tgtype": 28,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_refresh_esteira_estoque AFTER INSERT OR DELETE OR UPDATE ON public.estoque_produto FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()",
+      "trigger_md5": "d3c5cc0eff95a3c809d593a0623e5e4a",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "function_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "trg_validate_estoque_entrada",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_validate_estoque_entrada BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION validate_estoque_entrada()",
+      "trigger_md5": "00cedc0c318f3b1162732002c7fcb491",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.validate_estoque_entrada()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- Reservas parciais (têm quantidade_reservada preenchida) seguem normalmente\n  IF NEW.quantidade_reservada IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n\n  -- Exigir envase para o lote\n  IF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id) THEN\n    RAISE EXCEPTION 'Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  -- Bloquear duplicidade por envase_id (não mais por lote)\n  IF NEW.envase_id IS NOT NULL AND EXISTS (\n    SELECT 1 FROM public.estoque_produto\n    WHERE envase_id = NEW.envase_id\n      AND quantidade_reservada IS NULL\n      AND id <> COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)\n  ) THEN\n    RAISE EXCEPTION 'Já existe entrada de estoque para este envase.'\n      USING ERRCODE = 'unique_violation';\n  END IF;\n\n  -- Compat: se a entrada vier sem envase_id, manter a regra antiga de 1 por lote\n  IF NEW.envase_id IS NULL AND EXISTS (\n    SELECT 1 FROM public.estoque_produto\n    WHERE lote_id = NEW.lote_id\n      AND envase_id IS NULL\n      AND quantidade_reservada IS NULL\n      AND id <> COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)\n  ) THEN\n    RAISE EXCEPTION 'Já existe uma entrada de estoque agregada para este lote.'\n      USING ERRCODE = 'unique_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "9e24938a8d716a02ba023c9fb7ce24e9"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "trg_validate_estoque_reserva",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_validate_estoque_reserva BEFORE UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION validate_estoque_reserva()",
+      "trigger_md5": "cb7bbb9c52749bd7bcd424365f0271b2",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.validate_estoque_reserva()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.status::text = 'reservado' AND (OLD.status IS DISTINCT FROM NEW.status OR OLD.status::text <> 'reservado') THEN\n    IF NEW.reservado_para_os_id IS NULL THEN\n      RAISE EXCEPTION 'Reserva requer uma OS vinculada.' USING ERRCODE = 'check_violation';\n    END IF;\n\n    IF NEW.reservado_para_os_tipo = 'b2b' THEN\n      IF NEW.reservado_para_partner_id IS NULL THEN\n        RAISE EXCEPTION 'Reserva B2B requer um parceiro vinculado.' USING ERRCODE = 'check_violation';\n      END IF;\n    ELSE\n      IF NEW.reservado_para_cliente_id IS NULL AND NEW.reservado_para_partner_id IS NULL THEN\n        RAISE EXCEPTION 'Reserva requer um cliente ou parceiro vinculado.' USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n\n    IF NEW.quantidade_reservada IS NULL OR NEW.quantidade_reservada <= 0 THEN\n      RAISE EXCEPTION 'Informe uma quantidade reservada maior que zero.' USING ERRCODE = 'check_violation';\n    END IF;\n    IF NEW.quantidade IS NOT NULL AND NEW.quantidade_reservada > NEW.quantidade THEN\n      RAISE EXCEPTION 'Quantidade reservada (%) excede o estoque disponível (%).', NEW.quantidade_reservada, NEW.quantidade\n        USING ERRCODE = 'check_violation';\n    END IF;\n    IF NEW.reservado_em IS NULL THEN NEW.reservado_em := now(); END IF;\n    IF NEW.reservado_por IS NULL THEN NEW.reservado_por := auth.uid(); END IF;\n  END IF;\n\n  IF NEW.status::text = 'disponivel' AND OLD.status::text = 'reservado' THEN\n    NEW.reservado_para_os_id := NULL;\n    NEW.reservado_para_os_tipo := NULL;\n    NEW.reservado_para_cliente_id := NULL;\n    NEW.reservado_para_partner_id := NULL;\n    NEW.reservado_para_partner_order_id := NULL;\n    NEW.quantidade_reservada := NULL;\n    NEW.reservado_por := NULL;\n    NEW.reservado_em := NULL;\n    NEW.observacao_reserva := NULL;\n  END IF;\n\n  IF NEW.status::text = 'expedido' AND OLD.status::text <> 'expedido' THEN\n    IF NEW.expedido_em IS NULL THEN NEW.expedido_em := now(); END IF;\n    IF NEW.expedido_por IS NULL THEN NEW.expedido_por := auth.uid(); END IF;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "9bdbd6bc6fc957993bbdff466db6ef22"
+    },
+    {
+      "table_name": "estoque_produto",
+      "tgname": "update_estoque_updated_at",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER update_estoque_updated_at BEFORE UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "trigger_md5": "bc3d4c1ef9e8dcdd968aff59056dba16",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "function_md5": "b1930ed5bca3be839f783c6202ab8147"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "a01_envase_final_permit",
+      "tgtype": 5,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER a01_envase_final_permit AFTER INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1()",
+      "trigger_md5": "a297c2334d996e85973ec55c1e171748",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.envase_insert_final_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE p platform_private.envase_insert_permits_v1%ROWTYPE;\nBEGIN\n DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted RETURNING * INTO p;\n IF FOUND THEN\n  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')\n   OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;\n ELSIF TG_TABLE_NAME='envase' THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISSING' USING ERRCODE='42501';\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "7837c5852e37159d826875babf9da228"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "a01_envase_insert_permit",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1()",
+      "trigger_md5": "1b5e99e1e0003e623ba286fd627633d1",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.envase_insert_guard_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE p platform_private.envase_insert_permits_v1%ROWTYPE; c record; parent public.estoque_produto%ROWTYPE; a jsonb; org uuid;\nBEGIN\n IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;\n UPDATE platform_private.envase_insert_permits_v1 SET admitted=true WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted=false RETURNING * INTO p;\n IF FOUND THEN\n  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')\n   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;\n  RETURN NEW;\n END IF;\n -- Preserve ONLY the installed canonical partial reservation semantics under\n -- its private txid/actor/parent context, not an invented envase permit.\n IF TG_TABLE_NAME='estoque_produto' THEN\n  SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();\n  IF FOUND AND c.ctx->>'acao'='reserva' AND c.item IS NOT NULL AND NEW.id<>c.item THEN\n   SELECT * INTO parent FROM public.estoque_produto WHERE id=c.item;\n   a:=c.ctx->'reserve_args'; org:=platform_private.stock_motor_actor('reserva');\n   IF parent.status::text='disponivel' AND NEW.status::text='reservado' AND NEW.quantidade>0 AND NEW.quantidade<parent.quantidade\n    AND NEW.quantidade_reservada=NEW.quantidade AND NEW.lote_id=parent.lote_id\n    AND NEW.envase_id IS NOT DISTINCT FROM parent.envase_id AND NEW.produto_id IS NOT DISTINCT FROM parent.produto_id AND NEW.microrganismo_id IS NOT DISTINCT FROM parent.microrganismo_id\n    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade\n    AND NEW.reservado_para_os_id::text IS NOT DISTINCT FROM a->>'os_id' AND NEW.reservado_para_os_tipo IS NOT DISTINCT FROM a->>'os_tipo'\n    AND NEW.reservado_para_cliente_id::text IS NOT DISTINCT FROM a->>'cliente_id'\n    AND NEW.reservado_para_partner_id::text IS NOT DISTINCT FROM a->>'partner_id' AND NEW.reservado_para_partner_order_id::text IS NOT DISTINCT FROM a->>'partner_order_id'\n    AND NEW.observacao_reserva IS NOT DISTINCT FROM a->>'observacao'\n    AND EXISTS(SELECT 1 FROM public.lotes WHERE id=parent.lote_id AND organization_id=org) THEN RETURN NEW; END IF;\n  END IF;\n END IF;\n RAISE EXCEPTION 'ENVASE_INSERT_CLOSED' USING ERRCODE='42501';\nEND $function$\n",
+      "function_md5": "c150d00c4e0258ddcf4f7e2f86f53170"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "tenant_organization_guard",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.envase FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+      "trigger_md5": "e30858857e27a8aa1a87e750990b2180",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "d01a740c1e3e02407131d2b9228bf658"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "trg_envase_material_imutavel",
+      "tgtype": 27,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_envase_material_imutavel BEFORE DELETE OR UPDATE ON public.envase FOR EACH ROW EXECUTE FUNCTION fn_envase_material_imutavel()",
+      "trigger_md5": "fd6ccd45471d69e7cc6852ee2c5bbd70",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_envase_material_imutavel()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nBEGIN\n\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'ENVASE_IMUTAVEL: o envase % do lote % nao pode ser excluido. Registre um estorno/novo envase.', OLD.id, OLD.lote_id\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  IF NEW.lote_id IS DISTINCT FROM OLD.lote_id\n     OR NEW.quantidade IS DISTINCT FROM OLD.quantidade\n     OR NEW.volume_por_unidade IS DISTINCT FROM OLD.volume_por_unidade THEN\n    RAISE EXCEPTION 'ENVASE_IMUTAVEL: lote/quantidade/volume_por_unidade do envase % nao podem ser alterados apos o registro.', OLD.id\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "9e9464bcd54c17b31aae731785be3162"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "trg_refresh_esteira_envase",
+      "tgtype": 28,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_refresh_esteira_envase AFTER INSERT OR DELETE OR UPDATE ON public.envase FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()",
+      "trigger_md5": "dead21147ea211f4d725ded0221ac520",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "function_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "trg_saas_gate",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.envase FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('envase')",
+      "trigger_md5": "d0406d5b2bd7a5742f0ad907fb9f2a0d",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usuário ativo e empresa são obrigatórios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+      "function_md5": "13ed48832f81cbb35434688ca35fda4b"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "trg_validate_envase_cq",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_validate_envase_cq BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION fn_validate_envase_cq()",
+      "trigger_md5": "e198b2cdbb8b07c6a1251dd2924234f5",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_validate_envase_cq()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n    v_lote_status TEXT;\n    v_cq_resultado TEXT;\nBEGIN\n    SELECT status INTO v_lote_status FROM public.lotes WHERE id = NEW.lote_id;\n\n    SELECT resultado::text INTO v_cq_resultado\n      FROM public.controle_qualidade\n     WHERE lote_id = NEW.lote_id\n     ORDER BY created_at DESC, seq DESC\n     LIMIT 1;\n\n    IF v_lote_status <> 'aprovado' OR v_cq_resultado IS NULL OR v_cq_resultado <> 'aprovado' THEN\n        RAISE EXCEPTION 'O lote % não possui Controle de Qualidade aprovado. O envase não é permitido.',\n            (SELECT codigo_lote FROM public.lotes WHERE id = NEW.lote_id);\n    END IF;\n\n    RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "fc4a739dc17d709d70102885c115112f"
+    },
+    {
+      "table_name": "envase",
+      "tgname": "trg_validate_envase_volume",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_validate_envase_volume BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION fn_validate_envase_volume()",
+      "trigger_md5": "25fe9cf24e5b718c88f1143de6c86764",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_validate_envase_volume()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_produzido numeric;\n  v_envasado numeric;\n  v_novo numeric;\n  v_codigo text;\n  v_saldo numeric;\nBEGIN\n  IF NEW.quantidade IS NULL OR NEW.quantidade <= 0 THEN\n    RAISE EXCEPTION 'A quantidade do envase deve ser maior que zero.' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.volume_por_unidade IS NULL OR NEW.volume_por_unidade <= 0 OR NEW.volume_por_unidade::text IN ('NaN','Infinity','-Infinity') THEN\n    RAISE EXCEPTION 'O volume por unidade deve ser maior que zero.' USING ERRCODE = 'check_violation';\n  END IF;\n\n  -- H5-B01/B02: serializa qualquer INSERT de envase (inclusive direto via RLS) pela linha do lote.\n  -- Ordem de lock compatível com rpc_cockpit_registrar_envase_v1 (programacao -> lote).\n  SELECT volume_produzido, codigo_lote INTO v_produzido, v_codigo\n  FROM public.lotes WHERE id = NEW.lote_id FOR UPDATE;\n\n  IF v_codigo IS NULL AND v_produzido IS NULL THEN\n    RAISE EXCEPTION 'Lote % inexistente para envase.', NEW.lote_id USING ERRCODE = 'check_violation';\n  END IF;\n\n  IF v_produzido IS NULL OR v_produzido <= 0 OR v_produzido::text IN ('NaN','Infinity','-Infinity') THEN\n    RAISE EXCEPTION 'O lote % não possui volume produzido informado. Registre a produção antes de envasar.', COALESCE(v_codigo,'(desconhecido)')\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  v_envasado := public.lote_volume_envasado(NEW.lote_id);\n  v_novo := COALESCE(NEW.volume_por_unidade,0) * COALESCE(NEW.quantidade,0);\n  v_saldo := v_produzido - v_envasado;\n\n  IF (v_envasado + v_novo) > v_produzido THEN\n    RAISE EXCEPTION 'Envase excede o volume produzido do lote %. Produzido: % L, já envasado: % L, saldo disponível: % L, solicitado: % L.',\n      COALESCE(v_codigo,'(desconhecido)'),\n      ROUND(v_produzido/1000.0, 2),\n      ROUND(v_envasado/1000.0, 2),\n      ROUND(v_saldo/1000.0, 2),\n      ROUND(v_novo/1000.0, 2)\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "22092b56a46fbfc3a95718900a4e8201"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "a00_stock_envase_mutation_gate",
+      "tgtype": 62,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lotes FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()",
+      "trigger_md5": "d2cb3f9c52f27d051c35088b7a75c4cc",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_envase_mutation_gate_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\n SET lock_timeout TO '3s'\nAS $function$\nBEGIN\n IF TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_OP NOT IN ('INSERT','UPDATE','DELETE','TRUNCATE')\n OR TG_RELID NOT IN ('public.organizations'::regclass,'public.organization_subscriptions'::regclass,'public.saas_plan_versions'::regclass,'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass,'public.organization_feature_overrides'::regclass,'public.clientes'::regclass,'public.programacao_producao'::regclass,'public.ordens_servico'::regclass,'public.lotes'::regclass,'public.controle_qualidade'::regclass,'public.estoque_produto'::regclass) THEN RAISE EXCEPTION 'ENVASE_GATE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;\n -- Existing upstream RPCs can prelock business rows before their first DML.\n -- Never wait here while owning those rows: reject contention atomically instead\n -- of closing the singleton/business-row deadlock cycle.\n PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n RETURN NULL;\nEND $function$\n",
+      "function_md5": "fd66c95c67366e613d886ac4e6a4f9f7"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "aa_manual_lot_delete_v1",
+      "tgtype": 11,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER aa_manual_lot_delete_v1 BEFORE DELETE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_lot_delete_v1()",
+      "trigger_md5": "0b44789d22bb43bb5bf5b95009a0d43d",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.guard_manual_lot_delete_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF EXISTS(SELECT 1 FROM public.programacao_producao p WHERE p.id=OLD.programacao_id AND p.ordem_servico_id IS NOT NULL)\n OR EXISTS(SELECT 1 FROM public.laboratorio_esteira_eventos e WHERE e.lote_id=OLD.id AND e.origem_os='manual')\n THEN RAISE EXCEPTION 'MANUAL_LOT_DELETE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n RETURN OLD;\nEND $function$\n",
+      "function_md5": "0d490a2910e7fb63dd50fd4c86e1cf0f"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "aa_manual_lot_write_fence_v1",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER aa_manual_lot_write_fence_v1 BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_lot_write_v1()",
+      "trigger_md5": "5e87cf2bf932d0e7e95d3054f006ec1d",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.guard_manual_lot_write_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n p public.programacao_producao%ROWTYPE;\n old_manual boolean:=false;\n old_programacao uuid;\n org uuid;\nBEGIN\n -- Lock old/new parents in deterministic order. An UPDATE cannot escape the\n -- manual fence by changing programacao_id to onfarm or NULL.\n IF TG_OP='UPDATE' THEN old_programacao:=OLD.programacao_id; END IF;\n PERFORM 1 FROM public.programacao_producao\n WHERE id=NEW.programacao_id OR id=old_programacao\n ORDER BY id FOR SHARE;\n IF TG_OP='UPDATE' THEN\n  SELECT EXISTS(SELECT 1 FROM public.programacao_producao\n    WHERE id=OLD.programacao_id AND ordem_servico_id IS NOT NULL) INTO old_manual;\n END IF;\n SELECT * INTO p FROM public.programacao_producao WHERE id=NEW.programacao_id;\n IF old_manual OR p.ordem_servico_id IS NOT NULL OR p.id IS NULL THEN\n  IF TG_OP='UPDATE' AND old_manual THEN\n   org:=platform_private.h15_actor_organization();\n   IF auth.uid() IS NOT NULL AND org IS NOT NULL AND public.technical_actor_ready(auth.uid()) IS TRUE\n    AND (public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'producao')) IS TRUE\n    AND p.id IS NOT NULL AND p.ordem_servico_onfarm_id IS NULL AND p.organization_id=org AND NEW.organization_id=org AND OLD.organization_id=org\n    AND (to_jsonb(NEW)-'status'-'updated_at') IS NOT DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')\n    AND EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id\n     WHERE o.id=p.ordem_servico_id AND o.organization_id=org AND c.organization_id=org AND o.status::text='em_cq'\n     AND o.partner_order_id IS NULL AND o.partner_order_item_id IS NULL AND o.origem IS DISTINCT FROM 'b2b')\n    AND ((OLD.status::text='em_producao' AND NEW.status::text='aguardando_cq' AND p.status::text='aguardando_cq'\n     AND EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_send_v1' AND target=NEW.id))\n     OR (OLD.status::text='aguardando_cq' AND NEW.status::text IN ('aprovado','reprovado') AND p.status::text='aguardando_cq'\n     AND EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_'||NEW.status::text||'_v1' AND target=NEW.id)\n     AND EXISTS(SELECT 1 FROM public.controle_qualidade c WHERE c.lote_id=NEW.id AND c.organization_id=org AND c.resultado::text=NEW.status::text\n      AND c.responsavel='DADOS FICTICIOS SEM VALOR COMERCIAL' AND c.ph IS NOT NULL AND c.concentracao IS NOT NULL)))\n   THEN RETURN NEW; END IF;\n  END IF;\n\n  -- No JWT/GUC/current_user/service-role escape: only the reviewed insert RPC\n  -- can issue this private, target-specific ticket; it removes it after INSERT.\n  org:=platform_private.h15_actor_organization();\n  IF TG_OP<>'INSERT' OR org IS NULL OR auth.uid() IS NULL\n   OR public.technical_actor_ready(auth.uid()) IS NOT TRUE\n   OR p.id IS NULL OR p.ordem_servico_id IS NULL OR p.ordem_servico_onfarm_id IS NOT NULL\n   OR p.organization_id IS DISTINCT FROM org OR NEW.organization_id IS DISTINCT FROM org\n   OR p.produto_id IS DISTINCT FROM NEW.produto_id OR p.microrganismo_id IS DISTINCT FROM NEW.microrganismo_id\n   OR p.status::text IS DISTINCT FROM 'aguardando' OR NEW.status::text IS DISTINCT FROM 'em_producao'\n   OR NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id\n     WHERE o.id=p.ordem_servico_id AND o.organization_id=org AND c.organization_id=org\n     AND o.status::text='programada' AND o.partner_order_id IS NULL AND o.partner_order_item_id IS NULL\n     AND o.origem IS DISTINCT FROM 'b2b')\n   OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets\n     WHERE txid=pg_catalog.txid_current() AND scope='manual_lot_insert_v1' AND target=NEW.id)\n  THEN RAISE EXCEPTION 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "4eab765e76ca79f16a7dd481887496d9"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "tenant_organization_guard",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+      "trigger_md5": "413773b6e8c7dcb256c52e2cb905fbe6",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "d01a740c1e3e02407131d2b9228bf658"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "trg_lab_lot_biological_only",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_lab_lot_biological_only BEFORE INSERT OR UPDATE OF produto_id, microrganismo_id ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.trg_lab_lot_biological_only()",
+      "trigger_md5": "ff9801851de8f994d2297adbcbf4d30a",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.trg_lab_lot_biological_only()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF TG_OP='UPDATE' AND NEW.produto_id IS NOT DISTINCT FROM OLD.produto_id\n                    AND NEW.microrganismo_id IS NOT DISTINCT FROM OLD.microrganismo_id THEN RETURN NEW; END IF;\n  PERFORM platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id);\n  RETURN NEW;\nEND $function$\n",
+      "function_md5": "58abf38671745d272abeb923ee866083"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "trg_refresh_esteira_lotes",
+      "tgtype": 28,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_refresh_esteira_lotes AFTER INSERT OR DELETE OR UPDATE ON public.lotes FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()",
+      "trigger_md5": "76dcf0a090e1d48a2bf8f1a0cd04004e",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "function_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "trg_saas_gate",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('lotes_qualidade')",
+      "trigger_md5": "f7f6e80ebe8b4e6e85d9c0b1472bd77d",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usuário ativo e empresa são obrigatórios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+      "function_md5": "13ed48832f81cbb35434688ca35fda4b"
+    },
+    {
+      "table_name": "lotes",
+      "tgname": "update_lotes_updated_at",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER update_lotes_updated_at BEFORE UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "trigger_md5": "58b32d1aad06fbea342b06b8197f3a71",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "function_md5": "b1930ed5bca3be839f783c6202ab8147"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "a00_stock_envase_mutation_gate",
+      "tgtype": 62,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ordens_servico FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()",
+      "trigger_md5": "0001addca21fad009465978a9bdca510",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_envase_mutation_gate_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\n SET lock_timeout TO '3s'\nAS $function$\nBEGIN\n IF TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_OP NOT IN ('INSERT','UPDATE','DELETE','TRUNCATE')\n OR TG_RELID NOT IN ('public.organizations'::regclass,'public.organization_subscriptions'::regclass,'public.saas_plan_versions'::regclass,'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass,'public.organization_feature_overrides'::regclass,'public.clientes'::regclass,'public.programacao_producao'::regclass,'public.ordens_servico'::regclass,'public.lotes'::regclass,'public.controle_qualidade'::regclass,'public.estoque_produto'::regclass) THEN RAISE EXCEPTION 'ENVASE_GATE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;\n -- Existing upstream RPCs can prelock business rows before their first DML.\n -- Never wait here while owning those rows: reject contention atomically instead\n -- of closing the singleton/business-row deadlock cycle.\n PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n RETURN NULL;\nEND $function$\n",
+      "function_md5": "fd66c95c67366e613d886ac4e6a4f9f7"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "aa_guard_separate_approval",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER aa_guard_separate_approval BEFORE INSERT OR UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION private.guard_os_separate_approval()",
+      "trigger_md5": "2e019b844aaf2d28436ad1a03fe5faaa",
+      "function_definition": "CREATE OR REPLACE FUNCTION private.guard_os_separate_approval()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_origin text; v_org uuid;\nBEGIN\n IF TG_OP='INSERT' THEN\n -- Criação normal exclusivamente aberta, inclusive pelo serviço/DEFINER.\n -- NULL e qualquer estado avançado não podem saltar a aprovação humana.\n -- Sem whitelist service_role, flags GUC ou reparo de históricos.\n IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n RETURN NEW;\n END IF;\n IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;\n v_origin:=CASE TG_TABLE_NAME WHEN 'ordens_servico' THEN 'manual' WHEN 'ordens_servico_onfarm' THEN 'onfarm' END;\n IF TG_WHEN='BEFORE' THEN\n -- Um único UPDATE não pode substituir a identidade/referências e aprovar o estado anterior.\n IF (to_jsonb(NEW)-ARRAY['status','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at']) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n v_org:=private.assert_os_approval_scope(OLD.id,v_origin);\n RETURN NEW;\n END IF;\n IF OLD.status::text='aberta' THEN\n v_org:=private.assert_os_approval_scope(NEW.id,v_origin);\n INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)\n SELECT NEW.id,v_origin,pp.id,'aberta','aprovada','aprovar_os',auth.uid(),jsonb_build_object(\n 'organization_id',v_org,'before',jsonb_build_object('status',OLD.status,'volume',OLD.volume_total_ml,'data_os',to_jsonb(OLD)->'data_programada'),\n 'after',jsonb_build_object('status',NEW.status,'volume',NEW.volume_total_ml,'data_os',to_jsonb(NEW)->'data_programada'),\n 'programacao',jsonb_build_object('id',pp.id,'status',pp.status,'data',pp.data_programada,'volume',pp.volume_necessario),\n 'actor',auth.uid(),'at',clock_timestamp(),'manufacturing_started',false,'commercial_completed',false)::text\n FROM public.programacao_producao pp WHERE pp.ordem_servico_id=NEW.id OR pp.ordem_servico_onfarm_id=NEW.id;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "f00397fe862e611fbfa0eba3911d95c6"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "aa_manual_cq_parent_v1",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER aa_manual_cq_parent_v1 BEFORE UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_cq_parent_v1()",
+      "trigger_md5": "25b9eae736a4ba5b4471b65fe0363475",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE ticket text; org uuid; linked boolean;\nBEGIN\n IF TG_TABLE_NAME='ordens_servico' THEN\n  linked:=EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id WHERE p.ordem_servico_id=OLD.id AND l.organization_id IS NOT NULL);\n  IF linked AND OLD.status::text='em_cq' AND NEW.status::text='envase'\n   AND (to_jsonb(NEW)-'status'-'updated_at') IS NOT DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')\n   AND EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_envase_transition_v1' AND target=OLD.id)\n   AND EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id\n    WHERE p.ordem_servico_id=OLD.id AND l.status::text='aprovado' AND l.organization_id=OLD.organization_id)\n  THEN RETURN NEW; END IF;\n  IF linked AND OLD.status::text='em_cq' AND\n   (to_jsonb(NEW)-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'updated_at') THEN\n   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';\n  END IF;\n  IF linked AND (OLD.status::text='em_cq' OR NEW.status::text='em_cq') AND NEW.status IS DISTINCT FROM OLD.status THEN\n   IF OLD.status::text IS DISTINCT FROM 'programada' OR NEW.status::text IS DISTINCT FROM 'em_cq'\n    OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')\n    OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_send_v1' AND target=OLD.id)\n   THEN RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;\n  END IF;\n ELSE\n  linked:=OLD.ordem_servico_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.programacao_id=OLD.id AND l.organization_id IS NOT NULL);\n  IF linked AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.ordem_servico_id IS DISTINCT FROM OLD.ordem_servico_id\n   OR NEW.ordem_servico_onfarm_id IS DISTINCT FROM OLD.ordem_servico_onfarm_id\n   OR NEW.organization_id IS DISTINCT FROM OLD.organization_id\n   OR NEW.produto_id IS DISTINCT FROM OLD.produto_id OR NEW.microrganismo_id IS DISTINCT FROM OLD.microrganismo_id) THEN\n   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';\n  END IF;\n  IF linked AND (OLD.status::text IN ('aguardando_cq','aprovado') OR NEW.status::text IN ('aguardando_cq','aprovado')) AND NEW IS DISTINCT FROM OLD THEN\n   ticket:=CASE WHEN OLD.status::text='aguardando' AND NEW.status::text='aguardando_cq' THEN 'manual_cq_send_v1'\n     WHEN OLD.status::text='aguardando_cq' AND NEW.status::text='aprovado' THEN 'manual_cq_aprovado_v1' END;\n   IF ticket IS NULL OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')\n    OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope=ticket AND target=OLD.id)\n   THEN RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;\n  END IF;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "bf7c5e95e182062c054edc21157c0622"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "tenant_organization_guard",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+      "trigger_md5": "0fd72b73104f95457abe14d581f15f48",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "d01a740c1e3e02407131d2b9228bf658"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_check_os_item_ref",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_check_os_item_ref BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION check_os_item_ref()",
+      "trigger_md5": "8ea5b9b7c3549f6e049c24f5a5dbb0f2",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.check_os_item_ref()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.produto_id IS NULL AND NEW.microrganismo_id IS NULL THEN\n    RAISE EXCEPTION 'Ordem de Serviço precisa de produto_id OU microrganismo_id';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "d059f0014afe15e9d9405fc54a478f2e"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_check_os_status_transition",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_check_os_status_transition BEFORE UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION check_os_status_transition()",
+      "trigger_md5": "82d049b59674a061071b4bc3394de9af",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.check_os_status_transition()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  status_order text[] := ARRAY['aberta', 'aprovada', 'programada', 'em_producao', 'em_cq', 'envase', 'aguardando_reserva', 'pronto_entrega', 'entregue', 'finalizada'];\n  old_idx int;\n  new_idx int;\n  cq_count int;\n  v_lote_id uuid;\nBEGIN\n  IF TG_TABLE_NAME='ordens_servico' AND OLD.status::text='programada' AND NEW.status::text='em_cq'\n   AND EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_send_v1' AND target=NEW.id)\n   AND EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id JOIN public.clientes c ON c.id=NEW.cliente_id\n    WHERE p.ordem_servico_id=NEW.id AND p.ordem_servico_onfarm_id IS NULL AND p.organization_id=platform_private.h15_actor_organization()\n    AND l.organization_id=p.organization_id AND NEW.organization_id=p.organization_id AND c.organization_id=p.organization_id AND l.status::text='em_producao')\n  THEN RETURN NEW; END IF;\n  -- Se o status não mudou, permite\n  IF (OLD.status::text = NEW.status::text) THEN\n    RETURN NEW;\n  END IF;\n\n  -- Se o novo status é 'cancelada', permite\n  IF (NEW.status::text = 'cancelada') THEN\n    RETURN NEW;\n  END IF;\n\n  -- Validação específica: Bloquear avanço para 'envase' se o CQ não estiver aprovado\n  IF (NEW.status::text = 'envase') THEN\n    -- Encontrar o lote associado a esta OS OnFarm\n    -- A relação é OS -> Programação -> Lote\n    SELECT l.id INTO v_lote_id\n    FROM public.lotes l\n    JOIN public.programacao_producao pp ON l.programacao_id = pp.id\n    WHERE pp.ordem_servico_onfarm_id = NEW.id\n    LIMIT 1;\n\n    -- Se não encontrar por ordem_servico_onfarm_id, tenta pelo ordem_servico_id (caso seja OS padrão)\n    IF v_lote_id IS NULL THEN\n        SELECT l.id INTO v_lote_id\n        FROM public.lotes l\n        JOIN public.programacao_producao pp ON l.programacao_id = pp.id\n        WHERE pp.ordem_servico_id = NEW.id\n        LIMIT 1;\n    END IF;\n\n    IF v_lote_id IS NOT NULL THEN\n        -- Verificar se existe controle de qualidade aprovado para este lote\n        -- Assumindo que o enum de resultado do CQ possui 'aprovado'\n        SELECT count(*) INTO cq_count\n        FROM public.controle_qualidade\n        WHERE lote_id = v_lote_id AND resultado::text = 'aprovado';\n\n        IF cq_count = 0 THEN\n            RAISE EXCEPTION 'Não é possível avançar para ENVASE: O lote vinculado a esta Ordem de Serviço ainda não possui um laudo de Controle de Qualidade APROVADO.'\n            USING ERRCODE = 'check_violation';\n        END IF;\n    ELSE\n        -- Se não há lote/programação, mas tentou ir para envase, pode ser inconsistência de dados\n        -- Mas se o fluxo operacional permite envase sem lote em casos raros, poderíamos ignorar.\n        -- Para garantir segurança, vamos exigir o lote se estiver na fase de produção.\n        RAISE EXCEPTION 'Não é possível avançar para ENVASE: Nenhum lote de produção foi localizado para esta Ordem de Serviço.'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  END IF;\n\n  -- Encontra os índices na esteira\n  SELECT i INTO old_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = OLD.status::text;\n  SELECT i INTO new_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = NEW.status::text;\n\n  -- Validações:\n  -- 1. Se o status antigo ou novo não estão na lista (e não é cancelamento), lança erro\n  IF old_idx IS NULL OR new_idx IS NULL THEN\n    RAISE EXCEPTION 'Status inválido ou transição não permitida para o fluxo operacional.';\n  END IF;\n\n  -- 2. Permite apenas avançar 1 posição por vez\n  IF new_idx <> old_idx + 1\n     AND NOT (new_idx = old_idx + 2 AND status_order[old_idx + 1] = 'aguardando_reserva') THEN\n    RAISE EXCEPTION 'Transição de status inválida na esteira de produção: % -> %. A próxima etapa obrigatória é %.', \n      OLD.status::text, NEW.status::text, status_order[old_idx + 1];\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "8dc2c40052b006e51b1defc0284a09e6"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_comunicacao_os_pronto_retirada",
+      "tgtype": 17,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_comunicacao_os_pronto_retirada AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.status IS DISTINCT FROM old.status)) EXECUTE FUNCTION _comunicacao_trg_os_pronto_retirada()",
+      "trigger_md5": "7b1a4f0e9e2e67b7e8f607c1f839c75d",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._comunicacao_trg_os_pronto_retirada()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_idem text;\nBEGIN\n  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status = 'pronto_entrega'::public.status_os THEN\n    v_idem := 'os_pronto_retirada:ordens_servico:' || NEW.id::text;\n    PERFORM public._comunicacao_publish_system_event(\n      'produto_pronto_retirada','ordens_servico', NEW.id, '{}'::jsonb, v_idem);\n  END IF;\n  RETURN NEW;\nEND$function$\n",
+      "function_md5": "b0340dbc6fa5c5f880f0881ad845cb52"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_create_programacao_on_os_insert",
+      "tgtype": 5,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_create_programacao_on_os_insert AFTER INSERT ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_create_programacao_on_os_classica_insert()",
+      "trigger_md5": "d4b36308d5b41a1091c9094c9e8dcbbe",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_create_programacao_on_os_classica_insert()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.status::text NOT IN ('aberta','aprovada','programada') THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.produto_id IS NULL AND NEW.microrganismo_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF EXISTS (SELECT 1 FROM public.programacao_producao WHERE ordem_servico_id = NEW.id) THEN\n    RETURN NEW;\n  END IF;\n  INSERT INTO public.programacao_producao\n    (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)\n  VALUES\n    (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,\n     COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id);\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "27b31332cebda532e2d99d9547f9b67c"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_lab_os_biological_only",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_lab_os_biological_only BEFORE INSERT OR UPDATE OF produto_id, microrganismo_id ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.trg_lab_os_biological_only()",
+      "trigger_md5": "17c31f9a5a91777687a289f1b0113984",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.trg_lab_os_biological_only()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF TG_OP='UPDATE' AND NEW.produto_id IS NOT DISTINCT FROM OLD.produto_id\n    AND NEW.microrganismo_id IS NOT DISTINCT FROM OLD.microrganismo_id THEN RETURN NEW; END IF;\n  PERFORM platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id);\n  RETURN NEW;\nEND $function$\n",
+      "function_md5": "75b55313502aecaf7226cd0a235f1a4f"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_os_sync_partner_order",
+      "tgtype": 17,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_os_sync_partner_order AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.origem = 'b2b'::text)) EXECUTE FUNCTION trg_os_sync_partner_order_fn()",
+      "trigger_md5": "c11471756d7a4da24499784632a1c6de",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.trg_os_sync_partner_order_fn()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_partner_order_id uuid; v_total int; v_done int; v_in_prod int;\n v_new_status public.partner_order_status; v_old_status public.partner_order_status; v_nonlab int;\nBEGIN\n v_partner_order_id:=coalesce(NEW.partner_order_id,OLD.partner_order_id);\n IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;\n IF TG_OP='UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;\n SELECT count(*),count(*) FILTER(WHERE status IN ('pronto_entrega','entregue','finalizada')),\n count(*) FILTER(WHERE status IN ('em_producao','em_cq','envase','programada')) INTO v_total,v_done,v_in_prod\n FROM public.ordens_servico WHERE partner_order_id=v_partner_order_id;\n SELECT count(*) INTO v_nonlab FROM public.partner_order_items i WHERE i.order_id=v_partner_order_id\n AND NOT platform_private.lab_item_is_manufacturable(i.product_id,i.microrganismo_id);\n SELECT status INTO v_old_status FROM public.partner_orders WHERE id=v_partner_order_id;\n IF v_total>0 AND v_done=v_total AND v_nonlab=0 THEN v_new_status:='produzido';\n ELSIF v_in_prod>0 THEN v_new_status:='em_producao';\n ELSE v_new_status:=v_old_status; END IF;\n -- Pedido misto nunca é declarado integralmente produzido apenas por conclusão das OS biológicas.\n IF v_new_status IS DISTINCT FROM v_old_status THEN\n  UPDATE public.partner_orders SET status=v_new_status,updated_at=now() WHERE id=v_partner_order_id;\n  UPDATE public.production_planning SET status=v_new_status::text::public.production_planning_status,updated_at=now() WHERE partner_order_id=v_partner_order_id;\n  INSERT INTO public.production_timeline_events(partner_order_id,event_type,meta) VALUES(v_partner_order_id,\n  CASE WHEN v_new_status='produzido' THEN 'producao_finalizada' ELSE 'producao_iniciada' END,jsonb_build_object('from',v_old_status,'to',v_new_status));\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "d219a4922c0c6d2a464175dc61bdf5a3"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_protect_os_structural_fields",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_protect_os_structural_fields BEFORE UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION tg_protect_os_structural_fields()",
+      "trigger_md5": "e12da697522ef4cd28fb1f79d8147920",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.tg_protect_os_structural_fields()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.origem IS DISTINCT FROM OLD.origem\n     OR NEW.partner_order_id IS DISTINCT FROM OLD.partner_order_id\n     OR NEW.partner_order_item_id IS DISTINCT FROM OLD.partner_order_item_id\n     OR NEW.produto_id IS DISTINCT FROM OLD.produto_id\n     OR NEW.numero_os IS DISTINCT FROM OLD.numero_os\n  THEN\n    RAISE EXCEPTION 'Campos estruturais da OS (origem, vínculo B2B, produto, número) não podem ser alterados.';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "8c9c5436e1f0091706a4ff17c9f365fa"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_recalc_planning_from_os",
+      "tgtype": 17,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_recalc_planning_from_os AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION tg_recalc_planning_from_os()",
+      "trigger_md5": "cd161c0ffce06e58621e5c510015ae6e",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.tg_recalc_planning_from_os()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_po uuid;\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT l.partner_order_id INTO v_po\n    FROM public.production_order_link l\n   WHERE l.ordem_servico_id = NEW.id\n   LIMIT 1;\n\n  IF v_po IS NOT NULL THEN\n    PERFORM public.recalc_partner_order_production(v_po);\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "ac8746e2c142d33bfb9e4f3c6d5daf6d"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_refresh_esteira_ordens_servico",
+      "tgtype": 28,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_refresh_esteira_ordens_servico AFTER INSERT OR DELETE OR UPDATE ON public.ordens_servico FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()",
+      "trigger_md5": "5914569d0e0c14ad22f4bebe9da2d071",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "function_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_saas_gate",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('ordens_producao')",
+      "trigger_md5": "e4de04a88952a827a9f91a096a418bbd",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usuário ativo e empresa são obrigatórios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+      "function_md5": "13ed48832f81cbb35434688ca35fda4b"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_set_numero_os_regular",
+      "tgtype": 7,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_set_numero_os_regular BEFORE INSERT ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION set_numero_os_regular()",
+      "trigger_md5": "47fad17578d66a1d11ef4bdce7b9a0ae",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_numero_os_regular()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.numero_os IS NULL OR NEW.numero_os = '' THEN\n    NEW.numero_os := 'OS-' || to_char(COALESCE(NEW.created_at, now()), 'YYYY')\n      || '-' || lpad(nextval('public.ordens_servico_seq')::text, 6, '0');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "e132d714014a46dfbe38670920182ef0"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_sync_os_classica_downstream",
+      "tgtype": 17,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_sync_os_classica_downstream AFTER UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION fn_sync_os_classica_downstream()",
+      "trigger_md5": "f5612d04cd81617ca7436c0c11ea19a8",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_sync_os_classica_downstream()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_prog_id uuid;\n  v_lote_id uuid;\nBEGIN\n  IF (OLD.status IS NOT DISTINCT FROM NEW.status) THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT id INTO v_prog_id FROM public.programacao_producao\n   WHERE ordem_servico_id = NEW.id ORDER BY created_at DESC LIMIT 1;\n\n  IF v_prog_id IS NULL\n     AND NEW.status::text IN ('aprovada','programada','em_producao','em_cq','envase','pronto_entrega','entregue','finalizada')\n     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN\n    INSERT INTO public.programacao_producao\n      (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)\n    VALUES\n      (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,\n       COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id)\n    RETURNING id INTO v_prog_id;\n  END IF;\n\n  IF v_prog_id IS NOT NULL THEN\n    SELECT id INTO v_lote_id FROM public.lotes\n      WHERE programacao_id = v_prog_id ORDER BY created_at DESC LIMIT 1;\n  END IF;\n\n  CASE NEW.status::text\n    WHEN 'aprovada' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'aguardando' WHERE id = v_prog_id;\n      END IF;\n    WHEN 'programada' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao\n           SET status = 'aguardando',\n               data_programada = COALESCE(NEW.data_programada, data_programada, CURRENT_DATE)\n         WHERE id = v_prog_id;\n      END IF;\n    WHEN 'em_producao' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'em_producao' WHERE id = v_prog_id;\n      END IF;\n      IF v_lote_id IS NULL AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN\n        INSERT INTO public.lotes (codigo_lote, produto_id, microrganismo_id, programacao_id, status, volume_produzido, data_producao)\n        VALUES (public.gerar_codigo_lote(), NEW.produto_id, NEW.microrganismo_id, v_prog_id,\n                'em_producao', NEW.volume_total_ml, CURRENT_DATE);\n      END IF;\n    WHEN 'em_cq' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'aguardando_cq' WHERE id = v_prog_id;\n      END IF;\n      IF v_lote_id IS NOT NULL THEN\n        UPDATE public.lotes SET status = 'aguardando_cq' WHERE id = v_lote_id;\n      END IF;\n    WHEN 'envase' THEN\n      IF v_prog_id IS NOT NULL THEN\n        UPDATE public.programacao_producao SET status = 'aprovado' WHERE id = v_prog_id;\n      END IF;\n    ELSE\n      NULL;\n  END CASE;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "06e64b76968f91e19f03b24363ac610a"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "trg_sync_planning_from_os",
+      "tgtype": 21,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_sync_planning_from_os AFTER INSERT OR UPDATE OF status ON public.ordens_servico FOR EACH ROW WHEN ((new.partner_order_id IS NOT NULL)) EXECUTE FUNCTION _sync_planning_from_os()",
+      "trigger_md5": "ec0c8f2d65dea57cefbecebcb6298fc8",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._sync_planning_from_os()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_partner_order_id uuid;\n  v_planning_id uuid;\n  v_total int;\n  v_done int;\n  v_in_prod int;\nBEGIN\n  v_partner_order_id := COALESCE(NEW.partner_order_id, OLD.partner_order_id);\n  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;\n\n  SELECT id INTO v_planning_id FROM public.production_planning WHERE partner_order_id = v_partner_order_id;\n  IF v_planning_id IS NULL THEN RETURN NEW; END IF;\n\n  SELECT COUNT(*),\n         COUNT(*) FILTER (WHERE status IN ('finalizada','entregue','pronto_entrega')),\n         COUNT(*) FILTER (WHERE status IN ('em_producao','em_cq','envase','programada'))\n    INTO v_total, v_done, v_in_prod\n  FROM public.ordens_servico WHERE partner_order_id = v_partner_order_id;\n\n  IF v_total = 0 THEN RETURN NEW; END IF;\n\n  IF v_done = v_total THEN\n    UPDATE public.production_planning SET status='produzido', updated_at=now()\n      WHERE id=v_planning_id AND status <> 'produzido';\n  ELSIF v_in_prod > 0 THEN\n    UPDATE public.production_planning SET status='em_producao', updated_at=now()\n      WHERE id=v_planning_id AND status NOT IN ('em_producao','produzido','entregue');\n  END IF;\n\n  RETURN NEW;\nEND\n$function$\n",
+      "function_md5": "0e79d2c5c352a41f147a62bb1ae5afe4"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "update_os_updated_at",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER update_os_updated_at BEFORE UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "trigger_md5": "4fa57329f279421fc8e1bd90d2e3ed90",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "function_md5": "b1930ed5bca3be839f783c6202ab8147"
+    },
+    {
+      "table_name": "ordens_servico",
+      "tgname": "zz_audit_separate_approval",
+      "tgtype": 17,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER zz_audit_separate_approval AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION private.guard_os_separate_approval()",
+      "trigger_md5": "c63c3d3a66fec2ff26df670c96a615ea",
+      "function_definition": "CREATE OR REPLACE FUNCTION private.guard_os_separate_approval()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_origin text; v_org uuid;\nBEGIN\n IF TG_OP='INSERT' THEN\n -- Criação normal exclusivamente aberta, inclusive pelo serviço/DEFINER.\n -- NULL e qualquer estado avançado não podem saltar a aprovação humana.\n -- Sem whitelist service_role, flags GUC ou reparo de históricos.\n IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n RETURN NEW;\n END IF;\n IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;\n v_origin:=CASE TG_TABLE_NAME WHEN 'ordens_servico' THEN 'manual' WHEN 'ordens_servico_onfarm' THEN 'onfarm' END;\n IF TG_WHEN='BEFORE' THEN\n -- Um único UPDATE não pode substituir a identidade/referências e aprovar o estado anterior.\n IF (to_jsonb(NEW)-ARRAY['status','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at']) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n v_org:=private.assert_os_approval_scope(OLD.id,v_origin);\n RETURN NEW;\n END IF;\n IF OLD.status::text='aberta' THEN\n v_org:=private.assert_os_approval_scope(NEW.id,v_origin);\n INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)\n SELECT NEW.id,v_origin,pp.id,'aberta','aprovada','aprovar_os',auth.uid(),jsonb_build_object(\n 'organization_id',v_org,'before',jsonb_build_object('status',OLD.status,'volume',OLD.volume_total_ml,'data_os',to_jsonb(OLD)->'data_programada'),\n 'after',jsonb_build_object('status',NEW.status,'volume',NEW.volume_total_ml,'data_os',to_jsonb(NEW)->'data_programada'),\n 'programacao',jsonb_build_object('id',pp.id,'status',pp.status,'data',pp.data_programada,'volume',pp.volume_necessario),\n 'actor',auth.uid(),'at',clock_timestamp(),'manufacturing_started',false,'commercial_completed',false)::text\n FROM public.programacao_producao pp WHERE pp.ordem_servico_id=NEW.id OR pp.ordem_servico_onfarm_id=NEW.id;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "f00397fe862e611fbfa0eba3911d95c6"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "a00_stock_envase_mutation_gate",
+      "tgtype": 62,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.programacao_producao FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()",
+      "trigger_md5": "598eb162c046970537d36fac1816b884",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.stock_envase_mutation_gate_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\n SET lock_timeout TO '3s'\nAS $function$\nBEGIN\n IF TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_OP NOT IN ('INSERT','UPDATE','DELETE','TRUNCATE')\n OR TG_RELID NOT IN ('public.organizations'::regclass,'public.organization_subscriptions'::regclass,'public.saas_plan_versions'::regclass,'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass,'public.organization_feature_overrides'::regclass,'public.clientes'::regclass,'public.programacao_producao'::regclass,'public.ordens_servico'::regclass,'public.lotes'::regclass,'public.controle_qualidade'::regclass,'public.estoque_produto'::regclass) THEN RAISE EXCEPTION 'ENVASE_GATE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;\n -- Existing upstream RPCs can prelock business rows before their first DML.\n -- Never wait here while owning those rows: reject contention atomically instead\n -- of closing the singleton/business-row deadlock cycle.\n PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;\n RETURN NULL;\nEND $function$\n",
+      "function_md5": "fd66c95c67366e613d886ac4e6a4f9f7"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "aa_manual_cq_parent_v1",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER aa_manual_cq_parent_v1 BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_cq_parent_v1()",
+      "trigger_md5": "afec50e5b76ed4e4626b055ff9460ed3",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE ticket text; org uuid; linked boolean;\nBEGIN\n IF TG_TABLE_NAME='ordens_servico' THEN\n  linked:=EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id WHERE p.ordem_servico_id=OLD.id AND l.organization_id IS NOT NULL);\n  IF linked AND OLD.status::text='em_cq' AND NEW.status::text='envase'\n   AND (to_jsonb(NEW)-'status'-'updated_at') IS NOT DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')\n   AND EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_envase_transition_v1' AND target=OLD.id)\n   AND EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id\n    WHERE p.ordem_servico_id=OLD.id AND l.status::text='aprovado' AND l.organization_id=OLD.organization_id)\n  THEN RETURN NEW; END IF;\n  IF linked AND OLD.status::text='em_cq' AND\n   (to_jsonb(NEW)-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'updated_at') THEN\n   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';\n  END IF;\n  IF linked AND (OLD.status::text='em_cq' OR NEW.status::text='em_cq') AND NEW.status IS DISTINCT FROM OLD.status THEN\n   IF OLD.status::text IS DISTINCT FROM 'programada' OR NEW.status::text IS DISTINCT FROM 'em_cq'\n    OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')\n    OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_send_v1' AND target=OLD.id)\n   THEN RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;\n  END IF;\n ELSE\n  linked:=OLD.ordem_servico_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.programacao_id=OLD.id AND l.organization_id IS NOT NULL);\n  IF linked AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.ordem_servico_id IS DISTINCT FROM OLD.ordem_servico_id\n   OR NEW.ordem_servico_onfarm_id IS DISTINCT FROM OLD.ordem_servico_onfarm_id\n   OR NEW.organization_id IS DISTINCT FROM OLD.organization_id\n   OR NEW.produto_id IS DISTINCT FROM OLD.produto_id OR NEW.microrganismo_id IS DISTINCT FROM OLD.microrganismo_id) THEN\n   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';\n  END IF;\n  IF linked AND (OLD.status::text IN ('aguardando_cq','aprovado') OR NEW.status::text IN ('aguardando_cq','aprovado')) AND NEW IS DISTINCT FROM OLD THEN\n   ticket:=CASE WHEN OLD.status::text='aguardando' AND NEW.status::text='aguardando_cq' THEN 'manual_cq_send_v1'\n     WHEN OLD.status::text='aguardando_cq' AND NEW.status::text='aprovado' THEN 'manual_cq_aprovado_v1' END;\n   IF ticket IS NULL OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')\n    OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope=ticket AND target=OLD.id)\n   THEN RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;\n  END IF;\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "bf7c5e95e182062c054edc21157c0622"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "aa_manual_program_binding_v1",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER aa_manual_program_binding_v1 BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_program_binding_v1()",
+      "trigger_md5": "272738e640a27fc48a254da32af1daf8",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.guard_manual_program_binding_v1()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF OLD.ordem_servico_id IS NOT NULL\n AND ROW(NEW.id,NEW.ordem_servico_id,NEW.ordem_servico_onfarm_id,NEW.organization_id,NEW.produto_id,NEW.microrganismo_id)\n IS DISTINCT FROM ROW(OLD.id,OLD.ordem_servico_id,OLD.ordem_servico_onfarm_id,OLD.organization_id,OLD.produto_id,OLD.microrganismo_id)\n AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.programacao_id=OLD.id)\n THEN RAISE EXCEPTION 'MANUAL_PROGRAM_BINDING_IMMUTABLE' USING ERRCODE='42501'; END IF;\n RETURN NEW;\nEND $function$\n",
+      "function_md5": "7c168ffa9393207fb3388c9546c19d05"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "tenant_organization_guard",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()",
+      "trigger_md5": "24d3b62dc0e4d7f1a599965b4dd580e3",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "d01a740c1e3e02407131d2b9228bf658"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "trg_lab_programming_biological_only",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_lab_programming_biological_only BEFORE INSERT OR UPDATE OF produto_id, microrganismo_id ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.trg_lab_programming_biological_only()",
+      "trigger_md5": "9d5bfe34e9f5aa0b3aa0e68305ce4d78",
+      "function_definition": "CREATE OR REPLACE FUNCTION platform_private.trg_lab_programming_biological_only()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF TG_OP='UPDATE' AND NEW.produto_id IS NOT DISTINCT FROM OLD.produto_id\n                    AND NEW.microrganismo_id IS NOT DISTINCT FROM OLD.microrganismo_id THEN RETURN NEW; END IF;\n  PERFORM platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id);\n  RETURN NEW;\nEND $function$\n",
+      "function_md5": "d253b17831afaacef106b5c5e1efbb29"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "trg_notify_lab_on_programacao",
+      "tgtype": 5,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_notify_lab_on_programacao AFTER INSERT ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION fn_notify_lab_on_programacao()",
+      "trigger_md5": "ed58050c301c2be089de965a4a1490bf",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.fn_notify_lab_on_programacao()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ DECLARE org uuid; prod text; cli text; BEGIN\n IF NEW.status::text<>'aguardando' THEN RETURN NEW; END IF;\n org:=platform_private.notification_source_org('programacao_producao',NEW.id);\n IF org IS NULL THEN RETURN NEW; END IF;\n SELECT nome INTO prod FROM public.produtos WHERE id=NEW.produto_id;\n SELECT c.nome INTO cli FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id AND c.organization_id=org WHERE o.id=NEW.ordem_servico_id;\n INSERT INTO public.notificacoes_operacionais(usuario_id,tipo,titulo,mensagem,link,source_type,source_id)\n SELECT DISTINCT ur.user_id,'nova_demanda_producao','Nova demanda de produção',coalesce(prod,'Bioinsumo')||coalesce(' · '||cli,'')||coalesce(' · '||round(NEW.volume_necessario/1000.0,1)::text||' L',''),'/pcp?coluna=aguardando','programacao_producao',NEW.id\n FROM public.user_roles ur WHERE ur.role IN ('producao','administrador','gestor') AND platform_private.notification_user_ok(ur.user_id,org);\n RETURN NEW; END $function$\n",
+      "function_md5": "c910c1466bbc06328e3eb9f5b2b132ca"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "trg_refresh_esteira_programacao",
+      "tgtype": 28,
+      "tgenabled": "O",
+      "fires_delete": true,
+      "trigger_definition": "CREATE TRIGGER trg_refresh_esteira_programacao AFTER INSERT OR DELETE OR UPDATE ON public.programacao_producao FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()",
+      "trigger_md5": "fa1098fbf18e5a4b1dcc8150073d9422",
+      "function_definition": "CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  PERFORM public.refresh_esteira_laboratorio();\n  RETURN NULL;\nEND;\n$function$\n",
+      "function_md5": "2f361c1fd9de578cf45796d82f3754e0"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "trg_validate_responsavel_producao",
+      "tgtype": 23,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER trg_validate_responsavel_producao BEFORE INSERT OR UPDATE OF responsavel_id ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION validate_responsavel_producao()",
+      "trigger_md5": "cb8eabea69612dc8b7522aefb2da690b",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.validate_responsavel_producao()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid;\n  v_ok boolean;\nBEGIN\n  IF NEW.responsavel_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT user_id INTO v_user_id\n  FROM public.profiles\n  WHERE id = NEW.responsavel_id;\n\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Responsável inválido: perfil não encontrado'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM public.user_roles\n    WHERE user_id = v_user_id\n      AND role::text IN ('administrador','gestor','operador_onfarm','producao')\n  ) INTO v_ok;\n\n  IF NOT v_ok THEN\n    RAISE EXCEPTION 'Responsável inválido: perfil sem permissão para produção do laboratório'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "function_md5": "443795794c2cb18b295239a0c81021c6"
+    },
+    {
+      "table_name": "programacao_producao",
+      "tgname": "update_programacao_updated_at",
+      "tgtype": 19,
+      "tgenabled": "O",
+      "fires_delete": false,
+      "trigger_definition": "CREATE TRIGGER update_programacao_updated_at BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "trigger_md5": "69f46d61e49cd3c82a6c891707778bc8",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+      "function_md5": "b1930ed5bca3be839f783c6202ab8147"
+    }
+  ],
+  "fingerprints": {
+    "date": "2026-11-02",
+    "formula": "md5(to_jsonb(t)::text)",
+    "rows": [
+      {
+        "table_name": "ordens_servico",
+        "id": "4a5af44d-ea5a-4810-8b99-ea601fad8547",
+        "fingerprint": "4a95f9d51fe7324e590ee821c1d32149"
+      },
+      {
+        "table_name": "programacao_producao",
+        "id": "8896d700-5697-4346-9970-c76373cfb232",
+        "fingerprint": "dccf355bf74abb296eb11320c83f1c79"
+      },
+      {
+        "table_name": "lotes",
+        "id": "cd49ce12-9d06-459c-b874-3c8d3a275423",
+        "fingerprint": "aba260505aa3d49f123c9c1169e670e3"
+      },
+      {
+        "table_name": "envase",
+        "id": "bca8a46a-77a8-435c-ae67-b0ece207d91a",
+        "fingerprint": "a48c51fccc711a04f200e0791d6ec038"
+      },
+      {
+        "table_name": "estoque_produto",
+        "id": "000cd77c-506c-4cdf-b2bd-7233aff8efeb",
+        "fingerprint": "0c1a052173a564454cd51e69fcb72947"
+      },
+      {
+        "table_name": "entregas",
+        "id": "20d66f88-b3dd-4a6f-93ac-6ecf03c7468d",
+        "fingerprint": "0ca7565b51476f4e07399400368b3bc8"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "24e8477a-e6f7-4309-b421-f4d6a4099a0d",
+        "fingerprint": "292217c7bbe5cd1b484020044755ee1f"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "64d44336-a748-4491-85e8-eea7a290b5d6",
+        "fingerprint": "4dff28ca9a47aef874b599f8dd6b6db3"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "7a685c34-4553-422e-83ce-66d3a5589f55",
+        "fingerprint": "f947de2bc7ed5e7c3adf89f7b76b7920"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "968b8014-6c72-4589-b343-51edc85d9327",
+        "fingerprint": "2f7b00f6f7abd64e194239d77394fd39"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "9daa1bfc-1b12-478e-a565-0e13fc0ecdb8",
+        "fingerprint": "df3230cd8f1e41e1dd874481caf36404"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "b1c45816-a912-4624-ac3b-dd313bfec78b",
+        "fingerprint": "bd06ca5ae69326d6999b124e19577df9"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "c4b7f6db-c7a9-437e-a0fb-0042d39b3d38",
+        "fingerprint": "4470b013200f5f66ddf8bfc4af0a4911"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "e29b89a6-f826-433f-bdf0-ef8cf1afbabe",
+        "fingerprint": "7ea35e24fe7f90251ed586ea3b3df75e"
+      },
+      {
+        "table_name": "entrega_checklist",
+        "id": "f8cd717a-ca2e-4414-a65e-71342b34f967",
+        "fingerprint": "3b720c78c42492898b504e925e3c8b04"
+      },
+      {
+        "table_name": "entrega_comprovantes",
+        "id": "cee1b253-be2e-4f62-8b56-0ea15d8e4ec6",
+        "fingerprint": "fdaf6c0a9f28246a2456ee3cb3af2f15"
+      },
+      {
+        "table_name": "controle_qualidade",
+        "id": "51cf7c0c-be1b-4007-8882-a26a5399a2a0",
+        "fingerprint": "ccc1d985fe8b699f500d7d05d163bd03"
+      },
+      {
+        "table_name": "estoque_movimentacoes",
+        "id": "3f40d033-36f0-4dc2-bf01-750f10433fb6",
+        "fingerprint": "d33b2f5dc642f61845ce8de978fb4b3a"
+      },
+      {
+        "table_name": "estoque_movimentacoes",
+        "id": "619cde9e-3199-4b3a-bb35-de4bc2f9132c",
+        "fingerprint": "edd38f868e580c50ea4a496b7d87c937"
+      }
+    ],
+    "mismatch": []
+  }
+}

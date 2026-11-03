@@ -60,6 +60,7 @@ import ConfigCatalogoIA from "@/pages/configuracoes/ConfigCatalogoIA";
 import ParametrosCQPage from "@/pages/configuracoes/ParametrosCQPage";
 import FiscalEmpresa from "@/pages/configuracoes/FiscalEmpresa";
 import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
+import ProdutosEmpresa from "@/pages/configuracoes/ProdutosEmpresa";
 import FiscalServicos from "@/pages/configuracoes/FiscalServicos";
 import FiscalClientes from "@/pages/configuracoes/FiscalClientes";
 import FiscalDocumentos from "@/pages/fiscal/FiscalDocumentos";
@@ -645,6 +646,7 @@ const App = () => (
                 <Route path="/configuracoes/objetivos-visita" element={<RoleGuard><ObjetivosVisita /></RoleGuard>} />
                 <Route path="/configuracoes/parametros-cq" element={<RoleGuard><ParametrosCQPage /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/empresa" element={<RoleGuard><FiscalEmpresa /></RoleGuard>} />
+                <Route path="/configuracoes/produtos" element={<RoleGuard><ProdutosEmpresa /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/servicos" element={<RoleGuard><FiscalServicos /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />

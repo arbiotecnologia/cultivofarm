@@ -143,10 +143,13 @@ describe("Ordem de validação — primeiro requisito bloqueante", () => {
 
   it("a tela usa o primeiro bloqueio antes de consultar o servidor", () => {
     const corpo = pagina.slice(pagina.indexOf("const handleFinalize"));
+    // A consulta ao servidor vive em doFinalize(); o bloqueio retorna antes de qualquer chamada a ela.
     const iBloqueio = corpo.indexOf("etapas.bloqueio");
-    const iConsulta = corpo.indexOf('.from("portal_solicitacoes")');
+    const iRetorno = corpo.indexOf("return;", iBloqueio);
+    const iConsulta = corpo.indexOf("doFinalize()");
     expect(iBloqueio).toBeGreaterThan(-1);
-    expect(iBloqueio).toBeLessThan(iConsulta);
+    expect(iRetorno).toBeGreaterThan(iBloqueio);
+    expect(iRetorno).toBeLessThan(iConsulta);
   });
 });
 
@@ -190,7 +193,7 @@ describe("Estados desabilitados das etapas dependentes", () => {
   });
 
   it("a tela aplica esses estados aos botões", () => {
-    expect(pagina).toContain("disabled={generatingPdf || !etapas.podeGerarPdf}");
+    expect(pagina).toContain("disabled={pdfExport.busy || !etapas.podeGerarPdf}");
     expect(pagina).toContain("disabled={!etapas.podeEnviar}");
     expect(pagina).toContain("disabled={saveMutation.isPending || !etapas.finalizarAcionavel}");
   });
@@ -199,7 +202,7 @@ describe("Estados desabilitados das etapas dependentes", () => {
 describe("Prevenção de dupla submissão e recuperação após falha", () => {
   it("finalização tem trava de clique único e salvamento em andamento", () => {
     expect(pagina).toContain("const finalizandoRef = useRef(false);");
-    expect(pagina).toContain("if (finalizandoRef.current || saveMutation.isPending) return;");
+    expect(pagina).toContain("if (finalizandoRef.current || saveMutation.isPending || !acoesVisita.showFinalize) return;");
     expect(pagina).toContain("finalizandoRef.current = false;");
   });
 
@@ -222,7 +225,7 @@ describe("Cascata cliente → fazenda → talhão", () => {
   });
 
   it("seletores dependentes ficam desabilitados sem o pai", () => {
-    expect(pagina).toContain("disabled={!clienteId}");
-    expect(pagina).toContain("disabled={!fazendaId}");
+    expect(pagina).toContain("disabled={isReadOnly || !clienteId}");
+    expect(pagina).toContain("disabled={isReadOnly || !fazendaId}");
   });
 });

@@ -1,0 +1,200 @@
+{
+ "input_sha256": "799da8a507f085fd947d5f8eca09f3df9462097cde3fb6b44289eab5c0f35761",
+ "homolog_ref": "vrlcdwmlytukrjezrrnf",
+ "counts": {
+  "equal": 204,
+  "divergent": 63,
+  "absent": 192
+ },
+ "install": 225,
+ "replace": 63,
+ "create": 162,
+ "closed_by_absence": [
+  "platform_create_global_culture(jsonb,text,uuid)",
+  "platform_create_global_microorganism(jsonb,text,uuid)",
+  "platform_create_global_volume(text,uuid,jsonb,text,uuid)",
+  "platform_private.create_global_culture_core(jsonb,text,uuid)",
+  "platform_private.read_global_culture_detail_core(uuid)",
+  "platform_private.read_global_cultures_core(text,integer,integer)",
+  "platform_private.read_global_volume_detail_core(uuid)",
+  "platform_private.set_global_culture_status_core(uuid,timestamp with time zone,boolean,text,uuid)",
+  "platform_private.set_global_volume_status_core(uuid,timestamp with time zone,boolean,text,text,uuid)",
+  "platform_private.update_global_culture_core(uuid,timestamp with time zone,jsonb,text,uuid)",
+  "platform_private.update_global_volume_core(uuid,timestamp with time zone,jsonb,text,text,uuid)",
+  "platform_read_global_b2b_state(text,uuid)",
+  "platform_read_global_culture_detail(uuid)",
+  "platform_read_global_cultures(text,integer,integer)",
+  "platform_read_global_item_volumes(text,uuid,integer,integer)",
+  "platform_read_global_microorganism_detail(uuid)",
+  "platform_read_global_microorganisms(text,integer,integer,boolean)",
+  "platform_read_global_volume_detail(uuid)",
+  "platform_set_global_b2b_enabled(text,uuid,timestamp with time zone,boolean,text,uuid)",
+  "platform_set_global_culture_status(uuid,timestamp with time zone,boolean,text,uuid)",
+  "platform_set_global_microorganism_status(uuid,timestamp with time zone,boolean,text,uuid)",
+  "platform_set_global_volume_status(uuid,timestamp with time zone,boolean,text,text,uuid)",
+  "platform_update_global_culture(uuid,timestamp with time zone,jsonb,text,uuid)",
+  "platform_update_global_microorganism(uuid,timestamp with time zone,jsonb,text,uuid)",
+  "platform_update_global_volume(uuid,timestamp with time zone,jsonb,text,text,uuid)"
+ ],
+ "new_tables": [
+  "catalog_tenant_visibility",
+  "produto_composicao_conjuntos",
+  "produto_composicao_declaracoes"
+ ],
+ "add_columns": [
+  [
+   "culturas",
+   "updated_at"
+  ],
+  [
+   "microrganismos",
+   "updated_at"
+  ],
+  [
+   "produtos",
+   "familia_catalogo"
+  ],
+  [
+   "produtos",
+   "classe_catalogo"
+  ],
+  [
+   "clientes",
+   "marca_nome"
+  ],
+  [
+   "clientes",
+   "marca_logo_url"
+  ],
+  [
+   "clientes",
+   "marca_cor_primaria"
+  ],
+  [
+   "partner_accounts",
+   "marca_nome"
+  ],
+  [
+   "partner_accounts",
+   "marca_logo_url"
+  ],
+  [
+   "partner_accounts",
+   "marca_cor_primaria"
+  ],
+  [
+   "partner_orders",
+   "internal_origin_snapshot"
+  ],
+  [
+   "partner_orders",
+   "internal_economic_snapshot"
+  ],
+  [
+   "partner_orders",
+   "c2_external_origin_snapshot"
+  ],
+  [
+   "portal_solicitacoes",
+   "client_uuid"
+  ]
+ ],
+ "nullability": [
+  [
+   "cq_parametros_referencia",
+   "microrganismo_id",
+   "YES",
+   "NO"
+  ],
+  [
+   "envase",
+   "volume_por_unidade",
+   "NO",
+   "YES"
+  ],
+  [
+   "envase",
+   "quantidade",
+   "NO",
+   "YES"
+  ]
+ ],
+ "dep_types": [
+  "app_role",
+  "app_role[]"
+ ],
+ "grant_authenticated": [
+  "b2b_save_technical_simulation(jsonb)",
+  "can_manage_catalog_tecnico(uuid)",
+  "can_manage_technical_visit(uuid,uuid)",
+  "can_user_access_aplicacao(uuid)",
+  "can_user_access_cliente(uuid,uuid)",
+  "can_view_technical_visit(uuid,uuid)",
+  "fn_fiscal_can_read_internal(uuid)",
+  "fn_regulatory_can_read(uuid)",
+  "generate_b2b_receivable_secure(uuid)",
+  "get_cliente_ids_for_user(uuid)",
+  "get_financial_alerts(date)",
+  "get_financial_dashboard_summary(date,date,uuid,uuid,uuid)",
+  "get_partner_catalog_secure(uuid)",
+  "get_partner_catalog_secure(uuid,boolean)",
+  "get_partner_catalog_tecnico_secure()",
+  "get_partner_catalog_tecnico_secure(boolean)",
+  "get_portal_cliente_b2b_order_detail_secure(uuid)",
+  "get_portal_cliente_b2b_simulation_detail_secure(uuid)",
+  "get_user_partner_id()",
+  "h15_actor_organization()",
+  "has_active_user_cliente_access(uuid,uuid,text[])",
+  "has_role(uuid,app_role)",
+  "is_active_visit_participant(uuid,uuid)",
+  "is_delivery_staff(uuid)",
+  "is_financial_staff(uuid)",
+  "partner_apply_default_discount(uuid)",
+  "platform_private.b2b_coherent_self_partner(uuid)",
+  "platform_private.b2b_commercial_context()",
+  "platform_private.b2b_direct_partner_row_allowed()",
+  "platform_private.b2b_organization_full_row_allowed()",
+  "platform_private.b2b_owner_internal_order_readable(uuid)",
+  "platform_private.b2b_owner_internal_partner_readable(uuid)",
+  "platform_private.b2b_phase1_order_visible(uuid)",
+  "platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+  "platform_private.b2b_phase1_simulation_visible(uuid)",
+  "platform_private.b2b_save_technical_simulation(jsonb)",
+  "platform_private.c2p1_assignment_allowed(text,uuid,uuid)",
+  "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)",
+  "platform_private.c2p1_settings_allowed(uuid,boolean)",
+  "platform_private.global_product_fiscal_read_ready()",
+  "platform_private.global_product_fiscal_write_ready()",
+  "platform_private.h15_actor_organization()",
+  "platform_private.has_role(uuid,app_role)",
+  "platform_private.platform_actor_access_ready(uuid)",
+  "platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)",
+  "platform_private.stock_p1_lote_owned(uuid)",
+  "rpc_b2b_integrity_check()",
+  "rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)",
+  "rpc_converter_visita_em_os(uuid,text)",
+  "rpc_fiscal_nfe_readiness_v1()",
+  "rpc_programar_os_v1(uuid,text,date)",
+  "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])",
+  "send_partner_simulation_to_manager_secure(uuid)",
+  "stock_p1_lote_owned(uuid)",
+  "technical_child_read_scope(uuid)",
+  "technical_client_link(uuid,uuid,text[])",
+  "technical_refs_in_actor_tenant(uuid,uuid,uuid)",
+  "tenant_catalog_visit_selection_page(uuid,text,text,integer,integer,uuid[])"
+ ],
+ "constraints": 237,
+ "fks": 151,
+ "indexes_free": 241,
+ "policies": 232,
+ "triggers": 254,
+ "grants": 164,
+ "catalog_variant_pins": {
+  "homolog-clean/00-pre-global.homolog-clean.sql.review": "016211bf50e48cf441f9d7ecd8b1ff8a2fbb2400c25c43acdd00c91188aa5662",
+  "homolog-clean/01-migrate.homolog-clean.sql.review": "0a2177deef4c8dd24de278657a6db79efa3d6ca053053508a65c9407f5e9488c"
+ },
+ "orgs": {
+  "ar_bio_homolog": "c809e74f-486b-44b2-b2f4-4088f53421bb",
+  "fsf_homolog": "dcf50a75-579a-4828-a0fc-1d8eadcb4b8a"
+ }
+}
