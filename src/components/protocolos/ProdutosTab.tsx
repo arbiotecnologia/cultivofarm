@@ -269,13 +269,13 @@ export function ProdutosTab() {
   const activeScopeKey = editor.scope;
   const microrganismos = (details.data?.microorganisms ?? []) as unknown as Microrganismo[];
   const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
-  const items = useMemo(() => {
+  useEffect(() => {
     localGeneration.current += 1;
     setOpen(false); resetForm(); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null);
     setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
   }, [activeScopeKey]);
-  useEffect(() => {
+  const items = useMemo(() => {
     const micros = (details.data?.microorganisms ?? []) as unknown as Microrganismo[];
     const microMap = new Map(micros.map(m => [m.id, m]));
     const rows = (productList.data ?? []).map(p => ({ ...p,
@@ -285,7 +285,7 @@ export function ProdutosTab() {
   }, [productList.data, details.data]);
   const filteredItems = items.filter(p => (!search || `${p.nome} ${p.codigo ?? ""} ${p.funcao_completa ?? ""}`.toLowerCase().includes(search.toLowerCase())) &&
     (filterTipo === "todos" || p.tipo === filterTipo));
-  const tenantVis = { displayed: filteredItems, map: undefined };
+  const tenantVis = { displayed: filteredItems, map: undefined as Map<string, any> | undefined, error: null };
   const canManageVis = false;
 
   const handleSave = async (e: React.FormEvent) => {
