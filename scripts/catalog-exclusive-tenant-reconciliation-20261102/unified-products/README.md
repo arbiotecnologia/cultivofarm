@@ -31,3 +31,11 @@ Nenhuma publicação, implantação, SQL hosted, cobrança, fiscal ou SMTP execu
 - Gate Owned permanece false; ProdutosTab não monta OwnedCatalog nem chama suas RPCs antigas. Fonte única tenant_product_list; volumes usam tenant_catalog_root_save.
 - Parcial mantém diálogo/argumentos congelados e fecha só após ACK completo no mesmo contexto. Teste montado SDK real prova mesmas duas chamadas/chaves/CAS, nenhuma segunda raiz e tentativa de fechamento recusada.
 - Reteste: 4 arquivos/53 PASS; catálogo56/916 PASS; separação financeira5/5 PASS. Logs anteriores preservados; baterias720/2866 são anteriores a este ajuste focado, não repetidas nesta continuação. Build automático OK; sem typecheck separado, JWT, SQL ou publicação.
+
+## Continuação — RBAC independente03/11
+- Financeiro mantém leitura em Produtos (inclusive redirect legado com query/hash) sem CRUD, volumes/fichas mutantes ou abas irmãs. URLs diretas de outras abas/aliases/duplicação de tab são recusadas antes de montar leitores; menu e busca usam query-aware RBAC. Nenhum guard de servidor foi alterado.
+- Gestor mantém r na rota antiga e rw no Catálogo, com cadastro/edição/arquivamento/reativação próprios exercitados pelo SDK real e fetch sintético.
+- A aba Produtos oferece acesso à página fiscal canônica existente somente aos perfis já autorizados e com sua flag vigente. Esse link não concede associação nem CRUD fiscal: a associação global continua contida e o candidato fiscal próprio mantém seu gate OFF. Não há prova de associação fiscal real nesta sessão.
+- Disponibilidade de tenant_catalog_root_cfg para volumes e product_technical_profiles foi reportada pelo proprietário; não foi recapturada pelo agente nem exigiu DDL.
+- Reteste final: 68 arquivos/1064 PASS; separação financeira Python5/5 PASS; focados5/58 PASS. Primeira regressão falhou em três testes sem roteador após o novo link: wrapper corrigido sem retirar asserts, log inicial preservado. Build automático OK02:34:08UTC; diff --check limpo. Typecheck separado não executado por restrição do ambiente.
+- Sessão externa não gerenciada: navegador/JWT/RLS/Storage autenticados e espelho seguem pendentes do auditor; nenhuma operação de banco, SQL, publicação ou implantação executada. Baterias720/2866 continuam históricas, não repetidas nesta continuação.
