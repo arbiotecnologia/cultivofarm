@@ -40,6 +40,26 @@ class CatalogOnlySeparation(unittest.TestCase):
         self.assertEqual(functions['rpc_register_receivable_payment']['result'], 'uuid')
         self.assertEqual(functions['approve_partner_order']['result'], 'void')
 
+    def test_catalog_keeps_only_pure_shared_date_dependency(self):
+        source = (ROOT / 'src/lib/fiscal/ownedProductFiscal.ts').read_text()
+        self.assertIn('import { isCivilDate } from "@/lib/comercial/civilDate"', source)
+        dates = (ROOT / 'src/lib/comercial/civilDate.ts').read_text()
+        self.assertNotIn('supabase', dates)
+        for path in ROOT.joinpath('src').rglob('*'):
+            if path.suffix not in ['.ts', '.tsx'] or '/test/' in str(path):
+                continue
+            with self.subTest(path=str(path)):
+                text = path.read_text()
+                self.assertNotIn('partner_payment_condition_capability_v1', text)
+                self.assertNotIn('rpc_receivable_money_projection_v1', text)
+
+    def test_journal_is_original_not_a_payment_fallback(self):
+        original = subprocess.check_output(['git', 'show', '9d3a9424:src/lib/authz/orderJournal.ts'], cwd=ROOT)
+        self.assertEqual((ROOT / 'src/lib/authz/orderJournal.ts').read_bytes(), original)
+        journal = original.decode()
+        self.assertIn("rpc('partner_order_journal_capability_v1',{p_partner:partner}", journal)
+        self.assertIn("rpc('recover_partner_order_attempt_v1',{p_partner:partner", journal)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,37 @@
+{
+  "captured_at": "2026-11-03T01:15:47.230143+00:00",
+  "expected_ref": "swzpzcwiasxmjutrmvkm",
+  "functions": [
+    {
+      "name": "partner_order_journal_capability_v1",
+      "args": "p_partner uuid",
+      "result": "jsonb",
+      "body_md5": "e348e7407d84a0491d4bbfd487336b7d",
+      "authenticated_execute": true
+    },
+    {
+      "name": "recover_partner_order_attempt_v1",
+      "args": "p_partner uuid, p_expected_key text DEFAULT NULL::text, p_expected_generation bigint DEFAULT NULL::bigint, p_advance boolean DEFAULT false, p_ack_order uuid DEFAULT NULL::uuid",
+      "result": "jsonb",
+      "body_md5": "e4249abb0fcc76c5f40d8a03d03c5344",
+      "authenticated_execute": true
+    },
+    {
+      "name": "rpc_associate_microorganism_fiscal_product",
+      "args": "p_microorganism_id uuid, p_product_id uuid DEFAULT NULL::uuid",
+      "result": "TABLE(id uuid, product_id uuid)",
+      "body_md5": "da0d679779e9d57558a3a203219b4afc",
+      "authenticated_execute": false
+    }
+  ],
+  "absent": [
+    "partner_payment_condition_capability_v1",
+    "tenant_product_list",
+    "tenant_product_save",
+    "tenant_product_set_archived",
+    "tenant_catalog_root_save",
+    "tenant_catalog_root_delete",
+    "tenant_catalog_formulacoes_replace",
+    "tenant_owned_product_fiscal_save"
+  ]
+}
