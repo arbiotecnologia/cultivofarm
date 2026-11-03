@@ -101,7 +101,8 @@ export async function replaceTenantFormulacoes(
   const { data, error } = await client.rpc("tenant_catalog_formulacoes_replace", {
     p_produto_id: produtoId, p_items: clean, p_expected_produto_updated_at: expectedProdutoUpdatedAt, p_idempotency_key: idempotencyKey,
   });
-  if (error) throw new Error(tenantCatalogErrorMessage(error.code, error.message));
+  // `serverCode` marca uma resposta explícita do servidor (recusa definitiva); exceções sem código são incertas.
+  if (error) throw Object.assign(new Error(tenantCatalogErrorMessage(error.code, error.message)), { serverCode: error.code || null });
   const d = data as Record<string, unknown> | null;
   if (!d || d.ok !== true || d.produto_id !== produtoId || typeof d.updated_at !== "string" || d.items !== clean.length) {
     throw new Error("Resposta do servidor inválida");

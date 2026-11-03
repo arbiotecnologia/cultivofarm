@@ -1,0 +1,136 @@
+PASS captured business/authorization/pricing bodies reproduce all MD5s
+PASS all 44 current order/children/financial triggers installed; actions use origin mode
+PASS rebased origin PRE accepts exact numeric hash with writer false
+PASS READ ONLY preflight on captured containment
+PASS PRE denies disabled RLS
+PASS PRE denies unexpected permissive policy
+PASS inactive candidate parsed/applied only in disposable PG
+assembled 78 dependency guards; 6 changed bodies; writer remains false
+PASS assertive READ ONLY postflight composed containment
+PASS candidate leaves writer containment false
+PASS real simulation resolves canonical 1L price 180
+PASS accounting gate accepts genuinely validated synthetic fixture only
+PASS accounting preflight blocks DRAFT and NULL attestation
+PASS runtime blocks DRAFT NULL without partial order
+PASS accounting preflight blocks absent active configuration
+PASS private origin/ticket functions not executable by authenticated
+PASS baseline full RPC reproduces B2B_INTERNAL_ACTOR_DENIED
+PASS positive singleton/cumulative total180 owner/issuer/creditor A
+PASS three canonical schedule rows and no title before approval
+PASS positive singleton/cumulative total180 owner/issuer/creditor A
+PASS three canonical schedule rows and no title before approval
+PASS negative public create leaves all state unchanged
+PASS negative public create leaves all state unchanged
+PASS negative public create leaves all state unchanged
+PASS negative public create leaves all state unchanged
+PASS child guard denies external/foreign administration 00000000-0000-4000-8000-000000000102
+PASS child guard denies external/foreign administration 00000000-0000-4000-8000-000000000103
+PASS child guard denies external/foreign administration 00000000-0000-4000-8000-000000000104
+PASS child guard denies external/foreign administration 00000000-0000-4000-8000-000000000105
+PASS child guard denies external/foreign administration 00000000-0000-4000-8000-000000000106
+PASS child guard denies external/foreign administration 00000000-0000-4000-8000-000000000101
+PASS real approval/billing atomic with one title and no production readiness
+PASS H6 installments match exact contractual dates/amounts
+PASS authenticated B cannot read A partner_orders
+PASS authenticated B cannot read A partner_order_items
+PASS authenticated B cannot read A partner_order_payment_terms
+PASS authenticated B cannot read A partner_order_payment_schedule
+PASS authenticated B cannot read A accounts_receivable
+PASS authenticated B cannot read A accounts_receivable_installments
+PASS authenticated A reads own title
+PASS RLS blocks direct origin change
+PASS origin trigger rejects forged creditor
+PASS RLS blocks sealed item edits
+PASS billing replay one title
+PASS unauthorized approval unchanged
+PASS unauthorized approval unchanged
+PASS unauthorized approval unchanged
+PASS unauthorized approval unchanged
+PASS late billing failure rolls back approval/title/installments/schedule/audits
+ERROR:  C2_EXTERNAL_UNFINALIZED_APPROVAL
+CONTEXT:  PL/pgSQL function platform_private.c2_external_final_state_guard() line 4 at RAISE
+
+PASS late credit decision cannot leave pending order sealed
+PASS missing settings explicitly denied without automatic insert or partial title
+PASS na_entrega external approval no title singleton/cumulative 00000000-0000-4000-8000-000000000102
+PASS na_entrega before delivery billing denied no effects 00000000-0000-4000-8000-000000000102
+PASS na_entrega operational still denied em_producao 00000000-0000-4000-8000-000000000102
+PASS na_entrega operational still denied entregue 00000000-0000-4000-8000-000000000102
+PASS na_entrega no production planning 00000000-0000-4000-8000-000000000102
+PASS na_entrega external approval no title singleton/cumulative 00000000-0000-4000-8000-000000000103
+PASS na_entrega before delivery billing denied no effects 00000000-0000-4000-8000-000000000103
+PASS na_entrega operational still denied em_producao 00000000-0000-4000-8000-000000000103
+PASS na_entrega operational still denied entregue 00000000-0000-4000-8000-000000000103
+PASS na_entrega no production planning 00000000-0000-4000-8000-000000000103
+PASS captured overflow180 limit1 and original create atomic rollback
+PASS numeric candidate rejects body drift no data effects
+PASS numeric candidate rejects ACL drift
+PASS one declaration only byte-exact remainder ROUND2 ACL retained
+PASS numeric rollback rejects ACL drift atomically
+PASS guarded numeric rollback restores exact baseline without data effects
+PASS credit no limit
+PASS credit within
+PASS credit equal
+PASS credit above
+PASS credit overflow fixed
+PASS credit small limit large exposure
+PASS credit ROUND2
+PASS approval_required limit1 exposure180 exactly18000
+PASS invalid/direct input acceptance unchanged NULL 00000000-0000-4000-8000-000000000004
+PASS invalid/direct input acceptance unchanged -1 00000000-0000-4000-8000-000000000004
+PASS invalid/direct input acceptance unchanged 0 00000000-0000-4000-8000-000000000004
+PASS invalid/direct input acceptance unchanged 180 None
+PASS invalid/direct input acceptance unchanged 180 00000000-0000-4000-8000-000000009999
+PASS invalid/direct input acceptance unchanged 'NaN'::numeric 00000000-0000-4000-8000-000000000004
+PASS numeric14 invalid input retains22003 1000000000000
+PASS numeric14 invalid input retains22003 'Infinity'::numeric
+PASS numeric14 invalid input retains22003 '-Infinity'::numeric
+PASS OVERDUE_BLOCK precedence 0 block
+PASS OVERDUE_BLOCK precedence 200 block
+PASS OVERDUE_BLOCK precedence 1 approval_required
+PASS overdue nonblocking retainsOK
+PASS overdue strict threshold equal excluded
+PASS overdue one day before threshold included
+PASS rebased POST full dependencies RLS ACL writerfalse
+PASS fixed overflow create financial block no partial effects
+PASS real create approval_required pending no title180
+PASS numeric create replay idempotent sameID unchanged
+PASS numeric conflict atomic unchanged
+PASS pending consumes credit exclude order exact180
+PASS approval_required stays pending cannot bypass credit approval
+PASS numeric na_entrega approval no title no planning
+PASS numeric na_entrega premature billing denied all effects
+PASS numeric late create failure rollback order children audits key
+PASS create invalid quantity denied unchanged 0
+PASS create invalid quantity denied unchanged -1
+PASS revoked manager rejected with no writes
+PASS create idempotency same result and no new writes
+PASS conflicting replay no writes
+PASS incorrect hash no writes
+PASS unvalidated owner issuer rejected atomically
+PASS owner/client cross-tenant denied atomically
+PASS canonical internal origin created before containment
+PASS internal approval original downstream containment before rollback
+PASS internal billing original downstream denial before rollback
+ERROR:  origin_dependency_drift:public.approve_partner_order
+CONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE
+
+PASS containment rejects body drift atomically
+PASS containment rejects ACL drift atomically
+PASS containment install changes no history or snapshots
+PASS rollback closes writer and preserves historical data
+PASS contained external approval/billing denied no effects 78b322f5-b02a-4052-b238-80a74547a806
+PASS contained external approval/billing denied no effects 78b322f5-b02a-4052-b238-80a74547a806
+PASS contained external approval/billing denied no effects 6984dfc0-be58-495f-90d6-71f1b99b1af4
+PASS contained external approval/billing denied no effects 6984dfc0-be58-495f-90d6-71f1b99b1af4
+PASS contained external approval/billing denied no effects 6e68ec6b-4ca1-4078-9c88-d94172e31243
+PASS contained external approval/billing denied no effects 6e68ec6b-4ca1-4078-9c88-d94172e31243
+PASS internal approval original downstream denial preserved after containment
+PASS internal billing original downstream denial preserved after containment
+PASS legacy NULL retains original denial not external containment
+TOTAL 123 PASS; synthetic Auth, no hosted JWT/RLS certification
+
+real	1m16.104s
+user	0m17.960s
+sys	0m22.810s
+exit=0

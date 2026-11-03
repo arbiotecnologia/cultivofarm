@@ -1,0 +1,27 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/saas/c2-credit-numeric-postgres.test.ts (1 test) 85041ms
+   ✓ credit arithmetic keeps exact decisions, atomic create and delivery billing containment  85039ms
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-worker]: Timeout calling "onTaskUpdate"
+ ❯ Object.onTimeoutError node_modules/vitest/dist/chunks/rpc.-pEldfrD.js:53:10
+ ❯ Timeout._onTimeout node_modules/vitest/dist/chunks/index.B521nVV-.js:59:62
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+     Errors  1 error
+   Start at  13:57:10
+   Duration  87.53s (transform 116ms, setup 140ms, collect 23ms, tests 85.04s, environment 740ms, prepare 327ms)
+
+exit=1

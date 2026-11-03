@@ -10,6 +10,11 @@
       "original_sha256": "383b0ba796437aed94b40675b0d321de268b3b347b41b6ceaff2a704ee03e076"
     },
     {
+      "path": "docs/auditorias/auditoria-rotas-inventario-2026-10-07.json",
+      "sha256": "803f2ec770fb72ae17394282a591030639df64e75ce33b7b0715fe77af737a9f",
+      "original_sha256": "9018f649cbe2d9c99617050ede9fc574c7f88a17d3a00ef411626d8fcc341521"
+    },
+    {
       "path": "src/App.tsx",
       "sha256": "ae8c15b43c23bf7172ef47828a20f577a317ce4379d9fcf883910a9c6233c1aa",
       "original_sha256": "f0af466c015991837665b23aa822cfa017e7e26494bba39d8c7374ed448ce889"
@@ -21,7 +26,7 @@
     },
     {
       "path": "src/components/protocolos/AGENTS.md",
-      "sha256": "bb20ba908cb3c933d8f952f4000ff28126f2950d463446046bbcfa1f019fb79a",
+      "sha256": "772c904bdc7ea2c94572a4545c72570293d2324a0a82d47fb4e803759120accb",
       "original_sha256": "f9f41a74597c465fd3213066c328f97ef20e1e6cafe8bc6a26670e25b6321e57"
     },
     {
@@ -36,7 +41,7 @@
     },
     {
       "path": "src/components/protocolos/ProdutosTab.tsx",
-      "sha256": "e9fda0ec5010e89743ae7c79c639f13ea6ebef8134f9d8cb8a1a92db37f7ffa5",
+      "sha256": "951d9f51a5fffab6c80a76847ba1c1f2b573641233a119625c46a082604379ca",
       "original_sha256": "e59de15d5aa52d4ce08e082f01c8360410eae2ff93fa0bb59f1b050df34a4054"
     },
     {
@@ -81,8 +86,13 @@
     },
     {
       "path": "src/hooks/useTenantProducts.ts",
-      "sha256": "822dc9f1a1492d83e082c1e1222d74293e5cc8a2ed5a7a91f201bdba8721b2f4",
+      "sha256": "174af4e0845287e749c494416fb74e1899c8ca5a81234e050c1fe6213e43c585",
       "original_sha256": "40159be6b2cfe24e6dce6f2eaab59b4771b76b7c3e33250ea805c2155390085f"
+    },
+    {
+      "path": "src/lib/catalogo/tenantCatalogRoots.ts",
+      "sha256": "6920e881f35612c52d3544b5f9a51d67651602ec3c22ca662742eb6addc0a0a8",
+      "original_sha256": "2ddf89c22d0566a566c003d385d4d463f87f48f01740e56db6044b38840d6dcf"
     },
     {
       "path": "src/lib/permissions.ts",
@@ -141,7 +151,7 @@
     },
     {
       "path": "src/test/catalogo/unifiedProducts.realClient.test.tsx",
-      "sha256": "12649967524b2766839845cf91935b28f05370da3760d024d5633e6437fec9ad",
+      "sha256": "0516065cb09afbb46953d3992c2b1a46d4bbbb5e4958636e4de365ebf01eb195",
       "original_sha256": null
     },
     {
@@ -149,5 +159,7 @@
       "sha256": "e93cdd71fed4fa8aa18cdcc55ef53ef5d617708126366b7c9622eb192193109d",
       "original_sha256": "64ee85a759c448fb32ce81ce25bb5dc5fa0b05c6a108b4964a4cd68a18d116fa"
     }
-  ]
+  ],
+  "revision": "2026-11-03 definitive-exit + route inventory",
+  "patch_reproduces_final_bytes_on_base_local": true
 }

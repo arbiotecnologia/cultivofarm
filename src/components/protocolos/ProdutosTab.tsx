@@ -228,6 +228,10 @@ export function ProdutosTab() {
   const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
   const [partialMessage, setPartialMessage] = useState<string | null>(null);
   const [partialAck, setPartialAck] = useState<{ product_id: string; updated_at: string } | null>(null);
+  const [partialKind, setPartialKind] = useState<"definitive" | "uncertain" | null>(null);
+  const [partialExport, setPartialExport] = useState<string | null>(null);
+  const [reconciling, setReconciling] = useState(false);
+  const retainedForm = useRef<any>(null);
 
   const [form, setForm] = useState({
     id: "",
@@ -272,9 +276,10 @@ export function ProdutosTab() {
   const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
   useEffect(() => {
     localGeneration.current += 1;
-    retainedSave.current = null;
+    // Escopo mudou: descarta rascunho/exportação retidos (nunca reutilizados em outro ator/tenant).
+    retainedSave.current = null; retainedForm.current = null;
     setPartialMessage(null);
-    setPartialAck(null);
+    setPartialAck(null); setPartialKind(null); setPartialExport(null); setReconciling(false);
     setOpen(false); resetForm();
     setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
@@ -351,14 +356,21 @@ export function ProdutosTab() {
       if (outcome.status === "partial") {
         toast.error(outcome.message);
         retainedSave.current = input;
+        const frozen = { ...form, id: ack.product_id, updated_at: ack.updated_at };
+        retainedForm.current = frozen;
         setPartialAck({ product_id: ack.product_id, updated_at: ack.updated_at });
-        setForm(previous => ({ ...previous, id: ack.product_id, updated_at: ack.updated_at }));
+        setPartialKind(ack.compositionFailure === "definitive" ? "definitive" : "uncertain");
+        setPartialExport(JSON.stringify({
+          produto_id: ack.product_id, versao_confirmada_produto: ack.updated_at, nome: frozen.nome,
+          resultado_composicao: ack.compositionFailure === "definitive" ? "recusada_pelo_servidor" : "nao_confirmada",
+          composicao_rascunho: frozen.composicao.map(item => ({ ...item,
+            nome: item.microrganismo_id ? microrganismos.find(m => m.id === item.microrganismo_id)?.nome ?? null : items.find(p => p.id === item.component_insumo_id)?.nome ?? null })),
+        }, null, 2));
+        setForm(frozen);
         setPartialMessage(outcome.message ?? "Produto salvo; composição não confirmada.");
         return;
       }
-      retainedSave.current = null;
-      setPartialMessage(null);
-      setPartialAck(null);
+      clearPartial();
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
       setOpen(false);
       resetForm();
@@ -368,6 +380,63 @@ export function ProdutosTab() {
     } finally {
       savingRef.current = false;
       setSaving(false);
+    }
+  };
+
+  const clearPartial = () => {
+    retainedSave.current = null; retainedForm.current = null;
+    setPartialMessage(null); setPartialAck(null); setPartialKind(null); setPartialExport(null);
+  };
+
+  const copyPartialDraft = async () => {
+    if (!partialExport) return;
+    try { await navigator.clipboard.writeText(partialExport); toast.success("Rascunho copiado."); }
+    catch { toast.error("Não foi possível copiar; selecione o texto do rascunho exportável."); }
+  };
+
+  /** Saída explícita com tentativa INCERTA: fecha o diálogo mas mantém intenção/chaves retidas para replay posterior. */
+  const leavePendingUncertain = () => {
+    if (partialKind !== "uncertain" || savingRef.current) return;
+    setOpen(false);
+  };
+  const resumePending = () => {
+    if (!retainedForm.current || savingRef.current) return;
+    setForm(retainedForm.current); setOpen(true);
+  };
+
+  /**
+   * Recusa DEFINITIVA: lê o produto de novo pelas leituras canônicas do tenant e só então reconhece o resultado e
+   * reabre a edição do MESMO produto com a versão fresca (CAS). Nunca desfaz o produto nem cria outro.
+   */
+  const returnToEditAfterDefinitive = async () => {
+    if (partialKind !== "definitive" || !partialAck || savingRef.current || reconciling) return;
+    const current = editor.capture();
+    const productId = partialAck.product_id;
+    setReconciling(true);
+    try {
+      const [list, det] = await Promise.all([productList.refetch(), details.refetch()]);
+      if (!current()) return;
+      const fresh = list.isSuccess && det.isSuccess ? (list.data ?? []).find(p => p.id === productId) : undefined;
+      if (!fresh || typeof fresh.updated_at !== "string" || !fresh.updated_at) {
+        toast.error("A leitura atual não confirmou o produto salvo. Nada foi alterado; tente novamente.");
+        return;
+      }
+      if (!saveProduct.acknowledgeDefinitiveComposition(productId)) {
+        toast.error("Não foi possível reconhecer o resultado neste contexto. Recarregue a página.");
+        return;
+      }
+      const micros = (det.data?.microorganisms ?? []) as unknown as Microrganismo[];
+      const microMap = new Map(micros.map(m => [m.id, m]));
+      const freshProduct = { ...fresh, formulacoes: (det.data?.formulas ?? []).filter(f => f.produto_id === productId)
+        .map(f => ({ ...f, microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined })) } as unknown as Produto;
+      retainedSave.current = null; retainedForm.current = null;
+      setPartialMessage(null); setPartialAck(null); setPartialKind(null);
+      // O rascunho recusado continua exportável na edição reaberta até o diálogo fechar.
+      handleEdit(freshProduct);
+      composicaoTouched.current = false;
+      if (fresh.updated_at !== partialAck.updated_at) toast.info("O produto mudou desde o salvamento; a versão atual foi carregada.");
+    } finally {
+      if (current()) setReconciling(false);
     }
   };
 
@@ -618,7 +687,7 @@ export function ProdutosTab() {
           </Button>
 
           {editor.canEdit && (
-            <Button size="sm" onClick={() => { resetForm(); composicaoTouched.current = false; setOpen(true); }}>
+            <Button size="sm" disabled={!!partialMessage} onClick={() => { resetForm(); setPartialExport(null); composicaoTouched.current = false; setOpen(true); }}>
               <Plus className="h-4 w-4 mr-1" />Novo produto
             </Button>
           )}
@@ -629,7 +698,11 @@ export function ProdutosTab() {
 
 
 
-          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
+          {!open && partialMessage && partialAck && <div role="status" className="w-full text-sm text-destructive flex flex-wrap items-center gap-2">
+            <span>Composição pendente do produto {partialAck.product_id}. Novas edições ficam bloqueadas até reconciliar.</span>
+            <Button type="button" size="sm" variant="outline" onClick={resumePending}>Retomar reconciliação</Button>
+          </div>}
+          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
             <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
@@ -639,9 +712,16 @@ export function ProdutosTab() {
                 {partialMessage && <div role="alert" className="space-y-2 text-destructive">
                   <p>{partialMessage}</p>
                   {partialAck && <dl className="text-sm break-all"><dt>Produto salvo</dt><dd>{partialAck.product_id}</dd><dt>Versão confirmada do produto</dt><dd>{partialAck.updated_at}</dd></dl>}
-                  <p>Composição pendente de confirmação. O rascunho foi mantido; reconcilie antes de alterar.</p>
+                  {partialKind === "definitive"
+                    ? <p>O servidor recusou esta composição de forma definitiva; repetir a mesma tentativa não muda o resultado. O produto continua salvo (não foi desfeito). Copie o rascunho se precisar e volte a editar o mesmo produto a partir da versão atual.</p>
+                    : <p>Composição pendente de confirmação. O rascunho foi mantido; reconcilie a mesma tentativa antes de alterar. Você pode sair e retomar depois nesta tela.</p>}
                   <ul className="text-sm">{form.composicao.map((item, index) => <li key={index}>{item.microrganismo_id ? microrganismos.find(m => m.id === item.microrganismo_id)?.nome ?? item.microrganismo_id : items.find(p => p.id === item.component_insumo_id)?.nome ?? item.component_insumo_id} · {item.volume_ml} mL{item.concentracao != null ? ` · ${item.concentracao} ${item.unidade ?? ""}` : ""}</li>)}</ul>
                 </div>}
+                {partialExport && <details className="text-sm">
+                  <summary>Rascunho exportável da composição</summary>
+                  <textarea readOnly aria-label="Rascunho exportável" className="w-full h-32 font-mono text-xs border rounded p-2 bg-muted" value={partialExport} />
+                  <Button type="button" variant="outline" size="sm" onClick={copyPartialDraft}>Copiar rascunho</Button>
+                </details>}
                 <fieldset disabled={saving || !!partialMessage} className="min-w-0">
                 <Tabs defaultValue="geral">
                   <TabsList className="grid w-full grid-cols-3 mb-4">
@@ -1001,7 +1081,10 @@ export function ProdutosTab() {
                 </fieldset>
 
                 <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-background border-t flex justify-end items-center gap-4 z-10">
-                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>
+                  {partialKind === "uncertain" && <Button type="button" variant="outline" disabled={saving} onClick={leavePendingUncertain}>Sair mantendo pendência</Button>}
+                  {partialKind === "definitive"
+                    ? <Button type="button" disabled={saving || reconciling} onClick={returnToEditAfterDefinitive}>{reconciling ? "Lendo versão atual..." : "Reconhecer e voltar à edição"}</Button>
+                    : <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>}
                 </div>
               </form>
             </DialogContent>
@@ -1190,7 +1273,7 @@ export function ProdutosTab() {
                       </TooltipProvider>
                     )}
                     {editor.canEdit && <>
-                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending} onClick={() => handleEdit(p)}>Editar</Button>
+                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending || !!partialMessage} onClick={() => handleEdit(p)}>Editar</Button>
                       <Button variant="ghost" size="sm" disabled={archiveProduct.isPending || !p.updated_at} onClick={async () => {
                         if (!p.updated_at) return;
                         const current = editor.capture();
