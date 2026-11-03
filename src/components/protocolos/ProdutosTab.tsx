@@ -70,6 +70,8 @@ interface Formulacao {
   component_insumo_id: string | null;
   proporcao: number | null;
   e_volume_fixo: boolean;
+  concentracao?: number | null;
+  unidade?: string | null;
   microrganismos?: Microrganismo;
   insumos?: { nome: string };
 }
@@ -261,6 +263,8 @@ export function ProdutosTab() {
       volume_ml: number;
       proporcao: number | null;
       e_volume_fixo: boolean;
+      concentracao?: number | null;
+      unidade?: string | null;
     }[]
   });
 
@@ -327,7 +331,7 @@ export function ProdutosTab() {
     try {
       const ack = await saveProduct.mutateAsync({ id: form.id || null,
         expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
-        draft: payload, composition: composicaoTouched.current ? buildFormulacoesPayload(form.id, form.composicao) : undefined });
+        draft: payload, composition: composicaoTouched.current ? form.composicao.map(row => ({ ...row })) : undefined });
       if (!current()) return;
       const outcome = ack.compositionError ? { status: "partial", message: ack.compositionError } : { status: "ok" };
 
@@ -338,11 +342,6 @@ export function ProdutosTab() {
         fetch();
         return;
       }
-      if (outcome.status === "error") {
-        toast.error(outcome.message || "Erro ao salvar produto");
-        return;
-      }
-
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
       setOpen(false);
       resetForm();
@@ -416,6 +415,7 @@ export function ProdutosTab() {
         volume_ml: f.volume_ml,
         proporcao: f.proporcao,
         e_volume_fixo: f.e_volume_fixo
+        , concentracao: f.concentracao, unidade: f.unidade
       })) || []
     });
 
