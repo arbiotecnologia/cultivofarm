@@ -64,7 +64,7 @@ export interface ProductComposicao {
 }
 
 /** CAT-10 — lança se QUALQUER consulta falhar; nunca degrada erro em vazio. */
-export async function fetchProductProfileBundle(client: any, produtoId: string) {
+export async function fetchProductProfileBundle(client: any, produtoId: string, signal?: AbortSignal) {
   const [pRes, tRes, cRes, fRes] = await Promise.all([
     client.from("product_technical_profiles").select("*").eq("produto_id", produtoId).maybeSingle(),
     client.from("product_target_recommendations").select("*").eq("produto_id", produtoId).eq("ativo", true).order("prioridade"),
@@ -73,7 +73,7 @@ export async function fetchProductProfileBundle(client: any, produtoId: string) 
       .from("formulacoes")
       .select("microrganismo_id, component_insumo_id, volume_ml, proporcao, microrganismos(id,nome,nome_cientifico,funcao_agronomica,tipo), insumo:produtos!formulacoes_component_insumo_id_fkey(nome)")
       .eq("produto_id", produtoId),
-  ]);
+  ].map(q => signal ? q.abortSignal(signal) : q));
   const erro = [pRes, tRes, cRes, fRes].find((r) => r?.error)?.error;
   if (erro) {
     throw new Error(erro.message || "Não foi possível carregar a ficha técnica");
@@ -107,9 +107,9 @@ export function useProductProfile(produtoId: string | null | undefined) {
     queryKey: ["product-profile", produtoId],
     enabled: !!produtoId,
     retry: false,
-    queryFn: async () => {
+    queryFn: async signal => {
       if (!produtoId) throw new Error("Produto indisponível");
-      return fetchProductProfileBundle(supabase as any, produtoId);
+      return fetchProductProfileBundle(supabase as any, produtoId, signal);
     },
   });
 }
@@ -120,12 +120,16 @@ export function useUpsertProductProfile() {
   const editor = useTenantCatalogEditor();
   const actor = useStorageAccessScope("portal-query-actor");
   const attempt = useRef<{ sig: string; key: string } | null>(null);
+  const busy = useRef(false);
   return useMutation({
     retry: false,
     onMutate: () => ({ current: editor.capture(), actorScope: actor.scope }),
     mutationFn: async (payload: Partial<ProductProfile> & { produto_id: string }) => {
       const current = editor.capture();
       if (!editor.canEdit || !current()) throw new Error("catalog_context_unavailable");
+      if (busy.current) throw new Error("Aguarde o salvamento em andamento.");
+      busy.current = true;
+      try {
       // Catálogo exclusivo por empresa: ficha técnica só pela RPC (empresa do pai no servidor, CAS, idempotência);
       // status/validação nunca vêm do formulário — aprovação segue o fluxo auditado próprio.
       const { id: _id, updated_at: _u, status_validacao, validado_por: _vp, validado_em: _ve, created_at: _c, created_by: _cb, updated_by: _ub, ...fields } = payload as any;
@@ -144,6 +148,7 @@ export function useUpsertProductProfile() {
       if (!current()) throw new Error("catalog_context_changed");
       attempt.current = null;
       return { ...payload, id: ack.id, updated_at: ack.updated_at };
+      } finally { busy.current = false; }
     },
     onSuccess: (_d, v, context) => {
       if (!context?.current()) return;
