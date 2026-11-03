@@ -1,0 +1,65 @@
+import { readFileSync } from 'node:fs';
+import { beforeEach, expect, it, vi } from 'vitest';
+const transport = vi.hoisted(() => ({ fetch: vi.fn() }));
+vi.mock('@/integrations/supabase/client', async () => {
+  const { createClient } = await import('@supabase/supabase-js');
+  return { supabase: createClient('https://swzpzcwiasxmjutrmvkm.supabase.co', 'synthetic-key', {
+    accessToken: async () => 'synthetic-bearer', global: { fetch: (...args) => transport.fetch(...args) },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  }) };
+});
+import { supabase } from '@/integrations/supabase/client';
+import { internalContextProbe } from '@/lib/authz/internalContextProbe';
+import { producerContextProbe } from '@/lib/authz/producerContextProbe';
+const user = '11111111-1111-4111-8111-111111111111';
+const org = '22222222-2222-4222-8222-222222222222';
+const clientId = '33333333-3333-4333-8333-333333333333';
+const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+beforeEach(() => transport.fetch.mockReset());
+function check(index: number, path: string) {
+  const [url, init] = transport.fetch.mock.calls[index];
+  expect(String(url)).toContain(`/rest/v1/${path}`);
+  expect(new Headers(init.headers).get('authorization')).toBe('Bearer synthetic-bearer');
+  return init;
+}
+it('internalContextProbe usa SDK real e receiver preservado, valida ator/tenant/roles', async () => {
+  transport.fetch.mockResolvedValue(json({ v: 1, user_id: user, organization_id: org, roles: ['administrador'], roles_confirmed: true,
+    profile: { user_id: user, organization_id: org, ativo: true, senha_provisoria: false } }));
+  expect(await internalContextProbe(user, org, 'administrador')).toMatchObject({ eligible: true });
+  expect(check(0, 'rpc/internal_actor_context_v1').method).toBe('POST');
+  transport.fetch.mockResolvedValue(json({ v: 1, user_id: user, organization_id: clientId }));
+  expect(await internalContextProbe(user, org, 'administrador')).toEqual({ eligible: false, fingerprint: null });
+});
+it('internalContextProbe recusa erro backend sem fallback', async () => {
+  transport.fetch.mockResolvedValue(json({ code: '42501', message: 'denied' }, 403));
+  await expect(internalContextProbe(user, org, 'administrador')).rejects.toThrow('internal_probe_unavailable');
+  expect(transport.fetch).toHaveBeenCalledTimes(1);
+});
+it('producerContextProbe preserva receiver nos dois h15 e na seleção de clientes', async () => {
+  transport.fetch.mockResolvedValueOnce(json(org)).mockResolvedValueOnce(json([clientId]))
+    .mockResolvedValueOnce(json([{ id: clientId, organization_id: org }])).mockResolvedValueOnce(json(org));
+  expect(await producerContextProbe(user, org)).toMatchObject({ eligible: true });
+  check(0, 'rpc/h15_actor_organization');
+  expect(JSON.parse(check(1, 'rpc/get_cliente_ids_for_user').body)).toEqual({ _user_id: user });
+  check(2, 'clientes?'); check(3, 'rpc/h15_actor_organization');
+  expect(transport.fetch).toHaveBeenCalledTimes(4);
+});
+it('producerContextProbe nega tenant divergente antes de buscar clientes', async () => {
+  transport.fetch.mockResolvedValue(json(clientId));
+  expect(await producerContextProbe(user, org)).toEqual({ eligible: false, fingerprint: null });
+  expect(transport.fetch).toHaveBeenCalledTimes(1);
+});
+it('chamada B2B exata de useAuth chega ao REST com SDK real sem perda de this', async () => {
+  const source = readFileSync('src/hooks/useAuth.tsx', 'utf8');
+  const start = source.indexOf('const rpc = supabase.rpc as unknown as');
+  const end = source.indexOf('if (error) throw new Error("b2b_probe_unavailable");', start);
+  expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
+  // Executes the actual dispatch lines, removing only the TypeScript type cast.
+  const dispatch = source.slice(start, end).replace(/ as unknown as [^\n]+\n/, ';\n');
+  const invoke = new Function('supabase', `return (async () => { ${dispatch} return {data,error}; })();`);
+  transport.fetch.mockResolvedValue(json({ partner_id: clientId }));
+  expect(await invoke(supabase)).toMatchObject({ data: { partner_id: clientId }, error: null });
+  check(0, 'rpc/get_my_commercial_partner_context');
+  transport.fetch.mockResolvedValue(json({ code: '42501', message: 'denied' }, 403));
+  expect(await invoke(supabase)).toMatchObject({ error: { code: '42501' } });
+});

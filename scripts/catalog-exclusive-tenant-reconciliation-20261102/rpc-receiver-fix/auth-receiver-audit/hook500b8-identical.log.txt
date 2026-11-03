@@ -1,0 +1,1 @@
+PASS: current hook equals 500b8b148 byte for byte
