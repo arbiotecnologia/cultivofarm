@@ -687,7 +687,7 @@ export function ProdutosTab() {
           </Button>
 
           {editor.canEdit && (
-            <Button size="sm" onClick={() => { resetForm(); composicaoTouched.current = false; setOpen(true); }}>
+            <Button size="sm" disabled={!!partialMessage} onClick={() => { resetForm(); setPartialExport(null); composicaoTouched.current = false; setOpen(true); }}>
               <Plus className="h-4 w-4 mr-1" />Novo produto
             </Button>
           )}
@@ -698,7 +698,7 @@ export function ProdutosTab() {
 
 
 
-          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
+          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); setPartialExport(null); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
             <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
@@ -708,9 +708,16 @@ export function ProdutosTab() {
                 {partialMessage && <div role="alert" className="space-y-2 text-destructive">
                   <p>{partialMessage}</p>
                   {partialAck && <dl className="text-sm break-all"><dt>Produto salvo</dt><dd>{partialAck.product_id}</dd><dt>Versão confirmada do produto</dt><dd>{partialAck.updated_at}</dd></dl>}
-                  <p>Composição pendente de confirmação. O rascunho foi mantido; reconcilie antes de alterar.</p>
+                  {partialKind === "definitive"
+                    ? <p>O servidor recusou esta composição de forma definitiva; repetir a mesma tentativa não muda o resultado. O produto continua salvo (não foi desfeito). Copie o rascunho se precisar e volte a editar o mesmo produto a partir da versão atual.</p>
+                    : <p>Composição pendente de confirmação. O rascunho foi mantido; reconcilie a mesma tentativa antes de alterar. Você pode sair e retomar depois nesta tela.</p>}
                   <ul className="text-sm">{form.composicao.map((item, index) => <li key={index}>{item.microrganismo_id ? microrganismos.find(m => m.id === item.microrganismo_id)?.nome ?? item.microrganismo_id : items.find(p => p.id === item.component_insumo_id)?.nome ?? item.component_insumo_id} · {item.volume_ml} mL{item.concentracao != null ? ` · ${item.concentracao} ${item.unidade ?? ""}` : ""}</li>)}</ul>
                 </div>}
+                {partialExport && <details className="text-sm">
+                  <summary>Rascunho exportável da composição</summary>
+                  <textarea readOnly aria-label="Rascunho exportável" className="w-full h-32 font-mono text-xs border rounded p-2 bg-muted" value={partialExport} />
+                  <Button type="button" variant="outline" size="sm" onClick={copyPartialDraft}>Copiar rascunho</Button>
+                </details>}
                 <fieldset disabled={saving || !!partialMessage} className="min-w-0">
                 <Tabs defaultValue="geral">
                   <TabsList className="grid w-full grid-cols-3 mb-4">
@@ -1070,7 +1077,10 @@ export function ProdutosTab() {
                 </fieldset>
 
                 <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-background border-t flex justify-end items-center gap-4 z-10">
-                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>
+                  {partialKind === "uncertain" && <Button type="button" variant="outline" disabled={saving} onClick={leavePendingUncertain}>Sair mantendo pendência</Button>}
+                  {partialKind === "definitive"
+                    ? <Button type="button" disabled={saving || reconciling} onClick={returnToEditAfterDefinitive}>{reconciling ? "Lendo versão atual..." : "Reconhecer e voltar à edição"}</Button>
+                    : <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>}
                 </div>
               </form>
             </DialogContent>
@@ -1259,7 +1269,7 @@ export function ProdutosTab() {
                       </TooltipProvider>
                     )}
                     {editor.canEdit && <>
-                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending} onClick={() => handleEdit(p)}>Editar</Button>
+                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending || !!partialMessage} onClick={() => handleEdit(p)}>Editar</Button>
                       <Button variant="ghost" size="sm" disabled={archiveProduct.isPending || !p.updated_at} onClick={async () => {
                         if (!p.updated_at) return;
                         const current = editor.capture();
