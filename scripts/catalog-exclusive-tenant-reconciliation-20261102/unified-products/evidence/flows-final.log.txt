@@ -1,0 +1,67 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenant-catalog-owned-flow.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/catalogo/tenant-catalog-owned-flow.test.tsx > reabrir próprios nas abas Produtos e Microrganismos > produto próprio aparece, reabre com detalhe e persiste edição
+Warning: A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://reactjs.org/link/controlled-components
+    at input
+    at div
+    at div
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-tabs/dist/index.mjs:147:13
+    at /dev-server/src/components/ui/tabs.tsx:30:71
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-tabs/dist/index.mjs:24:7
+    at form
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:24:7
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-focus-scope/dist/index.mjs:15:5
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:206:13
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:132:58
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:123:64
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at Presence (file:///dev-server/node_modules/@radix-ui/react-presence/dist/index.mjs:19:11)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at DialogPortal (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:85:11)
+    at /dev-server/src/components/ui/dialog.tsx:25:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Dialog (file:///dev-server/node_modules/@radix-ui/react-dialog/dist/index.mjs:25:5)
+    at div
+    at div
+    at div
+    at ProdutosTab (/dev-server/src/components/protocolos/ProdutosTab.tsx:202:65)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+ ✓ src/test/catalogo/unifiedProducts.realClient.test.tsx (16 tests) 4239ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  2165ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1816ms
+ ✓ src/test/catalogo/tenant-catalog-owned-flow.test.tsx (13 tests) 3796ms
+   ✓ culturas próprias na aba existente > criar, ver, reabrir/editar, arquivar, ver arquivado e restaurar sem recarregar  918ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > produto próprio aparece, reabre com detalhe e persiste edição  574ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > microrganismo próprio aparece, reabre com detalhe e persiste edição  410ms
+   ✓ salvamento único de identificação/composição > declaração existente permanece intacta quando só identificação muda  374ms
+   ✓ salvamento único de identificação/composição > mudança de composição declarativa incompatível recusa tudo antes do produto, sem salvar parcialmente  475ms
+   ✓ salvamento único de identificação/composição > duplo clique não duplica e resposta antiga não aplica callbacks após AR→FSF→AR  334ms
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 617ms
+
+ Test Files  3 passed (3)
+      Tests  41 passed (41)
+   Start at  02:16:17
+   Duration  10.25s (transform 1.54s, setup 395ms, collect 4.65s, tests 8.65s, environment 2.36s, prepare 345ms)
+
