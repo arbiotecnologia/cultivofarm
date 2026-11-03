@@ -53,7 +53,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: "org-ar" }, loading: false, roles: ["administrador"] }),
+  useAuth: () => ({ user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: "org-ar", ativo: true }, loading: false, roles: ["administrador"] }),
 }));
 
 import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";

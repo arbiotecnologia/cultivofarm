@@ -25,7 +25,6 @@ describe("contenção de escrita do catálogo global", () => {
   });
 
   it.each([
-    "src/hooks/useProductProfile.ts",
     "src/hooks/useMicroorganismProfile.ts",
     "src/hooks/useCatalogSources.ts",
     "src/hooks/useCatalogTargetsCrops.ts",
@@ -43,6 +42,13 @@ describe("contenção de escrita do catálogo global", () => {
       expect(guard).toBeGreaterThan(-1);
       expect(guard).toBeLessThan(write);
     }
+  });
+
+  it("ficha própria usa gate de ator e RPC, nunca DML global", () => {
+    const s = read("src/hooks/useProductProfile.ts");
+    expect(s.indexOf("if (!editor.canEdit || !current())")).toBeLessThan(s.indexOf("const ack = await saveTenantCatalogRoot"));
+    expect(s).not.toMatch(/\.(insert|update|delete|upsert)\(/);
+    expect(s).toContain('"product_technical_profiles"');
   });
 
   it("fichas não oferecem edição e micro removeu caminho B2B-only", () => {
