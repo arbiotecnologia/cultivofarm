@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/authContextReceiver.realClient.test.ts (5 tests) 33ms
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 625ms
+ ✓ src/test/catalogo/tenantExclusiveCatalog.test.ts (8 tests) 12ms
+
+ Test Files  3 passed (3)
+      Tests  25 passed (25)
+   Start at  01:37:45
+   Duration  4.46s (transform 282ms, setup 370ms, collect 789ms, tests 670ms, environment 2.26s, prepare 422ms)
+
