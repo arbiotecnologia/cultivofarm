@@ -170,7 +170,7 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await screen.findByRole("button", { name: "Reconciliar composição" });
   expect(screen.getByRole("dialog")).toBeTruthy();
-  expect(screen.getByLabelText("Nome Comercial *").matches(":disabled")).toBe(true);
+  expect(screen.getByRole("tab", { name: "Identificação" }).matches(":disabled")).toBe(true);
   expect(screen.getByRole("alert").textContent).toContain("composição não confirmada");
   expect(rpcCalls("tenant_product_save")).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
