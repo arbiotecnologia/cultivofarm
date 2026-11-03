@@ -396,7 +396,8 @@ it("recusa definitiva persistente: sem replay inútil, rascunho exportável e vo
   fireEvent.click(screen.getByRole("button", { name: "Reconhecer e voltar à edição" }));
   await screen.findByRole("heading", { name: "Editar produto" });
   expect(screen.queryByRole("alert")).toBeNull();
-  expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe("Novo parcial");
+  fireEvent.mouseDown(screen.getByRole("tab", { name: "Identificação" }), { button: 0, ctrlKey: false });
+  expect(((await screen.findByLabelText("Nome Comercial *")) as HTMLInputElement).value).toBe("Novo parcial");
   expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial revisado" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
