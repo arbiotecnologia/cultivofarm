@@ -2,6 +2,10 @@ import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanM
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccess } from "@/lib/permissions";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
+import { Link } from "react-router-dom";
 import { useTenantProducts, useSaveTenantProduct, useArchiveTenantProduct } from "@/hooks/useTenantProducts";
 import { useTenantProductDetails } from "@/hooks/useTenantProductDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -217,6 +221,8 @@ export function ProdutosTab() {
   const productList = useTenantProducts(showArchived);
   const details = useTenantProductDetails();
   const editor = useTenantCatalogEditor();
+  const { roles = [] } = useAuth();
+  const canConsultFiscal = editor.ready && FEATURE_FLAGS.fiscalProductProfilesUi && roles.some(role => canAccess(role, "/configuracoes/fiscal/produtos"));
   const saveProduct = useSaveTenantProduct();
   const archiveProduct = useArchiveTenantProduct();
   const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
@@ -606,6 +612,7 @@ export function ProdutosTab() {
               <Plus className="h-4 w-4 mr-1" />Novo produto
             </Button>
           )}
+          {canConsultFiscal && <Button asChild variant="outline" size="sm"><Link to="/configuracoes/fiscal/produtos"><FileText className="h-4 w-4 mr-1" />Perfis fiscais</Link></Button>}
 
 
 

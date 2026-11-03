@@ -1,0 +1,31 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/protocolos/base-tecnica.redirect.test.tsx src/test/navigation/sidebar-adequacoes.test.tsx src/test/navigation/useTabParam.test.tsx "src/test/navigation.fase6-1.test.ts" "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/navigation/sidebar-adequacoes.test.tsx (11 tests) 16ms
+stderr | src/test/navigation/useTabParam.test.tsx > useTabParam > usa o fallback quando não há parâmetro
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/navigation/useTabParam.test.tsx (9 tests) 52ms
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/navigation.fase6-1.test.ts (10 tests) 16ms
+ ✓ src/test/catalogo/unifiedProducts.realClient.test.tsx (25 tests) 5224ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  2099ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1202ms
+   ✓ Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs  405ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  1240ms
+stderr | src/test/protocolos/base-tecnica.redirect.test.tsx > Redirect /protocolos -> /base-tecnica (roteador real) > preserva query string e hash
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/protocolos/base-tecnica.redirect.test.tsx (3 tests) 41ms
+
+ Test Files  5 passed (5)
+      Tests  58 passed (58)
+   Start at  02:31:45
+   Duration  11.22s (transform 1.69s, setup 689ms, collect 3.70s, tests 5.35s, environment 4.06s, prepare 589ms)
+

@@ -6,13 +6,18 @@
   "files": [
     {
       "path": "AGENTS.md",
-      "sha256": "7565ca57d946331829df213454a8099d5b8de9d433277ce6b9a248028fee98e9",
+      "sha256": "2563b42cb68b1ecf15ba0282ecb03984ff744666ef33a99dd8bfb1ad53493500",
       "original_sha256": "383b0ba796437aed94b40675b0d321de268b3b347b41b6ceaff2a704ee03e076"
     },
     {
       "path": "src/App.tsx",
       "sha256": "ae8c15b43c23bf7172ef47828a20f577a317ce4379d9fcf883910a9c6233c1aa",
       "original_sha256": "f0af466c015991837665b23aa822cfa017e7e26494bba39d8c7374ed448ce889"
+    },
+    {
+      "path": "src/components/AppSidebar.tsx",
+      "sha256": "278a3fcb0a3e41d21161bc4f3a573402933f1924f0fbfa4adc2617253a129a54",
+      "original_sha256": "89709a059a868996c5197365682925a7008048a4562b326736f9541bd115f86e"
     },
     {
       "path": "src/components/protocolos/AGENTS.md",
@@ -31,7 +36,7 @@
     },
     {
       "path": "src/components/protocolos/ProdutosTab.tsx",
-      "sha256": "5d6b7c77dcaa0eacef7a3f4978a3c4ff5e40c4759b3eef56da5a8a443c0864e6",
+      "sha256": "6d5fe50013f941c4ed9cfd7bcc206026ee2d2e209e84cd427f29fa9ca143ba8e",
       "original_sha256": "e59de15d5aa52d4ce08e082f01c8360410eae2ff93fa0bb59f1b050df34a4054"
     },
     {
@@ -81,12 +86,12 @@
     },
     {
       "path": "src/lib/permissions.ts",
-      "sha256": "de0a5582f9b128ed5daca3c48bf4d634de79160915e19470301c2bb427b9fa45",
+      "sha256": "5e8b3ce169d0971db6ec6a0ad800c8aed33596920e92ead0591d122681a9b390",
       "original_sha256": "feefacd367e52a05868504c68948f06f6ceefeeddf225273fe02a77204b783df"
     },
     {
       "path": "src/pages/Protocolos.tsx",
-      "sha256": "3700e42e9a2751d8a7bcd02d455e4884653730f7a5f8d7be613897f5e0a69ce9",
+      "sha256": "25bf6c4387a8b845795dd7757dd483a4792dbc679604c320e12a68fdd4c36530",
       "original_sha256": "71c9ba2ae3f2a56f4f9b892dcaec35440d715eab3dc67eaa35e7d9a064e547b7"
     },
     {
@@ -126,7 +131,7 @@
     },
     {
       "path": "src/test/catalogo/tenant-catalog-owned-flow.test.tsx",
-      "sha256": "44202812fe73bad4b922244325f6ed58b58d4e85ed722ae30dad6a1ff501e37d",
+      "sha256": "4ec2de97c73f9cfbf316f67dfd3bb5e578d53ad8d70a53932f86918a7a21fa24",
       "original_sha256": "ad8633799d28b3ed86be15602965effee0c2c1f5ae15c890c11b6eccd473842e"
     },
     {
@@ -136,7 +141,7 @@
     },
     {
       "path": "src/test/catalogo/unifiedProducts.realClient.test.tsx",
-      "sha256": "b428697472fd4a018d1664f5ec543101abb5cc009360beecb305d71db8c5abb0",
+      "sha256": "a35eab65ed4353f990bb878855ae06c98e6ddcff9ac925e89b0bbe6057bb2823",
       "original_sha256": null
     },
     {

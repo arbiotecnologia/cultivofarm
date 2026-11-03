@@ -105,4 +105,4 @@
 - Original integration package: scripts/original-integration-20261102/AGENTS.md.
 - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.
 
-- Tenant product CRUD uses only Catálogo → Produtos and scoped canonical RPCs; the legacy settings route preserves query/hash — prevents duplicate editors and global writers.
+- Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.

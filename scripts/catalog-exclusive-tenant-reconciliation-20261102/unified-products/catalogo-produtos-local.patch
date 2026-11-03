@@ -1,5 +1,5 @@
 diff --git a/AGENTS.md b/AGENTS.md
-index c3d57e73e..1c1540156 100644
+index c3d57e73e..368a4ccac 100644
 --- a/AGENTS.md
 +++ b/AGENTS.md
 @@ -75,7 +75,6 @@
@@ -15,7 +15,7 @@ index c3d57e73e..1c1540156 100644
  - Original integration package: scripts/original-integration-20261102/AGENTS.md.
  - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.
 +
-+- Tenant product CRUD uses only Catálogo → Produtos and scoped canonical RPCs; the legacy settings route preserves query/hash — prevents duplicate editors and global writers.
++- Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.
 diff --git a/src/App.tsx b/src/App.tsx
 index b873ab1c0..8408c6c04 100644
 --- a/src/App.tsx
@@ -37,6 +37,28 @@ index b873ab1c0..8408c6c04 100644
                  <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />
                  <Route path="/configuracoes/fiscal/servicos" element={<RoleGuard><FiscalServicos /></RoleGuard>} />
                  <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />
+diff --git a/src/components/AppSidebar.tsx b/src/components/AppSidebar.tsx
+index c9114550c..fb5594e91 100644
+--- a/src/components/AppSidebar.tsx
++++ b/src/components/AppSidebar.tsx
+@@ -28,7 +28,7 @@ export function AppSidebar() {
+   // primário, escondendo itens que o usuário multipapel podia realmente abrir.
+   const activeContext = readActiveContext();
+ 
+-  /** Rota sem query string — deep links (`?tab=`) usam a permissão da página. */
++  /** Entitlements use the page; RBAC also restricts catalogue tab deep links. */
+   const routePath = (route: string) =>
+     route.indexOf("?") === -1 ? route : route.slice(0, route.indexOf("?"));
+ 
+@@ -40,7 +40,7 @@ export function AppSidebar() {
+     resolveEffectiveRouteRole({
+       roles,
+       primaryRole: role,
+-      path: routePath(item.route),
++      path: item.route,
+       activeContext,
+     }).allowed &&
+     isNavItemFeatureEnabled(item) &&
 diff --git a/src/components/protocolos/AGENTS.md b/src/components/protocolos/AGENTS.md
 index 7d734a289..36396dab4 100644
 --- a/src/components/protocolos/AGENTS.md
@@ -317,21 +339,25 @@ index ed5531fc4..a7cfe5b69 100644
                <ReturnToReviewButton kind="produto" profileId={data.profile.id} onDone={refetch} />
              )}
 diff --git a/src/components/protocolos/ProdutosTab.tsx b/src/components/protocolos/ProdutosTab.tsx
-index a21b6ab85..afd58ecc5 100644
+index a21b6ab85..2dec8c363 100644
 --- a/src/components/protocolos/ProdutosTab.tsx
 +++ b/src/components/protocolos/ProdutosTab.tsx
-@@ -1,6 +1,9 @@
+@@ -1,6 +1,13 @@
  import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
  import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 -import { useEffect, useRef, useState } from "react";
 +import { useEffect, useMemo, useRef, useState } from "react";
 +import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
++import { useAuth } from "@/hooks/useAuth";
++import { canAccess } from "@/lib/permissions";
++import { FEATURE_FLAGS } from "@/config/featureFlags";
++import { Link } from "react-router-dom";
 +import { useTenantProducts, useSaveTenantProduct, useArchiveTenantProduct } from "@/hooks/useTenantProducts";
 +import { useTenantProductDetails } from "@/hooks/useTenantProductDetails";
  import { supabase } from "@/integrations/supabase/client";
  import { Button } from "@/components/ui/button";
  import { Input } from "@/components/ui/input";
-@@ -33,13 +36,6 @@ import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck
+@@ -33,13 +40,6 @@ import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck
  import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
  import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
  import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
@@ -345,7 +371,7 @@ index a21b6ab85..afd58ecc5 100644
  
  import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
  import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
-@@ -67,6 +63,8 @@ interface Formulacao {
+@@ -67,6 +67,8 @@ interface Formulacao {
    component_insumo_id: string | null;
    proporcao: number | null;
    e_volume_fixo: boolean;
@@ -354,7 +380,7 @@ index a21b6ab85..afd58ecc5 100644
    microrganismos?: Microrganismo;
    insumos?: { nome: string };
  }
-@@ -207,12 +205,7 @@ export async function carregarCatalogoProdutos(client: any): Promise<
+@@ -207,12 +209,7 @@ export async function carregarCatalogoProdutos(client: any): Promise<
  }
  
  export function ProdutosTab() {
@@ -367,7 +393,7 @@ index a21b6ab85..afd58ecc5 100644
    const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
    const [fichaProduto, setFichaProduto] = useState<Produto | null>(null);
    const [open, setOpen] = useState(false);
-@@ -220,19 +213,23 @@ export function ProdutosTab() {
+@@ -220,19 +217,25 @@ export function ProdutosTab() {
    const savingRef = useRef(false);
    const [search, setSearch] = useState("");
    const [filterTipo, setFilterTipo] = useState("todos");
@@ -382,6 +408,8 @@ index a21b6ab85..afd58ecc5 100644
 +  const productList = useTenantProducts(showArchived);
 +  const details = useTenantProductDetails();
 +  const editor = useTenantCatalogEditor();
++  const { roles = [] } = useAuth();
++  const canConsultFiscal = editor.ready && FEATURE_FLAGS.fiscalProductProfilesUi && roles.some(role => canAccess(role, "/configuracoes/fiscal/produtos"));
 +  const saveProduct = useSaveTenantProduct();
 +  const archiveProduct = useArchiveTenantProduct();
 +  const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
@@ -398,7 +426,7 @@ index a21b6ab85..afd58ecc5 100644
      nome: "",
      tipo: "solo",
      dose_ml_ha: "",
-@@ -241,7 +238,7 @@ export function ProdutosTab() {
+@@ -241,7 +244,7 @@ export function ProdutosTab() {
      valor_dose_brl: "",
      valor_litro_brl: "",
      funcao_completa: "",
@@ -407,7 +435,7 @@ index a21b6ab85..afd58ecc5 100644
      ativo: true,
      b2b_enabled: false,
      e_insumo: false,
-@@ -254,55 +251,43 @@ export function ProdutosTab() {
+@@ -254,55 +257,43 @@ export function ProdutosTab() {
        volume_ml: number;
        proporcao: number | null;
        e_volume_fixo: boolean;
@@ -487,7 +515,7 @@ index a21b6ab85..afd58ecc5 100644
      if (savingRef.current) return;
      savingRef.current = true;
      setSaving(true);
-@@ -318,6 +303,10 @@ export function ProdutosTab() {
+@@ -318,6 +309,10 @@ export function ProdutosTab() {
      const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (totalVolume > 0 ? totalVolume : null);
      const payload: any = {
        nome: form.nome,
@@ -498,7 +526,7 @@ index a21b6ab85..afd58ecc5 100644
        codigo: codigoFinal,
        tipo: form.tipo as any,
        dose_ml_ha: doseMlHa,
-@@ -326,8 +315,7 @@ export function ProdutosTab() {
+@@ -326,8 +321,7 @@ export function ProdutosTab() {
        valor_dose_brl: form.valor_dose_brl ? Number(form.valor_dose_brl) : null,
        valor_litro_brl: form.valor_litro_brl ? Number(form.valor_litro_brl) : null,
        funcao_completa: form.funcao_completa || null,
@@ -508,7 +536,7 @@ index a21b6ab85..afd58ecc5 100644
        b2b_enabled: form.b2b_enabled,
        e_insumo: form.e_insumo,
        estoque_minimo: form.estoque_minimo ? Number(form.estoque_minimo) : 0,
-@@ -337,33 +325,35 @@ export function ProdutosTab() {
+@@ -337,33 +331,35 @@ export function ProdutosTab() {
  
  
      try {
@@ -560,7 +588,7 @@ index a21b6ab85..afd58ecc5 100644
      } finally {
        savingRef.current = false;
        setSaving(false);
-@@ -375,6 +365,10 @@ export function ProdutosTab() {
+@@ -375,6 +371,10 @@ export function ProdutosTab() {
        id: "",
        updated_at: "",
        codigo: "",
@@ -571,7 +599,7 @@ index a21b6ab85..afd58ecc5 100644
        nome: "",
        tipo: "solo",
        dose_ml_ha: "",
-@@ -383,7 +377,7 @@ export function ProdutosTab() {
+@@ -383,7 +383,7 @@ export function ProdutosTab() {
        valor_dose_brl: "",
        valor_litro_brl: "",
        funcao_completa: "",
@@ -580,7 +608,7 @@ index a21b6ab85..afd58ecc5 100644
        ativo: true,
        b2b_enabled: false,
        e_insumo: false,
-@@ -410,6 +404,10 @@ export function ProdutosTab() {
+@@ -410,6 +410,10 @@ export function ProdutosTab() {
        id: p.id,
        updated_at: p.updated_at ?? "",
        codigo: p.codigo || "",
@@ -591,7 +619,7 @@ index a21b6ab85..afd58ecc5 100644
        nome: p.nome,
        tipo: p.tipo,
        dose_ml_ha: p.dose_ml_ha?.toString() || "",
-@@ -431,6 +429,7 @@ export function ProdutosTab() {
+@@ -431,6 +435,7 @@ export function ProdutosTab() {
          volume_ml: f.volume_ml,
          proporcao: f.proporcao,
          e_volume_fixo: f.e_volume_fixo
@@ -599,7 +627,7 @@ index a21b6ab85..afd58ecc5 100644
        })) || []
      });
  
-@@ -439,19 +438,6 @@ export function ProdutosTab() {
+@@ -439,19 +444,6 @@ export function ProdutosTab() {
      setOpen(true);
    };
  
@@ -619,7 +647,7 @@ index a21b6ab85..afd58ecc5 100644
    // Helpers for bidirectional pricing edits (shared util)
    const fmtNum = fmtNumStr;
    const numOrNull = numOrNullStr;
-@@ -486,7 +472,7 @@ export function ProdutosTab() {
+@@ -486,7 +478,7 @@ export function ProdutosTab() {
      markComposicaoTouched();
      setForm(prev => ({
        ...prev,
@@ -628,7 +656,7 @@ index a21b6ab85..afd58ecc5 100644
      }));
    };
  
-@@ -591,7 +577,7 @@ export function ProdutosTab() {
+@@ -591,7 +583,7 @@ export function ProdutosTab() {
            <Input 
              placeholder="Buscar por código, nome ou função..." 
              value={search} 
@@ -637,7 +665,7 @@ index a21b6ab85..afd58ecc5 100644
              className="pl-9"
            />
          </div>
-@@ -615,9 +601,9 @@ export function ProdutosTab() {
+@@ -615,32 +607,27 @@ export function ProdutosTab() {
              Exportar PDF
            </Button>
  
@@ -649,8 +677,10 @@ index a21b6ab85..afd58ecc5 100644
 +              <Plus className="h-4 w-4 mr-1" />Novo produto
              </Button>
            )}
++          {canConsultFiscal && <Button asChild variant="outline" size="sm"><Link to="/configuracoes/fiscal/produtos"><FileText className="h-4 w-4 mr-1" />Perfis fiscais</Link></Button>}
  
-@@ -626,21 +612,15 @@ export function ProdutosTab() {
+ 
+ 
  
  
  
@@ -677,7 +707,7 @@ index a21b6ab85..afd58ecc5 100644
                  <Tabs defaultValue="geral">
                    <TabsList className="grid w-full grid-cols-3 mb-4">
                      <TabsTrigger value="geral">Identificação</TabsTrigger>
-@@ -656,8 +636,8 @@ export function ProdutosTab() {
+@@ -656,8 +643,8 @@ export function ProdutosTab() {
                          <p className="text-[10px] text-muted-foreground">Gerado automaticamente conforme o tipo. Você pode editar se necessário.</p>
                        </div>
                        <div className="space-y-2">
@@ -688,7 +718,7 @@ index a21b6ab85..afd58ecc5 100644
                        </div>
                        <div className="space-y-2">
                          <Label>Tipo *</Label>
-@@ -672,10 +652,15 @@ export function ProdutosTab() {
+@@ -672,10 +659,15 @@ export function ProdutosTab() {
                        </div>
                        <div className="space-y-2">
                          <Label>Versão Catálogo</Label>
@@ -705,7 +735,7 @@ index a21b6ab85..afd58ecc5 100644
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/20 rounded border border-dashed">
                        <div className="flex items-center space-x-2">
                          <input 
-@@ -701,6 +686,7 @@ export function ProdutosTab() {
+@@ -701,6 +693,7 @@ export function ProdutosTab() {
                        )}
                      </div>
  
@@ -713,7 +743,7 @@ index a21b6ab85..afd58ecc5 100644
                      <div className="space-y-2">
                        <Label>Função Agronômica Completa</Label>
                        <Textarea value={form.funcao_completa} onChange={(e) => setForm({...form, funcao_completa: e.target.value})} rows={2} placeholder="Descrição detalhada das funções do produto..." />
-@@ -785,21 +771,19 @@ export function ProdutosTab() {
+@@ -785,21 +778,19 @@ export function ProdutosTab() {
                      </div>
  
                      <div className="border-t pt-4">
@@ -738,7 +768,7 @@ index a21b6ab85..afd58ecc5 100644
                              placeholder="Deixe em branco para remover"
                            />
                          </div>
-@@ -815,7 +799,7 @@ export function ProdutosTab() {
+@@ -815,7 +806,7 @@ export function ProdutosTab() {
                            <Label htmlFor="prod_b2b">Disponível no portal B2B</Label>
                          </div>
                          <div className="flex items-center gap-2">
@@ -747,7 +777,7 @@ index a21b6ab85..afd58ecc5 100644
                            <Label htmlFor="prod_ativo">Ativo</Label>
                          </div>
                        </div>
-@@ -827,6 +811,7 @@ export function ProdutosTab() {
+@@ -827,6 +818,7 @@ export function ProdutosTab() {
                    </TabsContent>
  
                    <TabsContent value="composicao" className="space-y-4 min-h-[300px] sm:min-h-[400px]">
@@ -755,7 +785,7 @@ index a21b6ab85..afd58ecc5 100644
                      <div className="flex justify-between items-center mb-2">
                        <Label>Composição Técnica (Fórmula)</Label>
                        <div className="flex gap-2">
-@@ -956,6 +941,7 @@ export function ProdutosTab() {
+@@ -956,6 +948,7 @@ export function ProdutosTab() {
                                  type="button" 
                                  variant="ghost" 
                                  size="icon" 
@@ -763,7 +793,7 @@ index a21b6ab85..afd58ecc5 100644
                                  className="h-8 w-8 text-destructive"
                                  onClick={() => removeMicrorganismo(idx)}
                                >
-@@ -990,9 +976,10 @@ export function ProdutosTab() {
+@@ -990,9 +983,10 @@ export function ProdutosTab() {
                      </div>
                    </TabsContent>
                  </Tabs>
@@ -775,7 +805,7 @@ index a21b6ab85..afd58ecc5 100644
                  </div>
                </form>
              </DialogContent>
-@@ -1000,11 +987,9 @@ export function ProdutosTab() {
+@@ -1000,11 +994,9 @@ export function ProdutosTab() {
          </div>
        </div>
  
@@ -790,7 +820,7 @@ index a21b6ab85..afd58ecc5 100644
        <div className="rounded-md border">
          <Table>
            <TableHeader>
-@@ -1032,7 +1017,7 @@ export function ProdutosTab() {
+@@ -1032,7 +1024,7 @@ export function ProdutosTab() {
                const safra: string | null = pAny.safra_referencia ?? null;
                const observacoes: string | null = pAny.observacoes ?? null;
                return (
@@ -799,7 +829,7 @@ index a21b6ab85..afd58ecc5 100644
                  <TableCell>
                    {p.codigo && (
                      <div className="font-mono text-[10px] text-muted-foreground">{p.codigo}</div>
-@@ -1040,7 +1025,7 @@ export function ProdutosTab() {
+@@ -1040,7 +1032,7 @@ export function ProdutosTab() {
                    <div className="font-medium flex items-center gap-2 flex-wrap">
                      {p.nome}
                      {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
@@ -808,7 +838,7 @@ index a21b6ab85..afd58ecc5 100644
                      <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />
                      {(p.formulacoes?.length || 0) > 0 && (
                        <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary bg-primary/5">Exclusivo</Badge>
-@@ -1106,8 +1091,8 @@ export function ProdutosTab() {
+@@ -1106,8 +1098,8 @@ export function ProdutosTab() {
                  </TableCell>
                  <TableCell>
                    <VolumesChips
@@ -819,7 +849,7 @@ index a21b6ab85..afd58ecc5 100644
                    />
                  </TableCell>
                  <TableCell className="text-right font-mono-data">
-@@ -1182,23 +1167,15 @@ export function ProdutosTab() {
+@@ -1182,23 +1174,15 @@ export function ProdutosTab() {
                          </Tooltip>
                        </TooltipProvider>
                      )}
@@ -852,7 +882,7 @@ index a21b6ab85..afd58ecc5 100644
                    </div>
                  </TableCell>
                </TableRow>
-@@ -1228,28 +1205,6 @@ export function ProdutosTab() {
+@@ -1228,28 +1212,6 @@ export function ProdutosTab() {
          />
        )}
  
@@ -1289,7 +1319,7 @@ index 24f8002e7..6c353a377 100644
 +    (["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === deliveryScope) });
 +}
 diff --git a/src/lib/permissions.ts b/src/lib/permissions.ts
-index dfbb41051..0241f256e 100644
+index dfbb41051..62f7004a6 100644
 --- a/src/lib/permissions.ts
 +++ b/src/lib/permissions.ts
 @@ -63,7 +63,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
@@ -1301,11 +1331,36 @@ index dfbb41051..0241f256e 100644
    },
    // Rota legada mantida apenas para o redirecionamento /protocolos -> /base-tecnica
    "/protocolos": {
+@@ -366,7 +366,13 @@ function resolveRoute(path: string): string {
+ 
+ export function getAccessLevel(role: string | null, path: string): AccessLevel {
+   if (!role) return "none";
+-  const route = resolveRoute(path);
++  const [pathname, search = ""] = path.split("#")[0].split("?");
++  // Financeiro inherits only the product consultation, not the sibling catalogue tabs.
++  if (role === "financeiro" && pathname === "/base-tecnica") {
++    const tabs = new URLSearchParams(search).getAll("tab");
++    if (tabs.length > 1 || (tabs.length === 1 && tabs[0] !== "produtos")) return "none";
++  }
++  const route = resolveRoute(pathname);
+   return ACCESS_MAP[route]?.[role as AppRole] ?? "none";
+ }
+ 
 diff --git a/src/pages/Protocolos.tsx b/src/pages/Protocolos.tsx
-index 769c875cc..1b35ae674 100644
+index 769c875cc..bb078222b 100644
 --- a/src/pages/Protocolos.tsx
 +++ b/src/pages/Protocolos.tsx
-@@ -53,7 +53,7 @@ export function CulturasTab() {
+@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { useTabParam } from "@/lib/navigation/useTabParam";
++import { useAuth } from "@/hooks/useAuth";
++import { canAccess } from "@/lib/permissions";
++import { Navigate, useLocation } from "react-router-dom";
+ import { Badge } from "@/components/ui/badge";
+ import { Textarea } from "@/components/ui/textarea";
+ import { Plus } from "lucide-react";
+@@ -53,7 +56,7 @@ export function CulturasTab() {
    return (
      <div className="space-y-4">
        <p className="text-sm text-muted-foreground" data-testid="culturas-readonly-notice">
@@ -1314,8 +1369,15 @@ index 769c875cc..1b35ae674 100644
        </p>
        {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
          <div><Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}><Plus className="mr-1 h-4 w-4" />Cultura própria</Button></div>
-@@ -484,7 +484,7 @@ export default function Protocolos() {
-   const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos", TAB_ALIASES);
+@@ -481,35 +484,41 @@ const TAB_ALIASES = {
+ } as const satisfies Record<string, (typeof MAIN_TABS)[number]>;
+ 
+ export default function Protocolos() {
+-  const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos", TAB_ALIASES);
++  const { roles = [] } = useAuth();
++  const location = useLocation();
++  const allowedTabs = MAIN_TABS.filter(value => roles.some(role => canAccess(role, `/base-tecnica?tab=${value}`)));
++  const [tab, setTab] = useTabParam("tab", allowedTabs, "produtos", TAB_ALIASES);
    useEffect(() => {
      const anterior = document.title;
 -    document.title = "Base Técnica Agronômica | Cultivo Farm";
@@ -1323,15 +1385,47 @@ index 769c875cc..1b35ae674 100644
      return () => {
        document.title = anterior;
      };
-@@ -492,7 +492,7 @@ export default function Protocolos() {
+   }, []);
++  if (!roles.some(role => canAccess(role, location.pathname + location.search))) {
++    return <Navigate to="/sem-permissao" replace />;
++  }
    return (
      <div className="space-y-6">
        <div>
 -        <h1 className="text-2xl font-bold">Base Técnica Agronômica</h1>
+-        <p className="text-muted-foreground">Produtos, microrganismos, culturas, alvos e recomendações técnicas.</p>
 +        <h1 className="text-2xl font-bold">Catálogo</h1>
-         <p className="text-muted-foreground">Produtos, microrganismos, culturas, alvos e recomendações técnicas.</p>
++        <p className="text-muted-foreground">{allowedTabs.length === 1 ? "Produtos da empresa." : "Produtos, microrganismos, culturas, alvos e recomendações técnicas."}</p>
        </div>
        <Card>
+         <CardContent className="pt-6">
+           <Tabs value={tab} onValueChange={setTab}>
+-            <TabsList className="grid w-full grid-cols-5">
+-              <TabsTrigger value="produtos">Produtos</TabsTrigger>
+-              <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>
+-              <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>
+-              <TabsTrigger value="culturas">Culturas</TabsTrigger>
+-              <TabsTrigger value="problemas">Problemas</TabsTrigger>
++            <TabsList className={`grid w-full ${allowedTabs.length === 1 ? "grid-cols-1" : "grid-cols-5"}`}>
++              {allowedTabs.includes("produtos") && <TabsTrigger value="produtos">Produtos</TabsTrigger>}
++              {allowedTabs.includes("microrganismos") && <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>}
++              {allowedTabs.includes("catalogo-tecnico") && <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>}
++              {allowedTabs.includes("culturas") && <TabsTrigger value="culturas">Culturas</TabsTrigger>}
++              {allowedTabs.includes("problemas") && <TabsTrigger value="problemas">Problemas</TabsTrigger>}
+             </TabsList>
+-            <TabsContent value="produtos"><ProdutosTab /></TabsContent>
+-            <TabsContent value="microrganismos"><MicrorganismosTab /></TabsContent>
+-            <TabsContent value="catalogo-tecnico"><CatalogoTecnicoTab /></TabsContent>
+-            <TabsContent value="culturas"><CulturasTab /></TabsContent>
+-            <TabsContent value="problemas"><ProblemasTab /></TabsContent>
++            {allowedTabs.includes("produtos") && <TabsContent value="produtos"><ProdutosTab /></TabsContent>}
++            {allowedTabs.includes("microrganismos") && <TabsContent value="microrganismos"><MicrorganismosTab /></TabsContent>}
++            {allowedTabs.includes("catalogo-tecnico") && <TabsContent value="catalogo-tecnico"><CatalogoTecnicoTab /></TabsContent>}
++            {allowedTabs.includes("culturas") && <TabsContent value="culturas"><CulturasTab /></TabsContent>}
++            {allowedTabs.includes("problemas") && <TabsContent value="problemas"><ProblemasTab /></TabsContent>}
+           </Tabs>
+         </CardContent>
+       </Card>
 diff --git a/src/pages/configuracoes/ProdutosEmpresa.tsx b/src/pages/configuracoes/ProdutosEmpresa.tsx
 index 657410833..9ba8892a2 100644
 --- a/src/pages/configuracoes/ProdutosEmpresa.tsx
@@ -1583,10 +1677,16 @@ index bc59769da..bcbaa39bb 100644
    });
    it("Microrganismos: lista sem Novo/Excluir e sem edição", async () => {
 diff --git a/src/test/catalogo/tenant-catalog-owned-flow.test.tsx b/src/test/catalogo/tenant-catalog-owned-flow.test.tsx
-index 3913d9f7f..9016700e0 100644
+index 3913d9f7f..0bc52bf89 100644
 --- a/src/test/catalogo/tenant-catalog-owned-flow.test.tsx
 +++ b/src/test/catalogo/tenant-catalog-owned-flow.test.tsx
-@@ -6,7 +6,7 @@ const AR = "org-ar"; const FSF = "org-fsf";
+@@ -1,12 +1,13 @@
+ import { describe, it, expect, vi, beforeEach } from "vitest";
+ import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
+ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { MemoryRouter } from "react-router-dom";
+ 
+ const AR = "org-ar"; const FSF = "org-fsf";
  const db = { rows: [] as Array<Record<string, unknown>>, calls: [] as string[], seq: 0, readDelay: null as Promise<void> | null,
    writes: [] as Array<Record<string, unknown>>, writeDelay: null as Promise<void> | null, failComposition: false, uncertain: false,
    receipts: new Map<string, unknown>() };
@@ -1595,7 +1695,7 @@ index 3913d9f7f..9016700e0 100644
  const toastFns = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
  vi.mock("sonner", () => ({ toast: toastFns }));
  vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
-@@ -21,6 +21,14 @@ function query(table: string) {
+@@ -21,6 +22,14 @@ function query(table: string) {
  vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc: (fn: string, args: Record<string, unknown>) => {
    const run = async () => {
      db.calls.push(fn);
@@ -1610,7 +1710,18 @@ index 3913d9f7f..9016700e0 100644
      if (fn === "tenant_catalog_owned_list") {
        const scopeAtRead = auth.profile.organization_id;
        if (db.readDelay) await db.readDelay;
-@@ -84,7 +92,7 @@ async function confirm(reason = "motivo suficiente") {
+@@ -68,8 +77,8 @@ import { CulturasTab } from "@/pages/Protocolos";
+ function requireRow(node: HTMLElement) { const row = node.closest("tr"); if (!row) throw new Error("Linha não encontrada"); return row; }
+ function app(Component = CulturasTab) {
+   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+-  const rendered = render(<QueryClientProvider client={client}><Component /></QueryClientProvider>);
+-  return { ...rendered, client, redraw: () => rendered.rerender(<QueryClientProvider client={client}><Component /></QueryClientProvider>) };
++  const rendered = render(<MemoryRouter><QueryClientProvider client={client}><Component /></QueryClientProvider></MemoryRouter>);
++  return { ...rendered, client, redraw: () => rendered.rerender(<MemoryRouter><QueryClientProvider client={client}><Component /></QueryClientProvider></MemoryRouter>) };
+ }
+ async function submitDialog(name: string, reason = "motivo suficiente") {
+   fireEvent.change(await screen.findByLabelText("Nome"), { target: { value: name } });
+@@ -84,7 +93,7 @@ async function confirm(reason = "motivo suficiente") {
  describe("culturas próprias na aba existente", () => {
    beforeEach(() => {
      Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
@@ -1619,7 +1730,7 @@ index 3913d9f7f..9016700e0 100644
      Object.values(toastFns).forEach((fn) => fn.mockReset());
    });
  
-@@ -142,7 +150,7 @@ describe("culturas próprias na aba existente", () => {
+@@ -142,7 +151,7 @@ describe("culturas próprias na aba existente", () => {
      db.readDelay = new Promise<void>((resolve) => { release = resolve; });
      const view = app();
      await waitFor(() => expect(db.calls).toContain("tenant_catalog_owned_list"));
@@ -1628,7 +1739,7 @@ index 3913d9f7f..9016700e0 100644
      db.readDelay = null; view.redraw();
      await act(async () => release());
      await screen.findByText("Soja");
-@@ -165,19 +173,26 @@ describe("culturas próprias na aba existente", () => {
+@@ -165,19 +174,26 @@ describe("culturas próprias na aba existente", () => {
  describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
    beforeEach(() => {
      Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
@@ -1660,7 +1771,7 @@ index 3913d9f7f..9016700e0 100644
      expect(await screen.findByText(nome + " editado")).toBeTruthy();
      expect(db.rows[0].descricao).toBe("Descrição fornecida");
    });
-@@ -186,48 +201,41 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
+@@ -186,48 +202,41 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
  describe("salvamento único de identificação/composição", () => {
    beforeEach(() => {
      Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
@@ -1731,7 +1842,7 @@ index 3913d9f7f..9016700e0 100644
    });
    it("resposta incerta após commit reutiliza recibo sem criar outra raiz", async () => {
      app(); await screen.findByText("Soja"); fireEvent.click(screen.getByRole("button", { name: /Cultura própria/ }));
-@@ -243,9 +251,9 @@ describe("salvamento único de identificação/composição", () => {
+@@ -243,9 +252,9 @@ describe("salvamento único de identificação/composição", () => {
      db.writeDelay = new Promise<void>((resolve) => { release = resolve; });
      await submitDialog("Resposta antiga"); fireEvent.click(screen.getByRole("button", { name: "Salvando..." }));
      await waitFor(() => expect(db.writes).toHaveLength(1));
@@ -1743,7 +1854,7 @@ index 3913d9f7f..9016700e0 100644
      await act(async () => release());
      expect(toastFns.success).not.toHaveBeenCalled(); expect(toastFns.error).not.toHaveBeenCalled();
    });
-@@ -265,7 +273,7 @@ describe("salvamento único de identificação/composição", () => {
+@@ -265,7 +274,7 @@ describe("salvamento único de identificação/composição", () => {
          reason: "motivo suficiente", idempotencyKey: "k-ar-pendente" }).catch(() => undefined);
      });
      await waitFor(() => expect(db.writes).toHaveLength(1));
@@ -1767,10 +1878,10 @@ index 4242ee9fb..73d11a139 100644
  import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
 diff --git a/src/test/catalogo/unifiedProducts.realClient.test.tsx b/src/test/catalogo/unifiedProducts.realClient.test.tsx
 new file mode 100644
-index 000000000..939098714
+index 000000000..197d21d9e
 --- /dev/null
 +++ b/src/test/catalogo/unifiedProducts.realClient.test.tsx
-@@ -0,0 +1,216 @@
+@@ -0,0 +1,251 @@
 +import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 +import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 +import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -1788,13 +1899,15 @@ index 000000000..939098714
 +});
 +import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 +import ProdutosEmpresa from "@/pages/configuracoes/ProdutosEmpresa";
++import Protocolos from "@/pages/Protocolos";
 +import { useSaveTenantProduct } from "@/hooks/useTenantProducts";
 +import { useSaveTenantProductVolume, useTenantProductVolumes } from "@/hooks/useTenantProductVolumes";
 +import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 +import { useProductProfile, useUpsertProductProfile } from "@/hooks/useProductProfile";
 +import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
 +import { navigation } from "@/config/navigation";
-+import { getAccessLevel } from "@/lib/permissions";
++import { canAccess, getAccessLevel } from "@/lib/permissions";
++import { searchNavItems } from "@/lib/navigation/search";
 +import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 +
 +const clients: QueryClient[] = [];
@@ -1802,7 +1915,7 @@ index 000000000..939098714
 +const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 +const ack = { product_id: "p1", updated_at: stamp, replayed: false };
 +function wrapper({ children }: { children: ReactNode }) {
-+  return <QueryClientProvider client={clients.at(-1) as QueryClient}>{children}</QueryClientProvider>;
++  return <MemoryRouter><QueryClientProvider client={clients.at(-1) as QueryClient}>{children}</QueryClientProvider></MemoryRouter>;
 +}
 +function client() { const c = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); clients.push(c); return c; }
 +function rpcCalls(name: string) { return state.fetch.mock.calls.filter(([url]) => String(url).endsWith(`/rpc/${name}`)).map(([, init]) => JSON.parse(init.body)); }
@@ -1832,6 +1945,10 @@ index 000000000..939098714
 +});
 +it.each(["administrador", "gestor"])("%s cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real", async role => {
 +  state.roles = [role]; client(); render(<ProdutosTab />, { wrapper });
++  if (role === "gestor") {
++    expect(getAccessLevel(role, "/configuracoes/produtos")).toBe("r");
++    expect(getAccessLevel(role, "/base-tecnica?tab=produtos")).toBe("rw");
++  }
 +  await screen.findByText("Nenhum produto encontrado");
 +  await waitFor(() => expect(state.fetch.mock.calls.filter(([u]) => String(u).includes("/formulacoes")).length).toBe(1));
 +  fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
@@ -1861,6 +1978,35 @@ index 000000000..939098714
 +  expect(getAccessLevel("superadmin", "/base-tecnica")).toBe("none");
 +  expect(getAccessLevel("financeiro", "/base-tecnica")).toBe("r");
 +  expect(isPathEntitled("/base-tecnica?tab=produtos", { status: "ready", features: new Set() })).toBe(false);
++});
++it("Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs", async () => {
++  state.roles = ["financeiro"]; const qc = client();
++  state.rows = [{ id: "p1", nome: "Produto financeiro", tipo: "solo", ativo: true, updated_at: stamp, owner_organization_id: "org-A" }];
++  render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={["/configuracoes/produtos?busca=solo&tab=culturas#p1"]}><Routes>
++    <Route path="/configuracoes/produtos" element={<ProdutosEmpresa />} />
++    <Route path="/base-tecnica" element={<Protocolos />} />
++  </Routes></MemoryRouter></QueryClientProvider>);
++  await screen.findByText("Produto financeiro");
++  expect(screen.getAllByRole("tab")).toHaveLength(1);
++  expect(screen.getByRole("tab", { name: "Produtos" }).getAttribute("aria-selected")).toBe("true");
++  for (const name of ["Novo produto", "Editar", "Arquivar", "Reativar"]) expect(screen.queryByRole("button", { name })).toBeNull();
++  expect(screen.getByRole("link", { name: "Perfis fiscais" }).getAttribute("href")).toBe("/configuracoes/fiscal/produtos");
++  expect(rpcCalls("tenant_product_list")).toHaveLength(1);
++  for (const name of ["tenant_product_save", "tenant_product_set_archived", "tenant_catalog_root_save", "rpc_associate_microorganism_fiscal_product"]) expect(rpcCalls(name)).toHaveLength(0);
++  const catalogue = navigation.find(item => item.id === "protocolos");
++  expect(searchNavItems(catalogue ? [catalogue] : [], "", "financeiro").map(item => item.id)).toEqual(["protocolos", "protocolos-produtos"]);
++  expect(getAccessLevel("financeiro", "/configuracoes/fiscal/produtos")).toBe("rw"); // Existing fiscal route only, not product CRUD.
++});
++it.each(["microrganismos", "catalogo-tecnico", "culturas", "problemas", "fichas", "desconhecida", "produtos&tab=culturas"])("Financeiro não monta aba %s por URL direta", async tab => {
++  state.roles = ["financeiro"]; const qc = client();
++  expect(canAccess("financeiro", `/base-tecnica?tab=${tab}`)).toBe(false);
++  expect(getAccessLevel("gestor", "/base-tecnica?tab=produtos")).toBe("rw");
++  render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={[`/base-tecnica?tab=${tab}`]}><Routes>
++    <Route path="/base-tecnica" element={<Protocolos />} />
++    <Route path="/sem-permissao" element={<output>Acesso bloqueado</output>} />
++  </Routes></MemoryRouter></QueryClientProvider>);
++  await screen.findByText("Acesso bloqueado");
++  expect(state.fetch).not.toHaveBeenCalled();
 +});
 +it("composição usa CAS retornado, conserva concentração/unidade e falha explícita, sem compensação", async () => {
 +  client();

@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from "@/lib/navigation/useTabParam";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccess } from "@/lib/permissions";
+import { Navigate, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
@@ -481,7 +484,10 @@ const TAB_ALIASES = {
 } as const satisfies Record<string, (typeof MAIN_TABS)[number]>;
 
 export default function Protocolos() {
-  const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos", TAB_ALIASES);
+  const { roles = [] } = useAuth();
+  const location = useLocation();
+  const allowedTabs = MAIN_TABS.filter(value => roles.some(role => canAccess(role, `/base-tecnica?tab=${value}`)));
+  const [tab, setTab] = useTabParam("tab", allowedTabs, "produtos", TAB_ALIASES);
   useEffect(() => {
     const anterior = document.title;
     document.title = "Catálogo | Cultivo Farm";
@@ -489,27 +495,30 @@ export default function Protocolos() {
       document.title = anterior;
     };
   }, []);
+  if (!roles.some(role => canAccess(role, location.pathname + location.search))) {
+    return <Navigate to="/sem-permissao" replace />;
+  }
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Catálogo</h1>
-        <p className="text-muted-foreground">Produtos, microrganismos, culturas, alvos e recomendações técnicas.</p>
+        <p className="text-muted-foreground">{allowedTabs.length === 1 ? "Produtos da empresa." : "Produtos, microrganismos, culturas, alvos e recomendações técnicas."}</p>
       </div>
       <Card>
         <CardContent className="pt-6">
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="produtos">Produtos</TabsTrigger>
-              <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>
-              <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>
-              <TabsTrigger value="culturas">Culturas</TabsTrigger>
-              <TabsTrigger value="problemas">Problemas</TabsTrigger>
+            <TabsList className={`grid w-full ${allowedTabs.length === 1 ? "grid-cols-1" : "grid-cols-5"}`}>
+              {allowedTabs.includes("produtos") && <TabsTrigger value="produtos">Produtos</TabsTrigger>}
+              {allowedTabs.includes("microrganismos") && <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>}
+              {allowedTabs.includes("catalogo-tecnico") && <TabsTrigger value="catalogo-tecnico">Catálogo Técnico</TabsTrigger>}
+              {allowedTabs.includes("culturas") && <TabsTrigger value="culturas">Culturas</TabsTrigger>}
+              {allowedTabs.includes("problemas") && <TabsTrigger value="problemas">Problemas</TabsTrigger>}
             </TabsList>
-            <TabsContent value="produtos"><ProdutosTab /></TabsContent>
-            <TabsContent value="microrganismos"><MicrorganismosTab /></TabsContent>
-            <TabsContent value="catalogo-tecnico"><CatalogoTecnicoTab /></TabsContent>
-            <TabsContent value="culturas"><CulturasTab /></TabsContent>
-            <TabsContent value="problemas"><ProblemasTab /></TabsContent>
+            {allowedTabs.includes("produtos") && <TabsContent value="produtos"><ProdutosTab /></TabsContent>}
+            {allowedTabs.includes("microrganismos") && <TabsContent value="microrganismos"><MicrorganismosTab /></TabsContent>}
+            {allowedTabs.includes("catalogo-tecnico") && <TabsContent value="catalogo-tecnico"><CatalogoTecnicoTab /></TabsContent>}
+            {allowedTabs.includes("culturas") && <TabsContent value="culturas"><CulturasTab /></TabsContent>}
+            {allowedTabs.includes("problemas") && <TabsContent value="problemas"><ProblemasTab /></TabsContent>}
           </Tabs>
         </CardContent>
       </Card>
