@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from "@/lib/navigation/useTabParam";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccess } from "@/lib/permissions";
+import { Navigate, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
@@ -484,6 +485,7 @@ const TAB_ALIASES = {
 
 export default function Protocolos() {
   const { roles = [] } = useAuth();
+  const location = useLocation();
   const allowedTabs = MAIN_TABS.filter(value => roles.some(role => canAccess(role, `/base-tecnica?tab=${value}`)));
   const [tab, setTab] = useTabParam("tab", allowedTabs, "produtos", TAB_ALIASES);
   useEffect(() => {
@@ -493,6 +495,9 @@ export default function Protocolos() {
       document.title = anterior;
     };
   }, []);
+  if (!roles.some(role => canAccess(role, location.pathname + location.search))) {
+    return <Navigate to="/sem-permissao" replace />;
+  }
   return (
     <div className="space-y-6">
       <div>

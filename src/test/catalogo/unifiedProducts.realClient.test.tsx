@@ -15,13 +15,15 @@ vi.mock("@/integrations/supabase/client", async () => {
 });
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import ProdutosEmpresa from "@/pages/configuracoes/ProdutosEmpresa";
+import Protocolos from "@/pages/Protocolos";
 import { useSaveTenantProduct } from "@/hooks/useTenantProducts";
 import { useSaveTenantProductVolume, useTenantProductVolumes } from "@/hooks/useTenantProductVolumes";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 import { useProductProfile, useUpsertProductProfile } from "@/hooks/useProductProfile";
 import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
 import { navigation } from "@/config/navigation";
-import { getAccessLevel } from "@/lib/permissions";
+import { canAccess, getAccessLevel } from "@/lib/permissions";
+import { searchNavItems } from "@/lib/navigation/search";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 
 const clients: QueryClient[] = [];
@@ -29,7 +31,7 @@ const stamp = "2026-11-03T01:00:00Z";
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const ack = { product_id: "p1", updated_at: stamp, replayed: false };
 function wrapper({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={clients.at(-1) as QueryClient}>{children}</QueryClientProvider>;
+  return <MemoryRouter><QueryClientProvider client={clients.at(-1) as QueryClient}>{children}</QueryClientProvider></MemoryRouter>;
 }
 function client() { const c = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); clients.push(c); return c; }
 function rpcCalls(name: string) { return state.fetch.mock.calls.filter(([url]) => String(url).endsWith(`/rpc/${name}`)).map(([, init]) => JSON.parse(init.body)); }
@@ -59,6 +61,10 @@ it("único menu de produtos e redirect preserva query/hash com aba destino prior
 });
 it.each(["administrador", "gestor"])("%s cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real", async role => {
   state.roles = [role]; client(); render(<ProdutosTab />, { wrapper });
+  if (role === "gestor") {
+    expect(getAccessLevel(role, "/configuracoes/produtos")).toBe("r");
+    expect(getAccessLevel(role, "/base-tecnica?tab=produtos")).toBe("rw");
+  }
   await screen.findByText("Nenhum produto encontrado");
   await waitFor(() => expect(state.fetch.mock.calls.filter(([u]) => String(u).includes("/formulacoes")).length).toBe(1));
   fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
@@ -88,6 +94,35 @@ it.each(["financeiro", "consultor_tecnico", "parceiro_b2b", "parceiro_b2b_tecnic
   expect(getAccessLevel("superadmin", "/base-tecnica")).toBe("none");
   expect(getAccessLevel("financeiro", "/base-tecnica")).toBe("r");
   expect(isPathEntitled("/base-tecnica?tab=produtos", { status: "ready", features: new Set() })).toBe(false);
+});
+it("Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs", async () => {
+  state.roles = ["financeiro"]; const qc = client();
+  state.rows = [{ id: "p1", nome: "Produto financeiro", tipo: "solo", ativo: true, updated_at: stamp, owner_organization_id: "org-A" }];
+  render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={["/configuracoes/produtos?busca=solo&tab=culturas#p1"]}><Routes>
+    <Route path="/configuracoes/produtos" element={<ProdutosEmpresa />} />
+    <Route path="/base-tecnica" element={<Protocolos />} />
+  </Routes></MemoryRouter></QueryClientProvider>);
+  await screen.findByText("Produto financeiro");
+  expect(screen.getAllByRole("tab")).toHaveLength(1);
+  expect(screen.getByRole("tab", { name: "Produtos" }).getAttribute("aria-selected")).toBe("true");
+  for (const name of ["Novo produto", "Editar", "Arquivar", "Reativar"]) expect(screen.queryByRole("button", { name })).toBeNull();
+  expect(screen.getByRole("link", { name: "Perfis fiscais" }).getAttribute("href")).toBe("/configuracoes/fiscal/produtos");
+  expect(rpcCalls("tenant_product_list")).toHaveLength(1);
+  for (const name of ["tenant_product_save", "tenant_product_set_archived", "tenant_catalog_root_save", "rpc_associate_microorganism_fiscal_product"]) expect(rpcCalls(name)).toHaveLength(0);
+  const catalogue = navigation.find(item => item.id === "protocolos");
+  expect(searchNavItems(catalogue ? [catalogue] : [], "", "financeiro").map(item => item.id)).toEqual(["protocolos", "protocolos-produtos"]);
+  expect(getAccessLevel("financeiro", "/configuracoes/fiscal/produtos")).toBe("rw"); // Existing fiscal route only, not product CRUD.
+});
+it.each(["microrganismos", "catalogo-tecnico", "culturas", "problemas", "fichas", "desconhecida", "produtos&tab=culturas"])("Financeiro não monta aba %s por URL direta", async tab => {
+  state.roles = ["financeiro"]; const qc = client();
+  expect(canAccess("financeiro", `/base-tecnica?tab=${tab}`)).toBe(false);
+  expect(getAccessLevel("gestor", "/base-tecnica?tab=produtos")).toBe("rw");
+  render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={[`/base-tecnica?tab=${tab}`]}><Routes>
+    <Route path="/base-tecnica" element={<Protocolos />} />
+    <Route path="/sem-permissao" element={<output>Acesso bloqueado</output>} />
+  </Routes></MemoryRouter></QueryClientProvider>);
+  await screen.findByText("Acesso bloqueado");
+  expect(state.fetch).not.toHaveBeenCalled();
 });
 it("composição usa CAS retornado, conserva concentração/unidade e falha explícita, sem compensação", async () => {
   client();
