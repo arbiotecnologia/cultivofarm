@@ -218,7 +218,7 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   expect(state.rows).toHaveLength(1);
 });
 it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da composição mantém ACK/componentes e replay único", async failure => {
-  client(); let attempts = 0; const receipts = new Map<string, typeof ack>();
+  client(); let attempts = 0; let compositionCommits = 0; const compositionReceipts = new Set<string>(); const receipts = new Map<string, typeof ack>();
   state.fetch.mockImplementation(async (url, init) => {
     const name = String(url).split("/rpc/")[1];
     if (name === "tenant_product_list") return json(state.rows);
@@ -231,8 +231,10 @@ it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da compo
       return json(receipts.get(args.p_idempotency_key));
     }
     if (name === "tenant_catalog_formulacoes_replace") {
+      const args = JSON.parse(init.body);
       if (++attempts === 1) {
         if (failure === "recusa definitiva") return json({ code: "42501", message: "tenant_catalog_ref_foreign" }, 403);
+        compositionReceipts.add(args.p_idempotency_key); compositionCommits++;
         throw new Error("ACK perdido após composição");
       }
       return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
