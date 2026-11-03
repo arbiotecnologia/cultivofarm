@@ -358,7 +358,7 @@ function mountNewProductFlow(opts: { composition: () => Response | Promise<Respo
   return ctl;
 }
 async function submitNewWithComponent() {
-  render(<ProdutosTab />, { wrapper });
+  const view = render(<ProdutosTab />, { wrapper });
   await screen.findByText("Nenhum produto encontrado");
   fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial" } });
@@ -368,6 +368,7 @@ async function submitNewWithComponent() {
   fireEvent.click(await screen.findByRole("option", { name: /Bacillus preservado/ }));
   fireEvent.keyDown(screen.getByRole("option", { name: /Bacillus preservado/ }), { key: "Escape" });
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  return view;
 }
 
 it("recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca", async () => {
@@ -442,15 +443,14 @@ it("resposta perdida: saída explícita mantém pendência/chaves, bloqueia nova
 it("troca de escopo descarta rascunho/exportação pendentes sem reutilizar em outro tenant", async () => {
   client();
   mountNewProductFlow({ composition: async () => { throw new Error("ACK perdido"); } });
-  await submitNewWithComponent();
+  const view = await submitNewWithComponent();
   await screen.findByRole("button", { name: "Reconciliar composição" });
   fireEvent.click(screen.getByRole("button", { name: "Sair mantendo pendência" }));
   await screen.findByRole("button", { name: "Retomar reconciliação" });
   const savesBefore = rpcCalls("tenant_product_save").length;
   state.tenant = "org-B"; state.epoch = 1; state.rows = [];
-  cleanup();
-  render(<ProdutosTab />, { wrapper });
-  await screen.findByText("Nenhum produto encontrado");
+  view.rerender(<ProdutosTab />); // mesma montagem: o efeito de escopo deve limpar o estado retido
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Retomar reconciliação" })).toBeNull());
   expect(screen.queryByRole("button", { name: "Retomar reconciliação" })).toBeNull();
   expect(screen.queryByLabelText("Rascunho exportável")).toBeNull();
   expect(screen.getByRole("button", { name: "Novo produto" }).matches(":disabled")).toBe(false);
