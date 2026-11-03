@@ -366,7 +366,13 @@ function resolveRoute(path: string): string {
 
 export function getAccessLevel(role: string | null, path: string): AccessLevel {
   if (!role) return "none";
-  const route = resolveRoute(path);
+  const [pathname, search = ""] = path.split("#")[0].split("?");
+  // Financeiro inherits only the product consultation, not the sibling catalogue tabs.
+  if (role === "financeiro" && pathname === "/base-tecnica") {
+    const tabs = new URLSearchParams(search).getAll("tab");
+    if (tabs.length > 1 || (tabs.length === 1 && tabs[0] !== "produtos")) return "none";
+  }
+  const route = resolveRoute(pathname);
   return ACCESS_MAP[route]?.[role as AppRole] ?? "none";
 }
 

@@ -28,7 +28,7 @@ export function AppSidebar() {
   // primário, escondendo itens que o usuário multipapel podia realmente abrir.
   const activeContext = readActiveContext();
 
-  /** Rota sem query string — deep links (`?tab=`) usam a permissão da página. */
+  /** Entitlements use the page; RBAC also restricts catalogue tab deep links. */
   const routePath = (route: string) =>
     route.indexOf("?") === -1 ? route : route.slice(0, route.indexOf("?"));
 
@@ -40,7 +40,7 @@ export function AppSidebar() {
     resolveEffectiveRouteRole({
       roles,
       primaryRole: role,
-      path: routePath(item.route),
+      path: item.route,
       activeContext,
     }).allowed &&
     isNavItemFeatureEnabled(item) &&
