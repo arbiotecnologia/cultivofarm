@@ -1,4 +1,5 @@
 ## 03/11 — Unificação Catálogo → Produtos (local, sem SQL/publicação)
+- [ ] Consolidar RBAC independente: Financeiro restrito a Produtos/associação fiscal existente, Gestor CRUD próprio; testar e atualizar patch sem DDL/publicação.
 - [x] Achado independente incorporado: gate Owned OFF, parcial congelado/reconciliável com mesmas chaves/CAS; 53 focados e 916 catálogo PASS.
 - [x] Unificar menu/redirect e cadastro com hooks scoped, sem writer global.
 - [x] Preservar composição/perfis/volumes; declarar campos não suportados e falhas parciais.
