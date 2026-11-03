@@ -44,7 +44,7 @@ export function useSaveTenantProductVolume() {
     },
     onSuccess: (_ack, _v, context) => {
       if (!context?.current()) return;
-      return qc.invalidateQueries({ predicate: q => ["tenant-product-volumes", "catalogo-volumes", "catalogo-unificado", "partner-catalog-secure"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === context.actorScope });
+      return qc.invalidateQueries({ predicate: q => ["tenant-product-details", "tenant-product-volumes", "catalogo-volumes", "catalogo-unificado", "partner-catalog-secure"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === context.actorScope });
     },
   });
 }

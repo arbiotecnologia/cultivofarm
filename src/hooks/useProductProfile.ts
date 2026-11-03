@@ -2,6 +2,10 @@ import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
 import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
+import { useTenantCatalogEditor } from "./useTenantCatalogEditor";
+import { useStorageAccessScope } from "./useStorageAccessScope";
+import { useRef } from "react";
 
 export interface ProductProfile {
   id: string;
@@ -99,25 +103,34 @@ export async function fetchProductProfileBundle(client: any, produtoId: string) 
 }
 
 export function useProductProfile(produtoId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["product-profile", produtoId],
     enabled: !!produtoId,
     retry: false,
-    queryFn: () => fetchProductProfileBundle(supabase as any, produtoId!),
+    queryFn: async () => {
+      if (!produtoId) throw new Error("Produit indisponível");
+      return fetchProductProfileBundle(supabase as any, produtoId);
+    },
   });
 }
 
 
 export function useUpsertProductProfile() {
   const qc = useQueryClient();
+  const editor = useTenantCatalogEditor();
+  const actor = useStorageAccessScope("portal-query-actor");
+  const attempt = useRef<{ sig: string; key: string } | null>(null);
   return useMutation({
+    retry: false,
+    onMutate: () => ({ current: editor.capture(), actorScope: actor.scope }),
     mutationFn: async (payload: Partial<ProductProfile> & { produto_id: string }) => {
-      assertGlobalCatalogWriteBlocked();
+      const current = editor.capture();
+      if (!editor.canEdit || !current()) throw new Error("catalog_context_unavailable");
       // Catálogo exclusivo por empresa: ficha técnica só pela RPC (empresa do pai no servidor, CAS, idempotência);
       // status/validação nunca vêm do formulário — aprovação segue o fluxo auditado próprio.
       const { id: _id, updated_at: _u, status_validacao, validado_por: _vp, validado_em: _ve, created_at: _c, created_by: _cb, updated_by: _ub, ...fields } = payload as any;
       // versão OBSERVADA na leitura montada (CAS); nunca uma releitura no momento do envio
-      const observed = (qc.getQueryData(["product-profile", payload.produto_id]) as any)?.profile ?? null;
+      const observed = (qc.getQueriesData({ queryKey: ["product-profile", payload.produto_id], predicate: q => q.queryKey.at(-2) === actor.scope })[0]?.[1] as any)?.profile ?? null;
       const id = observed?.id ?? null;
       const updated_at = observed?.updated_at ?? null;
       const currentStatus = observed?.status_validacao ?? "rascunho";
@@ -125,12 +138,16 @@ export function useUpsertProductProfile() {
         throw new Error("Mudança de status da ficha ainda não está disponível no catálogo por empresa; o conteúdo não foi salvo.");
       }
       if (id) delete fields.produto_id;
-      const ack = await saveTenantCatalogRoot(supabase as any, "product_technical_profiles", id ?? null, fields, id ? (updated_at ?? null) : null);
+      const sig = JSON.stringify([editor.scope, id, fields, updated_at]);
+      if (attempt.current?.sig !== sig) attempt.current = { sig, key: crypto.randomUUID() };
+      const ack = await saveTenantCatalogRoot(supabase as any, "product_technical_profiles", id ?? null, fields, id ? (updated_at ?? null) : null, attempt.current.key);
+      if (!current()) throw new Error("catalog_context_changed");
+      attempt.current = null;
       return { ...payload, id: ack.id, updated_at: ack.updated_at };
     },
-    onSuccess: (_d, v) => {
-      qc.invalidateQueries({ queryKey: ["product-profile", v.produto_id] });
-      qc.invalidateQueries({ queryKey: ["catalogo-tecnico"] });
+    onSuccess: (_d, v, context) => {
+      if (!context?.current()) return;
+      return qc.invalidateQueries({ predicate: q => ["product-profile", "tenant-product-details", "catalogo-tecnico"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === context.actorScope });
     },
   });
 }

@@ -1065,7 +1065,7 @@ export function ProdutosTab() {
                 </TableCell>
                 <TableCell>
                   <VolumesChips
-                    volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
+                    volumes={(details.data?.volumes ?? []).filter(v => v.produto_id === p.id) as any}
                     onAdd={editor.canEdit ? () => setVolumesEdit(p) : undefined}
                   />
                 </TableCell>

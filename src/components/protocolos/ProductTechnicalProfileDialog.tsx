@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
 import { useProductProfile, useUpsertProductProfile } from "@/hooks/useProductProfile";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
 import { ProductFormulaBenefits } from "./ProductFormulaBenefits";
@@ -55,6 +56,7 @@ interface Produto {
   modo_acao?: string | null;
   funcao_completa?: string | null;
   b2b_enabled?: boolean;
+  owner_organization_id?: string | null;
 }
 
 interface Props {
@@ -70,6 +72,8 @@ const SOURCE_VIEW_ROLES = ["administrador", "gestor", "consultor_tecnico", "tecn
 
 export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, origem = "protocolos" }: Props) {
   const { role } = useAuth();
+  const editor = useTenantCatalogEditor();
+  const tenantContent = editor.canEdit && !!produto?.owner_organization_id && origem === "protocolos";
   // Contrato: catálogo global é somente consulta para perfis de empresa.
   const canEditFull: boolean = TENANT_CAN_EDIT_GLOBAL_CATALOG;
   const canSeeHistory = role ? TECH_ROLES.includes(role) : false;
@@ -177,7 +181,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
     toast.success("Resumo B2B copiado");
   };
 
-  const ehReadOnly = (_field: "b2b" | "full") => !canEditFull;
+  const ehReadOnly = (_field: "b2b" | "full") => !(canEditFull || tenantContent);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -323,6 +327,14 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
         <div className="flex flex-col gap-3 border-t pt-3 mt-2">
           <div className="flex flex-wrap gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={copyResumoB2B}>Copiar resumo B2B</Button>
+            {!isError && isSuccess && tenantContent && <Button size="sm" disabled={upsert.isPending} onClick={async () => {
+              if (!produto) return;
+              const current = editor.capture();
+              try {
+                await upsert.mutateAsync({ produto_id: produto.id, ...form, status_validacao: data?.profile?.status_validacao ?? "rascunho" });
+                if (current()) toast.success("Conteúdo da ficha salvo");
+              } catch (e) { if (current()) toast.error((e as Error).message); }
+            }}>Salvar conteúdo</Button>}
             {!isError && canEditFull && data?.profile?.id && (
               <ReturnToReviewButton kind="produto" profileId={data.profile.id} onDone={refetch} />
             )}
