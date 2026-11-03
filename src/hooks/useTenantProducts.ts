@@ -33,12 +33,16 @@ export function useSaveTenantProduct() {
   const scope = useStorageAccessScope("tenant-product-save");
   const actor = useStorageAccessScope("portal-query-actor");
   const keyRef = useRef<{ sig: string; key: string; compositionKey: string } | null>(null);
+  const busy = useRef(false);
   return useMutation({
     retry: false,
     onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
     mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null; composition?: Record<string, unknown>[] }) => {
       const current = scope.capture();
       if (!current()) throw new Error("catalog_context_unavailable");
+      if (busy.current) throw new Error("Aguarde o salvamento em andamento.");
+      busy.current = true;
+      try {
       const payload = buildTenantProductPayload(v.draft, v.id === null);
       if (v.id && !v.expectedUpdatedAt) throw new Error("Versão do produto desconhecida. Recarregue antes de editar.");
       const sig = JSON.stringify([scope.scope, v.id, payload, v.expectedUpdatedAt, v.composition]);
@@ -66,6 +70,7 @@ export function useSaveTenantProduct() {
       }
       keyRef.current = null;
       return { ...ack, compositionError: undefined };
+      } finally { busy.current = false; }
     },
     onSuccess: (_ack, _vars, context) => {
       if (!context?.current()) return;

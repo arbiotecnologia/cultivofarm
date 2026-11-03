@@ -21,7 +21,7 @@ function query(table: string) {
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc: (fn: string, args: Record<string, unknown>) => {
   const run = async () => {
     db.calls.push(fn);
-    if (fn === "tenant_product_list") return { data: db.rows.filter(r => r.entity === "produto" && r.owner_organization_id === auth.profile.organization_id && (args.p_include_archived || r.ativo)), error: null };
+    if (fn === "tenant_product_list") return { data: structuredClone(db.rows.filter(r => r.entity === "produto" && r.owner_organization_id === auth.profile.organization_id && (args.p_include_archived || r.ativo))), error: null };
     if (fn === "tenant_product_save") {
       db.writes.push(args);
       const row = db.rows.find(r => r.id === args.p_product_id);

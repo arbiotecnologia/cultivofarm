@@ -608,7 +608,7 @@ export function ProdutosTab() {
 
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
-            <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
+            <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
               </DialogHeader>
