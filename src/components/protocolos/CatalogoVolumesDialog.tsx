@@ -17,9 +17,7 @@ import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
 import { fmtL } from "@/lib/envaseFormat";
 import { formatPrecoLitro, formatDose100ml, dosesPorVolume, type CatalogoVolume } from "@/hooks/useCatalogoVolumes";
-import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
-import { useOwnedCatalogCapability, useOwnedPresentationMutation } from "@/hooks/useOwnedCatalogMutations";
-import { TENANT_OWNED_CATALOG_ENABLED, ownedCatalogError } from "@/lib/catalogo/tenantCatalogOwnership";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 
 interface Props {
   open: boolean;
@@ -41,32 +39,27 @@ const calcPrecoFromLitro = (volumeMl: number, valorLitro: number) =>
 
 export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, itemNome, valorLitroBase, owned = false }: Props) {
   const qc = useQueryClient();
-  const ownedCapability = useOwnedCatalogCapability();
-  const ownedMutation = useOwnedPresentationMutation();
   const baseLitro = valorLitroBase && valorLitroBase > 0 ? Number(valorLitroBase) : 0;
   const [novo, setNovo] = useState({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
   const [precoTocado, setPrecoTocado] = useState(false);
-  const [reason, setReason] = useState("");
   const editor = useTenantCatalogEditor();
   const tenantVolumes = useTenantProductVolumes(itemId, owned && open && itemTipo === "produto");
   const tenantSave = useSaveTenantProductVolume();
   const ownedWritable = owned && itemTipo === "produto" && editor.canEdit;
-  const [ownedOffset, setOwnedOffset] = useState(0);
-  const ownedDetail = useOwnedCatalogRead(itemTipo, { id: itemId, offset: ownedOffset, enabled: owned && open });
   const frozenScope = useRef("");
   const scopeKey = editor.scope;
 
-  const globalRead = useQuery({
+  const globalRead = useScopedPortalQuery({
     queryKey: ["catalogo-volumes-item", itemTipo, itemId],
     enabled: open && !!itemId && !owned,
-    queryFn: async () => {
+    queryFn: async signal => {
       const col = itemTipo === "produto" ? "produto_id" : "microrganismo_id";
       const { data, error } = await supabase
         .from("catalogo_volumes" as any)
         .select("*")
         .eq(col, itemId)
         .order("ordem", { ascending: true })
-        .order("volume_ml", { ascending: true });
+        .order("volume_ml", { ascending: true }).abortSignal(signal);
       if (error) throw error;
       return ((data ?? []) as any[]).map((r) => ({
         ...r,
@@ -81,7 +74,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
   const isLoading = owned ? tenantVolumes.isLoading : globalRead.isLoading;
   const readError = owned ? tenantVolumes.error : globalRead.error;
   useEffect(() => {
-    if (open) { frozenScope.current = scopeKey; setOwnedOffset(0); }
+    if (open) { frozenScope.current = scopeKey; }
     // Freeze scope only at opening; a new scope must close the dialog.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, itemId]);
@@ -90,7 +83,6 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
     if (!open) {
       setNovo({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
       setPrecoTocado(false);
-      setReason("");
     }
   }, [open]);
 
@@ -105,7 +97,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       const vol = Number(novo.volume_ml);
       const preco = Number(novo.preco_brl);
       if (!vol || vol <= 0) throw new Error("Volume inválido");
-      if (preco < 0) throw new Error("Preço inválido");
+      if (!Number.isFinite(preco) || preco < 0) throw new Error("Preço inválido");
       const payload: any = {
         item_tipo: itemTipo,
         produto_id: itemTipo === "produto" ? itemId : null,
@@ -128,10 +120,9 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       toast.success("Volume adicionado");
       setNovo({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
       setPrecoTocado(false);
-      setReason("");
       invalidate();
     },
-    onError: (e: any) => toast.error(owned ? ownedCatalogError(e, "produto").message : e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const update = useMutation({
@@ -155,7 +146,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Atualizado"); invalidate(); },
-    onError: (e: any) => toast.error(owned ? ownedCatalogError(e, "produto").message : e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const remove = useMutation({
@@ -169,7 +160,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Removido"); invalidate(); },
-    onError: (e: any) => toast.error(owned ? ownedCatalogError(e, "produto").message : e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const aplicarSugestao = (ml: number) => {
@@ -227,7 +218,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground h-16 italic">Nenhum volume cadastrado.</TableCell></TableRow>
                 ) : data.map((v) => (
                   (TENANT_CAN_EDIT_GLOBAL_CATALOG || ownedWritable)
-                    ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={() => remove.mutate(v)} disabled={tenantSave.isPending} />
+                    ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={owned ? undefined : () => remove.mutate(v)} disabled={tenantSave.isPending} />
                     : <ReadOnlyVolumeRow key={v.id} v={v} />
                 ))}
               </TableBody>
@@ -299,7 +290,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
   );
 }
 
-function EditableRow({ v, baseLitro, onSave, onDelete, disabled }: { v: CatalogoVolume; baseLitro: number; onSave: (v: CatalogoVolume) => void; onDelete: () => void; disabled?: boolean }) {
+function EditableRow({ v, baseLitro, onSave, onDelete, disabled }: { v: CatalogoVolume; baseLitro: number; onSave: (v: CatalogoVolume) => void; onDelete?: () => void; disabled?: boolean }) {
   const [edit, setEdit] = useState(v);
   useEffect(() => setEdit(v), [v.id, v.volume_ml, v.preco_brl, v.rotulo, v.ordem, v.ativo]);
   const dirty = edit.volume_ml !== v.volume_ml || edit.preco_brl !== v.preco_brl || (edit.rotulo ?? "") !== (v.rotulo ?? "") || edit.ordem !== v.ordem || edit.ativo !== v.ativo;
