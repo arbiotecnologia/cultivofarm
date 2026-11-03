@@ -35,7 +35,7 @@ function request(index: number, name: string) {
   expect(init.method).toBe('POST');
   return JSON.parse(init.body);
 }
-it('reproduz a extração sem this com SDK real, antes de qualquer fetch', async () => {
+it('reproduz a extração sem this com SDK real, antes de qualquer fetch', () => {
   const detached = supabase.rpc;
   expect(() => detached('tenant_product_list' as never)).toThrow(/rest/);
   expect(state.fetch).not.toHaveBeenCalled();
@@ -97,4 +97,26 @@ it('ACK tardio de salvar em outro contexto não invalida cache B', async () => {
   state.actor = 'actor-B'; state.tenant = 'tenant-B'; state.epoch++; rerender();
   await act(async () => { resolve?.(json(ack)); expect(await work).toMatchObject({ message: 'catalog_context_changed' }); });
   expect(invalidate).not.toHaveBeenCalled();
+});
+it.each(['actor', 'tenant'] as const)('cache já preenchido é ocultado na troca somente de %s', async field => {
+  state.fetch.mockResolvedValue(json([{ id: 'product-A', nome: 'Produto A', owner_organization_id: 'tenant-A' }]));
+  const { result, rerender, client } = mount(() => useTenantProducts(false));
+  await waitFor(() => expect(result.current.data?.[0].nome).toBe('Produto A'));
+  state[field] = `${field}-B`;
+  state.fetch.mockResolvedValue(json([]));
+  rerender(); expect(result.current.data).toBeUndefined();
+  await waitFor(() => expect(result.current.data).toEqual([]));
+  expect(client.getQueryCache().getAll()).toHaveLength(1);
+  expect(state.fetch).toHaveBeenCalledTimes(2);
+});
+it('contexto não pronto oculta cache e recusa save/archive antes de REST', async () => {
+  state.ready = false;
+  const list = mount(() => useTenantProducts(false));
+  const save = mount(useSaveTenantProduct); const archive = mount(useArchiveTenantProduct);
+  await act(async () => {
+    await expect(save.result.current.mutateAsync({ id: null, draft: { nome: 'Produto A', tipo: 'solo' }, expectedUpdatedAt: null })).rejects.toThrow('catalog_context_unavailable');
+    await expect(archive.result.current.mutateAsync({ id: 'product-A', archived: true, expectedUpdatedAt: stamp })).rejects.toThrow('catalog_context_unavailable');
+  });
+  expect(list.result.current.data).toBeUndefined();
+  expect(state.fetch).not.toHaveBeenCalled();
 });

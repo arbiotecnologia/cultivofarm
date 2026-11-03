@@ -1,3 +1,9 @@
+## 03/11 — Correção receiver ProdutosEmpresa (somente local)
+- [x] Reprodução SDK real com transporte sintético: extração sem this falha antes de REST; bind preserva listar/salvar/arquivar e erros backend.
+- [x] Cache tenant-products migra ao wrapper canônico ator/empresa/papéis/época; respostas tardias e efeitos das mutações têm fence e invalidação scoped.
+- [x] Auditoria dos consumidores catálogo: chamadas membro/bind preservadas; nenhuma alteração financeira, SQL hosted ou publicação.
+- [ ] Espelhamento no isolado e JWT/POST/browser reais aguardam execução independente; patch/logs em rpc-receiver-fix.
+
 ## 03/11 — Revisão independente: catálogo isolado do financeiro
 - [x] Reconfirmação01:15: journal(uuid) e recovery existem/inalterados; capability pagamento ausente. Associação fiscal existe com EXECUTE authenticatedfalse; fechamento de imports, título/descrição documental de catálogo e retestes finais registrados.
 - [x] Auditoria read-only canônica: capability de condições/projeção monetária ausentes; create/simulate sem p_payment_choice; matriz44linhas registrada.
