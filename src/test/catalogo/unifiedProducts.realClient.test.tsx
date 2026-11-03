@@ -169,10 +169,13 @@ it("invalidação atinge só leitores do ator atual, nunca financeiro ou outra e
   const qc = client(); state.fetch.mockResolvedValue(json(ack));
   const { result } = renderHook(() => ({ actor: useTenantCatalogEditor(), save: useSaveTenantProduct() }), { wrapper });
   const actorScope = result.current.actor.scope.replace("tenant-catalog-editor", "portal-query-actor");
-  const prefixes = ["tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "estoque-prontos-entrega", "todas-os-disponiveis", "estoque_produto"];
+  const prefixes = ["tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "partner-catalog-tecnico", "estoque_produto"];
   prefixes.forEach(p => { qc.setQueryData([p, actorScope, "request-A"], []); qc.setQueryData([p, "foreign", "request-B"], []); });
   qc.setQueryData(["receivables", actorScope, "request-A"], []);
+  const deliveryScope = actorScope.replace("portal-query-actor", "entregas-operations");
+  ["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].forEach(p => { qc.setQueryData([p, deliveryScope, deliveryScope], []); qc.setQueryData([p, "foreign", "foreign"], []); });
   await act(async () => { await result.current.save.mutateAsync({ id: "p1", expectedUpdatedAt: stamp, draft: { nome: "Solo" } }); });
   prefixes.forEach(p => { expect(qc.getQueryState([p, actorScope, "request-A"])?.isInvalidated).toBe(true); expect(qc.getQueryState([p, "foreign", "request-B"])?.isInvalidated).toBe(false); });
   expect(qc.getQueryState(["receivables", actorScope, "request-A"])?.isInvalidated).toBe(false);
+  ["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].forEach(p => { expect(qc.getQueryState([p, deliveryScope, deliveryScope])?.isInvalidated).toBe(true); expect(qc.getQueryState([p, "foreign", "foreign"])?.isInvalidated).toBe(false); });
 });

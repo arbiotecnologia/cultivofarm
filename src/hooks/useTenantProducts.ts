@@ -32,11 +32,12 @@ export function useSaveTenantProduct() {
   const qc = useQueryClient();
   const scope = useStorageAccessScope("tenant-product-save");
   const actor = useStorageAccessScope("portal-query-actor");
+  const delivery = useStorageAccessScope("entregas-operations");
   const keyRef = useRef<{ sig: string; key: string; compositionKey: string } | null>(null);
   const busy = useRef(false);
   return useMutation({
     retry: false,
-    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
+    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope, deliveryScope: delivery.scope }),
     mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null; composition?: Record<string, unknown>[] }) => {
       const current = scope.capture();
       if (!current()) throw new Error("catalog_context_unavailable");
@@ -74,7 +75,7 @@ export function useSaveTenantProduct() {
     },
     onSuccess: (_ack, _vars, context) => {
       if (!context?.current()) return;
-      return invalidateProductReads(qc, context.actorScope);
+      return invalidateProductReads(qc, context.actorScope, context.deliveryScope);
     },
   });
 }
@@ -83,10 +84,11 @@ export function useArchiveTenantProduct() {
   const qc = useQueryClient();
   const scope = useStorageAccessScope("tenant-product-archive");
   const actor = useStorageAccessScope("portal-query-actor");
+  const delivery = useStorageAccessScope("entregas-operations");
   const attempt = useRef<{ sig: string; key: string } | null>(null);
   return useMutation({
     retry: false,
-    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
+    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope, deliveryScope: delivery.scope }),
     mutationFn: async (v: { id: string; archived: boolean; expectedUpdatedAt: string }) => {
       const current = scope.capture();
       if (!current()) throw new Error("catalog_context_unavailable");
@@ -107,13 +109,15 @@ export function useArchiveTenantProduct() {
     },
     onSuccess: (_ack, _vars, context) => {
       if (!context?.current()) return;
-      return invalidateProductReads(qc, context.actorScope);
+      return invalidateProductReads(qc, context.actorScope, context.deliveryScope);
     },
   });
 }
 
 /** Only current-actor scoped readers; never invalidate a foreign session or finance. */
-function invalidateProductReads(qc: ReturnType<typeof useQueryClient>, actorScope: string) {
-  const prefixes = ["tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "estoque-prontos-entrega", "todas-os-disponiveis", "estoque_produto"];
-  return qc.invalidateQueries({ predicate: q => prefixes.includes(String(q.queryKey[0])) && q.queryKey.at(-2) === actorScope });
+function invalidateProductReads(qc: ReturnType<typeof useQueryClient>, actorScope: string, deliveryScope: string) {
+  const prefixes = ["tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "partner-catalog-tecnico", "estoque_produto"];
+  return qc.invalidateQueries({ predicate: q =>
+    (prefixes.includes(String(q.queryKey[0])) && q.queryKey.at(-2) === actorScope) ||
+    (["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === deliveryScope) });
 }
