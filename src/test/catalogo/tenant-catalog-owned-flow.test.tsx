@@ -150,7 +150,7 @@ describe("culturas próprias na aba existente", () => {
     db.readDelay = new Promise<void>((resolve) => { release = resolve; });
     const view = app();
     await waitFor(() => expect(db.calls).toContain("tenant_catalog_owned_list"));
-    auth.profile = { user_id: "u-fsf", organization_id: FSF }; auth.user = { id: "u-fsf" };
+    auth.profile = { user_id: "u-fsf", organization_id: FSF, ativo: true }; auth.user = { id: "u-fsf" };
     db.readDelay = null; view.redraw();
     await act(async () => release());
     await screen.findByText("Soja");
@@ -180,7 +180,7 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
     ["microrganismo", MicrorganismosTab, "Micro Local", { tipo: "bacteria", nome_cientifico: "Bacillus declarado" }],
   ] as const)("%s próprio aparece, reabre com detalhe e persiste edição", async (entity, Component, nome, extra) => {
     db.rows.push({ id: "owned-local", entity, nome, descricao: "Descrição fornecida", ativo: true, archived_at: null,
-      owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z", ...extra });
+      owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z", b2b_enabled: false, e_insumo: false, ...extra });
     app(Component);
     expect(await screen.findByText(nome)).toBeTruthy();
     if (entity === "produto") {
@@ -206,7 +206,7 @@ describe("salvamento único de identificação/composição", () => {
   });
   async function openDeclared() {
     db.rows.push({ id: "declared", entity: "produto", nome: "Produto declarado", tipo: "solo", familia_catalogo: "quimico", classe_catalogo: "fungicida",
-      ativo: true, owner_organization_id: AR, archived_at: null, updated_at: "2026-10-15T00:00:00Z", composition_status: "rascunho",
+      ativo: true, owner_organization_id: AR, archived_at: null, updated_at: "2026-10-15T00:00:00Z", b2b_enabled: false, e_insumo: false, composition_status: "rascunho",
       declarations: [{ ordem: 1, tipo_componente: "ingrediente_ativo", microrganismo_id: null, componente_nome: "Fornecido", quantidade: 50,
         unidade: "g/L", base: "por_volume_produto", natureza: "concentracao_declarada" }] });
     const view = app(ProdutosTab);
@@ -251,9 +251,9 @@ describe("salvamento único de identificação/composição", () => {
     db.writeDelay = new Promise<void>((resolve) => { release = resolve; });
     await submitDialog("Resposta antiga"); fireEvent.click(screen.getByRole("button", { name: "Salvando..." }));
     await waitFor(() => expect(db.writes).toHaveLength(1));
-    auth.profile = { user_id: "u-fsf", organization_id: FSF }; auth.user = { id: "u-fsf" }; view.redraw();
+    auth.profile = { user_id: "u-fsf", organization_id: FSF, ativo: true }; auth.user = { id: "u-fsf" }; view.redraw();
     await waitFor(() => expect(screen.queryByText("Criar cultura própria")).toBeNull());
-    auth.profile = { user_id: "u-ar", organization_id: AR }; auth.user = { id: "u-ar" }; view.redraw();
+    auth.profile = { user_id: "u-ar", organization_id: AR, ativo: true }; auth.user = { id: "u-ar" }; view.redraw();
     await act(async () => release());
     expect(toastFns.success).not.toHaveBeenCalled(); expect(toastFns.error).not.toHaveBeenCalled();
   });
@@ -273,7 +273,7 @@ describe("salvamento único de identificação/composição", () => {
         reason: "motivo suficiente", idempotencyKey: "k-ar-pendente" }).catch(() => undefined);
     });
     await waitFor(() => expect(db.writes).toHaveLength(1));
-    auth.profile = { user_id: "u-fsf", organization_id: FSF }; auth.user = { id: "u-fsf" };
+    auth.profile = { user_id: "u-fsf", organization_id: FSF, ativo: true }; auth.user = { id: "u-fsf" };
     hook.rerender();
     await act(async () => { release(); await pending; });
     expect(onApplied).toHaveBeenCalledTimes(0);
