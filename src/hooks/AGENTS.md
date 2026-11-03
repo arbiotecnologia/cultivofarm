@@ -22,4 +22,4 @@
 - Approval follows its captured void contract: transport success with null is valid, explicit negative envelopes are denied, and scope fences still precede cache invalidation — prevents universal ACK assumptions breaking void RPCs.
 - Payment ACKs compare validated typed canonical fields, not serialized JSONB order, and reject conflicting returned scope; uncertainty settlement/retry rules stay unchanged — prevents committed orders being falsely rejected by key permutation.
 - RTC company/item hooks share a per-mount scope operation ledger: latest read wins, saves retire prior reads and synchronously own dispatch, reload during save is ignored, and finally releases only its own ticket — prevents stale revisions and concurrent unlocks without replacing server CAS.
-- Tenant product hooks keep CAS/idempotency/late-ACK fences — prevents duplicate dispatch and stale-context adoption.
+- Tenant product hooks keep CAS/idempotency/late-ACK fences and refuse changed same-scope intentions while a dispatched attempt is unresolved — prevents duplicate roots and lost composition retries.

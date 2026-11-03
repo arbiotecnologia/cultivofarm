@@ -227,6 +227,7 @@ export function ProdutosTab() {
   const archiveProduct = useArchiveTenantProduct();
   const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
   const [partialMessage, setPartialMessage] = useState<string | null>(null);
+  const [partialAck, setPartialAck] = useState<{ product_id: string; updated_at: string } | null>(null);
 
   const [form, setForm] = useState({
     id: "",
@@ -273,6 +274,7 @@ export function ProdutosTab() {
     localGeneration.current += 1;
     retainedSave.current = null;
     setPartialMessage(null);
+    setPartialAck(null);
     setOpen(false); resetForm();
     setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
@@ -349,11 +351,14 @@ export function ProdutosTab() {
       if (outcome.status === "partial") {
         toast.error(outcome.message);
         retainedSave.current = input;
+        setPartialAck({ product_id: ack.product_id, updated_at: ack.updated_at });
+        setForm(previous => ({ ...previous, id: ack.product_id, updated_at: ack.updated_at }));
         setPartialMessage(outcome.message ?? "Produto salvo; composição não confirmada.");
         return;
       }
       retainedSave.current = null;
       setPartialMessage(null);
+      setPartialAck(null);
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
       setOpen(false);
       resetForm();
@@ -626,7 +631,12 @@ export function ProdutosTab() {
               </DialogHeader>
               
               <form onSubmit={handleSave} className="space-y-6 pt-4">
-                {partialMessage && <p role="alert" className="text-destructive">{partialMessage} Repita a mesma tentativa para reconciliar; não cadastre outro produto.</p>}
+                {partialMessage && <div role="alert" className="space-y-2 text-destructive">
+                  <p>{partialMessage}</p>
+                  {partialAck && <dl className="text-sm break-all"><dt>Produto salvo</dt><dd>{partialAck.product_id}</dd><dt>Versão confirmada do produto</dt><dd>{partialAck.updated_at}</dd></dl>}
+                  <p>Composição pendente de confirmação. O rascunho foi mantido; reconcilie antes de alterar.</p>
+                  <ul className="text-sm">{form.composicao.map((item, index) => <li key={index}>{item.microrganismo_id ? microrganismos.find(m => m.id === item.microrganismo_id)?.nome ?? item.microrganismo_id : items.find(p => p.id === item.component_insumo_id)?.nome ?? item.component_insumo_id} · {item.volume_ml} mL{item.concentracao != null ? ` · ${item.concentracao} ${item.unidade ?? ""}` : ""}</li>)}</ul>
+                </div>}
                 <fieldset disabled={saving || !!partialMessage} className="min-w-0">
                 <Tabs defaultValue="geral">
                   <TabsList className="grid w-full grid-cols-3 mb-4">
