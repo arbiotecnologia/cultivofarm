@@ -1,3 +1,9 @@
+## 03/11 — Unificação Catálogo → Produtos (local, sem SQL/publicação)
+- [ ] Unificar menu/redirect e cadastro com hooks scoped, sem writer global.
+- [ ] Preservar composição/perfis/volumes; declarar campos não suportados e falhas parciais.
+- [ ] Testar SDK/CRUD/roles/cache/consumidores e entregar patch portátil com evidências.
+- Base aplicada c57bee895512e718694f8c746ad53139a024835a e exclusive_tenant_catalog_reviewed_v4 informadas pelo proprietário; não reaplicar. JWT bidirecional reportado PASS, não executado aqui; fiscal/SMTP/cron fechados preservados.
+
 ## 03/11 — Correção receiver ProdutosEmpresa (somente local)
 - [x] ffrg/ffx consolidados: original500b8 mantido, pedido de sobrescrever pelo básico fe2 supersedido. Auditor reportou negativa AR Bio→FSF API/REST e POST intacto; não reproduzidos pelo agente.
 - [x] Auditoria useAuth/internalContextProbe/producerContextProbe: todos já usam rpc.call(supabase), receiver preservado; testes SDK real/fetch sintético adicionados, nenhuma alteração funcional necessária.
