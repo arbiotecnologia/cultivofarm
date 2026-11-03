@@ -134,7 +134,9 @@ it("composição usa CAS retornado, conserva concentração/unidade e falha expl
   const { result } = renderHook(useSaveTenantProduct, { wrapper });
   await act(async () => {
     const output = await result.current.mutateAsync({ id: "p1", expectedUpdatedAt: stamp, draft: { nome: "Solo" }, composition: [{ microrganismo_id: "m1", volume_ml: 200, concentracao: 3, unidade: "mL" }] });
-    expect(output.compositionError).toMatch(/Produto salvo; composição não confirmada/);
+    // Expectativa revisada 03/11: recusa explícita do servidor passa a ser classificada como definitiva (não incerta).
+    expect(output.compositionError).toMatch(/Produto salvo; o servidor recusou a composição/);
+    expect(output.compositionFailure).toBe("definitive");
   });
   expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toMatchObject({ p_produto_id: "p1", p_expected_produto_updated_at: stamp, p_items: [{ microrganismo_id: "m1", volume_ml: 200, concentracao: 3, unidade: "mL" }] });
   expect(state.fetch).toHaveBeenCalledTimes(2);
@@ -217,7 +219,8 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
   expect(state.rows).toHaveLength(1);
 });
-it.each(["recusa definitiva", "resposta perdida"])("novo produto com %s da composição mantém ACK/componentes e replay único", async failure => {
+// "recusa definitiva" foi movida para o teste dedicado de saída segura (não oferece mais replay idêntico).
+it.each(["resposta perdida"])("novo produto com %s da composição mantém ACK/componentes e replay único", async failure => {
   client(); let attempts = 0; let compositionCommits = 0; const compositionReceipts = new Set<string>(); const receipts = new Map<string, typeof ack>();
   state.fetch.mockImplementation(async (url, init) => {
     const name = String(url).split("/rpc/")[1];
@@ -324,4 +327,127 @@ it("invalidação atinge só leitores do ator atual, nunca financeiro ou outra e
   prefixes.forEach(p => { expect(qc.getQueryState([p, actorScope, "request-A"])?.isInvalidated).toBe(true); expect(qc.getQueryState([p, "foreign", "request-B"])?.isInvalidated).toBe(false); });
   expect(qc.getQueryState(["receivables", actorScope, "request-A"])?.isInvalidated).toBe(false);
   ["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].forEach(p => { expect(qc.getQueryState([p, deliveryScope, deliveryScope])?.isInvalidated).toBe(true); expect(qc.getQueryState([p, "foreign", "foreign"])?.isInvalidated).toBe(false); });
+});
+function mountNewProductFlow(opts: { composition: () => Response | Promise<Response>; failListAfterPartial?: number }) {
+  const receipts = new Map<string, typeof ack>(); const ctl = { failList: 0, partial: false, inserts: 0 };
+  state.fetch.mockImplementation(async (url, init) => {
+    const name = String(url).split("/rpc/")[1];
+    if (name === "tenant_product_list") {
+      if (ctl.partial && ctl.failList > 0) { ctl.failList--; return json({ code: "XX000", message: "read_failed" }, 500); }
+      return json(state.rows);
+    }
+    if (name === "tenant_product_save") {
+      const args = JSON.parse(init.body);
+      if (!receipts.has(args.p_idempotency_key)) {
+        if (args.p_product_id === null) {
+          ctl.inserts++; state.rows.push({ id: "p1", owner_organization_id: state.tenant, ativo: true, tipo: "solo", updated_at: stamp, ...args.p_payload });
+          receipts.set(args.p_idempotency_key, ack);
+        } else {
+          expect(args.p_expected_updated_at).toBe(state.rows[0].updated_at);
+          Object.assign(state.rows[0], args.p_payload, { updated_at: "2026-11-03T02:00:00Z" });
+          receipts.set(args.p_idempotency_key, { product_id: "p1", updated_at: "2026-11-03T02:00:00Z", replayed: false });
+        }
+      }
+      return json(receipts.get(args.p_idempotency_key));
+    }
+    if (name === "tenant_catalog_formulacoes_replace") { ctl.partial = true; ctl.failList = opts.failListAfterPartial ?? 0; return opts.composition(); }
+    if (name) throw new Error(`RPC inesperada ${name}`);
+    if (String(url).includes("/microrganismos?")) return json([{ id: "m1", nome: "Bacillus preservado", codigo: "BIO-1", dose_ml_ha: 200 }]);
+    return json([]);
+  });
+  return ctl;
+}
+async function submitNewWithComponent() {
+  render(<ProdutosTab />, { wrapper });
+  await screen.findByText("Nenhum produto encontrado");
+  fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
+  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial" } });
+  fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
+  fireEvent.click(await screen.findByRole("button", { name: "+ Microrganismo" }));
+  fireEvent.click(screen.getByRole("combobox", { name: "" }));
+  fireEvent.click(await screen.findByRole("option", { name: /Bacillus preservado/ }));
+  fireEvent.keyDown(screen.getByRole("option", { name: /Bacillus preservado/ }), { key: "Escape" });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+}
+
+it("recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca", async () => {
+  client();
+  const ctl = mountNewProductFlow({ composition: () => json({ code: "42501", message: "tenant_catalog_ref_foreign" }, 403), failListAfterPartial: 1 });
+  await submitNewWithComponent();
+  const back = await screen.findByRole("button", { name: "Reconhecer e voltar à edição" });
+  expect(screen.queryByRole("button", { name: "Reconciliar composição" })).toBeNull();
+  expect(screen.getByRole("alert").textContent).toContain("recusou esta composição de forma definitiva");
+  expect(screen.getByRole("alert").textContent).toContain("p1");
+  const exported = JSON.parse((screen.getByLabelText("Rascunho exportável") as HTMLTextAreaElement).value);
+  expect(exported).toMatchObject({ produto_id: "p1", versao_confirmada_produto: stamp, resultado_composicao: "recusada_pelo_servidor",
+    composicao_rascunho: [{ microrganismo_id: "m1", volume_ml: 200, nome: "Bacillus preservado" }] });
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  // 1ª leitura fresca falha: nada é reconhecido, estado parcial e ID preservados.
+  fireEvent.click(back);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Reconhecer e voltar à edição" }).matches(":disabled")).toBe(false));
+  expect(screen.getByRole("alert").textContent).toContain("p1");
+  expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
+  // 2ª leitura confirma o produto: edição do MESMO produto com versão fresca.
+  fireEvent.click(screen.getByRole("button", { name: "Reconhecer e voltar à edição" }));
+  await screen.findByRole("heading", { name: "Editar produto" });
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe("Novo parcial");
+  expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial revisado" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  const saves = rpcCalls("tenant_product_save");
+  expect(saves).toHaveLength(2);
+  expect(saves[1]).toMatchObject({ p_product_id: "p1", p_expected_updated_at: stamp });
+  expect(saves[1].p_idempotency_key).not.toBe(saves[0].p_idempotency_key);
+  expect(rpcCalls("tenant_catalog_formulacoes_replace")).toHaveLength(1);
+  expect(ctl.inserts).toBe(1); expect(state.rows).toHaveLength(1);
+  expect(state.rows[0].nome).toBe("Novo parcial revisado");
+});
+
+it("resposta perdida: saída explícita mantém pendência/chaves, bloqueia novas intenções e retomada faz replay único", async () => {
+  client(); let attempts = 0; let commits = 0; const keys = new Set<string>();
+  const ctl = mountNewProductFlow({ composition: async () => {
+    const args = rpcCalls("tenant_catalog_formulacoes_replace").at(-1);
+    if (!keys.has(args.p_idempotency_key)) { keys.add(args.p_idempotency_key); commits++; }
+    if (++attempts === 1) throw new Error("ACK perdido");
+    return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
+  } });
+  await submitNewWithComponent();
+  await screen.findByRole("button", { name: "Reconciliar composição" });
+  expect(screen.queryByRole("button", { name: "Reconhecer e voltar à edição" })).toBeNull();
+  expect(JSON.parse((screen.getByLabelText("Rascunho exportável") as HTMLTextAreaElement).value).resultado_composicao).toBe("nao_confirmada");
+  fireEvent.click(screen.getByRole("button", { name: "Sair mantendo pendência" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(screen.getByRole("status").textContent).toContain("p1");
+  expect(screen.getByRole("button", { name: "Novo produto" }).matches(":disabled")).toBe(true);
+  expect(screen.getByRole("button", { name: "Editar" }).matches(":disabled")).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Retomar reconciliação" }));
+  await screen.findByRole("button", { name: "Reconciliar composição" });
+  expect(screen.getByRole("alert").textContent).toContain("Bacillus preservado · 200 mL");
+  fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
+  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
+  expect(ctl.inserts).toBe(1); expect(commits).toBe(1); expect(state.rows).toHaveLength(1);
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("troca de escopo descarta rascunho/exportação pendentes sem reutilizar em outro tenant", async () => {
+  client();
+  mountNewProductFlow({ composition: async () => { throw new Error("ACK perdido"); } });
+  await submitNewWithComponent();
+  await screen.findByRole("button", { name: "Reconciliar composição" });
+  fireEvent.click(screen.getByRole("button", { name: "Sair mantendo pendência" }));
+  await screen.findByRole("button", { name: "Retomar reconciliação" });
+  const savesBefore = rpcCalls("tenant_product_save").length;
+  state.tenant = "org-B"; state.epoch = 1; state.rows = [];
+  cleanup();
+  render(<ProdutosTab />, { wrapper });
+  await screen.findByText("Nenhum produto encontrado");
+  expect(screen.queryByRole("button", { name: "Retomar reconciliação" })).toBeNull();
+  expect(screen.queryByLabelText("Rascunho exportável")).toBeNull();
+  expect(screen.getByRole("button", { name: "Novo produto" }).matches(":disabled")).toBe(false);
+  expect(rpcCalls("tenant_product_save")).toHaveLength(savesBefore);
 });
