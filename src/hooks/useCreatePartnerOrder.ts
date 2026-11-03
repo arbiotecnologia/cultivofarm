@@ -7,7 +7,6 @@ import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
 import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
 import { prepareDurableOrder, recoverOrderJournal, type Journal } from '@/lib/authz/orderJournal';
-import { requirePaymentChoice, requirePaymentCapability, paymentChoicesEqual, type PaymentChoice, type PaymentMethod } from '@/lib/comercial/paymentContract';
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -34,9 +33,6 @@ export interface CartItem {
 }
 
 export interface CreateOrderInput {
-  payment_method?: PaymentMethod;
-  payment_condition_version?: number;
-  payment_deadline_days?: number;
   partner_id: string;
   observacoes?: string;
   requested_delivery_date?: string | null;
@@ -113,16 +109,6 @@ export function useCreatePartnerOrder() {
       if (!input.idempotency_key) throw new Error("idempotency_key_required");
       // O slot precisa corresponder ao ator/empresa/papéis/parceiro atuais.
       if (slot && slot !== slotFor(input.partner_id)) throw notSent(new Error("Contexto alterado."));
-      // New payment economics never silently downgrade to the legacy signature.
-      // Gate before reserving journal or invoking any writer, then fence every wait.
-      let choice: PaymentChoice;
-      try {
-        choice = requirePaymentChoice(input);
-        if (!user?.id || !profile?.organization_id) throw new Error('payment_contract_unavailable');
-        const capability = await (supabase as any).rpc('partner_payment_condition_capability_v1', { p_partner_id: input.partner_id });
-        if (capability.error || !current() || !(input.current_payload?.() ?? true)) throw new Error('payment_contract_unavailable');
-        requirePaymentCapability(capability.data, user.id, profile.organization_id, input.partner_id);
-      } catch (e) { throw notSent(e instanceof Error ? e : new Error('payment_contract_unavailable')); }
       const journalSlot = slotFor(input.partner_id);
       if (!journalSlot) throw notSent(new Error('Contexto indisponível.'));
       const dispatchCurrent=()=>current() && (input.current_payload?.() ?? true);
@@ -163,7 +149,6 @@ export function useCreatePartnerOrder() {
           p_installment_count: input.installment_count ?? null,
           p_expected_cart_hash: input.expected_cart_hash,
           p_idempotency_key: dispatchKey,
-          p_payment_choice: choice,
         },
       ) as typeof response;
       } catch (e) {
@@ -174,20 +159,14 @@ export function useCreatePartnerOrder() {
       }
       const { data, error } = response;
       const created = data as { id: string; numero: string; total: number } | null;
-      const paymentAck = data as { payment_choice?: unknown; organization_id?: string; partner_id?: string; actor_id?: string } | null;
-      const paymentConfirmed = paymentChoicesEqual(paymentAck?.payment_choice, choice)
-        && (paymentAck?.organization_id == null || paymentAck.organization_id === profile?.organization_id)
-        && (paymentAck?.partner_id == null || paymentAck.partner_id === input.partner_id)
-        && (paymentAck?.actor_id == null || paymentAck.actor_id === user?.id);
       if (slot && !durable) {
-        if (!error && created?.id && paymentConfirmed) markOrderAttemptCommitted(slot, input.idempotency_key, { numero: created.numero ?? null });
+        if (!error && created?.id) markOrderAttemptCommitted(slot, input.idempotency_key, { numero: created.numero ?? null });
         else if (isConclusiveRejection(error))
           markOrderAttemptRejected(slot, input.idempotency_key);
         else markOrderAttemptUnresolved(slot, input.idempotency_key);
       }
       if (!current()) throw new Error("Contexto alterado.");
       if (error) throw error;
-      if (!paymentConfirmed) throw new Error('payment_order_ack_unconfirmed');
       if (durable) {
         // A lost acknowledgment remains blocked; never retry create automatically.
         const acknowledged=await recoverOrderJournal(journalSlot,input.partner_id,current);

@@ -1,0 +1,80 @@
+{
+  "src/App.tsx": [],
+  "src/components/comercial/PaymentPlanSelector.tsx": [],
+  "src/components/financeiro/BaixaDialog.tsx": [],
+  "src/components/financeiro/ContaDrawer.tsx": [
+    "rpc_cancel_financial_installment"
+  ],
+  "src/components/protocolos/MicrorganismosTab.tsx": [],
+  "src/components/protocolos/ProdutosTab.tsx": [
+    "tenant_product_save"
+  ],
+  "src/config/navigation.ts": [],
+  "src/hooks/useCommercialPaymentPlans.ts": [
+    "rpc_b2b_list_selectable_payment_plans"
+  ],
+  "src/hooks/useCommercialPaymentPlansAdmin.ts": [
+    "rpc_admin_create_commercial_plan",
+    "rpc_admin_list_commercial_plans",
+    "rpc_admin_reorder_commercial_plans",
+    "rpc_admin_set_commercial_plan_active",
+    "rpc_admin_set_default_commercial_plan",
+    "rpc_admin_update_commercial_plan_metadata",
+    "rpc_admin_version_commercial_plan"
+  ],
+  "src/hooks/useCreatePartnerOrder.ts": [
+    "create_partner_order_secure",
+    "partner_payment_condition_capability_v1"
+  ],
+  "src/hooks/useMicroorganismProfile.ts": [],
+  "src/hooks/usePartnerOrderActions.ts": [
+    "approve_partner_order",
+    "reject_partner_order",
+    "request_partner_order_items",
+    "set_partner_order_delivery_date",
+    "update_partner_order_notes"
+  ],
+  "src/hooks/usePaymentConditionCapability.ts": [
+    "partner_payment_condition_capability_v1"
+  ],
+  "src/hooks/useProductFiscalAccess.ts": [],
+  "src/hooks/useProductFiscalProfiles.ts": [],
+  "src/hooks/useProductProfile.ts": [],
+  "src/hooks/useSimulateB2BPaymentPlan.ts": [
+    "partner_payment_condition_capability_v1"
+  ],
+  "src/hooks/useTenantProducts.ts": [],
+  "src/lib/authz/pendingOrderAttempt.ts": [],
+  "src/lib/catalogo/tenantCatalogRoots.ts": [
+    "tenant_catalog_formulacoes_replace",
+    "tenant_catalog_root_delete",
+    "tenant_catalog_root_save"
+  ],
+  "src/lib/catalogo/tenantProducts.ts": [],
+  "src/lib/comercial/civilDate.ts": [],
+  "src/lib/comercial/paymentContract.ts": [],
+  "src/lib/comercial/paymentSchedule.ts": [],
+  "src/lib/comercial/price.ts": [],
+  "src/lib/comercial/validation.ts": [],
+  "src/lib/financeiro/baixaRecebimento.ts": [],
+  "src/lib/financeiro/contasReceber.ts": [],
+  "src/lib/financeiro/receivableMoney.ts": [],
+  "src/lib/financeiro/receivableOrigin.ts": [
+    "rpc_receivable_money_projection_v1"
+  ],
+  "src/lib/fiscal/ownedProductFiscal.ts": [
+    "tenant_owned_product_fiscal_save"
+  ],
+  "src/lib/permissions.ts": [],
+  "src/lib/protocolos/seedCatalogoARBioV13.ts": [],
+  "src/lib/protocolos/seedMicrorganismosARBio2026.ts": [],
+  "src/pages/comercial/CommercialPaymentPlansPage.tsx": [],
+  "src/pages/comercial/SimuladorComercial.tsx": [],
+  "src/pages/configuracoes/FiscalProdutos.tsx": [],
+  "src/pages/configuracoes/ProdutosEmpresa.tsx": [],
+  "src/pages/financeiro/ContasReceber.tsx": [
+    "rpc_cancel_accounts_receivable"
+  ],
+  "src/pages/plataforma/PlataformaHome.tsx": [],
+  "src/pages/portal-parceiro/NovoPedido.tsx": []
+}

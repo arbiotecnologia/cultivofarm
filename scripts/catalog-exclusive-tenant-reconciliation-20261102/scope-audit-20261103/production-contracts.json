@@ -1,0 +1,139 @@
+{
+  "functions": [
+    {
+      "md5": "664f63441c92a6716f0117362255ec9e",
+      "args": "p_order_id uuid, p_approval_notes text DEFAULT NULL::text, p_estimated_delivery_date date DEFAULT NULL::date",
+      "name": "approve_partner_order",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "7ec41e17ca6cca8cd4ef1404a9edc936",
+      "args": "p_partner_id uuid, p_observacoes text DEFAULT NULL::text, p_items jsonb DEFAULT '[]'::jsonb, p_requested_delivery_date date DEFAULT NULL::date, p_payment_plan_id uuid DEFAULT NULL::uuid, p_first_due_date date DEFAULT NULL::date, p_installment_count integer DEFAULT NULL::integer, p_expected_cart_hash text DEFAULT NULL::text, p_idempotency_key text DEFAULT NULL::text",
+      "name": "create_partner_order_secure",
+      "result": "jsonb",
+      "auth_execute": true
+    },
+    {
+      "md5": "00e8de46e566d0b4e28d32f990514ff7",
+      "args": "p_order_id uuid, p_approval_notes text",
+      "name": "reject_partner_order",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "c9e9c05db76910604b6f5e612aabeabe",
+      "args": "p_order_id uuid, p_motivo text",
+      "name": "request_partner_order_items",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "16d256e65fa347929846f8444c4c9db1",
+      "args": "p_payload jsonb",
+      "name": "rpc_admin_create_commercial_plan",
+      "result": "uuid",
+      "auth_execute": true
+    },
+    {
+      "md5": "82f74eb42321cd215c531c067194785a",
+      "args": "p_search text DEFAULT NULL::text, p_status text DEFAULT 'all'::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0",
+      "name": "rpc_admin_list_commercial_plans",
+      "result": "TABLE(id uuid, code text, name text, description text, plan_type text, version integer, root_plan_id uuid, superseded_by_id uuid, valid_from timestamp with time zone, valid_until timestamp with time zone, is_default boolean, active boolean, sort_order integer, max_days integer, months_count numeric, installment_count integer, discount_percent numeric, monthly_interest_percent numeric, interest_type text, pricing_mode text, minimum_order_amount numeric, requires_credit_approval boolean, requires_guarantee boolean, requires_financial_approval boolean, is_referenced boolean, selectable boolean, total_count bigint)",
+      "auth_execute": true
+    },
+    {
+      "md5": "1871d5fcb33d36fd66ad2c265c46195d",
+      "args": "p_orders jsonb",
+      "name": "rpc_admin_reorder_commercial_plans",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "8de8b1923be398bcbca3970c18951084",
+      "args": "p_plan_id uuid, p_active boolean, p_motivo text DEFAULT NULL::text",
+      "name": "rpc_admin_set_commercial_plan_active",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "a4b18400e4e50ccaa62e2d53ac57b0e0",
+      "args": "p_plan_id uuid",
+      "name": "rpc_admin_set_default_commercial_plan",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "17efbe00b1f780ddd872f326602b781e",
+      "args": "p_plan_id uuid, p_name text DEFAULT NULL::text, p_description text DEFAULT NULL::text, p_sort_order integer DEFAULT NULL::integer",
+      "name": "rpc_admin_update_commercial_plan_metadata",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "325a7dd4f5a6778ac163531bbe8e1b35",
+      "args": "p_plan_id uuid, p_payload jsonb, p_motivo text DEFAULT NULL::text",
+      "name": "rpc_admin_version_commercial_plan",
+      "result": "uuid",
+      "auth_execute": true
+    },
+    {
+      "md5": "eb47ea09af200744f9e4431b8a3f1828",
+      "args": "",
+      "name": "rpc_b2b_list_selectable_payment_plans",
+      "result": "TABLE(id uuid, code text, name text, description text, plan_type text, max_days integer, months_count numeric, installment_count integer, discount_percent numeric, monthly_interest_percent numeric, interest_type text, pricing_mode text, minimum_order_amount numeric, requires_credit_approval boolean, requires_guarantee boolean, requires_financial_approval boolean, is_default boolean, sort_order integer)",
+      "auth_execute": true
+    },
+    {
+      "md5": "c89a108356d9aa251531d3dfdb54d41a",
+      "args": "p_id uuid, p_reason text",
+      "name": "rpc_cancel_accounts_receivable",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "c7d30a08b1cbd00936cd83aa5bf3415c",
+      "args": "p_installment_id uuid, p_kind text, p_reason text",
+      "name": "rpc_cancel_financial_installment",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "1c9d66132c125d97b72ac7948565b210",
+      "args": "p_installment_id uuid, p_payload jsonb",
+      "name": "rpc_register_payable_payment",
+      "result": "uuid",
+      "auth_execute": true
+    },
+    {
+      "md5": "db41f7e2cfcb196ef64536f62746f365",
+      "args": "p_installment_id uuid, p_payload jsonb",
+      "name": "rpc_register_receivable_payment",
+      "result": "uuid",
+      "auth_execute": true
+    },
+    {
+      "md5": "3f6e9e10bd8f0364d64f89722e5e0f3d",
+      "args": "p_order_id uuid, p_estimated_delivery_date date",
+      "name": "set_partner_order_delivery_date",
+      "result": "void",
+      "auth_execute": true
+    },
+    {
+      "md5": "37d4f45e388ed7b38f6f397b672629ee",
+      "args": "p_partner_id uuid, p_payment_plan_id uuid, p_items jsonb, p_first_due_date date DEFAULT NULL::date",
+      "name": "simulate_b2b_payment_plan_secure",
+      "result": "jsonb",
+      "auth_execute": true
+    },
+    {
+      "md5": "6988f6c5759d593dee2bab218b1f8119",
+      "args": "p_order_id uuid, p_commercial_notes text",
+      "name": "update_partner_order_notes",
+      "result": "void",
+      "auth_execute": true
+    }
+  ],
+  "captured_at": "2026-11-03T01:03:46.354838+00:00",
+  "expected_ref": "swzpzcwiasxmjutrmvkm"
+}

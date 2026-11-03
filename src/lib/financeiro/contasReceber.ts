@@ -11,7 +11,6 @@
  */
 
 import { hojeSaoPaulo, somarDiasCivis, toDataCivil } from "@/lib/monitoramento/alertas";
-import { additionalInterest, type ReceivableMoney } from './receivableMoney';
 
 export { hojeSaoPaulo, somarDiasCivis, toDataCivil };
 
@@ -42,7 +41,7 @@ export function classificarParcela(dueDate: unknown, hoje: string): Classificaca
   return due <= somarDiasCivis(hoje, DIAS_JANELA_VENCIMENTO) ? "vence_em_7_dias" : "futura";
 }
 
-export interface ParcelaKpi extends ReceivableMoney {
+export interface ParcelaKpi {
   original_amount?: unknown;
   received_amount?: unknown;
   interest_amount?: unknown;
@@ -72,7 +71,7 @@ export function saldoParcela(p: ParcelaKpi): number {
   return Math.max(
     0,
     cent(
-      num(p.original_amount) + additionalInterest(p) + num(p.penalty_amount) -
+      num(p.original_amount) + num(p.interest_amount) + num(p.penalty_amount) -
         num(p.discount_amount) - num(p.received_amount),
     ),
   );
@@ -98,7 +97,7 @@ export function resumoSaldoReceber(parcelas: ParcelaKpi[]): ResumoSaldoReceber {
     if (String(p.status ?? "") === "CANCELED") continue;
     r.original += num(p.original_amount);
     r.recebido += num(p.received_amount);
-    r.juros += additionalInterest(p);
+    r.juros += num(p.interest_amount);
     r.multa += num(p.penalty_amount);
     r.desconto += num(p.discount_amount);
     r.saldo += saldoParcela(p);

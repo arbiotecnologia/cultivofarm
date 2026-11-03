@@ -1,13 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { PaymentMethod } from '@/lib/comercial/paymentContract';
 
 export interface CommercialPaymentPlan {
-  payment_contract?: 'B2B_PAYMENT_CONDITION_V1';
-  version?: number;
-  payment_methods?: PaymentMethod[];
-  payment_deadline_days?: number;
-  approved_payment_configuration?: { approved: boolean; version: number } | null;
   id: string;
   name: string;
   code: string;

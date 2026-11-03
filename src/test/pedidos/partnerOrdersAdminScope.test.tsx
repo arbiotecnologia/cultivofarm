@@ -27,8 +27,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     return chain;
   },
   // Pre-install capability absence (exact PGRST202) keeps the legacy 001b path under test.
-  rpc: (name: string, args: unknown) => name === 'partner_payment_condition_capability_v1'
-    ? Promise.resolve({data:{contract:'B2B_PAYMENT_CONDITION_V1',actor_id:state.auth.user?.id,organization_id:state.auth.profile.organization_id,partner_id:'P',simulate:true,create:true},error:null}) : name === "partner_order_journal_capability_v1"
+  rpc: (name: string, args: unknown) => name === "partner_order_journal_capability_v1"
     ? Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find public.partner_order_journal_capability_v1" } })
     : new Promise(resolve => state.rpc.push({ name, args, resolve })),
   channel: (name: string) => {
@@ -118,13 +117,13 @@ describe("usePartnerOrdersAdmin — escopo canônico (transporte sintético)", (
 });
 
 describe("useCreatePartnerOrder — estado contábil após criar", () => {
-  const input = { payment_method:'pix' as const,payment_condition_version:1,payment_deadline_days:7,partner_id: "P", items: [{ item_id: "i", item_tipo: "produto", product_id: null, nome: "x", quantidade: 1, preco_unitario: 1, desconto_percentual: 0, subtotal: 1, unidade_pedido: "litro" }] as any, expected_cart_hash: "h", idempotency_key: "k1" };
+  const input = { partner_id: "P", items: [{ item_id: "i", item_tipo: "produto", product_id: null, nome: "x", quantidade: 1, preco_unitario: 1, desconto_percentual: 0, subtotal: 1, unidade_pedido: "litro" }] as any, expected_cart_hash: "h", idempotency_key: "k1" };
   async function run(readResult: unknown | "throw", mutateCtx?: () => void) {
     const c = client();
     const h = renderHook(() => useCreatePartnerOrder(), { wrapper: wrap(c) });
     act(() => { h.result.current.mutate(input); });
     await waitFor(() => expect(state.rpc).toHaveLength(1));
-    await act(async () => { state.rpc[0].resolve({ data: { id: "o1", numero: "PB-1", total: 1,payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null }); });
+    await act(async () => { state.rpc[0].resolve({ data: { id: "o1", numero: "PB-1", total: 1 }, error: null }); });
     await waitFor(() => expect(state.reads).toHaveLength(1));
     mutateCtx?.(); if (mutateCtx) h.rerender();
     await act(async () => { readResult === "throw" ? state.reads[0].resolve(Promise.reject(new Error("net"))) : state.reads[0].resolve(readResult); });
@@ -159,7 +158,7 @@ describe("useCreatePartnerOrder — estado contábil após criar", () => {
     for (let i = 0; i < 2; i++) {
       act(() => { h.result.current.mutate(input); });
       await waitFor(() => expect(state.rpc).toHaveLength(i + 1));
-      await act(async () => { state.rpc[i].resolve({ data: { id: "o1", numero: "PB-1", total: 1,payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null }); });
+      await act(async () => { state.rpc[i].resolve({ data: { id: "o1", numero: "PB-1", total: 1 }, error: null }); });
       await waitFor(() => expect(state.reads).toHaveLength(i + 1));
       await act(async () => { state.reads[i].resolve({ data: { id: "o1", c2_external_origin_snapshot: V1 }, error: null }); });
       await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(i + 1));

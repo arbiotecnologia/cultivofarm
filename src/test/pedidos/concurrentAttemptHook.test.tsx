@@ -8,8 +8,7 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "A" }, profile
   roles: ["parceiro_b2b"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
-  rpc: (name:string) => name==='partner_payment_condition_capability_v1'
-    ? Promise.resolve({data:{contract:'B2B_PAYMENT_CONDITION_V1',actor_id:'A',organization_id:'OA',partner_id:'P',simulate:true,create:true},error:null}) : name==='partner_order_journal_capability_v1'
+  rpc: (name:string) => name==='partner_order_journal_capability_v1'
     ? Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}})
     : new Promise(r => state.pending.push(r)),
   from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }) }),
@@ -19,7 +18,7 @@ import { clearAllOrderAttempts, markOrderAttemptSending, prepareOrderAttempt, re
 
 const REJECT = { data: null, error: { code: "P0001", message: "credit_limit_exceeded" } };
 const LOST = { data: null, error: { code: "", message: "Failed to fetch" } };
-const OK = { data: { id: "o1", numero: "PB-1", total: 1, payment_choice: {payment_method:'pix',payment_condition_version:1,payment_deadline_days:7} }, error: null };
+const OK = { data: { id: "o1", numero: "PB-1", total: 1 }, error: null };
 beforeEach(() => { clearAllOrderAttempts(); state.pending = []; });
 
 it.each([
@@ -32,7 +31,7 @@ it.each([
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
   const h = renderHook(() => useCreatePartnerOrder(), { wrapper });
   const slot = h.result.current.slotFor("P")!;
-  const input = { payment_method:'pix' as const,payment_condition_version:1,payment_deadline_days:7, partner_id: "P", items: [{ item_id: "i", item_tipo: "produto", product_id: null, nome: "n", quantidade: 1, preco_unitario: 1, desconto_percentual: 0, subtotal: 1, unidade_pedido: "volume_comercial", volume_ml: 1000 }] as never,
+  const input = { partner_id: "P", items: [{ item_id: "i", item_tipo: "produto", product_id: null, nome: "n", quantidade: 1, preco_unitario: 1, desconto_percentual: 0, subtotal: 1, unidade_pedido: "volume_comercial", volume_ml: 1000 }] as never,
     expected_cart_hash: "h", attempt_slot: slot };
   const sends: Promise<unknown>[] = [];
   act(() => {

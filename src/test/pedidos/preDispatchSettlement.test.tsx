@@ -19,7 +19,7 @@ const ABSENT={data:null,error:{code:'PGRST202',message:'Could not find public.pa
 let n=0; const partner=()=>`3333333${++n}-3333-4333-8333-333333333333`;
 const wrapper=()=>{const q=new QueryClient({defaultOptions:{mutations:{retry:false}}});return ({children}:{children:ReactNode})=><QueryClientProvider client={q}>{children}</QueryClientProvider>;};
 const creates=()=>state.rpc.mock.calls.filter(([x])=>x==='create_partner_order_secure');
-const mk=(p:string,slot:string,extra={})=>({payment_method:'pix' as const,payment_condition_version:1,payment_deadline_days:7,partner_id:p,items:[{item_id:p,item_tipo:'produto' as const,product_id:p,nome:'n',quantidade:1,preco_unitario:1,desconto_percentual:0,subtotal:1,unidade_pedido:'litro' as const}] as never,expected_cart_hash:'h',idempotency_key:'key1',attempt_slot:slot,...extra});
+const mk=(p:string,slot:string,extra={})=>({partner_id:p,items:[{item_id:p,item_tipo:'produto' as const,product_id:p,nome:'n',quantidade:1,preco_unitario:1,desconto_percentual:0,subtotal:1,unidade_pedido:'litro' as const}] as never,expected_cart_hash:'h',idempotency_key:'key1',attempt_slot:slot,...extra});
 const reserve=(slot:string)=>{const p=prepareOrderAttempt(slot,'fp',()=>'key1');if(!p.ok)throw Error('blocked');markOrderAttemptSending(slot,p.key);};
 beforeEach(()=>{clearAllOrderAttempts();state.pending=[];state.rpc.mockReset();vi.stubGlobal('indexedDB',new IDBFactory());vi.stubGlobal('crypto',webcrypto);});
 
@@ -55,7 +55,6 @@ it('storage negado após capability ativa: sem fallback e reserva liberada',asyn
 it('mesma chave: um preflight falha, outro create pendente vence; tentativa não é apagada',async()=>{
  let cap=0;
  state.rpc.mockImplementation((x:string)=>{
-  if(x==='partner_payment_condition_capability_v1')return Promise.resolve({data:{contract:'B2B_PAYMENT_CONDITION_V1',actor_id:A,organization_id:O,partner_id:P,simulate:true,create:true},error:null});
   if(x==='partner_order_journal_capability_v1') return ++cap===1?Promise.reject(Error('capability network unavailable')):Promise.resolve(ABSENT);
   return new Promise(r=>state.pending.push(r));
  });
@@ -64,7 +63,7 @@ it('mesma chave: um preflight falha, outro create pendente vence; tentativa não
  act(()=>{for(let i=0;i<2;i++){reserve(slot);sends.push(h.result.current.mutateAsync(mk(P,slot)).catch(()=>'rejected'));}});
  await vi.waitFor(()=>expect(state.pending).toHaveLength(1));
  expect(readOrderAttempt(slot)?.inflight).toBe(true);           // create concorrente ainda em voo
- await act(async()=>{state.pending[0]({data:{id:ID,numero:'PB-1',total:1,payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7}},error:null});await Promise.all(sends);});
+ await act(async()=>{state.pending[0]({data:{id:ID,numero:'PB-1',total:1},error:null});await Promise.all(sends);});
  const a=readOrderAttempt(slot);
  expect(a?.order?.numero).toBe('PB-1'); expect(a?.inflight).toBe(false); expect(a?.key).toBe('key1');
  expect(creates().map(c=>(c[1] as {p_idempotency_key:string}).p_idempotency_key)).toEqual(['key1']);
@@ -73,10 +72,9 @@ it('mesma chave: um preflight falha, outro create pendente vence; tentativa não
 it('transição legacy→durable no preflight: sucesso não deixa reserva local pendurada',async()=>{
  const P=partner(); let gen=1, term='uncertain';
  state.rpc.mockImplementation((x:string)=>{
-  if(x==='partner_payment_condition_capability_v1')return Promise.resolve({data:{contract:'B2B_PAYMENT_CONDITION_V1',actor_id:A,organization_id:O,partner_id:P,simulate:true,create:true},error:null});
   if(x==='partner_order_journal_capability_v1')return Promise.resolve({data:{contract,enabled:true,actor_id:A,organization_id:O,partner_id:P},error:null});
   if(x==='recover_partner_order_attempt_v1')return Promise.resolve({data:{contract,key:K,generation:gen,state:term,...(term==='committed'?{order_id:ID,numero:'PB-2'}:{})},error:null});
-  if(x==='create_partner_order_secure'){term='committed';return Promise.resolve({data:{id:ID,numero:'PB-2',total:1,payment_choice:{payment_method:'pix',payment_condition_version:1,payment_deadline_days:7}},error:null});}
+  if(x==='create_partner_order_secure'){term='committed';return Promise.resolve({data:{id:ID,numero:'PB-2',total:1},error:null});}
   return Promise.reject(Error('unexpected '+x));
  });
  const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:wrapper()}); const slot=h.result.current.slotFor(P)!;
@@ -90,7 +88,6 @@ it('transição legacy→durable no preflight: sucesso não deixa reserva local 
 it('durable: rejeição de transporte no create não decrementa outra reserva legacy concorrente',async()=>{
  const P=partner();
  state.rpc.mockImplementation((x:string)=>{
-  if(x==='partner_payment_condition_capability_v1')return Promise.resolve({data:{contract:'B2B_PAYMENT_CONDITION_V1',actor_id:A,organization_id:O,partner_id:P,simulate:true,create:true},error:null});
   if(x==='partner_order_journal_capability_v1')return Promise.resolve({data:{contract,enabled:true,actor_id:A,organization_id:O,partner_id:P},error:null});
   if(x==='recover_partner_order_attempt_v1')return Promise.resolve({data:{contract,key:K,generation:1,state:'uncertain'},error:null});
   if(x==='create_partner_order_secure')return Promise.reject(new Error('Failed to fetch'));

@@ -19,19 +19,18 @@ const slot=JSON.stringify([A,O,P]), contract='C2_ORDER_JOURNAL_V1';
 const j=(s:Journal['state']='uncertain',g=1):Journal=>({contract,key:K,generation:g,state:s,...(s==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})});
 const ok=(data:unknown)=>Promise.resolve({data,error:null});
 let generation=1, terminal:Journal['state']='uncertain', creates:string[]=[];
-const input={payment_method:'pix' as const,payment_condition_version:1,payment_deadline_days:7,partner_id:P,items:[{item_id:P,item_tipo:'produto' as const,product_id:P,nome:'Local',quantidade:1,preco_unitario:1,desconto_percentual:0,subtotal:1,unidade_pedido:'litro' as const}],expected_cart_hash:'live-hash',idempotency_key:'client-never-dispatched'};
+const input={partner_id:P,items:[{item_id:P,item_tipo:'produto' as const,product_id:P,nome:'Local',quantidade:1,preco_unitario:1,desconto_percentual:0,subtotal:1,unidade_pedido:'litro' as const}],expected_cart_hash:'live-hash',idempotency_key:'client-never-dispatched'};
 const setup=()=>{const q=new QueryClient({defaultOptions:{mutations:{retry:false},queries:{retry:false}}});return ({children}:{children:ReactNode})=><QueryClientProvider client={q}>{children}</QueryClientProvider>;};
 beforeEach(()=>{
  Object.assign(state,{actor:A,org:O,ready:true});generation=1;terminal='uncertain';creates=[];
  vi.stubGlobal('indexedDB',new IDBFactory());vi.stubGlobal('crypto',webcrypto);
  state.rpc.mockReset();state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>{
-  if(name==='partner_payment_condition_capability_v1') return ok({contract:'B2B_PAYMENT_CONDITION_V1',actor_id:state.actor,organization_id:state.org,partner_id:P,simulate:true,create:true});
   if(name==='partner_order_journal_capability_v1')return ok({contract,enabled:true,actor_id:state.actor,organization_id:state.org,partner_id:P});
   if(name==='recover_partner_order_attempt_v1') {
    if(args.p_advance){if(args.p_expected_generation!==generation || args.p_expected_key!==K || (terminal==='committed' && args.p_ack_order!==ID))return Promise.resolve({data:null,error:{code:'PT409',message:'C2DJ_CAS_CONFLICT'}});const predecessor={key:K,generation,state:terminal==='committed'?'committed':'closed',...(terminal==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})};generation++;terminal='reserved';return ok({...j(terminal,generation),key:'66666666-6666-4666-8666-666666666666',predecessors:[predecessor]});}
    return ok(j(terminal,generation));
   }
-  if(name==='create_partner_order_secure'){creates.push(String(args.p_idempotency_key));terminal='committed';return ok({id:ID,numero:'PB-LOCAL',total:1,payment_choice:args.p_payment_choice});}
+  if(name==='create_partner_order_secure'){creates.push(String(args.p_idempotency_key));terminal='committed';return ok({id:ID,numero:'PB-LOCAL',total:1});}
   if(name==='close_partner_order_attempt_v1'){terminal='closed';return ok({contract:'C2_ORDER_ATTEMPT_CLOSURE_V1',state:'closed'});}
   throw Error('unexpected '+name);
  });
@@ -49,7 +48,7 @@ it('real hook dispatches only server key after storage, then waits committed ack
  expect(state.rpc.mock.calls.filter(([n])=>n==='recover_partner_order_attempt_v1')).toHaveLength(2);
 });
 it('unknown/failed capability never falls back, even when legacy memory key is present',async()=>{
- const original=state.rpc.getMockImplementation();state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>name==='partner_payment_condition_capability_v1'?original?.(name,args):Promise.resolve({data:null,error:{code:'42501'}}));
+ state.rpc.mockResolvedValue({data:null,error:{code:'42501'}});
  const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
  await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_unavailable');});expect(creates).toEqual([]);
 });
@@ -119,7 +118,7 @@ it('two mounted create hooks same tick share key, never client-generated keys',a
  expect(creates.length).toBeGreaterThan(0);expect(new Set(creates)).toEqual(new Set([K]));expect(generation).toBe(1);
 });
 it.each(['actor','organization'] as const)('foreign capability %s cannot disclose or create',async(kind)=>{
- const prior=state.rpc.getMockImplementation();state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=> name==='partner_payment_condition_capability_v1'?prior?.(name,args):Promise.resolve({data:{contract,enabled:true,actor_id:kind==='actor'?P:A,organization_id:kind==='organization'?P:O,partner_id:P},error:null}));
+ state.rpc.mockResolvedValue({data:{contract,enabled:true,actor_id:kind==='actor'?P:A,organization_id:kind==='organization'?P:O,partner_id:P},error:null});
  const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
  await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_invalid');});expect(creates).toEqual([]);
 });
