@@ -1,0 +1,266 @@
+diff --git a/src/hooks/useTenantProducts.ts b/src/hooks/useTenantProducts.ts
+index 71ead0d1a..24f8002e7 100644
+--- a/src/hooks/useTenantProducts.ts
++++ b/src/hooks/useTenantProducts.ts
+@@ -1,21 +1,23 @@
+-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
++import { useMutation, useQueryClient } from "@tanstack/react-query";
+ import { useRef } from "react";
+ import { supabase } from "@/integrations/supabase/client";
++import { useScopedPortalQuery } from "./useScopedPortalQuery";
++import { useStorageAccessScope } from "./useStorageAccessScope";
+ import {
+   buildTenantProductPayload, parseTenantProductAck, tenantProductErrorMessage,
+   type TenantProduct, type TenantProductDraft,
+ } from "@/lib/catalogo/tenantProducts";
+ 
+-type Rpc = (n: string, a?: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
+-const rpc = () => supabase.rpc as unknown as Rpc;
++type Rpc = (n: string, a?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> & { abortSignal: (signal: AbortSignal) => PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> };
++const rpc = () => supabase.rpc.bind(supabase) as unknown as Rpc;
+ 
+ export const TENANT_PRODUCTS_KEY = ["tenant-products"] as const;
+ 
+ export function useTenantProducts(includeArchived: boolean) {
+-  return useQuery({
++  return useScopedPortalQuery<TenantProduct[]>({
+     queryKey: [...TENANT_PRODUCTS_KEY, includeArchived],
+-    queryFn: async () => {
+-      const { data, error } = await rpc()("tenant_product_list", { p_include_archived: includeArchived });
++    queryFn: async (signal) => {
++      const { data, error } = await rpc()("tenant_product_list", { p_include_archived: includeArchived }).abortSignal(signal);
+       if (error) throw new Error(tenantProductErrorMessage(error.code, error.message));
+       if (!Array.isArray(data)) throw new Error("Resposta do servidor inválida");
+       return data as TenantProduct[];
+@@ -27,15 +29,22 @@ export function useTenantProducts(includeArchived: boolean) {
+ /** Uma chave por intenção; repetição após incerteza reusa a mesma chave (servidor devolve recibo). */
+ export function useSaveTenantProduct() {
+   const qc = useQueryClient();
++  const scope = useStorageAccessScope("tenant-product-save");
++  const actor = useStorageAccessScope("portal-query-actor");
+   const keyRef = useRef<{ sig: string; key: string } | null>(null);
+   return useMutation({
++    retry: false,
++    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
+     mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null }) => {
++      const current = scope.capture();
++      if (!current()) throw new Error("catalog_context_unavailable");
+       const payload = buildTenantProductPayload(v.draft, v.id === null);
+-      const sig = JSON.stringify([v.id, payload, v.expectedUpdatedAt]);
++      const sig = JSON.stringify([scope.scope, v.id, payload, v.expectedUpdatedAt]);
+       if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: crypto.randomUUID() };
+       const { data, error } = await rpc()("tenant_product_save", {
+         p_product_id: v.id, p_payload: payload, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: keyRef.current.key,
+       });
++      if (!current()) throw new Error("catalog_context_changed");
+       if (error) {
+         if (error.code && error.code !== "") keyRef.current = null; // recusa definitiva: nova intenção, nova chave
+         throw new Error(tenantProductErrorMessage(error.code, error.message));
+@@ -44,20 +53,33 @@ export function useSaveTenantProduct() {
+       keyRef.current = null;
+       return ack;
+     },
+-    onSettled: () => qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY }),
++    onSuccess: (_ack, _vars, context) => {
++      if (!context?.current()) return;
++      return qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY, predicate: q => q.queryKey.at(-2) === context.actorScope });
++    },
+   });
+ }
+ 
+ export function useArchiveTenantProduct() {
+   const qc = useQueryClient();
++  const scope = useStorageAccessScope("tenant-product-archive");
++  const actor = useStorageAccessScope("portal-query-actor");
+   return useMutation({
++    retry: false,
++    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
+     mutationFn: async (v: { id: string; archived: boolean; expectedUpdatedAt: string }) => {
++      const current = scope.capture();
++      if (!current()) throw new Error("catalog_context_unavailable");
+       const { data, error } = await rpc()("tenant_product_set_archived", {
+         p_product_id: v.id, p_archived: v.archived, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: crypto.randomUUID(),
+       });
++      if (!current()) throw new Error("catalog_context_changed");
+       if (error) throw new Error(tenantProductErrorMessage(error.code, error.message));
+       return parseTenantProductAck({ replayed: false, ...(data as object) }, v.id);
+     },
+-    onSettled: () => qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY }),
++    onSuccess: (_ack, _vars, context) => {
++      if (!context?.current()) return;
++      return qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY, predicate: q => q.queryKey.at(-2) === context.actorScope });
++    },
+   });
+ }
+diff --git a/src/lib/catalogo/tenantProducts.ts b/src/lib/catalogo/tenantProducts.ts
+index baff017f2..190062358 100644
+--- a/src/lib/catalogo/tenantProducts.ts
++++ b/src/lib/catalogo/tenantProducts.ts
+@@ -81,7 +81,7 @@ export function tenantProductErrorMessage(code: string | undefined, message: str
+   if (m.includes("duplicate_name")) return "Já existe um produto com esse nome na sua empresa.";
+   if (m.includes("version_conflict") || m.includes("cas_required")) return "O produto foi alterado por outra pessoa. Recarregue e tente de novo.";
+   if (code === "42501" || m.includes("forbidden")) return "Você não tem permissão para gerenciar produtos desta empresa.";
+-  if (m.includes("not_found")) return "Produto não encontrado na sua empresa.";
++  if (code === "P0002" || m.includes("not_found")) return "Produto não encontrado na sua empresa.";
+   if (m.includes("tipo_required") || m.includes("tipo_invalid") || code === "22P02") return "Selecione um tipo de produto válido.";
+   if (code === "PGRST202" || m.includes("Could not find the function")) return "Cadastro de produtos da empresa ainda não está disponível neste ambiente.";
+   return "Não foi possível salvar o produto.";
+diff --git a/src/test/catalogo/tenantProducts.realClient.test.tsx b/src/test/catalogo/tenantProducts.realClient.test.tsx
+new file mode 100644
+index 000000000..3e65972b7
+--- /dev/null
++++ b/src/test/catalogo/tenantProducts.realClient.test.tsx
+@@ -0,0 +1,152 @@
++import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { afterEach, beforeEach, expect, it, vi } from 'vitest';
++import type { ReactNode } from 'react';
++
++const state = vi.hoisted(() => ({ actor: 'actor-A', tenant: 'tenant-A', epoch: 0, ready: true, fetch: vi.fn() }));
++vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant, ativo: true }, roles: ['administrador'], loading: false, authzReady: state.ready, authzEpoch: state.epoch }) }));
++// Real SDK, including rpc receiver and REST builder. Only transport is synthetic.
++vi.mock('@/integrations/supabase/client', async () => {
++  const { createClient } = await import('@supabase/supabase-js');
++  return { supabase: createClient('https://swzpzcwiasxmjutrmvkm.supabase.co', 'synthetic-test-key', {
++    accessToken: async () => 'synthetic-test-bearer',
++    global: { fetch: (...args) => state.fetch(...args) },
++    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
++  }) };
++});
++import { useArchiveTenantProduct, useSaveTenantProduct, useTenantProducts } from '@/hooks/useTenantProducts';
++import { supabase } from '@/integrations/supabase/client';
++
++const clients: QueryClient[] = [];
++const stamp = '2026-11-03T01:20:00Z';
++const ack = { product_id: 'product-A', updated_at: stamp, replayed: false };
++const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
++function mount<T>(hook: () => T) {
++  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
++  clients.push(client);
++  return { ...renderHook(hook, { wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> }), client };
++}
++beforeEach(() => { Object.assign(state, { actor: 'actor-A', tenant: 'tenant-A', epoch: 0, ready: true }); state.fetch.mockReset(); });
++afterEach(() => { cleanup(); clients.splice(0).forEach(c => c.clear()); });
++function request(index: number, name: string) {
++  const [url, init] = state.fetch.mock.calls[index];
++  expect(String(url)).toBe(`https://swzpzcwiasxmjutrmvkm.supabase.co/rest/v1/rpc/${name}`);
++  expect(new Headers(init.headers).get('authorization')).toBe('Bearer synthetic-test-bearer');
++  expect(init.method).toBe('POST');
++  return JSON.parse(init.body);
++}
++it('reproduz a extração sem this com SDK real, antes de qualquer fetch', () => {
++  const detached = supabase.rpc;
++  expect(() => detached('tenant_product_list' as never)).toThrow(/rest/);
++  expect(state.fetch).not.toHaveBeenCalled();
++});
++it('lista via REST autorizado preservando receiver e argumento de arquivados', async () => {
++  state.fetch.mockResolvedValue(json([{ id: 'product-A', owner_organization_id: 'tenant-A', nome: 'Produto A', updated_at: stamp }]));
++  const { result } = mount(() => useTenantProducts(true));
++  await waitFor(() => expect(result.current.isSuccess).toBe(true));
++  expect(result.current.data?.[0].nome).toBe('Produto A');
++  expect(request(0, 'tenant_product_list')).toEqual({ p_include_archived: true });
++});
++it('salva via SDK real com CAS/chave originais e sem empresa no payload', async () => {
++  state.fetch.mockResolvedValue(json(ack));
++  const { result } = mount(useSaveTenantProduct);
++  await act(async () => { expect(await result.current.mutateAsync({ id: 'product-A', draft: { nome: 'Produto A', tipo: 'solo' }, expectedUpdatedAt: stamp })).toEqual(ack); });
++  expect(request(0, 'tenant_product_save')).toEqual({ p_product_id: 'product-A', p_payload: { nome: 'Produto A', tipo: 'solo' }, p_expected_updated_at: stamp, p_idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/) });
++});
++it('arquiva via SDK real com CAS e ACK exatos', async () => {
++  state.fetch.mockResolvedValue(json(ack));
++  const { result } = mount(useArchiveTenantProduct);
++  await act(async () => { expect(await result.current.mutateAsync({ id: 'product-A', archived: true, expectedUpdatedAt: stamp })).toEqual(ack); });
++  expect(request(0, 'tenant_product_set_archived')).toEqual({ p_product_id: 'product-A', p_archived: true, p_expected_updated_at: stamp, p_idempotency_key: expect.any(String) });
++});
++it('erro backend real de list/save/archive é propagado sem retry ou falsa confirmação', async () => {
++  state.fetch.mockImplementation(async () => json({ code: '42501', message: 'forbidden' }, 403));
++  const list = mount(() => useTenantProducts(false));
++  await waitFor(() => expect(list.result.current.isError).toBe(true));
++  const save = mount(useSaveTenantProduct); const archive = mount(useArchiveTenantProduct);
++  await act(async () => {
++    await expect(save.result.current.mutateAsync({ id: null, draft: { nome: 'Produto A', tipo: 'solo' }, expectedUpdatedAt: null })).rejects.toThrow(/permissão/);
++    await expect(archive.result.current.mutateAsync({ id: 'product-A', archived: true, expectedUpdatedAt: stamp })).rejects.toThrow(/permissão/);
++  });
++  expect(state.fetch).toHaveBeenCalledTimes(3);
++});
++it('troca de ator/tenant oculta cache A e não adota resposta atrasada A nem após ABA', async () => {
++  let resolveA: ((value: Response) => void) | undefined;
++  state.fetch.mockImplementationOnce(() => new Promise<Response>(resolve => { resolveA = resolve; }));
++  const { result, rerender, client } = mount(() => useTenantProducts(false));
++  await waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(1));
++  state.actor = 'actor-B'; state.tenant = 'tenant-B'; state.epoch++;
++  state.fetch.mockResolvedValue(json([{ id: 'product-B', nome: 'Produto B', owner_organization_id: 'tenant-B', updated_at: stamp }]));
++  rerender(); expect(result.current.data).toBeUndefined();
++  await waitFor(() => expect(result.current.data?.[0].nome).toBe('Produto B'));
++  await act(async () => { resolveA?.(json([{ id: 'product-A', nome: 'Produto A', owner_organization_id: 'tenant-A' }])); });
++  expect(result.current.data?.[0].nome).toBe('Produto B');
++  expect(client.getQueryCache().getAll().some(q => String(q.queryKey).includes('actor-A'))).toBe(false);
++  state.actor = 'actor-A'; state.tenant = 'tenant-A'; state.epoch++;
++  state.fetch.mockResolvedValue(json([])); rerender(); expect(result.current.data).toBeUndefined();
++  await waitFor(() => expect(result.current.data).toEqual([]));
++});
++it('ACK tardio de salvar em outro contexto não invalida cache B', async () => {
++  let resolve: ((value: Response) => void) | undefined;
++  state.fetch.mockImplementation(() => new Promise<Response>(r => { resolve = r; }));
++  const { result, rerender, client } = mount(useSaveTenantProduct);
++  const invalidate = vi.spyOn(client, 'invalidateQueries');
++  let work: Promise<unknown> | undefined;
++  await act(async () => { work = result.current.mutateAsync({ id: 'product-A', draft: { nome: 'Produto A' }, expectedUpdatedAt: stamp }).catch(e => e); });
++  await waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(1));
++  state.actor = 'actor-B'; state.tenant = 'tenant-B'; state.epoch++; rerender();
++  await act(async () => { resolve?.(json(ack)); expect(await work).toMatchObject({ message: 'catalog_context_changed' }); });
++  expect(invalidate).not.toHaveBeenCalled();
++});
++it.each(['actor', 'tenant'] as const)('cache já preenchido é ocultado na troca somente de %s', async field => {
++  state.fetch.mockResolvedValue(json([{ id: 'product-A', nome: 'Produto A', owner_organization_id: 'tenant-A' }]));
++  const { result, rerender, client } = mount(() => useTenantProducts(false));
++  await waitFor(() => expect(result.current.data?.[0].nome).toBe('Produto A'));
++  state[field] = `${field}-B`;
++  state.fetch.mockResolvedValue(json([]));
++  rerender(); expect(result.current.data).toBeUndefined();
++  await waitFor(() => expect(result.current.data).toEqual([]));
++  expect(client.getQueryCache().getAll()).toHaveLength(1);
++  expect(state.fetch).toHaveBeenCalledTimes(2);
++});
++it('contexto não pronto oculta cache e recusa save/archive antes de REST', async () => {
++  state.ready = false;
++  const list = mount(() => useTenantProducts(false));
++  const save = mount(useSaveTenantProduct); const archive = mount(useArchiveTenantProduct);
++  await act(async () => {
++    await expect(save.result.current.mutateAsync({ id: null, draft: { nome: 'Produto A', tipo: 'solo' }, expectedUpdatedAt: null })).rejects.toThrow('catalog_context_unavailable');
++    await expect(archive.result.current.mutateAsync({ id: 'product-A', archived: true, expectedUpdatedAt: stamp })).rejects.toThrow('catalog_context_unavailable');
++  });
++  expect(list.result.current.data).toBeUndefined();
++  expect(state.fetch).not.toHaveBeenCalled();
++});
++it('P0002 HTTP500 em save/archive significa ausente no escopo, sem sucesso, retry ou invalidação', async () => {
++  state.fetch.mockImplementation(async () => json({ code: 'P0002', message: 'query returned no rows', details: null, hint: null }, 500));
++  const save = mount(useSaveTenantProduct); const archive = mount(useArchiveTenantProduct);
++  const saveInvalidation = vi.spyOn(save.client, 'invalidateQueries');
++  const archiveInvalidation = vi.spyOn(archive.client, 'invalidateQueries');
++  await act(async () => {
++    await expect(save.result.current.mutateAsync({ id: 'product-A', draft: { nome: 'Produto A' }, expectedUpdatedAt: stamp })).rejects.toThrow('Produto não encontrado na sua empresa.');
++    await expect(archive.result.current.mutateAsync({ id: 'product-A', archived: true, expectedUpdatedAt: stamp })).rejects.toThrow('Produto não encontrado na sua empresa.');
++  });
++  expect(state.fetch).toHaveBeenCalledTimes(2);
++  expect(request(0, 'tenant_product_save').p_expected_updated_at).toBe(stamp);
++  expect(request(1, 'tenant_product_set_archived').p_expected_updated_at).toBe(stamp);
++  expect(save.result.current.data).toBeUndefined();
++  expect(archive.result.current.data).toBeUndefined();
++  expect(saveInvalidation).not.toHaveBeenCalled();
++  expect(archiveInvalidation).not.toHaveBeenCalled();
++});
++it('tentativa incerta reusa chave só no mesmo escopo; troca de conta/empresa gera outra chave', async () => {
++  state.fetch.mockImplementation(async () => { throw new Error('synthetic transport unavailable'); });
++  const { result, rerender } = mount(useSaveTenantProduct);
++  const input = { id: 'product-A', draft: { nome: 'Produto A' }, expectedUpdatedAt: stamp };
++  await act(async () => { await expect(result.current.mutateAsync(input)).rejects.toThrow(); });
++  const keyA = request(0, 'tenant_product_save').p_idempotency_key;
++  await act(async () => { await expect(result.current.mutateAsync(input)).rejects.toThrow(); });
++  expect(request(1, 'tenant_product_save').p_idempotency_key).toBe(keyA);
++  state.actor = 'actor-B'; state.tenant = 'tenant-B'; state.epoch++; rerender();
++  await act(async () => { await expect(result.current.mutateAsync(input)).rejects.toThrow(); });
++  expect(request(2, 'tenant_product_save').p_idempotency_key).not.toBe(keyA);
++  expect(state.fetch).toHaveBeenCalledTimes(3);
++});
+\ No newline at end of file

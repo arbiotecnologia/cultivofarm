@@ -137,3 +137,16 @@ it('P0002 HTTP500 em save/archive significa ausente no escopo, sem sucesso, retr
   expect(saveInvalidation).not.toHaveBeenCalled();
   expect(archiveInvalidation).not.toHaveBeenCalled();
 });
+it('tentativa incerta reusa chave só no mesmo escopo; troca de conta/empresa gera outra chave', async () => {
+  state.fetch.mockImplementation(async () => { throw new Error('synthetic transport unavailable'); });
+  const { result, rerender } = mount(useSaveTenantProduct);
+  const input = { id: 'product-A', draft: { nome: 'Produto A' }, expectedUpdatedAt: stamp };
+  await act(async () => { await expect(result.current.mutateAsync(input)).rejects.toThrow(); });
+  const keyA = request(0, 'tenant_product_save').p_idempotency_key;
+  await act(async () => { await expect(result.current.mutateAsync(input)).rejects.toThrow(); });
+  expect(request(1, 'tenant_product_save').p_idempotency_key).toBe(keyA);
+  state.actor = 'actor-B'; state.tenant = 'tenant-B'; state.epoch++; rerender();
+  await act(async () => { await expect(result.current.mutateAsync(input)).rejects.toThrow(); });
+  expect(request(2, 'tenant_product_save').p_idempotency_key).not.toBe(keyA);
+  expect(state.fetch).toHaveBeenCalledTimes(3);
+});

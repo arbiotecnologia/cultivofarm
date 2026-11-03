@@ -1,0 +1,54 @@
+{
+  "snapshot": "fe2b61178c6ec8d6da633d983b24bba47a6dae62",
+  "upstream_sha256": "15e9fe9c047ed01ad2dde62e2f81a5d7fe7534bd2e06127cbccaf5f4a61911c5",
+  "files": [
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/FINAL.md",
+      "sha256": "586e1d14a0e6683b1ab8019a6f6822cc5341603fd4c7a339bfaf249dc6bb90bc"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/README.md",
+      "sha256": "005c09941bdc93e7a4ac3925e2872d82d77c05d7b3c4e0b640453360259c17ba"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/automatic-build.log.txt",
+      "sha256": "f056995b5068d30ceeea4242c7019b220eab7b8d1a134c7c1b136e6a22ea7ae4"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/diff-check.log.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/final-regression.log.txt",
+      "sha256": "c6db2fb9ab2cf11e0c01b5bbee69e00f94aa85dceefc78ce98c19bdea5b48805"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/focused.log.txt",
+      "sha256": "6b4a19e93f2de89706fa815033caa3272b10cdacfcf81ea2e1afb731393311a9"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/original-final.patch",
+      "sha256": "c955b14a63f5ac162e53f1c40cff703910bd204f49edd27335c413b8d60c25de"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/review.json",
+      "sha256": "9f7d1199903be690743ebe03a5598e7db28795411a655c7b9a205dcc63ac5dda"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/separation.log.txt",
+      "sha256": "6f828f5b3bcfe3d6f3399c24dddeae589663c36d4d860d9b1ca7f0d2d8b31661"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/upstream-exact.patch",
+      "sha256": "15e9fe9c047ed01ad2dde62e2f81a5d7fe7534bd2e06127cbccaf5f4a61911c5"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/upstream-useTenantCatalogVisibility.ts.txt",
+      "sha256": "1ad01b41c7e6469d2902cf514bec56057837c68afb42dba8c9efef8db82e5fba"
+    },
+    {
+      "path": "scripts/catalog-exclusive-tenant-reconciliation-20261102/rpc-receiver-fix/fe2-reconciliation/upstream-useTenantProducts.ts.txt",
+      "sha256": "2c593989e7befc103159657d4a5c638a5cdd4219ef13fe99fbc6dea2ef529cc3"
+    }
+  ]
+}

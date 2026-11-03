@@ -1,0 +1,49 @@
+diff --git a/src/test/catalogo/tenant-products-scope.test.tsx b/src/test/catalogo/tenant-products-scope.test.tsx
+new file mode 100644
+index 0000000..f29cd09
+--- /dev/null
++++ b/src/test/catalogo/tenant-products-scope.test.tsx
+@@ -0,0 +1,43 @@
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { renderHook, waitFor } from '@testing-library/react';
++import type { ReactNode } from 'react';
++import { describe, expect, it, vi, beforeEach } from 'vitest';
++
++const ARB = 'c809e74f-486b-44b2-b2f4-4088f53421bb';
++const FSF = 'dcf50a75-579a-4828-a0fc-1d8eadcb4b8a';
++let auth = { user: { id: 'u-arbio' }, profile: { user_id: 'u-arbio', organization_id: ARB }, loading: false };
++const rpc = vi.fn();
++vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
++vi.mock('@/integrations/supabase/client', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
++
++import { useTenantProducts } from '@/hooks/useTenantProducts';
++
++describe('cache tenant-products escopado por empresa+usuário', () => {
++  beforeEach(() => { rpc.mockReset(); auth = { user: { id: 'u-arbio' }, profile: { user_id: 'u-arbio', organization_id: ARB }, loading: false }; });
++
++  it('troca de sessão ARBio→FSF nunca exibe lista da sessão anterior e remove o cache antigo', async () => {
++    rpc.mockResolvedValueOnce({ data: [{ id: 'p-arbio', nome: 'AR Bio' }], error: null });
++    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++    const W = ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
++    const h = renderHook(() => useTenantProducts(false), { wrapper: W });
++    await waitFor(() => expect(h.result.current.data?.[0].id).toBe('p-arbio'));
++
++    let resolveFsf!: (v: unknown) => void;
++    rpc.mockReturnValueOnce(new Promise((r) => { resolveFsf = r; }));
++    auth = { user: { id: 'u-rh' }, profile: { user_id: 'u-rh', organization_id: FSF }, loading: false };
++    h.rerender();
++    expect(h.result.current.data).toBeUndefined();
++    resolveFsf({ data: [], error: null });
++    await waitFor(() => expect(h.result.current.data).toEqual([]));
++    const keys = qc.getQueryCache().getAll().map((q) => q.queryKey);
++    expect(keys.some((k) => k.includes(ARB))).toBe(false);
++    expect(keys.every((k) => k[1] === FSF && k[2] === 'u-rh')).toBe(true);
++  });
++
++  it('sem Auth/perfil pronto não consulta o servidor', () => {
++    auth = { user: { id: 'u-rh' }, profile: { user_id: 'outro', organization_id: FSF }, loading: false };
++    const qc = new QueryClient();
++    renderHook(() => useTenantProducts(false), { wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider> });
++    expect(rpc).not.toHaveBeenCalled();
++  });
++});
