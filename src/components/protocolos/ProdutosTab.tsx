@@ -356,14 +356,21 @@ export function ProdutosTab() {
       if (outcome.status === "partial") {
         toast.error(outcome.message);
         retainedSave.current = input;
+        const frozen = { ...form, id: ack.product_id, updated_at: ack.updated_at };
+        retainedForm.current = frozen;
         setPartialAck({ product_id: ack.product_id, updated_at: ack.updated_at });
-        setForm(previous => ({ ...previous, id: ack.product_id, updated_at: ack.updated_at }));
+        setPartialKind(ack.compositionFailure === "definitive" ? "definitive" : "uncertain");
+        setPartialExport(JSON.stringify({
+          produto_id: ack.product_id, versao_confirmada_produto: ack.updated_at, nome: frozen.nome,
+          resultado_composicao: ack.compositionFailure === "definitive" ? "recusada_pelo_servidor" : "nao_confirmada",
+          composicao_rascunho: frozen.composicao.map(item => ({ ...item,
+            nome: item.microrganismo_id ? microrganismos.find(m => m.id === item.microrganismo_id)?.nome ?? null : items.find(p => p.id === item.component_insumo_id)?.nome ?? null })),
+        }, null, 2));
+        setForm(frozen);
         setPartialMessage(outcome.message ?? "Produto salvo; composição não confirmada.");
         return;
       }
-      retainedSave.current = null;
-      setPartialMessage(null);
-      setPartialAck(null);
+      clearPartial();
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
       setOpen(false);
       resetForm();
@@ -373,6 +380,63 @@ export function ProdutosTab() {
     } finally {
       savingRef.current = false;
       setSaving(false);
+    }
+  };
+
+  const clearPartial = () => {
+    retainedSave.current = null; retainedForm.current = null;
+    setPartialMessage(null); setPartialAck(null); setPartialKind(null); setPartialExport(null);
+  };
+
+  const copyPartialDraft = async () => {
+    if (!partialExport) return;
+    try { await navigator.clipboard.writeText(partialExport); toast.success("Rascunho copiado."); }
+    catch { toast.error("Não foi possível copiar; selecione o texto do rascunho exportável."); }
+  };
+
+  /** Saída explícita com tentativa INCERTA: fecha o diálogo mas mantém intenção/chaves retidas para replay posterior. */
+  const leavePendingUncertain = () => {
+    if (partialKind !== "uncertain" || savingRef.current) return;
+    setOpen(false);
+  };
+  const resumePending = () => {
+    if (!retainedForm.current || savingRef.current) return;
+    setForm(retainedForm.current); setOpen(true);
+  };
+
+  /**
+   * Recusa DEFINITIVA: lê o produto de novo pelas leituras canônicas do tenant e só então reconhece o resultado e
+   * reabre a edição do MESMO produto com a versão fresca (CAS). Nunca desfaz o produto nem cria outro.
+   */
+  const returnToEditAfterDefinitive = async () => {
+    if (partialKind !== "definitive" || !partialAck || savingRef.current || reconciling) return;
+    const current = editor.capture();
+    const productId = partialAck.product_id;
+    setReconciling(true);
+    try {
+      const [list, det] = await Promise.all([productList.refetch(), details.refetch()]);
+      if (!current()) return;
+      const fresh = list.isSuccess && det.isSuccess ? (list.data ?? []).find(p => p.id === productId) : undefined;
+      if (!fresh || typeof fresh.updated_at !== "string" || !fresh.updated_at) {
+        toast.error("A leitura atual não confirmou o produto salvo. Nada foi alterado; tente novamente.");
+        return;
+      }
+      if (!saveProduct.acknowledgeDefinitiveComposition(productId)) {
+        toast.error("Não foi possível reconhecer o resultado neste contexto. Recarregue a página.");
+        return;
+      }
+      const micros = (det.data?.microorganisms ?? []) as unknown as Microrganismo[];
+      const microMap = new Map(micros.map(m => [m.id, m]));
+      const freshProduct = { ...fresh, formulacoes: (det.data?.formulas ?? []).filter(f => f.produto_id === productId)
+        .map(f => ({ ...f, microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined })) } as unknown as Produto;
+      retainedSave.current = null; retainedForm.current = null;
+      setPartialMessage(null); setPartialAck(null); setPartialKind(null);
+      // O rascunho recusado continua exportável na edição reaberta até o diálogo fechar.
+      handleEdit(freshProduct);
+      composicaoTouched.current = false;
+      if (fresh.updated_at !== partialAck.updated_at) toast.info("O produto mudou desde o salvamento; a versão atual foi carregada.");
+    } finally {
+      if (current()) setReconciling(false);
     }
   };
 
