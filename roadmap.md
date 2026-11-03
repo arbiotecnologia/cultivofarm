@@ -1,8 +1,10 @@
 ## 03/11 — Correção receiver ProdutosEmpresa (somente local)
+- [x] ffrg/ffx consolidados: original500b8 mantido, pedido de sobrescrever pelo básico fe2 supersedido. Auditor reportou negativa AR Bio→FSF API/REST e POST intacto; não reproduzidos pelo agente.
+- [x] Auditoria useAuth/internalContextProbe/producerContextProbe: todos já usam rpc.call(supabase), receiver preservado; testes SDK real/fetch sintético adicionados, nenhuma alteração funcional necessária.
 - [x] Revisão fe2b6117: hash exato15e9fe9c…911c5 confere, mas patch contém somente dois testes, não runtime; bind/cache/captured-scope já equivalentes no original, sem sobrescrever fences mais fortes ou duplicar helper.
 - [x] Evidência JWT HOMOLOG reportada pelo auditor: FSF não lista AR Bio; save/archive estrangeiro com CAS real retornam P0002 e registro intacto. Tratamento local P0002=ausente, sem retry/sucesso/invalidação, testado com SDK real/fetch sintético.
 - [x] Auditor esclareceu fe2b6117: AR Bio é marca GLOBAL configuracoes_sistema na homolog, não cache vazado; registro global preservado. JWT FSF API/UI create/edit/archive/restore e owner FSF reportados PASS, sem reprodução pelo agente.
-- [ ] Publicação continua bloqueada: falta troca real AR Bio→FSF, POST e testes finais independentes; provas FSF reportadas não certificam produção.
+- [ ] Publicação continua bloqueada: aguarda reteste final do espelho exato500b8 pelo auditor; provas AR Bio→FSF/POST reportadas não certificam produção nem espelho final.
 - [x] Reprodução SDK real com transporte sintético: extração sem this falha antes de REST; bind preserva listar/salvar/arquivar e erros backend.
 - [x] Cache tenant-products migra ao wrapper canônico ator/empresa/papéis/época; respostas tardias e efeitos das mutações têm fence e invalidação scoped.
 - [x] Auditoria dos consumidores catálogo: chamadas membro/bind preservadas; nenhuma alteração financeira, SQL hosted ou publicação.
