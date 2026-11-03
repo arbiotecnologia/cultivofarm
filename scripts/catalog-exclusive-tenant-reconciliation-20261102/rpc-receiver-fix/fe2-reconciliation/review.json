@@ -1,0 +1,10 @@
+{
+  "snapshot": "fe2b61178c6ec8d6da633d983b24bba47a6dae62",
+  "sha256": "15e9fe9c047ed01ad2dde62e2f81a5d7fe7534bd2e06127cbccaf5f4a61911c5",
+  "paths": [
+    "src/test/catalogo/tenant-products-scope.test.tsx"
+  ],
+  "runtime_patch_present": false,
+  "decision": "preserve original scoped wrapper, receiver bind and ACK fences; add behavioral idempotency scope test, not duplicate weaker upstream hook",
+  "binding_imported": false
+}

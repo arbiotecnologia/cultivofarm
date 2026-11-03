@@ -1,0 +1,90 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useTenantCatalogScope } from "@/hooks/useTenantCatalogVisibility";
+import type { TenantCatalogScope } from "@/lib/catalogo/tenantCatalogVisibility";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  buildTenantProductPayload, parseTenantProductAck, tenantProductErrorMessage,
+  type TenantProduct, type TenantProductDraft,
+} from "@/lib/catalogo/tenantProducts";
+
+type Rpc = (n: string, a?: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
+const rpc = (): Rpc => supabase.rpc.bind(supabase) as unknown as Rpc;
+
+export const TENANT_PRODUCTS_KEY = ["tenant-products"] as const;
+
+/** Chave sempre escopada por empresa+usuário: caches de outra sessão/empresa nunca são reutilizados. */
+export const tenantProductsScopeKey = (s: TenantCatalogScope) => [...TENANT_PRODUCTS_KEY, s.organizationId, s.userId] as const;
+
+/** Remove listas de escopos anteriores ao trocar identidade/empresa (logout→login, troca de tenant). */
+function useTenantProductsScopeFence(scope: TenantCatalogScope | null) {
+  const qc = useQueryClient();
+  const prev = useRef<string | null>(null);
+  const key = scope ? `${scope.organizationId}|${scope.userId}` : null;
+  useEffect(() => {
+    if (prev.current !== null && prev.current !== key) {
+      qc.cancelQueries({ queryKey: TENANT_PRODUCTS_KEY });
+      qc.removeQueries({ queryKey: TENANT_PRODUCTS_KEY, predicate: (q) => !scope || q.queryKey[1] !== scope.organizationId || q.queryKey[2] !== scope.userId });
+    }
+    prev.current = key;
+  }, [key, qc, scope]);
+}
+
+export function useTenantProducts(includeArchived: boolean) {
+  const scope = useTenantCatalogScope();
+  useTenantProductsScopeFence(scope);
+  return useQuery({
+    queryKey: scope ? [...tenantProductsScopeKey(scope), includeArchived] : [...TENANT_PRODUCTS_KEY, "unscoped", includeArchived],
+    enabled: !!scope,
+    queryFn: async () => {
+      const { data, error } = await rpc()("tenant_product_list", { p_include_archived: includeArchived });
+      if (error) throw new Error(tenantProductErrorMessage(error.code, error.message));
+      if (!Array.isArray(data)) throw new Error("Resposta do servidor inválida");
+      return data as TenantProduct[];
+    },
+    retry: false,
+  });
+}
+
+/** Uma chave por intenção; repetição após incerteza reusa a mesma chave (servidor devolve recibo). */
+export function useSaveTenantProduct() {
+  const qc = useQueryClient();
+  const scope = useTenantCatalogScope();
+  const keyRef = useRef<{ sig: string; key: string } | null>(null);
+  const scopeId = scope ? `${scope.organizationId}|${scope.userId}` : "";
+  return useMutation({
+    mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null }) => {
+      if (!scope) throw new Error("Sessão ainda não está pronta");
+      const payload = buildTenantProductPayload(v.draft, v.id === null);
+      const sig = JSON.stringify([scopeId, v.id, payload, v.expectedUpdatedAt]);
+      if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: crypto.randomUUID() };
+      const { data, error } = await rpc()("tenant_product_save", {
+        p_product_id: v.id, p_payload: payload, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: keyRef.current.key,
+      });
+      if (error) {
+        if (error.code && error.code !== "") keyRef.current = null; // recusa definitiva: nova intenção, nova chave
+        throw new Error(tenantProductErrorMessage(error.code, error.message));
+      }
+      const ack = parseTenantProductAck(data, v.id);
+      keyRef.current = null;
+      return { ack, scope };
+    },
+    onSettled: (r) => { if (r?.scope) qc.invalidateQueries({ queryKey: tenantProductsScopeKey(r.scope) }); },
+  });
+}
+
+export function useArchiveTenantProduct() {
+  const qc = useQueryClient();
+  const scope = useTenantCatalogScope();
+  return useMutation({
+    mutationFn: async (v: { id: string; archived: boolean; expectedUpdatedAt: string }) => {
+      if (!scope) throw new Error("Sessão ainda não está pronta");
+      const { data, error } = await rpc()("tenant_product_set_archived", {
+        p_product_id: v.id, p_archived: v.archived, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: crypto.randomUUID(),
+      });
+      if (error) throw new Error(tenantProductErrorMessage(error.code, error.message));
+      return { ack: parseTenantProductAck({ replayed: false, ...(data as object) }, v.id), scope };
+    },
+    onSettled: (r) => { if (r?.scope) qc.invalidateQueries({ queryKey: tenantProductsScopeKey(r.scope) }); },
+  });
+}
