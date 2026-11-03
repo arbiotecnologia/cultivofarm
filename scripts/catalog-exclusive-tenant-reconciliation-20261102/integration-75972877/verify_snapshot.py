@@ -54,7 +54,7 @@ def verify(snapshot, original, post=False):
         # Accept ancestry only when no package destination changed since the exact base.
         ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", BASE, head], cwd=original, capture_output=True)
         changed = subprocess.check_output(["git", "diff", "--name-only", BASE, head], cwd=original, text=True).splitlines()
-        allowed = {"roadmap.md", "scripts/catalog-exclusive-tenant-reconciliation-20261102/integration-75972877/verify_snapshot.py"}
+        allowed = {"roadmap.md", "scripts/catalog-exclusive-tenant-reconciliation-20261102/integration-75972877/verify_snapshot.py", "scripts/catalog-exclusive-tenant-reconciliation-20261102/integration-75972877/test_verify_snapshot.py"}
         if ancestor.returncode or set(changed) - allowed:
             errors.append("original_base_mismatch")
     actual = dict(collections.Counter(x["action"] for x in manifest["files"]))
