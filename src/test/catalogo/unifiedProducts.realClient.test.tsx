@@ -18,6 +18,8 @@ import ProdutosEmpresa from "@/pages/configuracoes/ProdutosEmpresa";
 import { useSaveTenantProduct } from "@/hooks/useTenantProducts";
 import { useSaveTenantProductVolume, useTenantProductVolumes } from "@/hooks/useTenantProductVolumes";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { useProductProfile, useUpsertProductProfile } from "@/hooks/useProductProfile";
+import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
 import { navigation } from "@/config/navigation";
 import { getAccessLevel } from "@/lib/permissions";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
@@ -112,4 +114,65 @@ it("volume recusa Financeiro antes de REST", async () => {
   state.roles = ["financeiro"]; client(); const { result } = renderHook(useSaveTenantProductVolume, { wrapper });
   await act(async () => { await expect(result.current.mutateAsync({ id: null, productId: "p1", expectedUpdatedAt: null, payload: { volume_ml: 1000, preco_brl: 37 } })).rejects.toThrow("catalog_context_unavailable"); });
   expect(state.fetch).not.toHaveBeenCalled();
+});
+
+it("ficha técnica lê versão real, salva conteúdo por CAS e nunca promove status", async () => {
+  client(); const profile = { id: "f1", produto_id: "p1", updated_at: stamp, status_validacao: "rascunho", resumo_curto: "Antes" };
+  state.fetch.mockImplementation(async url => {
+    if (String(url).endsWith("/rpc/tenant_catalog_root_save")) return json({ ok: true, id: "f1", updated_at: stamp, replayed: false });
+    if (String(url).includes("/product_technical_profiles?")) return json(profile);
+    return json([]);
+  });
+  const { result } = renderHook(() => ({ read: useProductProfile("p1"), save: useUpsertProductProfile() }), { wrapper });
+  await waitFor(() => expect(result.current.read.isSuccess).toBe(true));
+  await act(async () => { await result.current.save.mutateAsync({ produto_id: "p1", resumo_curto: "Depois", status_validacao: "rascunho" }); });
+  expect(rpcCalls("tenant_catalog_root_save")[0]).toMatchObject({ p_root: "product_technical_profiles", p_id: "f1", p_expected_updated_at: stamp, p_payload: { resumo_curto: "Depois" } });
+  expect(rpcCalls("tenant_catalog_root_save")[0].p_payload).not.toHaveProperty("status_validacao");
+  await act(async () => { await expect(result.current.save.mutateAsync({ produto_id: "p1", status_validacao: "aprovado" })).rejects.toThrow(/Mudança de status/); });
+  expect(rpcCalls("tenant_catalog_root_save")).toHaveLength(1);
+});
+it("composição incerta conserva ambas as chaves e CAS para reconciliação explícita", async () => {
+  client(); let failures = 1;
+  state.fetch.mockImplementation(async url => {
+    if (String(url).endsWith("tenant_product_save")) return json(ack);
+    if (failures-- > 0) throw new Error("Resposta perdida");
+    return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
+  });
+  const { result } = renderHook(useSaveTenantProduct, { wrapper });
+  const input = { id: "p1", expectedUpdatedAt: stamp, draft: { nome: "Solo" }, composition: [{ microrganismo_id: "m1", volume_ml: 200 }] };
+  await act(async () => { expect((await result.current.mutateAsync(input)).compositionError).toBeTruthy(); });
+  expect(state.fetch).toHaveBeenCalledTimes(2);
+  await act(async () => { expect((await result.current.mutateAsync(input)).compositionError).toBeUndefined(); });
+  const saves = rpcCalls("tenant_product_save"), compositions = rpcCalls("tenant_catalog_formulacoes_replace");
+  expect(saves[0].p_idempotency_key).toBe(saves[1].p_idempotency_key);
+  expect(compositions[0]).toEqual(compositions[1]);
+});
+it("CAS recusado não chama composição, não repete e não invalida", async () => {
+  const qc = client(); state.fetch.mockResolvedValue(json({ code: "PT409", message: "version_conflict" }, 409));
+  const invalidate = vi.spyOn(qc, "invalidateQueries"); const { result } = renderHook(useSaveTenantProduct, { wrapper });
+  await act(async () => { await expect(result.current.mutateAsync({ id: "p1", expectedUpdatedAt: stamp, draft: { nome: "Solo" }, composition: [] })).rejects.toThrow(/alterado por outra pessoa/); });
+  expect(state.fetch).toHaveBeenCalledTimes(1); expect(invalidate).not.toHaveBeenCalled();
+});
+it("ACK produto atrasado após ABA não despacha composição nem invalida outra conta", async () => {
+  const qc = client(); let release: (response: Response) => void = () => {};
+  state.fetch.mockImplementation(() => new Promise<Response>(r => { release = r; }));
+  const invalidate = vi.spyOn(qc, "invalidateQueries"); const { result, rerender } = renderHook(useSaveTenantProduct, { wrapper });
+  let pending: Promise<unknown> = Promise.resolve();
+  act(() => { pending = result.current.mutateAsync({ id: "p1", expectedUpdatedAt: stamp, draft: { nome: "Solo" }, composition: [] }).catch(e => e); });
+  await waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(1));
+  state.actor = "B"; state.tenant = "org-B"; state.epoch++; rerender();
+  state.actor = "A"; state.tenant = "org-A"; state.epoch++; rerender();
+  await act(async () => { release(json(ack)); expect((await pending as Error).message).toBe("catalog_context_changed"); });
+  expect(rpcCalls("tenant_catalog_formulacoes_replace")).toHaveLength(0); expect(invalidate).not.toHaveBeenCalled();
+});
+it("invalidação atinge só leitores do ator atual, nunca financeiro ou outra empresa", async () => {
+  const qc = client(); state.fetch.mockResolvedValue(json(ack));
+  const { result } = renderHook(() => ({ actor: useTenantCatalogEditor(), save: useSaveTenantProduct() }), { wrapper });
+  const actorScope = result.current.actor.scope.replace("tenant-catalog-editor", "portal-query-actor");
+  const prefixes = ["tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "estoque-prontos-entrega", "todas-os-disponiveis", "estoque_produto"];
+  prefixes.forEach(p => { qc.setQueryData([p, actorScope, "request-A"], []); qc.setQueryData([p, "foreign", "request-B"], []); });
+  qc.setQueryData(["receivables", actorScope, "request-A"], []);
+  await act(async () => { await result.current.save.mutateAsync({ id: "p1", expectedUpdatedAt: stamp, draft: { nome: "Solo" } }); });
+  prefixes.forEach(p => { expect(qc.getQueryState([p, actorScope, "request-A"])?.isInvalidated).toBe(true); expect(qc.getQueryState([p, "foreign", "request-B"])?.isInvalidated).toBe(false); });
+  expect(qc.getQueryState(["receivables", actorScope, "request-A"])?.isInvalidated).toBe(false);
 });
