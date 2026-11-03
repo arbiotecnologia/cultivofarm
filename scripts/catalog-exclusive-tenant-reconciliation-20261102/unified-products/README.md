@@ -26,3 +26,8 @@ CRUD montado foi exercitado com SDK real e fetch sintético. Não prova JWT/RLS/
 `catalogo-produtos-local.patch` contém somente src + regras AGENTS, sem SQL/conexão/flags/secrets. `MANIFEST.json` traz hashes originais/finais. Revisar cada caminho e comparar original_sha256 antes; divergência de base deve abortar, não aplicar cegamente. Rodar dry-run (`git apply --check`) no espelho; depois aplicar integralmente com revisão própria, testar e executar JWT real. Base local19d08e diferente da base implantada informada c57bee: patch não certifica compatibilidade byte a byte com o isolado.
 
 Nenhuma publicação, implantação, SQL hosted, cobrança, fiscal ou SMTP executado. GO depende do espelho e provas reais finais. O commit final é gerenciado pela plataforma; o pacote identifica base e hashes, não inventa commit de fechamento.
+
+## Continuação — achado independente03/11
+- Gate Owned permanece false; ProdutosTab não monta OwnedCatalog nem chama suas RPCs antigas. Fonte única tenant_product_list; volumes usam tenant_catalog_root_save.
+- Parcial mantém diálogo/argumentos congelados e fecha só após ACK completo no mesmo contexto. Teste montado SDK real prova mesmas duas chamadas/chaves/CAS, nenhuma segunda raiz e tentativa de fechamento recusada.
+- Reteste: 4 arquivos/53 PASS; catálogo56/916 PASS; separação financeira5/5 PASS. Logs anteriores preservados; baterias720/2866 são anteriores a este ajuste focado, não repetidas nesta continuação. Build automático OK; sem typecheck separado, JWT, SQL ou publicação.

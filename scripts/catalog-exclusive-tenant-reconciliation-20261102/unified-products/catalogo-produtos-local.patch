@@ -1,14 +1,21 @@
 diff --git a/AGENTS.md b/AGENTS.md
-index c3d57e73e..936777891 100644
+index c3d57e73e..1c1540156 100644
 --- a/AGENTS.md
 +++ b/AGENTS.md
-@@ -105,3 +105,6 @@
+@@ -75,7 +75,6 @@
+ - Durable order recovery follows its review-directory rules; React probes the server capability and keeps legacy dispatch only on exact pre-install RPC absence, while active continuity always reserves server keys and persists CAS before dispatch — prevents eviction/downgrade duplicates without installing SQL automatically.
+ - Cross-generation order recovery follows the durable review-directory predecessor-chain rules; local expectations cannot authorize a jump — prevents stale uncertain cache deadends without weakening terminal CAS.
+ - Global service IBS/CBS reuses the existing global fiscal catalogue fence, while company RTC uses actor/tenant request fencing; server CAS errors never trigger automatic saves or draft rebasing — prevents tenant writers and stale success without replacing server authorization.
+-- RTC company/item hooks share a per-mount scope operation ledger: latest read wins, saves retire prior reads and synchronously own dispatch, reload during save is ignored, and finally releases only its own ticket — prevents stale revisions and concurrent unlocks without replacing server CAS.
+ - Fiscal drafts need the observed positive server version; monitor rescheduling uses only the canonical RPC with exact observed timestamp and full envelope, never bare IDs or two-table writes; conflicts keep drafts, no retries — prevents false success and CAS bypass.
+ - Visit approval submit follows scripts/visit-approval-submit-20261027/AGENTS.md: gate before row, re-authorize after waits, PT409 business conflicts and mandatory CAS — prevents cached-authority approvals.
+ - Generic visit monitoring plans follow scripts/visit-monitoring-plan-20261027/AGENTS.md — read before changing that area.
+@@ -105,3 +104,5 @@
  - Homolog alignment: scripts/homolog-alignment-20261102/AGENTS.md.
  - Original integration package: scripts/original-integration-20261102/AGENTS.md.
  - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.
 +
-+- Tenant product CRUD lives only in Catálogo → Produtos; the legacy settings route redirects with preserved query/hash, and scoped canonical RPCs keep CAS/idempotency/late-ACK fences — prevents duplicate editors and global writer reactivation.
-+- Product metadata and formulation replacement are sequential contracts; expose an uncertain/partial composition result, preserve unsupported declarations and never compensate or claim combined atomicity — prevents silent data loss.
++- Tenant product CRUD uses only Catálogo → Produtos and scoped canonical RPCs; the legacy settings route preserves query/hash — prevents duplicate editors and global writers.
 diff --git a/src/App.tsx b/src/App.tsx
 index b873ab1c0..8408c6c04 100644
 --- a/src/App.tsx
@@ -30,6 +37,17 @@ index b873ab1c0..8408c6c04 100644
                  <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />
                  <Route path="/configuracoes/fiscal/servicos" element={<RoleGuard><FiscalServicos /></RoleGuard>} />
                  <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />
+diff --git a/src/components/protocolos/AGENTS.md b/src/components/protocolos/AGENTS.md
+index 7d734a289..36396dab4 100644
+--- a/src/components/protocolos/AGENTS.md
++++ b/src/components/protocolos/AGENTS.md
+@@ -1 +1,3 @@
+-- Product/composition saves confirm minimal returned IDs and cardinality before continuing; compensation remains best-effort and inconclusive reversal is critical — prevents false success without implying transactionality.
+\ No newline at end of file
++- Product/composition saves confirm minimal returned IDs and cardinality before continuing; compensation remains best-effort and inconclusive reversal is critical — prevents false success without implying transactionality.
++- Product metadata and formulation replacement are sequential contracts; expose an uncertain/partial composition result, preserve unsupported declarations and never compensate or claim combined atomicity — prevents silent data loss.
++- Partial product saves retain the frozen input and dialog for explicit same-key reconciliation; never reset to a new-product form or allow a concurrent edit — prevents duplicate roots after a lost composition ACK.
+\ No newline at end of file
 diff --git a/src/components/protocolos/CatalogoVolumesDialog.tsx b/src/components/protocolos/CatalogoVolumesDialog.tsx
 index e3e09f331..9646312bc 100644
 --- a/src/components/protocolos/CatalogoVolumesDialog.tsx
@@ -299,7 +317,7 @@ index ed5531fc4..a7cfe5b69 100644
                <ReturnToReviewButton kind="produto" profileId={data.profile.id} onDone={refetch} />
              )}
 diff --git a/src/components/protocolos/ProdutosTab.tsx b/src/components/protocolos/ProdutosTab.tsx
-index a21b6ab85..3dcd0cd50 100644
+index a21b6ab85..afd58ecc5 100644
 --- a/src/components/protocolos/ProdutosTab.tsx
 +++ b/src/components/protocolos/ProdutosTab.tsx
 @@ -1,6 +1,9 @@
@@ -313,21 +331,21 @@ index a21b6ab85..3dcd0cd50 100644
  import { supabase } from "@/integrations/supabase/client";
  import { Button } from "@/components/ui/button";
  import { Input } from "@/components/ui/input";
-@@ -33,13 +36,7 @@ import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck
+@@ -33,13 +36,6 @@ import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck
  import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
  import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
  import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
 -import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItemControls";
 -import { OwnedCatalogItemDialog } from "./OwnedCatalogItemDialog";
 -import { OwnedCatalogConfirmDialog } from "./OwnedCatalogConfirmDialog";
- import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
+-import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
 -import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
 -import { OwnedCatalogPagination } from "./OwnedCatalogPagination";
 -import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
  
  import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
  import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
-@@ -67,6 +64,8 @@ interface Formulacao {
+@@ -67,6 +63,8 @@ interface Formulacao {
    component_insumo_id: string | null;
    proporcao: number | null;
    e_volume_fixo: boolean;
@@ -336,7 +354,7 @@ index a21b6ab85..3dcd0cd50 100644
    microrganismos?: Microrganismo;
    insumos?: { nome: string };
  }
-@@ -207,12 +206,7 @@ export async function carregarCatalogoProdutos(client: any): Promise<
+@@ -207,12 +205,7 @@ export async function carregarCatalogoProdutos(client: any): Promise<
  }
  
  export function ProdutosTab() {
@@ -349,7 +367,7 @@ index a21b6ab85..3dcd0cd50 100644
    const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
    const [fichaProduto, setFichaProduto] = useState<Produto | null>(null);
    const [open, setOpen] = useState(false);
-@@ -220,19 +214,21 @@ export function ProdutosTab() {
+@@ -220,19 +213,23 @@ export function ProdutosTab() {
    const savingRef = useRef(false);
    const [search, setSearch] = useState("");
    const [filterTipo, setFilterTipo] = useState("todos");
@@ -366,6 +384,8 @@ index a21b6ab85..3dcd0cd50 100644
 +  const editor = useTenantCatalogEditor();
 +  const saveProduct = useSaveTenantProduct();
 +  const archiveProduct = useArchiveTenantProduct();
++  const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
++  const [partialMessage, setPartialMessage] = useState<string | null>(null);
  
    const [form, setForm] = useState({
      id: "",
@@ -378,7 +398,7 @@ index a21b6ab85..3dcd0cd50 100644
      nome: "",
      tipo: "solo",
      dose_ml_ha: "",
-@@ -241,7 +237,7 @@ export function ProdutosTab() {
+@@ -241,7 +238,7 @@ export function ProdutosTab() {
      valor_dose_brl: "",
      valor_litro_brl: "",
      funcao_completa: "",
@@ -387,7 +407,7 @@ index a21b6ab85..3dcd0cd50 100644
      ativo: true,
      b2b_enabled: false,
      e_insumo: false,
-@@ -254,55 +250,41 @@ export function ProdutosTab() {
+@@ -254,55 +251,43 @@ export function ProdutosTab() {
        volume_ml: number;
        proporcao: number | null;
        e_volume_fixo: boolean;
@@ -422,6 +442,8 @@ index a21b6ab85..3dcd0cd50 100644
      localGeneration.current += 1;
 -    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null);
 -    void fetch();
++    retainedSave.current = null;
++    setPartialMessage(null);
 +    setOpen(false); resetForm();
 +    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
      return () => { localGeneration.current += 1; };
@@ -465,7 +487,7 @@ index a21b6ab85..3dcd0cd50 100644
      if (savingRef.current) return;
      savingRef.current = true;
      setSaving(true);
-@@ -318,6 +300,10 @@ export function ProdutosTab() {
+@@ -318,6 +303,10 @@ export function ProdutosTab() {
      const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (totalVolume > 0 ? totalVolume : null);
      const payload: any = {
        nome: form.nome,
@@ -476,7 +498,7 @@ index a21b6ab85..3dcd0cd50 100644
        codigo: codigoFinal,
        tipo: form.tipo as any,
        dose_ml_ha: doseMlHa,
-@@ -326,8 +312,7 @@ export function ProdutosTab() {
+@@ -326,8 +315,7 @@ export function ProdutosTab() {
        valor_dose_brl: form.valor_dose_brl ? Number(form.valor_dose_brl) : null,
        valor_litro_brl: form.valor_litro_brl ? Number(form.valor_litro_brl) : null,
        funcao_completa: form.funcao_completa || null,
@@ -486,7 +508,7 @@ index a21b6ab85..3dcd0cd50 100644
        b2b_enabled: form.b2b_enabled,
        e_insumo: form.e_insumo,
        estoque_minimo: form.estoque_minimo ? Number(form.estoque_minimo) : 0,
-@@ -337,14 +322,19 @@ export function ProdutosTab() {
+@@ -337,33 +325,35 @@ export function ProdutosTab() {
  
  
      try {
@@ -501,27 +523,33 @@ index a21b6ab85..3dcd0cd50 100644
 +        !Number.isFinite(Number(row.volume_ml)) || Number(row.volume_ml) < 0)) {
 +        throw new Error("Revise os componentes e os volumes da composição; nenhum dado foi salvo.");
 +      }
-+      const ack = await saveProduct.mutateAsync({ id: form.id || null,
++      const input = retainedSave.current ?? { id: form.id || null,
          expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
 -        payload,
 -        // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
 -        buildFormulacoes: (id: string) => buildFormulacoesPayload(id, form.composicao),
 -      });
-+        draft: payload, composition: composicaoTouched.current ? form.composicao.map(row => ({ ...row })) : undefined });
++        draft: payload, composition: composicaoTouched.current ? form.composicao.map(row => ({ ...row })) : undefined };
++      const ack = await saveProduct.mutateAsync(input);
 +      if (!current()) return;
 +      const outcome = ack.compositionError ? { status: "partial", message: ack.compositionError } : { status: "ok" };
  
        if (outcome.status === "partial") {
          toast.error(outcome.message);
-@@ -353,17 +343,12 @@ export function ProdutosTab() {
-         fetch();
-         return;
-       }
--      if (outcome.status === "error") {
--        toast.error(outcome.message || "Erro ao salvar produto");
+-        setOpen(false);
+-        resetForm();
+-        fetch();
 -        return;
 -      }
+-      if (outcome.status === "error") {
+-        toast.error(outcome.message || "Erro ao salvar produto");
++        retainedSave.current = input;
++        setPartialMessage(outcome.message ?? "Produto salvo; composição não confirmada.");
+         return;
+       }
 -
++      retainedSave.current = null;
++      setPartialMessage(null);
        toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
        setOpen(false);
        resetForm();
@@ -532,7 +560,7 @@ index a21b6ab85..3dcd0cd50 100644
      } finally {
        savingRef.current = false;
        setSaving(false);
-@@ -375,6 +360,10 @@ export function ProdutosTab() {
+@@ -375,6 +365,10 @@ export function ProdutosTab() {
        id: "",
        updated_at: "",
        codigo: "",
@@ -543,7 +571,7 @@ index a21b6ab85..3dcd0cd50 100644
        nome: "",
        tipo: "solo",
        dose_ml_ha: "",
-@@ -383,7 +372,7 @@ export function ProdutosTab() {
+@@ -383,7 +377,7 @@ export function ProdutosTab() {
        valor_dose_brl: "",
        valor_litro_brl: "",
        funcao_completa: "",
@@ -552,7 +580,7 @@ index a21b6ab85..3dcd0cd50 100644
        ativo: true,
        b2b_enabled: false,
        e_insumo: false,
-@@ -410,6 +399,10 @@ export function ProdutosTab() {
+@@ -410,6 +404,10 @@ export function ProdutosTab() {
        id: p.id,
        updated_at: p.updated_at ?? "",
        codigo: p.codigo || "",
@@ -563,7 +591,7 @@ index a21b6ab85..3dcd0cd50 100644
        nome: p.nome,
        tipo: p.tipo,
        dose_ml_ha: p.dose_ml_ha?.toString() || "",
-@@ -431,6 +424,7 @@ export function ProdutosTab() {
+@@ -431,6 +429,7 @@ export function ProdutosTab() {
          volume_ml: f.volume_ml,
          proporcao: f.proporcao,
          e_volume_fixo: f.e_volume_fixo
@@ -571,7 +599,7 @@ index a21b6ab85..3dcd0cd50 100644
        })) || []
      });
  
-@@ -439,19 +433,6 @@ export function ProdutosTab() {
+@@ -439,19 +438,6 @@ export function ProdutosTab() {
      setOpen(true);
    };
  
@@ -591,7 +619,7 @@ index a21b6ab85..3dcd0cd50 100644
    // Helpers for bidirectional pricing edits (shared util)
    const fmtNum = fmtNumStr;
    const numOrNull = numOrNullStr;
-@@ -486,7 +467,7 @@ export function ProdutosTab() {
+@@ -486,7 +472,7 @@ export function ProdutosTab() {
      markComposicaoTouched();
      setForm(prev => ({
        ...prev,
@@ -600,7 +628,7 @@ index a21b6ab85..3dcd0cd50 100644
      }));
    };
  
-@@ -591,7 +572,7 @@ export function ProdutosTab() {
+@@ -591,7 +577,7 @@ export function ProdutosTab() {
            <Input 
              placeholder="Buscar por código, nome ou função..." 
              value={search} 
@@ -609,7 +637,7 @@ index a21b6ab85..3dcd0cd50 100644
              className="pl-9"
            />
          </div>
-@@ -615,9 +596,9 @@ export function ProdutosTab() {
+@@ -615,9 +601,9 @@ export function ProdutosTab() {
              Exportar PDF
            </Button>
  
@@ -622,10 +650,11 @@ index a21b6ab85..3dcd0cd50 100644
              </Button>
            )}
  
-@@ -627,17 +608,9 @@ export function ProdutosTab() {
+@@ -626,21 +612,15 @@ export function ProdutosTab() {
  
  
-           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
+ 
+-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
 -            {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
 -            <DialogTrigger asChild>
 -              <Button size="sm">
@@ -635,6 +664,7 @@ index a21b6ab85..3dcd0cd50 100644
 -            </DialogTrigger>
 -            )}
 -            <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
++          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
 +            <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
                <DialogHeader>
 -                <DialogTitle>{form.id ? "Editar" : "Novo"} Produto Bioinsumo</DialogTitle>
@@ -642,7 +672,12 @@ index a21b6ab85..3dcd0cd50 100644
                </DialogHeader>
                
                <form onSubmit={handleSave} className="space-y-6 pt-4">
-@@ -656,8 +629,8 @@ export function ProdutosTab() {
++                {partialMessage && <p role="alert" className="text-destructive">{partialMessage} Repita a mesma tentativa para reconciliar; não cadastre outro produto.</p>}
++                <fieldset disabled={saving || !!partialMessage} className="min-w-0">
+                 <Tabs defaultValue="geral">
+                   <TabsList className="grid w-full grid-cols-3 mb-4">
+                     <TabsTrigger value="geral">Identificação</TabsTrigger>
+@@ -656,8 +636,8 @@ export function ProdutosTab() {
                          <p className="text-[10px] text-muted-foreground">Gerado automaticamente conforme o tipo. Você pode editar se necessário.</p>
                        </div>
                        <div className="space-y-2">
@@ -653,7 +688,7 @@ index a21b6ab85..3dcd0cd50 100644
                        </div>
                        <div className="space-y-2">
                          <Label>Tipo *</Label>
-@@ -672,10 +645,15 @@ export function ProdutosTab() {
+@@ -672,10 +652,15 @@ export function ProdutosTab() {
                        </div>
                        <div className="space-y-2">
                          <Label>Versão Catálogo</Label>
@@ -670,7 +705,7 @@ index a21b6ab85..3dcd0cd50 100644
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/20 rounded border border-dashed">
                        <div className="flex items-center space-x-2">
                          <input 
-@@ -701,6 +679,7 @@ export function ProdutosTab() {
+@@ -701,6 +686,7 @@ export function ProdutosTab() {
                        )}
                      </div>
  
@@ -678,7 +713,7 @@ index a21b6ab85..3dcd0cd50 100644
                      <div className="space-y-2">
                        <Label>Função Agronômica Completa</Label>
                        <Textarea value={form.funcao_completa} onChange={(e) => setForm({...form, funcao_completa: e.target.value})} rows={2} placeholder="Descrição detalhada das funções do produto..." />
-@@ -785,21 +764,19 @@ export function ProdutosTab() {
+@@ -785,21 +771,19 @@ export function ProdutosTab() {
                      </div>
  
                      <div className="border-t pt-4">
@@ -703,7 +738,7 @@ index a21b6ab85..3dcd0cd50 100644
                              placeholder="Deixe em branco para remover"
                            />
                          </div>
-@@ -815,7 +792,7 @@ export function ProdutosTab() {
+@@ -815,7 +799,7 @@ export function ProdutosTab() {
                            <Label htmlFor="prod_b2b">Disponível no portal B2B</Label>
                          </div>
                          <div className="flex items-center gap-2">
@@ -712,7 +747,7 @@ index a21b6ab85..3dcd0cd50 100644
                            <Label htmlFor="prod_ativo">Ativo</Label>
                          </div>
                        </div>
-@@ -827,6 +804,7 @@ export function ProdutosTab() {
+@@ -827,6 +811,7 @@ export function ProdutosTab() {
                    </TabsContent>
  
                    <TabsContent value="composicao" className="space-y-4 min-h-[300px] sm:min-h-[400px]">
@@ -720,7 +755,27 @@ index a21b6ab85..3dcd0cd50 100644
                      <div className="flex justify-between items-center mb-2">
                        <Label>Composição Técnica (Fórmula)</Label>
                        <div className="flex gap-2">
-@@ -1000,11 +978,9 @@ export function ProdutosTab() {
+@@ -956,6 +941,7 @@ export function ProdutosTab() {
+                                 type="button" 
+                                 variant="ghost" 
+                                 size="icon" 
++                                aria-label="Remover componente"
+                                 className="h-8 w-8 text-destructive"
+                                 onClick={() => removeMicrorganismo(idx)}
+                               >
+@@ -990,9 +976,10 @@ export function ProdutosTab() {
+                     </div>
+                   </TabsContent>
+                 </Tabs>
++                </fieldset>
+ 
+                 <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-background border-t flex justify-end items-center gap-4 z-10">
+-                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar Produto"}</Button>
++                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>
+                 </div>
+               </form>
+             </DialogContent>
+@@ -1000,11 +987,9 @@ export function ProdutosTab() {
          </div>
        </div>
  
@@ -735,7 +790,7 @@ index a21b6ab85..3dcd0cd50 100644
        <div className="rounded-md border">
          <Table>
            <TableHeader>
-@@ -1032,7 +1008,7 @@ export function ProdutosTab() {
+@@ -1032,7 +1017,7 @@ export function ProdutosTab() {
                const safra: string | null = pAny.safra_referencia ?? null;
                const observacoes: string | null = pAny.observacoes ?? null;
                return (
@@ -744,7 +799,7 @@ index a21b6ab85..3dcd0cd50 100644
                  <TableCell>
                    {p.codigo && (
                      <div className="font-mono text-[10px] text-muted-foreground">{p.codigo}</div>
-@@ -1040,7 +1016,7 @@ export function ProdutosTab() {
+@@ -1040,7 +1025,7 @@ export function ProdutosTab() {
                    <div className="font-medium flex items-center gap-2 flex-wrap">
                      {p.nome}
                      {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
@@ -753,7 +808,7 @@ index a21b6ab85..3dcd0cd50 100644
                      <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />
                      {(p.formulacoes?.length || 0) > 0 && (
                        <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary bg-primary/5">Exclusivo</Badge>
-@@ -1106,8 +1082,8 @@ export function ProdutosTab() {
+@@ -1106,8 +1091,8 @@ export function ProdutosTab() {
                  </TableCell>
                  <TableCell>
                    <VolumesChips
@@ -764,7 +819,7 @@ index a21b6ab85..3dcd0cd50 100644
                    />
                  </TableCell>
                  <TableCell className="text-right font-mono-data">
-@@ -1182,23 +1158,15 @@ export function ProdutosTab() {
+@@ -1182,23 +1167,15 @@ export function ProdutosTab() {
                          </Tooltip>
                        </TooltipProvider>
                      )}
@@ -797,7 +852,7 @@ index a21b6ab85..3dcd0cd50 100644
                    </div>
                  </TableCell>
                </TableRow>
-@@ -1228,28 +1196,6 @@ export function ProdutosTab() {
+@@ -1228,28 +1205,6 @@ export function ProdutosTab() {
          />
        )}
  
@@ -847,6 +902,16 @@ index df213fb18..64454b901 100644
    { id: "config-fiscal", label: "Configuração Fiscal", icon: ShieldCheck, route: "/configuracoes/fiscal/empresa", section: "Administração", order: 2, platforms: ["desktop"], searchKeywords: ["fiscal", "configuração fiscal", "configuracao fiscal", "nf-e", "nfe", "nfs-e", "nfse", "empresa fiscal", "homologação", "homologacao", "sefaz", "prefeitura", "certificado", "a1"] },
  
    // ── Fiscal (Fase 3.16 — preparação/homologação, sem emissão) ───────────────
+diff --git a/src/hooks/AGENTS.md b/src/hooks/AGENTS.md
+index de050e967..0dba8775a 100644
+--- a/src/hooks/AGENTS.md
++++ b/src/hooks/AGENTS.md
+@@ -21,3 +21,5 @@
+ - New payment choices require a scoped positive server capability before journal reservation or dispatch and exact choice acknowledgment; legacy absence never authorizes new economics — prevents silent downgrade.
+ - Approval follows its captured void contract: transport success with null is valid, explicit negative envelopes are denied, and scope fences still precede cache invalidation — prevents universal ACK assumptions breaking void RPCs.
+ - Payment ACKs compare validated typed canonical fields, not serialized JSONB order, and reject conflicting returned scope; uncertainty settlement/retry rules stay unchanged — prevents committed orders being falsely rejected by key permutation.
++- RTC company/item hooks share a per-mount scope operation ledger: latest read wins, saves retire prior reads and synchronously own dispatch, reload during save is ignored, and finally releases only its own ticket — prevents stale revisions and concurrent unlocks without replacing server CAS.
++- Tenant product hooks keep CAS/idempotency/late-ACK fences — prevents duplicate dispatch and stale-context adoption.
 diff --git a/src/hooks/useCatalogoUnificado.ts b/src/hooks/useCatalogoUnificado.ts
 index 1f9c9aad5..6a50ebb0c 100644
 --- a/src/hooks/useCatalogoUnificado.ts
@@ -1702,10 +1767,10 @@ index 4242ee9fb..73d11a139 100644
  import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
 diff --git a/src/test/catalogo/unifiedProducts.realClient.test.tsx b/src/test/catalogo/unifiedProducts.realClient.test.tsx
 new file mode 100644
-index 000000000..d457e2a15
+index 000000000..939098714
 --- /dev/null
 +++ b/src/test/catalogo/unifiedProducts.realClient.test.tsx
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,216 @@
 +import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 +import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 +import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -1854,6 +1919,41 @@ index 000000000..d457e2a15
 +  const saves = rpcCalls("tenant_product_save"), compositions = rpcCalls("tenant_catalog_formulacoes_replace");
 +  expect(saves[0].p_idempotency_key).toBe(saves[1].p_idempotency_key);
 +  expect(compositions[0]).toEqual(compositions[1]);
++});
++it("parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz", async () => {
++  client(); let attempts = 0;
++  state.rows = [{ id: "p1", nome: "Produto existente", tipo: "solo", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" }];
++  state.fetch.mockImplementation(async (url, init) => {
++    const name = String(url).split("/rpc/")[1];
++    if (name === "tenant_product_list") return json(state.rows);
++    if (name === "tenant_product_save") return json(ack);
++    if (name === "tenant_catalog_formulacoes_replace") {
++      if (++attempts === 1) throw new Error("ACK perdido");
++      return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 0 });
++    }
++    if (name) throw new Error(`RPC antigo inesperado: ${name}`);
++    if (String(url).includes("/formulacoes?")) return json([{ id: "f1", produto_id: "p1", microrganismo_id: "m1", component_insumo_id: null, volume_ml: 100, e_volume_fixo: false }]);
++    return json([]);
++  });
++  render(<ProdutosTab />, { wrapper });
++  await screen.findByText("Produto existente");
++  fireEvent.click(screen.getByRole("button", { name: "Editar" }));
++  fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
++  fireEvent.click(await screen.findByRole("button", { name: "Remover componente" }));
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
++  await screen.findByRole("button", { name: "Reconciliar composição" });
++  expect(screen.getByRole("dialog")).toBeTruthy();
++  expect(screen.getByRole("tab", { name: "Identificação" }).matches(":disabled")).toBe(true);
++  expect(screen.getByRole("alert").textContent).toContain("composição não confirmada");
++  expect(rpcCalls("tenant_product_save")).toHaveLength(1);
++  fireEvent.click(screen.getByRole("button", { name: "Close" }));
++  expect(screen.getByRole("dialog")).toBeTruthy();
++  fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
++  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
++  expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
++  expect(rpcCalls("tenant_product_save")[1].p_product_id).toBe("p1");
++  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
++  expect(state.rows).toHaveLength(1);
 +});
 +it("CAS recusado não chama composição, não repete e não invalida", async () => {
 +  const qc = client(); state.fetch.mockResolvedValue(json({ code: "PT409", message: "version_conflict" }, 409));
