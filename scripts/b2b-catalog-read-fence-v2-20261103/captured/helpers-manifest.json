@@ -1,0 +1,50 @@
+{
+ "platform_private.h15_actor_organization": {
+  "md5": "64e10608403238a41a9baf92857ca881",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "platform_private.has_role": {
+  "md5": "c5af5b55de6d79da9b73a33948746ae2",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "platform_private.platform_actor_access_ready": {
+  "md5": "048249c0c2106c3761e26eacb8d0de84",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "public.can_view_catalog_internal": {
+  "md5": "b04164dd8464d16f52cb69e7bcf83de7",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "public.h15_actor_organization": {
+  "md5": "55edafec08bcc84a00f1526c14334a2c",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "public.has_role": {
+  "md5": "4d90e93d521a4819d9085f28d742030f",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "public.is_platform_superadmin": {
+  "md5": "3dfe79d976821244d9b7a7f893d765f2",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "platform_private.b2b_actor_scope": {
+  "md5": "c3f2997746f24bc2efd15db5c0ccc862",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "public._saas_user_has_feature": {
+  "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+  "source": "captura-helpers-20261102/helpers-fechamento-20261102.json"
+ },
+ "platform_private.b2b_internal_commercial_actor": {
+  "md5": "6555396c4f8fe914177d2ccfc3891279",
+  "source": "captura-agregadoras-20261102/fechamento-agregadoras-20261102.json"
+ },
+ "platform_private.c1b_catalog_visibility_scope": {
+  "md5": "cefe53f36d7fab8572575548cfb4ab7c",
+  "source": "captura-agregadoras-20261102/fechamento-agregadoras-20261102.json"
+ },
+ "platform_private.c2_internal_order_target_reason": {
+  "md5": "07d7c9002cbfe17497c9ee4a92d5a928",
+  "source": "captura-agregadoras-20261102/fechamento-agregadoras-20261102.json"
+ }
+}

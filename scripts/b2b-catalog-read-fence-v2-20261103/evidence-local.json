@@ -1,0 +1,216 @@
+{
+ "kind": "disposable_pg",
+ "hosted": false,
+ "real_helpers": {
+  "platform_private.platform_actor_access_ready": "048249c0c2106c3761e26eacb8d0de84",
+  "public.is_platform_superadmin": "3dfe79d976821244d9b7a7f893d765f2",
+  "platform_private.has_role": "c5af5b55de6d79da9b73a33948746ae2",
+  "public.has_role": "4d90e93d521a4819d9085f28d742030f",
+  "platform_private.h15_actor_organization": "64e10608403238a41a9baf92857ca881",
+  "public.h15_actor_organization": "55edafec08bcc84a00f1526c14334a2c",
+  "public._saas_user_has_feature": "501dd958e117d2df8a4d38f6bcbeed04",
+  "public.can_view_catalog_internal": "b04164dd8464d16f52cb69e7bcf83de7",
+  "platform_private.b2b_actor_scope": "c3f2997746f24bc2efd15db5c0ccc862",
+  "platform_private.b2b_internal_commercial_actor": "6555396c4f8fe914177d2ccfc3891279",
+  "platform_private.c2_internal_order_target_reason": "07d7c9002cbfe17497c9ee4a92d5a928",
+  "platform_private.c1b_catalog_visibility_scope": "cefe53f36d7fab8572575548cfb4ab7c"
+ },
+ "synthetic_seams": [
+  "auth.uid",
+  "auth.jwt",
+  "platform_private.entitlements_for_user",
+  "public.is_valid_b2b_partner_user",
+  "esquema mínimo"
+ ],
+ "helper_md5_in_pg_equals_capture": true,
+ "base_pins_vs_auditor": {
+  "public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)": {
+   "pg": "87418209039589320959c9891e97916c",
+   "auditor_prefix": "87418209",
+   "match": true
+  },
+  "public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)": {
+   "pg": "b201e49e0158bde0140e018282c047fc",
+   "auditor_prefix": "b201e49e",
+   "match": true
+  },
+  "platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)": {
+   "pg": "ab6404d381b02684f1933d3fdac64732",
+   "auditor_prefix": "ab6404d",
+   "match": true
+  },
+  "platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)": {
+   "pg": "7b7f90ddb519a281b4411c528813d927",
+   "auditor_prefix": "7b7f90d",
+   "match": true
+  },
+  "public.get_partner_catalog_secure(uuid)": {
+   "pg": "d3217db2d641a8bae11bcf7d68d47dae",
+   "auditor_prefix": "d3217db",
+   "match": true
+  },
+  "public.get_partner_catalog_secure(uuid,boolean)": {
+   "pg": "1391adc2133b922e2dcea4b1d3e26820",
+   "auditor_prefix": "1391adc",
+   "match": true
+  },
+  "platform_private.catalog_tenant_actor(text)": {
+   "pg": "5e0ce9cc9122f1c21d76e29a13de8b59",
+   "auditor_prefix": null,
+   "match": true
+  },
+  "platform_private.tenant_catalog_fence(text,uuid[])": {
+   "pg": "8c6e3eca826410f7e8a504a86ae9381f",
+   "auditor_prefix": "8c6e3ec",
+   "match": true
+  }
+ },
+ "RED_v1_green_falso": {
+  "CASO_REAL_fsf_admin_rh_org_partner_PF": 4,
+  "buyer_P1": 4
+ },
+ "homolog_pos_rollback_v1_base_pins_iguais": true,
+ "RED_estado_deny": {
+  "buyer_P1": [
+   "42501",
+   "tenant_catalog_fence_denied"
+  ],
+  "fsf_admin_rh_PF": [
+   "42501",
+   "tenant_catalog_fence_denied"
+  ]
+ },
+ "pre_homolog_on_homolog": true,
+ "pre_producao_on_homolog_aborts": true,
+ "install_homolog": true,
+ "post_homolog": true,
+ "rerun_aborts_homolog": true,
+ "acl_after_homolog": {
+  "platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)": [],
+  "platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)": [],
+  "platform_private.catalog_tenant_actor(text)": [],
+  "platform_private.tenant_catalog_fence(text,uuid[])": [],
+  "platform_private.b2b_partner_catalog_reader(uuid)": [],
+  "platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)": []
+ },
+ "green_homolog": {
+  "buyer_teste4_le_4_itens": true,
+  "preco_parceiro_150": true,
+  "preco_canonico_40_litro_80_ha": true,
+  "sem_preco_sob_consulta": true,
+  "familias": true,
+  "dto_exato_sem_fiscal": true,
+  "single_arg_ok": true,
+  "buyer_z_zero_itens_200_vazio": true,
+  "internal_A_le_P1_4_itens": true,
+  "internal_A_le_PF_carteira_propria": true,
+  "NEGA_CASO_REAL_fsf_admin_rh_org_partner_PF": true,
+  "NEGA_fsf_admin_rh_le_P1_teste4": true,
+  "NEGA_fsf_admin_rh_le_PZ_vendedor_sem_itens": true,
+  "NEGA_buyer_le_PF": true,
+  "NEGA_buyer_le_P2": true,
+  "NEGA_buyer_le_PZ_sem_itens": true,
+  "NEGA_buyer_other_P2_le_P1": true,
+  "NEGA_buyer_two_links_count2": true,
+  "NEGA_buyer_revoked_link": true,
+  "NEGA_buyer_tenant_mismatch_org_F": true,
+  "NEGA_buyer_sem_feature_catalogo": true,
+  "NEGA_buyer_perfil_inativo": true,
+  "NEGA_buyer_senha_provisoria": true,
+  "NEGA_tecnico": true,
+  "NEGA_buyer_e_tecnico": true,
+  "NEGA_internal_A_sem_pedidos_b2b": true,
+  "NEGA_internal_A_le_P3_fsf": true,
+  "NEGA_internal_F_le_P1": true,
+  "NEGA_internal_F_le_PF": true,
+  "NEGA_sem_papel": true,
+  "NEGA_superadmin": true,
+  "NEGA_parceiro_inativo": true,
+  "NEGA_anon": true,
+  "wrappers_publicos_negam_comprador": true,
+  "wrapper_publico_interno_proprio_40": true,
+  "wrapper_publico_interno_fsf_negado": true,
+  "buyer_direct_core_negado": true,
+  "buyer_direct_helper_negado": true,
+  "buyer_direct_reader_negado": true
+ },
+ "green_homolog_detail_fsf": [
+  "42501",
+  "forbidden_partner"
+ ],
+ "rollback_v2_homolog": true,
+ "after_rollback_v2": {
+  "buyer_P1": [
+   "42501",
+   "tenant_catalog_fence_denied"
+  ],
+  "fsf_admin_rh_PF": [
+   "42501",
+   "tenant_catalog_fence_denied"
+  ],
+  "internal_A_P1_itens": 4
+ },
+ "after_rollback_v2_equals_01b": true,
+ "pre_producao_on_prod": true,
+ "pre_homolog_on_prod_aborts": true,
+ "install_prod": true,
+ "post_prod": true,
+ "green_prod": {
+  "buyer_teste4_le_4_itens": true,
+  "preco_parceiro_150": true,
+  "preco_canonico_40_litro_80_ha": true,
+  "sem_preco_sob_consulta": true,
+  "familias": true,
+  "dto_exato_sem_fiscal": true,
+  "single_arg_ok": true,
+  "buyer_z_zero_itens_200_vazio": true,
+  "internal_A_le_P1_4_itens": true,
+  "internal_A_le_PF_carteira_propria": true,
+  "NEGA_CASO_REAL_fsf_admin_rh_org_partner_PF": true,
+  "NEGA_fsf_admin_rh_le_P1_teste4": true,
+  "NEGA_fsf_admin_rh_le_PZ_vendedor_sem_itens": true,
+  "NEGA_buyer_le_PF": true,
+  "NEGA_buyer_le_P2": true,
+  "NEGA_buyer_le_PZ_sem_itens": true,
+  "NEGA_buyer_other_P2_le_P1": true,
+  "NEGA_buyer_two_links_count2": true,
+  "NEGA_buyer_revoked_link": true,
+  "NEGA_buyer_tenant_mismatch_org_F": true,
+  "NEGA_buyer_sem_feature_catalogo": true,
+  "NEGA_buyer_perfil_inativo": true,
+  "NEGA_buyer_senha_provisoria": true,
+  "NEGA_tecnico": true,
+  "NEGA_buyer_e_tecnico": true,
+  "NEGA_internal_A_sem_pedidos_b2b": true,
+  "NEGA_internal_A_le_P3_fsf": true,
+  "NEGA_internal_F_le_P1": true,
+  "NEGA_internal_F_le_PF": true,
+  "NEGA_sem_papel": true,
+  "NEGA_superadmin": true,
+  "NEGA_parceiro_inativo": true,
+  "NEGA_anon": true,
+  "wrappers_publicos_negam_comprador": true,
+  "wrapper_publico_interno_proprio_40": true,
+  "wrapper_publico_interno_fsf_negado": true,
+  "buyer_direct_core_negado": true,
+  "buyer_direct_helper_negado": true,
+  "buyer_direct_reader_negado": true
+ },
+ "post_pins": {
+  "public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)": "87418209039589320959c9891e97916c",
+  "public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)": "b201e49e0158bde0140e018282c047fc",
+  "platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)": "8484e0259f2e5800c072d5ce907baf9d",
+  "platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)": "7b7f90ddb519a281b4411c528813d927",
+  "public.get_partner_catalog_secure(uuid)": "6b56cfb144ebc8dd947473e90e2d7768",
+  "public.get_partner_catalog_secure(uuid,boolean)": "1391adc2133b922e2dcea4b1d3e26820",
+  "platform_private.catalog_tenant_actor(text)": "5e0ce9cc9122f1c21d76e29a13de8b59",
+  "platform_private.tenant_catalog_fence(text,uuid[])": "8c6e3eca826410f7e8a504a86ae9381f",
+  "platform_private.b2b_partner_catalog_reader(uuid)": "bd985484b69c8fa6e63a920eff518369",
+  "platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)": "61e545e6138485ba995f989d2011590a"
+ },
+ "deny_pins": {
+  "platform_private.b2b_partner_catalog_reader(uuid)": "4e9a16adb6834cbace98fa2fa938de32",
+  "platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)": "f7ef7f50b06176356d5a39e11ba2e73d"
+ },
+ "result": "PASS"
+}
