@@ -55,7 +55,7 @@ it('chamada B2B exata de useAuth chega ao REST com SDK real sem perda de this', 
   const end = source.indexOf('if (error) throw new Error("b2b_probe_unavailable");', start);
   expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
   // Executes the actual dispatch lines, removing only the TypeScript type cast.
-  const dispatch = source.slice(start, end).replace(/ as unknown as [^;]+;/, ';');
+  const dispatch = source.slice(start, end).replace(/ as unknown as [^\n]+\n/, ';\n');
   const invoke = new Function('supabase', `return (async () => { ${dispatch} return {data,error}; })();`);
   transport.fetch.mockResolvedValue(json({ partner_id: clientId }));
   expect(await invoke(supabase)).toMatchObject({ data: { partner_id: clientId }, error: null });
