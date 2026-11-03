@@ -1,0 +1,26 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx "src/test/protocolos/produtos-tab-cat06-cat07.test.ts" src/test/catalogo/tenant-catalog-owned-flow.test.tsx "--maxWorkers=2" "--minWorkers=1"
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/catalogo/tenant-catalog-owned-flow.test.tsx (13 tests) 3533ms
+   ✓ culturas próprias na aba existente > criar, ver, reabrir/editar, arquivar, ver arquivado e restaurar sem recarregar  918ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > produto próprio aparece, reabre com detalhe e persiste edição  474ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > microrganismo próprio aparece, reabre com detalhe e persiste edição  387ms
+   ✓ salvamento único de identificação/composição > declaração existente permanece intacta quando só identificação muda  364ms
+   ✓ salvamento único de identificação/composição > mudança de composição declarativa incompatível recusa tudo antes do produto, sem salvar parcialmente  465ms
+ ✓ src/test/catalogo/unifiedProducts.realClient.test.tsx (17 tests) 5680ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  2170ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  1626ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  1657ms
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 611ms
+ ✓ src/test/protocolos/produtos-tab-cat06-cat07.test.ts (11 tests) 13ms
+
+ Test Files  4 passed (4)
+      Tests  53 passed (53)
+   Start at  02:27:09
+   Duration  12.06s (transform 1.65s, setup 505ms, collect 5.78s, tests 9.84s, environment 3.16s, prepare 548ms)
+

@@ -36,7 +36,6 @@ import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck
 import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
-import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
@@ -220,6 +219,8 @@ export function ProdutosTab() {
   const editor = useTenantCatalogEditor();
   const saveProduct = useSaveTenantProduct();
   const archiveProduct = useArchiveTenantProduct();
+  const retainedSave = useRef<Parameters<typeof saveProduct.mutateAsync>[0] | null>(null);
+  const [partialMessage, setPartialMessage] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     id: "",
@@ -264,6 +265,8 @@ export function ProdutosTab() {
   const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
   useEffect(() => {
     localGeneration.current += 1;
+    retainedSave.current = null;
+    setPartialMessage(null);
     setOpen(false); resetForm();
     setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
@@ -330,19 +333,21 @@ export function ProdutosTab() {
         !Number.isFinite(Number(row.volume_ml)) || Number(row.volume_ml) < 0)) {
         throw new Error("Revise os componentes e os volumes da composição; nenhum dado foi salvo.");
       }
-      const ack = await saveProduct.mutateAsync({ id: form.id || null,
+      const input = retainedSave.current ?? { id: form.id || null,
         expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
-        draft: payload, composition: composicaoTouched.current ? form.composicao.map(row => ({ ...row })) : undefined });
+        draft: payload, composition: composicaoTouched.current ? form.composicao.map(row => ({ ...row })) : undefined };
+      const ack = await saveProduct.mutateAsync(input);
       if (!current()) return;
       const outcome = ack.compositionError ? { status: "partial", message: ack.compositionError } : { status: "ok" };
 
       if (outcome.status === "partial") {
         toast.error(outcome.message);
-        setOpen(false);
-        resetForm();
-        fetch();
+        retainedSave.current = input;
+        setPartialMessage(outcome.message ?? "Produto salvo; composição não confirmada.");
         return;
       }
+      retainedSave.current = null;
+      setPartialMessage(null);
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
       setOpen(false);
       resetForm();
@@ -607,13 +612,15 @@ export function ProdutosTab() {
 
 
 
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
+          <Dialog open={open} onOpenChange={(v) => { if (!v && retainedSave.current) return; setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
             <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
                 <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
               </DialogHeader>
               
               <form onSubmit={handleSave} className="space-y-6 pt-4">
+                {partialMessage && <p role="alert" className="text-destructive">{partialMessage} Repita a mesma tentativa para reconciliar; não cadastre outro produto.</p>}
+                <fieldset disabled={saving || !!partialMessage} className="min-w-0">
                 <Tabs defaultValue="geral">
                   <TabsList className="grid w-full grid-cols-3 mb-4">
                     <TabsTrigger value="geral">Identificação</TabsTrigger>
@@ -934,6 +941,7 @@ export function ProdutosTab() {
                                 type="button" 
                                 variant="ghost" 
                                 size="icon" 
+                                aria-label="Remover componente"
                                 className="h-8 w-8 text-destructive"
                                 onClick={() => removeMicrorganismo(idx)}
                               >
@@ -968,9 +976,10 @@ export function ProdutosTab() {
                     </div>
                   </TabsContent>
                 </Tabs>
+                </fieldset>
 
                 <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-background border-t flex justify-end items-center gap-4 z-10">
-                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar Produto"}</Button>
+                  <Button type="submit" disabled={saving}>{saving ? "Salvando..." : partialMessage ? "Reconciliar composição" : "Salvar Produto"}</Button>
                 </div>
               </form>
             </DialogContent>

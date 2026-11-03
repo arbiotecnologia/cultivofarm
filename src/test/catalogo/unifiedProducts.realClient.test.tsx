@@ -147,6 +147,41 @@ it("composição incerta conserva ambas as chaves e CAS para reconciliação exp
   expect(saves[0].p_idempotency_key).toBe(saves[1].p_idempotency_key);
   expect(compositions[0]).toEqual(compositions[1]);
 });
+it("parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz", async () => {
+  client(); let attempts = 0;
+  state.rows = [{ id: "p1", nome: "Produto existente", tipo: "solo", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" }];
+  state.fetch.mockImplementation(async (url, init) => {
+    const name = String(url).split("/rpc/")[1];
+    if (name === "tenant_product_list") return json(state.rows);
+    if (name === "tenant_product_save") return json(ack);
+    if (name === "tenant_catalog_formulacoes_replace") {
+      if (++attempts === 1) throw new Error("ACK perdido");
+      return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 0 });
+    }
+    if (name) throw new Error(`RPC antigo inesperado: ${name}`);
+    if (String(url).includes("/formulacoes?")) return json([{ id: "f1", produto_id: "p1", microrganismo_id: "m1", component_insumo_id: null, volume_ml: 100, e_volume_fixo: false }]);
+    return json([]);
+  });
+  render(<ProdutosTab />, { wrapper });
+  await screen.findByText("Produto existente");
+  fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+  fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
+  fireEvent.click(await screen.findByRole("button", { name: "Remover componente" }));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await screen.findByRole("button", { name: "Reconciliar composição" });
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "Identificação" }).matches(":disabled")).toBe(true);
+  expect(screen.getByRole("alert").textContent).toContain("composição não confirmada");
+  expect(rpcCalls("tenant_product_save")).toHaveLength(1);
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Reconciliar composição" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(rpcCalls("tenant_product_save")[0]).toEqual(rpcCalls("tenant_product_save")[1]);
+  expect(rpcCalls("tenant_product_save")[1].p_product_id).toBe("p1");
+  expect(rpcCalls("tenant_catalog_formulacoes_replace")[0]).toEqual(rpcCalls("tenant_catalog_formulacoes_replace")[1]);
+  expect(state.rows).toHaveLength(1);
+});
 it("CAS recusado não chama composição, não repete e não invalida", async () => {
   const qc = client(); state.fetch.mockResolvedValue(json({ code: "PT409", message: "version_conflict" }, 409));
   const invalidate = vi.spyOn(qc, "invalidateQueries"); const { result } = renderHook(useSaveTenantProduct, { wrapper });
