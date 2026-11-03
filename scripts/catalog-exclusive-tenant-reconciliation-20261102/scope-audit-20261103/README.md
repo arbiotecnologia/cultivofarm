@@ -12,6 +12,8 @@
 - As sete RPCs tenant_product/root/formulacoes/owned_fiscal continuam ausentes. Matriz final suplementar registra implantação pendente; não executar SQL financeiro/fiscal para satisfazê-las automaticamente.
 -16arquivos runtime e17testes originais novamente verificados por igualdade byte a byte; import de civilDate permanece única dependência pura partilhada, sem capability de pagamento ou projeção monetária alcançável por src. Testes de fechamento verificam arquivos e chamadas ausentes, não autorizam servidor.
 
+**Reteste final deste estado:**5/5 verificações de separação; Vitest176arquivos/2866testes PASS; typecheck separado exit0; build automático OK. Comando: `bun run test -- $(cat scripts/catalog-exclusive-tenant-reconciliation-20261102/scope-audit-20261103/final-test-files.txt) --maxWorkers=2 --minWorkers=1`. Lista contém132filtros de caminhos; Vitest trata filtros por substring e executou176arquivos reais, enumerados em `final-executed-files.json` (não reportar132como execução). Não foram criados mocks/RPCs stub nem alteradas validações financeiras candidatas. NovoPedido/useCreatePartnerOrder/orderJournal não têm diff contra base9d3a9424. Build do harness, não build manual; JWT/banco/navegador real continuam pendentes.
+
 ## Evidência real versus testes
 
 `production-contracts.json` é captura real em03/11/2026 01:03:46UTC de19funções, com assinatura/retorno/MD5/EXECUTE authenticated. `production-signatures.log.txt` e `production-function-bodies.log.txt` preservam saídas brutas. Consultas em pg_proc/pg_namespace/pg_get_functiondef, sem JWT e sem execução das funções. Existência/grant não prova autorização, isolamento, efeitos ou resultados sob sessão real. Nenhum segredo ou registro de cliente foi consultado.
