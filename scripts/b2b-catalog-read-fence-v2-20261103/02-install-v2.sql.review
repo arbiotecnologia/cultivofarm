@@ -1,0 +1,100 @@
+-- Gerado por test-local.py (v2). Revisão do auditor; NÃO aplicar pelo agente. Nunca editar à mão.
+-- INSTALL v2: aceita EXATAMENTE uma das duas linhas de base (01a produção ou 01b homolog); qualquer outra aborta.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+DO $pre$ DECLARE r record; v_prod boolean := true; v_homo boolean := true; BEGIN
+  BEGIN
+  FOR r IN SELECT * FROM (VALUES ('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)','87418209039589320959c9891e97916c'), ('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)','b201e49e0158bde0140e018282c047fc'), ('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','ab6404d381b02684f1933d3fdac64732'), ('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','7b7f90ddb519a281b4411c528813d927'), ('public.get_partner_catalog_secure(uuid)','d3217db2d641a8bae11bcf7d68d47dae'), ('public.get_partner_catalog_secure(uuid,boolean)','1391adc2133b922e2dcea4b1d3e26820'), ('platform_private.catalog_tenant_actor(text)','5e0ce9cc9122f1c21d76e29a13de8b59'), ('platform_private.tenant_catalog_fence(text,uuid[])','8c6e3eca826410f7e8a504a86ae9381f'), ('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84'), ('is_platform_superadmin(uuid)','3dfe79d976821244d9b7a7f893d765f2'), ('platform_private.has_role(uuid,app_role)','c5af5b55de6d79da9b73a33948746ae2'), ('has_role(uuid,app_role)','4d90e93d521a4819d9085f28d742030f'), ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881'), ('h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c'), ('_saas_user_has_feature(uuid,text)','501dd958e117d2df8a4d38f6bcbeed04'), ('can_view_catalog_internal(uuid)','b04164dd8464d16f52cb69e7bcf83de7'), ('platform_private.b2b_actor_scope(uuid)','c3f2997746f24bc2efd15db5c0ccc862'), ('platform_private.b2b_internal_commercial_actor()','6555396c4f8fe914177d2ccfc3891279'), ('platform_private.c2_internal_order_target_reason(uuid,uuid)','07d7c9002cbfe17497c9ee4a92d5a928'), ('platform_private.c1b_catalog_visibility_scope(uuid)','cefe53f36d7fab8572575548cfb4ab7c')) t(sig, md5) LOOP
+      IF to_regprocedure(r.sig) IS NULL OR md5(pg_get_functiondef(to_regprocedure(r.sig))) <> r.md5 THEN RAISE EXCEPTION 'PRE_PROD_DRIFT:%', r.sig; END IF;
+    END LOOP;
+    IF EXISTS (SELECT 1 FROM unnest(ARRAY['platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','platform_private.catalog_tenant_actor(text)','platform_private.tenant_catalog_fence(text,uuid[])']) s, unnest(ARRAY['anon','authenticated']) g WHERE to_regprocedure(s) IS NOT NULL AND has_function_privilege(g, s, 'EXECUTE')) THEN RAISE EXCEPTION 'PRE_PROD_ACL_OPEN'; END IF;
+    IF to_regprocedure('platform_private.b2b_partner_catalog_reader(uuid)') IS NOT NULL OR to_regprocedure('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)') IS NOT NULL THEN RAISE EXCEPTION 'PRE_PROD_HELPERS_PRESENT'; END IF;
+  EXCEPTION WHEN raise_exception THEN v_prod := false; END;
+  BEGIN
+  FOR r IN SELECT * FROM (VALUES ('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)','87418209039589320959c9891e97916c'), ('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)','b201e49e0158bde0140e018282c047fc'), ('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','ab6404d381b02684f1933d3fdac64732'), ('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','7b7f90ddb519a281b4411c528813d927'), ('public.get_partner_catalog_secure(uuid)','d3217db2d641a8bae11bcf7d68d47dae'), ('public.get_partner_catalog_secure(uuid,boolean)','1391adc2133b922e2dcea4b1d3e26820'), ('platform_private.catalog_tenant_actor(text)','5e0ce9cc9122f1c21d76e29a13de8b59'), ('platform_private.tenant_catalog_fence(text,uuid[])','8c6e3eca826410f7e8a504a86ae9381f'), ('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84'), ('is_platform_superadmin(uuid)','3dfe79d976821244d9b7a7f893d765f2'), ('platform_private.has_role(uuid,app_role)','c5af5b55de6d79da9b73a33948746ae2'), ('has_role(uuid,app_role)','4d90e93d521a4819d9085f28d742030f'), ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881'), ('h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c'), ('_saas_user_has_feature(uuid,text)','501dd958e117d2df8a4d38f6bcbeed04'), ('can_view_catalog_internal(uuid)','b04164dd8464d16f52cb69e7bcf83de7'), ('platform_private.b2b_actor_scope(uuid)','c3f2997746f24bc2efd15db5c0ccc862'), ('platform_private.b2b_internal_commercial_actor()','6555396c4f8fe914177d2ccfc3891279'), ('platform_private.c2_internal_order_target_reason(uuid,uuid)','07d7c9002cbfe17497c9ee4a92d5a928'), ('platform_private.c1b_catalog_visibility_scope(uuid)','cefe53f36d7fab8572575548cfb4ab7c'), ('platform_private.b2b_partner_catalog_reader(uuid)','4e9a16adb6834cbace98fa2fa938de32'), ('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)','f7ef7f50b06176356d5a39e11ba2e73d')) t(sig, md5) LOOP
+      IF to_regprocedure(r.sig) IS NULL OR md5(pg_get_functiondef(to_regprocedure(r.sig))) <> r.md5 THEN RAISE EXCEPTION 'PRE_HOMOLOG_DRIFT:%', r.sig; END IF;
+    END LOOP;
+    IF EXISTS (SELECT 1 FROM unnest(ARRAY['platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','platform_private.catalog_tenant_actor(text)','platform_private.tenant_catalog_fence(text,uuid[])','platform_private.b2b_partner_catalog_reader(uuid)','platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)']) s, unnest(ARRAY['anon','authenticated','service_role']) g WHERE to_regprocedure(s) IS NOT NULL AND has_function_privilege(g, s, 'EXECUTE')) THEN RAISE EXCEPTION 'PRE_HOMOLOG_ACL_OPEN'; END IF;
+  EXCEPTION WHEN raise_exception THEN v_homo := false; END;
+  IF v_prod = v_homo THEN RAISE EXCEPTION 'PRE_NO_KNOWN_BASELINE prod=% homolog=%', v_prod, v_homo; END IF;
+END $pre$;
+-- CANDIDATO v2 (não aplicar pelo agente). Ramos EXCLUSIVOS por papel; sem atalho por org_partner; nulos negam.
+-- CREATE OR REPLACE: em produção os helpers não existem; na homolog existem com corpo deny (rollback v1). ACL fechada.
+CREATE OR REPLACE FUNCTION platform_private.b2b_partner_catalog_reader(p_partner_id uuid) RETURNS uuid
+  LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $f$
+DECLARE v_uid uuid := auth.uid(); s record; v_seller uuid; v_buyer boolean; v_internal boolean;
+BEGIN
+  IF v_uid IS NULL OR p_partner_id IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  IF public.is_platform_superadmin(v_uid) IS NOT FALSE THEN RAISE EXCEPTION 'b2b_catalog_platform_actor_denied' USING ERRCODE='42501'; END IF;
+  SELECT pa.commercial_owner_organization_id INTO v_seller FROM public.partner_accounts pa
+   WHERE pa.id = p_partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
+  IF v_seller IS NULL OR NOT EXISTS (SELECT 1 FROM public.organizations o WHERE o.id = v_seller AND o.ativo IS TRUE AND o.status = 'ativa') THEN
+    RAISE EXCEPTION 'partner_not_found' USING ERRCODE='42501'; END IF;
+  IF public.has_role(v_uid,'parceiro_b2b_tecnico'::public.app_role) IS NOT FALSE THEN
+    RAISE EXCEPTION 'forbidden_financial_terms' USING ERRCODE='42501'; END IF;
+  v_buyer := public.has_role(v_uid,'parceiro_b2b'::public.app_role) IS TRUE;
+  v_internal := public.has_role(v_uid,'administrador'::public.app_role) IS TRUE OR public.has_role(v_uid,'gestor_comercial'::public.app_role) IS TRUE;
+  IF v_buyer THEN
+    -- Ramo comprador: todos os campos do escopo canônico precisam bater com o parceiro pedido.
+    SELECT * INTO s FROM platform_private.b2b_actor_scope(v_uid);
+    IF NOT FOUND OR s.profile_ok IS NOT TRUE OR s.partner_valid IS NOT TRUE OR s.user_partner_count IS DISTINCT FROM 1
+       OR s.user_partner IS DISTINCT FROM p_partner_id OR s.org_partner IS DISTINCT FROM p_partner_id OR s.has_catalog IS NOT TRUE THEN
+      RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501'; END IF;
+  ELSIF v_internal THEN
+    -- Ramo interno: só ator comercial interno do vendedor (carteira); org_partner nunca autoriza.
+    IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE
+       OR platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NOT NULL THEN
+      RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501'; END IF;
+    IF public._saas_user_has_feature(v_uid, 'catalogo_precos') IS NOT TRUE THEN
+      RAISE EXCEPTION 'feature_not_entitled' USING ERRCODE='42501'; END IF;
+  ELSE
+    RAISE EXCEPTION 'forbidden_role' USING ERRCODE='42501';
+  END IF;
+  RETURN v_seller;
+END $f$;
+REVOKE ALL ON FUNCTION platform_private.b2b_partner_catalog_reader(uuid) FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION platform_private.b2b_partner_catalog_item_price(p_partner_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_ref_date date)
+  RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $f$
+DECLARE v_seller uuid;
+BEGIN
+  v_seller := platform_private.b2b_partner_catalog_reader(p_partner_id);
+  IF num_nonnulls(p_product_id, p_microrganismo_id) <> 1 OR p_volume_ml IS NOT NULL OR p_unit_type IS NULL OR p_unit_type NOT IN ('hectare','litro','dose') THEN
+    RETURN jsonb_build_object('ok', false, 'reason_code', 'ITEM_INVALID'); END IF;
+  IF p_product_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.produtos z WHERE z.id = p_product_id
+       AND z.owner_organization_id = v_seller AND z.ativo IS TRUE AND z.b2b_enabled IS TRUE
+       AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility cv WHERE cv.organization_id = ANY(platform_private.c1b_catalog_visibility_scope(p_partner_id))
+                       AND cv.entity_type = 'produto' AND cv.hidden IS TRUE AND cv.produto_id = z.id)) THEN
+    RAISE EXCEPTION 'b2b_catalog_item_denied' USING ERRCODE='42501'; END IF;
+  IF p_microrganismo_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.microrganismos z WHERE z.id = p_microrganismo_id
+       AND z.owner_organization_id = v_seller AND z.ativo IS TRUE AND z.b2b_enabled IS TRUE
+       AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility cv WHERE cv.organization_id = ANY(platform_private.c1b_catalog_visibility_scope(p_partner_id))
+                       AND cv.entity_type = 'microrganismo' AND cv.hidden IS TRUE AND cv.microrganismo_id = z.id)) THEN
+    RAISE EXCEPTION 'b2b_catalog_item_denied' USING ERRCODE='42501'; END IF;
+  RETURN platform_private.fn_b2b_resolve_base_unit_price__tenant_core(p_partner_id, p_product_id, p_microrganismo_id, p_unit_type, NULL, p_ref_date);
+END $f$;
+REVOKE ALL ON FUNCTION platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date) FROM PUBLIC, anon, authenticated, service_role;
+DO $d$ DECLARE v text := pg_get_functiondef('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)'::regprocedure); BEGIN
+  IF (length(v) - length(replace(v, 'public.fn_catalogo_preco_canonico(', ''))) / length('public.fn_catalogo_preco_canonico(') <> 1 THEN RAISE EXCEPTION 'DELTA_COUNT:platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)'; END IF;
+  EXECUTE replace(v, 'public.fn_catalogo_preco_canonico(', 'platform_private.fn_catalogo_preco_canonico__tenant_core(');
+END $d$;
+DO $d$ DECLARE v text := pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure); BEGIN
+  IF (length(v) - length(replace(v, 'public.fn_b2b_resolve_base_unit_price(p_partner_id, v_pid, v_mid, ', ''))) / length('public.fn_b2b_resolve_base_unit_price(p_partner_id, v_pid, v_mid, ') <> 3 THEN RAISE EXCEPTION 'DELTA_COUNT:public.get_partner_catalog_secure(uuid)'; END IF;
+  EXECUTE replace(v, 'public.fn_b2b_resolve_base_unit_price(p_partner_id, v_pid, v_mid, ', 'platform_private.b2b_partner_catalog_item_price(p_partner_id, v_pid, v_mid, ');
+END $d$;
+DO $d$ DECLARE v text := pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure); BEGIN
+  IF (length(v) - length(replace(v, '  IF v_uid IS NULL THEN RAISE EXCEPTION ''auth_required'' USING ERRCODE=''42501''; END IF;
+', ''))) / length('  IF v_uid IS NULL THEN RAISE EXCEPTION ''auth_required'' USING ERRCODE=''42501''; END IF;
+') <> 1 THEN RAISE EXCEPTION 'DELTA_COUNT:public.get_partner_catalog_secure(uuid)'; END IF;
+  EXECUTE replace(v, '  IF v_uid IS NULL THEN RAISE EXCEPTION ''auth_required'' USING ERRCODE=''42501''; END IF;
+', '  IF v_uid IS NULL THEN RAISE EXCEPTION ''auth_required'' USING ERRCODE=''42501''; END IF;
+  PERFORM platform_private.b2b_partner_catalog_reader(p_partner_id);
+');
+END $d$;
+DO $post$ DECLARE r record; BEGIN
+  FOR r IN SELECT * FROM (VALUES ('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)','87418209039589320959c9891e97916c'), ('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)','b201e49e0158bde0140e018282c047fc'), ('platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','8484e0259f2e5800c072d5ce907baf9d'), ('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','7b7f90ddb519a281b4411c528813d927'), ('public.get_partner_catalog_secure(uuid)','6b56cfb144ebc8dd947473e90e2d7768'), ('public.get_partner_catalog_secure(uuid,boolean)','1391adc2133b922e2dcea4b1d3e26820'), ('platform_private.catalog_tenant_actor(text)','5e0ce9cc9122f1c21d76e29a13de8b59'), ('platform_private.tenant_catalog_fence(text,uuid[])','8c6e3eca826410f7e8a504a86ae9381f'), ('platform_private.b2b_partner_catalog_reader(uuid)','bd985484b69c8fa6e63a920eff518369'), ('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)','61e545e6138485ba995f989d2011590a'), ('platform_private.platform_actor_access_ready(uuid)','048249c0c2106c3761e26eacb8d0de84'), ('is_platform_superadmin(uuid)','3dfe79d976821244d9b7a7f893d765f2'), ('platform_private.has_role(uuid,app_role)','c5af5b55de6d79da9b73a33948746ae2'), ('has_role(uuid,app_role)','4d90e93d521a4819d9085f28d742030f'), ('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881'), ('h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c'), ('_saas_user_has_feature(uuid,text)','501dd958e117d2df8a4d38f6bcbeed04'), ('can_view_catalog_internal(uuid)','b04164dd8464d16f52cb69e7bcf83de7'), ('platform_private.b2b_actor_scope(uuid)','c3f2997746f24bc2efd15db5c0ccc862'), ('platform_private.b2b_internal_commercial_actor()','6555396c4f8fe914177d2ccfc3891279'), ('platform_private.c2_internal_order_target_reason(uuid,uuid)','07d7c9002cbfe17497c9ee4a92d5a928'), ('platform_private.c1b_catalog_visibility_scope(uuid)','cefe53f36d7fab8572575548cfb4ab7c')) t(sig, md5) LOOP
+    IF to_regprocedure(r.sig) IS NULL OR md5(pg_get_functiondef(to_regprocedure(r.sig))) <> r.md5 THEN RAISE EXCEPTION 'POST_DRIFT:%', r.sig; END IF;
+  END LOOP;
+  IF EXISTS (SELECT 1 FROM unnest(ARRAY['platform_private.fn_b2b_resolve_base_unit_price__tenant_core(uuid,uuid,uuid,text,numeric,date)','platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)','platform_private.catalog_tenant_actor(text)','platform_private.tenant_catalog_fence(text,uuid[])','platform_private.b2b_partner_catalog_reader(uuid)','platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)']) s, unnest(ARRAY['anon','authenticated','service_role']) g WHERE to_regprocedure(s) IS NOT NULL AND has_function_privilege(g, s, 'EXECUTE')) THEN RAISE EXCEPTION 'POST_ACL_OPEN'; END IF;
+END $post$;
+COMMIT;
