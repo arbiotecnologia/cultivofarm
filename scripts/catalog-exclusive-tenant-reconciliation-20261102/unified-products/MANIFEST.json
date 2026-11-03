@@ -1,0 +1,138 @@
+{
+  "base_local": "19d08ecf1f889149d140934dfc92bf21f5bdb82a",
+  "production_base_reported": "c57bee895512e718694f8c746ad53139a024835a",
+  "migration_reported_applied": "exclusive_tenant_catalog_reviewed_v4",
+  "sql_included": false,
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "98d2c0cb2952956ef6293459487c6ae123ec7ae1e075ae2484096a73af281536",
+      "original_sha256": "383b0ba796437aed94b40675b0d321de268b3b347b41b6ceaff2a704ee03e076"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "ae8c15b43c23bf7172ef47828a20f577a317ce4379d9fcf883910a9c6233c1aa",
+      "original_sha256": "f0af466c015991837665b23aa822cfa017e7e26494bba39d8c7374ed448ce889"
+    },
+    {
+      "path": "src/components/protocolos/CatalogoVolumesDialog.tsx",
+      "sha256": "a7345dab3ac68eb861e71d95b6a0e9d9ca891bccedbabea76f676470c743c55a",
+      "original_sha256": "01586138a2e907a070669a684a8bbad0a92401da638c45c36a690144a0087283"
+    },
+    {
+      "path": "src/components/protocolos/ProductTechnicalProfileDialog.tsx",
+      "sha256": "f9c14ac519c6b98ffd7df11793478debc704c457c5e575848460c45eabf75202",
+      "original_sha256": "9fbbcde3b4013798869878a164b850c1100f78d184db14527b6fdd5ea4a1a0cc"
+    },
+    {
+      "path": "src/components/protocolos/ProdutosTab.tsx",
+      "sha256": "ef32cb550756a0b4822e07b729319b662d41eaeaa428d8de5a83d3fa547cde8f",
+      "original_sha256": "e59de15d5aa52d4ce08e082f01c8360410eae2ff93fa0bb59f1b050df34a4054"
+    },
+    {
+      "path": "src/config/navigation.ts",
+      "sha256": "4d516421f0b413525609d1e5cf4def5e5143eb96b6cc87a8f223c37686a4b8b9",
+      "original_sha256": "54b9d363c02f5ad86a1d1bc4791c2ff4c262f076015871884ba726a438cf33db"
+    },
+    {
+      "path": "src/hooks/useCatalogoUnificado.ts",
+      "sha256": "ba1d54f5e0a3839ed2033fc7fa19c26c383f6c1d5bb3362884447377fc376b9b",
+      "original_sha256": "24efaaa4574a81dc50012f8a92717507d94598f1ed3f1608a73f69ed37f847ef"
+    },
+    {
+      "path": "src/hooks/useCatalogoVolumes.ts",
+      "sha256": "753da4e78965c597911d6b926e6a1dab7c37a62b544e1657ce6817a9bb07966f",
+      "original_sha256": "075ea78dc980e6d2c8a263591b2d8e6737a2e1a88f99bebbd262b6de820374b9"
+    },
+    {
+      "path": "src/hooks/useProductProfile.ts",
+      "sha256": "91a493ba683fec932a3b2d39628b2bf42eb20f56bb1c174d587063d2959c5587",
+      "original_sha256": "fac9c14f28debda839b7851bdf318b5950c1a72174327e92b16edf7cc8823602"
+    },
+    {
+      "path": "src/hooks/useTenantCatalogEditor.ts",
+      "sha256": "f5f627021c447f0ee5f7f3e8befc2f408764110f9d46ad81ea99c245630f3f26",
+      "original_sha256": null
+    },
+    {
+      "path": "src/hooks/useTenantProductDetails.ts",
+      "sha256": "71545b8a51ad0f913569e7ce45c8cb463c991fd6e57617c41cb915f3b055ff15",
+      "original_sha256": null
+    },
+    {
+      "path": "src/hooks/useTenantProductVolumes.ts",
+      "sha256": "eb8b0d8b397cc237709d0bde76abba7bcff969cbf6d9135a0fcf3b5f70eb62d0",
+      "original_sha256": null
+    },
+    {
+      "path": "src/hooks/useTenantProducts.ts",
+      "sha256": "f30f19ba5624c8c0e22549f2c67fa32dc2638fa365a1508ed9f5ae94289a0953",
+      "original_sha256": "40159be6b2cfe24e6dce6f2eaab59b4771b76b7c3e33250ea805c2155390085f"
+    },
+    {
+      "path": "src/lib/permissions.ts",
+      "sha256": "de0a5582f9b128ed5daca3c48bf4d634de79160915e19470301c2bb427b9fa45",
+      "original_sha256": "feefacd367e52a05868504c68948f06f6ceefeeddf225273fe02a77204b783df"
+    },
+    {
+      "path": "src/pages/Protocolos.tsx",
+      "sha256": "3700e42e9a2751d8a7bcd02d455e4884653730f7a5f8d7be613897f5e0a69ce9",
+      "original_sha256": "71c9ba2ae3f2a56f4f9b892dcaec35440d715eab3dc67eaa35e7d9a064e547b7"
+    },
+    {
+      "path": "src/pages/configuracoes/ProdutosEmpresa.tsx",
+      "sha256": "107dc67292c16e271d3c7125ff5b1d04358c2cf48c9debfb22028a0a16a51da3",
+      "original_sha256": "7f2d1b7da52539dc5592587b597f024f9ee8eb405d720b4a1863fd15e840ac8c"
+    },
+    {
+      "path": "src/test/catalogo/catalogFamilyRead.test.tsx",
+      "sha256": "225c95405bf26e10c49dfdf0ec19b076a0512b63868201edfd6502f3faad6ab4",
+      "original_sha256": "b2705d71b04089dfab703151357ffc95851cea6371a4007621e33593c144dcc1"
+    },
+    {
+      "path": "src/test/catalogo/catalogo-errors.test.tsx",
+      "sha256": "9d5e138a72621be6bf767e16554c242a8ee3ba8cc8f418f6c3cf4a2862ff30bf",
+      "original_sha256": "8bd6d99b480ae4a234f6aa72690f2573cba7b2ffd62981f627a1de8f2df998a5"
+    },
+    {
+      "path": "src/test/catalogo/catalogo-fase27e-certificacao-final.test.ts",
+      "sha256": "c7fbfdf55fd1e1725ac46dd63ab25f678f911dfe66b71b5e99cb14c6a7ea584d",
+      "original_sha256": "7a7f0f5ef6c44df64372df2a16bd44678bc8d471b009270cfa3ef2477b4c3ae4"
+    },
+    {
+      "path": "src/test/catalogo/catalogo-fase28a-pos-certificacao.test.ts",
+      "sha256": "9ace25b7e065f9bc128913eef03b6d7b7e12641534fceba22b7a19ced9c4ccf0",
+      "original_sha256": "ff6b783100ce6c38c0abdc1a1cc13ddb99b17ead3356ce0c52318a43741f3f1e"
+    },
+    {
+      "path": "src/test/catalogo/globalCatalogContainment.test.ts",
+      "sha256": "9d099b625beab0a2c118ed261709c1df8cc88bb09ed247f6aeca2601c998854d",
+      "original_sha256": "b326a99770410474b52e5adb45a472af680af8d80d663ec8f6ecd71546d9b352"
+    },
+    {
+      "path": "src/test/catalogo/globalCatalogReadOnly.render.test.tsx",
+      "sha256": "7664971b0d96f11c811fc4e2d321b93ac39016b671743ffb41508bf4e94a9629",
+      "original_sha256": "d96a7eacbc24fea66178d0ba7e35996b3c27f3f7ba0e13a19280256c6de2843e"
+    },
+    {
+      "path": "src/test/catalogo/tenant-catalog-owned-flow.test.tsx",
+      "sha256": "44202812fe73bad4b922244325f6ed58b58d4e85ed722ae30dad6a1ff501e37d",
+      "original_sha256": "ad8633799d28b3ed86be15602965effee0c2c1f5ae15c890c11b6eccd473842e"
+    },
+    {
+      "path": "src/test/catalogo/tenant-visibility-cache.integration.test.tsx",
+      "sha256": "2604a15e72de9c6371c08bb393b49c13c9b207a7e775b1dd4dbd859ef33d8df4",
+      "original_sha256": "ab49f1cc3f8b1f5a22d6ec8a37514ba200cdacf8122a5664a9a1986378465d7f"
+    },
+    {
+      "path": "src/test/catalogo/unifiedProducts.realClient.test.tsx",
+      "sha256": "7bd3cf1b9d4fcbd0a9e91c4d95f735db3a370ce285a01a333146b122e9f59b7b",
+      "original_sha256": null
+    },
+    {
+      "path": "src/test/protocolos/base-tecnica.rename.test.ts",
+      "sha256": "e93cdd71fed4fa8aa18cdcc55ef53ef5d617708126366b7c9622eb192193109d",
+      "original_sha256": "64ee85a759c448fb32ce81ce25bb5dc5fa0b05c6a108b4964a4cd68a18d116fa"
+    }
+  ]
+}

@@ -67,7 +67,7 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
 
   it("a página apresenta título e descrição novos, sem o título antigo", () => {
     const src = read("src/pages/Protocolos.tsx");
-    expect(src).toContain("Base Técnica Agronômica");
+    expect(src).toContain("<h1 className=\"text-2xl font-bold\">Catálogo</h1>");
     expect(src).toContain("Produtos, microrganismos, culturas, alvos e recomendações técnicas.");
     expect(src).not.toContain("Protocolos Técnicos");
   });

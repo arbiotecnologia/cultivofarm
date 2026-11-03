@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { consultarCatalogo } from "@/lib/catalogoQueries";
 import { useTenantHiddenIds, type TenantHiddenState } from "@/hooks/useTenantCatalogVisibility";
@@ -141,13 +141,13 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
   const ready = kp !== null && km !== null;
   const hiddenProd = hp.status === "ready" ? hp.ids : [];
   const hiddenMicro = hm.status === "ready" ? hm.ids : [];
-  const query = useQuery({
+  const query = useScopedPortalQuery({
     queryKey: ["catalogo-unificado", scope, kp, km],
     enabled: ready,
     staleTime: CATALOGO_UNIFICADO_STALE_TIME,
     gcTime: CATALOGO_UNIFICADO_GC_TIME,
     refetchOnWindowFocus: false,
-    queryFn: async (): Promise<CatalogoUnificadoRow[]> => {
+    queryFn: async (signal): Promise<CatalogoUnificadoRow[]> => {
       const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await consultarCatalogo([
         catalogoExcludeHidden((supabase as any).from("produtos").select(PRODUTOS_SELECT), hiddenProd).order("nome"),
         catalogoExcludeHidden((supabase as any).from("microrganismos").select(MICROORGANISMOS_SELECT), hiddenMicro).order("nome"),
@@ -157,7 +157,7 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
         (supabase as any).from("catalog_technical_sources" as any).select(SOURCES_SELECT),
         (supabase as any).from("microorganism_targets").select(MICRO_TARGETS_SELECT).eq("ativo", true),
         (supabase as any).from("product_target_recommendations").select(PRODUCT_TARGETS_SELECT).eq("ativo", true),
-      ]);
+      ].map(q => q.abortSignal(signal)));
 
       const ppMap = buildIndexMap(prodProf.data, "produto_id");
       const mpMap = buildIndexMap(microProf.data, "microrganismo_id");

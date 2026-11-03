@@ -136,7 +136,7 @@ describe("FASE 27E — rotas e navegação", () => {
     const c = read(NAV);
     expect(c).toContain('label: "Catálogo"');
     expect(c).toContain("/base-tecnica");
-    expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo"]');
+    expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo", "/configuracoes/produtos"]');
   });
 
   it("/protocolos permanece como rota legada redirecionando para /base-tecnica", () => {

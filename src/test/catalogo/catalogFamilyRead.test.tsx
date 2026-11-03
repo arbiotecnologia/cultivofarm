@@ -6,6 +6,7 @@ import { catalogFamilyMatches, readCatalogFamily } from "@/lib/catalogo/catalogF
 import { recCanForwardToLab } from "@/lib/visita/recomendacaoCatalogo";
 
 const state = vi.hoisted(() => ({ actor: "A", tenant: "A", hidden: ["chem"], blocked: false, calls: [] as string[] }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant, ativo: true }, roles: ["administrador"], loading: false }) }));
 const products = [
   { id: "bio", nome: "B", familia_catalogo: "biologico", ativo: true, b2b_enabled: true },
   { id: "chem", nome: "Q", familia_catalogo: "quimico", ativo: true, b2b_enabled: true },
@@ -17,7 +18,7 @@ vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantHiddenIds: () =>
   : { status: "ready", scope: { userId: state.actor, organizationId: state.tenant }, ids: state.hidden } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: string) => {
   let excludes = "";
-  const q = { select: () => q, order: () => q, eq: () => q, not: (_c: string, _op: string, ids: string) => { excludes = ids; return q; },
+  const q = { select: () => q, order: () => q, eq: () => q, abortSignal: () => q, not: (_c: string, _op: string, ids: string) => { excludes = ids; return q; },
     then: (resolve: (v: unknown) => unknown) => {
       state.calls.push(table);
       return Promise.resolve({ data: table === "produtos" ? products.filter(p => !excludes.includes(p.id)) : [], error: null }).then(resolve);

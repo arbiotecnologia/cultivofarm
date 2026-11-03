@@ -1,0 +1,117 @@
+=== build 2026-11-03T02:03:59Z ===
+build OK
+
+=== build 2026-11-03T02:04:45Z ===
+build OK
+
+=== build 2026-11-03T02:05:38Z ===
+build OK
+
+=== build 2026-11-03T02:06:18Z ===
+--- typecheck ---
+src/components/protocolos/ProdutosTab.tsx(330,25): error TS2353: Object literal may only specify known properties, and 'composition' does not exist in type '{ id: string; draft: Partial<Record<"b2b_enabled" | "classe_catalogo" | "codigo" | "descricao" | "dose_ml_ha" | "e_insumo" | "estoque_minimo" | "familia_catalogo" | "funcao_completa" | "modo_acao" | ... 5 more ... | "valor_litro_brl", string | ... 1 more ... | boolean>>; expectedUpdatedAt: string; }'.
+src/components/protocolos/ProdutosTab.tsx(332,27): error TS2339: Property 'compositionError' does not exist on type 'TenantProductAck'.
+src/components/protocolos/ProdutosTab.tsx(332,80): error TS2339: Property 'compositionError' does not exist on type 'TenantProductAck'.
+
+=== build 2026-11-03T02:06:36Z ===
+--- typecheck ---
+src/components/protocolos/ProdutosTab.tsx(330,25): error TS2322: Type 'FormulacaoInsert[]' is not assignable to type 'Record<string, unknown>[]'.
+Type 'FormulacaoInsert' is not assignable to type 'Record<string, unknown>'.
+Index signature for type 'string' is missing in type 'FormulacaoInsert'.
+
+=== build 2026-11-03T02:06:53Z ===
+--- typecheck ---
+The typecheck did not run on this edit. The errors below are from the last typecheck that ran.
+src/components/protocolos/ProdutosTab.tsx(330,25): error TS2322: Type 'FormulacaoInsert[]' is not assignable to type 'Record<string, unknown>[]'.
+Type 'FormulacaoInsert' is not assignable to type 'Record<string, unknown>'.
+Index signature for type 'string' is missing in type 'FormulacaoInsert'.
+
+=== build 2026-11-03T02:07:11Z ===
+build OK
+
+=== build 2026-11-03T02:07:35Z ===
+--- typecheck ---
+src/components/protocolos/ProdutosTab.tsx(278,13): error TS2345: Argument of type '() => Produto[]' is not assignable to parameter of type 'EffectCallback'.
+Type 'Produto[]' is not assignable to type 'void | Destructor'.
+src/components/protocolos/ProdutosTab.tsx(286,31): error TS2339: Property 'filter' does not exist on type '() => void'.
+src/components/protocolos/ProdutosTab.tsx(825,50): error TS2339: Property 'find' does not exist on type '() => void'.
+src/components/protocolos/ProdutosTab.tsx(863,51): error TS2339: Property 'filter' does not exist on type '() => void'.
+src/components/protocolos/ProdutosTab.tsx(1099,84): error TS2339: Property 'error' does not exist on type '{ displayed: any; map: any; }'.
+
+=== build 2026-11-03T02:07:50Z ===
+build OK
+
+=== build 2026-11-03T02:08:21Z ===
+build OK
+
+=== build 2026-11-03T02:08:43Z ===
+build OK
+
+=== build 2026-11-03T02:09:23Z ===
+build OK
+
+=== build 2026-11-03T02:10:06Z ===
+build OK
+
+=== build 2026-11-03T02:10:20Z ===
+build OK
+
+=== build 2026-11-03T02:10:31Z ===
+build OK
+
+=== build 2026-11-03T02:10:45Z ===
+build OK
+
+=== build 2026-11-03T02:12:34Z ===
+build OK
+
+=== build 2026-11-03T02:13:39Z ===
+build OK
+
+=== build 2026-11-03T02:13:47Z ===
+build OK
+
+=== build 2026-11-03T02:14:54Z ===
+build OK
+
+=== build 2026-11-03T02:15:27Z ===
+--- typecheck ---
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(153,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(254,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(256,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(276,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+
+=== build 2026-11-03T02:15:48Z ===
+--- typecheck ---
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(153,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(254,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(256,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(276,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+
+=== build 2026-11-03T02:16:09Z ===
+--- typecheck ---
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(153,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(254,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(256,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(276,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+
+=== build 2026-11-03T02:16:29Z ===
+--- typecheck ---
+The typecheck did not run on this edit. The errors below are from the last typecheck that ran.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(153,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(254,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(256,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(276,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+
+=== build 2026-11-03T02:17:00Z ===
+--- typecheck ---
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(153,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(254,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(256,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+src/test/catalogo/tenant-catalog-owned-flow.test.tsx(276,5): error TS2741: Property 'ativo' is missing in type '{ user_id: string; organization_id: string; }' but required in type '{ user_id: string; organization_id: string; ativo: boolean; }'.
+
+=== build 2026-11-03T02:18:15Z ===
+build OK
+
+=== build 2026-11-03T02:23:39Z ===
+build OK

@@ -75,7 +75,6 @@
 - Durable order recovery follows its review-directory rules; React probes the server capability and keeps legacy dispatch only on exact pre-install RPC absence, while active continuity always reserves server keys and persists CAS before dispatch — prevents eviction/downgrade duplicates without installing SQL automatically.
 - Cross-generation order recovery follows the durable review-directory predecessor-chain rules; local expectations cannot authorize a jump — prevents stale uncertain cache deadends without weakening terminal CAS.
 - Global service IBS/CBS reuses the existing global fiscal catalogue fence, while company RTC uses actor/tenant request fencing; server CAS errors never trigger automatic saves or draft rebasing — prevents tenant writers and stale success without replacing server authorization.
-- RTC company/item hooks share a per-mount scope operation ledger: latest read wins, saves retire prior reads and synchronously own dispatch, reload during save is ignored, and finally releases only its own ticket — prevents stale revisions and concurrent unlocks without replacing server CAS.
 - Fiscal drafts need the observed positive server version; monitor rescheduling uses only the canonical RPC with exact observed timestamp and full envelope, never bare IDs or two-table writes; conflicts keep drafts, no retries — prevents false success and CAS bypass.
 - Visit approval submit follows scripts/visit-approval-submit-20261027/AGENTS.md: gate before row, re-authorize after waits, PT409 business conflicts and mandatory CAS — prevents cached-authority approvals.
 - Generic visit monitoring plans follow scripts/visit-monitoring-plan-20261027/AGENTS.md — read before changing that area.
@@ -105,3 +104,5 @@
 - Homolog alignment: scripts/homolog-alignment-20261102/AGENTS.md.
 - Original integration package: scripts/original-integration-20261102/AGENTS.md.
 - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.
+
+- Tenant product CRUD uses only Catálogo → Produtos and scoped canonical RPCs; the legacy settings route preserves query/hash — prevents duplicate editors and global writers.

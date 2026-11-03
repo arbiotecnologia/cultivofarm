@@ -120,7 +120,7 @@ export const navigation: NavItem[] = [
   {
     id: "protocolos", label: "Catálogo", icon: FileText, route: "/base-tecnica",
     section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11,
-    platforms: ["desktop"], legacyRoutes: ["/protocolos", "/comercial/catalogo"],
+    platforms: ["desktop"], legacyRoutes: ["/protocolos", "/comercial/catalogo", "/configuracoes/produtos"],
     searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo", "catalogo", "catálogo comercial", "catalogo comercial", "portfólio", "portfolio", "catálogo ar bio", "catalogo ar bio", "produtos", "produto", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "catalogo tecnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
 
     children: [
@@ -192,7 +192,6 @@ export const navigation: NavItem[] = [
 
   // ── Administração ──────────────────────────────────────────────────────────
   { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], legacyRoutes: ["/financeiro/configuracoes"], section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["configurações", "configuracoes", "config", "administração", "administracao", "ajustes", "parâmetros", "sistema", "preferências", "integrações", "usuários", "perfis", "configurações gerais", "configuracoes gerais", "administração geral", "administracao geral", "parâmetros gerais", "parametros gerais", "configurações financeiras", "configuracoes financeiras", "parâmetros financeiros", "parametros financeiros"] },
-  { id: "produtos-empresa", label: "Produtos da empresa", icon: Boxes, route: "/configuracoes/produtos", section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["produtos", "catálogo", "catalogo", "cadastro de produtos", "meus produtos"] },
   { id: "config-fiscal", label: "Configuração Fiscal", icon: ShieldCheck, route: "/configuracoes/fiscal/empresa", section: "Administração", order: 2, platforms: ["desktop"], searchKeywords: ["fiscal", "configuração fiscal", "configuracao fiscal", "nf-e", "nfe", "nfs-e", "nfse", "empresa fiscal", "homologação", "homologacao", "sefaz", "prefeitura", "certificado", "a1"] },
 
   // ── Fiscal (Fase 3.16 — preparação/homologação, sem emissão) ───────────────

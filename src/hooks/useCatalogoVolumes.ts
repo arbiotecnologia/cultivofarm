@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtL } from "@/lib/envaseFormat";
 import { brl } from "@/lib/financial/format";
@@ -69,14 +69,14 @@ function sortVolumes(list: CatalogoVolume[]): CatalogoVolume[] {
 }
 
 export function useCatalogoVolumes() {
-  return useQuery({
+  return useScopedPortalQuery({
     queryKey: ["catalogo-volumes"],
     staleTime: 60_000,
-    queryFn: async () => {
+    queryFn: async signal => {
       const { data, error } = await supabase
         .from("catalogo_volumes" as any)
         .select("*")
-        .eq("ativo", true);
+        .eq("ativo", true).abortSignal(signal);
       if (error) throw error;
       const rows = ((data ?? []) as any[]).map((r) => ({
         ...r,

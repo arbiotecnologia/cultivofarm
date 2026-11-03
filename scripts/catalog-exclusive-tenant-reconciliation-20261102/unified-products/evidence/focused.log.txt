@@ -1,0 +1,1589 @@
+$ vitest run src/test/catalogo/unifiedProducts.realClient.test.tsx src/test/catalogo/tenantProducts.realClient.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 602ms
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx (11 tests | 2 failed) 2379ms
+   ✓ único menu de produtos e redirect preserva query/hash com aba destino prioritária 35ms
+   × administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real 1392ms
+     → Unable to find an accessible element with the role "button" and name "Arquivar"
+
+Here are the accessible roles:
+
+  textbox:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+    [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-autocomplete[39m=[32m"none"[39m
+    [33maria-controls[39m=[32m"radix-:r0:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mdir[39m=[32m"ltr"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Exportar PDF":
+  [36m<button[39m
+    [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+  [36m/>[39m
+
+  Name "Novo produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  checkbox:
+
+  Name "Mostrar arquivados":
+  [36m<input[39m
+    [33mtype[39m=[32m"checkbox"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  status:
+
+  Name "":
+  [36m<p[39m
+    [33mrole[39m=[32m"status"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  table:
+
+  Name "":
+  [36m<table[39m
+    [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  rowgroup:
+
+  Name "":
+  [36m<thead[39m
+    [33mclass[39m=[32m"[&_tr]:border-b"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<tbody[39m
+    [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  row:
+
+  Name "Produto Composição Volumes Dose (mL/ha) Valor/ha Ref.":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  Name "Nenhum produto encontrado":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  columnheader:
+
+  Name "Produto":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Volumes":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Dose (mL/ha)":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Valor/ha":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Ref.":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  cell:
+
+  Name "Nenhum produto encontrado":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+    [33mcolspan[39m=[32m"7"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m""[39m
+[36m>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r0:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNovo produto[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<label[39m
+        [33mclass[39m=[32m"flex items-center gap-2 text-sm"[39m
+      [36m>[39m
+        [36m<input[39m
+          [33mtype[39m=[32m"checkbox"[39m
+        [36m/>[39m
+        [0mMostrar arquivados[0m
+      [36m</label>[39m
+      [36m<p[39m
+        [33mrole[39m=[32m"status"[39m
+      [36m>[39m
+        [0mCarregando produtos…[0m
+      [36m</p>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-md border"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full overflow-auto"[39m
+        [36m>[39m
+          [36m<table[39m
+            [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+          [36m>[39m
+            [36m<thead[39m
+              [33mclass[39m=[32m"[&_tr]:border-b"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mProduto[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mComposição[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mVolumes[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mDose (mL/ha)[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mValor/ha[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mRef.[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m/>[39m
+              [36m</tr>[39m
+            [36m</thead>[39m
+            [36m<tbody[39m
+              [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<td[39m
+                  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+                  [33mcolspan[39m=[32m"7"[39m
+                [36m>[39m
+                  [0mNenhum produto encontrado[0m
+                [36m</td>[39m
+              [36m</tr>[39m
+            [36m</tbody>[39m
+          [36m</table>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex justify-between items-center text-[10px] text-muted-foreground mt-4"[39m
+      [36m>[39m
+        [36m<span>[39m
+          [0mAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica.[0m
+        [36m</span>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+   × gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real 932ms
+     → Unable to find an accessible element with the role "button" and name "Arquivar"
+
+Here are the accessible roles:
+
+  textbox:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+    [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-autocomplete[39m=[32m"none"[39m
+    [33maria-controls[39m=[32m"radix-:ru:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mdir[39m=[32m"ltr"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Exportar PDF":
+  [36m<button[39m
+    [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+  [36m/>[39m
+
+  Name "Novo produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  checkbox:
+
+  Name "Mostrar arquivados":
+  [36m<input[39m
+    [33mtype[39m=[32m"checkbox"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  status:
+
+  Name "":
+  [36m<p[39m
+    [33mrole[39m=[32m"status"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  table:
+
+  Name "":
+  [36m<table[39m
+    [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  rowgroup:
+
+  Name "":
+  [36m<thead[39m
+    [33mclass[39m=[32m"[&_tr]:border-b"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<tbody[39m
+    [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  row:
+
+  Name "Produto Composição Volumes Dose (mL/ha) Valor/ha Ref.":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  Name "Nenhum produto encontrado":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  columnheader:
+
+  Name "Produto":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Volumes":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Dose (mL/ha)":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Valor/ha":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Ref.":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  cell:
+
+  Name "Nenhum produto encontrado":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+    [33mcolspan[39m=[32m"7"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m""[39m
+[36m>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:ru:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNovo produto[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<label[39m
+        [33mclass[39m=[32m"flex items-center gap-2 text-sm"[39m
+      [36m>[39m
+        [36m<input[39m
+          [33mtype[39m=[32m"checkbox"[39m
+        [36m/>[39m
+        [0mMostrar arquivados[0m
+      [36m</label>[39m
+      [36m<p[39m
+        [33mrole[39m=[32m"status"[39m
+      [36m>[39m
+        [0mCarregando produtos…[0m
+      [36m</p>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-md border"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full overflow-auto"[39m
+        [36m>[39m
+          [36m<table[39m
+            [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+          [36m>[39m
+            [36m<thead[39m
+              [33mclass[39m=[32m"[&_tr]:border-b"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mProduto[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mComposição[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mVolumes[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mDose (mL/ha)[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mValor/ha[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mRef.[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m/>[39m
+              [36m</tr>[39m
+            [36m</thead>[39m
+            [36m<tbody[39m
+              [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<td[39m
+                  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+                  [33mcolspan[39m=[32m"7"[39m
+                [36m>[39m
+                  [0mNenhum produto encontrado[0m
+                [36m</td>[39m
+              [36m</tr>[39m
+            [36m</tbody>[39m
+          [36m</table>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex justify-between items-center text-[10px] text-muted-foreground mt-4"[39m
+      [36m>[39m
+        [36m<span>[39m
+          [0mAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica.[0m
+        [36m</span>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+   ✓ financeiro não recebe CRUD próprio nem bypass global 2ms
+   ✓ consultor_tecnico não recebe CRUD próprio nem bypass global 2ms
+   ✓ parceiro_b2b não recebe CRUD próprio nem bypass global 1ms
+   ✓ parceiro_b2b_tecnico não recebe CRUD próprio nem bypass global 1ms
+   ✓ superadmin não recebe CRUD próprio nem bypass global 1ms
+   ✓ composição usa CAS retornado, conserva concentração/unidade e falha explícita, sem compensação 5ms
+   ✓ volume e preço conservados via root RPC com CAS, sem writer global 3ms
+   ✓ volume recusa Financeiro antes de REST 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Arquivar"
+
+Here are the accessible roles:
+
+  textbox:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+    [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-autocomplete[39m=[32m"none"[39m
+    [33maria-controls[39m=[32m"radix-:r0:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mdir[39m=[32m"ltr"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Exportar PDF":
+  [36m<button[39m
+    [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+  [36m/>[39m
+
+  Name "Novo produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  checkbox:
+
+  Name "Mostrar arquivados":
+  [36m<input[39m
+    [33mtype[39m=[32m"checkbox"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  status:
+
+  Name "":
+  [36m<p[39m
+    [33mrole[39m=[32m"status"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  table:
+
+  Name "":
+  [36m<table[39m
+    [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  rowgroup:
+
+  Name "":
+  [36m<thead[39m
+    [33mclass[39m=[32m"[&_tr]:border-b"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<tbody[39m
+    [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  row:
+
+  Name "Produto Composição Volumes Dose (mL/ha) Valor/ha Ref.":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  Name "Nenhum produto encontrado":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  columnheader:
+
+  Name "Produto":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Volumes":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Dose (mL/ha)":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Valor/ha":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Ref.":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  cell:
+
+  Name "Nenhum produto encontrado":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+    [33mcolspan[39m=[32m"7"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m""[39m
+[36m>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:r0:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNovo produto[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<label[39m
+        [33mclass[39m=[32m"flex items-center gap-2 text-sm"[39m
+      [36m>[39m
+        [36m<input[39m
+          [33mtype[39m=[32m"checkbox"[39m
+        [36m/>[39m
+        [0mMostrar arquivados[0m
+      [36m</label>[39m
+      [36m<p[39m
+        [33mrole[39m=[32m"status"[39m
+      [36m>[39m
+        [0mCarregando produtos…[0m
+      [36m</p>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-md border"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full overflow-auto"[39m
+        [36m>[39m
+          [36m<table[39m
+            [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+          [36m>[39m
+            [36m<thead[39m
+              [33mclass[39m=[32m"[&_tr]:border-b"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mProduto[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mComposição[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mVolumes[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mDose (mL/ha)[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mValor/ha[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mRef.[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m/>[39m
+              [36m</tr>[39m
+            [36m</thead>[39m
+            [36m<tbody[39m
+              [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<td[39m
+                  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+                  [33mcolspan[39m=[32m"7"[39m
+                [36m>[39m
+                  [0mNenhum produto encontrado[0m
+                [36m</td>[39m
+              [36m</tr>[39m
+            [36m</tbody>[39m
+          [36m</table>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex justify-between items-center text-[10px] text-muted-foreground mt-4"[39m
+      [36m>[39m
+        [36m<span>[39m
+          [0mAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica.[0m
+        [36m</span>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:76:26
+     74|   expect(rpcCalls("tenant_product_save")[1].p_expected_updated_at).toB…
+     75|   fireEvent.click(screen.getByRole("checkbox", { name: "Mostrar arquiv…
+     76|   fireEvent.click(screen.getByRole("button", { name: "Arquivar" }));
+       |                          ^
+     77|   await screen.findByRole("button", { name: "Reativar" });
+     78|   fireEvent.click(screen.getByRole("button", { name: "Reativar" }));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Arquivar"
+
+Here are the accessible roles:
+
+  textbox:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+    [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "":
+  [36m<button[39m
+    [33maria-autocomplete[39m=[32m"none"[39m
+    [33maria-controls[39m=[32m"radix-:ru:"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mdir[39m=[32m"ltr"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Exportar PDF":
+  [36m<button[39m
+    [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+  [36m/>[39m
+
+  Name "Novo produto":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  checkbox:
+
+  Name "Mostrar arquivados":
+  [36m<input[39m
+    [33mtype[39m=[32m"checkbox"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  status:
+
+  Name "":
+  [36m<p[39m
+    [33mrole[39m=[32m"status"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  table:
+
+  Name "":
+  [36m<table[39m
+    [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  rowgroup:
+
+  Name "":
+  [36m<thead[39m
+    [33mclass[39m=[32m"[&_tr]:border-b"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<tbody[39m
+    [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  row:
+
+  Name "Produto Composição Volumes Dose (mL/ha) Valor/ha Ref.":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  Name "Nenhum produto encontrado":
+  [36m<tr[39m
+    [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  columnheader:
+
+  Name "Produto":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Composição":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Volumes":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "Dose (mL/ha)":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Valor/ha":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  Name "Ref.":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<th[39m
+    [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  cell:
+
+  Name "Nenhum produto encontrado":
+  [36m<td[39m
+    [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+    [33mcolspan[39m=[32m"7"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body[39m
+  [33mstyle[39m=[32m""[39m
+[36m>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"space-y-4"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col md:flex-row gap-4 justify-between items-start md:items-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full md:w-80"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors pl-9"[39m
+            [33mplaceholder[39m=[32m"Buscar por código, nome ou função..."[39m
+            [33mvalue[39m=[32m""[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2 w-full md:w-auto"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-autocomplete[39m=[32m"none"[39m
+            [33maria-controls[39m=[32m"radix-:ru:"[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1 w-[140px]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mdir[39m=[32m"ltr"[39m
+            [33mrole[39m=[32m"combobox"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-filter h-4 w-4 mr-2"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<polygon[39m
+                [33mpoints[39m=[32m"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mstyle[39m=[32m"pointer-events: none;"[39m
+            [36m>[39m
+              [0mTodos Tipos[0m
+            [36m</span>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m6 9 6 6 6-6"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs hidden md:flex"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-down h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 18v-6"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m9 15 3 3 3-3"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mExportar PDF[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0mNovo produto[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<label[39m
+        [33mclass[39m=[32m"flex items-center gap-2 text-sm"[39m
+      [36m>[39m
+        [36m<input[39m
+          [33mtype[39m=[32m"checkbox"[39m
+        [36m/>[39m
+        [0mMostrar arquivados[0m
+      [36m</label>[39m
+      [36m<p[39m
+        [33mrole[39m=[32m"status"[39m
+      [36m>[39m
+        [0mCarregando produtos…[0m
+      [36m</p>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-md border"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"relative w-full overflow-auto"[39m
+        [36m>[39m
+          [36m<table[39m
+            [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+          [36m>[39m
+            [36m<thead[39m
+              [33mclass[39m=[32m"[&_tr]:border-b"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mProduto[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mComposição[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mVolumes[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mDose (mL/ha)[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m>[39m
+                  [0mValor/ha[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"[39m
+                [36m>[39m
+                  [0mRef.[0m
+                [36m</th>[39m
+                [36m<th[39m
+                  [33mclass[39m=[32m"h-12 px-4 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+                [36m/>[39m
+              [36m</tr>[39m
+            [36m</thead>[39m
+            [36m<tbody[39m
+              [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+            [36m>[39m
+              [36m<tr[39m
+                [33mclass[39m=[32m"border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50"[39m
+              [36m>[39m
+                [36m<td[39m
+                  [33mclass[39m=[32m"p-4 align-middle [&:has([role=checkbox])]:pr-0 text-center text-muted-foreground h-24"[39m
+                  [33mcolspan[39m=[32m"7"[39m
+                [36m>[39m
+                  [0mNenhum produto encontrado[0m
+                [36m</td>[39m
+              [36m</tr>[39m
+            [36m</tbody>[39m
+          [36m</table>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex justify-between items-center text-[10px] text-muted-foreground mt-4"[39m
+      [36m>[39m
+        [36m<span>[39m
+          [0mAs recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica.[0m
+        [36m</span>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ getByRole node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/catalogo/unifiedProducts.realClient.test.tsx:76:26
+     74|   expect(rpcCalls("tenant_product_save")[1].p_expected_updated_at).toB…
+     75|   fireEvent.click(screen.getByRole("checkbox", { name: "Mostrar arquiv…
+     76|   fireEvent.click(screen.getByRole("button", { name: "Arquivar" }));
+       |                          ^
+     77|   await screen.findByRole("button", { name: "Reativar" });
+     78|   fireEvent.click(screen.getByRole("button", { name: "Reativar" }));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 21 passed (23)
+   Start at  02:10:13
+   Duration  6.51s (transform 899ms, setup 302ms, collect 2.31s, tests 2.98s, environment 1.71s, prepare 1.21s)
+
+error: script "test" exited with code 1

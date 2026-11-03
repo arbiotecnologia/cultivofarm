@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScopedPortalQuery } from "./useScopedPortalQuery";
 import { useStorageAccessScope } from "./useStorageAccessScope";
+import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
 import {
   buildTenantProductPayload, parseTenantProductAck, tenantProductErrorMessage,
   type TenantProduct, type TenantProductDraft,
@@ -31,16 +32,23 @@ export function useSaveTenantProduct() {
   const qc = useQueryClient();
   const scope = useStorageAccessScope("tenant-product-save");
   const actor = useStorageAccessScope("portal-query-actor");
-  const keyRef = useRef<{ sig: string; key: string } | null>(null);
+  const delivery = useStorageAccessScope("entregas-operations");
+  const keyRef = useRef<{ sig: string; key: string; compositionKey: string } | null>(null);
+  const busy = useRef(false);
   return useMutation({
     retry: false,
-    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
-    mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null }) => {
+    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope, deliveryScope: delivery.scope }),
+    mutationFn: async (v: { id: string | null; draft: TenantProductDraft; expectedUpdatedAt: string | null; composition?: Record<string, unknown>[] }) => {
       const current = scope.capture();
       if (!current()) throw new Error("catalog_context_unavailable");
+      if (busy.current) throw new Error("Aguarde o salvamento em andamento.");
+      busy.current = true;
+      try {
       const payload = buildTenantProductPayload(v.draft, v.id === null);
-      const sig = JSON.stringify([scope.scope, v.id, payload, v.expectedUpdatedAt]);
-      if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: crypto.randomUUID() };
+      if (v.id && !v.expectedUpdatedAt) throw new Error("Versão do produto desconhecida. Recarregue antes de editar.");
+      const sig = JSON.stringify([scope.scope, v.id, payload, v.expectedUpdatedAt, v.composition]);
+      if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: crypto.randomUUID(), compositionKey: crypto.randomUUID() };
+      const attempt = keyRef.current;
       const { data, error } = await rpc()("tenant_product_save", {
         p_product_id: v.id, p_payload: payload, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: keyRef.current.key,
       });
@@ -50,12 +58,24 @@ export function useSaveTenantProduct() {
         throw new Error(tenantProductErrorMessage(error.code, error.message));
       }
       const ack = parseTenantProductAck(data, v.id);
+      if (v.composition !== undefined) {
+        try {
+          const composition = await replaceTenantFormulacoes(supabase as never, ack.product_id, v.composition, ack.updated_at, attempt.compositionKey);
+          if (!current()) throw new Error("catalog_context_changed");
+          keyRef.current = null;
+          return { ...ack, updated_at: composition.updated_at, compositionError: undefined };
+        } catch (e) {
+          if (!current()) throw new Error("catalog_context_changed");
+          return { ...ack, compositionError: `Produto salvo; composição não confirmada. Recarregue e revise antes de continuar. ${(e as Error).message}` };
+        }
+      }
       keyRef.current = null;
-      return ack;
+      return { ...ack, compositionError: undefined };
+      } finally { busy.current = false; }
     },
     onSuccess: (_ack, _vars, context) => {
       if (!context?.current()) return;
-      return qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY, predicate: q => q.queryKey.at(-2) === context.actorScope });
+      return invalidateProductReads(qc, context.actorScope, context.deliveryScope);
     },
   });
 }
@@ -64,22 +84,40 @@ export function useArchiveTenantProduct() {
   const qc = useQueryClient();
   const scope = useStorageAccessScope("tenant-product-archive");
   const actor = useStorageAccessScope("portal-query-actor");
+  const delivery = useStorageAccessScope("entregas-operations");
+  const attempt = useRef<{ sig: string; key: string } | null>(null);
   return useMutation({
     retry: false,
-    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope }),
+    onMutate: () => ({ current: scope.capture(), actorScope: actor.scope, deliveryScope: delivery.scope }),
     mutationFn: async (v: { id: string; archived: boolean; expectedUpdatedAt: string }) => {
       const current = scope.capture();
       if (!current()) throw new Error("catalog_context_unavailable");
+      if (!v.expectedUpdatedAt) throw new Error("Versão do produto desconhecida. Recarregue antes de editar.");
+      const sig = JSON.stringify([scope.scope, v]);
+      if (attempt.current?.sig !== sig) attempt.current = { sig, key: crypto.randomUUID() };
       const { data, error } = await rpc()("tenant_product_set_archived", {
-        p_product_id: v.id, p_archived: v.archived, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: crypto.randomUUID(),
+        p_product_id: v.id, p_archived: v.archived, p_expected_updated_at: v.expectedUpdatedAt, p_idempotency_key: attempt.current.key,
       });
       if (!current()) throw new Error("catalog_context_changed");
-      if (error) throw new Error(tenantProductErrorMessage(error.code, error.message));
-      return parseTenantProductAck({ replayed: false, ...(data as object) }, v.id);
+      if (error) {
+        if (error.code) attempt.current = null;
+        throw new Error(tenantProductErrorMessage(error.code, error.message));
+      }
+      const ack = parseTenantProductAck({ replayed: false, ...(data as object) }, v.id);
+      attempt.current = null;
+      return ack;
     },
     onSuccess: (_ack, _vars, context) => {
       if (!context?.current()) return;
-      return qc.invalidateQueries({ queryKey: TENANT_PRODUCTS_KEY, predicate: q => q.queryKey.at(-2) === context.actorScope });
+      return invalidateProductReads(qc, context.actorScope, context.deliveryScope);
     },
   });
+}
+
+/** Only current-actor scoped readers; never invalidate a foreign session or finance. */
+function invalidateProductReads(qc: ReturnType<typeof useQueryClient>, actorScope: string, deliveryScope: string) {
+  const prefixes = ["tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "partner-catalog-tecnico", "estoque_produto"];
+  return qc.invalidateQueries({ predicate: q =>
+    (prefixes.includes(String(q.queryKey[0])) && q.queryKey.at(-2) === actorScope) ||
+    (["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === deliveryScope) });
 }

@@ -29,7 +29,7 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: { getUser: async () => ({ data: { user: { id: "u" } } }), getSession: async () => ({ data: { session: null } }) },
     channel: () => ({ on() { return this; }, subscribe() { return this; } }), removeChannel: () => {} },
 }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: "administrador", user: { id: "u" }, roles: ["administrador"] }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: "administrador", user: { id: "u" }, profile: { user_id: "u", organization_id: "org", ativo: true }, loading: false, roles: ["administrador"] }) }));
 
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { MicrorganismosTab } from "@/components/protocolos/MicrorganismosTab";
@@ -52,13 +52,13 @@ beforeEach(() => { m.writes = []; m.rpcs = []; });
 afterEach(cleanup);
 
 describe("catálogo global somente consulta (render real, Administrador de empresa)", () => {
-  it("Produtos: lista sem Novo/Excluir e clique na linha não abre edição", async () => {
+  it("Produtos: não usa lista global nem oferece exclusão/DML global", async () => {
     wrap(<ProdutosTab />);
-    const cell = await screen.findByText("Produto Global Um");
-    noMutationButtons();
-    fireEvent.click(cell);
+    await screen.findByRole("alert");
+    expect(screen.queryByText("Produto Global Um")).toBeNull();
+    expect(m.rpcs).toEqual(["tenant_product_list"]);
+    expect(screen.queryByRole("button", { name: /Excluir/ })).toBeNull();
     expect(screen.queryByText(/Editar Produto|Salvar Produto/)).toBeNull();
-    expect(screen.getByRole("button", { name: /Ficha/ })).toBeTruthy();
     expect(m.writes).toEqual([]);
   });
   it("Microrganismos: lista sem Novo/Excluir e sem edição", async () => {

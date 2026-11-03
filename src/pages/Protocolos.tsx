@@ -53,7 +53,7 @@ export function CulturasTab() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground" data-testid="culturas-readonly-notice">
-        Culturas globais são disponíveis somente para consulta.
+        Culturas disponíveis para a sua empresa.
       </p>
       {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
         <div><Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}><Plus className="mr-1 h-4 w-4" />Cultura própria</Button></div>
@@ -484,7 +484,7 @@ export default function Protocolos() {
   const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos", TAB_ALIASES);
   useEffect(() => {
     const anterior = document.title;
-    document.title = "Base Técnica Agronômica | Cultivo Farm";
+    document.title = "Catálogo | Cultivo Farm";
     return () => {
       document.title = anterior;
     };
@@ -492,7 +492,7 @@ export default function Protocolos() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Base Técnica Agronômica</h1>
+        <h1 className="text-2xl font-bold">Catálogo</h1>
         <p className="text-muted-foreground">Produtos, microrganismos, culturas, alvos e recomendações técnicas.</p>
       </div>
       <Card>

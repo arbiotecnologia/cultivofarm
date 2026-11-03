@@ -5,11 +5,12 @@ import { MemoryRouter } from "react-router-dom";
 import { CATALOGO_FONTES, consultarCatalogo } from "@/lib/catalogoQueries";
 import { CatalogoTecnicoTab } from "@/components/protocolos/CatalogoTecnicoTab";
 const state = vi.hoisted(() => ({ failed: -1, calls: 0 }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "a" }, profile: { user_id: "a", organization_id: "org-a", ativo: true }, roles: ["administrador"], loading: false }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: string) => {
   const tables = ["produtos", "microrganismos", "product_technical_profiles", "microorganism_technical_profiles", "formulacoes", "catalog_technical_sources", "microorganism_targets", "product_target_recommendations"];
   const result = { data: table === "produtos" ? [{ id: "p", nome: "Produto", ativo: true }] : [], error: tables.indexOf(table) === state.failed ? { message: "sensitive" } : null };
   state.calls++;
-  const q: any = { select: () => q, order: () => q, eq: () => q, then: (resolve: any) => Promise.resolve(result).then(resolve) }; return q;
+  const q: any = { select: () => q, order: () => q, eq: () => q, abortSignal: () => q, then: (resolve: any) => Promise.resolve(result).then(resolve) }; return q;
 } } }));
 vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantHiddenIds: () => ({ status: "global" }) }));
 vi.mock("@/components/catalogo/CatalogoCardsGrid", () => ({ CatalogoCardsGrid: () => <p>Itens carregados</p> }));

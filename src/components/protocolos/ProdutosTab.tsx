@@ -1,6 +1,9 @@
 import { TenantHiddenBadge, TenantVisibilityBar, TenantVisibilityToggle, useCanManageTenantVisibility, useManagedVisibility } from "@/components/protocolos/TenantVisibilityControls";
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { useTenantProducts, useSaveTenantProduct, useArchiveTenantProduct } from "@/hooks/useTenantProducts";
+import { useTenantProductDetails } from "@/hooks/useTenantProductDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,13 +36,7 @@ import { TENANT_PRODUCT_FIELDS, buildTenantProductPayload, parseTenantProductAck
 import { replaceTenantFormulacoes } from "@/lib/catalogo/tenantCatalogRoots";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
-import { CatalogOriginBadge, OwnedCatalogItemControls } from "./OwnedCatalogItemControls";
-import { OwnedCatalogItemDialog } from "./OwnedCatalogItemDialog";
-import { OwnedCatalogConfirmDialog } from "./OwnedCatalogConfirmDialog";
 import { useOwnedCatalogCapability } from "@/hooks/useOwnedCatalogMutations";
-import { useOwnedCatalogRead } from "@/hooks/useOwnedCatalogRead";
-import { OwnedCatalogPagination } from "./OwnedCatalogPagination";
-import { TENANT_OWNED_CATALOG_ENABLED } from "@/lib/catalogo/tenantCatalogOwnership";
 
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
@@ -67,6 +64,8 @@ interface Formulacao {
   component_insumo_id: string | null;
   proporcao: number | null;
   e_volume_fixo: boolean;
+  concentracao?: number | null;
+  unidade?: string | null;
   microrganismos?: Microrganismo;
   insumos?: { nome: string };
 }
@@ -207,12 +206,7 @@ export async function carregarCatalogoProdutos(client: any): Promise<
 }
 
 export function ProdutosTab() {
-  const [items, setItems] = useState<Produto[]>([]);
-  const [filteredItems, setFilteredItems] = useState<Produto[]>([]);
-  const [microrganismos, setMicrorganismos] = useState<Microrganismo[]>([]);
-  const [profileStatusMap, setProfileStatusMap] = useState<Record<string, string>>({});
   
-  const { data: volumesCat } = useCatalogoVolumes();
   const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
   const [fichaProduto, setFichaProduto] = useState<Produto | null>(null);
   const [open, setOpen] = useState(false);
@@ -220,19 +214,21 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
-  const tenantVis = useManagedVisibility("produto", filteredItems);
-  const canManageVis = useCanManageTenantVisibility();
-  const ownedCapability = useOwnedCatalogCapability();
   const [showArchived, setShowArchived] = useState(false);
-  const [ownedOffset, setOwnedOffset] = useState(0);
-  const ownedRead = useOwnedCatalogRead("produto", { archived: showArchived, offset: ownedOffset, search });
-  const [ownedDialog, setOwnedDialog] = useState<{ open: boolean; item: Produto | null }>({ open: false, item: null });
-  const [ownedConfirm, setOwnedConfirm] = useState<{ item: Produto; operation: "archive" | "restore" } | null>(null);
+  const productList = useTenantProducts(showArchived);
+  const details = useTenantProductDetails();
+  const editor = useTenantCatalogEditor();
+  const saveProduct = useSaveTenantProduct();
+  const archiveProduct = useArchiveTenantProduct();
 
   const [form, setForm] = useState({
     id: "",
     updated_at: "" as string,
     codigo: "",
+    descricao: "",
+    familia_catalogo: "",
+    classe_catalogo: "",
+    modo_acao: "",
     nome: "",
     tipo: "solo",
     dose_ml_ha: "",
@@ -241,7 +237,7 @@ export function ProdutosTab() {
     valor_dose_brl: "",
     valor_litro_brl: "",
     funcao_completa: "",
-    versao_catalogo: "v1.2",
+    versao_catalogo: "",
     ativo: true,
     b2b_enabled: false,
     e_insumo: false,
@@ -254,55 +250,41 @@ export function ProdutosTab() {
       volume_ml: number;
       proporcao: number | null;
       e_volume_fixo: boolean;
+      concentracao?: number | null;
+      unidade?: string | null;
     }[]
   });
 
 
 
-  const fetch = async () => {
-    const generation = localGeneration.current;
-    const result = await carregarCatalogoProdutos(supabase as any);
-    if (generation !== localGeneration.current) return;
-    if ("error" in result) {
-      toast.error("Erro ao carregar produtos");
-      return;
-    }
-    setProfileStatusMap(result.profileStatusMap);
-    setMicrorganismos(result.microrganismos as Microrganismo[]);
-    setItems(result.produtos as unknown as Produto[]);
-
-  };
-
+  const fetch = async () => { await Promise.all([productList.refetch(), details.refetch()]); };
   const localGeneration = useRef(0);
-  const activeScopeKey = ownedCapability.scope ? `${ownedCapability.scope.organizationId}|${ownedCapability.scope.userId}` : "";
+  const activeScopeKey = editor.scope;
+  const microrganismos = (details.data?.microorganisms ?? []) as unknown as Microrganismo[];
+  const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
   useEffect(() => {
     localGeneration.current += 1;
-    setItems([]); setFilteredItems([]); setOwnedDialog({ open: false, item: null }); setOwnedConfirm(null); setVolumesEdit(null);
-    void fetch();
+    setOpen(false); resetForm();
+    setVolumesEdit(null); setFichaProduto(null); setSearch(""); setFilterTipo("todos");
     return () => { localGeneration.current += 1; };
-    // Session-bound legacy global reads; own reads use the scoped QueryClient hook.
   }, [activeScopeKey]);
-
-  useEffect(() => {
-    let result = [...items.filter((item) => !item.owner_organization_id), ...((ownedRead.data?.items ?? []) as unknown as Produto[])];
-    result = result.filter((item) => showArchived || !item.archived_at);
-    if (search) {
-      const s = search.toLowerCase();
-      result = result.filter(i => 
-        i.nome.toLowerCase().includes(s) || 
-        (i.codigo && i.codigo.toLowerCase().includes(s)) ||
-        (i.funcao_completa && i.funcao_completa.toLowerCase().includes(s))
-      );
-    }
-    if (filterTipo !== "todos") {
-      result = result.filter(i => i.tipo === filterTipo);
-    }
-    setFilteredItems(result);
-  }, [search, filterTipo, items, ownedRead.data, showArchived]);
+  const items = useMemo(() => {
+    const micros = (details.data?.microorganisms ?? []) as unknown as Microrganismo[];
+    const microMap = new Map(micros.map(m => [m.id, m]));
+    const rows = (productList.data ?? []).map(p => ({ ...p,
+      formulacoes: (details.data?.formulas ?? []).filter(f => f.produto_id === p.id).map(f => ({ ...f,
+        microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined })) })) as unknown as Produto[];
+    return rows;
+  }, [productList.data, details.data]);
+  const filteredItems = items.filter(p => (!search || `${p.nome} ${p.codigo ?? ""} ${p.funcao_completa ?? ""}`.toLowerCase().includes(search.toLowerCase())) &&
+    (filterTipo === "todos" || p.tipo === filterTipo));
+  const tenantVis = { displayed: filteredItems, map: undefined as Map<string, any> | undefined, error: null };
+  const canManageVis = false;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!TENANT_CAN_EDIT_GLOBAL_CATALOG) { toast.error(GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE); return; }
+    if (!editor.canEdit || !details.isSuccess || !productList.isSuccess) { toast.error("Catálogo indisponível para edição neste contexto."); return; }
+    const current = editor.capture();
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
@@ -318,6 +300,10 @@ export function ProdutosTab() {
     const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (totalVolume > 0 ? totalVolume : null);
     const payload: any = {
       nome: form.nome,
+      descricao: form.descricao || null,
+      familia_catalogo: form.familia_catalogo || null,
+      classe_catalogo: form.classe_catalogo || null,
+      modo_acao: form.modo_acao || null,
       codigo: codigoFinal,
       tipo: form.tipo as any,
       dose_ml_ha: doseMlHa,
@@ -326,8 +312,7 @@ export function ProdutosTab() {
       valor_dose_brl: form.valor_dose_brl ? Number(form.valor_dose_brl) : null,
       valor_litro_brl: form.valor_litro_brl ? Number(form.valor_litro_brl) : null,
       funcao_completa: form.funcao_completa || null,
-      versao_catalogo: normalizeVersaoCatalogoForSave(form.versao_catalogo),
-      ativo: form.ativo,
+
       b2b_enabled: form.b2b_enabled,
       e_insumo: form.e_insumo,
       estoque_minimo: form.estoque_minimo ? Number(form.estoque_minimo) : 0,
@@ -337,14 +322,19 @@ export function ProdutosTab() {
 
 
     try {
-      const outcome = await saveProdutoTenant({
-        client: supabase as any,
-        produtoId: form.id || null,
+      const existing = items.find(p => p.id === form.id) as any;
+      if (composicaoTouched.current && (existing?.composition_status || existing?.declarations?.length)) {
+        throw new Error("Composição declarativa preservada. Sua edição não é suportada por este contrato; nenhum dado foi salvo.");
+      }
+      if (composicaoTouched.current && form.composicao.some(row => (!row.microrganismo_id && !row.component_insumo_id) ||
+        !Number.isFinite(Number(row.volume_ml)) || Number(row.volume_ml) < 0)) {
+        throw new Error("Revise os componentes e os volumes da composição; nenhum dado foi salvo.");
+      }
+      const ack = await saveProduct.mutateAsync({ id: form.id || null,
         expectedUpdatedAt: form.id ? (form.updated_at || null) : null,
-        payload,
-        // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
-        buildFormulacoes: (id: string) => buildFormulacoesPayload(id, form.composicao),
-      });
+        draft: payload, composition: composicaoTouched.current ? form.composicao.map(row => ({ ...row })) : undefined });
+      if (!current()) return;
+      const outcome = ack.compositionError ? { status: "partial", message: ack.compositionError } : { status: "ok" };
 
       if (outcome.status === "partial") {
         toast.error(outcome.message);
@@ -353,17 +343,12 @@ export function ProdutosTab() {
         fetch();
         return;
       }
-      if (outcome.status === "error") {
-        toast.error(outcome.message || "Erro ao salvar produto");
-        return;
-      }
-
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
       setOpen(false);
       resetForm();
       fetch();
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao salvar produto");
+      if (current()) toast.error(err?.message || "Erro ao salvar produto");
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -375,6 +360,10 @@ export function ProdutosTab() {
       id: "",
       updated_at: "",
       codigo: "",
+      descricao: "",
+      familia_catalogo: "",
+      classe_catalogo: "",
+      modo_acao: "",
       nome: "",
       tipo: "solo",
       dose_ml_ha: "",
@@ -383,7 +372,7 @@ export function ProdutosTab() {
       valor_dose_brl: "",
       valor_litro_brl: "",
       funcao_completa: "",
-      versao_catalogo: "v1.2",
+      versao_catalogo: "",
       ativo: true,
       b2b_enabled: false,
       e_insumo: false,
@@ -410,6 +399,10 @@ export function ProdutosTab() {
       id: p.id,
       updated_at: p.updated_at ?? "",
       codigo: p.codigo || "",
+      descricao: p.descricao || "",
+      familia_catalogo: (p as any).familia_catalogo || "",
+      classe_catalogo: (p as any).classe_catalogo || "",
+      modo_acao: (p as any).modo_acao || "",
       nome: p.nome,
       tipo: p.tipo,
       dose_ml_ha: p.dose_ml_ha?.toString() || "",
@@ -431,6 +424,7 @@ export function ProdutosTab() {
         volume_ml: f.volume_ml,
         proporcao: f.proporcao,
         e_volume_fixo: f.e_volume_fixo
+        , concentracao: f.concentracao, unidade: f.unidade
       })) || []
     });
 
@@ -438,19 +432,6 @@ export function ProdutosTab() {
     lastSuggestion.current = null;
     setOpen(true);
   };
-
-  // Auto-preencher código ao abrir dialog de novo item ou trocar tipo (se vazio/automático)
-  useEffect(() => {
-    if (!open || form.id) return;
-    if (form.codigo && !ehCodigoAutomatico(form.codigo, PREFIXOS_PRODUTO)) return;
-    (async () => {
-      const codigo = await gerarProximoCodigoProduto(form.tipo);
-      setForm((f) => ({ ...f, codigo }));
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, form.tipo, form.id]);
-
-
 
   // Helpers for bidirectional pricing edits (shared util)
   const fmtNum = fmtNumStr;
@@ -486,7 +467,7 @@ export function ProdutosTab() {
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
-      composicao: [...prev.composicao, { microrganismo_id: "", component_insumo_id: null, volume_ml: 100, proporcao: null, e_volume_fixo: false }]
+      composicao: [...prev.composicao, { microrganismo_id: "", component_insumo_id: null, volume_ml: 0, proporcao: null, e_volume_fixo: false }]
     }));
   };
 
@@ -591,7 +572,7 @@ export function ProdutosTab() {
           <Input 
             placeholder="Buscar por código, nome ou função..." 
             value={search} 
-            onChange={(e) => { setSearch(e.target.value); setOwnedOffset(0); }}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
@@ -615,9 +596,9 @@ export function ProdutosTab() {
             Exportar PDF
           </Button>
 
-          {TENANT_OWNED_CATALOG_ENABLED && ownedCapability.canManage && (
-            <Button size="sm" onClick={() => setOwnedDialog({ open: true, item: null })}>
-              <Plus className="h-4 w-4 mr-1" />Produto próprio
+          {editor.canEdit && (
+            <Button size="sm" onClick={() => { resetForm(); composicaoTouched.current = false; setOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" />Novo produto
             </Button>
           )}
 
@@ -627,17 +608,9 @@ export function ProdutosTab() {
 
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
-            {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Novo Produto
-              </Button>
-            </DialogTrigger>
-            )}
-            <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
+            <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
               <DialogHeader>
-                <DialogTitle>{form.id ? "Editar" : "Novo"} Produto Bioinsumo</DialogTitle>
+                <DialogTitle>{form.id ? "Editar" : "Novo"} produto</DialogTitle>
               </DialogHeader>
               
               <form onSubmit={handleSave} className="space-y-6 pt-4">
@@ -656,8 +629,8 @@ export function ProdutosTab() {
                         <p className="text-[10px] text-muted-foreground">Gerado automaticamente conforme o tipo. Você pode editar se necessário.</p>
                       </div>
                       <div className="space-y-2">
-                        <Label>Nome Comercial *</Label>
-                        <Input value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} placeholder="Ex: Solo 1" required />
+                        <Label htmlFor="produto-nome">Nome Comercial *</Label>
+                        <Input id="produto-nome" value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} placeholder="Ex: Solo 1" required />
                       </div>
                       <div className="space-y-2">
                         <Label>Tipo *</Label>
@@ -672,10 +645,15 @@ export function ProdutosTab() {
                       </div>
                       <div className="space-y-2">
                         <Label>Versão Catálogo</Label>
-                        <Input value={form.versao_catalogo} onChange={(e) => setForm({...form, versao_catalogo: e.target.value})} />
+                        <Input value={form.versao_catalogo} disabled /><p className="text-xs text-muted-foreground">Versão preservada; alteração não disponível.</p>
                       </div>
                     </div>
                     
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2"><Label>Família</Label><Select value={form.familia_catalogo || "pendente"} onValueChange={v => setForm({ ...form, familia_catalogo: v === "pendente" ? "" : v })}><SelectTrigger aria-label="Família"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="biologico">Biológico</SelectItem><SelectItem value="quimico">Químico</SelectItem><SelectItem value="fertilizante_adubo">Fertilizante/Adubo</SelectItem></SelectContent></Select></div>
+                      <div className="space-y-2"><Label htmlFor="produto-classe">Classe</Label><Input id="produto-classe" value={form.classe_catalogo} onChange={e => setForm({ ...form, classe_catalogo: e.target.value })} /></div>
+                      <div className="space-y-2"><Label htmlFor="produto-modo-acao">Modo de ação</Label><Input id="produto-modo-acao" value={form.modo_acao} onChange={e => setForm({ ...form, modo_acao: e.target.value })} /></div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/20 rounded border border-dashed">
                       <div className="flex items-center space-x-2">
                         <input 
@@ -701,6 +679,7 @@ export function ProdutosTab() {
                       )}
                     </div>
 
+                    <div className="space-y-2"><Label htmlFor="produto-descricao">Descrição</Label><Textarea id="produto-descricao" value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} /></div>
                     <div className="space-y-2">
                       <Label>Função Agronômica Completa</Label>
                       <Textarea value={form.funcao_completa} onChange={(e) => setForm({...form, funcao_completa: e.target.value})} rows={2} placeholder="Descrição detalhada das funções do produto..." />
@@ -785,21 +764,19 @@ export function ProdutosTab() {
                     </div>
 
                     <div className="border-t pt-4">
-                      <h3 className="text-sm font-semibold mb-3">Referência Comercial</h3>
+                      <h3 className="text-sm font-semibold mb-3">Referência Comercial</h3><p className="text-xs text-muted-foreground">Fornecedor e safra não estão disponíveis para alteração neste cadastro.</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Fornecedor</Label>
                           <Input
-                            value={form.fornecedor}
-                            onChange={(e) => setForm({ ...form, fornecedor: e.target.value })}
+                            value={form.fornecedor} disabled
                             placeholder="Deixe em branco para remover"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>Safra</Label>
                           <Input
-                            value={form.safra_referencia}
-                            onChange={(e) => setForm({ ...form, safra_referencia: e.target.value })}
+                            value={form.safra_referencia} disabled
                             placeholder="Deixe em branco para remover"
                           />
                         </div>
@@ -815,7 +792,7 @@ export function ProdutosTab() {
                           <Label htmlFor="prod_b2b">Disponível no portal B2B</Label>
                         </div>
                         <div className="flex items-center gap-2">
-                          <input type="checkbox" id="prod_ativo" checked={form.ativo} onChange={(e) => setForm({...form, ativo: e.target.checked})} className="h-4 w-4" />
+                          <input type="checkbox" id="prod_ativo" checked={form.ativo} disabled className="h-4 w-4" />
                           <Label htmlFor="prod_ativo">Ativo</Label>
                         </div>
                       </div>
@@ -827,6 +804,7 @@ export function ProdutosTab() {
                   </TabsContent>
 
                   <TabsContent value="composicao" className="space-y-4 min-h-[300px] sm:min-h-[400px]">
+                    {((items.find(p => p.id === form.id) as any)?.composition_status || (items.find(p => p.id === form.id) as any)?.declarations?.length) && <p role="alert">Composição declarativa preservada; edição indisponível neste contrato. Identificação e preços podem ser alterados sem substituí-la.</p>}
                     <div className="flex justify-between items-center mb-2">
                       <Label>Composição Técnica (Fórmula)</Label>
                       <div className="flex gap-2">
@@ -1000,11 +978,9 @@ export function ProdutosTab() {
         </div>
       </div>
 
-      <TenantVisibilityBar v={tenantVis} />
-      {TENANT_OWNED_CATALOG_ENABLED && <OwnedCatalogPagination entity="produto" archived={showArchived} onArchived={setShowArchived}
-        offset={ownedOffset} onOffset={setOwnedOffset} hasMore={ownedRead.data?.has_more ?? false} busy={ownedRead.isFetching}
-        error={ownedRead.isError ? (ownedRead.error as Error).message : null} />}
-
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />Mostrar arquivados</label>
+      {(productList.isLoading || details.isLoading) && <p role="status">Carregando produtos…</p>}
+      {(productList.isError || details.isError) && <p role="alert" className="text-destructive">Não foi possível carregar o catálogo. <Button variant="outline" onClick={fetch}>Recarregar</Button></p>}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -1032,7 +1008,7 @@ export function ProdutosTab() {
               const safra: string | null = pAny.safra_referencia ?? null;
               const observacoes: string | null = pAny.observacoes ?? null;
               return (
-              <TableRow key={p.id} className={`hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`} onClick={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => handleEdit(p) : undefined}>
+              <TableRow key={p.id} className={`hover:bg-muted/50 ${!p.ativo ? "opacity-50" : ""}`} onClick={editor.canEdit && details.isSuccess ? () => handleEdit(p) : undefined}>
                 <TableCell>
                   {p.codigo && (
                     <div className="font-mono text-[10px] text-muted-foreground">{p.codigo}</div>
@@ -1040,7 +1016,7 @@ export function ProdutosTab() {
                   <div className="font-medium flex items-center gap-2 flex-wrap">
                     {p.nome}
                     {!p.ativo && <Badge variant="outline" className="text-[9px] h-4">Inativo</Badge>}
-                    <CatalogOriginBadge item={p} />
+
                     <TenantHiddenBadge state={tenantVis.map?.get(p.id)} />
                     {(p.formulacoes?.length || 0) > 0 && (
                       <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary bg-primary/5">Exclusivo</Badge>
@@ -1106,8 +1082,8 @@ export function ProdutosTab() {
                 </TableCell>
                 <TableCell>
                   <VolumesChips
-                    volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
-                    onAdd={TENANT_CAN_EDIT_GLOBAL_CATALOG ? () => setVolumesEdit(p) : undefined}
+                    volumes={(details.data?.volumes ?? []).filter(v => v.produto_id === p.id) as any}
+                    onAdd={editor.canEdit ? () => setVolumesEdit(p) : undefined}
                   />
                 </TableCell>
                 <TableCell className="text-right font-mono-data">
@@ -1182,23 +1158,15 @@ export function ProdutosTab() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
-                    <OwnedCatalogItemControls
-                      item={p}
-                      actorOrganizationId={ownedCapability.scope?.organizationId}
-                      canManage={ownedCapability.canManage}
-                      onEdit={() => setOwnedDialog({ open: true, item: p })}
-                      onArchive={() => setOwnedConfirm({ item: p, operation: "archive" })}
-                      onRestore={() => setOwnedConfirm({ item: p, operation: "restore" })}
-                    />
-                    {TENANT_CAN_EDIT_GLOBAL_CATALOG && (
-                    <DeleteProtocoloButton
-                      table="produtos"
-                      id={p.id}
-                      label={p.nome}
-                      itemLabel="produto"
-                      onDeleted={fetch}
-                    />
-                    )}
+                    {editor.canEdit && <>
+                      <Button variant="outline" size="sm" disabled={!details.isSuccess || saveProduct.isPending} onClick={() => handleEdit(p)}>Editar</Button>
+                      <Button variant="ghost" size="sm" disabled={archiveProduct.isPending || !p.updated_at} onClick={async () => {
+                        if (!p.updated_at) return;
+                        const current = editor.capture();
+                        try { await archiveProduct.mutateAsync({ id: p.id, archived: p.ativo, expectedUpdatedAt: p.updated_at }); }
+                        catch (e) { if (current()) toast.error((e as Error).message); }
+                      }}>{p.ativo ? "Arquivar" : "Reativar"}</Button>
+                    </>}
                   </div>
                 </TableCell>
               </TableRow>
@@ -1227,28 +1195,6 @@ export function ProdutosTab() {
           parentUpdatedAt={volumesEdit.updated_at ?? null}
         />
       )}
-
-      <OwnedCatalogItemDialog
-        open={ownedDialog.open}
-        onOpenChange={(open) => setOwnedDialog((current) => ({ ...current, open }))}
-        entity="produto"
-        item={ownedDialog.item}
-        microorganisms={microrganismos}
-        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
-        onLocateGlobal={(id) => {
-          setOwnedDialog({ open: false, item: null }); setFilterTipo("todos");
-          tenantVis.setShowHidden(true);
-          const match = items.find((row) => row.id === id);
-          setSearch(match?.nome ?? "");
-        }}
-      />
-      <OwnedCatalogConfirmDialog
-        item={ownedConfirm?.item ?? null}
-        entity="produto"
-        operation={ownedConfirm?.operation ?? "archive"}
-        onOpenChange={(open) => !open && setOwnedConfirm(null)}
-        onApplied={async () => { await ownedRead.refetch(); await fetch(); }}
-      />
 
       <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-4">
         <span>As recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica.</span>
