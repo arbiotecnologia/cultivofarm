@@ -2,9 +2,20 @@
 
 - Origem: isolado aec6d152-e409-44bf-9cb3-10da72365572, checkout cruzado no commit 1ebd039ae15bbd5ae34cc9df6597af876852a220.
 - Cópia byte a byte (`diff -r` sem diferenças); `SHA256SUMS` 30/30 OK. Esta nota fica fora das somas.
-- Status V2 (relato do auditor, não reexecutado aqui): PRE produção e homolog PASS; aplicado SOMENTE em homolog; POST PASS.
-  - JWT real rh@FSF: 403 forbidden_partner nos dois overloads; próprio catálogo 2 itens 200.
-  - JWT real teste4 (homolog): 200, 5 itens ARBio, preços 100; contrato C1B_DUAL_TENANT_V1.
-- Produção: SQL V2 NÃO aplicado; aguarda aplicação pelo auditor. Runtime original segue 7a80; B2B em produção permanece bloqueado até lá.
-- V1 (scripts/b2b-catalog-read-fence-20261103, efb5) continua REPROVADO — NÃO APLICAR.
-- Nenhum SQL, deploy, publicação, binding, financeiro ou AGENTS raiz alterado nesta cópia.
+
+## Produção (relato do auditor, não reexecutado aqui)
+- V2 APLICADA no banco de produção `swzpzcwiasxmjutrmvkm` pela migration `b2b_catalog_read_fence_v2_reviewed_20261103`; PRE e POST PASS.
+- JWT real teste4: 200 com 11 itens permitidos (4 produtos e 7 microrganismos); famílias biologico, quimico e fertilizante_adubo.
+- Tela de produção recarregada exibe BioInseticida01, Bombarbio e referências sintéticas químico/fertilizante, sem erro do catálogo.
+- PENDENTE: controle negativo FSF com sessão real em PRODUÇÃO.
+- Inalterados: faturas 5 e recebíveis 10; fiscal nfe/nfse/production 0; dispatch/test/f4 false; crons 4/5/6/8 false e 1/2/7 true.
+- Advisors agregados inalterados (não significa projeto sem achados).
+
+## Homolog (relato do auditor)
+- rh@FSF: 403 forbidden_partner nos dois overloads; catálogo próprio 2 itens 200.
+- teste4: 200, 5 itens.
+
+## Situação
+- Runtime publicado permanece 7a80. Corrigida somente a leitura do catálogo B2B; fluxo completo de pedidos NÃO aprovado (carrinho/simulação/pedidos/fiscal/envios seguem fechados).
+- V1 (scripts/b2b-catalog-read-fence-20261103, efb5) continua REPROVADA — NÃO APLICAR.
+- Nesta cópia nenhum SQL, deploy, publicação, binding, financeiro ou outro arquivo foi alterado pelo agente.
