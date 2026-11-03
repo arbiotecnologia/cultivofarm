@@ -401,6 +401,7 @@ export function ProdutosTab() {
 
 
   const handleEdit = (p: Produto) => {
+    if (retainedSave.current || savingRef.current) return;
     let dose = p.valor_dose_brl;
     let litro = p.valor_litro_brl;
     const ha = p.valor_ha_brl;
@@ -480,6 +481,7 @@ export function ProdutosTab() {
   const markComposicaoTouched = () => { composicaoTouched.current = true; };
 
   const addMicrorganismo = () => {
+    if (retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
@@ -488,6 +490,7 @@ export function ProdutosTab() {
   };
 
   const addInsumo = () => {
+    if (retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
@@ -496,6 +499,7 @@ export function ProdutosTab() {
   };
 
   const removeMicrorganismo = (index: number) => {
+    if (retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => ({
       ...prev,
@@ -504,6 +508,7 @@ export function ProdutosTab() {
   };
 
   const updateComposicao = (index: number, field: string, value: any) => {
+    if (retainedSave.current || savingRef.current) return;
     markComposicaoTouched();
     setForm(prev => {
       const newComp = [...prev.composicao];
