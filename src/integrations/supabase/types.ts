@@ -2432,6 +2432,60 @@ export type Database = {
         }
         Relationships: []
       }
+      catalogo_precos_embalagem: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          owner_organization_id: string
+          packaging_id: string
+          preco_brl: number
+          produto_id: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_organization_id: string
+          packaging_id: string
+          preco_brl: number
+          produto_id: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_organization_id?: string
+          packaging_id?: string
+          preco_brl?: number
+          produto_id?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_precos_embalagem_packaging_id_fkey"
+            columns: ["packaging_id"]
+            isOneToOne: false
+            referencedRelation: "product_packagings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogo_precos_embalagem_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalogo_problemas: {
         Row: {
           ativo: boolean
@@ -2475,6 +2529,7 @@ export type Database = {
           doses_por_volume: number | null
           id: string
           item_tipo: string
+          medida: string
           microrganismo_id: string | null
           moeda: string
           ordem: number
@@ -2485,7 +2540,7 @@ export type Database = {
           rotulo: string | null
           updated_at: string
           valor_dose_100ml_brl: number | null
-          volume_ml: number
+          volume_ml: number | null
         }
         Insert: {
           ativo?: boolean
@@ -2493,6 +2548,7 @@ export type Database = {
           doses_por_volume?: number | null
           id?: string
           item_tipo: string
+          medida?: string
           microrganismo_id?: string | null
           moeda?: string
           ordem?: number
@@ -2503,7 +2559,7 @@ export type Database = {
           rotulo?: string | null
           updated_at?: string
           valor_dose_100ml_brl?: number | null
-          volume_ml: number
+          volume_ml?: number | null
         }
         Update: {
           ativo?: boolean
@@ -2511,6 +2567,7 @@ export type Database = {
           doses_por_volume?: number | null
           id?: string
           item_tipo?: string
+          medida?: string
           microrganismo_id?: string | null
           moeda?: string
           ordem?: number
@@ -2521,7 +2578,7 @@ export type Database = {
           rotulo?: string | null
           updated_at?: string
           valor_dose_100ml_brl?: number | null
-          volume_ml?: number
+          volume_ml?: number | null
         }
         Relationships: [
           {
@@ -15845,6 +15902,101 @@ export type Database = {
           },
         ]
       }
+      product_packagings: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          owner_organization_id: string
+          peso_liquido_kg: number
+          product_id: string
+          valid_from: string
+          valid_to: string | null
+          version: number
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_by?: string | null
+          descricao?: string | null
+          id: string
+          owner_organization_id: string
+          peso_liquido_kg: number
+          product_id: string
+          valid_from?: string
+          valid_to?: string | null
+          version?: number
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          owner_organization_id?: string
+          peso_liquido_kg?: number
+          product_id?: string
+          valid_from?: string
+          valid_to?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_packagings_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "catalogo_volumes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_packagings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_sale_units: {
+        Row: {
+          forma_fisica: string | null
+          owner_organization_id: string
+          product_id: string
+          unidade_conteudo: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          forma_fisica?: string | null
+          owner_organization_id: string
+          product_id: string
+          unidade_conteudo: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          forma_fisica?: string | null
+          owner_organization_id?: string
+          product_id?: string
+          unidade_conteudo?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_sale_units_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_target_recommendations: {
         Row: {
           alvo_nome: string
@@ -23553,6 +23705,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      recorte_a_legacy_solid: { Args: { p_product: string }; Returns: boolean }
       recover_partner_order_attempt_v1: {
         Args: {
           p_ack_order?: string
@@ -26222,6 +26375,45 @@ export type Database = {
         }
         Returns: Json
       }
+      solid_pack_offer_archive_v1: {
+        Args: {
+          p_expected_version: number
+          p_idempotency_key: string
+          p_packaging_id: string
+        }
+        Returns: Json
+      }
+      solid_pack_offer_reactivate_v1: {
+        Args: {
+          p_expected_version: number
+          p_idempotency_key: string
+          p_packaging_id: string
+        }
+        Returns: Json
+      }
+      solid_pack_offer_save_v1: {
+        Args: {
+          p_codigo: string
+          p_descricao: string
+          p_expected_version: number
+          p_idempotency_key: string
+          p_packaging_id: string
+          p_peso_liquido_kg: number
+          p_product: string
+        }
+        Returns: Json
+      }
+      solid_pack_offers_admin_v1: { Args: { p_product: string }; Returns: Json }
+      solid_pack_price_set_v1: {
+        Args: {
+          p_expected_price_id: string
+          p_idempotency_key: string
+          p_packaging_id: string
+          p_preco_centavos: number
+          p_valid_from: string
+        }
+        Returns: Json
+      }
       start_technical_visit_secure: {
         Args: {
           p_client_uuid?: string
@@ -26450,6 +26642,7 @@ export type Database = {
         }
         Returns: Json
       }
+      tenant_product_unit_capability_v1: { Args: never; Returns: Json }
       tenant_smtp_activation_set: {
         Args: { p_active: boolean; p_version: number }
         Returns: Json
