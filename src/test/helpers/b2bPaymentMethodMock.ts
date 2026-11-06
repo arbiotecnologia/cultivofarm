@@ -15,21 +15,24 @@ function withAbort<T extends Promise<unknown>>(p: T) { return Object.assign(p, {
 
 function augmentSim(data: unknown) {
   if (!data || typeof data !== "object") return data;
-  const d = data as Record<string, unknown> & { schedule?: Array<{ installment_number: number; due_date: string; amount: number; principal_amount?: number; interest_amount?: number }>; amounts?: { final_amount?: number } };
-  const est = (d.schedule ?? []).map((s) => ({ installment_number: s.installment_number, estimated_due_date: s.due_date, amount: s.amount,
-    principal_amount: s.principal_amount ?? s.amount, interest_amount: s.interest_amount ?? 0 }));
-  return { ...d, payment_method_contract: "B2B_PAYMENT_METHOD_V1",
-    payment_method: { ...TEST_PIX, method_kind: "pix", payment_method_name: "Pix", due_days: 5, installment_count: 1 },
-    due_basis: "nf_issue", schedule_estimated: true, estimated_schedule: est, estimated_total: d.amounts?.final_amount ?? null };
+  const d = data as Record<string, unknown> & { schedule?: Array<{ due_date?: string }>; amounts?: { final_amount?: number }; quote_required?: boolean };
+  const final = d.amounts?.final_amount ?? 0;
+  // Uma verdade monetária (como o servidor): 1 parcela Pix = final_amount; datas marcadas como estimadas.
+  const schedule = d.quote_required ? [] : [{ installment_number: 1, due_date: d.schedule?.[0]?.due_date ?? "2027-01-05", estimated_due_date: d.schedule?.[0]?.due_date ?? "2027-01-05",
+    amount: final, principal_amount: final, interest_amount: 0 }];
+  return { ...d, final_amount: final, schedule, installment_count: 1, payment_method_contract: "B2B_PAYMENT_METHOD_V1",
+    payment_method: { ...TEST_PIX, method_kind: "pix", payment_method_name: "Pix", due_days: 5, installment_count: 1, due_basis: "nf_issue", schedule_estimated: true },
+    due_basis: "nf_issue", schedule_estimated: true };
 }
 
 /** `via` (ex.: o próprio mock rpc) registra também a chamada delegada com o nome legado. */
-export function withPaymentMethod(inner: Handler, via?: Handler): Handler {
+export function withPaymentMethod(inner: Handler, via?: Handler, opts?: { mode?: "required" | "legacy" }): Handler {
   const call = via ?? inner;
+  const mode = opts?.mode ?? "required";
   return (name, args) => {
     if (name === "b2b_list_payment_method_options_secure")
       return withAbort(Promise.resolve({ data: { contract: "B2B_PAYMENT_METHOD_V1", partner_id: args?.p_partner_id, payment_plan_id: args?.p_payment_plan_id,
-        due_basis: "nf_issue", options: [{ ...TEST_PIX, method_kind: "pix", available: true, payment_method_name: "Pix", due_days: 5, installment_count: 1 }] }, error: null }));
+        mode, due_basis: "nf_issue", options: [{ ...TEST_PIX, method_kind: "pix", available: true, payment_method_name: "Pix", due_days: 5, installment_count: 1 }] }, error: null }));
     if (name === "simulate_b2b_payment_plan_with_method_secure") {
       const { p_method_config_id: _c, p_method_config_version: _v, ...rest } = args ?? {};
       return Promise.resolve(call("simulate_b2b_payment_plan_secure", { ...rest, p_first_due_date: null }) as Promise<Reply>)
@@ -39,7 +42,13 @@ export function withPaymentMethod(inner: Handler, via?: Handler): Handler {
       const { p_method_config_id: cid, p_method_config_version: ver, ...rest } = args ?? {};
       return Promise.resolve(call("create_partner_order_secure", { ...rest, p_first_due_date: null, p_installment_count: null }) as Promise<Reply>)
         .then((r) => (r && !r.error && r.data && typeof r.data === "object"
-          ? { ...r, data: { ...(r.data as object), payment_method: { config_id: cid, version: ver, method_kind: "pix", schedule_estimated: true } } } : r));
+          ? { ...r, data: (() => {
+              const d = r.data as Record<string, unknown>;
+              const total = typeof d.total === "number" ? d.total : Number(d.final_amount ?? 0);
+              return { ...d, final_amount: d.final_amount ?? total, cart_hash: d.cart_hash ?? rest.p_expected_cart_hash,
+                schedule: [{ installment_number: 1, estimated_due_date: "2027-01-05", amount: total, principal_amount: total, interest_amount: 0 }],
+                payment_method: { config_id: cid, version: ver, method_kind: "pix", schedule_estimated: true } };
+            })() } : r));
     }
     return inner(name, args);
   };
