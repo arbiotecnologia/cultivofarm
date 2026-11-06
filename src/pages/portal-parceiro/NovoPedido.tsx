@@ -1410,7 +1410,7 @@ export default function NovoPedido() {
               <Button
                 onClick={() => handleSubmit()}
                 disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
-                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
+                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || simulateSelectedPlan.isPending || !visibleSimulation || !!visibleSimFailure}
               >
                 {createOrder.isPending
                   ? "Enviando..."
