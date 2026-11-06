@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { supplierLabel } from "@/lib/comercial/supplierName";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDateTimeDisplay } from "@/lib/date-utils";
@@ -28,9 +29,11 @@ interface Props {
   orderId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Nome do vendedor vindo do contexto autorizado; ausente → rótulo neutro. */
+  supplierName?: string | null;
 }
 
-export function TimelinePedidoDialog({ orderId, open, onOpenChange }: Props) {
+export function TimelinePedidoDialog({ orderId, open, onOpenChange, supplierName }: Props) {
   const { data: order } = useQuery({
     queryKey: ["partner-order-summary", orderId],
     enabled: !!orderId && open,
@@ -92,7 +95,7 @@ export function TimelinePedidoDialog({ orderId, open, onOpenChange }: Props) {
                 </div>
               ) : (
                 <div className="text-xs opacity-80 mt-1">
-                  Entre em contato com o comercial Cultivo Farm para mais detalhes.
+                  Entre em contato com o comercial da {supplierLabel(supplierName)} para mais detalhes.
                 </div>
               )}
               {order?.updated_at && (
