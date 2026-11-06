@@ -48,8 +48,10 @@ def call(uid, order, role="authenticated"):
 def main():
     tmp = h.boot(); work = pathlib.Path(tempfile.mkdtemp())
     try:
-        h.psql(TABLES)
+        head, tail = TABLES.split("ALTER TABLE public.partner_order_payment_terms ENABLE", 1)
+        h.psql(head)
         for c in CAPS: h.psql(capbody(c))
+        h.psql("ALTER TABLE public.partner_order_payment_terms ENABLE" + tail)
         h.psql("REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private FROM PUBLIC;")
         for sig, md in g["PINS"].items():
             loc = h.psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))").stdout.strip()
