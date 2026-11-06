@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
   actor: "11111111-1111-4111-8111-111111111111",
   tenant: "22222222-2222-4222-8222-222222222222",
   partner: "33333333-3333-4333-8333-333333333333",
-  epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false,
+  epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false, scoped: null as null | { name: string | null },
   rpc: vi.fn(), table: vi.fn(), writes: vi.fn(), subscriptions: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
@@ -50,7 +50,7 @@ function response(data: unknown) {
   return Object.assign(promise, { abortSignal: () => promise });
 }
 beforeEach(() => {
-  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false });
+  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false, scoped: null });
   vi.clearAllMocks();
   state.table.mockImplementation((table: string) => {
     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
@@ -68,6 +68,8 @@ beforeEach(() => {
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
     if (name === "log_my_access_denied_secure") return response(null);
     // Pré-instalação: leitor escopado ausente (PGRST202) mantém a leitura de volumes anterior.
+    if (name === "get_partner_catalog_volumes_secure" && state.scoped) return response({ contract: "B2B_PARTNER_VOLUMES_V1", partner_id: args?.p_partner_id,
+      seller: { name: state.scoped.name }, volumes: [{ id: "b86f2fe8-e6b7-43e4-8345-53bd9e2a3b03", item_tipo: "produto", produto_id: args?.p_partner_id, microrganismo_id: null, volume_ml: 1000, rotulo: "1 L", ordem: 0 }] });
     if (name === "get_partner_catalog_volumes_secure") { const p = Promise.resolve({ data: null, error: { code: "PGRST202", message: "absent" } }); return Object.assign(p, { abortSignal: () => p }); }
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
@@ -134,4 +136,20 @@ it("a foreign tenant projection cannot mount catalogue, entry link or cart even 
   expect(catalogCalls()).toHaveLength(0);
   expect(screen.queryByRole("link", { name: "Selecionar produto / Novo pedido" })).toBeNull();
   expect(state.table).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
+});
+// Reprodução local do relato teste4: leitura direta de volumes vazia (RLS owner) e item listado pelo catálogo escopado.
+it("antes: sem leitor escopado o volume oculto bloqueia e o aviso usa rótulo neutro, nunca Cultivo Farm", async () => {
+  mount(); await screen.findByText(product());
+  screen.getByRole("button", { name: "Adicionar ao pedido" }).click();
+  expect(await screen.findByText("Nenhum volume comercial cadastrado para este item. Solicite à empresa fornecedora.")).toBeTruthy();
+  expect(screen.queryByText(/Cultivo Farm/)).toBeNull();
+});
+it("depois: leitor escopado entrega o volume 1 L sem ler a tabela direta e sem escrita", async () => {
+  state.scoped = { name: "AR Bio" };
+  mount(); await screen.findByText(product());
+  screen.getByRole("button", { name: "Adicionar ao pedido" }).click();
+  expect(await screen.findByRole("button", { name: "Adicionar ao carrinho" })).toBeTruthy();
+  expect(screen.queryByText(/Nenhum volume comercial/)).toBeNull();
+  expect(state.table).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
+  expect(state.rpc.mock.calls.filter(([n]) => n === "get_partner_catalog_volumes_secure").map(([, a]) => a.p_partner_id)).toEqual([state.partner]);
 });
