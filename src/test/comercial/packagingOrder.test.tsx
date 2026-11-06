@@ -19,7 +19,7 @@ const offer = (o: Record<string, unknown> = {}) => ({
   product_id: SOLID, packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", rotulo: null,
   unidade_conteudo: "kg", peso_liquido_kg: 25, version: 1, preco_tabela_brl: 340, ...o,
 });
-const ack = (over: Record<string, unknown> = {}) => ({ contract: PACKAGING_ORDER_CONTRACT, partner_id: PARTNER, offers: [offer()], ...over });
+const ack = (over: Record<string, unknown> = {}) => ({ contract: PACKAGING_ORDER_CONTRACT, partner_id: PARTNER, offers: [offer()], solid_products: [{ product_id: SOLID, unidade_conteudo: "kg" }], ...over });
 
 describe("parser B2B_PARTNER_PACKAGING_ORDER_V1", () => {
   it("indexa a embalagem por produto", () => {
