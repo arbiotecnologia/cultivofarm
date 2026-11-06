@@ -105,6 +105,13 @@ UNCHANGED = {
     "platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)": cap("platform_private.b2b_packaging_line")[1],
     "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": cap("public.simulate_b2b_payment_plan_secure")[1],
 }
+# Funções expostas que chamam o motor: pinadas sem mudança (revisão de impacto no README).
+UNCHANGED.update({
+    "public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": cap("public.rpc_cc_simulate_price")[1],
+    "public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)": cap("public.rpc_resolve_commercial_prices")[1],
+    "public.get_partner_catalog_tecnico_secure()": cap("public.get_partner_catalog_tecnico_secure.f0cfc0c6")[1],
+    "public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)": cap("public.convert_partner_simulation_to_order_secure")[1],
+})
 CRP_SIG = "public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)"
 
 
