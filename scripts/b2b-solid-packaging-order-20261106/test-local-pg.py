@@ -15,6 +15,9 @@ gatilhos de partner_orders omitidos; exclusão GiST de catalogo_precos_embalagem
 Escopo: vendedor sintético "AR Bio" e um segundo tenant sintético; nenhum dado real, nenhuma FSF.
 """
 import hashlib, json, os, pathlib, shutil, subprocess, sys, tempfile, threading, time
+REAL = os.environ.get("B2BPACK_REAL_TRIGGERS") == "1"
+if REAL:
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import real_triggers as RT
 
 HERE = pathlib.Path(__file__).resolve().parent
 CAP = HERE / "captured"
@@ -298,7 +301,7 @@ def main():
     subprocess.run(su() + ["pg_ctl", "-D", str(tmp / "d"), "-o", f"-p {PORT} -k {tmp} -c listen_addresses=''", "-l", str(tmp / "log"), "-w", "start"],
                    check=True, capture_output=True)
     rep = {"kind": "disposable_pg", "hosted": False, "remote_writes": False, "package": "B2B_PARTNER_PACKAGING_ORDER_V1",
-           "postgres": None, "real_bodies": sorted(p.name for p in CAP.iterdir()),
+           "postgres": None, "real_bodies": sorted(p.name for p in CAP.iterdir() if p.is_file()),
            "synthetic_seams": ["auth.uid por GUC", "has_role/get_user_partner_id/is_platform_superadmin/b2b_actor_scope sobre tabelas mínimas",
                                "c2_* guards e journal mínimos", "crédito sem limite, juros 0, plano selecionável",
                                "get_partner_catalog_secure chama o leitor REAL", "fn_catalogo_preco_canonico mínimo",
@@ -312,12 +315,18 @@ def main():
         psql("CREATE DATABASE t", db="postgres")
         rep["postgres"] = psql("SHOW server_version").stdout.strip()
         psql(SCHEMA)
+        if REAL:
+            psql(RT.real_tables_sql())
         for name in ("public.fn_resolve_commercial_price", "public.recorte_a_legacy_solid", "platform_private.b2b_partner_catalog_reader",
                      "platform_private.solid_pack_presentation_link", "platform_private.partner_order_items_catalog_tenant_guard",
                      "public.fn_b2b_guard_order_items_immutable", "public.fn_resolve_b2b_cart", "public.fn_b2b_cart_hash",
                      "public.create_partner_order_secure", "public.simulate_b2b_payment_plan_secure", "public.respond_b2b_order_quote_secure"):
             psql(cap(name))
         psql(CATALOG_SEAM + REAL_TRIGGERS)
+        if REAL:
+            psql(RT.real_triggers_sql())
+            rep["synthetic_seams"] = [x for x in rep["synthetic_seams"] if x not in ("demais gatilhos de partner_orders omitidos", "exclusão GiST omitida")] + RT.SEAMS_DECLARED
+            rep["real_triggers"] = sorted(p.name for p in (CAP / "triggers").rglob("*.sql"))
         # ACL igual à LIVE para as funções substituídas/pinadas
         psql("""REVOKE ALL ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text), public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date),
                  public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text), public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date), public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric),
@@ -487,7 +496,7 @@ def main():
         shutil.rmtree(tmp, ignore_errors=True)
     rep["checks"] = checks; rep["result"] = "PASS" if ok else "FAIL"
     rep["passed"] = sum(1 for c in checks.values() if c["pass"]); rep["total"] = len(checks)
-    (HERE / "evidence-local-pg.json").write_text(json.dumps(rep, indent=2, ensure_ascii=False) + "\n")
+    (HERE / ("evidence-local-pg-real-triggers.json" if REAL else "evidence-local-pg.json")).write_text(json.dumps(rep, indent=2, ensure_ascii=False) + "\n")
     for k, v in checks.items():
         if not v["pass"]:
             print("FAIL", k, v.get("detail"))

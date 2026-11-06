@@ -222,11 +222,15 @@ ALTER TABLE public.partner_order_items
 ALTER TABLE public.partner_order_items ADD CONSTRAINT poi_packaging_snapshot_shape CHECK (
   (packaging_id_snapshot IS NULL AND packaging_codigo_snapshot IS NULL AND packaging_version_snapshot IS NULL
    AND packaging_peso_liquido_kg_snapshot IS NULL AND packaging_unidade_conteudo_snapshot IS NULL AND packaging_price_id_snapshot IS NULL)
+  -- Segunda alternativa com IS NOT NULL explícito em todo operando: nenhuma comparação nula vira UNKNOWN (que o CHECK aceitaria).
   OR (packaging_id_snapshot IS NOT NULL AND product_id IS NOT NULL AND microrganismo_id IS NULL
-      AND btrim(COALESCE(packaging_codigo_snapshot,'')) <> '' AND packaging_version_snapshot >= 1
-      AND packaging_peso_liquido_kg_snapshot > 0 AND packaging_unidade_conteudo_snapshot IN ('kg','g','ml','l')
+      AND packaging_codigo_snapshot IS NOT NULL AND btrim(packaging_codigo_snapshot) <> ''
+      AND packaging_version_snapshot IS NOT NULL AND packaging_version_snapshot >= 1
+      AND packaging_peso_liquido_kg_snapshot IS NOT NULL AND packaging_peso_liquido_kg_snapshot > 0
+      AND packaging_unidade_conteudo_snapshot IS NOT NULL AND packaging_unidade_conteudo_snapshot IN ('kg','g','ml','l')
       AND packaging_price_id_snapshot IS NOT NULL AND volume_ml IS NULL AND volume_ml_snapshot IS NULL
-      AND unidade_medida = 'unidade' AND quantidade > 0 AND quantidade = trunc(quantidade)));
+      AND unidade_medida IS NOT NULL AND unidade_medida = 'unidade'
+      AND quantidade IS NOT NULL AND quantidade > 0 AND quantidade = trunc(quantidade)));
 CREATE TRIGGER a001_b2b_packaging_item_snapshot BEFORE INSERT OR UPDATE ON public.partner_order_items
   FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_packaging_item_snapshot_guard();
 -- trigger criado após a função
