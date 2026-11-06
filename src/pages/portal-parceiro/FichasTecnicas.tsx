@@ -20,8 +20,11 @@ import { Download, Eye, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { generateFichaTecnicaProdutoPdf } from "@/lib/pdf/fichaTecnicaProdutoPdf";
 import { generateFichaTecnicaMicrorganismoPdf } from "@/lib/pdf/fichaTecnicaMicrorganismoPdf";
+import { useMyPartner } from "@/hooks/useMyPartner";
+import { supplierLabel } from "@/lib/comercial/supplierName";
 
 export default function FichasTecnicas() {
+  const { data: myPartner } = useMyPartner();
   const [tab, setTab] = useState<"produtos" | "microrganismos">("produtos");
   const [busca, setBusca] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -92,7 +95,7 @@ export default function FichasTecnicas() {
       <div>
         <h1 className="text-xl md:text-2xl font-bold">Fichas Técnicas</h1>
         <p className="text-sm text-muted-foreground">
-          Consulte fichas técnicas completas de todos os produtos e microrganismos da empresa fornecedora.
+          Consulte fichas técnicas completas de todos os produtos e microrganismos da {supplierLabel(myPartner?.sellerName)}.
         </p>
       </div>
 

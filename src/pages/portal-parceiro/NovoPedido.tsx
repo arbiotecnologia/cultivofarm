@@ -61,6 +61,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useCloseOrderAttempt } from "@/hooks/useCloseOrderAttempt";
 import { useOrderJournal } from '@/hooks/useOrderJournal';
 import { markOrderAttemptSending, orderAttemptFingerprint, prepareOrderAttempt, readOrderAttempt, settleOrderAttempt, subscribeOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
+import { useMyPartner } from "@/hooks/useMyPartner";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
@@ -136,7 +137,8 @@ export default function NovoPedido() {
   const legacyVolumes = useCatalogoVolumes(isSimulationMode);
   const partnerVolumes = usePartnerCatalogVolumes(isSimulationMode ? null : partner?.id);
   const volumes = isSimulationMode ? legacyVolumes : partnerVolumes;
-  const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? null;
+  const myPartnerSeller = useMyPartner();
+  const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? myPartnerSeller.data?.sellerName ?? null;
   const createOrder = useCreatePartnerOrder(supplierName);
   const createSimulation = useCreatePartnerSimulation();
   const navigate = useNavigate();

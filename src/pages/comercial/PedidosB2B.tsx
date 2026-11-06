@@ -49,6 +49,7 @@ import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntr
 import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialOwnerOrdersSection";
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
 import { usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 
 
@@ -68,6 +69,7 @@ const STATUS_OPTIONS = [
 const STATUS_VALUES = STATUS_OPTIONS.map((s) => s.value);
 
 export default function PedidosB2B() {
+  const { name: tenantName } = useActiveTenantName();
   const { role, roles = [] } = useAuth();
   const internalEntry = useInternalOrderEntry();
   const canApproveCredit =
@@ -598,6 +600,7 @@ export default function PedidosB2B() {
       </Dialog>
 
       <TimelinePedidoDialog
+        supplierName={tenantName}
         orderId={detail?.id ?? null}
         open={timelineOpen}
         onOpenChange={setTimelineOpen}
