@@ -231,6 +231,7 @@ export default function NovoPedido() {
   }, [cart, addRow?.id, requestedDate, isSimulationMode, partner?.id, setSafePartnerOrderDraft]);
   // Favoritos / modelos de pedido
   const saveTemplate = useSaveOrderTemplate();
+  const cartHasPackaging = Object.values(cart).some((i) => i.unidade_pedido === "embalagem");
   const [favOpen, setFavOpen] = useState(false);
   const [favNome, setFavNome] = useState("");
   const [favDescricao, setFavDescricao] = useState("");
@@ -1342,18 +1343,23 @@ export default function NovoPedido() {
               <Switch id="fav-star" checked={favMarcarFavorito} onCheckedChange={setFavMarcarFavorito} />
               <Label htmlFor="fav-star" className="text-xs">Marcar como favorito (aparece primeiro)</Label>
             </div>
-            <div className="text-xs text-muted-foreground">
-              {cartList.filter((i) => i.unidade_pedido !== "embalagem").length} item(ns) serão salvos.
-              {cartList.some((i) => i.unidade_pedido === "embalagem") && " Embalagens não são salvas em modelos."}
-            </div>
+            {cartHasPackaging ? (
+              <p role="alert" data-testid="template-packaging-blocked" className="text-xs text-destructive">
+                Este carrinho tem embalagem inteira. Modelos ainda não guardam embalagens, por isso nada será salvo:
+                remova as embalagens para salvar um modelo só com os demais itens, ou faça o pedido sem modelo.
+              </p>
+            ) : (
+              <div className="text-xs text-muted-foreground">{cartList.length} item(ns) serão salvos.</div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFavOpen(false)}>Cancelar</Button>
             <Button
-              disabled={!favNome.trim() || cartList.length === 0 || saveTemplate.isPending || !partner?.id}
+              disabled={!favNome.trim() || cartList.length === 0 || cartHasPackaging || saveTemplate.isPending || !partner?.id}
               onClick={() => {
-                if (!partner?.id) return;
-                const itens = cartList.filter((i) => i.unidade_pedido !== "embalagem").map((i) => ({
+                // Nunca grava modelo parcial (sem as embalagens) nem vazio.
+                if (!partner?.id || cartHasPackaging || cartList.length === 0) return;
+                const itens = cartList.map((i) => ({
                   item_id: i.item_id,
                   item_tipo: i.item_tipo,
                   nome: i.nome,
