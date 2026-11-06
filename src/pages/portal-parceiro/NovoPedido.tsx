@@ -298,7 +298,9 @@ export default function NovoPedido() {
     useCommercialPaymentPlans(!isSimulationMode);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodChoice | null>(null);
+  // Escolha do meio amarrada a parceiro+condição: ao trocar a condição a escolha anterior deixa de valer NO MESMO render
+  // (sem janela em que o meio de B é aplicado a A).
+  const [methodChoice, setMethodChoice] = useState<(PaymentMethodChoice & { planId: string; partnerId: string }) | null>(null);
   // Tentativa de envio: chave/estado vivem fora do componente (memória volátil
   // por ator+empresa+papéis+parceiro) para sobreviver a remontagem do boundary.
   const pageScope = useStorageAccessScope("partner-order-page");
@@ -476,12 +478,14 @@ export default function NovoPedido() {
   // B2B_PAYMENT_METHOD_V1: meios permitidos pelo vendedor para a condição; escolha reiniciada a cada condição/parceiro.
   const methodOptions = useB2BPaymentMethodOptions(partner?.id, selectedPlanId, !isSimulationMode && confirmOpen);
   const methodList = methodOptions.data?.status === "ok" ? methodOptions.data.options : [];
-  useEffect(() => { setSelectedMethod(null); }, [partner?.id, selectedPlanId]);
-  useEffect(() => {
-    if (selectedMethod && methodOptions.data?.status === "ok" &&
-        !methodList.some((o) => o.available && o.config_id === selectedMethod.config_id && o.version === selectedMethod.version))
-      setSelectedMethod(null);
-  }, [methodOptions.data, methodList, selectedMethod]);
+  const selectedMethod: PaymentMethodChoice | null = useMemo(() => {
+    if (!methodChoice || methodChoice.planId !== selectedPlanId || methodChoice.partnerId !== partner?.id) return null;
+    if (methodOptions.data?.status !== "ok") return null;
+    const live = methodOptions.data.options.some((o) => o.available && o.config_id === methodChoice.config_id && o.version === methodChoice.version);
+    return live ? { config_id: methodChoice.config_id, version: methodChoice.version } : null;
+  }, [methodChoice, selectedPlanId, partner?.id, methodOptions.data]);
+  const setSelectedMethod = (m: PaymentMethodChoice | null) =>
+    setMethodChoice(m && selectedPlanId && partner?.id ? { ...m, planId: selectedPlanId, partnerId: partner.id } : null);
   const selSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
     organizationId: profile?.organization_id, partnerId: partner?.id, planId: selectedPlanId, items: simulationItems,
     requireMethod: true, method: selectedMethod });
