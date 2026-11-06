@@ -1,0 +1,7 @@
+- Preparação apenas: nunca aplicar 02/04 hospedado, publicar, cadastrar meios/configurações remotas ou tocar PB-001036/teste4; o auditor revisa e instala — evita mudança financeira não revisada.
+- 01–04 são gerados por generate.py com pins LIVE (create c34e7404, simulate 37d4f45e, leitor bd985484, h15, leitor de condição efb3d18c e colunas); nunca editar à mão nem alterar corpos LIVE — wrappers reusam o contrato existente.
+- Vendedor sempre pelo b2b_partner_catalog_reader / h15 do ator, nunca do payload; planos globais não ganham colunas nem escritores — evita configuração vazando entre empresas.
+- Promissória/crédito e qualquer combinação sem configuração explícita ficam indisponíveis; Price exige taxa explícita e plano sem juros próprios; datas são estimadas (base emissão da NF) — não inventar regra comercial.
+- Comprador externo sem snapshot de meio falha no COMMIT; rollback é deny-only e mantém a exigência, snapshots e histórico — nunca reabre fallback 'pix'.
+- PG descartável usa corpos reais + costuras declaradas (create/terms reader stub); nunca reportar como prova JWT/RLS/PostgREST hospedada.
+- B4 (título na emissão da NF) só auditoria aqui; ver B4-AUDIT.md — não instalar gerador fiscal nem decidir cancelamento de NF após pagamento.

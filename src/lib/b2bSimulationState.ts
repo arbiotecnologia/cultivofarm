@@ -41,6 +41,14 @@ export function describeSimulationFailure(key: string, error: unknown): Simulati
       detail: "O servidor não autorizou o preço de um ou mais itens do carrinho para esta conta. Nenhum valor foi aplicado. Se persistir, informe a empresa fornecedora.",
       retryable: true };
   }
+  if (/payment_method_stale/.test(msg)) {
+    return { ...base, title: "A configuração deste meio de pagamento mudou.",
+      detail: "A empresa fornecedora atualizou o meio escolhido. Recarregue as opções e escolha novamente. Nenhum valor foi aplicado.", retryable: false };
+  }
+  if (/payment_method_(unavailable|required|installments_incompatible|price_interest_conflict|rolled_back)|b2b_payment_method_rolled_back/.test(msg)) {
+    return { ...base, title: "Meio de pagamento indisponível para esta condição.",
+      detail: "Escolha outro meio entre os permitidos pela empresa fornecedora. Nenhum valor foi aplicado.", retryable: false };
+  }
   if (code === "42501" || /forbidden|denied|auth_required/.test(msg)) {
     return { ...base, title: "Sem permissão para simular esta condição.",
       detail: "Sua conta não está autorizada a ver esta condição de pagamento agora. Nenhum valor foi aplicado.", retryable: true };

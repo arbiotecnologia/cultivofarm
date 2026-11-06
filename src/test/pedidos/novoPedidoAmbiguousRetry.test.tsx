@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { withPaymentMethod, pickTestPix } from "@/test/helpers/b2bPaymentMethodMock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -70,7 +71,7 @@ beforeEach(() => {
     }) }) }) };
     throw new Error(`Unexpected table read: ${table}`);
   });
-  state.rpc.mockImplementation((name: string, args?: Record<string, unknown>) => {
+  state.rpc.mockImplementation(withPaymentMethod((name: string, args?: Record<string, unknown>) => {
     if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
     const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actorOverride ?? state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
@@ -105,7 +106,7 @@ beforeEach(() => {
     });
     if (name === "log_my_access_denied_secure") return response(null);
     state.writes(name); throw new Error(`Unexpected RPC: ${name}`);
-  });
+  }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
 });
 afterEach(cleanup);
 function mount() {
@@ -131,6 +132,7 @@ async function fillAndSubmit(add = true) {
   }
   fireEvent.click((await screen.findAllByRole("button", { name: "Continuar para condição de pagamento" }))[0]);
   fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
+  await pickTestPix();
   const submit = await screen.findByRole("button", { name: "Enviar pedido para análise" });
   await waitFor(() => expect(submit).toBeEnabled());
   fireEvent.click(submit);
@@ -207,6 +209,7 @@ it("pedido aceito com resposta tardia durante desmontagem: aviso, carrinho novo 
   fireEvent.click((await screen.findAllByRole("button", { name: "Continuar para condição de pagamento" }))[0]);
   await screen.findByText(/PB-001030 já foi registrado/);
   fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
+  await pickTestPix();
   const submit = await screen.findByRole("button", { name: "Enviar pedido para análise" });
   await waitFor(() => expect(submit).toBeEnabled());
   fireEvent.click(submit);
@@ -292,6 +295,7 @@ it("dois cliques no mesmo tick: a reserva síncrona bloqueia o segundo envio (1 
   fireEvent.click(await screen.findByRole("button", { name: "Adicionar ao carrinho" }));
   fireEvent.click((await screen.findAllByRole("button", { name: "Continuar para condição de pagamento" }))[0]);
   fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
+  await pickTestPix();
   const submit = await screen.findByRole("button", { name: "Enviar pedido para análise" });
   await waitFor(() => expect(submit).toBeEnabled());
   fireEvent.click(submit); fireEvent.click(submit);

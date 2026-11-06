@@ -25,18 +25,37 @@ export interface FencedSimulationArgs {
   partnerId: string | null | undefined;
   planId: string | null | undefined;
   items: ReadonlyArray<Record<string, unknown>>;
+  /**
+   * B2B_PAYMENT_METHOD_V1: quando `requireMethod`, a chave só existe com meio escolhido e a simulação
+   * vai pelo wrapper com meio (mesma revalidação de config/versão do envio). Meio entra na chave.
+   */
+  requireMethod?: boolean;
+  method?: { config_id: string; version: number } | null;
 }
 
-function validReply(r: unknown, partnerId: string, planId: string): r is SimulateResult {
+export interface EstimatedInstallment { installment_number: number; estimated_due_date: string; amount: number; principal_amount: number; interest_amount: number }
+export type MethodSimulateResult = SimulateResult & {
+  payment_method: { config_id: string; version: number; method_kind: string; payment_method_name: string; due_days: number; installment_count: number };
+  schedule_estimated: true; due_basis: "nf_issue"; estimated_schedule: EstimatedInstallment[]; estimated_total: number | null;
+};
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+function validReply(r: unknown, partnerId: string, planId: string, method?: { config_id: string; version: number } | null): r is SimulateResult {
   if (!r || typeof r !== "object") return false;
-  const x = r as Partial<SimulateResult>;
-  return x.partner_id === partnerId && x.payment_plan?.id === planId && !!x.amounts &&
+  const x = r as Partial<MethodSimulateResult>;
+  const base = x.partner_id === partnerId && x.payment_plan?.id === planId && !!x.amounts &&
     typeof x.amounts.final_amount === "number" && Number.isFinite(x.amounts.final_amount);
+  if (!base || !method) return base;
+  const pm = x.payment_method;
+  return !!pm && pm.config_id === method.config_id && pm.version === method.version && x.schedule_estimated === true &&
+    x.due_basis === "nf_issue" && Array.isArray(x.estimated_schedule) &&
+    x.estimated_schedule.every((s) => !!s && typeof s.amount === "number" && Number.isFinite(s.amount) && typeof s.estimated_due_date === "string" && DATE.test(s.estimated_due_date));
 }
 
 export function useFencedB2BSimulation(a: FencedSimulationArgs) {
   const base = simulationKey({ userId: a.userId, organizationId: a.organizationId, partnerId: a.partnerId, planId: a.planId, items: a.items });
-  const key = a.enabled && base && a.scope.ready ? JSON.stringify([base, a.scope.scope]) : null;
+  const methodPart = a.requireMethod ? (a.method ? [a.method.config_id, a.method.version] : null) : [];
+  const key = a.enabled && base && a.scope.ready && methodPart ? JSON.stringify([base, a.scope.scope, ...(methodPart.length ? [methodPart] : [])]) : null;
   const keyRef = useRef(key);
   keyRef.current = key;
   const seqRef = useRef(0);
@@ -50,19 +69,24 @@ export function useFencedB2BSimulation(a: FencedSimulationArgs) {
   useEffect(() => {
     const seq = ++seqRef.current;            // qualquer mudança (inclusive para null) aposenta respostas em voo
     if (!key) { setSlot(null); return; }
-    const { partnerId, planId, items } = argsRef.current;
-    if (!partnerId || !planId) return;
+    const { partnerId, planId, items, method, requireMethod } = argsRef.current;
+    if (!partnerId || !planId || (requireMethod && !method)) return;
     const fence = scopeRef.current.capture();
     setSlot({ key, seq, status: "pending", fence });
     const live = () => seqRef.current === seq && keyRef.current === key && fence();
     (async () => {
       let outcome: Slot;
       try {
-        const { data, error } = await (supabase.rpc as any)("simulate_b2b_payment_plan_secure", {
-          p_partner_id: partnerId, p_payment_plan_id: planId, p_items: items, p_first_due_date: null,
-        });
+        const { data, error } = requireMethod && method
+          ? await (supabase.rpc as any)("simulate_b2b_payment_plan_with_method_secure", {
+              p_partner_id: partnerId, p_payment_plan_id: planId, p_items: items,
+              p_method_config_id: method.config_id, p_method_config_version: method.version,
+            })
+          : await (supabase.rpc as any)("simulate_b2b_payment_plan_secure", {
+              p_partner_id: partnerId, p_payment_plan_id: planId, p_items: items, p_first_due_date: null,
+            });
         if (error) throw error;
-        outcome = validReply(data, partnerId, planId)
+        outcome = validReply(data, partnerId, planId, requireMethod ? method : null)
           ? { key, seq, status: "ok", fence, result: data }
           : { key, seq, status: "error", fence, failure: describeSimulationFailure(key, { message: "invalid_simulation_reply" }) };
       } catch (err) {

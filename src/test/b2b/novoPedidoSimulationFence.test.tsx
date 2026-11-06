@@ -1,4 +1,5 @@
 import { act, cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { withPaymentMethod, pickTestPix } from "@/test/helpers/b2bPaymentMethodMock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -61,7 +62,7 @@ beforeEach(() => {
     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
     return { select: () => ({ eq: () => response([]) }) };
   });
-  state.rpc.mockImplementation((name: string, args?: { p_partner_id?: string }) => {
+  state.rpc.mockImplementation(withPaymentMethod((name: string, args?: { p_partner_id?: string }) => {
     if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
     const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
@@ -93,7 +94,7 @@ beforeEach(() => {
       valor_litro_brl: 10, preco_parceiro: 10, desconto_percentual: 0, unidade_preco_principal: "litro", ficha_aprovada: false,
     }]);
     state.writes(name); throw new Error(`Unexpected RPC: ${name}`);
-  });
+  }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
 });
 afterEach(() => { cleanup(); sessionStorage.clear(); });
 function mount() {
@@ -127,12 +128,12 @@ const sendBtn = () => screen.getByRole("button", { name: /Enviar pedido para an�
 beforeEach(() => {
   sims = [];
   const orig = state.rpc.getMockImplementation()!;
-  state.rpc.mockImplementation((name: string, args?: Record<string, unknown>) => {
+  state.rpc.mockImplementation(withPaymentMethod((name: string, args?: Record<string, unknown>) => {
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([plan(CASH, "A vista", "cash"), plan(PA, "Plano A", "short_term"), plan(PB, "Plano B", "short_term")]);
     if (name === "simulate_b2b_payment_plan_secure") return new Promise((resolve) => sims.push({ plan: String(args?.p_payment_plan_id), items: args?.p_items, resolve }));
     if (name === "create_partner_order_secure") { state.writes(name); return Promise.resolve({ data: null, error: { message: "blocked in test" } }); }
     return orig(name, args);
-  });
+  }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
 });
 async function openWithCart(qty = 2) {
   state.pk = "offer";
@@ -143,24 +144,24 @@ async function openWithCart(qty = 2) {
   await screen.findByText("Plano A");
   return m;
 }
-const pick = (name: string) => fireEvent.click(screen.getByText(name).closest('[role="button"]')!);
+const pick = async (name: string) => { fireEvent.click(screen.getByText(name).closest('[role="button"]')!); await pickTestPix(); };
 // Troca de época pode fechar/remontar o diálogo; se fechou, reabre — nunca reaproveita o resultado antigo.
 async function reopenIfClosed(planName: string) {
   await new Promise((r) => setTimeout(r, 20));
   if (!screen.queryByText(planName)) {
     fireEvent.click((await screen.findAllByRole("button", { name: /Continuar para condição de pagamento/ }))[0]);
     await screen.findByText(planName);
-    pick(planName);
+    await pick(planName);
   }
 }
 const settle = async (p: Pending, v: unknown) => { await act(async () => { p.resolve(v); await Promise.resolve(); }); };
 
 it("A→B→A: resposta atrasada do primeiro A não é adotada; só a do A atual", async () => {
   await openWithCart();
-  pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
   const a1 = last(PA);
-  pick("Plano B"); await waitFor(() => expect(sims.some((s) => s.plan === PB)).toBe(true));
-  pick("Plano A"); await waitFor(() => expect(sims.filter((s) => s.plan === PA).length).toBe(2));
+  await pick("Plano B"); await waitFor(() => expect(sims.some((s) => s.plan === PB)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.filter((s) => s.plan === PA).length).toBe(2));
   await settle(a1, reply(PA, 111.11));
   expect(has(brl(111.11))).toBe(false);
   expect(sendBtn()).toBeDisabled();
@@ -173,7 +174,7 @@ it("A→B→A: resposta atrasada do primeiro A não é adotada; só a do A atual
 
 it("erro fica visível com código; nova tentativa é manual e só ela dispara nova leitura", async () => {
   await openWithCart();
-  pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
   await settle(last(PA), { data: null, error: { code: "42501", message: "tenant_catalog_fence_denied" } });
   const alert = await screen.findByTestId("b2b-simulation-error");
   expect(alert).toHaveTextContent("42501");
@@ -191,7 +192,7 @@ it("erro fica visível com código; nova tentativa é manual e só ela dispara n
 
 it("revogação/troca de época na mesma identidade descarta resultado e resposta em voo", async () => {
   const m = await openWithCart();
-  pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
   await settle(last(PA), reply(PA, 77.77));
   await waitFor(() => expect(has(brl(77.77))).toBe(true));
   const before = sims.length;
@@ -208,7 +209,7 @@ it("revogação/troca de época na mesma identidade descarta resultado e respost
 
 it("referência à vista atrasada de contexto anterior não aparece como diferença", async () => {
   const m = await openWithCart();
-  pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === CASH) && sims.some((s) => s.plan === PA)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === CASH) && sims.some((s) => s.plan === PA)).toBe(true));
   const oldCash = last(CASH);
   state.epoch += 1; m.update();
   await reopenIfClosed("Plano A");
@@ -223,7 +224,7 @@ it("referência à vista atrasada de contexto anterior não aparece como diferen
 
 it("fechar e reabrir aposenta resposta em voo e exige simulação nova antes do envio", async () => {
   await openWithCart();
-  pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
   const a1 = last(PA);
   fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   await waitFor(() => expect(screen.queryByText("Plano A")).toBeNull());
@@ -232,14 +233,14 @@ it("fechar e reabrir aposenta resposta em voo e exige simulação nova antes do 
   await screen.findByText("Plano A");
   expect(has(brl(12.34))).toBe(false);
   expect(sendBtn()).toBeDisabled();
-  pick("Plano A"); await waitFor(() => expect(sims.filter((s) => s.plan === PA).length).toBeGreaterThanOrEqual(2));
+  await pick("Plano A"); await waitFor(() => expect(sims.filter((s) => s.plan === PA).length).toBeGreaterThanOrEqual(2));
   await settle(last(PA), reply(PA, 56.78));
   await waitFor(() => expect(has(brl(56.78))).toBe(true));
 });
 
 it("mudar itens com o mesmo plano invalida o resultado e a resposta antiga", async () => {
   await openWithCart(2);
-  pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
   const a1 = last(PA);
   fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   await waitFor(() => expect(screen.queryByText("Plano A")).toBeNull());
@@ -259,7 +260,7 @@ it("mudar itens com o mesmo plano invalida o resultado e a resposta antiga", asy
 
 it("clique de envio com resultado de época antiga não chama o criador de pedido", async () => {
   const m = await openWithCart();
-  pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
+  await pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === PA)).toBe(true));
   await settle(last(PA), reply(PA, 40));
   await waitFor(() => expect(sendBtn()).not.toBeDisabled());
   const btn = sendBtn();

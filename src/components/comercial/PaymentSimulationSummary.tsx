@@ -8,10 +8,15 @@ interface Props {
   cashReferenceAmount?: number | null;
   /** Nome já resolvido pelo chamador: vendedor autorizado (portal B2B) ou tenant ativo (interno). */
   responsavelNome?: string | null;
+  /** B2B_PAYMENT_METHOD_V1: parcelas ESTIMADAS do meio escolhido (base = emissão da NF). Substitui o cronograma legado. */
+  estimated?: { methodLabel: string; schedule: Array<{ installment_number: number; estimated_due_date: string; amount: number }> } | null;
 }
 
-export function PaymentSimulationSummary({ simulation, cashReferenceAmount, responsavelNome }: Props) {
-  const { amounts, schedule, warnings } = simulation;
+export function PaymentSimulationSummary({ simulation, cashReferenceAmount, responsavelNome, estimated }: Props) {
+  const { amounts, warnings } = simulation;
+  const schedule = estimated
+    ? estimated.schedule.map((s) => ({ installment_number: s.installment_number, due_date: s.estimated_due_date, amount: s.amount }))
+    : simulation.schedule;
   const diffVsCash =
     cashReferenceAmount != null && cashReferenceAmount > 0
       ? amounts.final_amount - cashReferenceAmount
@@ -68,13 +73,18 @@ export function PaymentSimulationSummary({ simulation, cashReferenceAmount, resp
       <Accordion type="single" collapsible>
         <AccordionItem value="schedule">
           <AccordionTrigger className="text-xs py-2">
-            Parcelas ({schedule.length})
+            {estimated ? `Parcelas estimadas · ${estimated.methodLabel} (${schedule.length})` : `Parcelas (${schedule.length})`}
           </AccordionTrigger>
           <AccordionContent>
+            {estimated && (
+              <p className="text-[11px] text-muted-foreground mb-1" data-testid="b2b-estimated-dates-note">
+                Datas estimadas. O vencimento definitivo é contado a partir da emissão da nota fiscal.
+              </p>
+            )}
             <div className="space-y-1">
               {schedule.map((s) => (
                 <div key={s.installment_number} className="flex justify-between text-xs border-b py-1 last:border-0">
-                  <span>Parcela {s.installment_number} · {fmtDate(s.due_date)}</span>
+                  <span>Parcela {s.installment_number} · {estimated ? "previsão " : ""}{fmtDate(s.due_date)}</span>
                   <span className="font-medium">{brl(s.amount)}</span>
                 </div>
               ))}
