@@ -755,7 +755,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void refresh();
       },
       onExpire: (reason) => {
-        clearAllPartnerOrderDrafts();
+        // Revogação (inelegível) apaga as escolhas retidas; offline/timeout/erro são transitórios e só bloqueiam a tela.
+        if (reason === "ineligible") clearAllPartnerOrderDrafts();
         partnerRenewalRef.current = null;
         partnerDraftRef.current = null;
         renewalRef.current = null;
