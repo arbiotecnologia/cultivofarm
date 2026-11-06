@@ -182,6 +182,12 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       }
       if (!current()) throw new Error("Contexto alterado.");
       if (error) throw error;
+      if (input.payment_method) {
+        // ACK exato do meio escolhido: pedido gravado sem o mesmo meio/versão nunca é tratado como sucesso.
+        const pm = (data as { payment_method?: { config_id?: unknown; version?: unknown; schedule_estimated?: unknown } } | null)?.payment_method;
+        if (!pm || pm.config_id !== input.payment_method.config_id || pm.version !== input.payment_method.version || pm.schedule_estimated !== true)
+          throw new Error("payment_method_ack_unconfirmed");
+      }
       if (durable) {
         // A lost acknowledgment remains blocked; never retry create automatically.
         const acknowledged=await recoverOrderJournal(journalSlot,input.partner_id,current);
