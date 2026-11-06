@@ -7,6 +7,8 @@ import { canAccess } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { Link } from "react-router-dom";
 import { useTenantProducts, useSaveTenantProduct, useArchiveTenantProduct } from "@/hooks/useTenantProducts";
+import { useProductUnitCapability, useProductUnitAdmin } from "@/hooks/useProductUnitAdmin";
+import { isProductUnit, type ProductUnit } from "@/lib/catalogo/productUnitContract";
 import { useTenantProductDetails } from "@/hooks/useTenantProductDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -269,6 +271,14 @@ export function ProdutosTab() {
 
 
 
+  const [unit, setUnit] = useState<ProductUnit | "">("");
+  const unitTouched = useRef(false);
+  const unitCapability = useProductUnitCapability(open && editor.canEdit);
+  const unitRead = useProductUnitAdmin(form.id, open && editor.canEdit && unitCapability.data === true);
+  useEffect(() => {
+    if (unitRead.isSuccess && !unitTouched.current) setUnit(unitRead.data ?? "");
+  }, [unitRead.data, unitRead.isSuccess]);
+
   const fetch = async () => { await Promise.all([productList.refetch(), details.refetch()]); };
   const localGeneration = useRef(0);
   const activeScopeKey = editor.scope;
@@ -276,6 +286,7 @@ export function ProdutosTab() {
   const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
   useEffect(() => {
     localGeneration.current += 1;
+    setUnit(""); unitTouched.current = false;
     // Escopo mudou: descarta rascunho/exportação retidos (nunca reutilizados em outro ator/tenant).
     retainedSave.current = null; retainedForm.current = null;
     setPartialMessage(null);
@@ -300,6 +311,9 @@ export function ProdutosTab() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editor.canEdit || !details.isSuccess || !productList.isSuccess) { toast.error("Catálogo indisponível para edição neste contexto."); return; }
+    if (!retainedSave.current && (unitCapability.data !== true || (form.id && !unitRead.isSuccess) || !isProductUnit(unit))) {
+      toast.error("Unidade do produto não confirmada. Escolha kg, g, mL ou L após carregar o cadastro."); return;
+    }
     const current = editor.capture();
     if (savingRef.current) return;
     savingRef.current = true;
@@ -316,6 +330,7 @@ export function ProdutosTab() {
     const doseMlHa = form.dose_ml_ha ? Number(form.dose_ml_ha) : (totalVolume > 0 ? totalVolume : null);
     const payload: any = {
       nome: form.nome,
+      unidade_conteudo: unit,
       descricao: form.descricao || null,
       familia_catalogo: form.familia_catalogo || null,
       classe_catalogo: form.classe_catalogo || null,
@@ -441,6 +456,7 @@ export function ProdutosTab() {
   };
 
   const resetForm = () => {
+    setUnit(""); unitTouched.current = false;
     setForm({
       id: "",
       updated_at: "",
@@ -471,6 +487,7 @@ export function ProdutosTab() {
 
   const handleEdit = (p: Produto) => {
     if (retainedSave.current || savingRef.current) return;
+    setUnit(""); unitTouched.current = false;
     let dose = p.valor_dose_brl;
     let litro = p.valor_litro_brl;
     const ha = p.valor_ha_brl;
@@ -738,6 +755,12 @@ export function ProdutosTab() {
                         <p className="text-[10px] text-muted-foreground">Gerado automaticamente conforme o tipo. Você pode editar se necessário.</p>
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="produto-unit">Unidade do produto *</Label>
+                        <Select value={unit || undefined} disabled={saving || unitCapability.data !== true || (!!form.id && !unitRead.isSuccess)} onValueChange={value => { if (isProductUnit(value)) { unitTouched.current = true; setUnit(value); } }}>
+                          <SelectTrigger id="produto-unit"><SelectValue placeholder="kg, g, mL ou L" /></SelectTrigger>
+                          <SelectContent><SelectItem value="kg">kg</SelectItem><SelectItem value="g">g</SelectItem><SelectItem value="ml">mL</SelectItem><SelectItem value="l">L</SelectItem></SelectContent>
+                        </Select>
+                        {(unitCapability.isError || unitRead.isError) && <p role="alert">Não foi possível confirmar a unidade do produto.</p>}
                         <Label htmlFor="produto-nome">Nome Comercial *</Label>
                         <Input id="produto-nome" value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} placeholder="Ex: Solo 1" required />
                       </div>

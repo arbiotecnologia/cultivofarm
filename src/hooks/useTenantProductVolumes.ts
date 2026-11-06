@@ -34,7 +34,8 @@ export function useSaveTenantProductVolume() {
       busy.current = true;
       try {
         const sig = JSON.stringify([editor.scope, v]);
-        if (attempt.current?.sig !== sig) attempt.current = { sig, key: crypto.randomUUID() };
+        if (attempt.current && attempt.current.sig !== sig) throw new Error("Reconcilie a mesma tentativa antes de mudar a intenção.");
+        if (!attempt.current) attempt.current = { sig, key: crypto.randomUUID() };
         const ack = await saveTenantCatalogRoot(supabase as never, "catalogo_volumes", v.id,
           v.id ? v.payload : { ...v.payload, produto_id: v.productId, item_tipo: "produto" }, v.expectedUpdatedAt, attempt.current.key);
         if (!current()) throw new Error("catalog_context_changed");
@@ -44,7 +45,7 @@ export function useSaveTenantProductVolume() {
     },
     onSuccess: (_ack, _v, context) => {
       if (!context?.current()) return;
-      return qc.invalidateQueries({ predicate: q => ["tenant-product-details", "tenant-product-volumes", "catalogo-volumes", "catalogo-unificado", "partner-catalog-secure"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === context.actorScope });
+      return qc.invalidateQueries({ predicate: q => ["tenant-products", "product-packaging-admin", "tenant-product-details", "tenant-product-volumes", "catalogo-volumes", "catalogo-unificado", "partner-catalog-secure"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === context.actorScope });
     },
   });
 }

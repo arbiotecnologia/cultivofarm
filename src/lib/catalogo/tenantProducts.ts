@@ -3,6 +3,7 @@
  * `tenant_product_list/save/set_archived` (scripts/tenant-exclusive-catalog-20261101).
  * O tenant é sempre derivado no servidor; o payload nunca carrega empresa/dono.
  */
+import { isProductUnit } from "./productUnitContract";
 import { Constants } from "@/integrations/supabase/cultivofarm.types";
 
 /** Valores do enum real `tipo_produto`; o servidor continua recusando qualquer outro (22P02). */
@@ -10,7 +11,7 @@ export const TIPOS_PRODUTO = Constants.public.Enums.tipo_produto as readonly str
 export const TENANT_PRODUCT_FIELDS = [
   "nome", "codigo", "descricao", "tipo", "classe_catalogo", "familia_catalogo", "modo_acao",
   "modo_aplicacao", "funcao_completa", "e_insumo", "b2b_enabled", "dose_ml_ha", "estoque_minimo",
-  "valor_dose_brl", "valor_ha_brl", "valor_litro_brl",
+  "valor_dose_brl", "valor_ha_brl", "valor_litro_brl", "unidade_conteudo",
 ] as const;
 export type TenantProductField = (typeof TENANT_PRODUCT_FIELDS)[number];
 const NUMERIC: TenantProductField[] = ["dose_ml_ha", "estoque_minimo", "valor_dose_brl", "valor_ha_brl", "valor_litro_brl"];
@@ -43,6 +44,9 @@ export function buildTenantProductPayload(draft: TenantProductDraft, create: boo
       const n = typeof v === "number" ? v : Number(String(v).replace(",", "."));
       if (!Number.isFinite(n) || n < 0) throw new Error(`Valor inválido em ${k}`);
       out[k] = n;
+    } else if (k === "unidade_conteudo") {
+      if (!isProductUnit(v)) throw new Error("Escolha kg, g, mL ou L.");
+      out[k] = v;
     } else if (k === "b2b_enabled") {
       // omitido = servidor grava false; nulo nunca é enviado (coluna NOT NULL, default LIVE true)
       if (typeof v !== "boolean") throw new Error("Valor inválido em b2b_enabled");
@@ -62,6 +66,7 @@ export function buildTenantProductPayload(draft: TenantProductDraft, create: boo
   if (nome !== undefined && (typeof nome !== "string" || nome.length < 2 || nome.length > 200)) {
     throw new Error("O nome deve ter entre 2 e 200 caracteres");
   }
+  if (create && !isProductUnit(out.unidade_conteudo)) throw new Error("Escolha kg, g, mL ou L.");
   if (create && typeof out.tipo !== "string") throw new Error("Selecione o tipo do produto");
   return out;
 }

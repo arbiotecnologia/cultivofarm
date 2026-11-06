@@ -18,12 +18,13 @@ interface Props {
 const GRID_VOLUMES = "grid grid-cols-[auto_auto_1fr] items-baseline gap-x-1 gap-y-0.5 text-[11px] font-mono-data";
 
 function CelulasVolume({ v }: { v: CatalogoVolume }) {
-  const { numero, unidade } = splitVolumeLabel(formatVolumeLabel(v));
+  const solid = (v as unknown as { medida?: string }).medida === "embalagem";
+  const { numero, unidade } = solid ? { numero: v.rotulo ?? "Embalagem", unidade: "" } : splitVolumeLabel(formatVolumeLabel(v));
   return (
     <>
       <span className="text-right tabular-nums whitespace-nowrap text-foreground/80">{numero}</span>
       <span className="text-left whitespace-nowrap text-muted-foreground">{unidade ?? ""}</span>
-      <span className="text-right tabular-nums whitespace-nowrap pl-3 text-foreground/80">{brl(v.preco_brl)}</span>
+      <span className="text-right tabular-nums whitespace-nowrap pl-3 text-foreground/80">{solid ? "" : brl(v.preco_brl)}</span>
     </>
   );
 }
@@ -34,13 +35,13 @@ function CelulasVolume({ v }: { v: CatalogoVolume }) {
 export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
   if (!volumes.length) {
     return onAdd ? (
-      <button
+      <Button variant="ghost" size="sm"
         type="button"
         onClick={(e) => { e.stopPropagation(); onAdd(); }}
         className="text-[11px] text-muted-foreground hover:text-primary inline-flex items-center gap-1"
       >
         <Plus className="h-3 w-3" /> adicionar
-      </button>
+      </Button>
     ) : (
       <span className="text-[11px] text-muted-foreground">—</span>
     );
