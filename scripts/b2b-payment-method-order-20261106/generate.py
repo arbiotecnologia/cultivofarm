@@ -339,7 +339,7 @@ BEGIN
       estimated_reference_date, estimated_schedule, estimated_total, created_by)
     VALUES (v_order, v_terms.id, (m->>'organization_id')::uuid, p_partner_id, (m->>'config_id')::uuid, (m->>'version')::integer,
       m->>'method_kind', (m->>'payment_method_id')::uuid, m->>'payment_method_name', (m->>'due_days')::integer, (m->>'installment_count')::integer,
-      (m->>'price_monthly_rate_percent')::numeric, CURRENT_DATE, v_est, v_total);
+      (m->>'price_monthly_rate_percent')::numeric, CURRENT_DATE, v_est, v_total, v_uid);
     INSERT INTO platform_private.b2b_payment_method_order_receipts(partner_id, idempotency_key, actor_id, fingerprint, order_id)
     VALUES (p_partner_id, v_key, v_uid, v_fp, v_order);
   END IF;
