@@ -48,8 +48,13 @@ type TipoFiltro =
   | "pedido_de_simulacao"
   | "simulacao_nao_convertida";
 
+/** Lê o nome do tenant SOMENTE quando o diálogo está aberto — a lista não monta leitura secundária. */
+function WithTenantName({ children }: { children: (name: string | null) => JSX.Element }) {
+  const { name } = useActiveTenantName();
+  return children(name);
+}
+
 export default function SolicitacoesB2B() {
-  const { name: tenantName } = useActiveTenantName();
   const { data: pedidos = [], isLoading: loadingPed, actorScope } = usePartnerOrdersAdmin();
   const { data: sims = [], isLoading: loadingSim } = useComercialSimulacoesAll();
 
@@ -526,13 +531,13 @@ export default function SolicitacoesB2B() {
         </TabsContent>
       </Tabs>
 
-      <DetalhePedidoDrawer
+      {!!openPedido && <WithTenantName>{(tenantName) => <DetalhePedidoDrawer
         empresaNome={tenantName}
         orderId={openPedido}
         open={!!openPedido}
         onOpenChange={(o) => !o && setOpenPedido(null)}
         viewerScope="comercial"
-      />
+      />}</WithTenantName>}
       <DetalheSimulacaoDrawer
         simulationId={openSim}
         open={!!openSim}

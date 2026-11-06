@@ -68,8 +68,13 @@ const STATUS_OPTIONS = [
 ];
 const STATUS_VALUES = STATUS_OPTIONS.map((s) => s.value);
 
+/** Lê o nome do tenant SOMENTE quando o diálogo está aberto — a lista não monta leitura secundária. */
+function WithTenantName({ children }: { children: (name: string | null) => JSX.Element }) {
+  const { name } = useActiveTenantName();
+  return children(name);
+}
+
 export default function PedidosB2B() {
-  const { name: tenantName } = useActiveTenantName();
   const { role, roles = [] } = useAuth();
   const internalEntry = useInternalOrderEntry();
   const canApproveCredit =
@@ -599,12 +604,12 @@ export default function PedidosB2B() {
         </DialogContent>
       </Dialog>
 
-      <TimelinePedidoDialog
+      {timelineOpen && <WithTenantName>{(tenantName) => <TimelinePedidoDialog
         supplierName={tenantName}
         orderId={detail?.id ?? null}
         open={timelineOpen}
         onOpenChange={setTimelineOpen}
-      />
+      />}</WithTenantName>}
 
       <ResponderCotacaoDialog
         open={quoteOpen}
