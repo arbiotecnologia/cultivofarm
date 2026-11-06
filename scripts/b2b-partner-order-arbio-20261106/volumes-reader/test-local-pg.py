@@ -99,7 +99,8 @@ def main():
 
         m = {}
         def case(name, who, partner):
-            err, rows = run(who, partner); m[name] = (err, rows[0]["r"] if (err is None and rows) else None); return m[name]
+            err, rows = run(who, partner)  # v2.call → (código, mensagem) na negação; (None, linhas) no sucesso
+            m[name] = ((err, rows) if err else None, rows[0]["r"] if (err is None and rows) else None); return m[name]
         err, r = case("buyer_P1", "buyer", P1)
         ids = [v["id"] for v in (r or {}).get("volumes", [])]
         chk("buyer_P1_lists_only_catalog_visible_seller_volumes", err is None and sorted(ids) == sorted([VOL["qa_1l"], VOL["fa_20l"], VOL["micro"]]), {"err": err, "ids": ids})
