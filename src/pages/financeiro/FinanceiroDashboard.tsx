@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { PeriodoFilter, defaultPeriodo, validarPeriodo, type PeriodoState } from "@/components/financeiro/bi/PeriodoFilter";
 import { AlertasGestor } from "@/components/financeiro/bi/AlertasGestor";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 type DashSummary = {
   total_receivable_expected: number; total_receivable_received: number;
@@ -80,6 +81,7 @@ function BlocoErro({ mensagem, onTentar, ocupado }: { mensagem: string; onTentar
 }
 
 export default function FinanceiroDashboard() {
+  const { label: tenantLabel } = useActiveTenantName();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [periodo, setPeriodo] = useState<PeriodoState>(defaultPeriodo());
@@ -176,7 +178,7 @@ export default function FinanceiroDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Dashboard Financeiro</h1>
-          <p className="text-sm text-muted-foreground">Visão gerencial — Cultivo Farm</p>
+          <p className="text-sm text-muted-foreground">Visão gerencial — {tenantLabel}</p>
         </div>
         <Button
           variant="outline" size="sm"

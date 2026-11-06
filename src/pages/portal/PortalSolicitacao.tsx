@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle } from "lucide-react";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 const TIPOS = ["Praga", "Doença", "Planta Daninha", "Nematoide", "Solo", "Nutrição Biológica", "Manejo Preventivo", "Outro"];
 const URGENCIAS = [
@@ -24,6 +25,7 @@ const URGENCIAS = [
 ];
 
 export default function PortalSolicitacao() {
+  const { label: tenantLabel } = useActiveTenantName();
   const { clienteId, loading: cl } = usePortalCliente();
   const { user } = useAuth();
   const fence = useStorageAccessScope(`producer-request:${clienteId}`);
@@ -77,7 +79,7 @@ export default function PortalSolicitacao() {
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Solicitação enviada!", description: "A equipe Cultivo Farm receberá sua solicitação em breve." });
+      toast({ title: "Solicitação enviada!", description: `A equipe da ${tenantLabel} receberá sua solicitação em breve.` });
       setForm({ fazenda_id: "", talhao_id: "", tipo_demanda: "", descricao: "", urgencia: "media", solicitante_nome: "", solicitante_contato: "" });
     }
   };

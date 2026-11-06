@@ -6,6 +6,7 @@ import {
   Users, TrendingUp, ClipboardList, Tractor, Building2,
 } from "lucide-react";
 import { HistoricoExportacoes } from "@/components/financeiro/relatorios/HistoricoExportacoes";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 const groups = [
   {
@@ -38,11 +39,12 @@ const groups = [
 ];
 
 export default function FinanceiroRelatorios() {
+  const { label: tenantLabel } = useActiveTenantName();
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Central de Relatórios Financeiros</h1>
-        <p className="text-sm text-muted-foreground">Gere, exporte e audite relatórios financeiros da Cultivo Farm.</p>
+        <p className="text-sm text-muted-foreground">Gere, exporte e audite relatórios financeiros da {tenantLabel}.</p>
       </div>
 
       <Tabs defaultValue="relatorios" className="space-y-4">

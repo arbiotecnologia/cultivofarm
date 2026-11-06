@@ -4,8 +4,10 @@ import { PortalBrandingSettings } from "@/components/portal/PortalBrandingSettin
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Mail, Phone } from "lucide-react";
 import { formatTelefone, formatCpfCnpj } from "@/lib/masks";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export default function PortalPerfil() {
+  const { label: tenantLabel } = useActiveTenantName();
   const { profile } = useAuth();
   const { clienteId, clienteNome, loading } = usePortalCliente();
   const p = profile as any;
@@ -58,7 +60,7 @@ export default function PortalPerfil() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Para suporte técnico ou dúvidas, entre em contato com a equipe Cultivo Farm através do seu consultor técnico responsável.
+            Para suporte técnico ou dúvidas, entre em contato com a equipe da {tenantLabel} através do seu consultor técnico responsável.
           </p>
         </CardContent>
       </Card>

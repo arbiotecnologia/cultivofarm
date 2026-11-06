@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Grid3X3, AlertTriangle, ClipboardList, Truck, Sprout, Stethoscope, FlaskConical } from "lucide-react";
 import { PageHeader } from "@/components/ResponsiveHelpers";
 import { cn } from "@/lib/utils";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export default function PortalDashboard() {
+  const { label: tenantLabel } = useActiveTenantName();
   const { clienteId, clienteNome, loading: clienteLoading } = usePortalCliente();
 
   const { data: stats, isLoading: statsLoading } = useScopedPortalQuery({
@@ -79,7 +81,7 @@ export default function PortalDashboard() {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <AlertTriangle className="h-12 w-12 text-yellow-500" />
-        <p className="text-muted-foreground text-center">Seu perfil ainda não está vinculado a um cadastro de cliente. Entre em contato com a equipe Cultivo Farm.</p>
+        <p className="text-muted-foreground text-center">Seu perfil ainda não está vinculado a um cadastro de cliente. Entre em contato com a equipe da {tenantLabel}.</p>
       </div>
     );
   }

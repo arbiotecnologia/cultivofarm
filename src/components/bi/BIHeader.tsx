@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BILastUpdated } from "./BILastUpdated";
 import { BIExportButton } from "./BIExportButton";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 interface BIHeaderProps {
   lastUpdated: Date;
@@ -11,12 +12,13 @@ interface BIHeaderProps {
 }
 
 export function BIHeader({ lastUpdated, loading, onUpdate }: BIHeaderProps) {
+  const { label: tenantLabel } = useActiveTenantName();
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight flex items-center gap-2">
           <BarChart3 className="h-8 w-8 text-primary" />
-          BI Operacional Cultivo Farm
+          BI Operacional — {tenantLabel}
         </h1>
         <p className="text-sm text-muted-foreground font-medium">
           Indicadores reais de visitas, produção, qualidade e logística.

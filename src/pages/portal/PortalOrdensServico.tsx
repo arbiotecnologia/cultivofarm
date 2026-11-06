@@ -11,6 +11,7 @@ import { Beaker, QrCode, Bell, CheckCircle2, FlaskConical, ArrowRight } from "lu
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export interface PortalOrdensServicoProps {
   embedded?: boolean;
@@ -209,7 +210,7 @@ export default function PortalOrdensServico({
               <div className="flex justify-between items-start border-b pb-4">
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Responsável Técnico</p>
-                  <p className="text-sm font-bold">{selectedLaudo.responsavel || "Laboratório Central Cultivo Farm"}</p>
+                  <p className="text-sm font-bold">{selectedLaudo.responsavel || "Laboratório da empresa responsável"}</p>
                 </div>
                 <div className="text-right">
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">ANÁLISE APROVADA</Badge>

@@ -4,8 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useB2BExecutiveDashboard } from "@/hooks/useB2BFinanceiro";
 import { brl } from "@/lib/financial/format";
 import { Wallet, TrendingUp, TrendingDown, AlertTriangle, Users, Ban, BarChart3, Activity, ShieldCheck as ShieldIcon } from "lucide-react";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export default function DashboardSociosB2B() {
+  const { label: tenantLabel } = useActiveTenantName();
   const { data, isLoading } = useB2BExecutiveDashboard();
   const k = data?.kpis ?? {};
   const f = data?.forecast ?? {};
@@ -16,7 +18,7 @@ export default function DashboardSociosB2B() {
     <div className="p-4 sm:p-6 space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Dashboard Executivo dos Sócios</h1>
-        <p className="text-sm text-muted-foreground">Visão consolidada da operação B2B Cultivo Farm.</p>
+        <p className="text-sm text-muted-foreground">Visão consolidada da operação B2B da {tenantLabel}.</p>
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}

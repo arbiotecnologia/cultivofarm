@@ -14,6 +14,7 @@ import {
   LABEL_CUSTO_HA,
   AVISO_CUSTO_HA_VARIAVEL,
 } from "@/lib/catalogo/formatUnidades";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 interface Props {
   open: boolean;
@@ -142,7 +143,7 @@ export function FichaProdutorDrawer({ open, onOpenChange, itemId, tipo, origem =
           <p className="text-sm text-muted-foreground py-10 text-center">Item não encontrado.</p>
         ) : !ficha.aprovada ? (
           <p className="text-sm text-muted-foreground py-10 text-center px-4 italic">
-            Ficha técnica em validação pela Cultivo Farm. Consulte a equipe técnica para recomendação detalhada.
+            Ficha técnica em validação pela empresa responsável. Consulte a equipe técnica para recomendação detalhada.
           </p>
         ) : (
           <div className="space-y-4 mt-4 text-sm">
