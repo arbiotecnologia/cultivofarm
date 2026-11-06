@@ -979,20 +979,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   revalidateAuthzRef.current = revalidateAuthz;
 
-  const signOut = () => {
+  const signOutOnce = () => {
     const leavingUserId = user?.id ?? null;
     // Single-flight: clique duplicado da MESMA identidade reutiliza a tentativa.
     const inflight = signOutFlightRef.current;
     if (inflight && inflight.userId === leavingUserId) return inflight.promise;
     const attempt = ++signOutAttemptRef.current;
-    const promise = runSignOut(leavingUserId, attempt).finally(() => {
+    const promise = signOut().finally(() => {
       if (signOutFlightRef.current?.attempt === attempt) signOutFlightRef.current = null;
     });
     signOutFlightRef.current = { userId: leavingUserId, attempt, promise };
     return promise;
   };
 
-  const runSignOut = async (leavingUserId: string | null, attempt: number) => {
+  const signOut = async () => {
+    const leavingUserId = user?.id ?? null;
+    const attempt = signOutAttemptRef.current; // fixado pelo single-flight antes da chamada
     // Marca logout VOLUNTÁRIO só para a identidade atual. Não altera readiness
     // (conteúdo continua oculto); apenas troca a mensagem de pausa por "Saindo".
     // Limpeza cercada por tentativa+identidade: promise antiga não apaga marca nova.
@@ -1050,7 +1052,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         loading,
         error,
-        signOut,
+        signOut: signOutOnce,
         refresh,
         authzReady,
         authzEpoch,
