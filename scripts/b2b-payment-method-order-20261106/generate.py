@@ -22,7 +22,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 
 LIVE_PINS = {
     "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "c34e740473afb7a365d362db854069cb",
-    "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e88d7d29467dd7e08b3e5c8c1",
+    "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee",
     "platform_private.b2b_partner_catalog_reader(uuid)": "bd985484b69c8fa6e63a920eff518369",
     "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
     "public.get_partner_order_payment_terms_secure(uuid)": "efb3d18c65088d7d69471fc5aa9ac859",
