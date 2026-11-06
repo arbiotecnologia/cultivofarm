@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -22,9 +21,13 @@ if (typeof window !== "undefined" && typeof Image !== "undefined") {
   preload.src = logoCultivoFarm.url;
 }
 
-/** Skeleton só durante a PRIMEIRA tentativa da config; falhas/retries mostram a marca local. */
-export function shouldShowLogoSkeleton(isLoading: boolean, failureCount: number) {
-  return isLoading && failureCount === 0;
+/**
+ * Marca exibida imediatamente: local enquanto a config está pendente/falhou;
+ * logo configurado assim que disponível; URL customizada que falhar volta à
+ * local (uma vez por URL, sem loop).
+ */
+export function resolveLoginLogo(customUrl: string | null | undefined, failedUrl: string | null) {
+  return customUrl && customUrl !== failedUrl ? customUrl : logoCultivoFarm.url;
 }
 
 export default function Auth() {
@@ -37,10 +40,11 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const { config, defaults, isLoading: configLoading, failureCount: configFailures } = useSystemConfig();
+  const { config, defaults } = useSystemConfig();
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
 
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
-  const logoUrl = config?.logo_url || logoCultivoFarm.url;
+  const logoUrl = resolveLoginLogo(config?.logo_url, failedLogoUrl);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,11 +84,12 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-6">
-            {shouldShowLogoSkeleton(configLoading, configFailures) ? (
-              <Skeleton className="h-36 w-96 rounded-xl" />
-            ) : (
-              <img
+            <img
                 src={logoUrl}
+                onError={() => {
+                  // Só a URL customizada cai para a local; falha da local não reentra.
+                  if (logoUrl !== logoCultivoFarm.url) setFailedLogoUrl(logoUrl);
+                }}
                 alt={nomeEmpresa}
                 width={1111}
                 height={285}
@@ -92,7 +97,7 @@ export default function Auth() {
                 fetchPriority="high"
                 className="h-36 sm:h-44 w-auto max-w-full object-contain"
               />
-            )}
+            
           </div>
           <CardDescription>
             {recovery ? "Recuperar senha" : isLogin ? "Entre na sua conta" : "Crie sua conta"}

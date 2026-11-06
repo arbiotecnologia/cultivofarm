@@ -859,6 +859,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout voluntário: válido apenas enquanto a MESMA identidade ainda está
   // presente. SIGNED_OUT (user=null) ou troca de usuário encerram a marca.
   const [signingOutUserId, setSigningOutUserId] = useState<string | null>(null);
+  const signOutAttemptRef = useRef(0);
+  const signOutFlightRef = useRef<{ userId: string | null; attempt: number; promise: Promise<void> } | null>(null);
   useEffect(() => {
     if (signingOutUserId && signingOutUserId !== user?.id) setSigningOutUserId(null);
   }, [user?.id, signingOutUserId]);
@@ -977,10 +979,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   revalidateAuthzRef.current = revalidateAuthz;
 
-  const signOut = async () => {
+  const signOut = () => {
+    const leavingUserId = user?.id ?? null;
+    // Single-flight: clique duplicado da MESMA identidade reutiliza a tentativa.
+    const inflight = signOutFlightRef.current;
+    if (inflight && inflight.userId === leavingUserId) return inflight.promise;
+    const attempt = ++signOutAttemptRef.current;
+    const promise = runSignOut(leavingUserId, attempt).finally(() => {
+      if (signOutFlightRef.current?.attempt === attempt) signOutFlightRef.current = null;
+    });
+    signOutFlightRef.current = { userId: leavingUserId, attempt, promise };
+    return promise;
+  };
+
+  const runSignOut = async (leavingUserId: string | null, attempt: number) => {
     // Marca logout VOLUNTÁRIO só para a identidade atual. Não altera readiness
     // (conteúdo continua oculto); apenas troca a mensagem de pausa por "Saindo".
-    const leavingUserId = user?.id ?? null;
+    // Limpeza cercada por tentativa+identidade: promise antiga não apaga marca nova.
+    const clearMine = () => {
+      if (!mountedRef.current || signOutAttemptRef.current !== attempt) return;
+      setSigningOutUserId(prev => (prev === leavingUserId ? null : prev));
+    };
     if (leavingUserId) setSigningOutUserId(leavingUserId);
     partnerRenewalRef.current = null;
     partnerDraftRef.current = null;
@@ -1012,11 +1031,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       failed = !!signOutError;
     } catch (err) {
       failed = true;
-      if (mountedRef.current) setSigningOutUserId(null);
+      clearMine();
       throw err;
     }
     // Rejeição: sessão pode continuar; volta ao estado honesto (pausa/retry).
-    if (failed && mountedRef.current) setSigningOutUserId(null);
+    if (failed) clearMine();
   };
 
 
