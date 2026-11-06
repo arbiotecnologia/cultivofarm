@@ -5,7 +5,7 @@ SELECT
   md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) = '64e10608403238a41a9baf92857ca881' AS h15_pin,
   md5(pg_get_functiondef('platform_private.platform_actor_access_ready(uuid)'::regprocedure)) = '048249c0c2106c3761e26eacb8d0de84' AS ready_pin,
   md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure)) = 'c5af5b55de6d79da9b73a33948746ae2' AS has_role_pin,
-  (SELECT array_to_string(proacl, ',') FROM pg_proc WHERE oid = 'public.rpc_commercial_kpis(date,date,uuid,uuid,text)'::regprocedure)
-    = 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' AS kpis_acl,
+  (SELECT array_agg(a ORDER BY a) FROM pg_proc, unnest(proacl::text[]) a WHERE oid = 'public.rpc_commercial_kpis(date,date,uuid,uuid,text)'::regprocedure)
+    = ARRAY['authenticated=X/postgres','postgres=X/postgres','service_role=X/postgres'] AS kpis_acl,
   EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='partner_accounts'
           AND column_name='commercial_owner_organization_id' AND data_type='uuid') AS owner_column;

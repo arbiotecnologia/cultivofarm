@@ -8,6 +8,6 @@ SELECT
   (length(def) - length(replace(def, 'commercial_owner_organization_id = v_org', ''))) / length('commercial_owner_organization_id = v_org') = 3 AS owner_filter_x3,
   prosecdef AS security_definer,
   proconfig = ARRAY['search_path=""'] AS search_path_empty,
-  array_to_string(proacl, ',') = 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres' AS acl_exact,
+  (SELECT array_agg(a ORDER BY a) FROM unnest(proacl::text[]) a) = ARRAY['authenticated=X/postgres','postgres=X/postgres','service_role=X/postgres'] AS acl_exact,
   NOT has_function_privilege('anon', oid, 'EXECUTE') AS anon_denied
 FROM f;
