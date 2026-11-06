@@ -64,6 +64,22 @@ const emptyForm: AssignmentInput = {
   motivo: null,
 };
 
+type PublishConfirmation = {
+  assignment: PlanAssignment;
+  conditionLabel: string;
+  destinationLabel: string;
+  scope: string;
+};
+
+const PUBLISH_CONTEXT_ERROR = "A sessão, a empresa, o perfil ou a atribuição mudou desde a abertura. Feche esta janela e abra a publicação novamente após a revalidação do acesso.";
+
+function samePublishTarget(current: PlanAssignment | undefined, expected: PlanAssignment) {
+  return !!current && current.id === expected.id && current.plan_id === expected.plan_id
+    && current.buyer_scope === expected.buyer_scope && current.partner_id === expected.partner_id
+    && current.customer_id === expected.customer_id && current.status === expected.status
+    && current.valid_from === expected.valid_from && current.valid_until === expected.valid_until;
+}
+
 export function AtribuicoesPlanosTab() {
   const { roles } = useAuth();
   const canPublish = roles.includes("administrador") || roles.includes("financeiro");
