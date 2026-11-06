@@ -1,0 +1,780 @@
+{
+"partner_order_idempotency": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "partner_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "idempotency_key",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 4,
+"col": "cart_hash",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 5,
+"col": "order_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 6,
+"col": "result_snapshot",
+"dflt": "'{}'::jsonb",
+"nn": true,
+"typ": "jsonb"
+},
+{
+"n": 7,
+"col": "created_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 8,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 9,
+"col": "updated_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 10,
+"col": "request_fingerprint",
+"dflt": null,
+"nn": false,
+"typ": "text"
+}
+],
+"partner_order_items": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "order_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "product_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 4,
+"col": "quantidade",
+"dflt": null,
+"nn": true,
+"typ": "numeric(12,2)"
+},
+{
+"n": 5,
+"col": "preco_unitario",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(12,2)"
+},
+{
+"n": 6,
+"col": "desconto_percentual",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(5,2)"
+},
+{
+"n": 7,
+"col": "subtotal",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(12,2)"
+},
+{
+"n": 8,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 9,
+"col": "produto_nome_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 10,
+"col": "produto_codigo_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 11,
+"col": "preco_tabela_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "numeric(12,2)"
+},
+{
+"n": 12,
+"col": "desconto_percentual_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "numeric(5,2)"
+},
+{
+"n": 13,
+"col": "preco_unitario_final_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "numeric(12,2)"
+},
+{
+"n": 14,
+"col": "unidade_medida",
+"dflt": "'unidade'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 15,
+"col": "microrganismo_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 16,
+"col": "volume_ml",
+"dflt": null,
+"nn": false,
+"typ": "numeric(12,2)"
+},
+{
+"n": 17,
+"col": "pricing_mode_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 18,
+"col": "price_source_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 19,
+"col": "base_price_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 20,
+"col": "condition_price_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 21,
+"col": "plan_discount_percent_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "numeric(9,4)"
+},
+{
+"n": 22,
+"col": "unit_type_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 23,
+"col": "volume_ml_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "numeric(12,2)"
+},
+{
+"n": 24,
+"col": "price_rule_id_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+}
+],
+"partner_order_payment_terms": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "partner_order_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "payment_plan_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 4,
+"col": "plan_name_snapshot",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 5,
+"col": "plan_code_snapshot",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 6,
+"col": "discount_percent_snapshot",
+"dflt": null,
+"nn": true,
+"typ": "numeric(6,3)"
+},
+{
+"n": 7,
+"col": "monthly_interest_percent_snapshot",
+"dflt": null,
+"nn": true,
+"typ": "numeric(6,3)"
+},
+{
+"n": 8,
+"col": "months_count_snapshot",
+"dflt": null,
+"nn": true,
+"typ": "numeric(6,2)"
+},
+{
+"n": 9,
+"col": "installment_count",
+"dflt": "1",
+"nn": true,
+"typ": "integer"
+},
+{
+"n": 10,
+"col": "first_due_date",
+"dflt": null,
+"nn": true,
+"typ": "date"
+},
+{
+"n": 11,
+"col": "interest_type_snapshot",
+"dflt": "'compound'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 12,
+"col": "table_amount",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(14,2)"
+},
+{
+"n": 13,
+"col": "discount_amount",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(14,2)"
+},
+{
+"n": 14,
+"col": "net_amount_after_discount",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(14,2)"
+},
+{
+"n": 15,
+"col": "financial_interest_amount",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(14,2)"
+},
+{
+"n": 16,
+"col": "final_amount",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(14,2)"
+},
+{
+"n": 17,
+"col": "approval_status",
+"dflt": "'not_required'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 18,
+"col": "approved_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 19,
+"col": "approved_at",
+"dflt": null,
+"nn": false,
+"typ": "timestamp with time zone"
+},
+{
+"n": 20,
+"col": "approval_notes",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 21,
+"col": "created_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 22,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 23,
+"col": "updated_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 24,
+"col": "pricing_mode_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 25,
+"col": "credit_decision_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+}
+],
+"partner_orders": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "numero",
+"dflt": "('PB-'::text || lpad((nextval('partner_orders_numero_seq'::regclass))::text, 6, '0'::text))",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 3,
+"col": "partner_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 4,
+"col": "status",
+"dflt": "'pendente'::partner_order_status",
+"nn": true,
+"typ": "partner_order_status"
+},
+{
+"n": 5,
+"col": "subtotal",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(12,2)"
+},
+{
+"n": 6,
+"col": "desconto_total",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(12,2)"
+},
+{
+"n": 7,
+"col": "total",
+"dflt": "0",
+"nn": true,
+"typ": "numeric(12,2)"
+},
+{
+"n": 8,
+"col": "observacoes",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 9,
+"col": "created_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 10,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 11,
+"col": "updated_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 12,
+"col": "approved_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 13,
+"col": "approved_at",
+"dflt": null,
+"nn": false,
+"typ": "timestamp with time zone"
+},
+{
+"n": 14,
+"col": "approval_notes",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 15,
+"col": "requested_delivery_date",
+"dflt": null,
+"nn": false,
+"typ": "date"
+},
+{
+"n": 16,
+"col": "estimated_delivery_date",
+"dflt": null,
+"nn": false,
+"typ": "date"
+},
+{
+"n": 17,
+"col": "commercial_notes",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 18,
+"col": "ready_for_production",
+"dflt": "false",
+"nn": true,
+"typ": "boolean"
+},
+{
+"n": 19,
+"col": "future_financial_link",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 20,
+"col": "financial_status",
+"dflt": "'pendente'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 21,
+"col": "receivable_generated",
+"dflt": "false",
+"nn": true,
+"typ": "boolean"
+},
+{
+"n": 22,
+"col": "receivable_generated_at",
+"dflt": null,
+"nn": false,
+"typ": "timestamp with time zone"
+},
+{
+"n": 23,
+"col": "receivable_generated_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 24,
+"col": "payment_due_date",
+"dflt": null,
+"nn": false,
+"typ": "date"
+},
+{
+"n": 25,
+"col": "payment_method",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 26,
+"col": "credit_block_reason",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 27,
+"col": "credit_approved_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 28,
+"col": "credit_approved_at",
+"dflt": null,
+"nn": false,
+"typ": "timestamp with time zone"
+},
+{
+"n": 29,
+"col": "credit_approval_notes",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 30,
+"col": "priority",
+"dflt": "'normal'::partner_order_priority",
+"nn": true,
+"typ": "partner_order_priority"
+},
+{
+"n": 31,
+"col": "itens_pendentes_motivo",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 32,
+"col": "itens_pendentes_solicitado_em",
+"dflt": null,
+"nn": false,
+"typ": "timestamp with time zone"
+},
+{
+"n": 33,
+"col": "itens_pendentes_solicitado_por",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 34,
+"col": "itens_pendentes_resolvido_em",
+"dflt": null,
+"nn": false,
+"typ": "timestamp with time zone"
+},
+{
+"n": 35,
+"col": "cultura",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 36,
+"col": "area_total_ha",
+"dflt": null,
+"nn": false,
+"typ": "numeric"
+},
+{
+"n": 37,
+"col": "origin_simulation_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 38,
+"col": "cliente_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 39,
+"col": "payment_plan_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 40,
+"col": "payment_terms_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 41,
+"col": "payment_condition_status",
+"dflt": "'pending'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 42,
+"col": "table_amount",
+"dflt": "0",
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 43,
+"col": "commercial_discount_amount",
+"dflt": "0",
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 44,
+"col": "net_amount_after_discount",
+"dflt": "0",
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 45,
+"col": "financial_interest_amount",
+"dflt": "0",
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 46,
+"col": "final_amount_with_interest",
+"dflt": "0",
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 47,
+"col": "requires_financial_approval",
+"dflt": "false",
+"nn": true,
+"typ": "boolean"
+},
+{
+"n": 48,
+"col": "financial_approval_status",
+"dflt": "'not_required'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 49,
+"col": "internal_origin_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+},
+{
+"n": 50,
+"col": "internal_economic_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+},
+{
+"n": 51,
+"col": "c2_external_origin_snapshot",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+}
+]
+}
