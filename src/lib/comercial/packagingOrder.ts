@@ -22,8 +22,38 @@ export interface PackagingOffer {
   preco_tabela_brl: number;
 }
 export type PackagingOffersByProduct = Map<string, PackagingOffer[]>;
+export interface PackagingCatalog {
+  offers: PackagingOffersByProduct;
+  /** Produtos sólidos (kg/g) confirmados pelo servidor, com ou sem oferta vigente. */
+  solidProducts: Set<string>;
+}
 
+export function parsePackagingCatalog(raw: unknown, partnerId: string): PackagingCatalog {
+  const fail = () => { throw new Error("packaging_contract_unavailable"); };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) fail();
+  const d = raw as Record<string, unknown>;
+  if (Object.keys(d).sort().join(",") !== "contract,offers,partner_id,solid_products" || !Array.isArray(d.solid_products)) fail();
+  const solidProducts = new Set<string>();
+  for (const r of d.solid_products as unknown[]) {
+    if (!r || typeof r !== "object" || Array.isArray(r)) fail();
+    const o = r as Record<string, unknown>;
+    if (Object.keys(o).sort().join(",") !== "product_id,unidade_conteudo" || typeof o.product_id !== "string" || !UUID.test(o.product_id) ||
+        (o.unidade_conteudo !== "kg" && o.unidade_conteudo !== "g") || solidProducts.has(o.product_id)) fail();
+    solidProducts.add(o.product_id as string);
+  }
+  const { solid_products: _s, ...rest } = d;
+  const offers = parseOffersEnvelope(rest, partnerId);
+  // Toda oferta precisa pertencer a um sólido confirmado (kg/g) ou ser ml/l explícito; nunca o inverso silencioso.
+  for (const [pid, list] of offers) if (list.some((o) => (o.unidade_conteudo === "kg" || o.unidade_conteudo === "g")) && !solidProducts.has(pid)) fail();
+  return { offers, solidProducts };
+}
+
+/** Compat: só ofertas (envelope com solid_products). */
 export function parsePackagingOffers(raw: unknown, partnerId: string): PackagingOffersByProduct {
+  return parsePackagingCatalog(raw, partnerId).offers;
+}
+
+function parseOffersEnvelope(raw: unknown, partnerId: string): PackagingOffersByProduct {
   const fail = () => { throw new Error("packaging_contract_unavailable"); };
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) fail();
   const d = raw as Record<string, unknown>;
