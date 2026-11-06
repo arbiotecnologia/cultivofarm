@@ -67,6 +67,8 @@ beforeEach(() => {
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
     if (name === "log_my_access_denied_secure") return response(null);
+    // Pré-instalação: leitor escopado ausente (PGRST202) mantém a leitura de volumes anterior.
+    if (name === "get_partner_catalog_volumes_secure") { const p = Promise.resolve({ data: null, error: { code: "PGRST202", message: "absent" } }); return Object.assign(p, { abortSignal: () => p }); }
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
       produto_nome: `Produto ${state.tenant}/${args?.p_partner_id}`, produto_codigo: "LOCAL", familia_catalogo: "biologico",
