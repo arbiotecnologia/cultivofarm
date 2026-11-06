@@ -4,3 +4,5 @@
 - The packaging pricing-mode mapping (discount_from_base applied to packaging base, quote_only allowed, fixed_item_price fail-closed) is an unreviewed commercial assumption until the owner confirms it — prevents silent commercial policy.
 - Local test pins of synthetic seams are swapped only in a temp copy and declared; real captured bodies keep LIVE pins — disposable PG never proves hosted JWT/RLS.
 - Frontend opens packaging only after the exact reader contract; PGRST202 naming the endpoint means not installed (closed), every other error fails closed; liquid fingerprints stay byte-identical.
+- Real-trigger PG rounds load captured LIVE trigger bodies unchanged; only declared seams may replace dependencies, and the C2 owner-order gate seam is an assumption, never proof — prevents disabling guards to pass.
+- Buyer UI opens the liquid dialog only on exact pre-install absence or a server-confirmed non-solid; loading/error/invalid/unpriced solids show explicit states, drafts keep revalidated packaging and templates with packaging are blocked whole — prevents silent line loss or solid-as-liquid.

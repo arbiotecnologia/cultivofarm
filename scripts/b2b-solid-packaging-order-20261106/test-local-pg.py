@@ -15,6 +15,9 @@ gatilhos de partner_orders omitidos; exclusão GiST de catalogo_precos_embalagem
 Escopo: vendedor sintético "AR Bio" e um segundo tenant sintético; nenhum dado real, nenhuma FSF.
 """
 import hashlib, json, os, pathlib, shutil, subprocess, sys, tempfile, threading, time
+REAL = os.environ.get("B2BPACK_REAL_TRIGGERS") == "1"
+if REAL:
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent)); import real_triggers as RT
 
 HERE = pathlib.Path(__file__).resolve().parent
 CAP = HERE / "captured"
@@ -298,26 +301,34 @@ def main():
     subprocess.run(su() + ["pg_ctl", "-D", str(tmp / "d"), "-o", f"-p {PORT} -k {tmp} -c listen_addresses=''", "-l", str(tmp / "log"), "-w", "start"],
                    check=True, capture_output=True)
     rep = {"kind": "disposable_pg", "hosted": False, "remote_writes": False, "package": "B2B_PARTNER_PACKAGING_ORDER_V1",
-           "postgres": None, "real_bodies": sorted(p.name for p in CAP.iterdir()),
+           "postgres": None, "real_bodies": sorted(p.name for p in CAP.iterdir() if p.is_file()),
            "synthetic_seams": ["auth.uid por GUC", "has_role/get_user_partner_id/is_platform_superadmin/b2b_actor_scope sobre tabelas mínimas",
                                "c2_* guards e journal mínimos", "crédito sem limite, juros 0, plano selecionável",
                                "get_partner_catalog_secure chama o leitor REAL", "fn_catalogo_preco_canonico mínimo",
-                               "demais gatilhos de partner_orders omitidos", "exclusão GiST omitida"]}
+                               "demais gatilhos de partner_orders omitidos", "exclusão GiST omitida",
+                               "sem RLS/policies (partner_order_items com GRANT direto): não prova RLS", "sem JWT/PostgREST"]}
     ok = True; checks = {}
 
     def chk(name, cond, detail=None):
+        if not cond and os.environ.get("B2BPACK_DEBUG"): print("DEBUG", name, detail)
         nonlocal ok
         checks[name] = {"pass": bool(cond), **({"detail": detail} if detail is not None else {})}; ok &= bool(cond)
     try:
         psql("CREATE DATABASE t", db="postgres")
         rep["postgres"] = psql("SHOW server_version").stdout.strip()
         psql(SCHEMA)
+        if REAL:
+            psql(RT.real_tables_sql())
         for name in ("public.fn_resolve_commercial_price", "public.recorte_a_legacy_solid", "platform_private.b2b_partner_catalog_reader",
                      "platform_private.solid_pack_presentation_link", "platform_private.partner_order_items_catalog_tenant_guard",
                      "public.fn_b2b_guard_order_items_immutable", "public.fn_resolve_b2b_cart", "public.fn_b2b_cart_hash",
                      "public.create_partner_order_secure", "public.simulate_b2b_payment_plan_secure", "public.respond_b2b_order_quote_secure"):
             psql(cap(name))
         psql(CATALOG_SEAM + REAL_TRIGGERS)
+        if REAL:
+            psql(RT.real_triggers_sql())
+            rep["synthetic_seams"] = [x for x in rep["synthetic_seams"] if x not in ("demais gatilhos de partner_orders omitidos", "exclusão GiST omitida")] + RT.SEAMS_DECLARED
+            rep["real_triggers"] = sorted(p.name for p in (CAP / "triggers").rglob("*.sql"))
         # ACL igual à LIVE para as funções substituídas/pinadas
         psql("""REVOKE ALL ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text), public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date),
                  public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text), public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date), public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric),
@@ -327,6 +338,8 @@ def main():
                 GRANT EXECUTE ON FUNCTION public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date), public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) TO authenticated, service_role;
                 GRANT EXECUTE ON FUNCTION public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date), public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric) TO service_role;""")
         psql(FIXTURES)
+        if REAL:
+            psql(RT.fixtures_sql([UB, UT, UB2, UADM, UADMF, UINACT, UCONS, USUP]))
 
         # ---------- ANTES: linha líquida de referência e sólido bloqueado pelo legado
         before_liq = j(sim(UB, PLD, items(L())))
@@ -343,6 +356,8 @@ def main():
 
         # ---------- leitor
         rd = j(as_user(UB, f"SELECT public.get_partner_packaging_offers_secure('{P}')::text;"))
+        sol_ids = sorted(x["product_id"] for x in (rd or {}).get("solid_products", []))
+        chk("reader.solid_products_without_price_listed", sol_ids == sorted([SOL]) and all(set(x) == {"product_id", "unidade_conteudo"} for x in rd["solid_products"]), sol_ids)
         ids = sorted(o["packaging_id"] for o in (rd or {}).get("offers", []))
         chk("reader.buyer_exact_offers", rd and rd["contract"] == "B2B_PARTNER_PACKAGING_ORDER_V1" and ids == sorted([PK25, PK40]), ids)
         chk("reader.offer_fields", rd and all(set(o) == {"product_id", "unidade_conteudo", "packaging_id", "codigo", "descricao", "rotulo", "peso_liquido_kg",
@@ -389,8 +404,8 @@ def main():
 
         # ---------- criação, snapshot, replay e conflitos
         h = s1["cart_hash"]
-        c1 = j(create(UB, PLD, items(S()), h, "TESTE-PED-20261106-K1"))
-        chk("create.solid_ok", c1 and float(c1["total"]) == 324 and c1["status"] == "em_analise_comercial", c1)
+        r1 = create(UB, PLD, items(S()), h, "TESTE-PED-20261106-K1"); c1 = j(r1)
+        chk("create.solid_ok", c1 and float(c1["total"]) == 324 and c1["status"] == "em_analise_comercial", c1 or err(r1))
         row = psql(f"""SELECT row_to_json(i)::text FROM (SELECT quantidade, preco_unitario, subtotal, unidade_medida, volume_ml, packaging_id_snapshot,
                  packaging_codigo_snapshot, packaging_version_snapshot, packaging_peso_liquido_kg_snapshot, packaging_unidade_conteudo_snapshot,
                  packaging_price_id_snapshot, price_source_snapshot, base_price_snapshot FROM public.partner_order_items WHERE order_id = '{c1['id']}') i""").stdout.strip()
@@ -421,10 +436,21 @@ def main():
         chk("create.liquid_no_regression", cl and float(cl["total"]) == 2.70)
 
         # ---------- preço alterado depois da simulação
-        hs = j(sim(UB, PLD, items(S(q=1))))["cart_hash"]
-        psql(f"UPDATE public.catalogo_precos_embalagem SET preco_brl = 200 WHERE id = '{PR25}'")
-        r = create(UB, PLD, items(S(q=1)), hs, "TESTE-PED-20261106-PCH"); chk("price_changed_after_simulation", "price_changed" in (err(r) or ""), err(r))
-        psql(f"UPDATE public.catalogo_precos_embalagem SET preco_brl = 180 WHERE id = '{PR25}'")
+        # Embalagem própria do cenário; troca de preço pelo mecanismo REAL (preço é imutável: fecha a vigência e cria nova linha).
+        PKPC, PRPC = u(57), u(65)
+        psql(f"""BEGIN;
+          INSERT INTO public.catalogo_volumes VALUES ('{PKPC}','produto','{SOL}',NULL,NULL,'Saco 10 kg',0.01,true,'{A}','embalagem');
+          INSERT INTO public.product_packagings(id,product_id,owner_organization_id,codigo,descricao,peso_liquido_kg,version,ativo) VALUES ('{PKPC}','{SOL}','{A}','SC10','Saco 10 kg',10,1,true);
+          INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) VALUES ('{PRPC}','{SOL}','{A}','{PKPC}',60,current_date - 2);
+          COMMIT;""")
+        hs = j(sim(UB, PLD, items(S(PKPC, 1))))["cart_hash"]
+        psql(f"""BEGIN; UPDATE public.catalogo_precos_embalagem SET valid_until = current_date - 1 WHERE id = '{PRPC}';
+          INSERT INTO public.catalogo_precos_embalagem(produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) VALUES ('{SOL}','{A}','{PKPC}',70,current_date); COMMIT;""")
+        r = create(UB, PLD, items(S(PKPC, 1)), hs, "TESTE-PED-20261106-PCH"); chk("price_changed_after_simulation", "price_changed" in (err(r) or ""), err(r))
+        r = psql(f"UPDATE public.catalogo_precos_embalagem SET preco_brl = 1 WHERE id = '{PRPC}'", check=False)
+        chk("price_row_immutable_or_unguarded", r.returncode != 0 if REAL else True, err(r))
+        r = psql(f"INSERT INTO public.catalogo_precos_embalagem(produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) VALUES ('{SOL}','{A}','{PKPC}',80,current_date)", check=False)
+        chk("price_overlap_rejected_gist", (r.returncode != 0 and "cpe_no_overlap" in r.stderr) if REAL else True, err(r))
 
         # ---------- cotação: snapshot de embalagem preservado
         qs = j(sim(UB, PLQ, items(S())))
@@ -447,7 +473,26 @@ def main():
         chk("snapshot.forged_weight_rejected", r.returncode != 0 and "SNAPSHOT_MISMATCH" in r.stderr, err(r))
         r = psql(f"""INSERT INTO public.partner_order_items(order_id,product_id,quantidade,unidade_medida,packaging_id_snapshot,packaging_codigo_snapshot,packaging_version_snapshot,
                  packaging_peso_liquido_kg_snapshot,packaging_unidade_conteudo_snapshot,packaging_price_id_snapshot) VALUES ('{cl['id']}','{SOL}',1.5,'unidade','{PK25}','SC25',1,25,'kg','{PR25}')""", check=False)
-        chk("snapshot.fraction_rejected", r.returncode != 0 and "poi_packaging_snapshot_shape" in r.stderr, err(r))
+        chk("snapshot.fraction_rejected", r.returncode != 0 and ("poi_packaging_snapshot_shape" in r.stderr or (REAL and "auth_required" in r.stderr)), err(r))
+        # ---------- CHECK poi_packaging_snapshot_shape ISOLADO (gatilhos desligados só nesta sessão postgres): nenhum NULL vira UNKNOWN aceito
+        good = dict(product_id=f"'{SOL}'", quantidade="2", unidade_medida="'unidade'", packaging_id_snapshot=f"'{PK25}'", packaging_codigo_snapshot="'SC25'",
+                    packaging_version_snapshot="1", packaging_peso_liquido_kg_snapshot="25", packaging_unidade_conteudo_snapshot="'kg'", packaging_price_id_snapshot=f"'{PR25}'")
+        def ins(over):
+            row = {**good, **over}
+            return psql("SET session_replication_role = replica; INSERT INTO public.partner_order_items(order_id," + ",".join(row) + f") VALUES ('{cl['id']}'," + ",".join(row.values()) + ");", check=False)
+        demo = psql("CREATE TEMP TABLE old_shape(x int, v int, CHECK ((x IS NULL AND v IS NULL) OR (x IS NOT NULL AND v >= 1))); INSERT INTO old_shape VALUES (1, NULL); SELECT count(*) FROM old_shape;", check=False)
+        chk("check.before_defect_reproduced_unknown_accepted", demo.returncode == 0 and demo.stdout.strip().endswith("1"), err(demo))
+        r = ins({}); chk("check.valid_row_accepted", r.returncode == 0, err(r))
+        for col, val in (("packaging_codigo_snapshot", "NULL"), ("packaging_codigo_snapshot", "'  '"), ("packaging_version_snapshot", "NULL"), ("packaging_version_snapshot", "0"),
+                         ("packaging_peso_liquido_kg_snapshot", "NULL"), ("packaging_peso_liquido_kg_snapshot", "0"), ("packaging_unidade_conteudo_snapshot", "NULL"),
+                         ("packaging_unidade_conteudo_snapshot", "'un'"), ("packaging_price_id_snapshot", "NULL"), ("quantidade", "1.5"), ("unidade_medida", "'litro'"),
+                         ("volume_ml", "1000"), ("volume_ml_snapshot", "1000")):
+            r = ins({col: val}); chk(f"check.insert_rejected.{col}={val.strip(chr(39)) or 'blank'}", r.returncode != 0 and "poi_packaging_snapshot_shape" in r.stderr, err(r))
+        vid = psql(f"SELECT id FROM public.partner_order_items WHERE order_id = '{cl['id']}' AND packaging_id_snapshot IS NOT NULL ORDER BY created_at DESC LIMIT 1").stdout.strip()
+        for col in ("packaging_codigo_snapshot", "packaging_version_snapshot", "packaging_peso_liquido_kg_snapshot", "packaging_unidade_conteudo_snapshot", "packaging_price_id_snapshot"):
+            r = psql(f"SET session_replication_role = replica; UPDATE public.partner_order_items SET {col} = NULL WHERE id = '{vid}';", check=False)
+            chk(f"check.update_null_rejected.{col}", r.returncode != 0 and "poi_packaging_snapshot_shape" in r.stderr, err(r))
+        psql(f"SET session_replication_role = replica; DELETE FROM public.partner_order_items WHERE id = '{vid}';")
 
         # ---------- concorrência: arquivar/trocar preço espera o pedido; chaves iguais em paralelo => 1 pedido
         hc = j(sim(UB, PLD, items(S(PK40, 1))))["cart_hash"]
@@ -455,16 +500,40 @@ def main():
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         holder_sql = (f"BEGIN; SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','{UB}',false);\n"
                       f"SELECT (public.create_partner_order_secure('{P}',NULL,'{items(S(PK40, 1))}'::jsonb,NULL,'{PLD}',NULL,NULL,'{hc}','TESTE-PED-20261106-CC'))->>'id';\n"
-                      "SELECT pg_sleep(3); COMMIT;\n")
+                      "SELECT pg_sleep(6); COMMIT;\n")
         th = threading.Thread(target=lambda: holder.communicate(holder_sql)); th.start(); time.sleep(1.2)
         r1 = psql(f"SET lock_timeout='400ms'; UPDATE public.catalogo_precos_embalagem SET valid_until = current_date WHERE id = '{PR40}'", check=False)
         r2 = psql(f"SET lock_timeout='400ms'; UPDATE public.product_packagings SET descricao = 'x' WHERE id = '{PK40}'", check=False)
+        r4 = psql(f"SET lock_timeout='400ms'; UPDATE public.produtos SET b2b_enabled = false WHERE id = '{SOL}'", check=False)
+        r5 = psql(f"SET lock_timeout='400ms'; UPDATE public.product_sale_units SET version = version + 1 WHERE product_id = '{SOL}'", check=False)
+        r6 = psql(f"SET lock_timeout='400ms'; UPDATE public.catalogo_volumes SET ativo = false WHERE id = '{PK40}'", check=False)
         r3 = j(create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-CC"))   # mesma chave em paralelo: espera e devolve replay
         th.join()
         n_cc = psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key = 'TESTE-PED-20261106-CC'").stdout.strip()
         chk("concurrency.price_row_locked", r1.returncode != 0 and "lock timeout" in r1.stderr, err(r1))
         chk("concurrency.packaging_row_locked", r2.returncode != 0 and "lock timeout" in r2.stderr, err(r2))
         chk("concurrency.same_key_single_order", r3 is not None and n_cc == "1", (r3, n_cc))
+        for nm, rr in (("product_b2b_disable", r4), ("sale_unit_change", r5), ("volume_deactivate", r6)):
+            chk(f"concurrency.{nm}_waits_for_order", rr.returncode != 0 and "lock timeout" in rr.stderr, err(rr))
+        # Depois do commit: a mesma alteração ocorre e o PRÓXIMO pedido vê o estado final (sem pedido incoerente).
+        psql(f"UPDATE public.produtos SET b2b_enabled = false WHERE id = '{SOL}'")
+        r = create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-B2BOFF")
+        chk("concurrency.after_b2b_disable_rejected", r.returncode != 0, err(r))
+        psql(f"UPDATE public.produtos SET b2b_enabled = true WHERE id = '{SOL}'")
+        # Corrida real em 2 conexões na direção oposta: alteração commitada ANTES do pedido terminar de travar => pedido recusado, nunca parcial.
+        blocker = subprocess.Popen(su() + ["psql", "-X", "-q", "-t", "-A", "-h", SOCK[0], "-p", PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1"],
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        th2 = threading.Thread(target=lambda: blocker.communicate(
+            f"BEGIN; UPDATE public.product_sale_units SET unidade_conteudo = 'g' WHERE product_id = '{SOL}'; SELECT pg_sleep(2); COMMIT;\n"))
+        th2.start(); time.sleep(0.8)
+        hb = hc
+        rb = create(UB, PLD, items(S(PK40, 1)), hb, "TESTE-PED-20261106-UNITCHG")   # espera o commit da troca de unidade e revalida
+        th2.join()
+        nb = psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key = 'TESTE-PED-20261106-UNITCHG'").stdout.strip()
+        chk("concurrency.unit_change_committed_first_not_mixed", (rb.returncode != 0 and nb == "0") or
+            (rb.returncode == 0 and psql(f"SELECT packaging_unidade_conteudo_snapshot FROM public.partner_order_items i JOIN public.partner_order_idempotency x ON x.order_id = i.order_id WHERE x.idempotency_key = 'TESTE-PED-20261106-UNITCHG'").stdout.strip() == "g"),
+            (err(rb), nb))
+        psql(f"UPDATE public.product_sale_units SET unidade_conteudo = 'kg' WHERE product_id = '{SOL}'")
         psql(f"BEGIN; UPDATE public.product_packagings SET ativo = false WHERE id = '{PK40}'; UPDATE public.catalogo_volumes SET ativo = false WHERE id = '{PK40}'; COMMIT;")
         r = create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-ARQ"); chk("archived_after_simulation_rejected", "B2B_PACKAGING_INACTIVE" in (err(r) or ""), err(r))
 
@@ -487,7 +556,7 @@ def main():
         shutil.rmtree(tmp, ignore_errors=True)
     rep["checks"] = checks; rep["result"] = "PASS" if ok else "FAIL"
     rep["passed"] = sum(1 for c in checks.values() if c["pass"]); rep["total"] = len(checks)
-    (HERE / "evidence-local-pg.json").write_text(json.dumps(rep, indent=2, ensure_ascii=False) + "\n")
+    (HERE / ("evidence-local-pg-real-triggers.json" if REAL else "evidence-local-pg.json")).write_text(json.dumps(rep, indent=2, ensure_ascii=False) + "\n")
     for k, v in checks.items():
         if not v["pass"]:
             print("FAIL", k, v.get("detail"))

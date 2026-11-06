@@ -166,11 +166,31 @@ export default function NovoPedido() {
   // Rebuild only choices present in the freshly authorized catalogue/volumes.
   useEffect(() => {
     if (renewalApplied.current || !catalogGestor.isSuccess || !volumes.isSuccess || isSimulationMode) return;
+    // Embalagens do rascunho só se restauram contra o leitor de embalagens já resolvido (dados ou erro).
+    if (!packagingOffers.data && !packagingOffers.isError) return;
     renewalApplied.current = true;
     const draft = takeSafePartnerOrderDraft?.();
     if (!draft || draft.partnerId !== partner?.id) return;
     const next: Record<string, CartItem> = {};
+    let droppedPackaging = 0;
     for (const choice of draft.items) {
+      if ("packagingId" in choice) {
+        // Revalida tenant/contrato/preço: só volta se a MESMA embalagem segue ofertada agora pelo vendedor autorizado.
+        const item = catalogMap.get(choice.itemId);
+        const offer = packagingOffers.data?.state === "available"
+          ? packagingOffers.data.offers.get(choice.itemId)?.find((o) => o.packaging_id === choice.packagingId) : undefined;
+        if (!item || item.item_tipo !== "produto" || !offer || !isWholePackagingQty(choice.quantity)) { droppedPackaging++; continue; }
+        const preco = offer.preco_tabela_brl;
+        next[`${choice.itemId}::pk::${offer.packaging_id}`] = {
+          item_id: item.item_id, item_tipo: "produto", product_id: item.product_id, nome: item.nome,
+          quantidade: choice.quantity, preco_unitario: preco, desconto_percentual: 0, subtotal: round2(preco * choice.quantity),
+          preco_unitario_cheio: preco, subtotal_cheio: round2(preco * choice.quantity),
+          unidade_pedido: "embalagem", volume_id: null, volume_ml: null, volume_rotulo: packagingLabel(offer),
+          area_ha: null, packaging_id: offer.packaging_id, peso_liquido_kg: offer.peso_liquido_kg,
+          unidade_conteudo: offer.unidade_conteudo,
+        };
+        continue;
+      }
       const item = catalogMap.get(choice.itemId);
       const volume = volumes.data.porProdutoId.get(choice.itemId)?.find(v => v.id === choice.volumeId) ??
         volumes.data.porMicrorganismoId.get(choice.itemId)?.find(v => v.id === choice.volumeId);
@@ -187,25 +207,31 @@ export default function NovoPedido() {
       };
     }
     setCart(next);
+    if (droppedPackaging > 0) {
+      toast.warning(`${droppedPackaging} embalagem(ns) do rascunho não puderam ser confirmadas agora (indisponível, sem preço vigente ou leitura com erro) e não foram restauradas.`);
+    }
     // A data desejada é escolha volátil do usuário: restaura só se ainda válida;
     // uma data vencida/inválida é descartada em vez de enviada silenciosamente.
     if (draft.requestedDeliveryDate && isDeliveryDateValid(draft.requestedDeliveryDate)) {
       setRequestedDate(draft.requestedDeliveryDate);
     }
     if (draft.addItemId) setAddRow(partnerCatalogRows(catalog).find(row => row.id === draft.addItemId) ?? null);
-  }, [catalogGestor.isSuccess, catalog, catalogMap, volumes.isSuccess, volumes.data, isSimulationMode, partner?.id, takeSafePartnerOrderDraft]);
+  }, [catalogGestor.isSuccess, catalog, catalogMap, volumes.isSuccess, volumes.data, isSimulationMode, partner?.id, takeSafePartnerOrderDraft,
+      packagingOffers.data, packagingOffers.isError]);
   useEffect(() => {
     setSafePartnerOrderDraft?.(!isSimulationMode && partner?.id ? {
       partnerId: partner.id, addItemId: addRow?.id ?? null,
       requestedDeliveryDate: requestedDate || null,
-      items: Object.values(cart).filter(item => item.volume_id && item.quantidade > 0).map(item => ({
-        itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade,
-      })),
+      items: Object.values(cart).filter(item => item.quantidade > 0 && (item.volume_id || item.packaging_id)).map(item =>
+        item.unidade_pedido === "embalagem" && item.packaging_id
+          ? { itemId: item.item_id, packagingId: item.packaging_id, quantity: item.quantidade }
+          : { itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade }),
     } : null);
     return () => setSafePartnerOrderDraft?.(null);
   }, [cart, addRow?.id, requestedDate, isSimulationMode, partner?.id, setSafePartnerOrderDraft]);
   // Favoritos / modelos de pedido
   const saveTemplate = useSaveOrderTemplate();
+  const cartHasPackaging = Object.values(cart).some((i) => i.unidade_pedido === "embalagem");
   const [favOpen, setFavOpen] = useState(false);
   const [favNome, setFavNome] = useState("");
   const [favDescricao, setFavDescricao] = useState("");
@@ -650,6 +676,19 @@ export default function NovoPedido() {
 
   const addRowCatalogItem = addRow ? catalogMap.get(addRow.id) : null;
   const addRowOffers = addRow && addRowCatalogItem?.item_tipo === "produto" ? offersFor(addRow.id) : [];
+  // Modo do item aberto. Líquido só quando o leitor de embalagens confirmou que NÃO é sólido, ou na ausência
+  // exata do endpoint (pré-instalação). Carregando/erro/contrato inválido nunca abrem o modo líquido nem dizem "sem volume".
+  const addRowMode: "none" | "liquid" | "packaging" | "packaging_loading" | "packaging_error" | "solid_unavailable" = (() => {
+    if (!addRow) return "none";
+    if (isSimulationMode || addRowCatalogItem?.item_tipo !== "produto") return "liquid";
+    const pk = packagingOffers.data;
+    if (packagingOffers.isError) return "packaging_error";
+    if (!pk) return "packaging_loading";
+    if (pk.state === "not_installed") return "liquid";
+    if (addRowOffers.length > 0) return "packaging";
+    return pk.solidProducts.has(addRow.id) ? "solid_unavailable" : "liquid";
+  })();
+  const packagingContractInvalid = packagingOffers.error instanceof Error && packagingOffers.error.message === "packaging_contract_unavailable";
   const doseRefHa = doseLitroHaFor(addRowCatalogItem ?? undefined);
 
   return (
@@ -909,9 +948,26 @@ export default function NovoPedido() {
         </div>
       )}
 
+      {/* Sólido/indefinido sem modo líquido: estado explícito, sem ação de compra */}
+      <Dialog open={addRowMode === "packaging_loading" || addRowMode === "packaging_error" || addRowMode === "solid_unavailable"}
+              onOpenChange={(v) => !v && setAddRow(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{addRow?.nome ?? "Produto"}</DialogTitle></DialogHeader>
+          <p role="status" data-testid="packaging-state" className="text-sm text-muted-foreground">
+            {addRowMode === "packaging_loading"
+              ? "Confirmando as apresentações disponíveis deste produto…"
+              : addRowMode === "packaging_error"
+                ? (packagingContractInvalid
+                    ? "A resposta de apresentações do fornecedor veio em formato não reconhecido. Nada foi adicionado; tente novamente mais tarde."
+                    : "Não foi possível confirmar as apresentações deste produto agora. Nada foi adicionado; tente novamente.")
+                : `Este produto é vendido em embalagem inteira, mas ${supplierName ?? "a empresa fornecedora"} ainda não tem embalagem ativa com preço vigente para ele.`}
+          </p>
+          <DialogFooter><Button variant="outline" onClick={() => setAddRow(null)}>Fechar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Add to cart dialog */}
       <AddPackagingToCartDialog
-        open={!!addRow && addRowOffers.length > 0}
+        open={addRowMode === "packaging"}
         onOpenChange={(v) => !v && setAddRow(null)}
         nome={addRow?.nome ?? null}
         offers={addRowOffers}
@@ -937,7 +993,7 @@ export default function NovoPedido() {
         volumesCat={volumes.data ?? null}
         volumesStatus={volumes.isError ? "error" : volumes.isSuccess ? "success" : "pending"}
         supplierName={supplierName}
-        open={!!addRow && addRowOffers.length === 0}
+        open={addRowMode === "liquid"}
         onOpenChange={(v) => !v && setAddRow(null)}
         row={addRow}
         doseRecomendadaLitroHa={doseRefHa}
@@ -1287,18 +1343,23 @@ export default function NovoPedido() {
               <Switch id="fav-star" checked={favMarcarFavorito} onCheckedChange={setFavMarcarFavorito} />
               <Label htmlFor="fav-star" className="text-xs">Marcar como favorito (aparece primeiro)</Label>
             </div>
-            <div className="text-xs text-muted-foreground">
-              {cartList.filter((i) => i.unidade_pedido !== "embalagem").length} item(ns) serão salvos.
-              {cartList.some((i) => i.unidade_pedido === "embalagem") && " Embalagens não são salvas em modelos."}
-            </div>
+            {cartHasPackaging ? (
+              <p role="alert" data-testid="template-packaging-blocked" className="text-xs text-destructive">
+                Este carrinho tem embalagem inteira. Modelos ainda não guardam embalagens, por isso nada será salvo:
+                remova as embalagens para salvar um modelo só com os demais itens, ou faça o pedido sem modelo.
+              </p>
+            ) : (
+              <div className="text-xs text-muted-foreground">{cartList.length} item(ns) serão salvos.</div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFavOpen(false)}>Cancelar</Button>
             <Button
-              disabled={!favNome.trim() || cartList.length === 0 || saveTemplate.isPending || !partner?.id}
+              disabled={!favNome.trim() || cartList.length === 0 || cartHasPackaging || saveTemplate.isPending || !partner?.id}
               onClick={() => {
-                if (!partner?.id) return;
-                const itens = cartList.filter((i) => i.unidade_pedido !== "embalagem").map((i) => ({
+                // Nunca grava modelo parcial (sem as embalagens) nem vazio.
+                if (!partner?.id || cartHasPackaging || cartList.length === 0) return;
+                const itens = cartList.map((i) => ({
                   item_id: i.item_id,
                   item_tipo: i.item_tipo,
                   nome: i.nome,

@@ -19,7 +19,7 @@ const offer = (o: Record<string, unknown> = {}) => ({
   product_id: SOLID, packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", rotulo: null,
   unidade_conteudo: "kg", peso_liquido_kg: 25, version: 1, preco_tabela_brl: 340, ...o,
 });
-const ack = (over: Record<string, unknown> = {}) => ({ contract: PACKAGING_ORDER_CONTRACT, partner_id: PARTNER, offers: [offer()], ...over });
+const ack = (over: Record<string, unknown> = {}) => ({ contract: PACKAGING_ORDER_CONTRACT, partner_id: PARTNER, offers: [offer()], solid_products: [{ product_id: SOLID, unidade_conteudo: "kg" }], ...over });
 
 describe("parser B2B_PARTNER_PACKAGING_ORDER_V1", () => {
   it("indexa a embalagem por produto", () => {
@@ -36,6 +36,12 @@ describe("parser B2B_PARTNER_PACKAGING_ORDER_V1", () => {
     ["peso zero", ack({ offers: [offer({ peso_liquido_kg: 0 })] })],
     ["preço zero", ack({ offers: [offer({ preco_tabela_brl: 0 })] })],
     ["embalagem duplicada", ack({ offers: [offer(), offer()] })],
+    ["sem solid_products (envelope antigo)", (({ solid_products: _x, ...r }) => r)(ack())],
+    ["sólido kg ofertado fora de solid_products", ack({ solid_products: [] })],
+    ["solid_products com unidade líquida", ack({ solid_products: [{ product_id: SOLID, unidade_conteudo: "l" }] })],
+    ["solid_products com chave extra (preço)", ack({ solid_products: [{ product_id: SOLID, unidade_conteudo: "kg", preco: 1 }] })],
+    ["solid_products nulo", ack({ solid_products: [null] })],
+    ["solid_products duplicado", ack({ solid_products: [{ product_id: SOLID, unidade_conteudo: "kg" }, { product_id: SOLID, unidade_conteudo: "kg" }] })],
   ])("recusa %s", (_n, raw) => {
     expect(() => parsePackagingOffers(raw, PARTNER)).toThrow("packaging_contract_unavailable");
   });

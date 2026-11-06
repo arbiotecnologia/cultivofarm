@@ -171,7 +171,7 @@ SET search_path TO ''
 AS $function$
 -- Trava (FOR SHARE, ordem determinística por id) embalagens e preços vigentes citados no carrinho, para que
 -- arquivamento/troca de preço concorrente espere o pedido ou seja vista por ele (sem mudança de estado aqui).
-DECLARE v_ids uuid[];
+DECLARE v_ids uuid[]; v_products uuid[];
 BEGIN
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN RETURN; END IF;
   SELECT array_agg(DISTINCT (l->>'packaging_id')::uuid ORDER BY (l->>'packaging_id')::uuid) INTO v_ids
@@ -179,6 +179,15 @@ BEGIN
    WHERE jsonb_typeof(l) = 'object' AND jsonb_typeof(l->'packaging_id') = 'string'
      AND (l->>'packaging_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
   IF v_ids IS NULL THEN RETURN; END IF;
+  -- Ordem fixa entre tabelas (produto -> unidade -> volume -> embalagem -> preço) e por id dentro de cada uma: alteração concorrente
+  -- de b2b_enabled/ativo do produto, da unidade de venda, do volume/apresentação ou do preço espera este pedido terminar.
+  SELECT array_agg(DISTINCT (l->>'item_id')::uuid ORDER BY (l->>'item_id')::uuid) INTO v_products
+    FROM jsonb_array_elements(p_items) l
+   WHERE jsonb_typeof(l) = 'object' AND jsonb_typeof(l->'packaging_id') = 'string' AND jsonb_typeof(l->'item_id') = 'string'
+     AND (l->>'item_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+  PERFORM 1 FROM public.produtos p WHERE p.id = ANY(v_products) ORDER BY p.id FOR SHARE;
+  PERFORM 1 FROM public.product_sale_units su WHERE su.product_id = ANY(v_products) ORDER BY su.product_id FOR SHARE;
+  PERFORM 1 FROM public.catalogo_volumes cv WHERE cv.id = ANY(v_ids) ORDER BY cv.id FOR SHARE;
   PERFORM 1 FROM public.product_packagings pp WHERE pp.id = ANY(v_ids) ORDER BY pp.id FOR SHARE;
   PERFORM 1 FROM public.catalogo_precos_embalagem c WHERE c.packaging_id = ANY(v_ids) AND c.ativo IS TRUE ORDER BY c.id FOR SHARE;
 END $function$;
@@ -230,7 +239,7 @@ SET search_path TO ''
 AS $function$
 -- Leitor do comprador: embalagens inteiras ativas, publicadas e com preço vigente do vendedor do parceiro.
 -- Mesmo guard canônico do catálogo; preco_tabela_brl é só exibição — o pedido é sempre recalculado no servidor.
-DECLARE v_seller uuid; v_offers jsonb;
+DECLARE v_seller uuid; v_offers jsonb; v_solids jsonb;
 BEGIN
   v_seller := platform_private.b2b_partner_catalog_reader(p_partner_id);
   IF v_seller IS NULL THEN RAISE EXCEPTION 'partner_not_found' USING ERRCODE='42501'; END IF;
@@ -249,7 +258,14 @@ BEGIN
                    WHERE c.packaging_id = k.id AND c.produto_id = k.product_id AND c.owner_organization_id = v_seller AND c.ativo IS TRUE
                      AND c.valid_from <= current_date AND (c.valid_until IS NULL OR c.valid_until >= current_date)) c ON c.n = 1
    WHERE k.owner_organization_id = v_seller AND k.ativo IS TRUE AND k.valid_from <= now() AND (k.valid_to IS NULL OR k.valid_to > now());
-  RETURN jsonb_build_object('contract', 'B2B_PARTNER_PACKAGING_ORDER_V1', 'partner_id', p_partner_id, 'offers', v_offers);
+  -- Sólidos confirmados (kg/g) do catálogo autorizado, COM ou SEM oferta vigente: o comprador nunca cai no modo líquido
+  -- por falta de preço/apresentação; a ausência de oferta é dita como tal. Sem preço, sem embalagem.
+  SELECT COALESCE(jsonb_agg(jsonb_build_object('product_id', pr.id, 'unidade_conteudo', s.unidade_conteudo) ORDER BY pr.id), '[]'::jsonb)
+    INTO v_solids
+    FROM (SELECT DISTINCT g.item_id FROM public.get_partner_catalog_secure(p_partner_id) g WHERE g.item_tipo = 'produto') g
+    JOIN public.produtos pr ON pr.id = g.item_id AND pr.owner_organization_id = v_seller AND pr.ativo IS TRUE AND COALESCE(pr.b2b_enabled, true) IS TRUE
+    JOIN public.product_sale_units s ON s.product_id = pr.id AND s.owner_organization_id = v_seller AND s.unidade_conteudo IN ('kg','g');
+  RETURN jsonb_build_object('contract', 'B2B_PARTNER_PACKAGING_ORDER_V1', 'partner_id', p_partner_id, 'offers', v_offers, 'solid_products', v_solids);
 END $function$;
 REVOKE ALL ON FUNCTION public.get_partner_packaging_offers_secure(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_partner_packaging_offers_secure(uuid) TO authenticated;
@@ -266,11 +282,15 @@ ALTER TABLE public.partner_order_items
 ALTER TABLE public.partner_order_items ADD CONSTRAINT poi_packaging_snapshot_shape CHECK (
   (packaging_id_snapshot IS NULL AND packaging_codigo_snapshot IS NULL AND packaging_version_snapshot IS NULL
    AND packaging_peso_liquido_kg_snapshot IS NULL AND packaging_unidade_conteudo_snapshot IS NULL AND packaging_price_id_snapshot IS NULL)
+  -- Segunda alternativa com IS NOT NULL explícito em todo operando: nenhuma comparação nula vira UNKNOWN (que o CHECK aceitaria).
   OR (packaging_id_snapshot IS NOT NULL AND product_id IS NOT NULL AND microrganismo_id IS NULL
-      AND btrim(COALESCE(packaging_codigo_snapshot,'')) <> '' AND packaging_version_snapshot >= 1
-      AND packaging_peso_liquido_kg_snapshot > 0 AND packaging_unidade_conteudo_snapshot IN ('kg','g','ml','l')
+      AND packaging_codigo_snapshot IS NOT NULL AND btrim(packaging_codigo_snapshot) <> ''
+      AND packaging_version_snapshot IS NOT NULL AND packaging_version_snapshot >= 1
+      AND packaging_peso_liquido_kg_snapshot IS NOT NULL AND packaging_peso_liquido_kg_snapshot > 0
+      AND packaging_unidade_conteudo_snapshot IS NOT NULL AND packaging_unidade_conteudo_snapshot IN ('kg','g','ml','l')
       AND packaging_price_id_snapshot IS NOT NULL AND volume_ml IS NULL AND volume_ml_snapshot IS NULL
-      AND unidade_medida = 'unidade' AND quantidade > 0 AND quantidade = trunc(quantidade)));
+      AND unidade_medida IS NOT NULL AND unidade_medida = 'unidade'
+      AND quantidade IS NOT NULL AND quantidade > 0 AND quantidade = trunc(quantidade)));
 CREATE TRIGGER a001_b2b_packaging_item_snapshot BEFORE INSERT OR UPDATE ON public.partner_order_items
   FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_packaging_item_snapshot_guard();
 """
