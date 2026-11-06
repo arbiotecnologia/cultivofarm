@@ -45,6 +45,7 @@ import { useOrdersSlaMap } from "@/hooks/useOrdersSlaMap";
 import { b2bToast } from "@/lib/b2bToast";
 import { PedidoItemProdutoInfo } from "@/components/pedidos-b2b/PedidoItemProdutoInfo";
 import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection";
+import { orderItemQuantityLabel } from "@/lib/comercial/orderItemPresentation";
 import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
 import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialOwnerOrdersSection";
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
@@ -411,7 +412,7 @@ export default function PedidosB2B() {
                         <div className="min-w-0 flex-1">
                           <PedidoItemProdutoInfo item={i} />
                           <div className="text-xs text-muted-foreground mt-0.5">
-                            {Number(i.quantidade)} × {fmt(Number(i.preco_unitario))}
+                            {orderItemQuantityLabel(i)} · {fmt(Number(i.preco_unitario))} cada
                           </div>
                         </div>
                         <div className="font-semibold whitespace-nowrap">{fmt(Number(i.subtotal))}</div>
