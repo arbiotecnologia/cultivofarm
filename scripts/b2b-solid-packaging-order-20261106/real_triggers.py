@@ -104,7 +104,7 @@ def real_triggers_sql() -> str:
     for p in helpers:
         parts.append(_body(p))
     for p in sorted(TRIG.glob("*.live-20261106.sql")):
-        if not p.name.startswith("_"):
+        if not p.name.startswith(("_triggerdefs", "_columns")):
             parts.append(_body(p))
     names = re.findall(r"CREATE (?:CONSTRAINT )?TRIGGER (\w+) .*? ON (public\.\w+)", (TRIG / "_triggerdefs.live-20261106.sql").read_text())
     for tg, tbl in names:
