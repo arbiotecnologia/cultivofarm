@@ -61,6 +61,7 @@ describe("diálogo real", () => {
     });
     render(<QueryClientProvider client={new QueryClient()}><CatalogoVolumesDialog open onOpenChange={() => {}} itemId={PROD} itemTipo="produto" itemNome="SOLO-5" owned /></QueryClientProvider>);
     await screen.findByRole("button", { name: "Preço" });
+    for (let i = 0; i < 5; i++) { await new Promise(r => setTimeout(r, 100)); console.log("T", i, screen.queryAllByRole("button", { name: "Preço" }).length, JSON.stringify(rpcMock.mock.calls.map(c => c[0]))); }
     console.log("PRICEBTN disabled", (screen.getByRole("button", { name: "Preço" }) as HTMLButtonElement).disabled);
     fill("10,00", "2026-11-06");
     await new Promise(r => setTimeout(r, 100));
