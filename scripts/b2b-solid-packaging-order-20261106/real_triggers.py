@@ -78,7 +78,16 @@ CREATE TABLE IF NOT EXISTS public.production_order_link(partner_order_id uuid);
 CREATE TABLE IF NOT EXISTS public.production_planning(id uuid DEFAULT gen_random_uuid(), partner_order_id uuid, status text);
 CREATE TABLE IF NOT EXISTS public.production_timeline_events(id uuid DEFAULT gen_random_uuid(), partner_order_id uuid, evento text, descricao text, created_by uuid, created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS public.partner_financial_settings(partner_id uuid, auto_generate_receivable boolean DEFAULT false);
-CREATE TABLE IF NOT EXISTS public.company_fiscal_settings(organization_id uuid);
+CREATE TABLE IF NOT EXISTS public.company_fiscal_settings(id uuid DEFAULT gen_random_uuid(), organization_id uuid, is_active boolean DEFAULT true,
+  configuration_status text, accounting_validated_at timestamptz, legal_name text, cnpj text, configuration_version integer DEFAULT 1);
+ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
+ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS partner_account_id uuid;
+CREATE TABLE IF NOT EXISTS public.clientes(id uuid PRIMARY KEY, organization_id uuid);
+DROP FUNCTION IF EXISTS platform_private.issue_ticket(text, uuid);
+-- B1 (capacidade C2 de criação externa) assumida ABERTA para o comprador vinculado e ativo: o estado real em produção não foi verificado.
+CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(uuid, uuid) RETURNS boolean LANGUAGE sql STABLE AS
+ $$ SELECT EXISTS (SELECT 1 FROM public.partner_users pu JOIN public.profiles p ON p.user_id = pu.user_id AND p.ativo
+      JOIN public.user_roles r ON r.user_id = pu.user_id AND r.role = 'parceiro_b2b' WHERE pu.user_id = $1 AND pu.partner_id = $2) $$;
 CREATE TABLE IF NOT EXISTS public.partner_engagement_metrics(partner_id uuid);
 CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(u uuid) RETURNS boolean LANGUAGE sql STABLE AS
  $$ SELECT EXISTS (SELECT 1 FROM public.profiles p WHERE p.user_id = u AND p.ativo) $$;
@@ -90,6 +99,8 @@ SEAMS_DECLARED = [
     "tabelas de 2º nível mínimas: commercial_audit_log, production_order_link, production_planning, production_timeline_events, partner_financial_settings, company_fiscal_settings, partner_engagement_metrics",
     "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
     "platform_private.platform_actor_access_ready = perfil ativo (sem lease/sessão real)",
+    "platform_private.c2_owner_order_create_allowed = comprador ativo vinculado com papel parceiro_b2b (B1/capacidade C2 assumida aberta; não verificada em produção)",
+    "company_fiscal_settings vazia => contrato real C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1 (sem emitente inventado)",
     "FKs para clientes/auth.users/partner_simulations omitidas (tabelas inexistentes no PG descartável)",
 ]
 
@@ -97,7 +108,7 @@ SEAMS_DECLARED = [
 def real_triggers_sql() -> str:
     parts = [DEP_SEAMS]
     # platform_private primeiro (funções SQL validam dependências na criação); ordem fixa b2b_internal_origin_valid antes dos que o usam.
-    order = ["platform_private.b2b_internal_origin_valid", "platform_private.c2_external_origin_contract_valid", "platform_private.has_ticket",
+    order = ["platform_private.issue_ticket", "platform_private.b2b_internal_origin_valid", "platform_private.c2_external_origin_contract_valid", "platform_private.has_ticket",
              "platform_private.h15_actor_organization", "platform_private.c2_accounting_promotion_ok", "platform_private.c2_external_origin_assert"]
     rank = lambda p: order.index(p.name.split(".live")[0].rsplit(".", 1)[0]) if p.name.split(".live")[0].rsplit(".", 1)[0] in order else 99
     helpers = sorted((TRIG / "helpers").glob("*.sql"), key=lambda p: (rank(p), p.name))
