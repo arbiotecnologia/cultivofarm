@@ -65,7 +65,7 @@ def main():
         h.check(f"pins de policy/ACL: LIVE no pacote ({lp['policies_md5'][:8]}), locais só na cópia temporária ({pol[:8]})", True)
         def cnt(uid):
             r = h.as_user(uid, f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{ORD}';")
-        return (r.stdout.strip().splitlines() or [r.stderr.strip()])[-1]
+            return (r.stdout.strip().splitlines() or [r.stderr.strip()])[-1]
         h.check("causa: admin do vendedor lê 0 linhas da tabela direta", cnt(h.UADM) == "0", cnt(h.UADM))
         h.check("causa: comprador lê 1 linha da tabela direta", cnt(h.UB) == "1", cnt(h.UB))
         r = h.runfile(work / "01-pre.sql.readonly"); h.check("01 PRE_OK", r.returncode == 0 and "PRE_OK" in r.stderr, r.stderr[-300:])

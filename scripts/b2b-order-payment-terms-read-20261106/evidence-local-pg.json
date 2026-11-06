@@ -1,0 +1,143 @@
+{
+  "package": "B2B_ORDER_PAYMENT_TERMS_READ_V1",
+  "hosted_proof": false,
+  "passed": 7,
+  "total": 27,
+  "checks": [
+    {
+      "name": "corpo real byte a byte: platform_private.b2b_phase1_order_visible(uuid)",
+      "ok": true,
+      "detail": "8504f07fbc3a7975accf919f386d00eb"
+    },
+    {
+      "name": "corpo real byte a byte: platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+      "ok": true,
+      "detail": "915f516e605af7cc14584e2e762a2661"
+    },
+    {
+      "name": "corpo real byte a byte: public.b2b_phase1_partner_visible(uuid,boolean)",
+      "ok": true,
+      "detail": "6b3defc01a66040146562c60ad224f03"
+    },
+    {
+      "name": "corpo real byte a byte: public.is_valid_b2b_partner_user(uuid,uuid)",
+      "ok": true,
+      "detail": "0bb0dea04be8ca84c66db7ca6329876c"
+    },
+    {
+      "name": "corpo real byte a byte: platform_private.b2b_owner_internal_partner_readable(uuid)",
+      "ok": true,
+      "detail": "fa72ca18fc673cb4a5ff4867e65137cd"
+    },
+    {
+      "name": "pins de policy/ACL: LIVE no pacote (ddbf3800), locais só na cópia temporária (782c02d5)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "causa: admin do vendedor lê 0 linhas da tabela direta",
+      "ok": false,
+      "detail": "ERROR:  permission denied for function b2b_phase1_order_visible"
+    },
+    {
+      "name": "causa: comprador lê 1 linha da tabela direta",
+      "ok": false,
+      "detail": "ERROR:  permission denied for function b2b_phase1_order_visible"
+    },
+    {
+      "name": "01 PRE_OK",
+      "ok": false,
+      "detail": "psql: error: /tmp/tmpstl9dxwy/01-pre.sql.readonly: Permission denied\n"
+    },
+    {
+      "name": "02 install",
+      "ok": false,
+      "detail": "psql: error: /tmp/tmpstl9dxwy/02-install.sql.review: Permission denied\n"
+    },
+    {
+      "name": "03 POST_OK",
+      "ok": false,
+      "detail": "psql: error: /tmp/tmpstl9dxwy/03-post.sql.readonly: Permission denied\n"
+    },
+    {
+      "name": "rerun recusado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "admin do vendedor lê condição (18.90) sem credit_decision",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "financeiro do vendedor lê condição",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "comprador do parceiro lê condição",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "pedido do vendedor sem condição => present=false (ausência real)",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "negado: admin de outro tenant",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "negado: comprador de outro parceiro",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "negado: técnico do parceiro",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "negado: comprador inativo",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "negado: admin do vendedor em pedido de outro tenant",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "negado: pedido inexistente (mesma negação, sem oráculo)",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "negado: sem sessão",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "anônimo sem EXECUTE",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    },
+    {
+      "name": "tabela direta continua 0 linhas para admin do vendedor (RLS intocada)",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "04 rollback deny",
+      "ok": false,
+      "detail": "psql: error: /tmp/tmpstl9dxwy/04-rollback-deny.sql.review: Permission denied\n"
+    },
+    {
+      "name": "rollback: leitor nega",
+      "ok": false,
+      "detail": "ERROR:  function public.get_partner_order_payment_terms_secure(unknown) does not exist"
+    }
+  ]
+}
