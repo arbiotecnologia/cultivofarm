@@ -79,6 +79,9 @@ export function useB2BPaymentMethodOptions(partnerId: string | null | undefined,
     enabled: enabled && !!partnerId && !!planId,
     retry: false,
     staleTime: 0,
-    queryFn: ({ signal }: { signal: AbortSignal }) => fetchPaymentMethodOptions(partnerId as string, planId as string, signal),
+    queryFn: (signal) => {
+      if (!partnerId || !planId) throw new Error("payment_method_scope_required");
+      return fetchPaymentMethodOptions(partnerId, planId, signal);
+    },
   });
 }
