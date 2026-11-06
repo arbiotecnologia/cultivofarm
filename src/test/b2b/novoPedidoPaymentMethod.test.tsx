@@ -177,21 +177,107 @@ it("falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por
   await waitFor(() => expect(calls("b2b_list_payment_method_options_secure").length).toBe(n + 1));
 });
 
-it("leitor ausente (pré-instalação exata): nunca rebaixa para o contrato antigo, envio bloqueado", async () => {
+it("leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio", async () => {
   overrideOptions(() => abortable(Promise.resolve({ data: null, error: { code: "PGRST202",
     message: "Could not find the function public.b2b_list_payment_method_options_secure(p_partner_id, p_payment_plan_id) in the schema cache" } })));
   await toPayment();
-  expect(await screen.findByTestId("b2b-payment-method-error")).toBeInTheDocument();
-  expect(await submitBtn()).toBeDisabled();
-  expect(calls("create_partner_order_secure")).toHaveLength(0);
+  const submit = await submitBtn();
+  await waitFor(() => expect(submit).toBeEnabled());
+  expect(screen.queryByTestId("b2b-payment-method")).toBeNull();
+  fireEvent.click(submit);
+  await waitFor(() => expect(calls("create_partner_order_secure")).toHaveLength(1));
+  expect(calls("simulate_b2b_payment_plan_with_method_secure")).toHaveLength(0);
+  expect(calls("create_partner_order_with_method_secure")).toHaveLength(0);
 });
 
-it("promissória marcada disponível pelo servidor é recusada pelo parser (indisponível, nunca selecionável)", async () => {
-  overrideOptions((a) => abortable(Promise.resolve({ data: { contract: "B2B_PAYMENT_METHOD_V1", partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,
-    due_basis: "nf_issue", options: [{ config_id: TEST_PIX_CONFIG, version: 1, method_kind: "promissoria", available: true, payment_method_name: "Promissória", due_days: 5, installment_count: 1 }] }, error: null })));
+it("outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado", async () => {
+  overrideOptions(() => abortable(Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find the function public.other(p_x)" } })));
   await toPayment();
   expect(await screen.findByTestId("b2b-payment-method-error")).toBeInTheDocument();
-  expect(screen.queryByRole("radio", { name: /Promiss/ })).toBeNull();
+  expect(await submitBtn()).toBeDisabled();
+  await new Promise((r) => setTimeout(r, 30));
+  expect(calls("simulate_b2b_payment_plan_secure")).toHaveLength(0);
+});
+
+it("empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation(withPaymentMethod((n, a) => base(n, a), undefined, { mode: "legacy" }));
+  await toPayment();
+  const submit = await submitBtn();
+  await waitFor(() => expect(submit).toBeEnabled());
+  expect(screen.queryByRole("radio", { name: /Pix/ })).toBeNull();
+  fireEvent.click(submit);
+  await waitFor(() => expect(calls("create_partner_order_secure")).toHaveLength(1));
+  expect(calls("create_partner_order_with_method_secure")).toHaveLength(0);
+});
+
+it("resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)", async () => {
+  overrideOptions((a) => abortable(Promise.resolve({ data: { contract: "B2B_PAYMENT_METHOD_V1", partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,
+    due_basis: "nf_issue", options: [] }, error: null })));
+  await toPayment();
+  expect(await screen.findByTestId("b2b-payment-method-error")).toBeInTheDocument();
+  expect(await submitBtn()).toBeDisabled();
+});
+
+it("promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)", async () => {
+  overrideOptions((a) => abortable(Promise.resolve({ data: { contract: "B2B_PAYMENT_METHOD_V1", partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,
+    mode: "required", due_basis: "nf_issue", options: [{ config_id: TEST_PIX_CONFIG, version: 1, method_kind: "promissoria", available: true, payment_method_name: "Promissória", due_days: 5, installment_count: 1 }] }, error: null })));
+  await toPayment();
+  expect(await screen.findByRole("radio", { name: /Promissória/ })).toBeInTheDocument();
+});
+
+function priceReply(rows: number[], final: number) {
+  return (a: Record<string, unknown>) => Promise.resolve({ data: {
+    partner_id: a.p_partner_id, pricing_mode: "discount_from_base", quote_required: false, cart_hash: "hash-price",
+    payment_plan: { id: PLAN.id, name: PLAN.name, code: PLAN.code, pricing_mode: "discount_from_base", discount_percent: 0, monthly_interest_percent: 0,
+      months_count: 1, installment_count: 3, requires_financial_approval: false, requires_credit_approval: false, requires_guarantee: false },
+    amounts: { table_amount: 1000, discount_amount: 0, net_amount_after_discount: 1000, financial_interest_amount: final - 1000, final_amount: final },
+    final_amount: final, installment_count: 3, schedule_estimated: true, due_basis: "nf_issue",
+    payment_method: { config_id: TEST_PIX_CONFIG, version: 1, method_kind: "boleto", payment_method_name: "Boleto", due_days: 30, installment_count: 3 },
+    schedule: rows.map((amount, i) => ({ installment_number: i + 1, due_date: `2027-0${i + 1}-05`, amount, principal_amount: amount, interest_amount: 0 })),
+    warnings: [], credit: null }, error: null });
+}
+function boletoOptions(a: Record<string, unknown>) {
+  return abortable(Promise.resolve({ data: { contract: "B2B_PAYMENT_METHOD_V1", partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,
+    mode: "required", due_basis: "nf_issue", options: [{ config_id: TEST_PIX_CONFIG, version: 1, method_kind: "boleto", available: true, payment_method_name: "Boleto", due_days: 30, installment_count: 3 }] }, error: null }));
+}
+
+it("Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "b2b_list_payment_method_options_secure" ? boletoOptions(a ?? {})
+    : n === "simulate_b2b_payment_plan_with_method_secure" ? priceReply([345.4, 345.4, 345.42], 1036.22)(a ?? {}) : base(n, a));
+  await toPayment();
+  fireEvent.click(await screen.findByRole("radio", { name: /Boleto/ }));
+  expect((await screen.findAllByText(/1\.036,22/)).length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByText(/Parcelas estimadas/));
+  expect(await screen.findByText("R$ 345,42")).toBeInTheDocument();
+  expect(await submitBtn()).toBeEnabled();
+});
+
+it("Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "b2b_list_payment_method_options_secure" ? boletoOptions(a ?? {})
+    : n === "simulate_b2b_payment_plan_with_method_secure" ? priceReply([345.4, 345.4, 345.42], 1000)(a ?? {}) : base(n, a));
+  await toPayment();
+  fireEvent.click(await screen.findByRole("radio", { name: /Boleto/ }));
+  expect(await screen.findByTestId("b2b-simulation-error")).toBeInTheDocument();
+  expect(await submitBtn()).toBeDisabled();
+});
+
+it("ACK com total diferente da simulação não é sucesso (sem navegação)", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "create_partner_order_with_method_secure"
+    ? Promise.resolve({ data: { id: "d4539dd9-b090-4433-9ed3-6f8f5d3e767b", numero: "PB-001029", total: 10, final_amount: 10, cart_hash: a?.p_expected_cart_hash,
+        schedule: [{ installment_number: 1, amount: 9.99 }], payment_method: { config_id: TEST_PIX_CONFIG, version: 1, schedule_estimated: true } }, error: null })
+    : base(n, a));
+  await toPayment();
+  await pickTestPix();
+  const submit = await submitBtn();
+  await waitFor(() => expect(submit).toBeEnabled());
+  fireEvent.click(submit);
+  await waitFor(() => expect(calls("create_partner_order_with_method_secure")).toHaveLength(1));
+  await new Promise((r) => setTimeout(r, 50));
+  expect(screen.queryByText("PB-001029")).toBeNull();
 });
 
 it("ACK com outro meio/versão não é tratado como sucesso (sem navegação)", async () => {
