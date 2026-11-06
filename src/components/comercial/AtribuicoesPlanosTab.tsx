@@ -95,6 +95,10 @@ export function AtribuicoesPlanosTab() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<AssignmentInput>(emptyForm);
+  const [publishTarget, setPublishTarget] = useState<PublishConfirmation | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const publishOpening = useRef<(() => boolean) | null>(null);
+  const publishLock = useRef(false);
 
   const planName = useMemo(() => {
     const m = new Map<string, string>();
