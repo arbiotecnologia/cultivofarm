@@ -51,3 +51,20 @@ describe("caminhos sem envio", () => {
     console.log("READY", rpcMock.mock.calls.length, JSON.stringify(toastMock.error.mock.calls));
   });
 });
+import { CatalogoVolumesDialog } from "@/components/protocolos/CatalogoVolumesDialog";
+describe("diálogo real", () => {
+  it("abre, preenche e salva", async () => {
+    const admin = { product_id: PROD, unidade_conteudo: "kg", offers: [{ packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", peso_liquido_kg: 25, version: 1, ativo: true, prices: [] }] };
+    rpcMock.mockImplementation((name: string) => {
+      const v = name === "solid_pack_offers_admin_v1" ? { data: admin, error: null } : { data: null, error: { code: "42501", message: "negado " + name } };
+      const p = Promise.resolve(v); return Object.assign(p, { abortSignal: () => p });
+    });
+    render(<QueryClientProvider client={new QueryClient()}><CatalogoVolumesDialog open onOpenChange={() => {}} itemId={PROD} itemTipo="produto" itemNome="SOLO-5" owned /></QueryClientProvider>);
+    await screen.findByRole("button", { name: "Preço" });
+    console.log("PRICEBTN disabled", (screen.getByRole("button", { name: "Preço" }) as HTMLButtonElement).disabled);
+    fill("10,00", "2026-11-06");
+    await new Promise(r => setTimeout(r, 100));
+    console.log("SAVEBTN disabled", (screen.getByRole("button", { name: "Salvar preço" }) as HTMLButtonElement).disabled);
+    console.log("DLG", JSON.stringify(rpcMock.mock.calls.map(c => c[0])), JSON.stringify(toastMock.error.mock.calls));
+  });
+});
