@@ -433,10 +433,21 @@ def main():
         chk("create.liquid_no_regression", cl and float(cl["total"]) == 2.70)
 
         # ---------- preço alterado depois da simulação
-        hs = j(sim(UB, PLD, items(S(q=1))))["cart_hash"]
-        psql(f"UPDATE public.catalogo_precos_embalagem SET preco_brl = 200 WHERE id = '{PR25}'")
-        r = create(UB, PLD, items(S(q=1)), hs, "TESTE-PED-20261106-PCH"); chk("price_changed_after_simulation", "price_changed" in (err(r) or ""), err(r))
-        psql(f"UPDATE public.catalogo_precos_embalagem SET preco_brl = 180 WHERE id = '{PR25}'")
+        # Embalagem própria do cenário; troca de preço pelo mecanismo REAL (preço é imutável: fecha a vigência e cria nova linha).
+        PKPC, PRPC = u(57), u(65)
+        psql(f"""BEGIN;
+          INSERT INTO public.catalogo_volumes VALUES ('{PKPC}','produto','{SOL}',NULL,NULL,'Saco 10 kg',0.01,true,'{A}','embalagem');
+          INSERT INTO public.product_packagings(id,product_id,owner_organization_id,codigo,descricao,peso_liquido_kg,version,ativo) VALUES ('{PKPC}','{SOL}','{A}','SC10','Saco 10 kg',10,1,true);
+          INSERT INTO public.catalogo_precos_embalagem(id,produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) VALUES ('{PRPC}','{SOL}','{A}','{PKPC}',60,current_date - 2);
+          COMMIT;""")
+        hs = j(sim(UB, PLD, items(S(PKPC, 1))))["cart_hash"]
+        psql(f"""BEGIN; UPDATE public.catalogo_precos_embalagem SET valid_until = current_date - 1 WHERE id = '{PRPC}';
+          INSERT INTO public.catalogo_precos_embalagem(produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) VALUES ('{SOL}','{A}','{PKPC}',70,current_date); COMMIT;""")
+        r = create(UB, PLD, items(S(PKPC, 1)), hs, "TESTE-PED-20261106-PCH"); chk("price_changed_after_simulation", "price_changed" in (err(r) or ""), err(r))
+        r = psql(f"UPDATE public.catalogo_precos_embalagem SET preco_brl = 1 WHERE id = '{PRPC}'", check=False)
+        chk("price_row_immutable_or_unguarded", r.returncode != 0 if REAL else True, err(r))
+        r = psql(f"INSERT INTO public.catalogo_precos_embalagem(produto_id,owner_organization_id,packaging_id,preco_brl,valid_from) VALUES ('{SOL}','{A}','{PKPC}',80,current_date)", check=False)
+        chk("price_overlap_rejected_gist", (r.returncode != 0 and "cpe_no_overlap" in r.stderr) if REAL else True, err(r))
 
         # ---------- cotação: snapshot de embalagem preservado
         qs = j(sim(UB, PLQ, items(S())))
