@@ -4,13 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 export interface SimulateInput {
   partner_id: string;
   payment_plan_id: string;
-  items: Array<{
-    item_id: string;
-    item_tipo: "produto" | "microrganismo";
-    quantidade: number;
-    unidade_medida: "hectare" | "litro" | "dose" | "unidade";
-    volume_ml?: number | null;
-  }>;
+  /** Linhas de orderLineFor: líquido {unidade_medida, volume_ml} ou embalagem {packaging_id} — nunca preço. */
+  items: Array<Record<string, unknown>>;
   first_due_date?: string | null;
 }
 

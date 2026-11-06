@@ -9,8 +9,9 @@ import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
 import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
 import { prepareDurableOrder, recoverOrderJournal, type Journal } from '@/lib/authz/orderJournal';
+import { orderLineFor } from "@/lib/comercial/packagingOrder";
 
-export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
+export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial" | "embalagem";
 
 export interface CartItem {
   item_id: string;
@@ -32,6 +33,10 @@ export interface CartItem {
   volume_rotulo?: string | null;
   /** Área-alvo informada pelo parceiro (referência interna; não persistida no backend) */
   area_ha?: number | null;
+  /** Embalagem inteira (B2B_PARTNER_PACKAGING_ORDER_V1): só o id vai ao servidor; peso é só frete/exibição. */
+  packaging_id?: string | null;
+  peso_liquido_kg?: number | null;
+  unidade_conteudo?: "kg" | "g" | "ml" | "l" | null;
 }
 
 export interface CreateOrderInput {
@@ -59,15 +64,6 @@ export interface CreateOrderInput {
   current_payload?: () => boolean;
 }
 
-
-const mapUnidadeMedida = (u: UnidadePedido): string => {
-  switch (u) {
-    case "hectare": return "hectare";
-    case "dose_100ml": return "dose";
-    case "litro": return "litro";
-    case "volume_comercial": return "unidade";
-  }
-};
 
 export type CreatedOrderAccountingState = "pending" | "validated" | "unknown" | "context_changed";
 
@@ -131,13 +127,9 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       // Capability confirmed: all writers use server key; never fall back after storage/RPC error.
       const dispatchKey = durable?.key ?? input.idempotency_key;
 
-      const payload = input.items.map((i) => ({
-        item_id: i.item_id,
-        item_tipo: i.item_tipo,
-        quantidade: Number(i.quantidade),
-        unidade_medida: mapUnidadeMedida(i.unidade_pedido),
-        volume_ml: i.unidade_pedido === "volume_comercial" ? i.volume_ml ?? null : null,
-      }));
+      // Embalagem: só {item_id,item_tipo,packaging_id,quantidade}; líquidos no formato de sempre. Nunca preço.
+      let payload: Record<string, unknown>[];
+      try { payload = input.items.map(orderLineFor); } catch (e) { throw notSent(e as Error); }
 
       let response: { data: unknown; error: { message?: string; code?: string } | null };
       try {
