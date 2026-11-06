@@ -110,7 +110,7 @@
     },
     "install.rerun_refused": {
       "pass": true,
-      "detail": "psql:/tmp/b2bpack-tkv1tpgi/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+      "detail": "psql:/tmp/b2bpack-muez7sab/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
     },
     "reader.buyer_exact_offers": {
       "pass": true,
@@ -254,7 +254,7 @@
     "create.solid_ok": {
       "pass": true,
       "detail": {
-        "id": "19af3c95-03e5-43ce-b467-974ccb753725",
+        "id": "75228a0b-24fb-4293-902b-8b2c538f8f68",
         "total": 324.0,
         "numero": "PB-000001",
         "status": "em_analise_comercial",
@@ -267,7 +267,7 @@
         "quote_required": false,
         "discount_amount": 36.0,
         "idempotency_key": "TESTE-PED-20261106-K1",
-        "payment_terms_id": "83323fce-3373-443f-a2df-cd43d19d076c",
+        "payment_terms_id": "8a5ef23d-6f6f-47a6-a2a7-82e88fcc3d93",
         "credit_reason_code": "NO_LIMIT",
         "credit_block_reason": null,
         "financial_approval_status": "not_required",
@@ -476,7 +476,7 @@
       "pass": true,
       "detail": [
         {
-          "id": "244dbc34-41fb-495b-8147-6848cdd46b12",
+          "id": "519a6759-2e81-4db4-aad6-cf11c1508527",
           "total": 243.0,
           "numero": "PB-000005",
           "status": "em_analise_comercial",
@@ -489,7 +489,7 @@
           "quote_required": false,
           "discount_amount": 27.0,
           "idempotency_key": "TESTE-PED-20261106-CC",
-          "payment_terms_id": "ff010813-76b2-49ae-ba76-6d3bf9a91fc1",
+          "payment_terms_id": "a1ba1af9-3324-451c-8c4a-5cc58ff1aa4b",
           "credit_reason_code": "NO_LIMIT",
           "credit_block_reason": null,
           "financial_approval_status": "not_required",
@@ -509,7 +509,8 @@
       "detail": "ERROR:  canceling statement due to lock timeout"
     },
     "concurrency.volume_deactivate_waits_for_order": {
-      "pass": false
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
     },
     "concurrency.after_b2b_disable_rejected": {
       "pass": true,
@@ -518,7 +519,7 @@
     "concurrency.unit_change_committed_first_not_mixed": {
       "pass": true,
       "detail": [
-        "ERROR:  B2B_PACKAGING_NOT_PUBLISHED",
+        "ERROR:  price_changed",
         "0"
       ]
     },
@@ -553,7 +554,7 @@
       "detail": "ERROR:  B2B_PACKAGING_SNAPSHOT_IMMUTABLE"
     }
   },
-  "result": "FAIL",
-  "passed": 99,
+  "result": "PASS",
+  "passed": 100,
   "total": 100
 }

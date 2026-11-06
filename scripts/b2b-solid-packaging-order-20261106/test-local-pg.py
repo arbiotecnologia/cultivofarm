@@ -495,7 +495,7 @@ def main():
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         holder_sql = (f"BEGIN; SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','{UB}',false);\n"
                       f"SELECT (public.create_partner_order_secure('{P}',NULL,'{items(S(PK40, 1))}'::jsonb,NULL,'{PLD}',NULL,NULL,'{hc}','TESTE-PED-20261106-CC'))->>'id';\n"
-                      "SELECT pg_sleep(3); COMMIT;\n")
+                      "SELECT pg_sleep(6); COMMIT;\n")
         th = threading.Thread(target=lambda: holder.communicate(holder_sql)); th.start(); time.sleep(1.2)
         r1 = psql(f"SET lock_timeout='400ms'; UPDATE public.catalogo_precos_embalagem SET valid_until = current_date WHERE id = '{PR40}'", check=False)
         r2 = psql(f"SET lock_timeout='400ms'; UPDATE public.product_packagings SET descricao = 'x' WHERE id = '{PK40}'", check=False)

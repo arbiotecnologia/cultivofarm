@@ -54,7 +54,7 @@
     },
     "install.rerun_refused": {
       "pass": true,
-      "detail": "psql:/tmp/b2bpack-rwghhfpt/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+      "detail": "psql:/tmp/b2bpack-o39m3kmk/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
     },
     "reader.buyer_exact_offers": {
       "pass": true,
@@ -198,7 +198,7 @@
     "create.solid_ok": {
       "pass": true,
       "detail": {
-        "id": "fb031cbe-5bd7-4d16-b1d6-6a4f6a53c22b",
+        "id": "4d87a413-9aa4-4c2a-8606-15558e80e6fd",
         "total": 324.0,
         "numero": "PB-1",
         "status": "em_analise_comercial",
@@ -211,7 +211,7 @@
         "quote_required": false,
         "discount_amount": 36.0,
         "idempotency_key": "TESTE-PED-20261106-K1",
-        "payment_terms_id": "32d9ca25-0702-4126-b3f9-9498a8d9bd85",
+        "payment_terms_id": "6f0af495-4859-477f-b4e4-fbb2d94e777b",
         "credit_reason_code": "NO_LIMIT",
         "credit_block_reason": null,
         "financial_approval_status": "not_required",
@@ -291,6 +291,12 @@
       "pass": true,
       "detail": "ERROR:  price_changed"
     },
+    "price_row_immutable_or_unguarded": {
+      "pass": true
+    },
+    "price_overlap_rejected_gist": {
+      "pass": true
+    },
     "quote.created_waiting": {
       "pass": true
     },
@@ -325,6 +331,81 @@
       "pass": true,
       "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
     },
+    "check.valid_row_accepted": {
+      "pass": true
+    },
+    "check.insert_rejected.packaging_codigo_snapshot=NULL": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_codigo_snapshot=  ": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_version_snapshot=NULL": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_version_snapshot=0": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_peso_liquido_kg_snapshot=NULL": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_peso_liquido_kg_snapshot=0": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_unidade_conteudo_snapshot=NULL": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_unidade_conteudo_snapshot=un": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.packaging_price_id_snapshot=NULL": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.quantidade=1.5": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.unidade_medida=litro": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.volume_ml=1000": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.insert_rejected.volume_ml_snapshot=1000": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.update_null_rejected.packaging_codigo_snapshot": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.update_null_rejected.packaging_version_snapshot": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.update_null_rejected.packaging_peso_liquido_kg_snapshot": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.update_null_rejected.packaging_unidade_conteudo_snapshot": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
+    "check.update_null_rejected.packaging_price_id_snapshot": {
+      "pass": true,
+      "detail": "ERROR:  new row for relation \"partner_order_items\" violates check constraint \"poi_packaging_snapshot_shape\""
+    },
     "concurrency.price_row_locked": {
       "pass": true,
       "detail": "ERROR:  canceling statement due to lock timeout"
@@ -337,7 +418,7 @@
       "pass": true,
       "detail": [
         {
-          "id": "bd3d4289-45a5-4726-9037-a322d5b36bfc",
+          "id": "b04010c5-3804-4e8a-b43b-fabc2bb53a26",
           "total": 243.0,
           "numero": "PB-5",
           "status": "em_analise_comercial",
@@ -350,7 +431,7 @@
           "quote_required": false,
           "discount_amount": 27.0,
           "idempotency_key": "TESTE-PED-20261106-CC",
-          "payment_terms_id": "fc71e725-526e-4a95-bd8d-8dd8e3fb74fb",
+          "payment_terms_id": "7ab8fb7e-b740-4d44-8d80-0f64f856b9f2",
           "credit_reason_code": "NO_LIMIT",
           "credit_block_reason": null,
           "financial_approval_status": "not_required",
@@ -359,6 +440,29 @@
           "requires_financial_approval": false
         },
         "1"
+      ]
+    },
+    "concurrency.product_b2b_disable_waits_for_order": {
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
+    },
+    "concurrency.sale_unit_change_waits_for_order": {
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
+    },
+    "concurrency.volume_deactivate_waits_for_order": {
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
+    },
+    "concurrency.after_b2b_disable_rejected": {
+      "pass": true,
+      "detail": "ERROR:  product_unavailable"
+    },
+    "concurrency.unit_change_committed_first_not_mixed": {
+      "pass": true,
+      "detail": [
+        "ERROR:  price_changed",
+        "0"
       ]
     },
     "archived_after_simulation_rejected": {
@@ -393,6 +497,6 @@
     }
   },
   "result": "PASS",
-  "passed": 74,
-  "total": 74
+  "passed": 100,
+  "total": 100
 }
