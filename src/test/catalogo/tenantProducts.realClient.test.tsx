@@ -65,7 +65,7 @@ it('erro backend real de list/save/archive é propagado sem retry ou falsa confi
   await waitFor(() => expect(list.result.current.isError).toBe(true));
   const save = mount(useSaveTenantProduct); const archive = mount(useArchiveTenantProduct);
   await act(async () => {
-    await expect(save.result.current.mutateAsync({ id: null, draft: { nome: 'Produto A', tipo: 'solo' }, expectedUpdatedAt: null })).rejects.toThrow(/permissão/);
+    await expect(save.result.current.mutateAsync({ id: null, draft: { nome: 'Produto A', tipo: 'solo', unidade_conteudo: 'kg' } as never, expectedUpdatedAt: null })).rejects.toThrow(/permissão/);
     await expect(archive.result.current.mutateAsync({ id: 'product-A', archived: true, expectedUpdatedAt: stamp })).rejects.toThrow(/permissão/);
   });
   expect(state.fetch).toHaveBeenCalledTimes(3);
