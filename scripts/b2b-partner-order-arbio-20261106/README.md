@@ -29,6 +29,12 @@ Escopo: vendedora AR Bio, tenant `007bb519-cba0-4704-be2c-cb93ad010048`; comprad
 - Frontend: só depois dos tipos regenerados com o contrato. O diálogo oferece apenas embalagens ativas com preço vigente; o peso fica só para frete; o carrinho envia `packaging_id`, nunca preço.
 - Evidência antes: `src/test/comercial/partnerOrderFlowArbio.audit.test.ts` (B2/B3 BLOCKED, 9/9 PASS). Depois: esses testes devem falhar e ser substituídos por testes positivos e negativos do novo contrato. Captura viva, JWT e RLS: NOT RUN.
 
+## Atualização 06/11/2026 (relato do auditor, não reverificado aqui)
+- Instalados em produção pelo auditor: tenant-display-name, leitor de volumes e `commercial_kpis_tenant_isolation_reviewed_20261106`; frontend `7340865291` publicado.
+- Smoke real teste4 PASS (químico 1 L disponível; avisos e fichas com o nome do vendedor). KPIs: FSF negativo e AR Bio positivo PASS.
+- **Isto não é E2E aprovado.** B1 depende da sessão real; B3/B4 seguem BLOCKED.
+- B2: candidato em `scripts/b2b-solid-packaging-order-20261106/` (NÃO APLICADO; 74/74 em PG descartável) e frontend fail-closed integrado. Mapeamento de condição para embalagem aguarda confirmação do proprietário.
+
 ## Dados de teste mínimos (o proprietário cria pelo fluxo autorizado; o assistente não cria nada)
 Prefixo `TESTE-PED-20261106-` em nomes e códigos, sempre no tenant AR Bio:
 - Biológico líquido: 1 produto com volume de 1 L.
