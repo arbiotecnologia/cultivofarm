@@ -45,8 +45,18 @@ HELPER = r"""CREATE OR REPLACE FUNCTION platform_private.b2b_partner_cart_volume
  SET search_path TO ''
 AS $function$
 -- B2B_CART_CATALOG_FENCE_V1. Sem EXECUTE para clientes; só chamado por fn_resolve_commercial_price (escopo partner).
-DECLARE v_seller uuid;
+DECLARE v_seller uuid; v_uid uuid := auth.uid();
 BEGIN
+  -- Rota nova SOMENTE para: linha de carrinho por volume (unidade + volume_ml > 0) e comprador externo puro
+  -- (parceiro_b2b sem administrador/gestor_comercial). Unidades hectare/litro/dose (catálogos técnico/comercial)
+  -- e atores internos seguem exatamente o wrapper cercado anterior.
+  IF p_unit_type IS DISTINCT FROM 'unidade' OR COALESCE(p_volume_ml, 0) <= 0
+     OR v_uid IS NULL
+     OR public.has_role(v_uid, 'parceiro_b2b'::public.app_role) IS NOT TRUE
+     OR public.has_role(v_uid, 'administrador'::public.app_role) IS NOT FALSE
+     OR public.has_role(v_uid, 'gestor_comercial'::public.app_role) IS NOT FALSE THEN
+    RETURN public.fn_catalogo_preco_canonico(p_product_id, p_microrganismo_id, p_unit_type, p_volume_ml);
+  END IF;
   BEGIN
     v_seller := platform_private.b2b_partner_catalog_reader(p_partner_id);   -- guard canônico: técnico/superadmin/outro parceiro/inativo negam
   EXCEPTION WHEN insufficient_privilege THEN
