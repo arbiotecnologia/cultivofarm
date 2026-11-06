@@ -29,3 +29,15 @@ Conclusão: a candidata prévia cobre o mesmo contrato com mais dependências (c
 **contrato duplicado**. O B3 local fica **PAUSADO** (não candidato a instalação) até o auditor escolher a base:
 (a) rebasear a candidata prévia para o create LIVE `c34e7404`; ou (b) seguir o B3 local, absorvendo calendário/crédito.
 Decisão comercial também pendente: boleto com prazo fixo de 30 dias ou configurável.
+
+## Atualização após revisão 9c0d288 (rev. 2)
+Confirmado neste projeto: `scripts/financial-price-generator-20261029/integration/` (schema/build/test) **existe**; o
+`paymentContract.ts` frontend **não existe em src/** (só a cópia adiada sem pin). A rev. 2 aproximou o modelo da candidata
+prévia onde ela era mais completa, sem copiá-la:
+- igual: escolha versionada por empresa vendedora, seis meios, único = 1 parcela sem juros, boleto ≤ 3, Price com taxa
+  explícita, snapshot imutável por pedido, cotação sem valor, idempotência com meio/versão, total único em create/simulate.
+- diferente: overload gerado do create LIVE **atual** c34e7404 (a prévia parte de 7ec41e17, já substituído); vínculo de
+  parceiro reaproveita `commercial_payment_plan_assignments` (a prévia cria `b2b_condition_assignments`); sem calendário
+  Paracatu-MG nem atestação fiscal (ficam para B4); boleto com prazo configurável (a prévia fixa 30 dias); ativação por
+  empresa (a prévia usa capability por ator/parceiro).
+Continua sendo decisão do auditor qual das duas é a base única; esta rev. não instala nada nem desativa a prévia.

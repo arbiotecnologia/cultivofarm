@@ -187,6 +187,14 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
         const pm = (data as { payment_method?: { config_id?: unknown; version?: unknown; schedule_estimated?: unknown } } | null)?.payment_method;
         if (!pm || pm.config_id !== input.payment_method.config_id || pm.version !== input.payment_method.version || pm.schedule_estimated !== true)
           throw new Error("payment_method_ack_unconfirmed");
+        // Uma verdade: mesmo hash simulado e soma das parcelas = total = final (centavos).
+        const ack = data as { cart_hash?: unknown; total?: unknown; final_amount?: unknown; quote_required?: unknown; schedule?: unknown };
+        const rows = Array.isArray(ack.schedule) ? (ack.schedule as Array<{ amount?: unknown }>) : null;
+        const c = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v * 100) : NaN);
+        const sum = rows ? rows.reduce((a, r) => a + c(r?.amount), 0) : NaN;
+        if (ack.cart_hash !== input.expected_cart_hash || !rows ||
+            (ack.quote_required !== true && !(rows.length > 0 && sum === c(ack.total) && sum === c(ack.final_amount))))
+          throw new Error("payment_method_ack_unconfirmed");
       }
       if (durable) {
         // A lost acknowledgment remains blocked; never retry create automatically.

@@ -8,15 +8,17 @@ interface Props {
   cashReferenceAmount?: number | null;
   /** Nome já resolvido pelo chamador: vendedor autorizado (portal B2B) ou tenant ativo (interno). */
   responsavelNome?: string | null;
-  /** B2B_PAYMENT_METHOD_V1: parcelas ESTIMADAS do meio escolhido (base = emissão da NF). Substitui o cronograma legado. */
-  estimated?: { methodLabel: string; schedule: Array<{ installment_number: number; estimated_due_date: string; amount: number }> } | null;
+  /**
+   * B2B_PAYMENT_METHOD_V1: nome do meio quando o servidor marcou as parcelas como ESTIMADAS. Valores e parcelas vêm
+   * sempre de `simulation` (uma verdade monetária); este rótulo só muda a apresentação das datas.
+   */
+  estimatedMethodLabel?: string | null;
 }
 
-export function PaymentSimulationSummary({ simulation, cashReferenceAmount, responsavelNome, estimated }: Props) {
+export function PaymentSimulationSummary({ simulation, cashReferenceAmount, responsavelNome, estimatedMethodLabel }: Props) {
   const { amounts, warnings } = simulation;
-  const schedule = estimated
-    ? estimated.schedule.map((s) => ({ installment_number: s.installment_number, due_date: s.estimated_due_date, amount: s.amount }))
-    : simulation.schedule;
+  const schedule = simulation.schedule;
+  const estimated = estimatedMethodLabel ? { methodLabel: estimatedMethodLabel } : null;
   const diffVsCash =
     cashReferenceAmount != null && cashReferenceAmount > 0
       ? amounts.final_amount - cashReferenceAmount

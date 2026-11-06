@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatrizPrecosTab } from "@/components/comercial/MatrizPrecosTab";
 import { AtribuicoesPlanosTab } from "@/components/comercial/AtribuicoesPlanosTab";
 import { MatrizConfiguravelTab } from "@/components/comercial/MatrizConfiguravelTab";
+import { MeiosPagamentoTab } from "@/components/comercial/MeiosPagamentoTab";
 import { AlertCircle, Plus, Pencil, GitBranch, Star, Loader2 } from "lucide-react";
 import { useTabParam } from "@/lib/navigation/useTabParam";
 import { formatCivilDateDisplay } from "@/lib/date-utils";
@@ -81,7 +82,7 @@ export function preview(form: PaymentPlanPayload, base = 100000) {
 type Mode = "create" | "version" | "metadata";
 
 export default function CommercialPaymentPlansPage() {
-  const [tab, setTab] = useTabParam("tab", ["planos", "matriz", "atribuicoes", "condicoes"] as const, "planos");
+  const [tab, setTab] = useTabParam("tab", ["planos", "matriz", "atribuicoes", "condicoes", "meios"] as const, "planos");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
   const [page, setPage] = useState(0);
@@ -231,7 +232,12 @@ export default function CommercialPaymentPlansPage() {
           <TabsTrigger value="matriz">Matriz de preços</TabsTrigger>
           <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
           <TabsTrigger value="condicoes">Matriz por condição</TabsTrigger>
+          <TabsTrigger value="meios">Meios de pagamento</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="meios">
+          <MeiosPagamentoTab />
+        </TabsContent>
 
         <TabsContent value="atribuicoes">
           <AtribuicoesPlanosTab />

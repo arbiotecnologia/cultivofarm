@@ -1,330 +1,469 @@
 #!/usr/bin/env python3
-"""PG DESCARTÁVEL — B2B_PAYMENT_METHOD_V1. Sem rede, sem banco hospedado, sem sessão real.
+"""PG DESCARTÁVEL — B2B_PAYMENT_METHOD_V1 rev. 2. Sem rede, sem banco hospedado, sem sessão real.
 
-Reaproveita o boot do pacote b2b-cart-catalog-fence-20261106 e reproduz o estado INSTALADO em produção
-(02 do 9c99095 + upgrade V2), com os mesmos CORPOS REAIS conferidos por md5:
-  simulate_b2b_payment_plan_secure (37d4f45e), b2b_partner_catalog_reader (bd985484), h15_actor_organization (64e10608),
-  b2b_actor_scope, fn_resolve_b2b_cart, b2b_packaging_line, motor/fence de preço etc.
-COSTURAS DECLARADAS (SYNTHETIC, não são prova): as do harness base (auth.uid por claims locais, has_role, features...) e,
-  neste pacote, create_partner_order_secure e get_partner_order_payment_terms_secure substituídos por stubs mínimos
-  (o corpo LIVE c34e7404 depende de journal/tickets/notificações fora do harness). O stub reutiliza a simulação REAL
-  para valores, grava pedido+condição e tem idempotência por fingerprint como o LIVE. Tabelas mínimas sintéticas.
-Dados 100% fictícios ("TESTE"), vendedor A (papel AR Bio) e vendedor F (papel FSF). Nunca prova JWT/RLS/PostgREST.
+Base = harness do pacote b2b-solid-packaging-order-20261106 em modo de GATILHOS REAIS (B2BPACK_REAL_TRIGGERS=1) e com o
+02 do B2 aplicado: o create resultante é o CORPO REAL c34e7404 (md5 conferido), com os gatilhos reais de partner_orders/
+itens/condição. Resolvedores REAIS de crédito/juros/plano (213ac31f/806e5d87/4cb833a3), h15 REAL (64e10608), leitor do
+parceiro REAL (bd985484), carrinho/hash REAIS. O pacote gera os RPCs com meio a partir desses corpos por deltas exatos.
+
+COSTURAS DECLARADAS (não são prova): as do harness B2 (auth.uid por GUC, has_role/get_user_partner_id/b2b_actor_scope,
+c2_* mínimos, entitlements, tabelas de 2º nível sem gatilhos); payment_methods mínima; get_partner_order_payment_terms_secure = portas mínimas (comprador do parceiro ou admin do vendedor). Os pins de
+colunas/leitor de condição são trocados SÓ na cópia temporária. Nunca prova JWT/RLS/PostgREST hospedado.
+Dados 100% fictícios (TESTE): vendedor A (papel AR Bio) e F (outro tenant).
 """
-import hashlib, importlib.util, json, pathlib, runpy, subprocess, sys, tempfile, threading, uuid
-from decimal import Decimal, ROUND_HALF_UP
+import calendar, json, os, pathlib, runpy, subprocess, sys, tempfile, threading, time, uuid
 from datetime import date, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 
+os.environ["B2BPACK_REAL_TRIGGERS"] = "1"
 HERE = pathlib.Path(__file__).resolve().parent
-CF = HERE.parent / "b2b-cart-catalog-fence-20261106"
-spec = importlib.util.spec_from_file_location("h", CF / "test-local-pg.py"); h = importlib.util.module_from_spec(spec); spec.loader.exec_module(h)
+SPD = HERE.parent / "b2b-solid-packaging-order-20261106"
+sys.path.insert(0, str(SPD))
+import importlib.util
+_spec = importlib.util.spec_from_file_location("sp", SPD / "test-local-pg.py"); SP = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(SP)
+import real_extras as RX  # noqa: E402
 g = runpy.run_path(str(HERE / "generate.py"), run_name="lib")
-u = h.u
-A, F, P, PO, PF = h.A, h.F, h.P, h.PO, h.PF
-UB, UT, UB2, UADM, UADMF, UINACT, UBF = h.UB, h.UT, h.UB2, h.UADM, h.UADMF, h.UINACT, h.UBF
+SP.PORT = "55461"
+
+u = SP.u
+A, F, P, PO, PF = SP.A, SP.F, SP.P, SP.PO, SP.PF
+UB, UT, UB2, UADM, UADMF, UINACT = SP.UB, SP.UT, SP.UB2, SP.UADM, SP.UADMF, SP.UINACT
 UFIN, UGC = u(29), u(30)
-PLD, P3, PINT, PNA = h.PLD, u(72), u(73), u(74)
-M_PIX, M_BOL, M_CASH, M_OFF = u(91), u(92), u(93), u(94)
-LIQ, PACK = h.LIQ_LINE, h.PACK_LINE
+PLD, PLQ = SP.PLD, SP.PLQ
+P3, PINT, PNA, P3B = u(81), u(82), u(83), u(84)
+M_PIX, M_BOL, M_CASH, M_OFF, M_PROM, M_DEB = u(91), u(92), u(93), u(94), u(95), u(96)
+psql, as_user = SP.psql, SP.as_user
 
-SEAMS = f"""
-CREATE TABLE public.payment_methods(id uuid PRIMARY KEY, name text, active boolean, created_at timestamptz DEFAULT now());
-ALTER TABLE public.commercial_payment_plans ADD COLUMN superseded_by_id uuid;
-CREATE TABLE public.partner_orders(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), numero text, partner_id uuid NOT NULL, payment_plan_id uuid,
-  total numeric(14,2), created_by uuid);
-CREATE TABLE public.partner_order_payment_terms(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_order_id uuid NOT NULL REFERENCES public.partner_orders(id),
-  payment_plan_id uuid, installment_count integer, final_amount numeric(14,2));
-CREATE TABLE public.partner_order_idempotency(partner_id uuid, idempotency_key text, fp text, result jsonb, PRIMARY KEY (partner_id, idempotency_key));
--- SYNTHETIC: stub de create_partner_order_secure (assinatura LIVE). Valores pela simulação REAL; parcelas do plano p/ externo (como o LIVE).
-CREATE FUNCTION public.create_partner_order_secure(p_partner_id uuid, p_observacoes text DEFAULT NULL, p_items jsonb DEFAULT '[]', p_requested_delivery_date date DEFAULT NULL,
-  p_payment_plan_id uuid DEFAULT NULL, p_first_due_date date DEFAULT NULL, p_installment_count integer DEFAULT NULL, p_expected_cart_hash text DEFAULT NULL,
-  p_idempotency_key text DEFAULT NULL) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
-DECLARE v jsonb; fp text; prev record; o uuid; n integer; internal boolean := has_role(auth.uid(),'administrador') OR has_role(auth.uid(),'gestor_comercial');
-BEGIN
-  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
-  fp := md5(p_partner_id::text||coalesce(p_payment_plan_id::text,'-')||coalesce(p_first_due_date::text,'-')||coalesce(p_installment_count::text,'-')||p_items::text);
-  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_partner_id::text || ':' || p_idempotency_key, 0));
-  SELECT * INTO prev FROM partner_order_idempotency WHERE partner_id=p_partner_id AND idempotency_key=p_idempotency_key;
-  IF FOUND THEN IF prev.fp <> fp THEN RAISE EXCEPTION 'idempotency_conflict'; END IF; RETURN prev.result; END IF;
-  v := simulate_b2b_payment_plan_secure(p_partner_id, p_payment_plan_id, p_items, NULL);
-  IF v->>'cart_hash' IS DISTINCT FROM p_expected_cart_hash THEN RAISE EXCEPTION 'cart_hash_mismatch'; END IF;
-  SELECT CASE WHEN internal THEN GREATEST(COALESCE(p_installment_count, installment_count,1),1) ELSE GREATEST(COALESCE(installment_count,1),1) END INTO n
-    FROM commercial_payment_plans WHERE id=p_payment_plan_id;
-  INSERT INTO partner_orders(numero, partner_id, payment_plan_id, total, created_by) VALUES ('PB-TESTE', p_partner_id, p_payment_plan_id, (v->>'final_amount')::numeric, auth.uid()) RETURNING id INTO o;
-  INSERT INTO partner_order_payment_terms(partner_order_id, payment_plan_id, installment_count, final_amount) VALUES (o, p_payment_plan_id, n, (v->>'final_amount')::numeric);
-  v := jsonb_build_object('id', o, 'numero', 'PB-TESTE', 'total', (v->>'final_amount')::numeric, 'cart_hash', v->>'cart_hash');
-  INSERT INTO partner_order_idempotency VALUES (p_partner_id, p_idempotency_key, fp, v);
-  RETURN v;
-END $$;
--- SYNTHETIC: stub do leitor de condição instalado (efb3d18c): comprador do parceiro do pedido ou admin do vendedor.
-CREATE FUNCTION public.get_partner_order_payment_terms_secure(p_order_id uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM partner_orders o JOIN partner_accounts pa ON pa.id=o.partner_id WHERE o.id=p_order_id AND (
-      EXISTS (SELECT 1 FROM partner_users pu WHERE pu.partner_id=o.partner_id AND pu.user_id=auth.uid())
-      OR (has_role(auth.uid(),'administrador') AND EXISTS (SELECT 1 FROM profiles p WHERE p.user_id=auth.uid() AND p.organization_id=pa.commercial_owner_organization_id)))) THEN
-    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
-  RETURN '{{}}'::jsonb;
-END $$;
-REVOKE EXECUTE ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text), public.get_partner_order_payment_terms_secure(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text), public.get_partner_order_payment_terms_secure(uuid) TO authenticated;
-INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true);
-INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial');
-INSERT INTO public.payment_methods(id,name,active) VALUES ('{M_PIX}','Pix TESTE',true),('{M_BOL}','Boleto TESTE',true),('{M_CASH}','Dinheiro TESTE',true),('{M_OFF}','Inativo TESTE',false);
-INSERT INTO public.commercial_payment_plans VALUES
-  ('{P3}',true,'discount_from_base',10,0,1,'none',3,30,NULL,false,false,false,'TESTE 3x','T3'),
-  ('{PINT}',true,'discount_from_base',10,1.8,1,'compound',2,30,NULL,false,false,false,'TESTE juros 2x','TJ'),
-  ('{PNA}',true,'discount_from_base',10,0,1,'none',1,30,NULL,false,false,false,'TESTE não publicado','TN');
-INSERT INTO public.commercial_payment_plan_assignments VALUES
-  ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLD}','partner','{PO}',NULL,CURRENT_DATE-1,NULL),
-  ('published','{PLD}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
-  ('published','{PINT}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('draft','{PNA}','partner','{P}',NULL,CURRENT_DATE-1,NULL);
-"""
+CHECKS = []
 
-checks = h.checks
-check, out = h.check, h.out
+
+def check(name, ok, detail=""):
+    CHECKS.append({"name": name, "ok": bool(ok), **({} if ok else {"detail": str(detail)[:400]})})
+
+
+def out(r):
+    if r.returncode != 0:
+        return None, (r.stderr or "").strip()
+    return json.loads(r.stdout.strip().splitlines()[-1]), None
 
 
 def call(uid, sql, role="authenticated"):
-    return out(h.as_user(uid, f"SELECT ({sql})::text;", role))
+    return out(as_user(uid, f"SELECT ({sql})::text;", role))
 
 
 def denied(name, r, token):
     j, e = r
-    check(name, j is None and token in (e or ""), f"esperado erro {token!r}; obtido {e or j}")
+    check(name, j is None and token in (e or ""), f"esperado {token!r}; obtido {e or j}")
+
+
+def L(q=1):
+    return {"item_id": SP.LIQ, "item_tipo": "produto", "quantidade": q, "unidade_medida": "unidade", "volume_ml": 1000}
+
+
+def S(q=1):
+    return {"item_id": SP.SOL, "item_tipo": "produto", "packaging_id": SP.PK25, "quantidade": q}
+
+
+def SF(q=1):
+    return {"item_id": SP.FSOL, "item_tipo": "produto", "packaging_id": SP.PKF, "quantidade": q}
+
+
+def js(x):
+    return json.dumps(x).replace("'", "''")
+
+
+def q(x):
+    return "NULL" if x is None else f"'{x}'"
 
 
 def save(uid, cid, plan, kind, pm, due, mx, rate, status, ver):
-    rate_s = "NULL" if rate is None else repr(str(rate))
-    cid_s = "NULL" if cid is None else f"'{cid}'"
-    return call(uid, f"public.b2b_payment_method_config_save({cid_s}::uuid,'{plan}','{kind}','{pm}',{due},{mx},{rate_s}::numeric,'{status}',{ver})")
+    return call(uid, f"public.b2b_payment_method_config_save({q(cid)}::uuid,'{plan}','{kind}','{pm}',{due},{mx},{q(rate)}::numeric,'{status}',{ver})")
 
 
-def sim(uid, partner, plan, items, cid, ver):
-    return call(uid, f"public.simulate_b2b_payment_plan_with_method_secure('{partner}','{plan}','{json.dumps(items)}'::jsonb,{('NULL' if cid is None else repr(cid))}::uuid,{('NULL' if ver is None else ver)})")
+def activation(uid, mode, partners, ver):
+    arr = "ARRAY[" + ",".join(f"'{p}'::uuid" for p in partners) + "]::uuid[]" if partners else "'{}'::uuid[]"
+    return call(uid, f"public.b2b_payment_method_activation_set('{mode}',{arr},{ver})")
 
 
-def base_hash(uid, partner, plan, items):
-    j, e = call(uid, f"public.simulate_b2b_payment_plan_secure('{partner}','{plan}','{json.dumps(items)}'::jsonb,NULL)")
-    assert j, e
-    return j["cart_hash"]
+def sim(uid, plan, items, cid, ver, partner=P):
+    return call(uid, f"public.simulate_b2b_payment_plan_with_method_secure('{partner}','{plan}','{js(items)}'::jsonb,{q(cid)}::uuid,{'NULL' if ver is None else ver})")
 
 
-def create(uid, partner, plan, items, key, cid, ver, cart_hash):
-    return call(uid, f"public.create_partner_order_with_method_secure('{partner}',NULL,'{json.dumps(items)}'::jsonb,NULL,'{plan}','{cart_hash}','{key}',{('NULL' if cid is None else repr(cid))}::uuid,{('NULL' if ver is None else ver)})")
+def create_sql(partner, plan, items, h, key, cid, ver):
+    return f"public.create_partner_order_with_method_secure('{partner}',NULL,'{js(items)}'::jsonb,NULL,'{plan}','{h}','{key}',{q(cid)}::uuid,{'NULL' if ver is None else ver})"
 
 
-def price_schedule(amount, n, rate, due_days, base):
-    """Price independente com Decimal (centavos ROUND_HALF_UP), última parcela absorve resíduo."""
-    q = Decimal("0.01"); bal = Decimal(str(amount)).quantize(q); i = Decimal(str(rate)) / 100
-    pmt = (bal / n).quantize(q, ROUND_HALF_UP) if i == 0 else (bal * i / (1 - (1 + i) ** -n)).quantize(q, ROUND_HALF_UP)
-    first = base + timedelta(days=due_days); res = []
+def create(uid, plan, items, h, key, cid, ver, partner=P):
+    return call(uid, create_sql(partner, plan, items, h, key, cid, ver))
+
+
+def legacy(uid, plan, items, key, partner=P):  # noqa
+    s, _ = call(uid, f"public.simulate_b2b_payment_plan_secure('{partner}','{plan}','{js(items)}'::jsonb)")
+    h = s["cart_hash"] if s else "x"
+    return as_user(uid, f"SELECT public.create_partner_order_secure('{partner}',NULL,'{js(items)}'::jsonb,NULL,'{plan}',NULL,NULL,'{h}','{key}')::text;")
+
+
+def price(principal, n, rate, due_days, base):
+    """Price independente (Decimal, centavos ROUND_HALF_UP; última parcela absorve o resíduo do principal)."""
+    c = Decimal("0.01"); bal = Decimal(str(principal)).quantize(c); i = Decimal(str(rate)) / 100
+    pmt = (bal / n).quantize(c, ROUND_HALF_UP) if i == 0 else (bal * i / (1 - (1 + i) ** -n)).quantize(c, ROUND_HALF_UP)
+    first = base + timedelta(days=due_days); rows = []
     for k in range(1, n + 1):
-        it = (bal * i).quantize(q, ROUND_HALF_UP); pr = pmt - it if k < n else bal
+        it = (bal * i).quantize(c, ROUND_HALF_UP); pr = pmt - it if k < n else bal
         m = first.month - 1 + (k - 1); y = first.year + m // 12; m = m % 12 + 1
-        import calendar
-        d = min(first.day, calendar.monthrange(y, m)[1])
-        res.append({"installment_number": k, "estimated_due_date": date(y, m, d).isoformat(), "amount": float(pr + it),
-                    "principal_amount": float(pr), "interest_amount": float(it)})
-        bal -= pr
-    return res
+        d = date(y, m, min(first.day, calendar.monthrange(y, m)[1]))
+        rows.append((k, d.isoformat(), pr + it, pr, it)); bal -= pr
+    return rows
 
 
-def parallel(sqls):
+def rows_of(sched, key="estimated_due_date"):
+    return [(r["installment_number"], r[key], Decimal(str(r["amount"])), Decimal(str(r["principal_amount"])), Decimal(str(r["interest_amount"]))) for r in sched]
+
+
+def session(uid, body):
+    pre = f"SET ROLE authenticated;\nSELECT set_config('request.jwt.claim.sub','{uid}',false) \\g /dev/null\n" if uid else ""
+    return pre + body
+
+
+def parallel(sqls, delays):
     res = [None] * len(sqls)
-    def run(ix, s): res[ix] = h.psql(s, check=False)
-    ts = [threading.Thread(target=run, args=(ix, s)) for ix, s in enumerate(sqls)]
+
+    def run(ix, s, d):
+        time.sleep(d); res[ix] = psql(s, check=False)
+    ts = [threading.Thread(target=run, args=(ix, s, d)) for ix, (s, d) in enumerate(zip(sqls, delays))]
     [t.start() for t in ts]; [t.join() for t in ts]
     return res
 
 
-def claims(uid):
-    import time
-    c = json.dumps({"sub": uid, "role": "authenticated", "exp": int(time.time()) + 3600})
-    return f"SET ROLE authenticated;\nSELECT set_config('request.jwt.claims', '{c}', false) \\g /dev/null\n"
+SEAMS = f"""
+CREATE TABLE public.payment_methods(id uuid PRIMARY KEY, name text NOT NULL, active boolean NOT NULL DEFAULT true);
+CREATE FUNCTION public.get_partner_order_payment_terms_secure(p_order_id uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM partner_orders o JOIN partner_accounts pa ON pa.id = o.partner_id WHERE o.id = p_order_id AND (
+      EXISTS (SELECT 1 FROM partner_users pu WHERE pu.partner_id = o.partner_id AND pu.user_id = auth.uid())
+      OR (has_role(auth.uid(),'administrador') AND EXISTS (SELECT 1 FROM profiles p WHERE p.user_id = auth.uid() AND p.organization_id = pa.commercial_owner_organization_id)))) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  RETURN '{{}}'::jsonb;
+END $$;
+REVOKE ALL ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) TO authenticated;
+INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true);
+INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial');
+INSERT INTO platform_private.seam_entitlements VALUES ('{UFIN}','pedidos_b2b'),('{UGC}','pedidos_b2b'),('{UFIN}','catalogo_precos'),('{UGC}','catalogo_precos');
+INSERT INTO public.payment_methods VALUES ('{M_PIX}','Pix TESTE',true),('{M_BOL}','Boleto TESTE',true),('{M_CASH}','Dinheiro TESTE',true),
+  ('{M_OFF}','Inativo TESTE',false),('{M_PROM}','Promissória TESTE',true),('{M_DEB}','Débito TESTE',true);
+INSERT INTO public.commercial_payment_plans(id,active,pricing_mode,discount_percent,monthly_interest_percent,months_count,interest_type,installment_count,
+  max_days,minimum_order_amount,requires_financial_approval,requires_guarantee,requires_credit_approval,name,code) VALUES
+  ('{P3}',true,'discount_from_base',0,0,1,'simple',3,90,NULL,false,false,false,'TESTE 3x','T3'),
+  ('{P3B}',true,'discount_from_base',0,0,1,'simple',3,90,NULL,false,false,false,'TESTE 3x B','T3B'),
+  ('{PINT}',true,'discount_from_base',0,2,3,'compound',3,90,NULL,false,false,false,'TESTE juros 3x','TJ'),
+  ('{PNA}',true,'discount_from_base',0,0,1,'simple',1,30,NULL,false,false,false,'TESTE não publicado','TN');
+INSERT INTO public.commercial_payment_plan_assignments VALUES
+  ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLD}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{P3B}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PINT}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
+  ('draft','{PNA}','partner','{P}',NULL,CURRENT_DATE-1,NULL);
+"""
+
+
+def boot():
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="b2bpm-", dir="/tmp")); tmp.chmod(0o777); SP.SOCK[0] = str(tmp)
+    subprocess.run(SP.su() + ["initdb", "-D", str(tmp / "d"), "-U", "postgres", "-A", "trust"], check=True, capture_output=True)
+    subprocess.run(SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-o", f"-p {SP.PORT} -k {tmp} -c listen_addresses=''", "-l", str(tmp / "log"), "-w", "start"],
+                   check=True, capture_output=True)
+    psql("CREATE DATABASE t", db="postgres")
+    psql(SP.SCHEMA); psql(SP.RT.real_tables_sql())
+    for name in ("public.fn_resolve_commercial_price", "public.recorte_a_legacy_solid", "platform_private.b2b_partner_catalog_reader",
+                 "platform_private.solid_pack_presentation_link", "platform_private.partner_order_items_catalog_tenant_guard",
+                 "public.fn_b2b_guard_order_items_immutable", "public.fn_resolve_b2b_cart", "public.fn_b2b_cart_hash",
+                 "public.create_partner_order_secure", "public.simulate_b2b_payment_plan_secure", "public.respond_b2b_order_quote_secure"):
+        psql(SP.cap(name))
+    psql(SP.CATALOG_SEAM + SP.REAL_TRIGGERS); psql(SP.RT.real_triggers_sql())
+    sp_src = (SPD / "test-local-pg.py").read_text()
+    acl = sp_src.split('        psql("""REVOKE ALL ON FUNCTION public.create_partner_order_secure', 1)[1].split('""")', 1)[0]
+    psql("REVOKE ALL ON FUNCTION public.create_partner_order_secure" + acl)  # ACL LIVE idêntica à do harness B2
+    psql(SP.FIXTURES); psql(SP.RT.fixtures_sql([UB, UT, UB2, SP.UADM, SP.UADMF, SP.UINACT, SP.UCONS, SP.USUP]))
+    for f in ("01-pre.sql.readonly", "02-install.sql.review", "03-post.sql.readonly"):  # estado INSTALADO do B2 (produção)
+        r = SP.runfile(SPD / f); check(f"estado instalado B2: {f}", r.returncode == 0, r.stderr[-300:])
+    # Resolvedores REAIS de crédito/juros/plano (mesmo bloco do real_extras do B2).
+    blk = (SPD / "real_extras.py").read_text().split('psql("""\nCREATE TABLE IF NOT EXISTS public.accounts_receivable', 1)[1].split('""")', 1)[0]
+    psql("CREATE TABLE IF NOT EXISTS public.accounts_receivable" + blk)
+    for n in ("public.fn_b2b_credit_exposure", "public.fn_b2b_apply_interest", "public.fn_b2b_plan_selectable"):
+        psql(RX._cap("credit", n))
+    psql("""REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;""")
+    psql((HERE.parent / "b2b-cart-catalog-fence-20261106" / "captured" / "platform_private.h15_actor_organization.64e10608.live-20261106.sql").read_text().rstrip() + ";\n"
+         "REVOKE ALL ON FUNCTION platform_private.h15_actor_organization() FROM PUBLIC;")
+    psql(SEAMS)
+    return tmp
+
+
+def md5_of(sig):
+    return psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))").stdout.strip()
+
+
+def runf(path):
+    return subprocess.run(SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1", "-f", str(path)],
+                          capture_output=True, text=True)
 
 
 def main():
-    tmp = h.boot(); work = pathlib.Path(tempfile.mkdtemp()); work.chmod(0o777)
+    tmp = boot(); work = pathlib.Path(tempfile.mkdtemp(prefix="b2bpm-w-")); work.chmod(0o777)
+    fm = {}
     try:
-        r = h.runfile(CF / "upgrade-v2" / "captured" / "v1-02-install.sql.review.applied"); check("estado instalado: cart fence 9c99095", r.returncode == 0, r.stderr[-200:])
-        r = h.runfile(CF / "upgrade-v2" / "02-upgrade.sql.review"); check("estado instalado: upgrade V2", r.returncode == 0, r.stderr[-200:])
-        h.psql(SEAMS)
-        # Corpos REAIS: md5 local == LIVE.
-        real = {k: v for k, v in g["LIVE_PINS"].items() if "create_partner_order_secure" not in k and "payment_terms_secure" not in k}
+        real = {k: v for k, v in g["LIVE_PINS"].items() if "payment_terms_secure" not in k}
+        full = {}
         for sig, md in real.items():
-            loc = h.psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))").stdout.strip()
-            check(f"corpo REAL carregado = LIVE: {sig}", loc == md, f"{loc} != {md}")
-        # Costuras: pins trocados SÓ na cópia temporária (declarado).
-        pins = dict(g["LIVE_PINS"])
-        for sig in [k for k in pins if k not in real]:
-            pins[sig] = h.psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))").stdout.strip()
-        cols = {t: h.psql(f"SELECT md5(string_agg(column_name||':'||data_type, ',' ORDER BY ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name='{t}'").stdout.strip()
-                for t in g["LIVE_COLS"]}
-        files = g["build"](pins=pins, cols=cols)
-        for n, t in files.items(): (work / n).write_text(t)
-        r = h.runfile(work / "01-pre.sql.readonly"); check("01 PRE_OK", r.returncode == 0 and "PRE_OK" in r.stderr, r.stderr[-300:])
-        r = h.runfile(work / "02-install.sql.review"); check("02 install", r.returncode == 0, r.stderr[-400:])
-        fm = {"install": {k: h.psql(f"SELECT md5(pg_get_functiondef('{s}'::regprocedure))").stdout.strip() for k, s in g["PUB"].items()}}
-        files = g["build"](pins=pins, cols=cols, fn_md5=fm["install"])
-        for n, t in files.items(): (work / n).write_text(t)
-        r = h.runfile(work / "03-post.sql.readonly"); check("03 POST_OK", r.returncode == 0 and "POST_OK" in r.stderr, r.stderr[-300:])
-        r = h.runfile(work / "02-install.sql.review"); check("rerun do install recusado", r.returncode != 0)
-        bad = dict(pins); bad[next(iter(real))] = "0" * 32
-        (work / "pre-bad.sql").write_text(g["build"](pins=bad, cols=cols)["01-pre.sql.readonly"])
-        r = h.runfile(work / "pre-bad.sql"); check("PRE recusa corpo LIVE divergente", r.returncode != 0 and "divergente" in r.stderr)
+            loc = md5_of(sig); full[sig] = loc
+            check(f"corpo REAL = LIVE: {sig}", loc.startswith(md), f"{loc} != {md}")
+        pins = dict(g["LIVE_PINS"]); pins.update(full)
+        seam_sig = next(k for k in pins if "payment_terms_secure" in k); pins[seam_sig] = md5_of(seam_sig)  # costura declarada
+        cols = {t: psql(f"SELECT md5(string_agg(column_name||':'||data_type, ',' ORDER BY ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name='{t}'").stdout.strip()
+                for t in g["LIVE_COLS"]}  # costura declarada (esquema mínimo)
 
-        # ---------- configuração pelo vendedor ----------
-        j, e = save(UADM, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0); check("admin A cria Pix (v1)", j and j["config"]["version"] == 1, e)
-        pix = j["config"]["id"] if j else None
-        j, e = save(UFIN, None, P3, "boleto", M_BOL, 10, 3, "2.5", "active", 0); check("financeiro A cria boleto 3x Price 2,5% a.m.", j and j["config"]["version"] == 1, e)
-        bol = j["config"]["id"] if j else None
-        j, e = save(UADM, None, P3, "pix", M_PIX, 5, 1, None, "active", 0); pix3 = j["config"]["id"] if j else None
-        j, e = save(UADM, None, PINT, "boleto", M_BOL, 10, 3, "1", "active", 0); bolint = j["config"]["id"] if j else None
-        j, e = save(UADM, None, PLD, "dinheiro", M_CASH, 0, 1, None, "active", 0); cash = j["config"]["id"] if j else None
-        j, e = save(UADMF, None, PLD, "pix", M_PIX, 2, 1, None, "active", 0); check("admin F cria Pix próprio (independente)", j and j["config"]["organization_id"] == F, e)
-        pixF = j["config"]["id"] if j else None
-        denied("promissória ativa recusada", save(UADM, None, PLD, "promissoria", M_BOL, 5, 1, None, "active", 0), "payment_method_kind_not_defined")
-        denied("crédito ativo recusado", save(UADM, None, PLD, "credito", M_BOL, 5, 1, None, "active", 0), "payment_method_kind_not_defined")
-        denied("Pix parcelado recusado (CHECK)", save(UADM, None, PINT, "pix", M_PIX, 5, 2, "1", "active", 0), "b2b_pmc_single_payment")
-        denied("boleto 2x sem taxa explícita recusado", save(UADM, None, PNA, "boleto", M_BOL, 5, 2, None, "active", 0), "b2b_pmc_price_rate_explicit")
-        denied("boleto 4x recusado", save(UADM, None, PNA, "boleto", M_BOL, 5, 4, "1", "active", 0), "max_installments")
-        denied("meio inativo no catálogo recusado", save(UADM, None, PNA, "pix", M_OFF, 5, 1, None, "active", 0), "payment_method_catalog_unavailable")
-        denied("criação duplicada (mesmo plano/meio) = stale", save(UADM, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0), "payment_method_config_stale")
-        denied("comprador não configura", save(UB, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0), "forbidden")
-        denied("técnico não configura", save(UT, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0), "forbidden")
-        denied("gestor comercial não configura (só admin/financeiro)", save(UGC, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0), "forbidden")
-        denied("admin F não edita config de A (sem oráculo)", save(UADMF, pix, PLD, "pix", M_PIX, 9, 1, None, "active", 1), "forbidden")
-        denied("anônimo sem EXECUTE no writer", out(h.as_user(None, f"SELECT public.b2b_payment_method_config_list();", "anon")), "permission denied")
-        j, e = call(UADMF, "public.b2b_payment_method_config_list()")
-        check("lista do vendedor F só vê F", j and {c["organization_id"] for c in j["configs"]} == {F}, e)
-        denied("comprador não lista configs internas", call(UB, "public.b2b_payment_method_config_list()"), "forbidden")
-        denied("tabela de configs fechada a authenticated", out(h.as_user(UADM, "SELECT count(*) FROM public.b2b_payment_method_configs;")), "permission denied")
+        def write(fmd=None, dmd=None, p=pins):
+            files = g["build"](pins=p, cols=cols, fn_md5=fmd, deny_md5=dmd)
+            for n, t in files.items(): (work / n).write_text(t); (work / n).chmod(0o644)
+            return files
 
-        # ---------- opções do comprador ----------
+        # ---------- install falho é transacional ----------
+        bad = dict(pins); bad["public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)"] = "0" * 32
+        (work / "bad-install.sql").write_text(g["build"](pins=bad, cols=cols)["02-install.sql.review"]); (work / "bad-install.sql").chmod(0o644)
+        r = runf(work / "bad-install.sql")
+        left = psql("SELECT count(*) FROM pg_class WHERE relname LIKE 'b2b_payment_method%'").stdout.strip()
+        check("02 com corpo LIVE divergente aborta sem deixar objetos", r.returncode != 0 and "divergente" in r.stderr and left == "0", (r.stderr[-200:], left))
+        write()
+        r = runf(work / "01-pre.sql.readonly"); check("01 PRE_OK", r.returncode == 0 and "PRE_OK" in r.stderr, r.stderr[-300:])
+        r = runf(work / "02-install.sql.review"); check("02 install", r.returncode == 0, r.stderr[-600:])
+        fm["install"] = {k: md5_of(s) for k, s in g["PUB"].items()}
+        write(fm["install"])
+        r = runf(work / "03-post.sql.readonly"); check("03 POST_OK", r.returncode == 0 and "POST_OK" in r.stderr, r.stderr[-300:])
+        r = runf(work / "02-install.sql.review"); check("rerun do install recusado", r.returncode != 0)
+        check("corpos LIVE originais intactos após install", md5_of("public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)") == g["LIVE_PINS"]["public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)"]
+              and md5_of("public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)") == g["LIVE_PINS"]["public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)"])
+
+        # ---------- sem ativação: contrato atual para todos ----------
+        r = legacy(UB, PLD, [L(1)], "TESTE-LEG-0")
+        check("sem ativação: comprador segue contrato atual (nenhum bloqueio global)", r.returncode == 0, r.stderr[-200:])
+        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F0", partner=PF)
+        check("sem ativação: outro tenant segue contrato atual", r.returncode == 0, (r.stderr or "").strip().splitlines()[:1])
+
+        # ---------- configuração ----------
+        j, e = save(UADM, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0); check("admin A cria Pix v1", j and j["config"]["version"] == 1, e)
+        pix = j and j["config"]["id"]
+        j, e = save(UFIN, None, P3, "boleto", M_BOL, 30, 3, "1.8", "active", 0); check("financeiro A cria boleto 3x Price 1,8%", j and j["config"]["version"] == 1, e)
+        bol = j and j["config"]["id"]
+        j, e = save(UADM, None, PLD, "dinheiro", M_CASH, 0, 1, None, "active", 0); cash = j and j["config"]["id"]
+        j, e = save(UADM, None, PLQ, "pix", M_PIX, 5, 1, None, "active", 0); pixq = j and j["config"]["id"]
+        j, e = save(UADM, None, P3, "pix", M_PIX, 5, 1, None, "active", 0); pix3 = j and j["config"]["id"]
+        j, e = save(UADM, None, PINT, "boleto", M_BOL, 30, 3, "1", "active", 0); bolint = j and j["config"]["id"]
+        j, e = save(UADM, None, P3B, "promissoria", M_PROM, 30, 3, "0", "active", 0)
+        check("promissória personalizável: 3x com taxa explícita 0 aceita", j and j["config"]["method_kind"] == "promissoria", e); prom = j and j["config"]["id"]
+        denied("promissória 3x sem taxa explícita recusada", save(UADM, None, P3, "promissoria", M_PROM, 30, 3, None, "active", 0), "b2b_pmc_price_rate_explicit")
+        denied("crédito 37x recusado", save(UADM, None, P3, "credito", M_PROM, 30, 37, "1", "active", 0), "max_installments")
+        denied("Pix parcelado recusado", save(UADM, None, PINT, "pix", M_PIX, 5, 2, "1", "active", 0), "b2b_pmc_single_payment")
+        denied("boleto 4x recusado", save(UADM, None, PNA, "boleto", M_BOL, 5, 4, "1", "active", 0), "b2b_pmc_boleto_max3")
+        denied("meio inativo no catálogo recusado", save(UADM, None, PNA, "debito", M_OFF, 5, 1, None, "active", 0), "payment_method_catalog_unavailable")
+        denied("criação duplicada = stale", save(UADM, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0), "payment_method_config_stale")
+        for nm, uid in (("comprador", UB), ("técnico", UT), ("gestor comercial (só leitura)", UGC), ("superadmin", SP.USUP)):
+            denied(f"{nm} não configura", save(uid, None, PNA, "pix", M_PIX, 5, 1, None, "active", 0), "forbidden")
+        denied("admin F não edita config de A", save(UADMF, pix, PLD, "pix", M_PIX, 9, 1, None, "active", 1), "forbidden")
+        j, e = save(UADMF, None, PLD, "pix", M_PIX, 2, 1, None, "active", 0); pixF = j and j["config"]["id"]
+        j, e = call(UGC, "public.b2b_payment_method_config_list()")
+        check("gestor comercial lê configs de A (sem editar)", j and j["can_edit"] is False and all(c["organization_id"] == A for c in j["configs"]) and len(j["configs"]) >= 6, e)
+        j, e = call(UADMF, "public.b2b_payment_method_config_list()"); check("lista de F só vê F", j and {c["organization_id"] for c in j["configs"]} == {F}, e)
+        denied("comprador não lista configs", call(UB, "public.b2b_payment_method_config_list()"), "forbidden")
+        denied("tabela fechada ao cliente", out(as_user(UADM, "SELECT count(*)::text FROM public.b2b_payment_method_configs;")), "permission denied")
+        denied("anônimo sem EXECUTE", out(as_user(None, "SELECT public.b2b_payment_method_config_list()::text;", "anon")), "permission denied")
+
+        # ---------- opções ----------
         j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')")
-        kinds = sorted(o["method_kind"] for o in (j or {}).get("options", []))
-        check("comprador P vê só meios ativos do vendedor A na condição", kinds == ["dinheiro", "pix"] and all(o["config_id"] != pixF for o in j["options"]), e or kinds)
-        j, e = call(UBF, f"public.b2b_list_payment_method_options_secure('{PF}','{PLD}')")
+        check("opções do comprador P: só meios ativos de A; mode legacy antes da ativação",
+              j and sorted(o["method_kind"] for o in j["options"]) == ["dinheiro", "pix"] and j["mode"] == "legacy", e or j)
+        j, e = call(UB2, f"public.b2b_list_payment_method_options_secure('{PF}','{PLD}')")
         check("comprador F vê só o Pix de F", j and [o["config_id"] for o in j["options"]] == [pixF], e or j)
-        denied("comprador P pedindo parceiro F negado", call(UB, f"public.b2b_list_payment_method_options_secure('{PF}','{PLD}')"), "forbidden_partner")
-        denied("técnico negado (termos financeiros)", call(UT, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"), "forbidden_financial_terms")
+        denied("comprador P pedindo parceiro F negado", call(UB, f"public.b2b_list_payment_method_options_secure('{PF}','{PLD}')"), "forbidden")
+        denied("técnico negado", call(UT, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"), "forbidden_financial_terms")
         denied("comprador inativo negado", call(UINACT, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"), "")
-        denied("anônimo sem EXECUTE no leitor", out(h.as_user(None, f"SELECT public.b2b_list_payment_method_options_secure('{P}','{PLD}');", "anon")), "permission denied")
-        j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PNA}')")
-        check("condição não publicada ao parceiro: nenhuma opção", j and j["options"] == [], e or j)
-        j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{P3}')")
-        o3 = {o["method_kind"]: o for o in (j or {}).get("options", [])}
-        check("plano 3x: boleto disponível, Pix indisponível (parcelas incompatíveis)", o3.get("boleto", {}).get("available") is True
-              and o3.get("pix", {}).get("available") is False and o3["pix"]["reason"] == "payment_method_installments_incompatible", e or o3)
+        j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PNA}')"); check("condição não publicada: nenhuma opção", j and j["options"] == [], e or j)
+        j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{P3}')"); o3 = {o["method_kind"]: o for o in (j or {}).get("options", [])}
+        check("plano 3x: boleto disponível, Pix indisponível", o3.get("boleto", {}).get("available") is True and o3.get("pix", {}).get("reason") == "payment_method_installments_incompatible", e or o3)
         j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PINT}')")
-        check("plano com juros próprios: boleto Price indisponível (juros em dobro)", j and j["options"][0]["available"] is False
-              and j["options"][0]["reason"] == "payment_method_price_interest_conflict", e or j)
+        check("plano com juros próprios: Price indisponível", j and j["options"][0]["reason"] == "payment_method_price_interest_conflict", e or j)
+        j, e = call(UADM, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"); check("ator interno de A vê opções do parceiro de A", j and len(j["options"]) == 2, e)
+        denied("ator interno de F não vê parceiro de A", call(UADMF, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"), "forbidden_partner")
 
-        # ---------- simulação com meio ----------
-        base = date.fromisoformat(h.psql("SELECT CURRENT_DATE").stdout.strip())
-        for nm, items, amt in (("líquido", [LIQ], 0.90), ("embalagem inteira", [PACK], 18.00), ("misto", [LIQ, PACK], 18.90)):
-            j, e = sim(UB, P, PLD, items, pix, 1)
-            ok = j and j["final_amount"] == amt and j["estimated_schedule"] == [{"installment_number": 1, "estimated_due_date": (base + timedelta(days=5)).isoformat(),
-                 "amount": amt, "principal_amount": amt, "interest_amount": 0}] and j["schedule_estimated"] is True and j["due_basis"] == "nf_issue"
-            check(f"simulação Pix {nm}: R$ {amt:.2f} em 1 parcela estimada base+5d", ok, e or j and (j["final_amount"], j["estimated_schedule"]))
-        j, e = sim(UB, P, P3, [LIQ, PACK], bol, 1)
-        exp = price_schedule(18.90, 3, "2.5", 10, base)
-        check("boleto 3x Price 2,5%: parcelas = cálculo Decimal independente", j and j["estimated_schedule"] == exp, e or (j and j["estimated_schedule"], exp))
-        check("boleto 3x: principal soma exatamente o líquido (18,90)", j and abs(sum(Decimal(str(x["principal_amount"])) for x in j["estimated_schedule"]) - Decimal("18.90")) == 0)
-        check("boleto 3x: total estimado = soma das parcelas", j and Decimal(str(j["estimated_total"])) == sum(Decimal(str(x["amount"])) for x in exp))
-        j, e = call(UB, f"(SELECT platform_private.b2b_payment_method_estimate(100,3,31,0,'2027-01-01'))", "postgres")
-        check("taxa 0: 33,33+33,33+33,34 e meses mesmo dia/último dia (01/02→01/03→01/04)", j and [x["amount"] for x in j] == [33.33, 33.33, 33.34]
-              and [x["estimated_due_date"] for x in j] == ["2027-02-01", "2027-03-01", "2027-04-01"], j)
-        j, e = call(UB, f"(SELECT platform_private.b2b_payment_method_estimate(10,3,30,0,'2027-01-01'))", "postgres")
-        check("1ª em 31/01 → 28/02 → 31/03 (último dia)", j and [x["estimated_due_date"] for x in j] == ["2027-01-31", "2027-02-28", "2027-03-31"], j)
-        denied("helper de estimativa fechado ao cliente", call(UB, "platform_private.b2b_payment_method_estimate(1,1,1,0,CURRENT_DATE)"), "permission denied")
-        denied("sem meio: payment_method_required", sim(UB, P, PLD, [LIQ], None, None), "payment_method_required")
-        denied("config inexistente: indisponível sem oráculo", sim(UB, P, PLD, [LIQ], str(uuid.uuid4()), 1), "payment_method_unavailable")
-        denied("config de F usada por comprador de A: indisponível", sim(UB, P, PLD, [LIQ], pixF, 1), "payment_method_unavailable")
-        denied("config de outra condição: indisponível", sim(UB, P, PLD, [LIQ], bol, 1), "payment_method_unavailable")
-        denied("Pix em plano 3x: parcelas incompatíveis", sim(UB, P, P3, [LIQ], pix3, 1), "payment_method_installments_incompatible")
-        denied("boleto em plano com juros: conflito Price", sim(UB, P, PINT, [LIQ], bolint, 1), "payment_method_price_interest_conflict")
-        denied("técnico não simula com meio", sim(UT, P, PLD, [LIQ], pix, 1), "forbidden_financial_terms")
-        j, e = sim(UB, P, PLD, [dict(LIQ, preco_unitario=0.01, subtotal=0.01)], pix, 1)
-        check("preço client-side não altera valor (erro ou R$ 0,90)", (j is None and e) or (j and j["final_amount"] == 0.90), e or j)
+        # ---------- UMA verdade monetária ----------
+        base = date.fromisoformat(psql("SELECT CURRENT_DATE").stdout.strip())
+        j, e = sim(UB, P3, [L(1000)], bol, 1)
+        exp = price(1000, 3, "1.8", 30, base)
+        check("exemplo do revisor: 1000 a 1,8% 3x = 345,40/345,40/345,42 (Decimal independente)",
+              [str(x[2]) for x in exp] == ["345.40", "345.40", "345.42"] and sum(x[2] for x in exp) == Decimal("1036.22"), exp)
+        ok = j and rows_of(j["schedule"]) == exp and Decimal(str(j["final_amount"])) == Decimal("1036.22") \
+            and Decimal(str(j["amounts"]["final_amount"])) == Decimal("1036.22") and Decimal(str(j["financial_interest_amount"])) == Decimal("36.22") \
+            and Decimal(str(j["net_amount_after_discount"])) == Decimal("1000.00") and j["first_due_date"] == exp[0][1] \
+            and Decimal(str(j["credit"]["exposicao_projetada"])) >= Decimal("1036.22") and j["schedule_estimated"] is True
+        check("simulação: final/amounts/juros/cronograma/crédito = 1036,22 (uma verdade)", ok, e or j and (j["final_amount"], j["schedule"], j.get("credit")))
+        sim_hash = j and j["cart_hash"]
+        bj, _ = call(UB, f"public.simulate_b2b_payment_plan_secure('{P}','{P3}','{js([L(1000)])}'::jsonb)")
+        check("hash com meio ≠ hash LIVE do mesmo carrinho (inclui condição/meio/versão/total)", sim_hash and bj and sim_hash != bj["cart_hash"])
+        denied("create com hash LIVE (1000) recusado: price_changed", create(UB, P3, [L(1000)], bj["cart_hash"], "TESTE-H1", bol, 1), "price_changed")
+        j, e = create(UB, P3, [L(1000)], sim_hash, "TESTE-PRICE-1", bol, 1)
+        oid = j and j["id"]
+        check("create Price: ACK total/final/juros 1036,22 e mesmo hash", j and Decimal(str(j["total"])) == Decimal("1036.22") and Decimal(str(j["final_amount"])) == Decimal("1036.22")
+              and Decimal(str(j["financial_interest_amount"])) == Decimal("36.22") and j["cart_hash"] == sim_hash and j["payment_method"]["version"] == 1, e or j)
+        if oid:
+            row = psql(f"""SELECT json_build_object('o',(SELECT json_build_object('total',total,'final',final_amount_with_interest,'int',financial_interest_amount,'net',net_amount_after_discount,'terms',payment_terms_id) FROM public.partner_orders WHERE id='{oid}'),
+              't',(SELECT json_agg(json_build_object('id',id,'final',final_amount,'int',financial_interest_amount,'n',installment_count,'first',first_due_date)) FROM public.partner_order_payment_terms WHERE partner_order_id='{oid}'),
+              's',(SELECT json_agg(json_build_object('installment_number',installment_number,'estimated_due_date',due_date,'amount',amount,'principal_amount',principal_amount,'interest_amount',interest_amount) ORDER BY installment_number) FROM public.partner_order_payment_schedule WHERE partner_order_id='{oid}'),
+              'm',(SELECT json_build_object('final',final_amount,'sched',estimated_schedule,'hash',cart_hash,'terms',payment_terms_id) FROM public.partner_order_payment_method_snapshots WHERE partner_order_id='{oid}'),
+              'i',(SELECT result_snapshot->>'final_amount' FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-PRICE-1'))""").stdout.strip()
+            d = json.loads(row); D = lambda x: Decimal(str(x))
+            check("pedido/terms/cronograma/snapshot/idempotência: todos 1036,22 e as mesmas 3 parcelas",
+                  D(d["o"]["total"]) == D(d["o"]["final"]) == D(d["t"][0]["final"]) == D(d["m"]["final"]) == D(d["i"]) == Decimal("1036.22")
+                  and D(d["o"]["int"]) == D(d["t"][0]["int"]) == Decimal("36.22") and len(d["t"]) == 1 and d["t"][0]["n"] == 3
+                  and d["o"]["terms"] == d["t"][0]["id"] == d["m"]["terms"] and rows_of(d["s"]) == exp and rows_of(d["m"]["sched"]) == exp
+                  and d["t"][0]["first"] == exp[0][1] and d["m"]["hash"] == sim_hash, d)
+        j2, e = create(UB, P3, [L(1000)], sim_hash, "TESTE-PRICE-1", bol, 1)
+        check("replay mesma chave+meio: mesmo pedido e mesmo ACK", j2 and j2["id"] == oid and j2["total"] == j["total"], e or j2)
+        check("replay não duplica snapshot/terms", psql(f"SELECT (SELECT count(*) FROM public.partner_order_payment_method_snapshots WHERE partner_order_id='{oid}')||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oid}')").stdout.strip() == "1:1")
+        denied("mesma chave com outro meio: conflito", create(UB, P3, [L(1000)], sim_hash, "TESTE-PRICE-1", pix3, 1), "idempotency_conflict")
+        # Desconto + líquido/embalagem/misto à vista
+        for nm, items, amt in (("líquido", [L(1)], "0.90"), ("embalagem inteira", [S(1)], "162.00"), ("misto", [L(1), S(1)], "162.90")):
+            j, e = sim(UB, PLD, items, pix, 1)
+            check(f"Pix {nm} com desconto 10%: R$ {amt} em 1 parcela base+5d", j and Decimal(str(j["final_amount"])) == Decimal(amt) and len(j["schedule"]) == 1
+                  and j["schedule"][0]["estimated_due_date"] == (base + timedelta(days=5)).isoformat() and Decimal(str(j["schedule"][0]["amount"])) == Decimal(amt), e or j)
+        hm = sim(UB, PLD, [L(1), S(1)], pix, 1)[0]["cart_hash"]
+        j, e = create(UB, PLD, [L(1), S(1)], hm, "TESTE-MIX-1", pix, 1)
+        o_mix = j and j["id"]
+        it = psql(f"SELECT string_agg(coalesce(packaging_codigo_snapshot,'L')||':'||quantidade::text||':'||preco_unitario_final_snapshot::text, ',' ORDER BY packaging_codigo_snapshot NULLS FIRST) FROM public.partner_order_items WHERE order_id='{o_mix}'").stdout.strip() if o_mix else ""
+        check("pedido misto: snapshots de embalagem inteira + líquido preservados", j and Decimal(str(j["total"])) == Decimal("162.90") and it.startswith("L:1") and "SC25:1" in it, e or it)
+        denied("preço client-side ignorado: hash não confere", create(UB, PLD, [dict(L(1), preco_unitario=0.01)], "x" * 64, "TESTE-CLI", pix, 1), "price_changed")
+        denied("parcelas/vencimento do cliente não existem no contrato", out(as_user(UB, f"SELECT public.create_partner_order_with_method_secure('{P}',NULL,'[]'::jsonb,NULL,'{PLD}','x','k',NULL,NULL,3)::text;")), "does not exist")
+        # Cotação
+        j, e = sim(UB, PLQ, [L(1)], pixq, 1)
+        hq = j and j["cart_hash"]
+        j, e = create(UB, PLQ, [L(1)], hq, "TESTE-COT-1", pixq, 1)
+        oq = j and j["id"]
+        st = psql(f"SELECT status||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||coalesce((SELECT final_amount::text FROM public.partner_order_payment_method_snapshots WHERE partner_order_id='{oq}'),'null') FROM public.partner_orders WHERE id='{oq}'").stdout.strip() if oq else ""
+        check("cotação: aguardando_cotacao, sem terms, snapshot com valor nulo", st == "aguardando_cotacao:0:null", e or st)
+        # Crédito real: limite entre 1000 e 1036,22
+        psql(f"INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES (gen_random_uuid(),'{P}',2050,'block',false,0) ON CONFLICT (partner_id) DO UPDATE SET credit_limit=2050, credit_limit_action='block'")
+        expo = json.loads(psql(f"SELECT public.fn_b2b_credit_exposure('{P}',0,NULL)::text").stdout.strip())
+        room = Decimal(str(expo["credit_limit"])) - Decimal(str(expo["exposicao_projetada"]))
+        lim_room = (Decimal("1000") + Decimal("1036.22")) / 2  # disponível entre o líquido e o total Price
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit = {Decimal(str(expo['credit_limit'])) - room + lim_room} WHERE partner_id='{P}'")
+        j, e = sim(UB, P3, [L(1000)], bol, 1); hp = j and j["cart_hash"]
+        check("crédito: simulação avisa excesso com o total Price (não o líquido)", j and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j and j["warnings"])
+        denied("crédito real: create bloqueado pelo total Price (credit_limit_exceeded)", create(UB, P3, [L(1000)], hp, "TESTE-CRED-1", bol, 1), "credit_limit_exceeded")
+        psql(f"DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'")
 
-        # ---------- criação ----------
-        hm = base_hash(UB, P, PLD, [LIQ, PACK])
-        j, e = create(UB, P, PLD, [LIQ, PACK], "k-1", pix, 1, hm)
-        o1 = j and j["id"]
-        check("pedido misto com Pix: criado com snapshot do meio (estimado, base NF)", j and j["payment_method"]["method_kind"] == "pix" and j["payment_method"]["version"] == 1
-              and j["payment_method"]["schedule_estimated"] is True and j["payment_method"]["due_basis"] == "nf_issue" and j["total"] == 18.90, e or j)
-        j2, e = create(UB, P, PLD, [LIQ, PACK], "k-1", pix, 1, hm)
-        check("repetição mesma chave+meio: mesmo pedido", j2 and j2["id"] == o1, e or j2)
-        n = h.psql(f"SELECT count(*) FROM public.partner_order_payment_method_snapshots WHERE partner_order_id='{o1}'").stdout.strip()
-        check("um único snapshot após repetição", n == "1", n)
-        denied("mesma chave com outro meio: conflito", create(UB, P, PLD, [LIQ, PACK], "k-1", cash, 1, hm), "idempotency_conflict")
-        denied("mesma chave por outro comprador: negado", create(UB2, P, PLD, [LIQ, PACK], "k-1", pix, 1, hm), "forbidden_partner")
-        # legado direto: bloqueado com erro explícito no COMMIT
-        r = h.as_user(UB, f"SELECT public.create_partner_order_secure('{P}',NULL,'{json.dumps([LIQ])}'::jsonb,NULL,'{PLD}',NULL,NULL,'{base_hash(UB, P, PLD, [LIQ])}','legacy-1');")
-        check("contrato antigo pelo comprador: B2B_PAYMENT_METHOD_REQUIRED, nada gravado", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr
-              and h.psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='legacy-1'").stdout.strip() == "0", r.stderr[-200:])
-        r = h.as_user(UADM, f"SELECT public.create_partner_order_secure('{P}',NULL,'{json.dumps([LIQ])}'::jsonb,NULL,'{PLD}',NULL,NULL,'{base_hash(UADM, P, PLD, [LIQ])}','internal-1');")
-        check("ator interno do vendedor segue o caminho atual (inalterado)", r.returncode == 0, r.stderr[-200:])
-        # parcelas: boleto 3x (do plano); cliente não tem parâmetro de parcelas
-        hb = base_hash(UB, P, P3, [PACK])
-        j, e = create(UB, P, P3, [PACK], "k-bol", bol, 1, hb)
-        check("boleto 3x: snapshot 3 parcelas Price (n do plano, nunca do cliente)", j and j["payment_method"]["installment_count"] == 3
-              and j["payment_method"]["estimated_schedule"] == price_schedule(18.00, 3, "2.5", 10, base), e or j)
-        # stale/revogação/concorrência
-        j, e = save(UADM, pix, PLD, "pix", M_PIX, 7, 1, None, "active", 1); check("admin A altera Pix (v2) com CAS", j and j["config"]["version"] == 2, e)
+        # ---------- negativas de autorização / stale ----------
+        denied("sem meio: payment_method_required", sim(UB, PLD, [L(1)], None, None), "payment_method_required")
+        denied("config inexistente sem oráculo", sim(UB, PLD, [L(1)], str(uuid.uuid4()), 1), "payment_method_unavailable")
+        denied("config de F por comprador de A", sim(UB, PLD, [L(1)], pixF, 1), "payment_method_unavailable")
+        denied("config de outra condição", sim(UB, PLD, [L(1)], bol, 1), "payment_method_unavailable")
+        denied("técnico não simula", sim(UT, PLD, [L(1)], pix, 1), "forbidden_financial_terms")
+        denied("anônimo sem EXECUTE no create", out(as_user(None, f"SELECT {create_sql(P, PLD, [L(1)], 'x', 'k', pix, 1)}::text;", "anon")), "permission denied")
+        j, e = save(UADM, pix, PLD, "pix", M_PIX, 7, 1, None, "active", 1); check("Pix v2 com CAS", j and j["config"]["version"] == 2, e)
         denied("CAS antigo recusado", save(UADM, pix, PLD, "pix", M_PIX, 8, 1, None, "active", 1), "payment_method_config_stale")
-        denied("simulação com versão antiga: stale", sim(UB, P, PLD, [LIQ], pix, 1), "payment_method_stale")
-        denied("criação com versão antiga: stale", create(UB, P, PLD, [LIQ, PACK], "k-stale", pix, 1, hm), "payment_method_stale")
-        v1snap = h.psql(f"SELECT config_version||':'||due_days FROM public.partner_order_payment_method_snapshots WHERE partner_order_id='{o1}'").stdout.strip()
-        check("snapshot histórico preserva v1 e 5 dias após alteração", v1snap == "1:5", v1snap)
-        r = h.psql(f"UPDATE public.partner_order_payment_method_snapshots SET due_days=1 WHERE partner_order_id='{o1}'", check=False)
-        check("snapshot imutável (UPDATE recusado até para owner)", r.returncode != 0 and "immutable" in r.stderr)
-        r = h.psql(f"DELETE FROM public.b2b_payment_method_config_versions", check=False)
-        check("histórico de versões append-only", r.returncode != 0)
-        # Concorrência: revogação enquanto pedido trava a config (FOR SHARE) -> uma ordem serializada, sem pedido com versão revogada.
-        hp = base_hash(UB, P, PLD, [LIQ])
-        res = parallel([claims(UB) + f"BEGIN; SELECT public.create_partner_order_with_method_secure('{P}',NULL,'{json.dumps([LIQ])}'::jsonb,NULL,'{PLD}','{hp}','k-cc',{repr(pix)}::uuid,2); SELECT pg_sleep(1.5); COMMIT;",
-                        "SELECT pg_sleep(0.5);\n" + claims(UADM) + f"SELECT public.b2b_payment_method_config_save({repr(pix)}::uuid,'{PLD}','pix','{M_PIX}',7,1,NULL,'revoked',2);"])
-        made = h.psql("SELECT count(*) FROM platform_private.b2b_payment_method_order_receipts WHERE idempotency_key='k-cc'").stdout.strip()
-        check("concorrência criação×revogação: pedido v2 confirmado e revogação aplicada depois", res[0].returncode == 0 and res[1].returncode == 0 and made == "1",
-              (res[0].stderr[-200:], res[1].stderr[-200:]))
-        denied("após revogação: indisponível", sim(UB, P, PLD, [LIQ], pix, 3), "payment_method_unavailable")
-        j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')")
-        check("revogado sai das opções", j and [o["method_kind"] for o in j["options"]] == ["dinheiro"], e or j)
-        # Mesma chave em paralelo: um pedido só.
-        hc = base_hash(UB, P, PLD, [PACK])
-        sql = claims(UB) + f"BEGIN; SELECT public.create_partner_order_with_method_secure('{P}',NULL,'{json.dumps([PACK])}'::jsonb,NULL,'{PLD}','{hc}','k-par',{repr(cash)}::uuid,1); SELECT pg_sleep(0.5); COMMIT;"
-        res = parallel([sql, sql])
-        n = h.psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='k-par'").stdout.strip()
-        check("duas requisições paralelas com a mesma chave: um pedido", all(x.returncode == 0 for x in res) and n == "1", [x.stderr[-150:] for x in res])
-        # Leitura do snapshot
-        j, e = call(UB, f"public.get_partner_order_payment_method_secure('{o1}')")
-        check("comprador lê meio do pedido (presente, estimado)", j and j["present"] and j["payment_method"]["method_kind"] == "pix" and j["payment_method"]["schedule_estimated"], e or j)
-        j, e = call(UADM, f"public.get_partner_order_payment_method_secure('{o1}')"); check("admin do vendedor lê meio do pedido", j and j["present"], e)
-        denied("comprador de F não lê pedido de A", call(UBF, f"public.get_partner_order_payment_method_secure('{o1}')"), "forbidden")
-        denied("admin F não lê pedido de A", call(UADMF, f"public.get_partner_order_payment_method_secure('{o1}')"), "forbidden")
+        denied("simulação versão antiga: stale", sim(UB, PLD, [L(1)], pix, 1), "payment_method_stale")
+        denied("create versão antiga: stale", create(UB, PLD, [L(1), S(1)], hm, "TESTE-STALE", pix, 1), "payment_method_stale")
+        check("snapshot histórico preserva v1/5 dias", psql(f"SELECT config_version||':'||due_days FROM public.partner_order_payment_method_snapshots WHERE partner_order_id='{o_mix}'").stdout.strip() == "1:5")
+        r = psql(f"UPDATE public.partner_order_payment_method_snapshots SET due_days=1 WHERE partner_order_id='{o_mix}'", check=False)
+        check("snapshot imutável", r.returncode != 0 and "immutable" in r.stderr)
+        check("histórico de versões append-only", psql("DELETE FROM public.b2b_payment_method_config_versions", check=False).returncode != 0)
 
-        # ---------- rollback deny-only ----------
-        rb_files = g["build"](pins=pins, cols=cols, fn_md5=fm["install"])
-        (work / "04.sql").write_text(rb_files["04-rollback-deny.sql.review"])
-        r = h.runfile(work / "04.sql"); check("04 rollback deny-only", r.returncode == 0, r.stderr[-300:])
+        # ---------- duas sessões: revogação durante espera ----------
+        hp2 = sim(UB, PLD, [L(1)], pix, 2)[0]["cart_hash"]
+        cs = session(UB, f"SELECT {create_sql(P, PLD, [L(1)], hp2, 'TESTE-W1', pix, 2)};")
+        res = parallel([session(UADM, f"BEGIN; SELECT public.b2b_payment_method_config_save('{pix}','{PLD}','pix','{M_PIX}',7,1,NULL,'revoked',2); SELECT pg_sleep(1.2); COMMIT;"), cs], [0, 0.4])
+        check("duas sessões: create espera a revogação do meio e falha depois (sem pedido)", res[0].returncode == 0 and res[1].returncode != 0
+              and ("payment_method_stale" in res[1].stderr or "payment_method_unavailable" in res[1].stderr)
+              and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-W1'").stdout.strip() == "0", (res[0].stderr[-150:], res[1].stderr[-200:]))
+        hc = sim(UB, PLD, [L(1)], cash, 1)[0]["cart_hash"]
+        res = parallel([f"BEGIN; UPDATE public.commercial_payment_plan_assignments SET status='revoked' WHERE plan_id='{PLD}' AND partner_id='{P}'; SELECT pg_sleep(1.2); COMMIT;",
+                        session(UB, f"SELECT {create_sql(P, PLD, [L(1)], hc, 'TESTE-W2', cash, 1)};")], [0, 0.4])
+        check("duas sessões: atribuição revogada durante a espera -> indisponível", res[1].returncode != 0 and "payment_method_unavailable" in res[1].stderr, res[1].stderr[-200:])
+        psql(f"UPDATE public.commercial_payment_plan_assignments SET status='published' WHERE plan_id='{PLD}' AND partner_id='{P}'")
+        res = parallel([f"BEGIN; UPDATE public.payment_methods SET active=false WHERE id='{M_CASH}'; SELECT pg_sleep(1.2); COMMIT;",
+                        session(UB, f"SELECT {create_sql(P, PLD, [L(1)], hc, 'TESTE-W3', cash, 1)};")], [0, 0.4])
+        check("duas sessões: meio desativado no catálogo durante a espera -> indisponível", res[1].returncode != 0 and "payment_method_unavailable" in res[1].stderr, res[1].stderr[-200:])
+        psql(f"UPDATE public.payment_methods SET active=true WHERE id='{M_CASH}'")
+        res = parallel([f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{P}',0)); SELECT pg_sleep(1.2); COMMIT;",
+                        session(UB, f"SELECT {create_sql(P, PLD, [L(1)], hc, 'TESTE-W4', cash, 1)};"),
+                        f"DELETE FROM public.user_roles WHERE user_id='{UB}' AND role='parceiro_b2b';"], [0, 0.3, 0.7])
+        check("duas sessões: papel do comprador revogado durante a espera de crédito -> negado na revalidação", res[1].returncode != 0
+              and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-W4'").stdout.strip() == "0", res[1].stderr[-200:])
+        psql(f"INSERT INTO public.user_roles VALUES ('{UB}','parceiro_b2b')")
+        res = parallel([session(UADM, f"BEGIN; SELECT public.b2b_payment_method_config_save('{cash}','{PLD}','dinheiro','{M_CASH}',1,1,NULL,'active',1); SELECT pg_sleep(1.2); COMMIT;"),
+                        session(UFIN, f"SELECT public.b2b_payment_method_config_save('{cash}','{PLD}','dinheiro','{M_CASH}',2,1,NULL,'active',2);"),
+                        f"DELETE FROM public.user_roles WHERE user_id='{UFIN}' AND role='financeiro';"], [0, 0.3, 0.7])
+        check("config_save: papel revogado durante a espera do advisory -> forbidden (reautoriza após lock)", res[0].returncode == 0 and res[1].returncode != 0 and "forbidden" in res[1].stderr, res[1].stderr[-200:])
+        psql(f"INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro')")
+        sql_par = session(UB, f"BEGIN; SELECT {create_sql(P, PLD, [S(1)], sim(UB, PLD, [S(1)], cash, 2)[0]['cart_hash'], 'TESTE-PAR', cash, 2)}; SELECT pg_sleep(0.5); COMMIT;")
+        res = parallel([sql_par, sql_par], [0, 0.1])
+        check("mesma chave em paralelo: um pedido", all(x.returncode == 0 for x in res) and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-PAR'").stdout.strip() == "1", [x.stderr[-150:] for x in res])
+
+        # ---------- ativação por empresa ----------
+        denied("financeiro não ativa", activation(UFIN, "pilot", [P], 0), "forbidden")
+        denied("piloto com parceiro de outro tenant recusado", activation(UADM, "pilot", [PF], 0), "payment_method_pilot_partner_invalid")
+        j, e = activation(UADM, "pilot", [P], 0); check("admin A ativa piloto só para o parceiro P", j and j["activation"]["mode"] == "pilot" and j["activation"]["version"] == 1, e)
+        denied("ativação com CAS antigo recusada", activation(UADM, "enforced", [], 0), "payment_method_activation_stale")
+        j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"); check("piloto: comprador P vê mode required", j and j["mode"] == "required", e)
+        r = legacy(UB, PLD, [L(1)], "TESTE-LEG-1")
+        check("piloto: contrato antigo do comprador P bloqueado (B2B_PAYMENT_METHOD_REQUIRED, nada gravado)", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr
+              and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-LEG-1'").stdout.strip() == "0", r.stderr[-200:])
+        r = legacy(SP.UADM, PLD, [L(1)], "TESTE-LEG-INT")
+        e_leg = (r.stderr or "").strip().splitlines()[0] if r.returncode else ""
+        hi = sim(SP.UADM, PLD, [L(1)], cash, 2)
+        j, e = create(SP.UADM, PLD, [L(1)], hi[0]["cart_hash"] if hi[0] else "x", "TESTE-INT-1", cash, 2)
+        check("piloto: ator interno de A simula com meio (mesma verdade monetária)", hi[0] and Decimal(str(hi[0]["final_amount"])) == Decimal("0.90"), hi[1])
+        check("ator interno: barreira LIVE de origem interna preservada nos dois caminhos (sem bypass por meio)", r.returncode != 0 and j is None
+              and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in e_leg and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in (e or "")
+              and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key IN ('TESTE-LEG-INT','TESTE-INT-1')").stdout.strip() == "0", (e_leg, e))
+        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F1", partner=PF)
+        check("piloto de A não afeta comprador de F (contrato atual)", r.returncode == 0, r.stderr[-200:])
+        r = psql(session(UB, f"BEGIN; SELECT {create_sql(P, PLD, [L(1)], hc, 'TESTE-DEF', cash, 2)}; DELETE FROM public.partner_order_payment_method_snapshots; COMMIT;"), check=False)
+        check("gatilho DEFERRED: snapshot removido na mesma transação -> recusado (imutável/obrigatório)", r.returncode != 0)
+        # Isolado: com o gatilho de imutabilidade desligado numa transação desfeita, só a exigência deferida barra.
+        r = psql("BEGIN; ALTER TABLE public.partner_order_payment_method_snapshots DISABLE TRIGGER b2b_pm_snapshot_immutable;\n"
+                 + session(UB, f"SELECT {create_sql(P, PLD, [S(2)], sim(UB, PLD, [S(2)], cash, 2)[0]['cart_hash'], 'TESTE-DEF2', cash, 2)};\nRESET ROLE;\n")
+                 + "DELETE FROM public.partner_order_payment_method_snapshots s USING public.partner_order_idempotency i WHERE i.idempotency_key='TESTE-DEF2' AND s.partner_order_id=i.order_id;\nCOMMIT;", check=False)
+        check("gatilho DEFERRED isolado: pedido sem snapshot falha no COMMIT com B2B_PAYMENT_METHOD_REQUIRED", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr
+              and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-DEF2'").stdout.strip() == "0", r.stderr[-200:])
+        j, e = call(UB, f"public.get_partner_order_payment_method_secure('{oid}')")
+        check("comprador lê meio/parcelas do pedido (mesmo total)", j and j["present"] and Decimal(str(j["payment_method"]["final_amount"])) == Decimal("1036.22"), e or j)
+        denied("admin F não lê pedido de A", call(UADMF, f"public.get_partner_order_payment_method_secure('{oid}')"), "forbidden")
+
+        # ---------- rollback deny-only transacional ----------
+        files = write(fm["install"])
+        bad_rb = files["04-rollback-deny.sql.review"].replace(fm["install"]["read"], "0" * 32, 1)
+        (work / "bad-rb.sql").write_text(bad_rb); (work / "bad-rb.sql").chmod(0o644)
+        r = runf(work / "bad-rb.sql")
+        check("04 com pin divergente aborta sem mudar nada", r.returncode != 0 and md5_of(g["PUB"]["read"]) == fm["install"]["read"], r.stderr[-200:])
+        r = runf(work / "04-rollback-deny.sql.review"); check("04 rollback deny-only", r.returncode == 0, r.stderr[-300:])
         denied("após rollback: opções negadas", call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"), "permission denied")
-        r = h.as_user(UB, f"SELECT public.create_partner_order_secure('{P}',NULL,'{json.dumps([LIQ])}'::jsonb,NULL,'{PLD}',NULL,NULL,'{base_hash(UB, P, PLD, [LIQ])}','legacy-2');")
-        check("após rollback: contrato antigo continua bloqueado (sem reabrir fallback)", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr)
-        n = h.psql("SELECT count(*) FROM public.partner_order_payment_method_snapshots").stdout.strip()
-        check("após rollback: snapshots preservados", int(n) >= 3, n)
-        fm["deny"] = {k: h.psql(f"SELECT md5(pg_get_functiondef('{s}'::regprocedure))").stdout.strip() for k, s in g["PUB"].items()}
+        r = legacy(UB, PLD, [L(1)], "TESTE-LEG-2")
+        check("após rollback: empresa ativada continua bloqueada (nunca reabre fallback)", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr)
+        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F2", partner=PF)
+        check("após rollback: empresa não ativada segue contrato atual", r.returncode == 0, r.stderr[-200:])
+        check("após rollback: snapshots/histórico preservados", int(psql("SELECT count(*) FROM public.partner_order_payment_method_snapshots").stdout.strip()) >= 4
+              and int(psql("SELECT count(*) FROM public.b2b_payment_method_config_versions").stdout.strip()) >= 8)
+        fm["deny"] = {k: md5_of(s) for k, s in g["PUB"].items()}
         (HERE / "fn-md5.json").write_text(json.dumps(fm, indent=2) + "\n")
+    except Exception:
+        for c in CHECKS:
+            if not c["ok"]: print("FAIL", c["name"], c.get("detail", ""))
+        raise
     finally:
-        h.stop(tmp)
-    passed = sum(1 for c in checks if c["ok"])
-    (HERE / "evidence-local-pg.json").write_text(json.dumps({"contract": "B2B_PAYMENT_METHOD_V1", "kind": "DISPOSABLE_PG_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-        "passed": passed, "total": len(checks), "checks": checks}, indent=2, ensure_ascii=False) + "\n")
-    print(f"{passed}/{len(checks)}")
-    for c in checks:
+        subprocess.run(SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
+    passed = sum(1 for c in CHECKS if c["ok"])
+    (HERE / "evidence-local-pg.json").write_text(json.dumps({"contract": "B2B_PAYMENT_METHOD_V1", "revision": 2,
+        "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF", "passed": passed, "total": len(CHECKS), "checks": CHECKS},
+        indent=2, ensure_ascii=False) + "\n")
+    print(f"{passed}/{len(CHECKS)}")
+    for c in CHECKS:
         if not c["ok"]: print("FAIL", c["name"], c.get("detail", ""))
-    return 0 if passed == len(checks) else 1
+    return 0 if passed == len(CHECKS) else 1
 
 
 if __name__ == "__main__":

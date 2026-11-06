@@ -1,6 +1,6 @@
 {
-  "01-pre.sql.readonly": "6cb36d8c057f58b23ea9f04318a92c5f",
-  "02-install.sql.review": "4549ee37340765531bd45c3b63046c82",
-  "03-post.sql.readonly": "5d149d2151065bf946299533a0db00e2",
-  "04-rollback-deny.sql.review": "b61f7d07f6baa85c26e9dfb6ded8f074"
+  "01-pre.sql.readonly": "518196ba9ffa732dbd581883511202c5",
+  "02-install.sql.review": "8686fa544b868b10131f5d3fd4b13c6f",
+  "03-post.sql.readonly": "2653cb1f9bb60e86969fb6cd73ace948",
+  "04-rollback-deny.sql.review": "f9fef4711ff3552d4fdaaeda3a60d8ae"
 }

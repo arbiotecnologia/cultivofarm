@@ -1,15 +1,17 @@
 {
   "install": {
-    "save": "45759f6f03ed148b407ccbc46a500276",
-    "list": "6b2267c23072a68bec19f5c9b8046f1f",
-    "options": "d5ecaea6be5bb7fa9395cb2420fde29b",
-    "sim": "3fc7aff096ad61f23ef686589b29b133",
-    "create": "c2a2878620cd4c632ff67688ea7ddc04",
-    "read": "7eb8864f421d6439fe2cc53bbd8987aa"
+    "save": "e57747479507e128f1441fac3a14f526",
+    "list": "002596544d24b1af40f98741bef70c1d",
+    "activation": "f76f71d4c17e633167241227e3c9fdfe",
+    "options": "9d2e154da71b137a6f5e61a5019744d6",
+    "sim": "7bb0a13fadd36c50ce965723ac9a56a0",
+    "create": "c3559050ca39024ae7d923b1632e91e1",
+    "read": "1174d8eb22493896800959e3dadcdc06"
   },
   "deny": {
     "save": "5fb5d830b0eac706fd2832b58c3dc937",
     "list": "144a812e7101ccec50dfcd3da410ea09",
+    "activation": "1369b5148904ca9e2ee521bc3b7b23ba",
     "options": "f89bfea9d8748583616e2b4f187aed50",
     "sim": "8bc26955e341751dcc2a3d2da60f3651",
     "create": "103459f3931a748e8dd00db8a53f514a",
