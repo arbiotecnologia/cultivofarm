@@ -1,8 +1,7 @@
-- Pausado até o auditor escolher entre este pacote e B2B_PAYMENT_CONDITION_V1 (RECONCILIATION-PRIOR-CANDIDATE.md); nunca manter os dois contratos — evita duplicação.
-- Preparação apenas: nunca aplicar 02/04 hospedado, publicar, cadastrar meios/configurações remotas ou tocar PB-001036/teste4; o auditor revisa e instala — evita mudança financeira não revisada.
-- 01–04 são gerados por generate.py com pins LIVE (create c34e7404, simulate 37d4f45e, leitor bd985484, h15, leitor de condição efb3d18c e colunas); nunca editar à mão nem alterar corpos LIVE — wrappers reusam o contrato existente.
-- Vendedor sempre pelo b2b_partner_catalog_reader / h15 do ator, nunca do payload; planos globais não ganham colunas nem escritores — evita configuração vazando entre empresas.
-- Promissória/crédito e qualquer combinação sem configuração explícita ficam indisponíveis; Price exige taxa explícita e plano sem juros próprios; datas são estimadas (base emissão da NF) — não inventar regra comercial.
-- Comprador externo sem snapshot de meio falha no COMMIT; rollback é deny-only e mantém a exigência, snapshots e histórico — nunca reabre fallback 'pix'.
-- PG descartável usa corpos reais + costuras declaradas (create/terms reader stub); nunca reportar como prova JWT/RLS/PostgREST hospedada.
-- B4 (título na emissão da NF) só auditoria aqui; ver B4-AUDIT.md — não instalar gerador fiscal nem decidir cancelamento de NF após pagamento.
+- Pausado/NÃO aprovado: nunca aplicar 02/04 hospedado, publicar, cadastrar meios/ativações remotas nem tocar PB-001036/teste4; e nunca manter este contrato junto com B2B_PAYMENT_CONDITION_V1 sem decisão do auditor (RECONCILIATION-PRIOR-CANDIDATE.md) — evita duplicação.
+- RPCs com meio são gerados dos corpos LIVE capturados por deltas de âncora única em generate.py; nunca wrappers sobre o motor antigo nem edição manual de 01–04 — garante uma verdade monetária (crédito/hash/terms/schedule/ACK).
+- Vendedor sempre por leitor canônico (comprador) ou h15 dono comercial (interno), nunca do payload; reautorizar e reler config/plano/atribuição/meio após cada espera na ordem documentada no README — evita autoridade obsoleta.
+- Seis meios configuráveis; sem config ativa = indisponível; parcelado exige taxa Price explícita e plano sem juros próprios — não inventar taxa nem regra comercial.
+- Exigência só por ativação da empresa vendedora (off/pilot/enforced) e para todos os atores; rollback é deny-only e mantém ativação/snapshots — nunca bloqueio global nem reabertura de fallback.
+- PG descartável usa o create REAL c34e7404 do estado B2 com costuras declaradas; nunca reportar como prova JWT/RLS/PostgREST.
+- B4 só auditoria (B4-AUDIT.md); não instalar gerador fiscal nem decidir cancelamento de NF após pagamento.

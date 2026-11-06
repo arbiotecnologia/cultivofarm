@@ -1,42 +1,39 @@
-# B2B_PAYMENT_METHOD_V1 — escolha do meio de pagamento pelo comprador (B3)
+# B2B_PAYMENT_METHOD_V1 rev. 2 — meio de pagamento escolhido no pedido (B3)
 
-Status: **PAUSADO — não candidato a instalação** até reconciliar com B2B_PAYMENT_CONDITION_V1 (ver RECONCILIATION-PRIOR-CANDIDATE.md). **NÃO APLICADO.** Nenhum SQL remoto, publicação, cadastro de meio, cobrança, documento ou envio.
-Leituras de produção feitas somente em `swzpzcwiasxmjutrmvkm` (read-only) em 2026-11-06.
+Status: **NÃO APROVADO PARA IMPLANTAÇÃO; NÃO APLICADO.** Revisão 9c0d288 tratada só em código e PG descartável.
+Sem SQL remoto, publicação, cadastro de meios, cobrança, documento, envio ou alteração de PB-001036/teste4.
 
-## Estado LIVE que motivou o pacote
-- `payment_methods` é global (id, name, active): ativos "Boleto bancário" e "AUDIT-AR-20260922 - Sem transferencia".
-- `commercial_payment_plans` é global; não tem meio de pagamento. Vínculo ao parceiro por `commercial_payment_plan_assignments`.
-- `create_partner_order_secure` (c34e7404) não recebe meio; para comprador externo usa `installment_count` do plano e grava
-  `partner_order_payment_schedule` com `current_date + max_days` (+30 d) — datas pré-NF (divergência B4, não alterada aqui).
-- `generate_b2b_receivable_secure_impl` usa `partner_financial_settings.default_payment_method` (texto) e grava
-  `partner_orders.payment_method = COALESCE(default,'pix')` (fallback a remover no B4; não tocado aqui).
+## Correções da revisão 9c0d288
+| # | Bloqueador | Correção |
+|---|---|---|
+| 1 | Totais divergentes (motor antigo × Price) | simulate/create com meio são **gerados dos corpos LIVE** (37d4f45e/c34e7404) por 12+9 deltas exatos (contagem = 1). Após carrinho e juros do plano, `b2b_payment_method_schedule` gera as parcelas; `final_amount` = soma; juros = final − líquido. O mesmo valor alimenta crédito, `cart_hash` (base LIVE + config/versão/tipo/n/prazo/taxa/total), pedido, terms, schedule, snapshot, idempotência e ACK. A tela usa só `simulation.schedule/amounts`; resposta ou ACK com soma ≠ total é recusada. |
+| 2 | Create stub | O harness usa o **corpo REAL c34e7404** (estado instalado do B2, gatilhos reais de pedido/itens/condição), crédito/juros/plano REAIS e h15 REAL. Cobre desconto, Price 1000→1036,22, crédito real bloqueando pelo total Price, replay, cotação, gatilho deferido isolado e install/rollback transacionais. |
+| 3 | Autoridade antes das travas | Ordem documentada abaixo; o resolve roda depois do lock de idempotência e trava config→plano→atribuição→meio; nova leitura depois das esperas de embalagem/crédito; `config_save` e ativação reautorizam depois do advisory. Cinco testes com duas/três sessões. |
+| 4 | Duplicação com B2B_PAYMENT_CONDITION_V1 | Ver RECONCILIATION-PRIOR-CANDIDATE.md (decisão do auditor). |
+| 5 | Promissória/crédito proibidos por CHECK | Os seis meios são configuráveis: único (dinheiro/pix/débito) = 1; boleto ≤ 3; promissória/crédito ≤ 36; n > 1 exige taxa Price **explícita** (0 é permitido). Sem config ativa = indisponível. |
+| 6 | Bloqueio global | Ativação **por empresa vendedora**: `off` (padrão, nenhuma linha) → `pilot` (parceiros listados da própria empresa) → `enforced`. O gatilho só exige meio em pedidos de parceiros ativados; outras empresas seguem o contrato atual. Ativar exige config ativa e administrador. |
+| 7 | Sem tela de configuração | Aba **Motor Comercial B2B → Meios de pagamento**: admin/financeiro editam com CAS, admin ativa/piloto, gestor comercial consulta. Pedido comercial interno usa o mesmo leitor e exige meio quando a empresa está ativada (sem bypass por papel). |
 
-## O que o pacote instala (02)
-| Objeto | Papel |
-|---|---|
-| `public.b2b_payment_method_configs` (+ `_versions` append-only) | condição × meio **por empresa vendedora**, `version` CAS, 6 tipos no modelo; promissória/crédito nunca `active` (CHECK) |
-| `public.partner_order_payment_method_snapshots` | snapshot imutável por pedido: config/versão/tipo/nome/dias/parcelas/taxa, `due_basis='nf_issue'`, `schedule_estimated=true` |
-| `platform_private.b2b_payment_method_order_receipts` | idempotência do meio (chave do pedido + fingerprint config/versão/tipo/n) |
-| `b2b_payment_method_config_save/list` | escritor/leitor do vendedor (admin/financeiro; empresa por h15; sem parceiro/técnico/superadmin) |
-| `b2b_list_payment_method_options_secure` | opções do comprador (vendedor via `b2b_partner_catalog_reader`, condição publicada ao parceiro) |
-| `simulate_b2b_payment_plan_with_method_secure` | revalida config e chama a simulação LIVE; acrescenta parcelas **estimadas** |
-| `create_partner_order_with_method_secure` | mesmo lock de idempotência do LIVE, trava config `FOR SHARE`, chama o create LIVE, grava snapshot e recibo |
-| `get_partner_order_payment_method_secure` | leitura do snapshot com as mesmas portas do leitor de condição instalado |
-| constraint trigger `b2b_payment_method_required` (DEFERRED) | pedido criado por comprador externo sem snapshot falha no COMMIT: `B2B_PAYMENT_METHOD_REQUIRED` |
+## Ordem de travas
+```text
+create:  advisory b2b_idem:<parceiro>:<chave> (LIVE) -> reautorização LIVE -> replay
+         -> config FOR SHARE -> plano FOR SHARE -> atribuição publicada FOR SHARE -> payment_methods FOR SHARE
+         -> b2b_packaging_lock (LIVE) -> advisory b2b_credit:<parceiro> (LIVE) -> resolve sem trava (autoridade) -> INSERT
+config:  advisory b2b_pmc:<org>:<plano>:<meio> -> reautorização -> config FOR UPDATE -> plano/meio FOR SHARE -> CAS
+ativação: advisory b2b_pma:<org> -> reautorização -> linha FOR UPDATE -> CAS
+```
+Escritores globais de planos/meios que tomem FOR UPDATE nesses registros esperam o pedido em curso; não verifiquei a ordem
+interna desses escritores no hospedado.
 
-Regras: pagamento único (dinheiro/Pix/débito) = 1 parcela em base + `due_days` por condição; boleto 1..3 quando o plano tem
-essa quantidade e a configuração permite; Price exige taxa explícita (`price_monthly_rate_percent`) e plano **sem** juros
-próprios (`payment_method_price_interest_conflict`); parcelas vêm do plano, nunca do cliente. Meses seguintes no mesmo dia
-ou último dia do mês. **Dias úteis Paracatu-MG + nacionais não são aplicados na estimativa** (B4, calendário selado).
+## Evidência (PG descartável, não é prova hospedada)
+`test-local-pg.py` → `evidence-local-pg.json`: **101/101**. Costuras declaradas: as do harness B2 (auth.uid por GUC,
+has_role/c2_* mínimos, entitlements, tabelas de 2º nível), `payment_methods` mínima, leitor de condição com portas mínimas,
+pins de colunas trocados só na cópia temporária. O caminho interno é barrado pela guarda LIVE de origem interna
+(`B2B_INTERNAL_ISSUER_AMBIGUOUS` no harness) nos dois contratos; a positiva interna não foi demonstrada.
 
-## Ordem de implantação (decisão do auditor)
-1. 01 PRE → 02 → 03 POST. A partir do COMMIT, o frontend publicado (29e9706) **não consegue criar pedido** como comprador
-   externo (erro explícito). Publicar o frontend deste pacote logo depois; antes disso o vendedor precisa configurar meios
-   (nenhuma configuração é criada pelo pacote).
-2. Rollback 04: RPCs novos negam; exigência permanece (comprador externo bloqueado até nova revisão); dados preservados.
-
-## Evidências
-- `test-local-pg.py` → `evidence-local-pg.json`: **81/81** em PG descartável, estado instalado (cart fence 9c99095 + V2)
-  reproduzido; corpos REAIS simulate/reader/h15 conferidos por md5 = LIVE. Costuras declaradas: create e leitor de condição
-  (stubs), has_role/auth.uid/features do harness base. Não prova JWT/RLS/PostgREST hospedado.
-- `fn-md5.json`: md5 dos corpos instalados/negação medidos no PG; `generated-md5.json`: md5 dos arquivos 01–04.
+## Limitações abertas
+- Datas: referência = data do pedido; sem ajuste a dia útil Paracatu-MG; o vencimento definitivo é do B4 (emissão da NF).
+- `partner_order_payment_schedule` continua recebendo datas estimadas antes da NF (como o LIVE); o B4 precisa recalcular.
+- Outros criadores de pedido (conversão de simulação, cotação respondida) não recebem meio; numa empresa ativada eles falham com `B2B_PAYMENT_METHOD_REQUIRED`.
+- Rollback 04 é só negação: empresa já ativada fica bloqueada até nova revisão.
+- Sem JWT/RLS/PostgREST/browser autenticado.
