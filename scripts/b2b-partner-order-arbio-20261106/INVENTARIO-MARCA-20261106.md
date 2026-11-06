@@ -56,3 +56,11 @@ Estes pontos NÃO estão concluídos como nome dinâmico; falta projeção autor
 - Acompanhamento de pedidos B2B (TimelinePedidoDialog e lista) — fonte atual não traz o vendedor.
 - Pedido B2B antes da instalação do SQL: o fallback legado retorna `sellerName=null` → "empresa fornecedora" até o leitor escopado existir.
 Dinâmicos (nome real quando o contexto autorizado responde; neutro só em carregamento/troca/logout/erro): demais itens da tabela ALTERADAS.
+
+## Revisão 90b26883 — fonte corrigida e estado real
+- `org_onboarding_state` só devolve nome ao ADMIN (definição de produção). Fonte trocada para `tenant_display_name_v1` (pacote `scripts/tenant-display-name-20261106/`, NÃO aplicado). Até a instalação, TODAS as telas internas/portal do cliente listadas como "ALTERADAS" exibem o rótulo neutro para todos os perfis — inclusive admin. Não estão concluídas como nome dinâmico.
+- B2B: nome do vendedor vem do leitor de volumes (NovoPedido) e do campo `seller` da projeção já autorizada (`useMyPartner`, sem consulta financeira nova): acompanhamento (MeusPedidos → linha do tempo e PDF do pedido), aviso do layout, clientes, fichas (texto e PDF), simulações (PDF), histórico/solicitações (PDF). Ambos dependem de SQL ainda NÃO aplicado → hoje neutro "empresa fornecedora".
+- PDFs: cabeçalho recebe `empresaNome` obrigatório em todos os 7 geradores (catálogos, fichas, dossiê, pedido, simulação); logo e rodapé "Documento gerado pelo Cultivo Farm" preservados (sistema). Sem nome comprovado → "Empresa responsável".
+- `ReportShell.tsx` revertido byte a byte (pin financeiro `0ec06253`): cabeçalho/rodapé dos relatórios financeiros voltam a "Cultivo Farm" — PENDENTE de revisão de diff da evidência financeira.
+- Fornecedor gravado/seed de microrganismos: mantido (dado, não mensagem).
+- Neutros fixos remanescentes (sem projeção): laudo `PortalOrdensServico.tsx:212`, `FichaProdutorDrawer.tsx:145`, `AccountingPendingNotice.tsx`, aviso de usuário sem vínculo `PortalParceiroLayout.tsx` (sem parceiro não há vendedor).
