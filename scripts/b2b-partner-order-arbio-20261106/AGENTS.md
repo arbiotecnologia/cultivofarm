@@ -4,3 +4,4 @@
 - Characterization tests stay BLOCKED until the contract is installed and the types are regenerated; they never prove JWT/RLS — prevents false certification.
 - Buyer volume reads go only through get_partner_catalog_volumes_secure (canonical b2b_partner_catalog_reader + catalog item set, no prices); never widen catalogo_volumes/produtos RLS — prevents cross-tenant catalog exposure.
 - Supplier names shown to buyers come only from the server-resolved seller context, with a neutral fallback; never the buyer tenant or the system brand — prevents misattributing the supplier.
+- The legacy volume fallback triggers only on PostgREST PGRST202 naming exactly public.get_partner_catalog_volumes_secure(p_partner_id); 42883 and any other error fail closed without REST — prevents a broken install from masquerading as pre-install.
