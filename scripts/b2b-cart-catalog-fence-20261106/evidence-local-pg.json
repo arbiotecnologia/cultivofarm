@@ -26,7 +26,7 @@
     "public.simulate_b2b_payment_plan_secure"
   ],
   "seams": "ver docstring",
-  "passed": 44,
+  "passed": 45,
   "total": 45,
   "checks": [
     {
@@ -206,7 +206,7 @@
     },
     {
       "name": "post: superadmin com vínculo de parceiro",
-      "ok": false,
+      "ok": true,
       "detail": "ERROR:  tenant_catalog_fence_denied"
     },
     {

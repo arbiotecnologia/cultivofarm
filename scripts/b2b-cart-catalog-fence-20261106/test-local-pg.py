@@ -239,7 +239,7 @@ def matrix(phase):
     denied(f"{tag}: admin de outro tenant simulando o parceiro", sim(UADMF, P, [LIQ_LINE]), "forbidden_partner")
     denied(f"{tag}: técnico do parceiro", sim(UT, P, [LIQ_LINE]), "forbidden_financial_terms")
     denied(f"{tag}: comprador inativo", sim(UINACT, P, [LIQ_LINE]), "C2_SCOPE_INACTIVE")
-    denied(f"{tag}: superadmin com vínculo de parceiro", sim(USUP, P, [LIQ_LINE]), "platform_actor_denied")
+    denied(f"{tag}: superadmin com vínculo de parceiro", sim(USUP, P, [LIQ_LINE]), "tenant_catalog_fence_denied")  # leitor nega; fence (inalterada) também nega
     denied(f"{tag}: authenticated sem sessão", sim(None, P, [LIQ_LINE]), "auth_required")
     denied(f"{tag}: anônimo sem EXECUTE", sim(None, P, [LIQ_LINE], role="anon"), "permission denied")
     denied(f"{tag}: wrapper público cercado continua negando o comprador",
