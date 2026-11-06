@@ -53,6 +53,6 @@ export function useActiveTenantName(): ActiveTenantName {
     },
   });
 
-  const name = enabled && query.isSuccess && !query.isFetching ? query.data ?? null : null;
+  const name = enabled && query.isSuccess ? query.data ?? null : null;
   return { name, label: name ? responsibleLabel(name) : NEUTRAL_RESPONSIBLE };
 }
