@@ -23,19 +23,21 @@ function augmentSim(data: unknown) {
     due_basis: "nf_issue", schedule_estimated: true, estimated_schedule: est, estimated_total: d.amounts?.final_amount ?? null };
 }
 
-export function withPaymentMethod(inner: Handler): Handler {
+/** `via` (ex.: o próprio mock rpc) registra também a chamada delegada com o nome legado. */
+export function withPaymentMethod(inner: Handler, via?: Handler): Handler {
+  const call = via ?? inner;
   return (name, args) => {
     if (name === "b2b_list_payment_method_options_secure")
       return withAbort(Promise.resolve({ data: { contract: "B2B_PAYMENT_METHOD_V1", partner_id: args?.p_partner_id, payment_plan_id: args?.p_payment_plan_id,
         due_basis: "nf_issue", options: [{ ...TEST_PIX, method_kind: "pix", available: true, payment_method_name: "Pix", due_days: 5, installment_count: 1 }] }, error: null }));
     if (name === "simulate_b2b_payment_plan_with_method_secure") {
       const { p_method_config_id: _c, p_method_config_version: _v, ...rest } = args ?? {};
-      return Promise.resolve(inner("simulate_b2b_payment_plan_secure", { ...rest, p_first_due_date: null }) as Promise<Reply>)
+      return Promise.resolve(call("simulate_b2b_payment_plan_secure", { ...rest, p_first_due_date: null }) as Promise<Reply>)
         .then((r) => (r && !r.error ? { ...r, data: augmentSim(r.data) } : r));
     }
     if (name === "create_partner_order_with_method_secure") {
       const { p_method_config_id: cid, p_method_config_version: ver, ...rest } = args ?? {};
-      return Promise.resolve(inner("create_partner_order_secure", { ...rest, p_first_due_date: null, p_installment_count: null }) as Promise<Reply>)
+      return Promise.resolve(call("create_partner_order_secure", { ...rest, p_first_due_date: null, p_installment_count: null }) as Promise<Reply>)
         .then((r) => (r && !r.error && r.data && typeof r.data === "object"
           ? { ...r, data: { ...(r.data as object), payment_method: { config_id: cid, version: ver, method_kind: "pix", schedule_estimated: true } } } : r));
     }
