@@ -19,8 +19,10 @@ import {
   usePartnerSimulationItems,
   useDeletePartnerSimulation,
 } from "@/hooks/usePartnerSimulations";
+import { useMyPartner } from "@/hooks/useMyPartner";
 
 export default function HistoricoSimulacoes() {
+  const { data: myPartnerSeller } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const { profile, role, user } = useAuth();
   const { data: allSims = [], isLoading } = usePartnerSimulations(partner?.id);
@@ -38,6 +40,7 @@ export default function HistoricoSimulacoes() {
 
   const handleDownload = async (sim: any, itemsList: any[]) => {
     const { blobUrl, filename } = await generateSimulacaoPdf({
+      empresaNome: myPartnerSeller?.sellerName ?? null,
       simulacao: sim,
       parceiro_nome: partner?.nome_fantasia ?? partner?.razao_social ?? null,
       baixado_por: {

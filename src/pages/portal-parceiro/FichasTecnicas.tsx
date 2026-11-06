@@ -61,8 +61,8 @@ export default function FichasTecnicas() {
       if (!current() || refreshed.error || !refreshed.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) return;
       const result =
         capturedTipo === "produto"
-          ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b" })
-          : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b" });
+          ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b", empresaNome: myPartner?.sellerName ?? null })
+          : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b", empresaNome: myPartner?.sellerName ?? null });
       if (result && "blobUrl" in result) {
         if (!current()) { URL.revokeObjectURL(result.blobUrl); return; }
         const after = await catalog.refetch();

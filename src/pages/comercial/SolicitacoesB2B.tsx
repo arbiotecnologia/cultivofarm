@@ -32,6 +32,7 @@ import {
 } from "@/lib/partnerOrderStatus";
 import { DetalhePedidoDrawer } from "@/components/pedidos-b2b/DetalhePedidoDrawer";
 import { DetalheSimulacaoDrawer } from "@/components/pedidos-b2b/DetalheSimulacaoDrawer";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 const SIM_STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho",
@@ -48,6 +49,7 @@ type TipoFiltro =
   | "simulacao_nao_convertida";
 
 export default function SolicitacoesB2B() {
+  const { name: tenantName } = useActiveTenantName();
   const { data: pedidos = [], isLoading: loadingPed, actorScope } = usePartnerOrdersAdmin();
   const { data: sims = [], isLoading: loadingSim } = useComercialSimulacoesAll();
 
@@ -525,6 +527,7 @@ export default function SolicitacoesB2B() {
       </Tabs>
 
       <DetalhePedidoDrawer
+        empresaNome={tenantName}
         orderId={openPedido}
         open={!!openPedido}
         onOpenChange={(o) => !o && setOpenPedido(null)}

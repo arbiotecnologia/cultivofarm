@@ -230,6 +230,7 @@ export default function MeusPedidos() {
       />
 
       <DetalhePedidoDrawer
+        empresaNome={myPartner?.sellerName ?? null}
         orderId={detalheId}
         open={!!detalheId}
         onOpenChange={(o) => !o && setDetalheId(null)}

@@ -21,6 +21,7 @@ import { generateSimulacaoPdf } from "@/lib/pdf/simulacaoPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { DetalheSimulacaoDrawer } from "@/components/pedidos-b2b/DetalheSimulacaoDrawer";
 import { formatarArea, formatarMoeda } from "@/lib/catalogo/formatUnidades";
+import { useMyPartner } from "@/hooks/useMyPartner";
 
 const STATUS_LABEL: Record<PartnerSimulationStatus, string> = {
   rascunho: "Rascunho",
@@ -37,6 +38,7 @@ const STATUS_VARIANT: Record<PartnerSimulationStatus, "outline" | "secondary" | 
 };
 
 export default function SimulacoesEquipe() {
+  const { data: myPartnerSeller } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const [statusFilter, setStatusFilter] = useState<string>("todas");
   const [tecnicoFilter, setTecnicoFilter] = useState<string>("todos");
@@ -305,6 +307,7 @@ function SimulacaoDrawerComPdf({
   const handleDownloadPdf = async () => {
     if (!sim) return;
     const { blobUrl, filename } = await generateSimulacaoPdf({
+      empresaNome: myPartnerSeller?.sellerName ?? null,
       simulacao: sim,
       parceiro_nome: partner?.nome_fantasia ?? partner?.razao_social ?? null,
       tecnico_nome: tecnicoNome,
