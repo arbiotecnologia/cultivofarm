@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReportShell } from "@/components/financeiro/relatorios/ReportShell";
 import RelatorioMensal from "@/pages/financeiro/relatorios/RelatorioMensal";
+vi.mock("@/hooks/useActiveTenantName", () => ({ useActiveTenantName: () => ({ name: null, label: "empresa responsável" }) }));
 
 const state = vi.hoisted(() => ({
   auth: { user: { id: "A", email: "" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["financeiro"], loading: false, error: null as string | null },

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const t = vi.hoisted(() => ({ rpc: vi.fn(), open: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: t.rpc } }));
 import { EtiquetaProdutoActions } from "@/components/etiquetas/EtiquetaProdutoActions";
+vi.mock("@/hooks/useActiveTenantName", () => ({ useActiveTenantName: () => ({ name: null, label: "empresa responsável" }) }));
 beforeEach(() => { vi.clearAllMocks(); vi.spyOn(window, "open").mockImplementation(t.open); });
 describe("Cancelamento de etiqueta contido independentemente da página", () => {
   it.each([false, true])("não disponibiliza writer com readOnly=%s, preserva consulta/impressão", readOnly => {

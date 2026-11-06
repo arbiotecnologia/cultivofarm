@@ -22,6 +22,7 @@ vi.mock("@/lib/authz/authenticatedAttachment", async (orig) => ({
   downloadAuthenticatedAttachment: (...a: unknown[]) => s.download(...a),
 }));
 import { ReportShell } from "@/components/financeiro/relatorios/ReportShell";
+vi.mock("@/hooks/useActiveTenantName", () => ({ useActiveTenantName: () => ({ name: null, label: "empresa responsável" }) }));
 
 const live = { url: "https://swzpzcwiasxmjutrmvkm.supabase.co/storage/v1/object/sign/financial-reports/x?token=SIGNED", path: PATH, row_count: 1 };
 const reviewed = { bucket: "financial-reports", path: PATH, export_id: "33333333-3333-4333-8333-333333333333", row_count: 1 };
