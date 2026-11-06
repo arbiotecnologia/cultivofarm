@@ -54,7 +54,7 @@ describe("caminhos sem envio", () => {
 import { CatalogoVolumesDialog } from "@/components/protocolos/CatalogoVolumesDialog";
 describe("diálogo real", () => {
   it("abre, preenche e salva", async () => {
-    const admin = { product_id: PROD, unidade_conteudo: "kg", offers: [{ packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", peso_liquido_kg: 25, version: 1, ativo: true, prices: [] }] };
+    const admin = { contract: "SOLID_PACK_ADMIN_V1", config_version: 1, product_id: PROD, unidade_conteudo: "kg", offers: [{ packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", peso_liquido_kg: 25, version: 1, ativo: true, prices: [] }] };
     rpcMock.mockImplementation((name: string) => {
       const v = name === "solid_pack_offers_admin_v1" ? { data: admin, error: null } : { data: null, error: { code: "42501", message: "negado " + name } };
       const p = Promise.resolve(v); return Object.assign(p, { abortSignal: () => p });
