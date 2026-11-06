@@ -5,6 +5,8 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { formatarArea, formatarMoeda, formatarOuTraco, PLACEHOLDER_VAZIO } from "@/lib/catalogo/formatUnidades";
 
 export interface SimulacaoPdfInput {
+  /** Empresa fornecedora/emitente já resolvida pelo chamador (vendedor B2B autorizado ou tenant ativo). */
+  empresaNome: string | null;
   simulacao: {
     titulo: string | null;
     cultura: string | null;
@@ -39,6 +41,7 @@ export async function generateSimulacaoPdf(input: SimulacaoPdfInput): Promise<{
   let y = await drawArBioHeader(doc, {
     subtitulo: `Simulação Técnica — ${input.simulacao.titulo ?? "Sem título"}`,
     totalRegistros: input.itens.length,
+    empresaNome: input.empresaNome,
   });
 
   const info: [string, string][] = [

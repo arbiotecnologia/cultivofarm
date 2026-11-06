@@ -6,6 +6,8 @@ import { brl } from "@/lib/financial/format";
 import { formatarArea, formatarOuTraco, formatarPercentual, PLACEHOLDER_VAZIO } from "@/lib/catalogo/formatUnidades";
 
 export interface PedidoPdfInput {
+  /** Empresa fornecedora/emitente já resolvida pelo chamador (vendedor B2B autorizado ou tenant ativo). */
+  empresaNome: string | null;
   pedido: {
     numero: string;
     status?: string | null;
@@ -52,6 +54,7 @@ export async function generatePedidoPdf(input: PedidoPdfInput): Promise<{
   let y = await drawArBioHeader(doc, {
     subtitulo: `Pedido Comercial — ${input.pedido.numero}`,
     totalRegistros: input.itens.length,
+    empresaNome: input.empresaNome,
   });
 
   const info: [string, string][] = [
