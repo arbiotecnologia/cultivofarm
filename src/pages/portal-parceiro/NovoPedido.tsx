@@ -47,6 +47,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCommercialPaymentPlans } from "@/hooks/useCommercialPaymentPlans";
 import { useSimulateB2BPaymentPlan, type SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
+import { simulationKey, describeSimulationFailure, type SimulationFailure } from "@/lib/b2bSimulationState";
 import { PaymentPlanSelector } from "@/components/comercial/PaymentPlanSelector";
 import { PaymentSimulationSummary } from "@/components/comercial/PaymentSimulationSummary";
 
@@ -1281,9 +1282,24 @@ export default function NovoPedido() {
                   loading={simulateSelectedPlan.isPending}
                 />
 
-                {simulation && (
+                {visibleSimFailure && !simulateSelectedPlan.isPending && (
+                  <Alert variant="destructive" className="py-2" role="alert" data-testid="b2b-simulation-error">
+                    <AlertDescription className="text-xs space-y-2">
+                      <p className="font-medium">{visibleSimFailure.title}</p>
+                      <p>{visibleSimFailure.detail}</p>
+                      {visibleSimFailure.code && <p className="opacity-80">Código: {visibleSimFailure.code}</p>}
+                      {visibleSimFailure.retryable && (
+                        <Button type="button" size="sm" variant="outline"
+                          onClick={() => setSimRetryTick((n) => n + 1)}>
+                          Tentar calcular novamente
+                        </Button>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {visibleSimulation && (
                   <PaymentSimulationSummary
-                    simulation={simulation}
+                    simulation={visibleSimulation}
                     cashReferenceAmount={cashSimulation?.amounts.final_amount ?? null}
                     responsavelNome={supplierName}
                   />
