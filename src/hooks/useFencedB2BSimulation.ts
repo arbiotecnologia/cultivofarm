@@ -57,7 +57,7 @@ function validReply(r: unknown, partnerId: string, planId: string, method?: { co
   if (!sched.every((s) => !!s && typeof s.amount === "number" && Number.isFinite(s.amount) && typeof s.due_date === "string" && DATE.test(s.due_date))) return false;
   // Uma verdade: soma das parcelas (centavos) = final_amount = amounts.final_amount.
   const cents = sched.reduce((acc, s) => acc + Math.round((s.amount as number) * 100), 0);
-  return cents === Math.round(x.amounts!.final_amount * 100) && Math.round(Number(x.final_amount) * 100) === cents;
+  return cents === Math.round(x.amounts!.final_amount * 100) && Math.round(Number((x as { final_amount?: unknown }).final_amount) * 100) === cents;
 }
 
 export function useFencedB2BSimulation(a: FencedSimulationArgs) {
