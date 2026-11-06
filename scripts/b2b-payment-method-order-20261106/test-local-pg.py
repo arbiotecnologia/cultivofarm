@@ -445,6 +445,10 @@ def main():
               and int(psql("SELECT count(*) FROM public.b2b_payment_method_config_versions").stdout.strip()) >= 8)
         fm["deny"] = {k: md5_of(s) for k, s in g["PUB"].items()}
         (HERE / "fn-md5.json").write_text(json.dumps(fm, indent=2) + "\n")
+    except Exception:
+        for c in CHECKS:
+            if not c["ok"]: print("FAIL", c["name"], c.get("detail", ""))
+        raise
     finally:
         subprocess.run(SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
     passed = sum(1 for c in CHECKS if c["ok"])
