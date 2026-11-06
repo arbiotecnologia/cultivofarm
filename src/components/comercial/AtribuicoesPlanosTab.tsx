@@ -200,11 +200,8 @@ export function AtribuicoesPlanosTab() {
                       )}
                       {canPublish && a.status !== "published" && a.status !== "archived" && (
                         <Button
-                          size="sm" disabled={submit.isPending || publish.isPending || archive.isPending}
-                          onClick={() => {
-                            if (!confirm("Publicar esta atribuição? O plano passa a ficar elegível para o destino.")) return;
-                            publish.mutate({ id: a.id }, { onSuccess: () => toast.success("Atribuição publicada"), onError });
-                          }}
+                          size="sm" disabled={submit.isPending || publish.isPending || archive.isPending || !publish.ready}
+                          onClick={() => openPublishConfirmation(a)}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Publicar
                         </Button>
