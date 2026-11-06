@@ -470,7 +470,24 @@ def main():
         chk("snapshot.forged_weight_rejected", r.returncode != 0 and "SNAPSHOT_MISMATCH" in r.stderr, err(r))
         r = psql(f"""INSERT INTO public.partner_order_items(order_id,product_id,quantidade,unidade_medida,packaging_id_snapshot,packaging_codigo_snapshot,packaging_version_snapshot,
                  packaging_peso_liquido_kg_snapshot,packaging_unidade_conteudo_snapshot,packaging_price_id_snapshot) VALUES ('{cl['id']}','{SOL}',1.5,'unidade','{PK25}','SC25',1,25,'kg','{PR25}')""", check=False)
-        chk("snapshot.fraction_rejected", r.returncode != 0 and "poi_packaging_snapshot_shape" in r.stderr, err(r))
+        chk("snapshot.fraction_rejected", r.returncode != 0 and ("poi_packaging_snapshot_shape" in r.stderr or (REAL and "auth_required" in r.stderr)), err(r))
+        # ---------- CHECK poi_packaging_snapshot_shape ISOLADO (gatilhos desligados só nesta sessão postgres): nenhum NULL vira UNKNOWN aceito
+        good = dict(product_id=f"'{SOL}'", quantidade="2", unidade_medida="'unidade'", packaging_id_snapshot=f"'{PK25}'", packaging_codigo_snapshot="'SC25'",
+                    packaging_version_snapshot="1", packaging_peso_liquido_kg_snapshot="25", packaging_unidade_conteudo_snapshot="'kg'", packaging_price_id_snapshot=f"'{PR25}'")
+        def ins(over):
+            row = {**good, **over}
+            return psql("SET session_replication_role = replica; INSERT INTO public.partner_order_items(order_id," + ",".join(row) + f") VALUES ('{cl['id']}'," + ",".join(row.values()) + ");", check=False)
+        r = ins({}); chk("check.valid_row_accepted", r.returncode == 0, err(r))
+        for col, val in (("packaging_codigo_snapshot", "NULL"), ("packaging_codigo_snapshot", "'  '"), ("packaging_version_snapshot", "NULL"), ("packaging_version_snapshot", "0"),
+                         ("packaging_peso_liquido_kg_snapshot", "NULL"), ("packaging_peso_liquido_kg_snapshot", "0"), ("packaging_unidade_conteudo_snapshot", "NULL"),
+                         ("packaging_unidade_conteudo_snapshot", "'un'"), ("packaging_price_id_snapshot", "NULL"), ("quantidade", "1.5"), ("unidade_medida", "'litro'"),
+                         ("volume_ml", "1000"), ("volume_ml_snapshot", "1000")):
+            r = ins({col: val}); chk(f"check.insert_rejected.{col}={val.strip(chr(39)) or 'blank'}", r.returncode != 0 and "poi_packaging_snapshot_shape" in r.stderr, err(r))
+        vid = psql(f"SELECT id FROM public.partner_order_items WHERE order_id = '{cl['id']}' AND packaging_id_snapshot IS NOT NULL ORDER BY created_at DESC LIMIT 1").stdout.strip()
+        for col in ("packaging_codigo_snapshot", "packaging_version_snapshot", "packaging_peso_liquido_kg_snapshot", "packaging_unidade_conteudo_snapshot", "packaging_price_id_snapshot"):
+            r = psql(f"SET session_replication_role = replica; UPDATE public.partner_order_items SET {col} = NULL WHERE id = '{vid}';", check=False)
+            chk(f"check.update_null_rejected.{col}", r.returncode != 0 and "poi_packaging_snapshot_shape" in r.stderr, err(r))
+        psql(f"SET session_replication_role = replica; DELETE FROM public.partner_order_items WHERE id = '{vid}';")
 
         # ---------- concorrência: arquivar/trocar preço espera o pedido; chaves iguais em paralelo => 1 pedido
         hc = j(sim(UB, PLD, items(S(PK40, 1))))["cart_hash"]

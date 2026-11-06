@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS public.company_fiscal_settings(id uuid DEFAULT gen_ra
 ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
 ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS partner_account_id uuid;
 CREATE TABLE IF NOT EXISTS public.clientes(id uuid PRIMARY KEY, organization_id uuid);
+CREATE TABLE IF NOT EXISTS platform_private.delivery_context_20261030(txid bigint NOT NULL PRIMARY KEY, actor uuid NOT NULL, organization_id uuid NOT NULL,
+  action text NOT NULL, target uuid, consumed boolean DEFAULT false NOT NULL, item uuid, delivery uuid, mutation text);
 CREATE TABLE IF NOT EXISTS platform_private.solid_pack_presentation_tx(txid bigint NOT NULL PRIMARY KEY, created_at timestamptz DEFAULT now() NOT NULL);
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'gestor';
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'administrativo';
