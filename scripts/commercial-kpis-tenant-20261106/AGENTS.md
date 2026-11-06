@@ -1,0 +1,6 @@
+- Preparation only: never apply 02/04 hosted, publish or grant from here; the owner/auditor runs PRE/POST after review — prevents unreviewed production changes.
+- Install aborts on any pin drift (kpis body, h15, readiness, has_role) and on rerun; never hand-edit captured/ — prevents installing over a changed guard.
+- Every aggregate, the JOIN and parceiros_novos filter partner_accounts.commercial_owner_organization_id = h15 tenant; foreign/unknown p_partner_id raise the same 'forbidden' — prevents cross-tenant sums and existence oracles.
+- Keep signature, defaults, 8 jsonb keys, original roles (administrador/gestor_comercial) and ACL; never widen roles or grant anon — avoids breaking consumers or expanding access.
+- Rollback is deny-only and never restores the vulnerable 96771c88 body.
+- Disposable PG seams (auth.uid/jwt, minimal schema) are not hosted JWT/RLS proof; the real FSF negative must be re-run in a real session after install.
