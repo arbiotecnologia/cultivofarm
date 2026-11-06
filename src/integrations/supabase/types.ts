@@ -13664,6 +13664,12 @@ export type Database = {
           id: string
           microrganismo_id: string | null
           order_id: string
+          packaging_codigo_snapshot: string | null
+          packaging_id_snapshot: string | null
+          packaging_peso_liquido_kg_snapshot: number | null
+          packaging_price_id_snapshot: string | null
+          packaging_unidade_conteudo_snapshot: string | null
+          packaging_version_snapshot: number | null
           plan_discount_percent_snapshot: number | null
           preco_tabela_snapshot: number | null
           preco_unitario: number
@@ -13690,6 +13696,12 @@ export type Database = {
           id?: string
           microrganismo_id?: string | null
           order_id: string
+          packaging_codigo_snapshot?: string | null
+          packaging_id_snapshot?: string | null
+          packaging_peso_liquido_kg_snapshot?: number | null
+          packaging_price_id_snapshot?: string | null
+          packaging_unidade_conteudo_snapshot?: string | null
+          packaging_version_snapshot?: number | null
           plan_discount_percent_snapshot?: number | null
           preco_tabela_snapshot?: number | null
           preco_unitario?: number
@@ -13716,6 +13728,12 @@ export type Database = {
           id?: string
           microrganismo_id?: string | null
           order_id?: string
+          packaging_codigo_snapshot?: string | null
+          packaging_id_snapshot?: string | null
+          packaging_peso_liquido_kg_snapshot?: number | null
+          packaging_price_id_snapshot?: string | null
+          packaging_unidade_conteudo_snapshot?: string | null
+          packaging_version_snapshot?: number | null
           plan_discount_percent_snapshot?: number | null
           preco_tabela_snapshot?: number | null
           preco_unitario?: number
@@ -22716,6 +22734,10 @@ export type Database = {
             }[]
           }
       get_partner_catalog_volumes_secure: {
+        Args: { p_partner_id: string }
+        Returns: Json
+      }
+      get_partner_packaging_offers_secure: {
         Args: { p_partner_id: string }
         Returns: Json
       }
