@@ -1,413 +1,425 @@
 {
   "contract": "B2B_PAYMENT_METHOD_V1",
-  "kind": "DISPOSABLE_PG_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 81,
-  "total": 81,
+  "revision": 2,
+  "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
+  "passed": 94,
+  "total": 102,
   "checks": [
     {
-      "name": "estado instalado: cart fence 9c99095",
-      "ok": true,
-      "detail": ""
+      "name": "estado instalado B2: 01-pre.sql.readonly",
+      "ok": true
     },
     {
-      "name": "estado instalado: upgrade V2",
-      "ok": true,
-      "detail": ""
+      "name": "estado instalado B2: 02-install.sql.review",
+      "ok": true
     },
     {
-      "name": "corpo REAL carregado = LIVE: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
-      "ok": true,
-      "detail": "37d4f45e388ed7b38f6f397b672629ee != 37d4f45e388ed7b38f6f397b672629ee"
+      "name": "estado instalado B2: 03-post.sql.readonly",
+      "ok": true
     },
     {
-      "name": "corpo REAL carregado = LIVE: platform_private.b2b_partner_catalog_reader(uuid)",
-      "ok": true,
-      "detail": "bd985484b69c8fa6e63a920eff518369 != bd985484b69c8fa6e63a920eff518369"
+      "name": "corpo REAL = LIVE: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
     },
     {
-      "name": "corpo REAL carregado = LIVE: platform_private.h15_actor_organization()",
-      "ok": true,
-      "detail": "64e10608403238a41a9baf92857ca881 != 64e10608403238a41a9baf92857ca881"
+      "name": "corpo REAL = LIVE: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)",
+      "ok": false,
+      "detail": "e268d3d3a9857c3ec8cbc2bf1f6c2fd6 != 26fd3c77"
+    },
+    {
+      "name": "02 com corpo LIVE divergente aborta sem deixar objetos",
+      "ok": true
     },
     {
       "name": "01 PRE_OK",
-      "ok": true,
-      "detail": "psql:/tmp/tmpdy60u_1i/01-pre.sql.readonly:13: NOTICE:  PRE_OK\n"
+      "ok": true
     },
     {
       "name": "02 install",
-      "ok": true,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "03 POST_OK",
-      "ok": true,
-      "detail": "psql:/tmp/tmpdy60u_1i/03-post.sql.readonly:39: NOTICE:  POST_OK\n"
+      "ok": true
     },
     {
       "name": "rerun do install recusado",
-      "ok": true,
-      "detail": ""
+      "ok": true
     },
     {
-      "name": "PRE recusa corpo LIVE divergente",
-      "ok": true,
-      "detail": ""
+      "name": "corpos LIVE originais intactos após install",
+      "ok": true
     },
     {
-      "name": "admin A cria Pix (v1)",
-      "ok": true,
-      "detail": "None"
+      "name": "sem ativação: comprador segue contrato atual (nenhum bloqueio global)",
+      "ok": true
     },
     {
-      "name": "financeiro A cria boleto 3x Price 2,5% a.m.",
-      "ok": true,
-      "detail": "None"
+      "name": "sem ativação: outro tenant segue contrato atual",
+      "ok": false,
+      "detail": "e->>'unidade_conteudo', NULLIF(v_line->>'packaging_price_id','')::uuid\n    )\"\nPL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 221 at SQL statement\n"
     },
     {
-      "name": "admin F cria Pix próprio (independente)",
-      "ok": true,
-      "detail": "None"
+      "name": "admin A cria Pix v1",
+      "ok": true
     },
     {
-      "name": "promissória ativa recusada",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_kind_not_defined'; obtido ERROR:  payment_method_kind_not_defined"
+      "name": "financeiro A cria boleto 3x Price 1,8%",
+      "ok": true
     },
     {
-      "name": "crédito ativo recusado",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_kind_not_defined'; obtido ERROR:  payment_method_kind_not_defined"
+      "name": "promissória personalizável: 3x com taxa explícita 0 aceita",
+      "ok": true
     },
     {
-      "name": "Pix parcelado recusado (CHECK)",
-      "ok": true,
-      "detail": "esperado erro 'b2b_pmc_single_payment'; obtido ERROR:  new row for relation \"b2b_payment_method_configs\" violates check constraint \"b2b_pmc_single_payment\""
+      "name": "promissória 3x sem taxa explícita recusada",
+      "ok": true
     },
     {
-      "name": "boleto 2x sem taxa explícita recusado",
-      "ok": true,
-      "detail": "esperado erro 'b2b_pmc_price_rate_explicit'; obtido ERROR:  new row for relation \"b2b_payment_method_configs\" violates check constraint \"b2b_pmc_price_rate_explicit\""
+      "name": "crédito 37x recusado",
+      "ok": true
+    },
+    {
+      "name": "Pix parcelado recusado",
+      "ok": true
     },
     {
       "name": "boleto 4x recusado",
-      "ok": true,
-      "detail": "esperado erro 'max_installments'; obtido ERROR:  new row for relation \"b2b_payment_method_configs\" violates check constraint \"b2b_payment_method_configs_max_installments_check\""
+      "ok": true
     },
     {
       "name": "meio inativo no catálogo recusado",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_catalog_unavailable'; obtido ERROR:  payment_method_catalog_unavailable"
+      "ok": true
     },
     {
-      "name": "criação duplicada (mesmo plano/meio) = stale",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_config_stale'; obtido ERROR:  payment_method_config_stale"
+      "name": "criação duplicada = stale",
+      "ok": true
     },
     {
       "name": "comprador não configura",
-      "ok": true,
-      "detail": "esperado erro 'forbidden'; obtido ERROR:  forbidden"
+      "ok": true
     },
     {
       "name": "técnico não configura",
-      "ok": true,
-      "detail": "esperado erro 'forbidden'; obtido ERROR:  forbidden"
+      "ok": true
     },
     {
-      "name": "gestor comercial não configura (só admin/financeiro)",
-      "ok": true,
-      "detail": "esperado erro 'forbidden'; obtido ERROR:  forbidden"
+      "name": "gestor comercial (só leitura) não configura",
+      "ok": true
     },
     {
-      "name": "admin F não edita config de A (sem oráculo)",
-      "ok": true,
-      "detail": "esperado erro 'forbidden'; obtido ERROR:  forbidden"
+      "name": "superadmin não configura",
+      "ok": true
     },
     {
-      "name": "anônimo sem EXECUTE no writer",
-      "ok": true,
-      "detail": "esperado erro 'permission denied'; obtido ERROR:  permission denied for function b2b_payment_method_config_list"
+      "name": "admin F não edita config de A",
+      "ok": true
     },
     {
-      "name": "lista do vendedor F só vê F",
-      "ok": true,
-      "detail": "None"
+      "name": "gestor comercial lê configs de A (sem editar)",
+      "ok": true
     },
     {
-      "name": "comprador não lista configs internas",
-      "ok": true,
-      "detail": "esperado erro 'forbidden'; obtido ERROR:  forbidden"
+      "name": "lista de F só vê F",
+      "ok": true
     },
     {
-      "name": "tabela de configs fechada a authenticated",
-      "ok": true,
-      "detail": "esperado erro 'permission denied'; obtido ERROR:  permission denied for table b2b_payment_method_configs"
+      "name": "comprador não lista configs",
+      "ok": true
     },
     {
-      "name": "comprador P vê só meios ativos do vendedor A na condição",
-      "ok": true,
-      "detail": "['dinheiro', 'pix']"
+      "name": "tabela fechada ao cliente",
+      "ok": true
+    },
+    {
+      "name": "anônimo sem EXECUTE",
+      "ok": true
+    },
+    {
+      "name": "opções do comprador P: só meios ativos de A; mode legacy antes da ativação",
+      "ok": true
     },
     {
       "name": "comprador F vê só o Pix de F",
-      "ok": true,
-      "detail": "{'options': [{'version': 1, 'due_days': 2, 'available': True, 'config_id': 'bb1c413d-fd42-4a5f-9845-7a02fd901097', 'method_kind': 'pix', 'installment_count': 1, 'payment_method_id': '00000000-0000-0000-0000-000000000091', 'payment_method_name': 'Pix TESTE', 'price_monthly_rate_percent': None}], 'con"
+      "ok": true
     },
     {
       "name": "comprador P pedindo parceiro F negado",
-      "ok": true,
-      "detail": "esperado erro 'forbidden_partner'; obtido ERROR:  forbidden_partner"
+      "ok": true
     },
     {
-      "name": "técnico negado (termos financeiros)",
-      "ok": true,
-      "detail": "esperado erro 'forbidden_financial_terms'; obtido ERROR:  forbidden_financial_terms"
+      "name": "técnico negado",
+      "ok": true
     },
     {
       "name": "comprador inativo negado",
-      "ok": true,
-      "detail": "esperado erro ''; obtido ERROR:  forbidden_role"
+      "ok": true
     },
     {
-      "name": "anônimo sem EXECUTE no leitor",
-      "ok": true,
-      "detail": "esperado erro 'permission denied'; obtido ERROR:  permission denied for function b2b_list_payment_method_options_secure"
+      "name": "condição não publicada: nenhuma opção",
+      "ok": true
     },
     {
-      "name": "condição não publicada ao parceiro: nenhuma opção",
-      "ok": true,
-      "detail": "{'options': [], 'contract': 'B2B_PAYMENT_METHOD_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'payment_plan_id': '00000000-0000-0000-0000-000000000074'}"
+      "name": "plano 3x: boleto disponível, Pix indisponível",
+      "ok": true
     },
     {
-      "name": "plano 3x: boleto disponível, Pix indisponível (parcelas incompatíveis)",
-      "ok": true,
-      "detail": "{'boleto': {'version': 1, 'due_days': 10, 'available': True, 'config_id': '4a1cbc55-a20f-4f64-8730-57bb307882c6', 'method_kind': 'boleto', 'installment_count': 3, 'payment_method_id': '00000000-0000-0000-0000-000000000092', 'payment_method_name': 'Boleto TESTE', 'price_monthly_rate_percent': 2.5}, '"
+      "name": "plano com juros próprios: Price indisponível",
+      "ok": true
     },
     {
-      "name": "plano com juros próprios: boleto Price indisponível (juros em dobro)",
-      "ok": true,
-      "detail": "{'options': [{'reason': 'payment_method_price_interest_conflict', 'version': 1, 'available': False, 'config_id': 'fcd0f1f0-218d-435e-94ea-effdd30b31b8', 'method_kind': 'boleto'}], 'contract': 'B2B_PAYMENT_METHOD_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'pay"
+      "name": "ator interno de A vê opções do parceiro de A",
+      "ok": true
     },
     {
-      "name": "simulação Pix líquido: R$ 0.90 em 1 parcela estimada base+5d",
-      "ok": true,
-      "detail": "(0.9, [{'amount': 0.9, 'interest_amount': 0.0, 'principal_amount': 0.9, 'estimated_due_date': '2026-11-11', 'installment_number': 1}])"
+      "name": "ator interno de F não vê parceiro de A",
+      "ok": true
     },
     {
-      "name": "simulação Pix embalagem inteira: R$ 18.00 em 1 parcela estimada base+5d",
-      "ok": true,
-      "detail": "(18.0, [{'amount': 18.0, 'interest_amount': 0.0, 'principal_amount': 18.0, 'estimated_due_date': '2026-11-11', 'installment_number': 1}])"
+      "name": "exemplo do revisor: 1000 a 1,8% 3x = 345,40/345,40/345,42 (Decimal independente)",
+      "ok": true
     },
     {
-      "name": "simulação Pix misto: R$ 18.90 em 1 parcela estimada base+5d",
-      "ok": true,
-      "detail": "(18.9, [{'amount': 18.9, 'interest_amount': 0.0, 'principal_amount': 18.9, 'estimated_due_date': '2026-11-11', 'installment_number': 1}])"
+      "name": "simulação: final/amounts/juros/cronograma/crédito = 1036,22 (uma verdade)",
+      "ok": true
     },
     {
-      "name": "boleto 3x Price 2,5%: parcelas = cálculo Decimal independente",
-      "ok": true,
-      "detail": "([{'amount': 6.62, 'interest_amount': 0.47, 'principal_amount': 6.15, 'estimated_due_date': '2026-11-16', 'installment_number': 1}, {'amount': 6.62, 'interest_amount': 0.32, 'principal_amount': 6.3, 'estimated_due_date': '2026-12-16', 'installment_number': 2}, {'amount': 6.61, 'interest_amount': 0.1"
+      "name": "hash com meio ≠ hash LIVE do mesmo carrinho (inclui condição/meio/versão/total)",
+      "ok": true
     },
     {
-      "name": "boleto 3x: principal soma exatamente o líquido (18,90)",
-      "ok": true,
-      "detail": ""
+      "name": "create com hash LIVE (1000) recusado: price_changed",
+      "ok": true
     },
     {
-      "name": "boleto 3x: total estimado = soma das parcelas",
-      "ok": true,
-      "detail": ""
+      "name": "create Price: ACK total/final/juros 1036,22 e mesmo hash",
+      "ok": true
     },
     {
-      "name": "taxa 0: 33,33+33,33+33,34 e meses mesmo dia/último dia (01/02→01/03→01/04)",
-      "ok": true,
-      "detail": "[{'amount': 33.33, 'interest_amount': 0.0, 'principal_amount': 33.33, 'estimated_due_date': '2027-02-01', 'installment_number': 1}, {'amount': 33.33, 'interest_amount': 0.0, 'principal_amount': 33.33, 'estimated_due_date': '2027-03-01', 'installment_number': 2}, {'amount': 33.34, 'interest_amount': "
+      "name": "pedido/terms/cronograma/snapshot/idempotência: todos 1036,22 e as mesmas 3 parcelas",
+      "ok": true
     },
     {
-      "name": "1ª em 31/01 → 28/02 → 31/03 (último dia)",
-      "ok": true,
-      "detail": "[{'amount': 3.33, 'interest_amount': 0.0, 'principal_amount': 3.33, 'estimated_due_date': '2027-01-31', 'installment_number': 1}, {'amount': 3.33, 'interest_amount': 0.0, 'principal_amount': 3.33, 'estimated_due_date': '2027-02-28', 'installment_number': 2}, {'amount': 3.34, 'interest_amount': 0.0, "
+      "name": "replay mesma chave+meio: mesmo pedido e mesmo ACK",
+      "ok": true
     },
     {
-      "name": "helper de estimativa fechado ao cliente",
-      "ok": true,
-      "detail": "esperado erro 'permission denied'; obtido ERROR:  permission denied for function b2b_payment_method_estimate"
-    },
-    {
-      "name": "sem meio: payment_method_required",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_required'; obtido ERROR:  payment_method_required"
-    },
-    {
-      "name": "config inexistente: indisponível sem oráculo",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_unavailable'; obtido ERROR:  payment_method_unavailable"
-    },
-    {
-      "name": "config de F usada por comprador de A: indisponível",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_unavailable'; obtido ERROR:  payment_method_unavailable"
-    },
-    {
-      "name": "config de outra condição: indisponível",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_unavailable'; obtido ERROR:  payment_method_unavailable"
-    },
-    {
-      "name": "Pix em plano 3x: parcelas incompatíveis",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_installments_incompatible'; obtido ERROR:  payment_method_installments_incompatible"
-    },
-    {
-      "name": "boleto em plano com juros: conflito Price",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_price_interest_conflict'; obtido ERROR:  payment_method_price_interest_conflict"
-    },
-    {
-      "name": "técnico não simula com meio",
-      "ok": true,
-      "detail": "esperado erro 'forbidden_financial_terms'; obtido ERROR:  forbidden_financial_terms"
-    },
-    {
-      "name": "preço client-side não altera valor (erro ou R$ 0,90)",
-      "ok": true,
-      "detail": "{'items': [{'nome': 'Químico TESTE 1L', 'codigo': 'Q1', 'item_id': '00000000-0000-0000-0000-000000000031', 'rule_id': None, 'item_tipo': 'produto', 'volume_ml': 1000.0, 'base_price': 1.0, 'quantidade': 1.0, 'reason_code': 'OK', 'min_quantity': 0.0, 'price_source': 'catalog_volume_price', 'pricing_mo"
-    },
-    {
-      "name": "pedido misto com Pix: criado com snapshot do meio (estimado, base NF)",
-      "ok": true,
-      "detail": "{'id': 'f6201f45-3b6e-4696-a695-ada9ff035a95', 'total': 18.9, 'numero': 'PB-TESTE', 'cart_hash': 'fd911dbf44a37bf6e86e78c83ed6d1b363d408e89413ea023d18ea4ccc710afd', 'payment_method': {'version': 1, 'due_days': 5, 'config_id': 'cec90b1a-15db-41c6-9cb2-85830c3eccbd', 'due_basis': 'nf_issue', 'method_k"
-    },
-    {
-      "name": "repetição mesma chave+meio: mesmo pedido",
-      "ok": true,
-      "detail": "{'id': 'f6201f45-3b6e-4696-a695-ada9ff035a95', 'total': 18.9, 'numero': 'PB-TESTE', 'cart_hash': 'fd911dbf44a37bf6e86e78c83ed6d1b363d408e89413ea023d18ea4ccc710afd', 'payment_method': {'version': 1, 'due_days': 5, 'config_id': 'cec90b1a-15db-41c6-9cb2-85830c3eccbd', 'due_basis': 'nf_issue', 'method_k"
-    },
-    {
-      "name": "um único snapshot após repetição",
-      "ok": true,
-      "detail": "1"
+      "name": "replay não duplica snapshot/terms",
+      "ok": true
     },
     {
       "name": "mesma chave com outro meio: conflito",
-      "ok": true,
-      "detail": "esperado erro 'idempotency_conflict'; obtido ERROR:  idempotency_conflict"
+      "ok": true
     },
     {
-      "name": "mesma chave por outro comprador: negado",
-      "ok": true,
-      "detail": "esperado erro 'forbidden_partner'; obtido ERROR:  forbidden_partner"
+      "name": "Pix líquido com desconto 10%: R$ 0.90 em 1 parcela base+5d",
+      "ok": true
     },
     {
-      "name": "contrato antigo pelo comprador: B2B_PAYMENT_METHOD_REQUIRED, nada gravado",
-      "ok": true,
-      "detail": "  Selecione um meio de pagamento permitido pela empresa fornecedora (contrato B2B_PAYMENT_METHOD_V1).\nCONTEXT:  PL/pgSQL function platform_private.b2b_payment_method_required_check() line 10 at RAISE\n"
+      "name": "Pix embalagem inteira com desconto 10%: R$ 162.00 em 1 parcela base+5d",
+      "ok": true
     },
     {
-      "name": "ator interno do vendedor segue o caminho atual (inalterado)",
-      "ok": true,
-      "detail": ""
+      "name": "Pix misto com desconto 10%: R$ 162.90 em 1 parcela base+5d",
+      "ok": true
     },
     {
-      "name": "boleto 3x: snapshot 3 parcelas Price (n do plano, nunca do cliente)",
-      "ok": true,
-      "detail": "{'id': 'f1a7bf1a-040b-4abd-be2c-6c4ab026fb70', 'total': 18.0, 'numero': 'PB-TESTE', 'cart_hash': '4372c74258ad1e75caab1ad5bbe3cb7774866426a5f81ca55c2ec6f02134c1fe', 'payment_method': {'version': 1, 'due_days': 10, 'config_id': '4a1cbc55-a20f-4f64-8730-57bb307882c6', 'due_basis': 'nf_issue', 'method_"
+      "name": "pedido misto: snapshots de embalagem inteira + líquido preservados",
+      "ok": true
     },
     {
-      "name": "admin A altera Pix (v2) com CAS",
-      "ok": true,
-      "detail": "None"
+      "name": "preço client-side ignorado: hash não confere",
+      "ok": true
+    },
+    {
+      "name": "parcelas/vencimento do cliente não existem no contrato",
+      "ok": true
+    },
+    {
+      "name": "cotação: aguardando_cotacao, sem terms, snapshot com valor nulo",
+      "ok": true
+    },
+    {
+      "name": "crédito: simulação avisa excesso com o total Price (não o líquido)",
+      "ok": false,
+      "detail": "[]"
+    },
+    {
+      "name": "crédito real: create bloqueado pelo total Price (credit_limit_exceeded)",
+      "ok": false,
+      "detail": "esperado 'credit_limit_exceeded'; obtido {'id': '74a8cf24-2c59-4cc1-b74a-c164ff6a39c2', 'total': 1000.0, 'numero': 'PB-000006', 'status': 'em_analise_comercial', 'schedule': [{'amount': 333.33, 'interest_amount': 0.0, 'principal_amount': 333.33, 'estimated_due_date': '2026-12-06', 'installment_number': 1}, {'amount': 333.33, 'interest_amount': 0.0, 'principal_amount': 333.33, 'estimated_due_date':"
+    },
+    {
+      "name": "sem meio: payment_method_required",
+      "ok": true
+    },
+    {
+      "name": "config inexistente sem oráculo",
+      "ok": true
+    },
+    {
+      "name": "config de F por comprador de A",
+      "ok": true
+    },
+    {
+      "name": "config de outra condição",
+      "ok": true
+    },
+    {
+      "name": "técnico não simula",
+      "ok": true
+    },
+    {
+      "name": "anônimo sem EXECUTE no create",
+      "ok": true
+    },
+    {
+      "name": "Pix v2 com CAS",
+      "ok": true
     },
     {
       "name": "CAS antigo recusado",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_config_stale'; obtido ERROR:  payment_method_config_stale"
+      "ok": true
     },
     {
-      "name": "simulação com versão antiga: stale",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_stale'; obtido ERROR:  payment_method_stale"
+      "name": "simulação versão antiga: stale",
+      "ok": true
     },
     {
-      "name": "criação com versão antiga: stale",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_stale'; obtido ERROR:  payment_method_stale"
+      "name": "create versão antiga: stale",
+      "ok": true
     },
     {
-      "name": "snapshot histórico preserva v1 e 5 dias após alteração",
-      "ok": true,
-      "detail": "1:5"
+      "name": "snapshot histórico preserva v1/5 dias",
+      "ok": true
     },
     {
-      "name": "snapshot imutável (UPDATE recusado até para owner)",
-      "ok": true,
-      "detail": ""
+      "name": "snapshot imutável",
+      "ok": true
     },
     {
       "name": "histórico de versões append-only",
-      "ok": true,
-      "detail": ""
+      "ok": true
     },
     {
-      "name": "concorrência criação×revogação: pedido v2 confirmado e revogação aplicada depois",
-      "ok": true,
-      "detail": "('', '')"
+      "name": "duas sessões: create espera a revogação do meio e falha depois (sem pedido)",
+      "ok": true
     },
     {
-      "name": "após revogação: indisponível",
-      "ok": true,
-      "detail": "esperado erro 'payment_method_unavailable'; obtido ERROR:  payment_method_unavailable"
+      "name": "duas sessões: atribuição revogada durante a espera -> indisponível",
+      "ok": true
     },
     {
-      "name": "revogado sai das opções",
-      "ok": true,
-      "detail": "{'options': [{'version': 1, 'due_days': 0, 'available': True, 'config_id': '3f737775-fa73-4463-b87a-a85d8b275a74', 'method_kind': 'dinheiro', 'installment_count': 1, 'payment_method_id': '00000000-0000-0000-0000-000000000093', 'payment_method_name': 'Dinheiro TESTE', 'price_monthly_rate_percent': No"
+      "name": "duas sessões: meio desativado no catálogo durante a espera -> indisponível",
+      "ok": true
     },
     {
-      "name": "duas requisições paralelas com a mesma chave: um pedido",
-      "ok": true,
-      "detail": "['', '']"
+      "name": "duas sessões: papel do comprador revogado durante a espera de crédito -> negado na revalidação",
+      "ok": true
     },
     {
-      "name": "comprador lê meio do pedido (presente, estimado)",
-      "ok": true,
-      "detail": "{'present': True, 'contract': 'B2B_PAYMENT_METHOD_V1', 'order_id': 'f6201f45-3b6e-4696-a695-ada9ff035a95', 'payment_method': {'due_days': 5, 'due_basis': 'nf_issue', 'method_kind': 'pix', 'config_version': 1, 'estimated_total': 18.9, 'installment_count': 1, 'estimated_schedule': [{'amount': 18.9, 'i"
+      "name": "config_save: papel revogado durante a espera do advisory -> forbidden (reautoriza após lock)",
+      "ok": true
     },
     {
-      "name": "admin do vendedor lê meio do pedido",
-      "ok": true,
-      "detail": "None"
+      "name": "mesma chave em paralelo: um pedido",
+      "ok": true
     },
     {
-      "name": "comprador de F não lê pedido de A",
-      "ok": true,
-      "detail": "esperado erro 'forbidden'; obtido ERROR:  forbidden"
+      "name": "financeiro não ativa",
+      "ok": true
+    },
+    {
+      "name": "piloto com parceiro de outro tenant recusado",
+      "ok": true
+    },
+    {
+      "name": "admin A ativa piloto só para o parceiro P",
+      "ok": true
+    },
+    {
+      "name": "ativação com CAS antigo recusada",
+      "ok": true
+    },
+    {
+      "name": "piloto: comprador P vê mode required",
+      "ok": true
+    },
+    {
+      "name": "piloto: contrato antigo do comprador P bloqueado (B2B_PAYMENT_METHOD_REQUIRED, nada gravado)",
+      "ok": true
+    },
+    {
+      "name": "piloto: ator interno de A também exige meio (sem bypass por papel)",
+      "ok": false,
+      "detail": "te_required' ELSE 'defined' END,\n    v_block_reason\n  ) RETURNING id, numero\"\nPL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 209 at SQL statement\n"
+    },
+    {
+      "name": "piloto: ator interno de A cria com meio",
+      "ok": false,
+      "detail": "ERROR:  B2B_INTERNAL_ISSUER_AMBIGUOUS\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 60 at RAISE\nSQL statement \"INSERT INTO public.partner_orders(\n    partner_id, status, subtotal, desconto_total, total, observacoes, created_by,\n    requested_delivery_date, ready_for_production, payment_plan_id, payment_condition_status,\n    credit_block_reason\n  ) VALUES (\n "
+    },
+    {
+      "name": "piloto de A não afeta comprador de F (contrato atual)",
+      "ok": false,
+      "detail": "e->>'unidade_conteudo', NULLIF(v_line->>'packaging_price_id','')::uuid\n    )\"\nPL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 221 at SQL statement\n"
+    },
+    {
+      "name": "gatilho DEFERRED: snapshot removido na mesma transação -> recusado (imutável/obrigatório)",
+      "ok": true
+    },
+    {
+      "name": "gatilho DEFERRED isolado: pedido sem snapshot falha no COMMIT com B2B_PAYMENT_METHOD_REQUIRED",
+      "ok": true
+    },
+    {
+      "name": "comprador lê meio/parcelas do pedido (mesmo total)",
+      "ok": true
     },
     {
       "name": "admin F não lê pedido de A",
-      "ok": true,
-      "detail": "esperado erro 'forbidden'; obtido ERROR:  forbidden"
+      "ok": true
+    },
+    {
+      "name": "04 com pin divergente aborta sem mudar nada",
+      "ok": true
     },
     {
       "name": "04 rollback deny-only",
-      "ok": true,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "após rollback: opções negadas",
-      "ok": true,
-      "detail": "esperado erro 'permission denied'; obtido ERROR:  permission denied for function b2b_list_payment_method_options_secure"
+      "ok": true
     },
     {
-      "name": "após rollback: contrato antigo continua bloqueado (sem reabrir fallback)",
-      "ok": true,
-      "detail": ""
+      "name": "após rollback: empresa ativada continua bloqueada (nunca reabre fallback)",
+      "ok": true
     },
     {
-      "name": "após rollback: snapshots preservados",
-      "ok": true,
-      "detail": "4"
+      "name": "após rollback: empresa não ativada segue contrato atual",
+      "ok": false,
+      "detail": "e->>'unidade_conteudo', NULLIF(v_line->>'packaging_price_id','')::uuid\n    )\"\nPL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 221 at SQL statement\n"
+    },
+    {
+      "name": "após rollback: snapshots/histórico preservados",
+      "ok": true
     }
   ]
 }

@@ -174,10 +174,9 @@ def boot():
                  "public.create_partner_order_secure", "public.simulate_b2b_payment_plan_secure", "public.respond_b2b_order_quote_secure"):
         psql(SP.cap(name))
     psql(SP.CATALOG_SEAM + SP.REAL_TRIGGERS); psql(SP.RT.real_triggers_sql())
-    psql("""REVOKE ALL ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text), public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date),
-             public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date), public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric), platform_private.b2b_partner_catalog_reader(uuid) FROM PUBLIC;
-            GRANT EXECUTE ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text), public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) TO authenticated, service_role;
-            GRANT EXECUTE ON FUNCTION public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date), public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric) TO service_role;""")
+    sp_src = (SPD / "test-local-pg.py").read_text()
+    acl = sp_src.split('        psql("""REVOKE ALL ON FUNCTION public.create_partner_order_secure', 1)[1].split('""")', 1)[0]
+    psql("REVOKE ALL ON FUNCTION public.create_partner_order_secure" + acl)  # ACL LIVE idêntica à do harness B2
     psql(SP.FIXTURES); psql(SP.RT.fixtures_sql([UB, UT, UB2, SP.UADM, SP.UADMF, SP.UINACT, SP.UCONS, SP.USUP]))
     for f in ("01-pre.sql.readonly", "02-install.sql.review", "03-post.sql.readonly"):  # estado INSTALADO do B2 (produção)
         r = SP.runfile(SPD / f); check(f"estado instalado B2: {f}", r.returncode == 0, r.stderr[-300:])
