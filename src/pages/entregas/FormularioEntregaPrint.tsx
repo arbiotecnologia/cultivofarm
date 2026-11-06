@@ -8,8 +8,9 @@ import { Printer, ArrowLeft, Copy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/date-utils";
 import { labelModalidade, labelResponsavel } from "@/lib/entregas/modalidade";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
-const TERMO = `Declaro, para os devidos fins, que recebi da Cultivo Farm os produtos/bioinsumos descritos neste formulário, conferi as quantidades, identificação dos produtos, lotes, volumes e condições aparentes das embalagens no ato do recebimento. Declaro estar ciente de que o armazenamento, manuseio e aplicação devem seguir as orientações técnicas fornecidas pela Cultivo Farm, respeitando as condições adequadas de conservação e utilização. Eventuais divergências identificadas no recebimento deverão ser registradas neste documento no campo de observações/ressalvas.`;
+const termoRecebimento = (empresa: string) => `Declaro, para os devidos fins, que recebi da ${empresa} os produtos/bioinsumos descritos neste formulário, conferi as quantidades, identificação dos produtos, lotes, volumes e condições aparentes das embalagens no ato do recebimento. Declaro estar ciente de que o armazenamento, manuseio e aplicação devem seguir as orientações técnicas fornecidas pela ${empresa}, respeitando as condições adequadas de conservação e utilização. Eventuais divergências identificadas no recebimento deverão ser registradas neste documento no campo de observações/ressalvas.`;
 
 const NAO_INFORMADA = "Não informada";
 
@@ -19,6 +20,7 @@ const SELECT_ENTREGA =
   "*, clientes(nome,cpf_cnpj,endereco_municipio,endereco_estado), produtos(nome), lotes(codigo_lote,data_producao), ordens_servico(id,numero_os, fazendas(nome,municipio,estado))";
 
 export default function FormularioEntregaPrint() {
+  const { label: tenantLabel } = useActiveTenantName();
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -156,7 +158,7 @@ export default function FormularioEntregaPrint() {
   const viasArr = Array.from({ length: vias }, (_, i) => i);
   const labelVia = (i: number) => {
     if (vias === 1) return null;
-    return i === 0 ? "1ª Via — Cliente / Recebedor" : "2ª Via — Cultivo Farm (cópia interna)";
+    return i === 0 ? "1ª Via — Cliente / Recebedor" : `2ª Via — ${tenantLabel} (cópia interna)`;
   };
 
   return (
@@ -179,7 +181,7 @@ export default function FormularioEntregaPrint() {
                 return sp;
               });
             }}
-            title="Alternar entre 1 e 2 vias (cliente + Cultivo Farm)"
+            title={`Alternar entre 1 e 2 vias (cliente + ${tenantLabel})`}
             data-testid="formulario-vias"
           >
             <Copy className="h-4 w-4 mr-1" /> {vias === 2 ? "2 vias" : "1 via"}
@@ -199,7 +201,7 @@ export default function FormularioEntregaPrint() {
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-slate-900 pb-3">
             <div>
-              <div className="text-xl font-bold">Cultivo Farm</div>
+              <div className="text-xl font-bold">{tenantLabel}</div>
               <div className="text-[10px] text-slate-600">Bioinsumos com rastreabilidade</div>
               <div className="mt-2 text-[14px] font-bold uppercase">Formulário de Entrega e Termo de Recebimento de Bioinsumos</div>
               <div className="text-[10px] mt-1">Nº <span className="font-mono">{comprovante.numero_formulario}</span> · Emitido em {formatDateTimeDisplay(comprovante.gerado_em)}</div>
@@ -350,7 +352,7 @@ export default function FormularioEntregaPrint() {
           {/* Termo */}
           <section className="mt-3 border border-slate-400 p-3 bg-slate-50">
             <h2 className="font-bold text-[12px] mb-1">Termo de Recebimento</h2>
-            <p className="text-[11px] text-justify">{TERMO}</p>
+            <p className="text-[11px] text-justify">{termoRecebimento(tenantLabel)}</p>
             {comprovante.assinatura_tipo === "digital_tela" && (
               <p className="text-[10px] mt-2 italic">
                 A assinatura digital coletada nesta tela registra a ciência e confirmação operacional do
@@ -383,7 +385,7 @@ export default function FormularioEntregaPrint() {
               <div className="border-b border-slate-700 h-12 mb-1" />
               <div className="text-center">
                 <div><b>{entrega.motorista || "_______________________"}</b></div>
-                <div>Entregador Cultivo Farm</div>
+                <div>Entregador — {tenantLabel}</div>
               </div>
             </div>
           </section>

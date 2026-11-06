@@ -3,8 +3,10 @@ import { useCommercialKpis } from "@/hooks/useCommercial";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { brl as fmt } from "@/lib/financial/format";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export default function IndicadoresComerciais() {
+  const { label: tenantLabel } = useActiveTenantName();
   const today = new Date().toISOString().slice(0, 10);
   const thirty = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(thirty);
@@ -16,7 +18,7 @@ export default function IndicadoresComerciais() {
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">Indicadores Comerciais</h1>
-        <p className="text-sm text-muted-foreground">KPIs do módulo B2B Cultivo Farm.</p>
+        <p className="text-sm text-muted-foreground">KPIs do módulo B2B da {tenantLabel}.</p>
       </div>
 
       <Card>

@@ -8,6 +8,7 @@ import { useExecutivoRegistrarExportacao } from "@/hooks/useExecutivoRegistrarEx
 import { useExecutivoArquivarRelatorio } from "@/hooks/useExecutivoArquivarRelatorio";
 import { formatDateTimeDisplay, formatDateDisplay } from "@/lib/date-utils";
 import { arrayToCsv, downloadCsv, buildCsvFilename } from "@/lib/executivoCsv";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 interface Props {
   relatorioId: string | null;
@@ -44,6 +45,7 @@ function KV({ k, v }: { k: string; v: any }) {
 }
 
 export function ExecutivoRelatorioDetalheDrawer({ relatorioId, onClose }: Props) {
+  const { label: tenantLabel } = useActiveTenantName();
   const { data: rel, isLoading } = useExecutivoRelatorioDetalhe(relatorioId);
   const registrar = useExecutivoRegistrarExportacao();
   const arquivar = useExecutivoArquivarRelatorio();
@@ -119,7 +121,7 @@ export function ExecutivoRelatorioDetalheDrawer({ relatorioId, onClose }: Props)
             {/* Print header */}
             <div className="border-b pb-3">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Cultivo Farm — Portal Executivo
+                {tenantLabel} — Portal Executivo
               </p>
               <h1 className="text-xl font-bold">{rel.titulo}</h1>
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">

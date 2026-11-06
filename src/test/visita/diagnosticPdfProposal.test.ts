@@ -23,7 +23,7 @@ const builderCode = ts.transpileModule(`const buildPdfData = ${ts.createPrinter(
 type OsFixture = { volume_total_ml: number | null | undefined; dose_ml_ha: number | null | undefined };
 function buildData(os: OsFixture, visita: object | null = {}) {
   return runInNewContext(builderCode, {
-    visita, arquivos: [], checkins: [], fotos: [], config: null,
+    visita, arquivos: [], checkins: [], fotos: [], config: null, tenantLabel: "empresa responsável",
     ordensConsolidado: [{ ...os, area_hectares: 2, status: "aberta", produtos: { nome: "Biológico teste" } }],
     descricaoTecnica: "", encerramento: {}, conduta: {},
     formatOS: () => "OS teste", formatDateDisplay: () => "", formatDateTimeDisplay: () => "",

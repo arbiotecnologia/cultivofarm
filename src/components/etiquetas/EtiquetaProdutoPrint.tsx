@@ -1,5 +1,6 @@
 import { QRCodeRastreioProduto } from "./QRCodeRastreioProduto";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export interface EtiquetaData {
   id: string;
@@ -21,6 +22,7 @@ export interface EtiquetaData {
 }
 
 export function EtiquetaProdutoPrint({ etiqueta }: { etiqueta: EtiquetaData }) {
+  const { label: tenantLabel } = useActiveTenantName();
   const reduzida = etiqueta.tipo_etiqueta === "reduzida";
 
   if (reduzida) {
@@ -31,7 +33,7 @@ export function EtiquetaProdutoPrint({ etiqueta }: { etiqueta: EtiquetaData }) {
       >
         <div className="flex-1 flex flex-col justify-between overflow-hidden">
           <div>
-            <div className="font-bold">Cultivo Farm</div>
+            <div className="font-bold">{tenantLabel}</div>
             <div className="truncate font-semibold">{etiqueta.produto_nome}</div>
             <div>Lote: <span className="font-mono">{etiqueta.lote_codigo}</span></div>
             {etiqueta.volume && (
@@ -57,7 +59,7 @@ export function EtiquetaProdutoPrint({ etiqueta }: { etiqueta: EtiquetaData }) {
     >
       <div className="flex items-start justify-between border-b border-black pb-1">
         <div>
-          <div className="font-bold text-base leading-tight">Cultivo Farm</div>
+          <div className="font-bold text-base leading-tight">{tenantLabel}</div>
           <div className="text-[7pt] italic">Agricultura Sustentável</div>
         </div>
         <div className="text-right text-[7pt]">

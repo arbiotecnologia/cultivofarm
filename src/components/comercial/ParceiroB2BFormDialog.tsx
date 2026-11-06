@@ -42,6 +42,7 @@ import {
 } from "@/hooks/useParceiroB2BMutations";
 import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 import type { ParceiroB2B } from "@/hooks/useParceirosB2B";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 const emailOpt = z.string().trim().email("E-mail inválido").max(200).or(z.literal("")).optional().nullable();
 
@@ -131,6 +132,7 @@ const empty: ParceiroB2BInput = {
 };
 
 export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
+  const { label: tenantLabel } = useActiveTenantName();
   const create = useCreateParceiroB2B();
   const update = useUpdateParceiroB2B();
   const editing = !!parceiro;
@@ -729,7 +731,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— Não informado —</SelectItem>
-                    <SelectItem value="CIF">CIF (frete por conta da Cultivo Farm)</SelectItem>
+                    <SelectItem value="CIF">CIF (frete por conta da {tenantLabel})</SelectItem>
                     <SelectItem value="FOB">FOB (frete por conta do parceiro)</SelectItem>
                   </SelectContent>
                 </Select>

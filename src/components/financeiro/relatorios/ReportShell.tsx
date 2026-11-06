@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { FINANCIAL_REPORT_BUCKET, parseFinancialReportLocator } from "@/lib/financeiro/reportExportLocator";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 const FORMAT_LABEL = { PDF: "PDF", XLSX: "Excel", CSV: "CSV" } as const;
 const EXPORT_UNAVAILABLE = "Exportação indisponível. Verifique seu acesso e tente novamente.";
@@ -43,6 +44,7 @@ function ScopedReportShell<TData = unknown>({
   renderPreview,
   requiresCustomer,
 }: ReportShellProps<TData>) {
+  const { label: tenantLabel } = useActiveTenantName();
   const { user, profile, error: authError } = useAuth();
   const access = useStorageAccessScope(`report:${reportType}`);
   // Same resource as the parent key: any scope change remounts and revokes Blobs.
@@ -191,7 +193,7 @@ function ScopedReportShell<TData = unknown>({
       <header className="rounded-lg border bg-card p-4 print:border-b print:border-x-0 print:border-t-0 print:rounded-none">
         <div className="flex items-start justify-between flex-wrap gap-2">
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Cultivo Farm</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">{tenantLabel}</p>
             <h1 className="text-2xl font-bold leading-tight">{title}</h1>
             {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
@@ -250,7 +252,7 @@ function ScopedReportShell<TData = unknown>({
       </Card>
 
       <footer className="hidden print:block text-xs text-muted-foreground border-t pt-2 mt-4">
-        Cultivo Farm • Relatório gerado eletronicamente • {formatDateTimeDisplay(new Date())}
+        {tenantLabel} • Relatório gerado eletronicamente • {formatDateTimeDisplay(new Date())}
       </footer>
     </div>
   );

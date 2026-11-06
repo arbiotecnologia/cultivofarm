@@ -16,6 +16,7 @@ import { useTenantHiddenIds } from "@/hooks/useTenantCatalogVisibility";
 import { catalogoExcludeHidden } from "@/hooks/useCatalogoUnificado";
 import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
 import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 type Tipo = "todos" | "produto" | "microrganismo";
 
@@ -32,6 +33,7 @@ interface Row {
 }
 
 export default function MobileCatalogoTecnico() {
+  const { label: tenantLabel } = useActiveTenantName();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export default function MobileCatalogoTecnico() {
   }, [rows, search, tipo, family]);
 
   const copyResumo = async (r: Row) => {
-    const txt = `${r.nome}${r.subtitulo ? ` (${r.subtitulo})` : ""}\n${r.resumo ?? "Sem resumo cadastrado"}\n\nCultivo Farm · Recomendação técnica exige prescrição agronômica.`;
+    const txt = `${r.nome}${r.subtitulo ? ` (${r.subtitulo})` : ""}\n${r.resumo ?? "Sem resumo cadastrado"}\n\n${tenantLabel} · Recomendação técnica exige prescrição agronômica.`;
     await navigator.clipboard.writeText(txt);
     toast.success("Resumo copiado");
   };
