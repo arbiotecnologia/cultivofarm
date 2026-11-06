@@ -1,0 +1,8 @@
+{
+ "src/hooks/useDeliveryFinanceReconciliation.ts": {
+  "historical_md5": "a8fac0db1d11083375bab059354311c1",
+  "current_md5": "045be9c926880c8434219495bf9f0dfc",
+  "commit": "91609839d8f9d72be3ce8a15f7d2b507ee72b032",
+  "reason": "REVISADO E APROVADO tecnicamente por Renato S. Cunha na revisão c9f89292 (06/11/2026): diff do commit 91609839 conferido pessoalmente; mantém a mesma leitura escopada e reduz callbacks (remove reject local; estados indisponivel/carregando/nenhum_titulo), sem RPC, escrita, cobrança ou dispatch novos. Pin histórico a8fac0db preservado; promovido de consumer-revision-delivery-finance-20261030.candidate.json."
+ }
+}
