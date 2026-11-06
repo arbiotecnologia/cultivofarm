@@ -93,7 +93,7 @@ def main():
         x = v2.runfile(HERE / "02-install.sql.review"); chk("rerun_aborts_target_exists", x.returncode != 0 and "já existe" in x.stderr)
         acl = {r: p(f"SELECT has_function_privilege('{r}','{SIG}','EXECUTE')").stdout.strip() == "t" for r in ("anon", "authenticated", "service_role")}
         public_acl = p(f"SELECT coalesce(array_to_string(proacl,','),'') FROM pg_proc WHERE oid='{SIG}'::regprocedure").stdout.strip()
-        chk("grant_only_authenticated", acl["authenticated"] and not acl["anon"] and "=X/" not in public_acl, {"acl": acl, "proacl": public_acl})
+        chk("grant_only_authenticated", acl["authenticated"] and not acl["anon"] and not any(e.startswith("=") for e in public_acl.split(",")), {"acl": acl, "proacl": public_acl})
         chk("definer_and_search_path", p(f"SELECT prosecdef AND proconfig=ARRAY['search_path=\"\"'] FROM pg_proc WHERE oid='{SIG}'::regprocedure").stdout.strip() == "t")
         chk("policies_unchanged", p("SELECT count(*) FROM pg_policy WHERE polrelid='public.catalogo_volumes'::regclass").stdout.strip() == pol_before)
 
@@ -118,7 +118,7 @@ def main():
         chk("supplier_internal_commercial_actor_allowed_by_canonical_reader", err is None and r["seller"]["name"] == "AR Bio", err)
         err, r = case("buyer_z_PZ", "buyer_z", PZ)
         chk("other_tenant_buyer_never_sees_AR_volumes", err is not None or all(v["id"] not in VOL.values() or False for v in (r or {}).get("volumes", [])), {"err": err})
-        rep["matrix"] = {k: {"err": e, "n": (len(v["volumes"]) if v else None)} for k, (e, v) in m.items()}
+        rep["matrix"] = {k: {"err": list(e) if e else None, "n": (len(v["volumes"]) if v else None)} for k, (e, v) in m.items()}
 
         x = v2.runfile(HERE / "04-rollback-deny.sql.review"); chk("rollback_ok", x.returncode == 0, x.stderr[-400:] or None)
         err, r = case("buyer_P1_after_rollback", "buyer", P1)

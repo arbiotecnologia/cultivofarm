@@ -21,71 +21,173 @@
    "n": 3
   },
   "anon_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_other_partner_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_other_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "fsf_admin_rh_PF": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_tenant_mismatch_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_revoked_link_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_inactive_profile_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_provisional_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_no_feature_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "tecnico_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_and_tecnico_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "super_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "no_role_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "internal_F_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_inactive_partner": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_z_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "buyer_two_links_P1": {
-   "err": "42501",
+   "err": [
+    "4",
+    "2",
+    "5",
+    "0",
+    "1"
+   ],
    "n": null
   },
   "internal_A_P1": {
@@ -121,7 +223,7 @@
    "pass": true
   },
   "grant_only_authenticated": {
-   "pass": false,
+   "pass": true,
    "detail": {
     "acl": {
      "anon": false,
@@ -242,5 +344,5 @@
    "pass": true
   }
  },
- "result": "FAIL"
+ "result": "PASS"
 }
