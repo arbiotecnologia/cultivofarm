@@ -29,6 +29,7 @@ CREATE POLICY popt_select ON public.partner_order_payment_terms FOR SELECT USING
      JOIN partner_users pu ON ((pu.partner_id = po.partner_id)))
   WHERE ((po.id = partner_order_payment_terms.partner_order_id) AND (pu.user_id = ( SELECT auth.uid() AS uid)))))));
 CREATE POLICY popt_update ON public.partner_order_payment_terms FOR UPDATE USING (platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role));
+UPDATE public.partner_users SET valid_from = now() - interval '1 day';
 INSERT INTO public.profiles VALUES ('{UFIN}','{h.A}',true); INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro');
 INSERT INTO public.partner_orders VALUES ('{ORD}','{h.P}','PB-T1',gen_random_uuid(),gen_random_uuid()),('{ORD2}','{h.P}','PB-T2',NULL,NULL),('{ORDF}','{h.PF}','PB-TF',gen_random_uuid(),gen_random_uuid());
 INSERT INTO public.partner_order_payment_terms(partner_order_id, plan_name_snapshot, plan_code_snapshot, table_amount, discount_amount, net_amount_after_discount,
