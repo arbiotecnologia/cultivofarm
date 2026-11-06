@@ -623,8 +623,6 @@ export default function NovoPedido() {
           setObs("");
           setRequestedDate("");
           setSelectedPlanId(null);
-          setSimulation(null);
-          setCashSimulation(null);
           navigate(afterCreatePath ?? "/portal-parceiro/pedidos");
         },
       },
