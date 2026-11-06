@@ -38,7 +38,6 @@ const STATUS_VARIANT: Record<PartnerSimulationStatus, "outline" | "secondary" | 
 };
 
 export default function SimulacoesEquipe() {
-  const { data: myPartnerSeller } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const [statusFilter, setStatusFilter] = useState<string>("todas");
   const [tecnicoFilter, setTecnicoFilter] = useState<string>("todos");
@@ -284,6 +283,7 @@ function SimulacaoDrawerComPdf({
   sims: any[];
 }) {
   const sim = detalheId ? sims.find((s) => s.id === detalheId) : null;
+  const { data: myPartnerSeller } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const { profile, role } = useAuth();
   const { data: items = [] } = usePartnerSimulationItems(detalheId);

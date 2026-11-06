@@ -77,6 +77,7 @@ export function DetalhePedidoDrawer({
       open={open}
       onOpenChange={onOpenChange}
       viewerScope={viewerScope}
+      empresaNome={empresaNome}
     />
   );
 }
@@ -86,7 +87,8 @@ function InternoPedidoDrawer({
   open,
   onOpenChange,
   viewerScope,
-}: Required<Pick<Props, "orderId" | "open" | "onOpenChange" | "viewerScope">>) {
+  empresaNome,
+}: Required<Pick<Props, "orderId" | "open" | "onOpenChange" | "viewerScope">> & { empresaNome: string | null }) {
   const { data, isLoading } = usePedidoFormalHeader(orderId);
   const { data: items = [] } = usePartnerOrderItems(orderId);
   const { profile, role } = useAuth();
