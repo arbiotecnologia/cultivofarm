@@ -25,10 +25,11 @@ export interface ProdutoCatalogoItem {
   b2b_enabled: boolean;
 }
 
-export async function generateCatalogoProdutosPdf(items: ProdutoCatalogoItem[]) {
+export async function generateCatalogoProdutosPdf(items: ProdutoCatalogoItem[], empresaNome: string | null) {
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "landscape" });
   const startY = await drawArBioHeader(doc, {
     subtitulo: "Catálogo de Produtos Bioinsumos",
+    empresaNome,
     totalRegistros: items.length,
   });
 

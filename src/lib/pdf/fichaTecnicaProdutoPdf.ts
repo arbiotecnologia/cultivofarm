@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatarPrecoUnitario } from "@/lib/catalogo/formatUnidades";
 
 export interface FichaProdutoOptions {
+  /** Empresa fornecedora/emitente já resolvida pelo chamador. */
+  empresaNome: string | null;
   produtoId: string;
   mode?: "download" | "blob";
   audience?: "interna" | "b2b";
 }
 
-export async function generateFichaTecnicaProdutoPdf({ produtoId, mode = "download", audience = "interna" }: FichaProdutoOptions): Promise<void | { blobUrl: string; filename: string }> {
+export async function generateFichaTecnicaProdutoPdf({ empresaNome, produtoId, mode = "download", audience = "interna" }: FichaProdutoOptions): Promise<void | { blobUrl: string; filename: string }> {
   const isB2B = audience === "b2b";
 
   const produtoSelect = isB2B
@@ -45,7 +47,7 @@ export async function generateFichaTecnicaProdutoPdf({ produtoId, mode = "downlo
   const formul: any[] = (fRes as any).data ?? [];
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
-  let y = await drawArBioHeader(doc, { subtitulo: `Ficha técnica — ${pr.nome}` });
+  let y = await drawArBioHeader(doc, { empresaNome, subtitulo: `Ficha técnica — ${pr.nome}` });
   const margin = 40;
   const w = doc.internal.pageSize.getWidth() - margin * 2;
 

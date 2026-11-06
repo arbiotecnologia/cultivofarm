@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supplierLabel } from "@/lib/comercial/supplierName";
 
 // NOTA: Estrutura de vínculo B2B × cliente (Meus Produtores, Usuários × Clientes,
 // Técnicos × Produtores) preservada no banco/rotas para uso futuro.
@@ -230,7 +231,7 @@ export default function PortalParceiroLayout() {
             <h1 className="text-2xl font-semibold">Meus pedidos</h1>
             <CommercialOwnOrders partnerId={ownPartner.id} />
             <p className="text-sm text-muted-foreground">
-              Pedidos enviados seguem para análise comercial da empresa fornecedora. Aprovação, cobrança,
+              Pedidos enviados seguem para análise comercial da {supplierLabel(ownPartner.sellerName)}. Aprovação, cobrança,
               nota fiscal e entrega dependem de validações internas e podem permanecer bloqueadas —
               este acompanhamento não garante nenhuma dessas etapas.
             </p>

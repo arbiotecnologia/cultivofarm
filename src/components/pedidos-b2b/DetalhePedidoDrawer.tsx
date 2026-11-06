@@ -33,6 +33,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   viewerScope?: ViewerScope;
+  /** Empresa fornecedora/emitente do PDF, resolvida pelo chamador (vendedor B2B autorizado ou tenant ativo). */
+  empresaNome: string | null;
 }
 
 export function DetalhePedidoDrawer({
@@ -40,6 +42,7 @@ export function DetalhePedidoDrawer({
   open,
   onOpenChange,
   viewerScope = "comercial",
+  empresaNome,
 }: Props) {
   // Técnico B2B: bloqueado para pedidos oficiais
   if (viewerScope === "parceiro_tecnico") {
@@ -74,6 +77,7 @@ export function DetalhePedidoDrawer({
       open={open}
       onOpenChange={onOpenChange}
       viewerScope={viewerScope}
+      empresaNome={empresaNome}
     />
   );
 }
@@ -83,7 +87,8 @@ function InternoPedidoDrawer({
   open,
   onOpenChange,
   viewerScope,
-}: Required<Pick<Props, "orderId" | "open" | "onOpenChange" | "viewerScope">>) {
+  empresaNome,
+}: Required<Pick<Props, "orderId" | "open" | "onOpenChange" | "viewerScope">> & { empresaNome: string | null }) {
   const { data, isLoading } = usePedidoFormalHeader(orderId);
   const { data: items = [] } = usePartnerOrderItems(orderId);
   const { profile, role } = useAuth();
@@ -92,6 +97,7 @@ function InternoPedidoDrawer({
   const handleDownloadPdf = async () => {
     if (!data) return;
     const { blobUrl, filename } = await generatePedidoPdf({
+      empresaNome,
       pedido: data,
       parceiro_nome:
         data.partner?.nome_fantasia ?? data.partner?.razao_social ?? null,

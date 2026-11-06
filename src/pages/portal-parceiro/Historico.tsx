@@ -92,6 +92,7 @@ export default function Historico() {
       </Card>
 
       <DetalhePedidoDrawer
+        empresaNome={partner?.sellerName ?? null}
         orderId={detalheId}
         open={!!detalheId}
         onOpenChange={(o) => !o && setDetalheId(null)}

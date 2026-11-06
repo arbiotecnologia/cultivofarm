@@ -10,6 +10,18 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 export type PartnerUserPapel = "gestor" | "tecnico";
 
+/** Nome do vendedor na projeção B2B autorizada (campo aditivo 'seller'). */
+export function readSellerName(partner: Record<string, unknown>, tenantId: string): string | null {
+  if (!("seller" in partner) || partner.seller === null) return null;
+  const s = partner.seller;
+  if (!s || typeof s !== "object" || Array.isArray(s)) throw new Error("partner_context_unavailable");
+  const seller = s as Record<string, unknown>;
+  if (seller.organization_id !== tenantId || (seller.name !== null && typeof seller.name !== "string"))
+    throw new Error("partner_context_unavailable");
+  const n = typeof seller.name === "string" ? seller.name.trim() : "";
+  return n || null;
+}
+
 export function useMyPartner() {
   const { user, roles, profile } = useAuth();
   const fence = useStorageAccessScope("my-commercial-partner");
@@ -55,11 +67,14 @@ export function useMyPartner() {
       if (partner.id !== context.partner_id || partner.papel !== context.papel || partner.mode !== context.mode || partner.ativo !== true)
         throw new Error("partner_context_unavailable");
       if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
+      // TENANT_DISPLAY_NAME_V1: 'seller' só existe após a instalação; ausente → null (neutro). Presente, deve ser o
+      // vendedor (commercial owner = tenant do contexto), nunca o parceiro comprador; divergência falha fechado.
+      const sellerName = readSellerName(partner, profile?.organization_id ?? "");
       return { id: context.partner_id, codigo: partner.codigo, razao_social: partner.razao_social,
         nome_fantasia: typeof partner.nome_fantasia === "string" ? partner.nome_fantasia : null,
         ativo: true, financeRead: readOwnFinanceCapability(partner.finance_capabilities), capabilities: readCatalogCapabilities(partner.capabilities),
         orderCreate: context.role === "parceiro_b2b" && readOwnerOrderCapability(partner.order_capabilities), papel: context.papel as PartnerUserPapel,
-        mode: context.mode as "commercial_owner" | "legacy_partner_tenant" };
+        mode: context.mode as "commercial_owner" | "legacy_partner_tenant", sellerName };
     },
   });
   return { ...result, data: ready && !result.isError ? result.data : undefined, ready, scope: fence.scope };

@@ -532,6 +532,7 @@ export default function Solicitacoes() {
       </Tabs>
 
       <DetalhePedidoDrawer
+        empresaNome={partner?.sellerName ?? null}
         orderId={openPedido}
         open={!!openPedido}
         onOpenChange={(o) => !o && setOpenPedido(null)}

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Users, Link2, Link2Off, UserCog } from "lucide-react";
+import { supplierLabel } from "@/lib/comercial/supplierName";
 
 type Usuario = { user_id: string; nome: string | null; email: string | null; papel: string };
 type Cliente = {
@@ -252,7 +253,7 @@ export default function UsuariosClientesB2B() {
               })}
               {clientes.length === 0 && (
                 <div className="p-4 text-sm text-muted-foreground text-center">
-                  Nenhum cliente vinculado ao parceiro. Solicite à empresa fornecedora o vínculo de produtores.
+                  Nenhum cliente vinculado ao parceiro. Solicite à {supplierLabel(partner?.sellerName)} o vínculo de produtores.
                 </div>
               )}
             </div>

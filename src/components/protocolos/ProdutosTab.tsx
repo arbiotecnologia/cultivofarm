@@ -49,6 +49,7 @@ import { VolumesChips } from "./VolumesChips";
 import { gerarProximoCodigoProduto, ehCodigoAutomatico, PREFIXOS_PRODUTO } from "@/lib/protocolos/autoCodigo";
 import { normalizeVersaoCatalogoForSave, versaoCatalogoToInput } from "@/lib/protocolos/produtoFormFields";
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 interface Microrganismo {
   id: string;
@@ -211,6 +212,7 @@ export async function carregarCatalogoProdutos(client: any): Promise<
 }
 
 export function ProdutosTab() {
+  const { name: tenantName } = useActiveTenantName();
   
   const [volumesEdit, setVolumesEdit] = useState<Produto | null>(null);
   const [fichaProduto, setFichaProduto] = useState<Produto | null>(null);
@@ -660,7 +662,7 @@ export function ProdutosTab() {
 
   const handleExportPdf = async () => {
     try {
-      await generateCatalogoProdutosPdf(filteredItems);
+      await generateCatalogoProdutosPdf(filteredItems, tenantName);
       toast.success("Catálogo exportado!");
     } catch (err: any) {
       toast.error("Erro ao exportar: " + err.message);
@@ -1279,7 +1281,7 @@ export function ProdutosTab() {
                       className="h-7 w-7 p-0"
                       onClick={async () => {
                         try {
-                          await generateFichaTecnicaProdutoPdf({ produtoId: p.id });
+                          await generateFichaTecnicaProdutoPdf({ produtoId: p.id, empresaNome: tenantName });
                           toast.success("PDF exportado");
                         } catch (e: any) { toast.error(e.message); }
                       }}

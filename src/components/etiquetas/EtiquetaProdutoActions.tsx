@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tag, Printer, Link as LinkIcon, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { buildRastreioUrl } from "./QRCodeRastreioProduto";
-import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 interface Props {
   readOnly?: boolean;
@@ -24,7 +23,6 @@ interface Props {
 }
 
 export function EtiquetaProdutoActions({ readOnly = false, envaseId, loteId, etiquetaId, traceToken, status, onChanged }: Props) {
-  const { label: tenantLabel } = useActiveTenantName();
   const [openGerar, setOpenGerar] = useState(false);
   const [tipo, setTipo] = useState("principal");
   const [conservacao, setConservacao] = useState("");
@@ -100,11 +98,11 @@ export function EtiquetaProdutoActions({ readOnly = false, envaseId, loteId, eti
             </div>
             <div className="space-y-1">
               <Label>Conservação (opcional)</Label>
-              <Input value={conservacao} onChange={(e) => setConservacao(e.target.value)} placeholder={`Padrão da ${tenantLabel}`} />
+              <Input value={conservacao} onChange={(e) => setConservacao(e.target.value)} placeholder="Padrão da empresa responsável" />
             </div>
             <div className="space-y-1">
               <Label>Uso (opcional)</Label>
-              <Input value={uso} onChange={(e) => setUso(e.target.value)} placeholder={`Padrão da ${tenantLabel}`} />
+              <Input value={uso} onChange={(e) => setUso(e.target.value)} placeholder="Padrão da empresa responsável" />
             </div>
             <div className="space-y-1">
               <Label>Observações</Label>

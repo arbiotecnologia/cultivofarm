@@ -34,10 +34,11 @@ const tipoLabels: Record<string, string> = {
   consorcio: "Consórcio",
 };
 
-export async function generateCatalogoMicrorganismosPdf(items: MicrorganismoCatalogoItem[]) {
+export async function generateCatalogoMicrorganismosPdf(items: MicrorganismoCatalogoItem[], empresaNome: string | null) {
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "landscape" });
   const startY = await drawArBioHeader(doc, {
     subtitulo: "Catálogo de Microrganismos",
+    empresaNome,
     totalRegistros: items.length,
   });
 

@@ -214,6 +214,7 @@ export default function MeusPedidos() {
       </Card>
 
       <TimelinePedidoDialog
+        supplierName={partner?.sellerName ?? null}
         orderId={timelineOrderId}
         open={!!timelineOrderId}
         onOpenChange={(o) => !o && setTimelineOrderId(null)}
@@ -227,6 +228,7 @@ export default function MeusPedidos() {
       />
 
       <DetalhePedidoDrawer
+        empresaNome={partner?.sellerName ?? null}
         orderId={detalheId}
         open={!!detalheId}
         onOpenChange={(o) => !o && setDetalheId(null)}

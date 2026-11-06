@@ -40,6 +40,7 @@ import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
 import { VolumesChips } from "./VolumesChips";
 import { saveTenantCatalogRoot } from "@/lib/catalogo/tenantCatalogRoots";
 import { gerarProximoCodigoMicro, ehCodigoAutomatico, PREFIXOS_MICRO } from "@/lib/protocolos/autoCodigo";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 /** CAT-08 · carga consistente: só aplica dados se ambas as consultas passarem. */
 export async function carregarMicrorganismosCatalogo(client: any): Promise<
@@ -104,6 +105,7 @@ interface Microrganismo {
 }
 
 export function MicrorganismosTab() {
+  const { name: tenantName } = useActiveTenantName();
   const [items, setItems] = useState<Microrganismo[]>([]);
   const [filteredItems, setFilteredItems] = useState<Microrganismo[]>([]);
   const tenantVis = useManagedVisibility("microrganismo", filteredItems);
@@ -317,7 +319,7 @@ export function MicrorganismosTab() {
 
   const handleExportPdf = async () => {
     try {
-      await generateCatalogoMicrorganismosPdf(filteredItems);
+      await generateCatalogoMicrorganismosPdf(filteredItems, tenantName);
       toast.success("Catálogo exportado!");
     } catch (err: any) {
       toast.error("Erro ao exportar: " + err.message);
@@ -375,7 +377,7 @@ export function MicrorganismosTab() {
             onClick={async () => {
               try {
                 toast.loading("Gerando dossiê de microrganismos...");
-                await generateDossieCompletoMicrorganismos();
+                await generateDossieCompletoMicrorganismos({ empresaNome: tenantName });
                 toast.dismiss();
                 toast.success("Dossiê exportado!");
               } catch (err: any) {
@@ -709,7 +711,7 @@ export function MicrorganismosTab() {
                       className="h-7 w-7 p-0"
                       onClick={async () => {
                         try {
-                          await generateFichaTecnicaMicrorganismoPdf({ microId: m.id });
+                          await generateFichaTecnicaMicrorganismoPdf({ microId: m.id, empresaNome: tenantName });
                           toast.success("PDF exportado");
                         } catch (e: any) { toast.error(e.message); }
                       }}

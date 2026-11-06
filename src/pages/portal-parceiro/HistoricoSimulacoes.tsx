@@ -38,6 +38,7 @@ export default function HistoricoSimulacoes() {
 
   const handleDownload = async (sim: any, itemsList: any[]) => {
     const { blobUrl, filename } = await generateSimulacaoPdf({
+      empresaNome: partner?.sellerName ?? null,
       simulacao: sim,
       parceiro_nome: partner?.nome_fantasia ?? partner?.razao_social ?? null,
       baixado_por: {

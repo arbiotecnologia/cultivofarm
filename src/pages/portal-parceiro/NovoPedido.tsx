@@ -136,7 +136,7 @@ export default function NovoPedido() {
   const legacyVolumes = useCatalogoVolumes(isSimulationMode);
   const partnerVolumes = usePartnerCatalogVolumes(isSimulationMode ? null : partner?.id);
   const volumes = isSimulationMode ? legacyVolumes : partnerVolumes;
-  const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? null;
+  const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? partner?.sellerName ?? null;
   const createOrder = useCreatePartnerOrder(supplierName);
   const createSimulation = useCreatePartnerSimulation();
   const navigate = useNavigate();

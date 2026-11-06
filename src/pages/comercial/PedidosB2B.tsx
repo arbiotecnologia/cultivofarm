@@ -49,6 +49,7 @@ import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntr
 import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialOwnerOrdersSection";
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
 import { usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 
 
@@ -66,6 +67,12 @@ const STATUS_OPTIONS = [
   { value: "cancelado", label: "Cancelado" },
 ];
 const STATUS_VALUES = STATUS_OPTIONS.map((s) => s.value);
+
+/** Lê o nome do tenant SOMENTE quando o diálogo está aberto — a lista não monta leitura secundária. */
+function WithTenantName({ children }: { children: (name: string | null) => JSX.Element }) {
+  const { name } = useActiveTenantName();
+  return children(name);
+}
 
 export default function PedidosB2B() {
   const { role, roles = [] } = useAuth();
@@ -597,11 +604,12 @@ export default function PedidosB2B() {
         </DialogContent>
       </Dialog>
 
-      <TimelinePedidoDialog
+      {timelineOpen && <WithTenantName>{(tenantName) => <TimelinePedidoDialog
+        supplierName={tenantName}
         orderId={detail?.id ?? null}
         open={timelineOpen}
         onOpenChange={setTimelineOpen}
-      />
+      />}</WithTenantName>}
 
       <ResponderCotacaoDialog
         open={quoteOpen}

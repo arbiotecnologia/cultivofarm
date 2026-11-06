@@ -305,6 +305,7 @@ function SimulacaoDrawerComPdf({
   const handleDownloadPdf = async () => {
     if (!sim) return;
     const { blobUrl, filename } = await generateSimulacaoPdf({
+      empresaNome: partner?.sellerName ?? null,
       simulacao: sim,
       parceiro_nome: partner?.nome_fantasia ?? partner?.razao_social ?? null,
       tecnico_nome: tecnicoNome,

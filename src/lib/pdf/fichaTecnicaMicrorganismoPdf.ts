@@ -5,12 +5,14 @@ import { formatConcentracaoDisplay } from "@/lib/cqFormat";
 import { formatarPrecoUnitario } from "@/lib/catalogo/formatUnidades";
 
 export interface FichaMicroOptions {
+  /** Empresa fornecedora/emitente já resolvida pelo chamador. */
+  empresaNome: string | null;
   microId: string;
   mode?: "download" | "blob";
   audience?: "interna" | "b2b";
 }
 
-export async function generateFichaTecnicaMicrorganismoPdf({ microId, mode = "download", audience = "interna" }: FichaMicroOptions): Promise<void | { blobUrl: string; filename: string }> {
+export async function generateFichaTecnicaMicrorganismoPdf({ empresaNome, microId, mode = "download", audience = "interna" }: FichaMicroOptions): Promise<void | { blobUrl: string; filename: string }> {
   const isB2B = audience === "b2b";
 
   const microSelect = isB2B
@@ -39,7 +41,7 @@ export async function generateFichaTecnicaMicrorganismoPdf({ microId, mode = "do
   const crops: any[] = cRes.data ?? [];
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
-  let y = await drawArBioHeader(doc, { subtitulo: `Ficha técnica — ${m.nome}` });
+  let y = await drawArBioHeader(doc, { empresaNome, subtitulo: `Ficha técnica — ${m.nome}` });
 
   const margin = 40;
   const w = doc.internal.pageSize.getWidth() - margin * 2;

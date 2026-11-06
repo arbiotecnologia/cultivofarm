@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 const SIM_STATUS_LABEL: Record<string, string> = {
   enviada_gestor: "Em análise",
@@ -42,6 +43,7 @@ const SIM_STATUS_LABEL: Record<string, string> = {
 const HIDDEN_SIM_STATUS = new Set(["rascunho", "arquivada"]);
 
 export default function PortalMeusPedidos() {
+  const { name: tenantName } = useActiveTenantName();
   const { clienteId, clienteNome, loading } = usePortalCliente();
   const { data: pedidos = [], isLoading: loadingPed } = useProdutorPedidos(clienteId);
   const { data: simsRaw = [], isLoading: loadingSim } = useProdutorSimulacoes(clienteId);
@@ -391,6 +393,7 @@ export default function PortalMeusPedidos() {
       </Tabs>
 
       <DetalhePedidoDrawer
+        empresaNome={tenantName}
         orderId={openPedido}
         open={!!openPedido}
         onOpenChange={(o) => !o && setOpenPedido(null)}

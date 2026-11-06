@@ -6,6 +6,8 @@ import { formatConcentracaoDisplay } from "@/lib/cqFormat";
 export interface DossieMicrorganismosOptions {
   mode?: "download" | "blob";
   audience?: "interna" | "b2b";
+  /** Empresa fornecedora/emitente já resolvida pelo chamador. */
+  empresaNome: string | null;
 }
 
 /**
@@ -13,8 +15,9 @@ export interface DossieMicrorganismosOptions {
  */
 export async function generateDossieCompletoMicrorganismos({
   mode = "download",
-  audience = "interna"
-}: DossieMicrorganismosOptions = {}): Promise<void | { blobUrl: string; filename: string }> {
+  audience = "interna",
+  empresaNome,
+}: DossieMicrorganismosOptions): Promise<void | { blobUrl: string; filename: string }> {
   
   const query = (supabase as any)
     .from("microrganismos")
@@ -39,7 +42,7 @@ export async function generateDossieCompletoMicrorganismos({
   for (let i = 0; i < microList.length; i++) {
     const micro = microList[i];
     if (i > 0) doc.addPage();
-    await appendMicroorganismoToDoc(doc, micro.id, audience);
+    await appendMicroorganismoToDoc(doc, micro.id, audience, empresaNome);
   }
 
   if (mode === "blob") {
@@ -49,7 +52,7 @@ export async function generateDossieCompletoMicrorganismos({
   doc.save(filename);
 }
 
-async function appendMicroorganismoToDoc(doc: jsPDF, microId: string, audience: "interna" | "b2b"): Promise<void> {
+async function appendMicroorganismoToDoc(doc: jsPDF, microId: string, audience: "interna" | "b2b", empresaNome: string | null): Promise<void> {
   const isB2B = audience === "b2b";
   const microSelect = isB2B
     ? "id, nome, codigo, tipo, nome_cientifico, concentracao_ufc_ml, dose_ml_ha, descricao, funcao_agronomica, ativo, b2b_enabled, valor_dose_brl, valor_litro_brl"
@@ -71,7 +74,7 @@ async function appendMicroorganismoToDoc(doc: jsPDF, microId: string, audience: 
   const targets: any[] = tRes.data ?? [];
   const crops: any[] = cRes.data ?? [];
 
-  let y = await drawArBioHeader(doc, { subtitulo: `Ficha técnica — ${m.nome}` });
+  let y = await drawArBioHeader(doc, { empresaNome, subtitulo: `Ficha técnica — ${m.nome}` });
 
   const margin = 40;
   const w = doc.internal.pageSize.getWidth() - margin * 2;

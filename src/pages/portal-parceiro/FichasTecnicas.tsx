@@ -20,8 +20,12 @@ import { Download, Eye, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { generateFichaTecnicaProdutoPdf } from "@/lib/pdf/fichaTecnicaProdutoPdf";
 import { generateFichaTecnicaMicrorganismoPdf } from "@/lib/pdf/fichaTecnicaMicrorganismoPdf";
+import { supplierLabel } from "@/lib/comercial/supplierName";
+import { useOutletContext } from "react-router-dom";
 
 export default function FichasTecnicas() {
+  // Contexto do layout (projeção B2B autorizada); fora do layout → null e rótulo neutro.
+  const partner = useOutletContext<{ partner?: { sellerName?: string | null } } | null>()?.partner ?? null;
   const [tab, setTab] = useState<"produtos" | "microrganismos">("produtos");
   const [busca, setBusca] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -58,8 +62,8 @@ export default function FichasTecnicas() {
       if (!current() || refreshed.error || !refreshed.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) return;
       const result =
         capturedTipo === "produto"
-          ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b" })
-          : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b" });
+          ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b", empresaNome: partner?.sellerName ?? null })
+          : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b", empresaNome: partner?.sellerName ?? null });
       if (result && "blobUrl" in result) {
         if (!current()) { URL.revokeObjectURL(result.blobUrl); return; }
         const after = await catalog.refetch();
@@ -92,7 +96,7 @@ export default function FichasTecnicas() {
       <div>
         <h1 className="text-xl md:text-2xl font-bold">Fichas Técnicas</h1>
         <p className="text-sm text-muted-foreground">
-          Consulte fichas técnicas completas de todos os produtos e microrganismos da empresa fornecedora.
+          Consulte fichas técnicas completas de todos os produtos e microrganismos da {supplierLabel(partner?.sellerName)}.
         </p>
       </div>
 
