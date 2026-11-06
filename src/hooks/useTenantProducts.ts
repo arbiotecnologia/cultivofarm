@@ -136,7 +136,7 @@ export function useArchiveTenantProduct() {
 
 /** Only current-actor scoped readers; never invalidate a foreign session or finance. */
 function invalidateProductReads(qc: ReturnType<typeof useQueryClient>, actorScope: string, deliveryScope: string) {
-  const prefixes = ["tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "partner-catalog-tecnico", "estoque_produto"];
+  const prefixes = ["product-packaging-admin", "tenant-products", "tenant-product-details", "catalogo-unificado", "catalogo-volumes", "catalogo-tecnico", "partner-catalog-secure", "partner-catalog-tecnico", "estoque_produto"];
   return qc.invalidateQueries({ predicate: q =>
     (prefixes.includes(String(q.queryKey[0])) && q.queryKey.at(-2) === actorScope) ||
     (["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].includes(String(q.queryKey[0])) && q.queryKey.at(-2) === deliveryScope) });

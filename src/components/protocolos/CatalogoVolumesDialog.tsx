@@ -1,7 +1,9 @@
 import { TENANT_CAN_EDIT_GLOBAL_CATALOG, GLOBAL_CATALOG_WRITE_BLOCKED_MESSAGE } from "@/lib/catalogo/globalCatalogWriteContainment";
 import { assertGlobalCatalogWriteBlocked } from "@/lib/catalogo/globalCatalogWriteContainment";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTenantCatalogEditor } from "@/hooks/useTenantCatalogEditor";
+import { usePackagingAdminRead } from "@/hooks/usePackagingAdmin";
+import { SolidPresentations } from "./SolidPresentations";
 import { useTenantProductVolumes, useSaveTenantProductVolume } from "@/hooks/useTenantProductVolumes";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,9 +45,22 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
   const [novo, setNovo] = useState({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
   const [precoTocado, setPrecoTocado] = useState(false);
   const editor = useTenantCatalogEditor();
+  const packaging = usePackagingAdminRead(itemId, owned && open && itemTipo === "produto" && editor.canEdit);
+  const solid = packaging.data?.unidade_conteudo === "kg" || packaging.data?.unidade_conteudo === "g";
+  const unitKnown = packaging.isSuccess && packaging.data?.unidade_conteudo != null;
+  // Existing tenant RLS reader stays independent of administrative unit metadata.
   const tenantVolumes = useTenantProductVolumes(itemId, owned && open && itemTipo === "produto");
+  const instanceKey = JSON.stringify([itemId, itemTipo, editor.scope, open, editor.canEdit, solid]);
+  const instance = useRef({ key: instanceKey, epoch: 0, locked: false });
+  if (instance.current.key !== instanceKey) instance.current = { key: instanceKey, epoch: instance.current.epoch + 1, locked: false };
+  const epoch = instance.current.epoch;
+  const [, renderLock] = useState(0);
+  const setPackLocked = useCallback((locked: boolean) => {
+    if (instance.current.epoch !== epoch) return;
+    instance.current.locked = locked; renderLock(value => value + 1);
+  }, [epoch]);
   const tenantSave = useSaveTenantProductVolume();
-  const ownedWritable = owned && itemTipo === "produto" && editor.canEdit;
+  const ownedWritable = owned && itemTipo === "produto" && editor.canEdit && unitKnown && !solid;
   const frozenScope = useRef("");
   const scopeKey = editor.scope;
 
@@ -70,7 +85,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
     },
   });
 
-  const data = owned ? tenantVolumes.data : globalRead.data;
+  const data = owned ? (solid ? [] : tenantVolumes.data) : globalRead.data;
   const isLoading = owned ? tenantVolumes.isLoading : globalRead.isLoading;
   const readError = owned ? tenantVolumes.error : globalRead.error;
   useEffect(() => {
@@ -116,11 +131,11 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
       const { error } = await supabase.from("catalogo_volumes" as any).insert(payload);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await invalidate();
       toast.success("Volume adicionado");
       setNovo({ volume_ml: "", rotulo: "", preco_brl: "", ordem: "0" });
       setPrecoTocado(false);
-      invalidate();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -145,7 +160,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
         .eq("id", v.id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Atualizado"); invalidate(); },
+    onSuccess: async () => { await invalidate(); toast.success("Atualizado"); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -183,10 +198,10 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={value => { if (!value && instance.current.epoch === epoch && instance.current.locked) { toast.error("Retome a tentativa original antes de fechar."); return; } onOpenChange(value); }}>
       <DialogContent className="max-w-5xl w-[96vw] max-h-[92vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
-          <DialogTitle>Volumes do catálogo</DialogTitle>
+          <DialogTitle>Apresentações do produto</DialogTitle>
           <DialogDescription>
             {owned
               ? <>{itemNome} · apresentações comerciais próprias, com preço e histórico auditável.</>
@@ -196,12 +211,13 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 min-w-0">
+        {owned && !unitKnown && <p role="status">Unidade do produto não confirmada. Referências existentes em consulta; solicite ao administrador a configuração de kg, g, mL ou L. Peso e volume não são inferidos.</p>}
+        {solid && packaging.data ? <SolidPresentations key={`${itemId}:${scopeKey}:${epoch}`} state={packaging.data} active={open && frozenScope.current === scopeKey} onLockChange={setPackLocked} /> : <div className="space-y-4 min-w-0">
           <div className="border rounded-md w-full">
             <Table className="text-xs [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:h-8 [&_td]:py-1.5">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px]">Vol (mL)</TableHead>
+                  <TableHead className="text-[10px]">{ownedWritable ? "Vol (mL)" : "Apresentação"}</TableHead>
                   <TableHead className="text-[10px]">Rótulo</TableHead>
                   <TableHead className="text-[10px] text-right">Preço</TableHead>
                   <TableHead className="text-[10px] text-right">R$/L · /100mL</TableHead>
@@ -219,7 +235,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
                 ) : data.map((v) => (
                   (TENANT_CAN_EDIT_GLOBAL_CATALOG || ownedWritable)
                     ? <EditableRow key={v.id} v={v} baseLitro={baseLitro} onSave={(nv) => update.mutate(nv)} onDelete={owned ? undefined : () => remove.mutate(v)} disabled={tenantSave.isPending} />
-                    : <ReadOnlyVolumeRow key={v.id} v={v} />
+                    : <ReadOnlyVolumeRow key={v.id} v={v} compatibility={owned && !unitKnown} />
                 ))}
               </TableBody>
             </Table>
@@ -284,7 +300,7 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
             )}
           </div>
           )}
-        </div>
+        </div>}
       </DialogContent>
     </Dialog>
   );
@@ -316,17 +332,19 @@ function EditableRow({ v, baseLitro, onSave, onDelete, disabled }: { v: Catalogo
   );
 }
 
-function ReadOnlyVolumeRow({ v }: { v: CatalogoVolume }) {
+function ReadOnlyVolumeRow({ v, compatibility = false }: { v: CatalogoVolume; compatibility?: boolean }) {
+  const packaging = (v as unknown as { medida?: string }).medida === "embalagem";
+  const literal = compatibility || packaging;
   return (
     <TableRow>
-      <TableCell className="text-xs">{v.volume_ml}</TableCell>
-      <TableCell className="text-xs">{v.rotulo || fmtL(v.volume_ml)}</TableCell>
-      <TableCell className="text-right text-xs">{brl(Number(v.preco_brl))}</TableCell>
+      <TableCell className="text-xs">{packaging ? "Embalagem" : v.volume_ml}</TableCell>
+      <TableCell className="text-xs">{v.rotulo || (literal ? "Referência cadastrada" : fmtL(v.volume_ml))}</TableCell>
+      <TableCell className="text-right text-xs">{packaging ? "—" : brl(Number(v.preco_brl))}</TableCell>
       <TableCell className="text-right text-[10px] text-muted-foreground leading-tight">
-        <div className="whitespace-nowrap">{formatPrecoLitro(v)}</div>
-        <div className="whitespace-nowrap">{formatDose100ml(v)}</div>
+        <div className="whitespace-nowrap">{literal ? "—" : formatPrecoLitro(v)}</div>
+        <div className="whitespace-nowrap">{literal ? "—" : formatDose100ml(v)}</div>
       </TableCell>
-      <TableCell className="text-right text-[11px] text-muted-foreground">{Math.round(dosesPorVolume(v))}</TableCell>
+      <TableCell className="text-right text-[11px] text-muted-foreground">{literal ? "—" : Math.round(dosesPorVolume(v))}</TableCell>
       <TableCell className="text-xs">{v.ordem}</TableCell>
       <TableCell className="text-xs">{v.ativo ? "Ativo" : "Inativo"}</TableCell>
       <TableCell />
