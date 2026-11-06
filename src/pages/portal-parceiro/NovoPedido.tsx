@@ -29,6 +29,9 @@ import { toast } from "sonner";
 import { partnerCatalogRows } from "@/lib/catalogo/partnerCatalogRows";
 import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
 import { AddToCartDialog } from "@/components/catalogo/AddToCartDialog";
+import { AddPackagingToCartDialog } from "@/components/catalogo/AddPackagingToCartDialog";
+import { usePartnerPackagingOffers } from "@/hooks/usePartnerPackagingOffers";
+import { isWholePackagingQty, orderLineFor, packagingLabel } from "@/lib/comercial/packagingOrder";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import { brl as fmt } from "@/lib/financial/format";
 import { formatDateDisplay } from "@/lib/date-utils";
@@ -138,6 +141,10 @@ export default function NovoPedido() {
   const volumes = isSimulationMode ? legacyVolumes : partnerVolumes;
   const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? partner?.sellerName ?? null;
   const createOrder = useCreatePartnerOrder(supplierName);
+  // Embalagens inteiras: só comprador e só com o contrato confirmado pelo leitor (ausente/erro => fechado).
+  const packagingOffers = usePartnerPackagingOffers(isSimulationMode ? null : partner?.id);
+  const offersFor = (itemId: string) =>
+    packagingOffers.data?.state === "available" ? packagingOffers.data.offers.get(itemId) ?? [] : [];
   const createSimulation = useCreatePartnerSimulation();
   const navigate = useNavigate();
 
@@ -375,26 +382,15 @@ export default function NovoPedido() {
   const cartList = Object.entries(cart).map(([key, item]) => ({ key, ...item }));
   const total = cartList.reduce((s, i) => s + i.subtotal, 0);
   const totalCheio = cartList.reduce((s, i) => s + (i.subtotal_cheio ?? i.subtotal), 0);
-  const cartInvalid = cartList.some((i) => i.quantidade <= 0 || i.preco_unitario <= 0);
+  const cartInvalid = cartList.some((i) => i.quantidade <= 0 || i.preco_unitario <= 0 ||
+    (i.unidade_pedido === "embalagem" && (!i.packaging_id || !isWholePackagingQty(i.quantidade))));
 
   // Payload de itens para a RPC de simulação (mesmo shape do create)
   const simulationItems = useMemo(
     () =>
-      cartList.map((i) => ({
-        item_id: i.item_id,
-        item_tipo: i.item_tipo,
-        quantidade: Number(i.quantidade),
-        unidade_medida: (i.unidade_pedido === "hectare"
-          ? "hectare"
-          : i.unidade_pedido === "dose_100ml"
-          ? "dose"
-          : i.unidade_pedido === "litro"
-          ? "litro"
-          : "unidade") as "hectare" | "litro" | "dose" | "unidade",
-        volume_ml: i.unidade_pedido === "volume_comercial" ? i.volume_ml ?? null : null,
-      })),
+      cartInvalid ? [] : cartList.map(orderLineFor),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(cartList.map((i) => [i.item_id, i.quantidade, i.unidade_pedido, i.volume_ml]))],
+    [cartInvalid, JSON.stringify(cartList.map((i) => [i.item_id, i.quantidade, i.unidade_pedido, i.volume_ml, i.packaging_id ?? null]))],
   );
 
   const cashPlan = useMemo(() => paymentPlans.find((p) => p.plan_type === "cash") ?? null, [paymentPlans]);
@@ -653,6 +649,7 @@ export default function NovoPedido() {
   };
 
   const addRowCatalogItem = addRow ? catalogMap.get(addRow.id) : null;
+  const addRowOffers = addRow && addRowCatalogItem?.item_tipo === "produto" ? offersFor(addRow.id) : [];
   const doseRefHa = doseLitroHaFor(addRowCatalogItem ?? undefined);
 
   return (
@@ -791,6 +788,11 @@ export default function NovoPedido() {
                           Informe uma quantidade maior que zero.
                         </p>
                       )}
+                      {i.unidade_pedido === "embalagem" && i.peso_liquido_kg && i.quantidade > 0 && (
+                        <div className="text-[10px] text-muted-foreground">
+                          Peso para frete: {nfmt.format(i.peso_liquido_kg * i.quantidade)} kg
+                        </div>
+                      )}
                       {totalLitros !== null && i.quantidade > 0 && (
                         <div className="text-[10px] text-muted-foreground">
                           Total: {nfmt.format(totalLitros)} L
@@ -908,11 +910,34 @@ export default function NovoPedido() {
       )}
 
       {/* Add to cart dialog */}
+      <AddPackagingToCartDialog
+        open={!!addRow && addRowOffers.length > 0}
+        onOpenChange={(v) => !v && setAddRow(null)}
+        nome={addRow?.nome ?? null}
+        offers={addRowOffers}
+        onConfirm={({ offer, quantidade: q }) => {
+          if (!addRow || !addRowCatalogItem) return;
+          setCart((c) => {
+            const key = `${addRow.id}::pk::${offer.packaging_id}`;
+            const quantidade = (c[key]?.quantidade ?? 0) + q;
+            const preco = offer.preco_tabela_brl;
+            return { ...c, [key]: {
+              item_id: addRow.id, item_tipo: "produto", product_id: addRowCatalogItem.product_id, nome: addRow.nome,
+              quantidade, preco_unitario: preco, desconto_percentual: 0, subtotal: round2(preco * quantidade),
+              preco_unitario_cheio: preco, subtotal_cheio: round2(preco * quantidade),
+              unidade_pedido: "embalagem", volume_id: null, volume_ml: null, volume_rotulo: packagingLabel(offer),
+              area_ha: null, packaging_id: offer.packaging_id, peso_liquido_kg: offer.peso_liquido_kg,
+              unidade_conteudo: offer.unidade_conteudo,
+            } };
+          });
+          toast.success("Embalagem adicionada ao carrinho");
+        }}
+      />
       <AddToCartDialog
         volumesCat={volumes.data ?? null}
         volumesStatus={volumes.isError ? "error" : volumes.isSuccess ? "success" : "pending"}
         supplierName={supplierName}
-        open={!!addRow}
+        open={!!addRow && addRowOffers.length === 0}
         onOpenChange={(v) => !v && setAddRow(null)}
         row={addRow}
         doseRecomendadaLitroHa={doseRefHa}
@@ -1263,7 +1288,8 @@ export default function NovoPedido() {
               <Label htmlFor="fav-star" className="text-xs">Marcar como favorito (aparece primeiro)</Label>
             </div>
             <div className="text-xs text-muted-foreground">
-              {cartList.length} item(ns) serão salvos.
+              {cartList.filter((i) => i.unidade_pedido !== "embalagem").length} item(ns) serão salvos.
+              {cartList.some((i) => i.unidade_pedido === "embalagem") && " Embalagens não são salvas em modelos."}
             </div>
           </div>
           <DialogFooter>
@@ -1272,7 +1298,7 @@ export default function NovoPedido() {
               disabled={!favNome.trim() || cartList.length === 0 || saveTemplate.isPending || !partner?.id}
               onClick={() => {
                 if (!partner?.id) return;
-                const itens = cartList.map((i) => ({
+                const itens = cartList.filter((i) => i.unidade_pedido !== "embalagem").map((i) => ({
                   item_id: i.item_id,
                   item_tipo: i.item_tipo,
                   nome: i.nome,

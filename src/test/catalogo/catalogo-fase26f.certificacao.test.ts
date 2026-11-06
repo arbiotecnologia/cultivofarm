@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
+import { orderLineFor } from "@/lib/comercial/packagingOrder";
 const read = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf8");
 const exists = (p: string) => fs.existsSync(path.resolve(process.cwd(), p));
 
@@ -83,8 +84,9 @@ describe("26F — carrinho e pedido B2B preservados", () => {
   });
 
   it("useCreatePartnerOrder mapeia dose_100ml para dose e envia unidade_medida", () => {
-    expect(createOrder).toContain('case "dose_100ml": return "dose"');
-    expect(createOrder).toContain("unidade_medida: mapUnidadeMedida");
+    // Mapeamento movido para a linha canônica compartilhada com a simulação (orderLineFor).
+    expect(createOrder).toContain("input.items.map(orderLineFor)");
+    expect(orderLineFor({ item_id: "x", item_tipo: "produto", quantidade: 1, unidade_pedido: "dose_100ml" }).unidade_medida).toBe("dose");
     expect(createOrder).toContain("create_partner_order_secure");
     expect(createOrder).toContain("p_expected_cart_hash");
   });

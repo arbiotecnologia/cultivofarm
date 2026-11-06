@@ -44,9 +44,12 @@ describe("B2 — sólidos por embalagem inteira (BLOCKED: contrato de pedido aus
       expect(block).not.toMatch(/unidade_conteudo/);
     }
   });
-  it("NovoPedido precifica apenas por volume_ml × preço por litro", () => {
+  it("NovoPedido: líquido segue volume_ml × litro; embalagem só pelo candidato confirmado (B2B_PARTNER_PACKAGING_ORDER_V1)", () => {
     expect(novoPedido).toMatch(/volume_ml \/ 1000/);
-    expect(novoPedido).not.toMatch(/packaging_id|peso_liquido_kg|solid_pack/);
+    // Ainda BLOCKED em produção: o leitor/linha de embalagem só abre com o contrato instalado e confirmado.
+    expect(novoPedido).toContain("usePartnerPackagingOffers(isSimulationMode ? null : partner?.id)");
+    expect(novoPedido).toContain('packagingOffers.data?.state === "available"');
+    expect(novoPedido).not.toMatch(/solid_pack/);
   });
   it("o cadastro de apresentação sólida existe no catálogo (não é o bloqueio)", () => {
     expect(types).toMatch(/solid_pack_offer_save_v1: \{/);
