@@ -24,6 +24,8 @@
     "crédito sem limite, juros 0, plano selecionável",
     "get_partner_catalog_secure chama o leitor REAL",
     "fn_catalogo_preco_canonico mínimo",
+    "sem RLS/policies (partner_order_items com GRANT direto): não prova RLS",
+    "sem JWT/PostgREST",
     "tabelas de 2º nível com colunas reais, chaves/únicos/CHECKs reais, SEM seus próprios gatilhos e FKs: commercial_audit_log, notificacoes_operacionais, partner_engagement_metrics, partner_financial_settings, partner_order_audit_logs, production_order_link, production_planning, production_timeline_events",
     "company_fiscal_settings/clientes mínimas (colunas usadas pelos guards reais)",
     "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
@@ -110,7 +112,7 @@
     },
     "install.rerun_refused": {
       "pass": true,
-      "detail": "psql:/tmp/b2bpack-muez7sab/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+      "detail": "psql:/tmp/b2bpack-da276j5o/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
     },
     "reader.buyer_exact_offers": {
       "pass": true,
@@ -254,7 +256,7 @@
     "create.solid_ok": {
       "pass": true,
       "detail": {
-        "id": "75228a0b-24fb-4293-902b-8b2c538f8f68",
+        "id": "e746394e-c820-4331-9eaa-83f3d919ec53",
         "total": 324.0,
         "numero": "PB-000001",
         "status": "em_analise_comercial",
@@ -267,7 +269,7 @@
         "quote_required": false,
         "discount_amount": 36.0,
         "idempotency_key": "TESTE-PED-20261106-K1",
-        "payment_terms_id": "8a5ef23d-6f6f-47a6-a2a7-82e88fcc3d93",
+        "payment_terms_id": "ba28eccc-3084-4180-8078-b97266de422e",
         "credit_reason_code": "NO_LIMIT",
         "credit_block_reason": null,
         "financial_approval_status": "not_required",
@@ -389,6 +391,9 @@
       "pass": true,
       "detail": "ERROR:  auth_required"
     },
+    "check.before_defect_reproduced_unknown_accepted": {
+      "pass": true
+    },
     "check.valid_row_accepted": {
       "pass": true
     },
@@ -476,7 +481,7 @@
       "pass": true,
       "detail": [
         {
-          "id": "519a6759-2e81-4db4-aad6-cf11c1508527",
+          "id": "d9192d0a-2b3d-402b-8654-e6972d2adc54",
           "total": 243.0,
           "numero": "PB-000005",
           "status": "em_analise_comercial",
@@ -489,7 +494,7 @@
           "quote_required": false,
           "discount_amount": 27.0,
           "idempotency_key": "TESTE-PED-20261106-CC",
-          "payment_terms_id": "a1ba1af9-3324-451c-8c4a-5cc58ff1aa4b",
+          "payment_terms_id": "39dd9bbb-5d94-4a2b-96c1-6f4aff313c28",
           "credit_reason_code": "NO_LIMIT",
           "credit_block_reason": null,
           "financial_approval_status": "not_required",
@@ -555,6 +560,6 @@
     }
   },
   "result": "PASS",
-  "passed": 100,
-  "total": 100
+  "passed": 101,
+  "total": 101
 }

@@ -305,7 +305,8 @@ def main():
            "synthetic_seams": ["auth.uid por GUC", "has_role/get_user_partner_id/is_platform_superadmin/b2b_actor_scope sobre tabelas mínimas",
                                "c2_* guards e journal mínimos", "crédito sem limite, juros 0, plano selecionável",
                                "get_partner_catalog_secure chama o leitor REAL", "fn_catalogo_preco_canonico mínimo",
-                               "demais gatilhos de partner_orders omitidos", "exclusão GiST omitida"]}
+                               "demais gatilhos de partner_orders omitidos", "exclusão GiST omitida",
+                               "sem RLS/policies (partner_order_items com GRANT direto): não prova RLS", "sem JWT/PostgREST"]}
     ok = True; checks = {}
 
     def chk(name, cond, detail=None):
@@ -477,6 +478,8 @@ def main():
         def ins(over):
             row = {**good, **over}
             return psql("SET session_replication_role = replica; INSERT INTO public.partner_order_items(order_id," + ",".join(row) + f") VALUES ('{cl['id']}'," + ",".join(row.values()) + ");", check=False)
+        demo = psql("CREATE TEMP TABLE old_shape(x int, v int, CHECK ((x IS NULL AND v IS NULL) OR (x IS NOT NULL AND v >= 1))); INSERT INTO old_shape VALUES (1, NULL); SELECT count(*) FROM old_shape;", check=False)
+        chk("check.before_defect_reproduced_unknown_accepted", demo.returncode == 0 and demo.stdout.strip().endswith("1"), err(demo))
         r = ins({}); chk("check.valid_row_accepted", r.returncode == 0, err(r))
         for col, val in (("packaging_codigo_snapshot", "NULL"), ("packaging_codigo_snapshot", "'  '"), ("packaging_version_snapshot", "NULL"), ("packaging_version_snapshot", "0"),
                          ("packaging_peso_liquido_kg_snapshot", "NULL"), ("packaging_peso_liquido_kg_snapshot", "0"), ("packaging_unidade_conteudo_snapshot", "NULL"),
