@@ -109,6 +109,10 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       if (!input.idempotency_key) throw new Error("idempotency_key_required");
       // O slot precisa corresponder ao ator/empresa/papéis/parceiro atuais.
       if (slot && slot !== slotFor(input.partner_id)) throw notSent(new Error("Contexto alterado."));
+      // Montado ANTES de qualquer reserva/dispatch: linha inválida nunca reserva chave nem chega ao servidor.
+      // Embalagem: só {item_id,item_tipo,packaging_id,quantidade}; líquidos no formato de sempre. Nunca preço.
+      let payload: Record<string, unknown>[];
+      try { payload = input.items.map(orderLineFor); } catch (e) { throw notSent(e as Error); }
       const journalSlot = slotFor(input.partner_id);
       if (!journalSlot) throw notSent(new Error('Contexto indisponível.'));
       const dispatchCurrent=()=>current() && (input.current_payload?.() ?? true);
@@ -127,9 +131,6 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       // Capability confirmed: all writers use server key; never fall back after storage/RPC error.
       const dispatchKey = durable?.key ?? input.idempotency_key;
 
-      // Embalagem: só {item_id,item_tipo,packaging_id,quantidade}; líquidos no formato de sempre. Nunca preço.
-      let payload: Record<string, unknown>[];
-      try { payload = input.items.map(orderLineFor); } catch (e) { throw notSent(e as Error); }
 
       let response: { data: unknown; error: { message?: string; code?: string } | null };
       try {
