@@ -2,23 +2,47 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
 
 // ---------- KPIs ----------
+export const COMMERCIAL_KPI_KEYS = [
+  "pedidos_total", "pedidos_aprovados", "pedidos_em_negociacao", "pedidos_aguardando_ajuste",
+  "receita_prevista", "receita_aprovada", "parceiros_ativos", "parceiros_novos",
+] as const;
+export type CommercialKpis = Record<(typeof COMMERCIAL_KPI_KEYS)[number], number>;
+
+/** Parser rígido: objeto com exatamente as 8 chaves numéricas finitas e não negativas; qualquer outra forma é erro (nunca zero falso). */
+export function parseCommercialKpis(raw: unknown): CommercialKpis {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("commercial_kpis_invalid");
+  const d = raw as Record<string, unknown>;
+  if (Object.keys(d).sort().join(",") !== [...COMMERCIAL_KPI_KEYS].sort().join(",")) throw new Error("commercial_kpis_invalid");
+  const out = {} as CommercialKpis;
+  for (const k of COMMERCIAL_KPI_KEYS) {
+    const v = typeof d[k] === "string" && /^\d+(\.\d+)?$/.test(d[k] as string) ? Number(d[k]) : d[k];
+    if (typeof v !== "number" || !Number.isFinite(v) || v < 0) throw new Error("commercial_kpis_invalid");
+    out[k] = v;
+  }
+  return out;
+}
+
+/**
+ * KPIs comerciais do tenant ativo. Cache isolado por ator/tenant/papéis/época (useScopedPortalQuery):
+ * troca de tenant, logout ou revogação descartam dados anteriores e respostas atrasadas. A autorização
+ * por tenant é do servidor (pacote scripts/commercial-kpis-tenant-20261106); o cliente não a substitui.
+ */
 export function useCommercialKpis(params: {
   from?: string; to?: string; partner_id?: string; consultor?: string; region?: string;
 } = {}) {
-  return useQuery({
-    queryKey: ["commercial-kpis", params],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_commercial_kpis" as any, {
-        p_from: params.from ?? null,
-        p_to: params.to ?? null,
-        p_partner_id: params.partner_id ?? null,
-        p_consultor: params.consultor ?? null,
-        p_region: params.region ?? null,
-      });
-      if (error) throw error;
-      return data as any;
+  const p = {
+    p_from: params.from ?? null, p_to: params.to ?? null, p_partner_id: params.partner_id ?? null,
+    p_consultor: params.consultor ?? null, p_region: params.region ?? null,
+  };
+  return useScopedPortalQuery<CommercialKpis>({
+    queryKey: ["commercial-kpis", p.p_from, p.p_to, p.p_partner_id, p.p_consultor, p.p_region],
+    queryFn: async (signal) => {
+      const { data, error } = await supabase.rpc("rpc_commercial_kpis" as any, p).abortSignal(signal);
+      if (error) throw new Error("commercial_kpis_unavailable");
+      return parseCommercialKpis(data);
     },
   });
 }

@@ -12,7 +12,7 @@ export default function IndicadoresComerciais() {
   const [from, setFrom] = useState(thirty);
   const [to, setTo] = useState(today);
 
-  const { data, isLoading } = useCommercialKpis({ from, to });
+  const { data, isError, ready, refetch, isFetching } = useCommercialKpis({ from, to });
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
@@ -35,7 +35,16 @@ export default function IndicadoresComerciais() {
         </CardContent>
       </Card>
 
-      {isLoading ? <div className="text-sm text-muted-foreground">Carregando...</div> : data && (
+      {!ready ? (
+        <div role="status" className="text-sm text-muted-foreground">Verificando seu acesso...</div>
+      ) : isError ? (
+        <div role="alert" className="border rounded-md p-4 text-sm space-y-2">
+          <p>Não foi possível carregar os indicadores. Nenhum valor é exibido até a confirmação do servidor.</p>
+          <button type="button" className="underline" disabled={isFetching} onClick={() => void refetch()}>Tentar novamente</button>
+        </div>
+      ) : !data ? (
+        <div role="status" className="text-sm text-muted-foreground">Carregando...</div>
+      ) : (
         <div className="grid md:grid-cols-3 gap-3">
           <Kpi label="Pedidos no período" value={String(data.pedidos_total ?? 0)} />
           <Kpi label="Aprovados" value={String(data.pedidos_aprovados ?? 0)} />
