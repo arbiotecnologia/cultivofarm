@@ -134,7 +134,7 @@ def parallel(sqls, delays):
 
 SEAMS = f"""
 CREATE TABLE public.payment_methods(id uuid PRIMARY KEY, name text NOT NULL, active boolean NOT NULL DEFAULT true);
-CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS
+CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS
  $$ SELECT EXISTS (SELECT 1 FROM public.profiles p WHERE p.user_id = $1 AND p.ativo) $$;
 CREATE FUNCTION public.get_partner_order_payment_terms_secure(p_order_id uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
 BEGIN
