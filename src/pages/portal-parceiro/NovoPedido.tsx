@@ -816,6 +816,18 @@ export default function NovoPedido() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {pendingPackaging.length > 0 && (
+              <div role="alert" data-testid="pending-packaging" className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                <p>
+                  {pendingPackaging.length} embalagem(ns) do seu rascunho aguardam confirmação: a leitura das apresentações falhou.
+                  Elas não foram descartadas, mas simulação e envio ficam bloqueados até confirmar preço e disponibilidade atuais.
+                </p>
+                <Button size="sm" variant="outline" className="mt-2" disabled={packagingOffers.isFetching}
+                        onClick={() => void packagingOffers.refetch()}>
+                  {packagingOffers.isFetching ? "Confirmando…" : "Tentar confirmar agora"}
+                </Button>
+              </div>
+            )}
             {cartList.length === 0 ? (
               <div className="text-sm text-muted-foreground py-6 text-center">Carrinho vazio</div>
             ) : (
