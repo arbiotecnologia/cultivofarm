@@ -266,6 +266,22 @@ def matrix(phase):
            as_user(UB, f"SELECT public.fn_resolve_commercial_price('partner','{P}',NULL,'{PLD}','{LIQ}',NULL,'unidade',1000);"), "permission denied")
 
 
+def boot():
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="b2bfence-")); os.chmod(tmp, 0o777); SOCK[0] = str(tmp)
+    subprocess.run(su() + ["initdb", "-D", str(tmp / "d"), "-U", "postgres", "-A", "trust"], check=True, capture_output=True)
+    subprocess.run(su() + ["pg_ctl", "-D", str(tmp / "d"), "-o", f"-p {PORT} -k {tmp} -c listen_addresses=''", "-l", str(tmp / "log"), "-w", "start"], check=True, capture_output=True)
+    subprocess.run(su() + ["createdb", "-h", str(tmp), "-p", PORT, "-U", "postgres", "t"], check=True)
+    psql(SCHEMA)
+    for b in REAL_BODIES:
+        psql(cap(b))
+    psql(ACL); psql(DATA)
+    return tmp
+
+
+def stop(tmp):
+    subprocess.run(su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
+
+
 def main():
     if not shutil.which("initdb"): print("initdb ausente"); return 2
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="b2bfence-")); os.chmod(tmp, 0o777); SOCK[0] = str(tmp)
