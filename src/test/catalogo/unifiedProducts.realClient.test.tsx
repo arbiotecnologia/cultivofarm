@@ -4,12 +4,30 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
-const state = vi.hoisted(() => ({ actor: "A", tenant: "org-A", roles: ["administrador"], epoch: 0, fetch: vi.fn(), rows: [] as any[] }));
+const state = vi.hoisted(() => ({ actor: "A", tenant: "org-A", roles: ["administrador"], epoch: 0, fetch: vi.fn(), rows: [] as any[],
+  unitCap: "absent" as "positive" | "absent" | "denied", unitCalls: [] as string[] }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant, ativo: true }, roles: state.roles, role: state.roles[0], loading: false, authzReady: true, authzEpoch: state.epoch }) }));
+// Contrato PRODUCT_UNIT_V2 explícito e separado do transporte de cada cenário: capability ausente por padrão
+// (SQL ainda não instalado); positiva somente quando o cenário a declara. Unidade lida do próprio produto da empresa.
+const unitContractFetch = vi.hoisted(() => (url: string, init?: RequestInit): Promise<Response> | null => {
+  const name = url.split("/rpc/")[1];
+  if (name !== "tenant_product_unit_capability_v1" && name !== "solid_pack_offers_admin_v1") return null;
+  state.unitCalls.push(name);
+  const res = (data: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } }));
+  if (name === "tenant_product_unit_capability_v1") {
+    if (state.unitCap === "absent") return res({ code: "PGRST202", message: "Could not find the function" }, 404);
+    if (state.unitCap === "denied") return res({ code: "42501", message: "forbidden" }, 403);
+    return res({ contract: "PRODUCT_UNIT_V2", writer: "tenant_product_save", units: ["kg", "g", "ml", "l"] });
+  }
+  const id = JSON.parse(String(init?.body ?? "{}")).p_product;
+  const row = state.rows.find(r => r.id === id && r.owner_organization_id === state.tenant);
+  if (!row) return res({ code: "P0002", message: "not_found" }, 404);
+  return res({ contract: "SOLID_PACK_ADMIN_V1", product_id: id, config_version: 0, unidade_conteudo: row.unidade_conteudo ?? null, offers: [] });
+});
 vi.mock("@/integrations/supabase/client", async () => {
   const { createClient } = await import("@supabase/supabase-js");
   return { supabase: createClient("https://swzpzcwiasxmjutrmvkm.supabase.co", "synthetic-key", {
-    accessToken: async () => "synthetic-bearer", global: { fetch: (...args) => state.fetch(...args) },
+    accessToken: async () => "synthetic-bearer", global: { fetch: (...args) => unitContractFetch(String(args[0]), args[1]) ?? state.fetch(...args) },
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   }) };
 });
@@ -36,7 +54,7 @@ function wrapper({ children }: { children: ReactNode }) {
 function client() { const c = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); clients.push(c); return c; }
 function rpcCalls(name: string) { return state.fetch.mock.calls.filter(([url]) => String(url).endsWith(`/rpc/${name}`)).map(([, init]) => JSON.parse(init.body)); }
 beforeEach(() => {
-  Object.assign(state, { actor: "A", tenant: "org-A", roles: ["administrador"], epoch: 0, rows: [] }); state.fetch.mockReset();
+  Object.assign(state, { actor: "A", tenant: "org-A", roles: ["administrador"], epoch: 0, rows: [], unitCap: "absent", unitCalls: [] }); state.fetch.mockReset();
   state.fetch.mockImplementation(async (url, init) => {
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer synthetic-bearer");
     const name = String(url).split("/rpc/")[1];
@@ -50,6 +68,17 @@ beforeEach(() => {
     return json([]);
   });
 });
+async function chooseUnit(unit: "kg" | "g" | "ml" | "l") {
+  const trigger = await screen.findByLabelText("Unidade do produto *");
+  await waitFor(() => expect(trigger.matches(":disabled")).toBe(false));
+  const native = trigger.parentElement?.querySelector("select");
+  if (!native) throw new Error("select nativo da unidade ausente");
+  fireEvent.change(native, { target: { value: unit } });
+  await waitFor(() => expect(trigger.textContent).toBe(unit === "ml" ? "mL" : unit === "l" ? "L" : unit));
+}
+async function unitLoaded(label: string) {
+  await waitFor(() => expect(screen.getByLabelText("Unidade do produto *").textContent).toBe(label));
+}
 afterEach(() => { cleanup(); clients.splice(0).forEach(c => c.clear()); });
 
 it("único menu de produtos e redirect preserva query/hash com aba destino prioritária", async () => {
@@ -60,7 +89,7 @@ it("único menu de produtos e redirect preserva query/hash com aba destino prior
   expect(await screen.findByText("/base-tecnica?busca=solo&tab=produtos#p1")).toBeTruthy();
 });
 it.each(["administrador", "gestor"])("%s cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real", async role => {
-  state.roles = [role]; client(); render(<ProdutosTab />, { wrapper });
+  state.roles = [role]; state.unitCap = "positive"; client(); render(<ProdutosTab />, { wrapper });
   if (role === "gestor") {
     expect(getAccessLevel(role, "/configuracoes/produtos")).toBe("r");
     expect(getAccessLevel(role, "/base-tecnica?tab=produtos")).toBe("rw");
@@ -70,16 +99,19 @@ it.each(["administrador", "gestor"])("%s cadastra, edita, arquiva e reativa no m
   fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Solo Empresa" } });
   fireEvent.change(screen.getByLabelText("Descrição"), { target: { value: "Descrição preservada" } });
+  await chooseUnit("g");
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await screen.findByText("Solo Empresa");
-  expect(rpcCalls("tenant_product_save")[0]).toMatchObject({ p_product_id: null, p_expected_updated_at: null, p_payload: { nome: "Solo Empresa", descricao: "Descrição preservada", tipo: "solo", b2b_enabled: false } });
+  expect(rpcCalls("tenant_product_save")[0]).toMatchObject({ p_product_id: null, p_expected_updated_at: null, p_payload: { nome: "Solo Empresa", descricao: "Descrição preservada", tipo: "solo", unidade_conteudo: "g", b2b_enabled: false } });
   expect(rpcCalls("tenant_product_save")[0].p_payload).not.toHaveProperty("owner_organization_id");
   expect(rpcCalls("tenant_catalog_formulacoes_replace")).toHaveLength(0);
   fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+  await unitLoaded("g");
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Solo Editado" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await screen.findByText("Solo Editado");
   expect(rpcCalls("tenant_product_save")[1].p_expected_updated_at).toBe(stamp);
+  expect(rpcCalls("tenant_product_save")[1].p_payload.unidade_conteudo).toBe("g");
   fireEvent.click(screen.getByRole("checkbox", { name: "Mostrar arquivados" }));
   fireEvent.click(await screen.findByRole("button", { name: "Arquivar" }));
   await screen.findByRole("button", { name: "Reativar" });
@@ -185,8 +217,8 @@ it("composição incerta conserva ambas as chaves e CAS para reconciliação exp
   expect(compositions[0]).toEqual(compositions[1]);
 });
 it("parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz", async () => {
-  client(); let attempts = 0;
-  state.rows = [{ id: "p1", nome: "Produto existente", tipo: "solo", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" }];
+  client(); let attempts = 0; state.unitCap = "positive";
+  state.rows = [{ id: "p1", nome: "Produto existente", tipo: "solo", unidade_conteudo: "kg", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" }];
   state.fetch.mockImplementation(async (url, init) => {
     const name = String(url).split("/rpc/")[1];
     if (name === "tenant_product_list") return json(state.rows);
@@ -202,6 +234,7 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
   render(<ProdutosTab />, { wrapper });
   await screen.findByText("Produto existente");
   fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+  await unitLoaded("kg");
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
   fireEvent.click(await screen.findByRole("button", { name: "Remover componente" }));
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
@@ -221,7 +254,7 @@ it("parcial montado mantém diálogo e input congelados; retry exato não cria o
 });
 // "recusa definitiva" foi movida para o teste dedicado de saída segura (não oferece mais replay idêntico).
 it.each(["resposta perdida"])("novo produto com %s da composição mantém ACK/componentes e replay único", async failure => {
-  client(); let attempts = 0; let compositionCommits = 0; const compositionReceipts = new Set<string>(); const receipts = new Map<string, typeof ack>();
+  client(); state.unitCap = "positive"; let attempts = 0; let compositionCommits = 0; const compositionReceipts = new Set<string>(); const receipts = new Map<string, typeof ack>();
   state.fetch.mockImplementation(async (url, init) => {
     const name = String(url).split("/rpc/")[1];
     if (name === "tenant_product_list") return json(state.rows);
