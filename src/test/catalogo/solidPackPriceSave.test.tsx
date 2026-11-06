@@ -6,68 +6,86 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock } })
 vi.mock("sonner", () => ({ toast: toastMock }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth.value }));
 import { SolidPresentations } from "@/components/protocolos/SolidPresentations";
+import { CatalogoVolumesDialog } from "@/components/protocolos/CatalogoVolumesDialog";
+import { cents, civilDate } from "@/lib/catalogo/packagingAdminContract";
 
+// Valor R$ 10,00 é apenas da fixture TESTE do auditor, não padrão comercial.
 const U = "11111111-1111-4111-8111-111111111111", ORG = "007bb519-cba0-4704-be2c-cb93ad010048";
 const PROD = "22222222-2222-4222-8222-222222222222", PK = "366e6f04-0000-4000-8000-000000000002";
-const state = { product_id: PROD, unidade_conteudo: "kg" as const, offers: [{ packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", peso_liquido_kg: 25, version: 1, ativo: true, prices: [] }] };
-const mk = () => render(<QueryClientProvider client={new QueryClient()}><SolidPresentations state={state} /></QueryClientProvider>);
+const offer = { packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", peso_liquido_kg: 25, version: 1, ativo: true, prices: [] };
+const state = { product_id: PROD, unidade_conteudo: "kg" as const, offers: [offer] };
+const admin = { contract: "SOLID_PACK_ADMIN_V1", config_version: 1, ...state };
+const resp = (v: unknown) => { const p = Promise.resolve(v); return Object.assign(p, { abortSignal: () => p }); };
+const routes = () => rpcMock.mockImplementation((name: string) => resp(name === "solid_pack_offers_admin_v1"
+  ? { data: admin, error: null } : { data: null, error: { code: "42501", message: "negado pelo servidor" } }));
 const fill = (price: string, date: string) => {
   fireEvent.click(screen.getByRole("button", { name: "Preço" }));
   fireEvent.change(screen.getByLabelText("Preço por embalagem (R$)"), { target: { value: price } });
   fireEvent.change(screen.getByLabelText("Vigência"), { target: { value: date } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar preço" }));
 };
+const priceCalls = () => rpcMock.mock.calls.filter(c => c[0] === "solid_pack_price_set_v1");
+const mk = () => render(<QueryClientProvider client={new QueryClient()}><SolidPresentations state={state} /></QueryClientProvider>);
 beforeEach(() => {
-  rpcMock.mockReset(); toastMock.error.mockReset(); toastMock.success.mockReset();
-  auth.value = { user: { id: U }, profile: { user_id: U, ativo: true, senha_provisoria: false, organization_id: ORG }, roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true };
+  rpcMock.mockReset(); toastMock.error.mockReset(); toastMock.success.mockReset(); routes();
+  auth.value = { user: { id: U }, profile: { user_id: U, ativo: true, senha_provisoria: false, organization_id: ORG },
+    roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true };
 });
 
-describe("Salvar preço da embalagem (fixture TESTE R$ 10,00)", () => {
-  it("despacha solid_pack_price_set_v1 com 1000 centavos", async () => {
-    rpcMock.mockResolvedValue({ data: null, error: { code: "42501", message: "x" } });
-    mk(); fill("10,00", "2026-11-06");
-    await waitFor(() => expect(rpcMock).toHaveBeenCalled());
-    expect(rpcMock.mock.calls[0][0]).toBe("solid_pack_price_set_v1");
-    expect(rpcMock.mock.calls[0][1]).toMatchObject({ p_packaging_id: PK, p_preco_centavos: 1000, p_valid_from: "2026-11-06", p_expected_price_id: null });
+describe("parse de preço e vigência", () => {
+  it.each([["10", 1000], ["10,00", 1000], ["10.00", 1000], ["R$ 10,00", 1000], ["1.234,56", 123456], ["0,5", 50]])("%s => %i", (t, v) => expect(cents(t)).toBe(v));
+  it.each(["", "abc", "10,001", "1,234.56", "-10", "0", "0,00", "10 00"])("recusa %s com motivo", t => expect(() => cents(t)).toThrow(/Preço/));
+  it("vigência civil", () => {
+    expect(civilDate("2026-11-06")).toBe("2026-11-06");
+    for (const t of ["06/11/2026", "2026-02-30", "2026-13-01", ""]) expect(() => civilDate(t)).toThrow(/Vigência inválida/);
   });
 });
-describe("caminhos sem envio", () => {
-  it("lease pausada no clique", async () => {
+
+describe("Salvar preço da embalagem", () => {
+  it("despacha solid_pack_price_set_v1 com 1000 centavos e sem preço anterior", async () => {
+    mk(); fill("10,00", "2026-11-06");
+    await waitFor(() => expect(priceCalls()).toHaveLength(1));
+    expect(priceCalls()[0][1]).toMatchObject({ p_packaging_id: PK, p_preco_centavos: 1000, p_valid_from: "2026-11-06", p_expected_price_id: null });
+    expect(typeof priceCalls()[0][1].p_idempotency_key).toBe("string");
+  });
+  it("recusa do servidor aparece na tela", async () => {
+    mk(); fill("10,00", "2026-11-06");
+    expect(await screen.findByRole("alert")).toHaveTextContent("negado pelo servidor");
+  });
+  it("preço inválido: motivo visível e nenhum envio", async () => {
+    mk(); fill("10,001", "2026-11-06");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Preço inválido");
+    expect(priceCalls()).toHaveLength(0);
+  });
+  it("sessão em revalidação no clique: motivo visível, nenhum envio, autorização não relaxada", async () => {
     let ok = true; auth.value.checkAuthzAccess = () => ok;
     mk(); ok = false; fill("10,00", "2026-11-06");
-    await new Promise(r => setTimeout(r, 50));
-    console.log("LEASE", rpcMock.mock.calls.length, JSON.stringify(toastMock.error.mock.calls));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Sessão em revalidação");
+    expect(priceCalls()).toHaveLength(0);
   });
-  it("papéis sem edição", async () => {
-    auth.value.roles = ["administrador", "parceiro_b2b"];
-    mk(); fill("10,00", "2026-11-06");
-    await new Promise(r => setTimeout(r, 50));
-    console.log("ROLES", rpcMock.mock.calls.length, JSON.stringify(toastMock.error.mock.calls));
-  });
-  it("authz not ready", async () => {
-    auth.value.authzReady = false;
-    mk(); fill("10,00", "2026-11-06");
-    await new Promise(r => setTimeout(r, 50));
-    console.log("READY", rpcMock.mock.calls.length, JSON.stringify(toastMock.error.mock.calls));
+  it.each([[["administrador", "parceiro_b2b"]], [["financeiro"]]])("papéis sem edição %j: nenhum envio, motivo visível", async roles => {
+    auth.value.roles = roles; mk(); fill("10,00", "2026-11-06");
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(priceCalls()).toHaveLength(0);
   });
 });
-import { CatalogoVolumesDialog } from "@/components/protocolos/CatalogoVolumesDialog";
-describe("diálogo real", () => {
-  it("abre, preenche e salva", async () => {
-    const admin = { contract: "SOLID_PACK_ADMIN_V1", config_version: 1, product_id: PROD, unidade_conteudo: "kg", offers: [{ packaging_id: PK, codigo: "SC25", descricao: "Saco 25 kg", peso_liquido_kg: 25, version: 1, ativo: true, prices: [] }] };
-    rpcMock.mockImplementation((name: string) => {
-      const v = name === "solid_pack_offers_admin_v1" ? { data: admin, error: null } : { data: null, error: { code: "42501", message: "negado " + name } };
-      const p = Promise.resolve(v); return Object.assign(p, { abortSignal: () => p });
-    });
-    render(<QueryClientProvider client={new QueryClient()}><CatalogoVolumesDialog open onOpenChange={() => {}} itemId={PROD} itemTipo="produto" itemNome="SOLO-5" owned /></QueryClientProvider>);
-    await new Promise(r => setTimeout(r, 300));
-    console.log("BODY", document.body.textContent?.slice(0, 600), JSON.stringify(rpcMock.mock.calls.map(c => c[0])));
+
+describe("diálogo real de apresentações", () => {
+  const dialog = (qc: QueryClient) => <QueryClientProvider client={qc}><CatalogoVolumesDialog open onOpenChange={() => {}} itemId={PROD} itemTipo="produto" itemNome="SOLO-5" owned /></QueryClientProvider>;
+  it("primeira abertura salva", async () => {
+    render(dialog(new QueryClient()));
     await screen.findByRole("button", { name: "Preço" });
-    for (let i = 0; i < 5; i++) { await new Promise(r => setTimeout(r, 100)); console.log("T", i, screen.queryAllByRole("button", { name: "Preço" }).length, JSON.stringify(rpcMock.mock.calls.map(c => c[0]))); }
-    console.log("PRICEBTN disabled", (screen.getByRole("button", { name: "Preço" }) as HTMLButtonElement).disabled);
     fill("10,00", "2026-11-06");
-    await new Promise(r => setTimeout(r, 100));
-    console.log("SAVEBTN disabled", (screen.getByRole("button", { name: "Salvar preço" }) as HTMLButtonElement).disabled);
-    console.log("DLG", JSON.stringify(rpcMock.mock.calls.map(c => c[0])), JSON.stringify(toastMock.error.mock.calls));
+    await waitFor(() => expect(priceCalls()).toHaveLength(1));
+  });
+  it("reabertura com leitura em cache não fica inativa sem aviso", async () => {
+    const qc = new QueryClient();
+    const first = render(dialog(qc));
+    await screen.findByRole("button", { name: "Preço" });
+    first.unmount();
+    render(dialog(qc));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Preço" })).not.toBeDisabled());
+    fill("10,00", "2026-11-06");
+    await waitFor(() => expect(priceCalls()).toHaveLength(1));
   });
 });
