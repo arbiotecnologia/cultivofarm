@@ -11,7 +11,6 @@ import { Beaker, QrCode, Bell, CheckCircle2, FlaskConical, ArrowRight } from "lu
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
-import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export interface PortalOrdensServicoProps {
   embedded?: boolean;

@@ -14,7 +14,6 @@ import {
   LABEL_CUSTO_HA,
   AVISO_CUSTO_HA_VARIAVEL,
 } from "@/lib/catalogo/formatUnidades";
-import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 interface Props {
   open: boolean;
