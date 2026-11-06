@@ -325,7 +325,7 @@ def main():
         j2, e = create(UB, P3, [L(1000)], sim_hash, "TESTE-PRICE-1", bol, 1)
         check("replay mesma chave+meio: mesmo pedido e mesmo ACK", j2 and j2["id"] == oid and j2["total"] == j["total"], e or j2)
         check("replay não duplica snapshot/terms", psql(f"SELECT (SELECT count(*) FROM public.partner_order_payment_method_snapshots WHERE partner_order_id='{oid}')||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oid}')").stdout.strip() == "1:1")
-        denied("mesma chave com outro meio: conflito", create(UB, P3, [L(1000)], sim_hash, "TESTE-PRICE-1", pix3, 1), "")
+        denied("mesma chave com outro meio: conflito", create(UB, P3, [L(1000)], sim_hash, "TESTE-PRICE-1", pix3, 1), "idempotency_conflict")
         # Desconto + líquido/embalagem/misto à vista
         for nm, items, amt in (("líquido", [L(1)], "0.90"), ("embalagem inteira", [S(1)], "162.00"), ("misto", [L(1), S(1)], "162.90")):
             j, e = sim(UB, PLD, items, pix, 1)
