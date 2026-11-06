@@ -47,6 +47,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCommercialPaymentPlans } from "@/hooks/useCommercialPaymentPlans";
 import { useSimulateB2BPaymentPlan, type SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
+import { simulationKey, describeSimulationFailure, type SimulationFailure } from "@/lib/b2bSimulationState";
 import { PaymentPlanSelector } from "@/components/comercial/PaymentPlanSelector";
 import { PaymentSimulationSummary } from "@/components/comercial/PaymentSimulationSummary";
 
@@ -471,19 +472,42 @@ export default function NovoPedido() {
     [paymentPlans, selectedPlanId],
   );
 
-  // Dispara simulação sempre que plano/itens mudam
+  // Dispara simulação sempre que plano/itens/contexto mudam. Só a resposta da chave atual é adotada;
+  // falhas ficam visíveis até nova tentativa manual ou mudança de contexto (sem retry automático).
+  const currentSimKey = simulationKey({ userId: user?.id, organizationId: profile?.organization_id,
+    partnerId: partner?.id, planId: selectedPlanId, items: simulationItems });
+  const simKeyRef = useRef<string | null>(null);
+  simKeyRef.current = currentSimKey;
+  const [simFailure, setSimFailure] = useState<SimulationFailure | null>(null);
+  const [simRetryTick, setSimRetryTick] = useState(0);
   useEffect(() => {
     if (isSimulationMode || !confirmOpen) return;
-    if (!partner?.id || !selectedPlanId || simulationItems.length === 0 || cartInvalid) {
-      setSimulation(null);
-      return;
-    }
+    setSimulation(null);
+    setSimFailure(null);
+    if (!partner?.id || !selectedPlanId || !currentSimKey || cartInvalid) return;
+    const key = currentSimKey;
     simulateSelectedPlan.mutate(
       { partner_id: partner.id, payment_plan_id: selectedPlanId, items: simulationItems },
-      { onSuccess: (res) => setSimulation(res), onError: () => setSimulation(null) },
+      {
+        onSuccess: (res) => {
+          if (simKeyRef.current !== key) return;
+          if (!res || res.partner_id !== partner.id || res.payment_plan?.id !== selectedPlanId) {
+            setSimFailure(describeSimulationFailure(key, { message: "invalid_simulation_reply" }));
+            return;
+          }
+          setSimulation(res);
+        },
+        onError: (err) => {
+          if (simKeyRef.current !== key) return;
+          setSimulation(null);
+          setSimFailure(describeSimulationFailure(key, err));
+        },
+      },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanId, simulationItems, partner?.id, confirmOpen, isSimulationMode, cartInvalid]);
+  }, [currentSimKey, confirmOpen, isSimulationMode, cartInvalid, simRetryTick]);
+  const visibleSimFailure = simFailure && simFailure.key === currentSimKey ? simFailure : null;
+  const visibleSimulation = simulation && simulation.partner_id === partner?.id && simulation.payment_plan?.id === selectedPlanId ? simulation : null;
 
   // Referência à vista (para diferença) — recalcula sempre que carrinho/parceiro/plano mudam
   useEffect(() => {
@@ -1258,9 +1282,24 @@ export default function NovoPedido() {
                   loading={simulateSelectedPlan.isPending}
                 />
 
-                {simulation && (
+                {visibleSimFailure && !simulateSelectedPlan.isPending && (
+                  <Alert variant="destructive" className="py-2" role="alert" data-testid="b2b-simulation-error">
+                    <AlertDescription className="text-xs space-y-2">
+                      <p className="font-medium">{visibleSimFailure.title}</p>
+                      <p>{visibleSimFailure.detail}</p>
+                      {visibleSimFailure.code && <p className="opacity-80">Código: {visibleSimFailure.code}</p>}
+                      {visibleSimFailure.retryable && (
+                        <Button type="button" size="sm" variant="outline"
+                          onClick={() => setSimRetryTick((n) => n + 1)}>
+                          Tentar calcular novamente
+                        </Button>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {visibleSimulation && (
                   <PaymentSimulationSummary
-                    simulation={simulation}
+                    simulation={visibleSimulation}
                     cashReferenceAmount={cashSimulation?.amounts.final_amount ?? null}
                     responsavelNome={supplierName}
                   />
@@ -1371,7 +1410,7 @@ export default function NovoPedido() {
               <Button
                 onClick={() => handleSubmit()}
                 disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
-                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
+                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || simulateSelectedPlan.isPending || !visibleSimulation || !!visibleSimFailure}
               >
                 {createOrder.isPending
                   ? "Enviando..."
