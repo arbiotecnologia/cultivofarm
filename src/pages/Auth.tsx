@@ -97,7 +97,6 @@ export default function Auth() {
                 fetchPriority="high"
                 className="h-36 sm:h-44 w-auto max-w-full object-contain"
               />
-            
           </div>
           <CardDescription>
             {recovery ? "Recuperar senha" : isLogin ? "Entre na sua conta" : "Crie sua conta"}

@@ -148,6 +148,41 @@ describe('logout voluntário não exibe "sessão pausada"', () => {
     s.uid = '00000000-0000-4000-8000-000000000001';
   });
 
+  it('clique duplicado: single-flight, uma única chamada signOut', async () => {
+    let calls = 0; let finish!: () => void;
+    s.signOutImpl = () => { calls++; return new Promise(r => { finish = () => r({ error: null }); }); };
+    setup(); await tick(3000);
+    let p1!: Promise<void>, p2!: Promise<void>;
+    act(() => { p1 = s.auth!.signOut(); p2 = s.auth!.signOut(); }); await tick(100);
+    expect(calls).toBe(1); expect(p1).toBe(p2);
+    finish(); signedOut(); await act(async () => { await p1; }); await tick(200);
+    expect(s.auth!.authzSigningOut).toBe(false);
+  });
+
+  it('A pendente → B entra → B logout → rejeição tardia de A não apaga marca de B', async () => {
+    const A = s.uid; const B = '00000000-0000-4000-8000-0000000000bb';
+    const rejects: Array<(v: unknown) => void> = [];
+    s.signOutImpl = () => new Promise(r => { rejects.push(r); });
+    setup(); await tick(3000);
+    let pA!: Promise<void>; act(() => { pA = s.auth!.signOut(); }); await tick(100);
+    expect(s.auth!.authzSigningOut).toBe(true);
+    s.uid = B; act(() => { s.authListener?.('SIGNED_IN', { user: { id: B } }); }); await tick(3000);
+    expect(s.auth!.user?.id).toBe(B); expect(s.auth!.authzSigningOut).toBe(false);
+    let pB!: Promise<void>; act(() => { pB = s.auth!.signOut(); }); await tick(100);
+    expect(pB).not.toBe(pA); expect(rejects.length).toBe(2);
+    expect(s.auth!.authzSigningOut).toBe(true);
+    rejects[0]({ error: { status: 500, message: 'late A' } }); await act(async () => { await pA; }); await tick(200);
+    expect(s.auth!.user?.id).toBe(B);
+    expect(s.auth!.authzSigningOut).toBe(true);
+    expect(screen.getByText(LEAVING)).toBeTruthy();
+    expect(screen.queryByText(PAUSED)).toBeNull();
+    // Rejeição real de B volta ao estado honesto (não afirma saída concluída).
+    rejects[1]({ error: { status: 500, message: 'B' } }); await act(async () => { await pB; }); await tick(500);
+    expect(s.auth!.authzSigningOut).toBe(false);
+    expect(screen.queryByText(LEAVING)).toBeNull();
+    s.uid = A;
+  });
+
   it('pausa real (perda de papel) continua visível como pausa', async () => {
     s.autoFreshFailures = 0;
     setup(); await tick(3000);
