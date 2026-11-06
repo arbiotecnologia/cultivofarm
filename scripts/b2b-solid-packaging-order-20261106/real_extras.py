@@ -179,7 +179,9 @@ DROP FUNCTION public.fn_b2b_plan_selectable(uuid);
         ("credit_wait_to_analysis", ORD_CREDIT, "status = 'em_analise_comercial'"),
         ("credit_approved_at", ORD_CREDIT, "credit_approved_at = now()"),
     ):
-        r = psql(f"UPDATE public.partner_orders SET {setc} WHERE id = '{oid}'", check=False)
+        # Ator = admin do vendedor (auth.uid por GUC local) para que os guards anteriores não neguem por ausência de sessão;
+        # a asserção exige a mensagem do c2_accounting_pending_guard, não "qualquer negação".
+        r = psql(f"SELECT set_config('request.jwt.claim.sub','{UADM}',false) \\g /dev/null\nUPDATE public.partner_orders SET {setc} WHERE id = '{oid}'", check=False)
         chk(f"accounting.pending_guard_denies.{nm}", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, err(r))
     st = psql(f"SELECT status||'|'||coalesce(receivable_generated,false)||'|'||coalesce(ready_for_production,false) FROM public.partner_orders WHERE id = '{ORD_ANALISE}'").stdout.strip()
     chk("accounting.order_unchanged_after_denials", st == "em_analise_comercial|false|false", st)
@@ -206,15 +208,15 @@ DROP FUNCTION public.fn_b2b_plan_selectable(uuid);
 
     # ------------------------------------------------------------------ 4. writers REAIS de embalagem x pedido
     psql("ALTER TABLE public.catalogo_volumes ADD COLUMN IF NOT EXISTS ordem integer NOT NULL DEFAULT 0;")
+    psql("""CREATE TABLE IF NOT EXISTS platform_private.solid_pack_admin_receipts(idempotency_key text NOT NULL PRIMARY KEY, actor_id uuid NOT NULL, organization_id uuid NOT NULL,
+              action text NOT NULL, request_fp text NOT NULL, result jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
+            DROP FUNCTION IF EXISTS public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text);""")
     for n in ("platform_private.has_role", "platform_private.solid_mass_price_ok", "platform_private.recorte_a_actor_fresh", "platform_private.solid_pack_admin_org",
               "platform_private.solid_pack_receipt", "platform_private.solid_pack_decimal_text", "platform_private.solid_pack_weight_label",
               "platform_private.solid_pack_presentation_set_active", "platform_private.solid_pack_presentation_insert",
               "platform_private.solid_pack_presentation_new_version", "platform_private.catalogo_volumes_owner_consistent",
               "platform_private.solid_pack_presentation_guard"):
         psql(_cap("solid-pack", n))
-    psql("""CREATE TABLE IF NOT EXISTS platform_private.solid_pack_admin_receipts(idempotency_key text NOT NULL PRIMARY KEY, actor_id uuid NOT NULL, organization_id uuid NOT NULL,
-              action text NOT NULL, request_fp text NOT NULL, result jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
-            DROP FUNCTION IF EXISTS public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text);""")
     psql(_cap("solid-pack", "public.solid_pack_price_set_v1")); psql(_cap("solid-pack", "public.solid_pack_offer_save_v1"))
     psql("""REVOKE ALL ON FUNCTION public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text), public.solid_pack_offer_save_v1(uuid,uuid,text,text,numeric,integer,text) FROM PUBLIC;
             GRANT EXECUTE ON FUNCTION public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text), public.solid_pack_offer_save_v1(uuid,uuid,text,text,numeric,integer,text) TO authenticated;
