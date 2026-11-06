@@ -106,3 +106,4 @@
 - Owned-product fiscal: scripts/fiscal-tenant-catalog-20261101/AGENTS.md; inactive, needs ownership foundation.
 
 - Tenant product CRUD uses only Catálogo → Produtos and scoped RPCs; legacy query/hash survive. Query-aware RBAC mounts only authorized tabs; fiscal links retain existing gates — prevents duplicate editors and redirected privilege expansion.
+- B2B solid/mixed packaging orders follow scripts/b2b-solid-packaging-order-20261106/AGENTS.md; frontend opens only on the exact reader contract — prevents client pricing and fractional sale.
