@@ -67,7 +67,7 @@ function makeRpc(handler: (fn: string, args: any, index: number) => any) {
 }
 const ACK = (id: string) => ({ data: { product_id: id, updated_at: "2026-11-02T10:00:00.000001+00:00", replayed: false }, error: null });
 const FORM_ACK = (id: string, n: number) => ({ data: { ok: true, produto_id: id, items: n, updated_at: "2026-11-02T10:00:00.000002+00:00" }, error: null });
-const BASE = { nome: "Produto X", tipo: "solo", codigo: null, versao_catalogo: "v1", ativo: true, b2b_enabled: false };
+const BASE = { nome: "Produto X", tipo: "solo", unidade_conteudo: "kg", codigo: null, versao_catalogo: "v1", ativo: true, b2b_enabled: false };
 const build = (id: string) => [{ produto_id: id, microrganismo_id: "m2", volume_ml: 200 }];
 
 describe("CAT-06 · salvamento de produto por empresa", () => {
@@ -94,6 +94,7 @@ describe("CAT-06 · salvamento de produto por empresa", () => {
     expect(body).not.toHaveProperty("versao_catalogo");
     expect(body).not.toHaveProperty("ativo");
     expect(body).not.toHaveProperty("codigo");
+    expect(body.unidade_conteudo).toBe("kg");
     expect(calls[0].args.p_expected_updated_at).toBeNull();
   });
   it("falha do produto: composição não é enviada", async () => {

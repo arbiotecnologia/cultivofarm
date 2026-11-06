@@ -14,14 +14,18 @@ describe("catálogo exclusivo por empresa — contrato do cliente", () => {
   it("valores monetários negativos ou inválidos são recusados", () => {
     expect(() => buildTenantProductPayload({ nome: "Bio", valor_ha_brl: -1 }, true)).toThrow(/inválido/);
     expect(() => buildTenantProductPayload({ nome: "Bio", valor_ha_brl: "abc" }, true)).toThrow(/inválido/);
-    expect(buildTenantProductPayload({ nome: "Bio", tipo: "inoculante", valor_ha_brl: "10,5" }, true)).toEqual({ nome: "Bio", tipo: "inoculante", valor_ha_brl: 10.5 });
+    expect(buildTenantProductPayload({ nome: "Bio", tipo: "inoculante", unidade_conteudo: "l", valor_ha_brl: "10,5" } as never, true)).toEqual({ nome: "Bio", tipo: "inoculante", unidade_conteudo: "l", valor_ha_brl: 10.5 });
   });
   it("revisão f588e1d8: criação exige tipo do enum real; b2b_enabled nunca nulo (omitido = false no servidor)", () => {
-    expect(() => buildTenantProductPayload({ nome: "Bio" }, true)).toThrow(/tipo/);
-    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "INVALID" }, true)).toThrow(/tipo de produto válido/);
-    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "solo", b2b_enabled: null }, true)).toThrow(/b2b_enabled/);
-    expect(buildTenantProductPayload({ nome: "Bio", tipo: "solo" }, true)).not.toHaveProperty("b2b_enabled");
+    expect(() => buildTenantProductPayload({ nome: "Bio", unidade_conteudo: "kg" } as never, true)).toThrow(/tipo/);
+    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "INVALID", unidade_conteudo: "kg" } as never, true)).toThrow(/tipo de produto válido/);
+    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "solo", unidade_conteudo: "kg", b2b_enabled: null } as never, true)).toThrow(/b2b_enabled/);
+    expect(buildTenantProductPayload({ nome: "Bio", tipo: "solo", unidade_conteudo: "kg" } as never, true)).not.toHaveProperty("b2b_enabled");
     expect(buildTenantProductPayload({ descricao: "x" }, false)).toEqual({ descricao: "x" });
+    // contrato PRODUCT_UNIT_V2: criação sem unidade ou com unidade fora de kg/g/ml/l é recusada antes do dispatch
+    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "solo" }, true)).toThrow(/kg, g, mL ou L/);
+    expect(() => buildTenantProductPayload({ nome: "Bio", tipo: "solo", unidade_conteudo: "un" } as never, true)).toThrow(/kg, g, mL ou L/);
+    expect(buildTenantProductPayload({ descricao: "x" }, false)).not.toHaveProperty("unidade_conteudo");
     expect(tenantProductErrorMessage("22P02", "invalid input value for enum")).toMatch(/tipo/);
   });
   it("ACK de outro produto é recusado; ACK sem versão é recusado", () => {
