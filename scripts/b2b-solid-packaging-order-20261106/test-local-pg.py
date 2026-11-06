@@ -380,6 +380,7 @@ def main():
         chk("solid.simulate_server_price", s1 and float(s1["table_amount"]) == 360 and float(s1["final_amount"]) == 324 and float(line["final_unit_price"]) == 162
             and line["packaging_id"] == PK25 and line["unidade_conteudo"] == "kg" and float(line["peso_liquido_kg"]) == 25 and line["volume_ml"] is None,
             s1 and {k: s1[k] for k in ("table_amount", "final_amount")})
+        chk("decision.discount_from_base_on_packaging_price", s1 and float(line["final_unit_price"]) == round(180 * 0.9, 2))
         mx = j(sim(UB, PLD, items(L(), S(PK40, 1))))
         chk("mixed.simulate", mx and float(mx["table_amount"]) == 273 and float(mx["final_amount"]) == round(2.70 + 243, 2), mx and mx["final_amount"])
 
@@ -400,7 +401,7 @@ def main():
         for k, it in neg.items():
             r = sim(UB, PLD, items(it)); chk(f"neg.{k}", expect[k] in (err(r) or ""), err(r))
         r = sim(UB, PLD, items(S(), S(q=1))); chk("neg.duplicate_packaging_line", "DUPLICATE_LINE" in (err(r) or ""), err(r))
-        r = sim(UB, PLX, items(S())); chk("neg.fixed_price_mode_unsupported", "PRICING_MODE_UNSUPPORTED" in (err(r) or ""), err(r))
+        r = sim(UB, PLX, items(S())); chk("decision.fixed_item_price_refused_without_packaging_config", "PRICING_MODE_UNSUPPORTED" in (err(r) or ""), err(r))
 
         # ---------- criação, snapshot, replay e conflitos
         h = s1["cart_hash"]
@@ -455,12 +456,14 @@ def main():
         # ---------- cotação: snapshot de embalagem preservado
         qs = j(sim(UB, PLQ, items(S())))
         cq = j(create(UB, PLQ, items(S()), qs["cart_hash"], "TESTE-PED-20261106-COT"))
+        chk("decision.quote_only_creates_quote", cq and cq["status"] == "aguardando_cotacao")
         chk("quote.created_waiting", cq and cq["status"] == "aguardando_cotacao")
         it_id = psql(f"SELECT id FROM public.partner_order_items WHERE order_id = '{cq['id']}'").stdout.strip()
         r = as_user(UADM, f"""SELECT public.respond_b2b_order_quote_secure('{cq['id']}','[{{"item_id":"{it_id}","unit_price":170}}]'::jsonb)::text;""")
         qrow = psql(f"SELECT subtotal||'|'||packaging_id_snapshot||'|'||packaging_price_id_snapshot FROM public.partner_order_items WHERE id = '{it_id}'").stdout.strip()
         chk("quote.respond_keeps_packaging_snapshot", r.returncode == 0 and qrow == f"340.00|{PK25}|{PR25}", (err(r), qrow))
         r = as_user(UADMF, f"""SELECT public.respond_b2b_order_quote_secure('{cq['id']}','[{{"item_id":"{it_id}","unit_price":1}}]'::jsonb);""")
+        chk("decision.quote_only_other_tenant_cannot_respond", r.returncode != 0, err(r))
         chk("quote.other_tenant_denied", r.returncode != 0, err(r))
 
         # ---------- imutabilidade e forja de snapshot (até postgres)

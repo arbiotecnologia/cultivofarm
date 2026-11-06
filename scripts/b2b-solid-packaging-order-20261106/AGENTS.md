@@ -1,7 +1,7 @@
 - Preparation only: never apply install/rollback hosted, publish or call hosted writers from this package; the auditor reviews and installs — prevents unreviewed commercial changes.
 - Generate SQL only via generate.py from captured live bodies with exact-count anchors and md5 pins; never hand-edit generated files — prevents drift.
 - Packaging lines carry only item_id/item_tipo/packaging_id/integer quantidade; price comes server-side from the seller's single active packaging price; weight is freight-only; volume/unit/price keys are rejected — prevents client pricing and fractional sale.
-- The packaging pricing-mode mapping (discount_from_base applied to packaging base, quote_only allowed, fixed_item_price fail-closed) is an unreviewed commercial assumption until the owner confirms it — prevents silent commercial policy.
+- Packaging pricing modes follow the owner-confirmed decision recorded in README (discount over the registered packaging price, quote only for the authorized seller, fixed price refused without a packaging-specific configuration); never add fixed-price support here — commercial approval is not SQL/integration/session proof.
 - Local test pins of synthetic seams are swapped only in a temp copy and declared; real captured bodies keep LIVE pins — disposable PG never proves hosted JWT/RLS.
 - Frontend opens packaging only after the exact reader contract; PGRST202 naming the endpoint means not installed (closed), every other error fails closed; liquid fingerprints stay byte-identical.
 - Real-trigger PG rounds load captured LIVE trigger bodies unchanged; only declared seams may replace dependencies, and the C2 owner-order gate seam is an assumption, never proof — prevents disabling guards to pass.
