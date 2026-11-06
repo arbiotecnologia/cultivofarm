@@ -540,6 +540,10 @@ def main():
         psql(f"BEGIN; UPDATE public.product_packagings SET ativo = false WHERE id = '{PK40}'; UPDATE public.catalogo_volumes SET ativo = false WHERE id = '{PK40}'; COMMIT;")
         r = create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-ARQ"); chk("archived_after_simulation_rejected", "B2B_PACKAGING_INACTIVE" in (err(r) or ""), err(r))
 
+        if REAL:
+            import real_extras as RX
+            rep["synthetic_seams"] += RX.run(globals(), chk, j, c1)
+
         # ---------- rollback deny-only
         hist_before = psql("SELECT count(*) FROM public.partner_order_items WHERE packaging_id_snapshot IS NOT NULL").stdout.strip()
         x = runfile(HERE / "04-rollback-deny.sql.review"); chk("rollback.ok", x.returncode == 0, x.stderr.strip()[:300])

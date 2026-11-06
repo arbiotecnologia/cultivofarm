@@ -247,6 +247,7 @@ DROP FUNCTION public.fn_b2b_plan_selectable(uuid);
     # Sanidade: writer real funciona fora de corrida e é idempotente; ator externo negado.
     r = adm(f"SELECT public.solid_pack_price_set_v1('{PK25}', 19000, current_date + 1, '{PR25}', 'TESTE-PRICE-SANITY-0001')::text;")
     chk("solidpack.price_set_real_ok", r.returncode == 0 and '"price_id"' in r.stdout, err(r))
+    PR_FUT = json.loads(r.stdout.strip().splitlines()[-1])["price_id"] if r.returncode == 0 else None
     c_ok = counts()
     r2 = adm(f"SELECT public.solid_pack_price_set_v1('{PK25}', 19000, current_date + 1, '{PR25}', 'TESTE-PRICE-SANITY-0001')::text;")
     chk("solidpack.price_set_replay_same_result", r2.returncode == 0 and '"replayed": true' in r2.stdout and counts() == c_ok, err(r2))
@@ -263,7 +264,7 @@ DROP FUNCTION public.fn_b2b_plan_selectable(uuid);
                  "SELECT pg_sleep(3); COMMIT;\n")
     time.sleep(1.0)
     t0 = time.time()
-    rp = adm(f"SELECT public.solid_pack_price_set_v1('{PK25}', 20000, current_date + 3, NULL, 'TESTE-PRICE-RACE-A-0001')::text;")
+    rp = adm(f"SELECT public.solid_pack_price_set_v1('{PK25}', 20000, current_date + 3, '{PR_FUT}', 'TESTE-PRICE-RACE-A-0001')::text;")
     waited = time.time() - t0
     th.join()
     snap = psql("SELECT i.packaging_price_id_snapshot FROM public.partner_order_items i JOIN public.partner_order_idempotency x ON x.order_id = i.order_id "
