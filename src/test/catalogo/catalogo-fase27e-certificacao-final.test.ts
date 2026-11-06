@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { orderLineFor } from "@/lib/comercial/packagingOrder";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -98,9 +99,9 @@ describe("FASE 27E — carrinho e unidades comerciais", () => {
   it("useCreatePartnerOrder envia unidade_medida via create_partner_order_secure", () => {
     const c = read(HOOK_ORDER);
     expect(c).toContain("create_partner_order_secure");
-    expect(c).toContain("unidade_medida");
-    expect(c).toMatch(/case "hectare": return "hectare";/);
-    expect(c).toMatch(/case "dose_100ml": return "dose";/);
+    expect(c).toContain("input.items.map(orderLineFor)");
+    const line = (u: string) => orderLineFor({ item_id: "x", item_tipo: "produto", quantidade: 1, unidade_pedido: u }).unidade_medida;
+    expect([line("hectare"), line("dose_100ml"), line("litro"), line("volume_comercial")]).toEqual(["hectare", "dose", "litro", "unidade"]);
   });
 
   it("NovoPedido mantém o mapeamento hectare/dose_100ml das unidades", () => {
