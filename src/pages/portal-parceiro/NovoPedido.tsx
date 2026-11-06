@@ -475,9 +475,16 @@ export default function NovoPedido() {
   // Simulações cercadas: estado atômico por chave (contexto+escopo canônico+itens+plano), seq por disparo
   // e fence capturado. Diálogo fechado/carrinho inválido => chave nula, o que aposenta respostas em voo.
   const simEnabled = !isSimulationMode && confirmOpen && !cartInvalid;
+  // (o modo do meio de pagamento também precisa estar confirmado; ver methodMode abaixo)
   // B2B_PAYMENT_METHOD_V1: meios permitidos pelo vendedor para a condição; escolha reiniciada a cada condição/parceiro.
   const methodOptions = useB2BPaymentMethodOptions(partner?.id, selectedPlanId, !isSimulationMode && confirmOpen);
   const methodList = methodOptions.data?.status === "ok" ? methodOptions.data.options : [];
+  // Modo vem do servidor por empresa vendedora/parceiro. Pré-instalação exata = contrato atual (o servidor não exige meio).
+  // Carregando/erro/escopo ausente => null: nenhuma simulação nem envio (falha fechada).
+  const methodMode: "required" | "legacy" | null = methodOptions.isError ? null
+    : methodOptions.data?.status === "ok" ? methodOptions.data.mode
+    : methodOptions.data?.status === "not_installed" ? "legacy" : null;
+  const requireMethod = methodMode === "required";
   const selectedMethod: PaymentMethodChoice | null = useMemo(() => {
     if (!methodChoice || methodChoice.planId !== selectedPlanId || methodChoice.partnerId !== partner?.id) return null;
     if (methodOptions.data?.status !== "ok") return null;
@@ -486,9 +493,9 @@ export default function NovoPedido() {
   }, [methodChoice, selectedPlanId, partner?.id, methodOptions.data]);
   const setSelectedMethod = (m: PaymentMethodChoice | null) =>
     setMethodChoice(m && selectedPlanId && partner?.id ? { ...m, planId: selectedPlanId, partnerId: partner.id } : null);
-  const selSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
+  const selSim = useFencedB2BSimulation({ enabled: simEnabled && methodMode !== null, scope: pageScope, userId: user?.id,
     organizationId: profile?.organization_id, partnerId: partner?.id, planId: selectedPlanId, items: simulationItems,
-    requireMethod: true, method: selectedMethod });
+    requireMethod, method: requireMethod ? selectedMethod : null });
   const cashSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
     organizationId: profile?.organization_id, partnerId: partner?.id, planId: cashPlan?.id, items: simulationItems });
   const simulation = selSim.result;
@@ -503,7 +510,7 @@ export default function NovoPedido() {
     partner_id: partner?.id ?? "", observacoes: obs || undefined, requested_delivery_date: requestedDate || null,
     items: cartList.map(({ key, ...rest }) => rest), payment_plan_id: selectedPlanId,
     // Com meio: parcelas e vencimento são do servidor (estimados, base NF); o cliente não os envia.
-    first_due_date: null, installment_count: null, payment_method: selectedMethod,
+    first_due_date: null, installment_count: null, payment_method: requireMethod ? selectedMethod : null,
   };
   const handleSubmit = (opts?: { simStatus?: "rascunho" | "enviada_gestor" }) => {
     if (!partner?.id || cartList.length === 0 || cartInvalid) return;
@@ -578,7 +585,11 @@ export default function NovoPedido() {
       toast.error("Selecione uma condição de pagamento antes de finalizar o pedido.");
       return;
     }
-    if (!selectedMethod) {
+    if (methodMode === null) {
+      toast.error("Não foi possível confirmar os meios de pagamento desta condição.");
+      return;
+    }
+    if (requireMethod && !selectedMethod) {
       toast.error("Selecione um meio de pagamento permitido pela empresa fornecedora.");
       return;
     }
@@ -605,7 +616,7 @@ export default function NovoPedido() {
       payment_plan_id: selectedPlanId,
       first_due_date: null,
       installment_count: null,
-      payment_method: selectedMethod,
+      payment_method: requireMethod ? selectedMethod : null,
       expected_cart_hash: currentSim.cart_hash,
     };
     const fingerprint = orderAttemptFingerprint(input);
@@ -1253,7 +1264,7 @@ export default function NovoPedido() {
                   loading={selSim.pending}
                 />
 
-                {selectedPlanId && (
+                {selectedPlanId && methodMode !== "legacy" && (
                   <div className="space-y-1" data-testid="b2b-payment-method">
                     <div className="text-xs font-semibold uppercase text-muted-foreground">Meio de pagamento</div>
                     {methodOptions.isLoading ? (
@@ -1310,10 +1321,8 @@ export default function NovoPedido() {
                     simulation={visibleSimulation}
                     cashReferenceAmount={cashSimulation?.amounts.final_amount ?? null}
                     responsavelNome={supplierName}
-                    estimated={(visibleSimulation as Partial<MethodSimulateResult>).estimated_schedule ? {
-                      methodLabel: (visibleSimulation as MethodSimulateResult).payment_method.payment_method_name,
-                      schedule: (visibleSimulation as MethodSimulateResult).estimated_schedule,
-                    } : null}
+                    estimatedMethodLabel={(visibleSimulation as Partial<MethodSimulateResult>).schedule_estimated
+                      ? (visibleSimulation as MethodSimulateResult).payment_method.payment_method_name : null}
                   />
                 )}
                 {!selectedPlanId && (
@@ -1422,7 +1431,7 @@ export default function NovoPedido() {
               <Button
                 onClick={() => handleSubmit()}
                 disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
-                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || !selectedMethod || selSim.pending || !visibleSimulation || !!visibleSimFailure}
+                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || methodMode === null || (requireMethod && !selectedMethod) || selSim.pending || !visibleSimulation || !!visibleSimFailure}
               >
                 {createOrder.isPending
                   ? "Enviando..."
