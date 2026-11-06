@@ -1117,6 +1117,7 @@ export default function NovoPedido() {
                   <PaymentSimulationSummary
                     simulation={simulation}
                     cashReferenceAmount={cashSimulation?.amounts.final_amount ?? null}
+                    responsavelNome={supplierName}
                   />
                 )}
                 {!selectedPlanId && (

@@ -13,8 +13,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { brl } from '@/lib/financial/format';
 import { catalogFamilyLabel } from '@/lib/catalogo/catalogFamilyRead';
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 export default function SimuladorComercial() {
+  const { name: tenantName } = useActiveTenantName();
   const sim = useSimulateB2BPaymentPlan();
   const plans = useCommercialPaymentPlans();
   const assignments = usePlanAssignments('published');
@@ -89,7 +91,7 @@ export default function SimuladorComercial() {
         {line.quote_required ? <p>Sob consulta — exige cotação.</p> : <p>Unitário: {line.unit_price == null ? '—' : brl(line.unit_price)} · Subtotal: {line.subtotal == null ? '—' : brl(line.subtotal)}</p>}
         {line.reason_code && <p>{line.reason_code}</p>}
       </div>)}
-      <PaymentSimulationSummary simulation={result} />
+      <PaymentSimulationSummary simulation={result} responsavelNome={tenantName} />
       {!result.quote_required && <p className="font-semibold">Total final: {brl(result.amounts.final_amount)}</p>}
     </section>}
   </main>;
