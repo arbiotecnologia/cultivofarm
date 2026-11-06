@@ -363,6 +363,7 @@ it("invalidação atinge só leitores do ator atual, nunca financeiro ou outra e
   ["entregas", "estoque-prontos-entrega", "todas-os-disponiveis"].forEach(p => { expect(qc.getQueryState([p, deliveryScope, deliveryScope])?.isInvalidated).toBe(true); expect(qc.getQueryState([p, "foreign", "foreign"])?.isInvalidated).toBe(false); });
 });
 function mountNewProductFlow(opts: { composition: () => Response | Promise<Response>; failListAfterPartial?: number }) {
+  state.unitCap = "positive";
   const receipts = new Map<string, typeof ack>(); const ctl = { failList: 0, partial: false, inserts: 0 };
   state.fetch.mockImplementation(async (url, init) => {
     const name = String(url).split("/rpc/")[1];
@@ -490,4 +491,38 @@ it("troca de escopo descarta rascunho/exportação pendentes sem reutilizar em o
   expect(screen.queryByLabelText("Rascunho exportável")).toBeNull();
   expect(screen.getByRole("button", { name: "Novo produto" }).matches(":disabled")).toBe(false);
   expect(rpcCalls("tenant_product_save")).toHaveLength(savesBefore);
+});
+
+it.each(["absent", "denied"] as const)("capability de unidade %s mantém cadastro fechado com zero dispatch", async mode => {
+  state.unitCap = mode; client(); render(<ProdutosTab />, { wrapper });
+  await screen.findByText("Nenhum produto encontrado");
+  fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
+  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Sem capability" } });
+  await screen.findByText("Não foi possível confirmar a unidade do produto.");
+  expect(screen.getByLabelText("Unidade do produto *").matches(":disabled")).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await new Promise(r => setTimeout(r, 50));
+  expect(state.unitCalls).toEqual(["tenant_product_unit_capability_v1"]);
+  for (const name of ["tenant_product_save", "tenant_catalog_formulacoes_replace", "tenant_catalog_root_save"]) expect(rpcCalls(name)).toHaveLength(0);
+  expect(screen.getByRole("dialog")).toBeTruthy();
+});
+it("capability positiva sem unidade escolhida não despacha cadastro", async () => {
+  state.unitCap = "positive"; client(); render(<ProdutosTab />, { wrapper });
+  await screen.findByText("Nenhum produto encontrado");
+  fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
+  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Sem unidade" } });
+  await waitFor(() => expect(screen.getByLabelText("Unidade do produto *").matches(":disabled")).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await new Promise(r => setTimeout(r, 50));
+  expect(rpcCalls("tenant_product_save")).toHaveLength(0);
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe("Sem unidade");
+});
+it("Financeiro em consulta não consulta capability de unidade nem apresentações", async () => {
+  state.roles = ["financeiro"]; state.unitCap = "positive"; client();
+  state.rows = [{ id: "p1", nome: "Produto consulta", tipo: "solo", unidade_conteudo: "kg", ativo: true, updated_at: stamp, owner_organization_id: "org-A" }];
+  render(<ProdutosTab />, { wrapper });
+  await screen.findByText("Produto consulta");
+  expect(screen.queryByRole("button", { name: "Novo produto" })).toBeNull();
+  expect(state.unitCalls).toHaveLength(0);
 });
