@@ -47,7 +47,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCommercialPaymentPlans } from "@/hooks/useCommercialPaymentPlans";
 import { useSimulateB2BPaymentPlan, type SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
-import { useFencedB2BSimulation } from "@/hooks/useFencedB2BSimulation";
+import { useFencedB2BSimulation, type MethodSimulateResult } from "@/hooks/useFencedB2BSimulation";
+import { useB2BPaymentMethodOptions, METHOD_KIND_LABEL, type PaymentMethodChoice } from "@/hooks/useB2BPaymentMethodOptions";
 import { PaymentPlanSelector } from "@/components/comercial/PaymentPlanSelector";
 import { PaymentSimulationSummary } from "@/components/comercial/PaymentSimulationSummary";
 
@@ -297,6 +298,7 @@ export default function NovoPedido() {
     useCommercialPaymentPlans(!isSimulationMode);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodChoice | null>(null);
   // Tentativa de envio: chave/estado vivem fora do componente (memória volátil
   // por ator+empresa+papéis+parceiro) para sobreviver a remontagem do boundary.
   const pageScope = useStorageAccessScope("partner-order-page");
@@ -471,8 +473,18 @@ export default function NovoPedido() {
   // Simulações cercadas: estado atômico por chave (contexto+escopo canônico+itens+plano), seq por disparo
   // e fence capturado. Diálogo fechado/carrinho inválido => chave nula, o que aposenta respostas em voo.
   const simEnabled = !isSimulationMode && confirmOpen && !cartInvalid;
+  // B2B_PAYMENT_METHOD_V1: meios permitidos pelo vendedor para a condição; escolha reiniciada a cada condição/parceiro.
+  const methodOptions = useB2BPaymentMethodOptions(partner?.id, selectedPlanId, !isSimulationMode && confirmOpen);
+  const methodList = methodOptions.data?.status === "ok" ? methodOptions.data.options : [];
+  useEffect(() => { setSelectedMethod(null); }, [partner?.id, selectedPlanId]);
+  useEffect(() => {
+    if (selectedMethod && methodOptions.data?.status === "ok" &&
+        !methodList.some((o) => o.available && o.config_id === selectedMethod.config_id && o.version === selectedMethod.version))
+      setSelectedMethod(null);
+  }, [methodOptions.data, methodList, selectedMethod]);
   const selSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
-    organizationId: profile?.organization_id, partnerId: partner?.id, planId: selectedPlanId, items: simulationItems });
+    organizationId: profile?.organization_id, partnerId: partner?.id, planId: selectedPlanId, items: simulationItems,
+    requireMethod: true, method: selectedMethod });
   const cashSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
     organizationId: profile?.organization_id, partnerId: partner?.id, planId: cashPlan?.id, items: simulationItems });
   const simulation = selSim.result;
@@ -486,7 +498,8 @@ export default function NovoPedido() {
   liveInputRef.current = {
     partner_id: partner?.id ?? "", observacoes: obs || undefined, requested_delivery_date: requestedDate || null,
     items: cartList.map(({ key, ...rest }) => rest), payment_plan_id: selectedPlanId,
-    first_due_date: simulation?.schedule?.[0]?.due_date ?? null, installment_count: selectedPlan?.installment_count ?? null,
+    // Com meio: parcelas e vencimento são do servidor (estimados, base NF); o cliente não os envia.
+    first_due_date: null, installment_count: null, payment_method: selectedMethod,
   };
   const handleSubmit = (opts?: { simStatus?: "rascunho" | "enviada_gestor" }) => {
     if (!partner?.id || cartList.length === 0 || cartInvalid) return;
@@ -561,6 +574,10 @@ export default function NovoPedido() {
       toast.error("Selecione uma condição de pagamento antes de finalizar o pedido.");
       return;
     }
+    if (!selectedMethod) {
+      toast.error("Selecione um meio de pagamento permitido pela empresa fornecedora.");
+      return;
+    }
     // Revalida no clique: só o resultado da chave/seq/fence atuais autoriza o envio.
     const currentSim = selSim.take();
     if (!currentSim?.cart_hash) {
@@ -582,8 +599,9 @@ export default function NovoPedido() {
       requested_delivery_date: requestedDate || null,
       items,
       payment_plan_id: selectedPlanId,
-      first_due_date: currentSim.schedule?.[0]?.due_date ?? null,
-      installment_count: selectedPlan?.installment_count ?? null,
+      first_due_date: null,
+      installment_count: null,
+      payment_method: selectedMethod,
       expected_cart_hash: currentSim.cart_hash,
     };
     const fingerprint = orderAttemptFingerprint(input);
@@ -623,6 +641,7 @@ export default function NovoPedido() {
           setObs("");
           setRequestedDate("");
           setSelectedPlanId(null);
+          setSelectedMethod(null);
           navigate(afterCreatePath ?? "/portal-parceiro/pedidos");
         },
       },
@@ -1358,7 +1377,7 @@ export default function NovoPedido() {
               <Button
                 onClick={() => handleSubmit()}
                 disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
-                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || selSim.pending || !visibleSimulation || !!visibleSimFailure}
+                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || !selectedMethod || selSim.pending || !visibleSimulation || !!visibleSimFailure}
               >
                 {createOrder.isPending
                   ? "Enviando..."
