@@ -136,7 +136,7 @@ CREATE FUNCTION public.fn_b2b_credit_exposure(uuid, numeric, uuid) RETURNS jsonb
 
 REAL = ["public.has_role_placeholder"]  # (não usado)
 REAL_BODIES = ["platform_private.h15_actor_organization", "platform_private.catalog_tenant_actor", "platform_private.tenant_catalog_fence",
-               "public.can_view_catalog_internal", "platform_private.fn_catalogo_preco_canonico__tenant_core", "public.fn_catalogo_preco_canonico",
+               "public.can_view_catalog_internal", "platform_private.fn_catalogo_preco_canonico__tenant_core", "public.fn_catalogo_preco_canonico", "platform_private.fn_b2b_resolve_base_unit_price__tenant_core", "public.fn_b2b_resolve_base_unit_price",
                "platform_private.b2b_actor_scope", "public.get_user_partner_id", "platform_private.c1b_catalog_visibility_scope",
                "platform_private.b2b_partner_catalog_reader", "platform_private.b2b_partner_catalog_item_price", "public.get_partner_catalog_secure.6b56cfb1",
                "public.recorte_a_legacy_solid", "public.fn_b2b_cart_hash", "public.fn_b2b_apply_interest", "public.fn_resolve_commercial_price",

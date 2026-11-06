@@ -1,0 +1,258 @@
+{
+  "package": "B2B_CART_CATALOG_FENCE_V1",
+  "disposable_pg": true,
+  "hosted_proof": false,
+  "real_bodies": [
+    "platform_private.h15_actor_organization",
+    "platform_private.catalog_tenant_actor",
+    "platform_private.tenant_catalog_fence",
+    "public.can_view_catalog_internal",
+    "platform_private.fn_catalogo_preco_canonico__tenant_core",
+    "public.fn_catalogo_preco_canonico",
+    "platform_private.fn_b2b_resolve_base_unit_price__tenant_core",
+    "public.fn_b2b_resolve_base_unit_price",
+    "platform_private.b2b_actor_scope",
+    "public.get_user_partner_id",
+    "platform_private.c1b_catalog_visibility_scope",
+    "platform_private.b2b_partner_catalog_reader",
+    "platform_private.b2b_partner_catalog_item_price",
+    "public.get_partner_catalog_secure.6b56cfb1",
+    "public.recorte_a_legacy_solid",
+    "public.fn_b2b_cart_hash",
+    "public.fn_b2b_apply_interest",
+    "public.fn_resolve_commercial_price",
+    "platform_private.b2b_packaging_line",
+    "public.fn_resolve_b2b_cart.507077a4",
+    "public.simulate_b2b_payment_plan_secure"
+  ],
+  "seams": "ver docstring",
+  "passed": 44,
+  "total": 45,
+  "checks": [
+    {
+      "name": "corpo real carregado byte a byte: platform_private.tenant_catalog_fence(text,uuid[])",
+      "ok": true,
+      "detail": "8c6e3eca826410f7e8a504a86ae9381f != 8c6e3eca826410f7e8a504a86ae9381f"
+    },
+    {
+      "name": "corpo real carregado byte a byte: platform_private.catalog_tenant_actor(text)",
+      "ok": true,
+      "detail": "5e0ce9cc9122f1c21d76e29a13de8b59 != 5e0ce9cc9122f1c21d76e29a13de8b59"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.can_view_catalog_internal(uuid)",
+      "ok": true,
+      "detail": "b04164dd8464d16f52cb69e7bcf83de7 != b04164dd8464d16f52cb69e7bcf83de7"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)",
+      "ok": true,
+      "detail": "b201e49e0158bde0140e018282c047fc != b201e49e0158bde0140e018282c047fc"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)",
+      "ok": true,
+      "detail": "87418209039589320959c9891e97916c != 87418209039589320959c9891e97916c"
+    },
+    {
+      "name": "corpo real carregado byte a byte: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true,
+      "detail": "bd985484b69c8fa6e63a920eff518369 != bd985484b69c8fa6e63a920eff518369"
+    },
+    {
+      "name": "corpo real carregado byte a byte: platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)",
+      "ok": true,
+      "detail": "61e545e6138485ba995f989d2011590a != 61e545e6138485ba995f989d2011590a"
+    },
+    {
+      "name": "corpo real carregado byte a byte: platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)",
+      "ok": true,
+      "detail": "7b7f90ddb519a281b4411c528813d927 != 7b7f90ddb519a281b4411c528813d927"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)",
+      "ok": true,
+      "detail": "507077a4a5d43f04022c8c7235aef6f3 != 507077a4a5d43f04022c8c7235aef6f3"
+    },
+    {
+      "name": "corpo real carregado byte a byte: platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)",
+      "ok": true,
+      "detail": "c8fbde6ba0fba4ea5109b001077849f6 != c8fbde6ba0fba4ea5109b001077849f6"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true,
+      "detail": "37d4f45e388ed7b38f6f397b672629ee != 37d4f45e388ed7b38f6f397b672629ee"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)",
+      "ok": true,
+      "detail": "0df0d9005d46b667db4433d3eae59e27 != 0df0d9005d46b667db4433d3eae59e27"
+    },
+    {
+      "name": "01 PRE_OK",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/01-pre.sql.readonly:33: NOTICE:  PRE_OK\n"
+    },
+    {
+      "name": "pre: comprador líquido reproduz tenant_catalog_fence_denied",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "pre: comprador misto reproduz tenant_catalog_fence_denied",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "pre: comprador só embalagem já passava (20/2/18)",
+      "ok": true,
+      "detail": "{'table_amount': 20.0, 'discount_amount': 2.0, 'net_amount_after_discount': 18.0}"
+    },
+    {
+      "name": "pre: admin interno do vendedor passa a fence (líquido 1/0.1/0.9)",
+      "ok": true,
+      "detail": "{'table_amount': 1.0, 'discount_amount': 0.1, 'net_amount_after_discount': 0.9}"
+    },
+    {
+      "name": "02 install aplicou e pins pós conferem",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "03 POST_OK",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/03-post.sql.readonly:38: NOTICE:  POST_OK\n"
+    },
+    {
+      "name": "rerun: PRE recusa após instalação",
+      "ok": true,
+      "detail": "-pre.sql.readonly:33: ERROR:  PRE: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\n"
+    },
+    {
+      "name": "post: comprador líquido 1L (1/0.10/0.90)",
+      "ok": true,
+      "detail": "{'table_amount': 1.0, 'discount_amount': 0.1, 'net_amount_after_discount': 0.9}"
+    },
+    {
+      "name": "post: comprador embalagem 2x25kg (20/2/18)",
+      "ok": true,
+      "detail": "{'table_amount': 20.0, 'discount_amount': 2.0, 'net_amount_after_discount': 18.0}"
+    },
+    {
+      "name": "post: comprador misto 2x25kg + 1L (21/2.10/18.90)",
+      "ok": true,
+      "detail": "{'table_amount': 21.0, 'discount_amount': 2.1, 'net_amount_after_discount': 18.9}"
+    },
+    {
+      "name": "post: misto devolve fontes packaging_price + catalog_volume_price",
+      "ok": true,
+      "detail": "['packaging_price', 'catalog_volume_price']"
+    },
+    {
+      "name": "post: comprador microrganismo 1L (5/0.5/4.5)",
+      "ok": true,
+      "detail": "{'table_amount': 5.0, 'discount_amount': 0.5, 'net_amount_after_discount': 4.5}"
+    },
+    {
+      "name": "post: preço enviado pelo cliente na linha líquida é ignorado (servidor 1/0.9)",
+      "ok": true,
+      "detail": "{'table_amount': 1.0, 'discount_amount': 0.1, 'net_amount_after_discount': 0.9}"
+    },
+    {
+      "name": "post: preço enviado pelo cliente na embalagem é recusado",
+      "ok": true,
+      "detail": "ERROR:  B2B_PACKAGING_CLIENT_PRICE_FORBIDDEN"
+    },
+    {
+      "name": "post: admin interno do vendedor continua (1/0.1/0.9)",
+      "ok": true,
+      "detail": "{'table_amount': 1.0, 'discount_amount': 0.1, 'net_amount_after_discount': 0.9}"
+    },
+    {
+      "name": "post: produto de outro tenant no carrinho do comprador",
+      "ok": true,
+      "detail": "ERROR:  b2b_catalog_item_denied"
+    },
+    {
+      "name": "post: produto oculto para o parceiro",
+      "ok": true,
+      "detail": "ERROR:  b2b_catalog_item_denied"
+    },
+    {
+      "name": "post: comprador simulando outro parceiro do mesmo vendedor",
+      "ok": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    {
+      "name": "post: comprador de outro tenant simulando o parceiro",
+      "ok": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    {
+      "name": "post: admin de outro tenant simulando o parceiro",
+      "ok": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    {
+      "name": "post: técnico do parceiro",
+      "ok": true,
+      "detail": "ERROR:  forbidden_financial_terms"
+    },
+    {
+      "name": "post: comprador inativo",
+      "ok": true,
+      "detail": "ERROR:  C2_SCOPE_INACTIVE"
+    },
+    {
+      "name": "post: superadmin com vínculo de parceiro",
+      "ok": false,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: authenticated sem sessão",
+      "ok": true,
+      "detail": "ERROR:  auth_required"
+    },
+    {
+      "name": "post: anônimo sem EXECUTE",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function simulate_b2b_payment_plan_secure"
+    },
+    {
+      "name": "post: wrapper público cercado continua negando o comprador",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: helper privado sem EXECUTE para authenticated",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function b2b_partner_cart_volume_price"
+    },
+    {
+      "name": "post: motor fn_resolve_commercial_price sem EXECUTE cliente",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function fn_resolve_commercial_price"
+    },
+    {
+      "name": "04 rollback deny aplicou",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback: comprador volta a ser negado pela fence (misto)",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "rollback: embalagem segue como antes",
+      "ok": true,
+      "detail": "{'table_amount': 20.0, 'discount_amount': 2.0, 'net_amount_after_discount': 18.0}"
+    },
+    {
+      "name": "rollback: helper é corpo de negação",
+      "ok": true,
+      "detail": "ERROR:  b2b_cart_catalog_fence_rolled_back"
+    }
+  ]
+}
