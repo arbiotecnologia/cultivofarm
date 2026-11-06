@@ -36,6 +36,12 @@ describe("parser B2B_PARTNER_PACKAGING_ORDER_V1", () => {
     ["peso zero", ack({ offers: [offer({ peso_liquido_kg: 0 })] })],
     ["preço zero", ack({ offers: [offer({ preco_tabela_brl: 0 })] })],
     ["embalagem duplicada", ack({ offers: [offer(), offer()] })],
+    ["sem solid_products (envelope antigo)", (({ solid_products: _x, ...r }) => r)(ack())],
+    ["sólido kg ofertado fora de solid_products", ack({ solid_products: [] })],
+    ["solid_products com unidade líquida", ack({ solid_products: [{ product_id: SOLID, unidade_conteudo: "l" }] })],
+    ["solid_products com chave extra (preço)", ack({ solid_products: [{ product_id: SOLID, unidade_conteudo: "kg", preco: 1 }] })],
+    ["solid_products nulo", ack({ solid_products: [null] })],
+    ["solid_products duplicado", ack({ solid_products: [{ product_id: SOLID, unidade_conteudo: "kg" }, { product_id: SOLID, unidade_conteudo: "kg" }] })],
   ])("recusa %s", (_n, raw) => {
     expect(() => parsePackagingOffers(raw, PARTNER)).toThrow("packaging_contract_unavailable");
   });
