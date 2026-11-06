@@ -120,6 +120,49 @@ export function AtribuicoesPlanosTab() {
     return "Tabela padrão";
   }
 
+  const publishContextValid = !!publishTarget && publish.ready && publish.scope === publishTarget.scope
+    && publishOpening.current?.() === true
+    && samePublishTarget(assignments.find((a) => a.id === publishTarget.assignment.id), publishTarget.assignment);
+
+  function resetPublishConfirmation() {
+    publishOpening.current = null;
+    setPublishTarget(null);
+    setPublishError(null);
+  }
+
+  function openPublishConfirmation(a: PlanAssignment) {
+    if (!canPublish || !publish.ready || publish.isPending || publishLock.current) return;
+    publishOpening.current = publish.capture();
+    setPublishError(null);
+    setPublishTarget({
+      assignment: { ...a },
+      conditionLabel: planName.get(a.plan_id) ?? a.plan_id,
+      destinationLabel: a.buyer_scope === "partner"
+        ? partnerName.get(a.partner_id ?? "") ?? `Parceiro ${a.partner_id ?? "não identificado"}`
+        : a.buyer_scope === "producer" ? `Produtor ${a.customer_id ?? "não identificado"}` : "Tabela padrão",
+      scope: publish.scope,
+    });
+  }
+
+  function handlePublishConfirmation() {
+    const target = publishTarget;
+    if (!target || publishLock.current || publish.isPending) return;
+    if (!publishContextValid) {
+      setPublishError(PUBLISH_CONTEXT_ERROR);
+      return;
+    }
+    publishLock.current = true;
+    setPublishError(null);
+    publish.mutate({ id: target.assignment.id }, {
+      onSuccess: () => {
+        toast.success("Atribuição publicada");
+        resetPublishConfirmation();
+      },
+      onError: (e) => setPublishError(conditionErrorMessage((e as Error)?.message)),
+      onSettled: () => { publishLock.current = false; },
+    });
+  }
+
   function onError(e: unknown) {
     toast.error(conditionErrorMessage((e as Error)?.message));
   }
