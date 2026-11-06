@@ -46,13 +46,18 @@ def call(uid, order, role="authenticated"):
     return h.as_user(uid, f"SELECT public.get_partner_order_payment_terms_secure('{order}')::text;", role)
 
 def main():
-    tmp = h.boot(); work = pathlib.Path(tempfile.mkdtemp())
+    tmp = h.boot(); work = pathlib.Path(tempfile.mkdtemp()); work.chmod(0o777)
     try:
         head, tail = TABLES.split("ALTER TABLE public.partner_order_payment_terms ENABLE", 1)
         h.psql(head)
         for c in CAPS: h.psql(capbody(c))
         h.psql("ALTER TABLE public.partner_order_payment_terms ENABLE" + tail)
-        h.psql("REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private FROM PUBLIC;")
+        h.psql("REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private FROM PUBLIC;\n"
+               # ACL LIVE (capturada read-only): authenticated executa estes predicados de policy.
+               "GRANT EXECUTE ON FUNCTION platform_private.b2b_phase1_order_visible(uuid), platform_private.b2b_phase1_partner_visible(uuid,boolean),"
+               " public.b2b_phase1_partner_visible(uuid,boolean), platform_private.b2b_owner_internal_partner_readable(uuid),"
+               " platform_private.h15_actor_organization(), platform_private.has_role(uuid,public.app_role), public.is_valid_b2b_partner_user(uuid,uuid),"
+               " public.has_role(uuid,public.app_role) TO authenticated;")
         for sig, md in g["PINS"].items():
             loc = h.psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))").stdout.strip()
             h.check(f"corpo real byte a byte: {sig}", loc == md, loc)
