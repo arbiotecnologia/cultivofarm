@@ -31,7 +31,8 @@ import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
 import { AddToCartDialog } from "@/components/catalogo/AddToCartDialog";
 import { AddPackagingToCartDialog } from "@/components/catalogo/AddPackagingToCartDialog";
 import { usePartnerPackagingOffers } from "@/hooks/usePartnerPackagingOffers";
-import { isWholePackagingQty, orderLineFor, packagingLabel } from "@/lib/comercial/packagingOrder";
+import { isWholePackagingQty, orderLineFor, packagingLabel, type PackagingOffer } from "@/lib/comercial/packagingOrder";
+import { loadPartnerOrderDraft, savePartnerOrderDraft, type PartnerOrderDraftScope } from "@/lib/authz/partnerOrderDraftStore";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import { brl as fmt } from "@/lib/financial/format";
 import { formatDateDisplay } from "@/lib/date-utils";
@@ -120,7 +121,7 @@ const doseLitroHaFor = (p: CatalogItem | undefined): number | null => {
 
 export default function NovoPedido() {
   const { partner, afterCreatePath } = useOutletContext<{ partner: any; afterCreatePath?: string }>();
-  const { role, setSafePartnerOrderDraft, takeSafePartnerOrderDraft } = useAuth();
+  const { role, user, profile, checkAuthzAccess, setSafePartnerOrderDraft, takeSafePartnerOrderDraft } = useAuth();
   const location = useLocation();
   const isRoleTecnico = role === "parceiro_b2b_tecnico";
   const isSimuladorRoute = location.pathname.includes("/portal-parceiro/simulador");
@@ -162,33 +163,50 @@ export default function NovoPedido() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [addRow, setAddRow] = useState<CatalogoUnificadoRow | null>(null);
   const renewalApplied = useRef(false);
+  // Escolhas de embalagem ainda NÃO confirmadas por uma leitura fresca (erro transitório do leitor):
+  // ficam retidas só como identidade + quantidade, sem preço/autoridade, e bloqueiam simulação/envio.
+  const [pendingPackaging, setPendingPackaging] = useState<Array<{ itemId: string; packagingId: string; quantity: number }>>([]);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftScope = useMemo<PartnerOrderDraftScope | null>(() =>
+    !isSimulationMode && user?.id && profile?.organization_id && partner?.id
+      ? { userId: user.id, tenantId: profile.organization_id, partnerId: partner.id } : null,
+    [isSimulationMode, user?.id, profile?.organization_id, partner?.id]);
+  const packagingCartLine = (item: CatalogItem, offer: PackagingOffer, quantidade: number): CartItem => ({
+    item_id: item.item_id, item_tipo: "produto", product_id: item.product_id, nome: item.nome,
+    quantidade, preco_unitario: offer.preco_tabela_brl, desconto_percentual: 0, subtotal: round2(offer.preco_tabela_brl * quantidade),
+    preco_unitario_cheio: offer.preco_tabela_brl, subtotal_cheio: round2(offer.preco_tabela_brl * quantidade),
+    unidade_pedido: "embalagem", volume_id: null, volume_ml: null, volume_rotulo: packagingLabel(offer),
+    area_ha: null, packaging_id: offer.packaging_id, peso_liquido_kg: offer.peso_liquido_kg,
+    unidade_conteudo: offer.unidade_conteudo,
+  });
   // Natural renewal never restores prices/hash/plan/text or a submit receipt.
   // Rebuild only choices present in the freshly authorized catalogue/volumes.
+  // Origem: recibo de renovação natural (memória) ou, após recarregar, a retenção mínima escopada
+  // (usuário+tenant+parceiro, expirável) — só com o monitor confirmando o acesso atual.
   useEffect(() => {
     if (renewalApplied.current || !catalogGestor.isSuccess || !volumes.isSuccess || isSimulationMode) return;
     // Embalagens do rascunho só se restauram contra o leitor de embalagens já resolvido (dados ou erro).
     if (!packagingOffers.data && !packagingOffers.isError) return;
     renewalApplied.current = true;
-    const draft = takeSafePartnerOrderDraft?.();
+    setDraftRestored(true);
+    const draft = takeSafePartnerOrderDraft?.() ??
+      (draftScope && (checkAuthzAccess?.() ?? false) ? loadPartnerOrderDraft(draftScope) : null);
     if (!draft || draft.partnerId !== partner?.id) return;
     const next: Record<string, CartItem> = {};
+    const pending: Array<{ itemId: string; packagingId: string; quantity: number }> = [];
     let droppedPackaging = 0;
+    const readerFailed = packagingOffers.isError;
     for (const choice of draft.items) {
       if ("packagingId" in choice) {
-        // Revalida tenant/contrato/preço: só volta se a MESMA embalagem segue ofertada agora pelo vendedor autorizado.
         const item = catalogMap.get(choice.itemId);
+        if (!item || item.item_tipo !== "produto" || !isWholePackagingQty(choice.quantity)) { droppedPackaging++; continue; }
+        // Leitura com erro: NÃO descarta; retém para nova leitura e bloqueia envio até revalidar.
+        if (readerFailed) { pending.push(choice); continue; }
+        // Revalida tenant/contrato/preço: só volta se a MESMA embalagem segue ofertada agora pelo vendedor autorizado.
         const offer = packagingOffers.data?.state === "available"
           ? packagingOffers.data.offers.get(choice.itemId)?.find((o) => o.packaging_id === choice.packagingId) : undefined;
-        if (!item || item.item_tipo !== "produto" || !offer || !isWholePackagingQty(choice.quantity)) { droppedPackaging++; continue; }
-        const preco = offer.preco_tabela_brl;
-        next[`${choice.itemId}::pk::${offer.packaging_id}`] = {
-          item_id: item.item_id, item_tipo: "produto", product_id: item.product_id, nome: item.nome,
-          quantidade: choice.quantity, preco_unitario: preco, desconto_percentual: 0, subtotal: round2(preco * choice.quantity),
-          preco_unitario_cheio: preco, subtotal_cheio: round2(preco * choice.quantity),
-          unidade_pedido: "embalagem", volume_id: null, volume_ml: null, volume_rotulo: packagingLabel(offer),
-          area_ha: null, packaging_id: offer.packaging_id, peso_liquido_kg: offer.peso_liquido_kg,
-          unidade_conteudo: offer.unidade_conteudo,
-        };
+        if (!offer) { droppedPackaging++; continue; }
+        next[`${choice.itemId}::pk::${offer.packaging_id}`] = packagingCartLine(item, offer, choice.quantity);
         continue;
       }
       const item = catalogMap.get(choice.itemId);
@@ -207,8 +225,9 @@ export default function NovoPedido() {
       };
     }
     setCart(next);
+    setPendingPackaging(pending);
     if (droppedPackaging > 0) {
-      toast.warning(`${droppedPackaging} embalagem(ns) do rascunho não puderam ser confirmadas agora (indisponível, sem preço vigente ou leitura com erro) e não foram restauradas.`);
+      toast.warning(`${droppedPackaging} embalagem(ns) do rascunho não estão mais disponíveis com preço vigente e não foram restauradas.`);
     }
     // A data desejada é escolha volátil do usuário: restaura só se ainda válida;
     // uma data vencida/inválida é descartada em vez de enviada silenciosamente.
@@ -217,18 +236,45 @@ export default function NovoPedido() {
     }
     if (draft.addItemId) setAddRow(partnerCatalogRows(catalog).find(row => row.id === draft.addItemId) ?? null);
   }, [catalogGestor.isSuccess, catalog, catalogMap, volumes.isSuccess, volumes.data, isSimulationMode, partner?.id, takeSafePartnerOrderDraft,
-      packagingOffers.data, packagingOffers.isError]);
+      packagingOffers.data, packagingOffers.isError, draftScope, checkAuthzAccess]);
+  // Nova leitura BEM-SUCEDIDA do leitor confirma (ou descarta por ausência confirmada) as embalagens pendentes,
+  // sempre com preço/peso/identidade dessa leitura — nunca os de antes.
   useEffect(() => {
-    setSafePartnerOrderDraft?.(!isSimulationMode && partner?.id ? {
+    if (pendingPackaging.length === 0 || packagingOffers.isError || !packagingOffers.isSuccess || !packagingOffers.data) return;
+    const pk = packagingOffers.data;
+    let dropped = 0;
+    setCart((c) => {
+      const next = { ...c };
+      for (const choice of pendingPackaging) {
+        const item = catalogMap.get(choice.itemId);
+        const offer = pk.state === "available" ? pk.offers.get(choice.itemId)?.find((o) => o.packaging_id === choice.packagingId) : undefined;
+        if (!item || !offer) { dropped++; continue; }
+        const key = `${choice.itemId}::pk::${offer.packaging_id}`;
+        next[key] = packagingCartLine(item, offer, (next[key]?.quantidade ?? 0) + choice.quantity);
+      }
+      return next;
+    });
+    setPendingPackaging([]);
+    if (dropped > 0) toast.warning(`${dropped} embalagem(ns) do rascunho não estão mais disponíveis com preço vigente e não foram restauradas.`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPackaging, packagingOffers.isError, packagingOffers.isSuccess, packagingOffers.data, catalogMap]);
+  useEffect(() => {
+    const draft = !isSimulationMode && partner?.id ? {
       partnerId: partner.id, addItemId: addRow?.id ?? null,
       requestedDeliveryDate: requestedDate || null,
-      items: Object.values(cart).filter(item => item.quantidade > 0 && (item.volume_id || item.packaging_id)).map(item =>
-        item.unidade_pedido === "embalagem" && item.packaging_id
-          ? { itemId: item.item_id, packagingId: item.packaging_id, quantity: item.quantidade }
-          : { itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade }),
-    } : null);
+      items: [
+        ...Object.values(cart).filter(item => item.quantidade > 0 && (item.volume_id || item.packaging_id)).map(item =>
+          item.unidade_pedido === "embalagem" && item.packaging_id
+            ? { itemId: item.item_id, packagingId: item.packaging_id, quantity: item.quantidade }
+            : { itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade }),
+        ...pendingPackaging,
+      ],
+    } : null;
+    setSafePartnerOrderDraft?.(draft);
+    // Retenção após recarregar: só depois da restauração (nunca apaga o retido com o carrinho inicial vazio).
+    if (draftRestored && draftScope) savePartnerOrderDraft(draftScope, draft);
     return () => setSafePartnerOrderDraft?.(null);
-  }, [cart, addRow?.id, requestedDate, isSimulationMode, partner?.id, setSafePartnerOrderDraft]);
+  }, [cart, pendingPackaging, addRow?.id, requestedDate, isSimulationMode, partner?.id, setSafePartnerOrderDraft, draftRestored, draftScope]);
   // Favoritos / modelos de pedido
   const saveTemplate = useSaveOrderTemplate();
   const cartHasPackaging = Object.values(cart).some((i) => i.unidade_pedido === "embalagem");
@@ -408,7 +454,7 @@ export default function NovoPedido() {
   const cartList = Object.entries(cart).map(([key, item]) => ({ key, ...item }));
   const total = cartList.reduce((s, i) => s + i.subtotal, 0);
   const totalCheio = cartList.reduce((s, i) => s + (i.subtotal_cheio ?? i.subtotal), 0);
-  const cartInvalid = cartList.some((i) => i.quantidade <= 0 || i.preco_unitario <= 0 ||
+  const cartInvalid = pendingPackaging.length > 0 || cartList.some((i) => i.quantidade <= 0 || i.preco_unitario <= 0 ||
     (i.unidade_pedido === "embalagem" && (!i.packaging_id || !isWholePackagingQty(i.quantidade))));
 
   // Payload de itens para a RPC de simulação (mesmo shape do create)
@@ -770,6 +816,18 @@ export default function NovoPedido() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {pendingPackaging.length > 0 && (
+              <div role="alert" data-testid="pending-packaging" className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                <p>
+                  {pendingPackaging.length} embalagem(ns) do seu rascunho aguardam confirmação: a leitura das apresentações falhou.
+                  Elas não foram descartadas, mas simulação e envio ficam bloqueados até confirmar preço e disponibilidade atuais.
+                </p>
+                <Button size="sm" variant="outline" className="mt-2" disabled={packagingOffers.isFetching}
+                        onClick={() => void packagingOffers.refetch()}>
+                  {packagingOffers.isFetching ? "Confirmando…" : "Tentar confirmar agora"}
+                </Button>
+              </div>
+            )}
             {cartList.length === 0 ? (
               <div className="text-sm text-muted-foreground py-6 text-center">Carrinho vazio</div>
             ) : (
@@ -913,8 +971,14 @@ export default function NovoPedido() {
       </div>
 
       {/* Sticky resumo mobile */}
-      {cartList.length > 0 && (
+      {(cartList.length > 0 || pendingPackaging.length > 0) && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t bg-background p-3 z-20 space-y-2 shadow-lg">
+          {pendingPackaging.length > 0 && (
+            <p role="status" className="text-xs text-destructive">
+              {pendingPackaging.length} embalagem(ns) aguardam confirmação; envio bloqueado.{" "}
+              <button type="button" className="underline" onClick={() => void packagingOffers.refetch()}>Tentar confirmar</button>
+            </p>
+          )}
           <div className="flex justify-between text-sm items-end gap-2">
             <span className="text-muted-foreground">{cartList.length} item(s)</span>
             <PrecoComDesconto

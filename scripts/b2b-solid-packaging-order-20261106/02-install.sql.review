@@ -179,6 +179,10 @@ BEGIN
     FROM jsonb_array_elements(p_items) l
    WHERE jsonb_typeof(l) = 'object' AND jsonb_typeof(l->'packaging_id') = 'string' AND jsonb_typeof(l->'item_id') = 'string'
      AND (l->>'item_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+  -- Alinhamento com os writers de apresentação/preço (solid_pack_*_v1), que tomam a trava consultiva EXCLUSIVA
+  -- 'solid_pack_product:<produto>' antes de qualquer linha: o pedido toma a mesma chave COMPARTILHADA primeiro (pedidos não
+  -- se bloqueiam entre si), eliminando o ciclo produto/volume x embalagem com o writer (deadlock reproduzido no PG descartável).
+  PERFORM pg_advisory_xact_lock_shared(hashtextextended('solid_pack_product:' || x::text, 0)) FROM unnest(v_products) AS x ORDER BY x;
   PERFORM 1 FROM public.produtos p WHERE p.id = ANY(v_products) ORDER BY p.id FOR SHARE;
   PERFORM 1 FROM public.product_sale_units su WHERE su.product_id = ANY(v_products) ORDER BY su.product_id FOR SHARE;
   PERFORM 1 FROM public.catalogo_volumes cv WHERE cv.id = ANY(v_ids) ORDER BY cv.id FOR SHARE;

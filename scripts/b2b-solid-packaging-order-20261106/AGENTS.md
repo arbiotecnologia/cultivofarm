@@ -6,3 +6,5 @@
 - Frontend opens packaging only after the exact reader contract; PGRST202 naming the endpoint means not installed (closed), every other error fails closed; liquid fingerprints stay byte-identical.
 - Real-trigger PG rounds load captured LIVE trigger bodies unchanged; only declared seams may replace dependencies, and the C2 owner-order gate seam is an assumption, never proof — prevents disabling guards to pass.
 - Buyer UI opens the liquid dialog only on exact pre-install absence or a server-confirmed non-solid; loading/error/invalid/unpriced solids show explicit states, drafts keep revalidated packaging and templates with packaging are blocked whole — prevents silent line loss or solid-as-liquid.
+- Buyer packaging locks take the shared 'solid_pack_product:<id>' advisory key before any row, matching the exclusive key of solid_pack_* writers — prevents the reproduced buyer/offer_save deadlock.
+- Negative proofs for a guard require its own message with the other triggers disabled in a rolled-back transaction, besides the integrated stack — "guard installed" is never proof.
