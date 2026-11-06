@@ -457,6 +457,10 @@ def main():
         chk("rollback.history_preserved", hist_before == hist_after and int(hist_after) >= 3, (hist_before, hist_after))
         r = psql(f"UPDATE public.partner_order_items SET packaging_id_snapshot = NULL WHERE order_id = '{c1['id']}'", check=False)
         chk("rollback.snapshot_still_immutable", r.returncode != 0, err(r))
+    except Exception:
+        for k, v in checks.items():
+            if not v['pass']: print('FAIL', k, v.get('detail'))
+        raise
     finally:
         subprocess.run(su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         shutil.rmtree(tmp, ignore_errors=True)
