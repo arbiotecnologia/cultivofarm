@@ -36,3 +36,9 @@ A aprovação comercial não substitui revisão do SQL, testes integrados nem pr
 - Tela: carregando / erro / contrato inválido / sólido sem preço mostram estado explícito; só pré-instalação (PGRST202 exato) ou "não sólido" confirmado abrem o diálogo líquido. Consequência: se o leitor de embalagens falhar depois de instalado, também líquidos ficam sem adicionar até nova leitura (fechado por desenho).
 - Rascunho de renovação é em memória (renovação natural de sessão); recarregar a página não o preserva (comportamento anterior, inalterado).
 - Meio de pagamento (B3) e recebível por NF (B4) seguem BLOCKED; fiscal/cobrança/envios OFF.
+
+## Prova real — formulário de preço de embalagem (revisão 9db4cc74, relatada pelo auditor em 06/11/2026)
+- Sessão real admin AR Bio na prévia: **PASS**. "Salvar preço" confirmou e a lista mostrou R$ 10,00 vigente desde 2026-11-06; SELECT read-only do auditor confirmou exatamente um preço ativo para a embalagem sintética TESTE saco 25 kg (valor só de fixture, não padrão comercial).
+- Observação do auditor: o preenchimento automatizado do campo de data exibiu 06/11/2026 no DOM, mas o estado React ficou vazio ("Informe a vigência"); a entrada nativa (ArrowUp/ArrowDown/Tab) confirmou a data.
+- Causa raiz do clique mudo original: **não demonstrada**. A hipótese de sessão em revalidação NÃO foi comprovada; há limitação do preenchimento automatizado de data. Nenhum guard foi alterado por isso; os testes negativos com motivo na tela (`src/test/catalogo/solidPackPriceSave.test.tsx`) permanecem.
+- Esta prova cobre só o cadastro de preço; não certifica o pedido por embalagem (pacote B2 continua NÃO APLICADO).
