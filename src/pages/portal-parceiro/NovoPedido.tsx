@@ -166,11 +166,31 @@ export default function NovoPedido() {
   // Rebuild only choices present in the freshly authorized catalogue/volumes.
   useEffect(() => {
     if (renewalApplied.current || !catalogGestor.isSuccess || !volumes.isSuccess || isSimulationMode) return;
+    // Embalagens do rascunho só se restauram contra o leitor de embalagens já resolvido (dados ou erro).
+    if (!packagingOffers.data && !packagingOffers.isError) return;
     renewalApplied.current = true;
     const draft = takeSafePartnerOrderDraft?.();
     if (!draft || draft.partnerId !== partner?.id) return;
     const next: Record<string, CartItem> = {};
+    let droppedPackaging = 0;
     for (const choice of draft.items) {
+      if ("packagingId" in choice) {
+        // Revalida tenant/contrato/preço: só volta se a MESMA embalagem segue ofertada agora pelo vendedor autorizado.
+        const item = catalogMap.get(choice.itemId);
+        const offer = packagingOffers.data?.state === "available"
+          ? packagingOffers.data.offers.get(choice.itemId)?.find((o) => o.packaging_id === choice.packagingId) : undefined;
+        if (!item || item.item_tipo !== "produto" || !offer || !isWholePackagingQty(choice.quantity)) { droppedPackaging++; continue; }
+        const preco = offer.preco_tabela_brl;
+        next[`${choice.itemId}::pk::${offer.packaging_id}`] = {
+          item_id: item.item_id, item_tipo: "produto", product_id: item.product_id, nome: item.nome,
+          quantidade: choice.quantity, preco_unitario: preco, desconto_percentual: 0, subtotal: round2(preco * choice.quantity),
+          preco_unitario_cheio: preco, subtotal_cheio: round2(preco * choice.quantity),
+          unidade_pedido: "embalagem", volume_id: null, volume_ml: null, volume_rotulo: packagingLabel(offer),
+          area_ha: null, packaging_id: offer.packaging_id, peso_liquido_kg: offer.peso_liquido_kg,
+          unidade_conteudo: offer.unidade_conteudo,
+        };
+        continue;
+      }
       const item = catalogMap.get(choice.itemId);
       const volume = volumes.data.porProdutoId.get(choice.itemId)?.find(v => v.id === choice.volumeId) ??
         volumes.data.porMicrorganismoId.get(choice.itemId)?.find(v => v.id === choice.volumeId);
@@ -187,20 +207,25 @@ export default function NovoPedido() {
       };
     }
     setCart(next);
+    if (droppedPackaging > 0) {
+      toast.warning(`${droppedPackaging} embalagem(ns) do rascunho não puderam ser confirmadas agora (indisponível, sem preço vigente ou leitura com erro) e não foram restauradas.`);
+    }
     // A data desejada é escolha volátil do usuário: restaura só se ainda válida;
     // uma data vencida/inválida é descartada em vez de enviada silenciosamente.
     if (draft.requestedDeliveryDate && isDeliveryDateValid(draft.requestedDeliveryDate)) {
       setRequestedDate(draft.requestedDeliveryDate);
     }
     if (draft.addItemId) setAddRow(partnerCatalogRows(catalog).find(row => row.id === draft.addItemId) ?? null);
-  }, [catalogGestor.isSuccess, catalog, catalogMap, volumes.isSuccess, volumes.data, isSimulationMode, partner?.id, takeSafePartnerOrderDraft]);
+  }, [catalogGestor.isSuccess, catalog, catalogMap, volumes.isSuccess, volumes.data, isSimulationMode, partner?.id, takeSafePartnerOrderDraft,
+      packagingOffers.data, packagingOffers.isError]);
   useEffect(() => {
     setSafePartnerOrderDraft?.(!isSimulationMode && partner?.id ? {
       partnerId: partner.id, addItemId: addRow?.id ?? null,
       requestedDeliveryDate: requestedDate || null,
-      items: Object.values(cart).filter(item => item.volume_id && item.quantidade > 0).map(item => ({
-        itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade,
-      })),
+      items: Object.values(cart).filter(item => item.quantidade > 0 && (item.volume_id || item.packaging_id)).map(item =>
+        item.unidade_pedido === "embalagem" && item.packaging_id
+          ? { itemId: item.item_id, packagingId: item.packaging_id, quantity: item.quantidade }
+          : { itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade }),
     } : null);
     return () => setSafePartnerOrderDraft?.(null);
   }, [cart, addRow?.id, requestedDate, isSimulationMode, partner?.id, setSafePartnerOrderDraft]);
