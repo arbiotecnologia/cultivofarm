@@ -1,0 +1,529 @@
+{
+"commercial_audit_log": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "usuario_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "partner_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 4,
+"col": "order_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 5,
+"col": "acao",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 6,
+"col": "dados_anteriores",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+},
+{
+"n": 7,
+"col": "dados_novos",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+},
+{
+"n": 8,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+}
+],
+"notificacoes_operacionais": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "usuario_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "tipo",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 4,
+"col": "titulo",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 5,
+"col": "mensagem",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 6,
+"col": "link",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 7,
+"col": "lido",
+"dflt": "false",
+"nn": true,
+"typ": "boolean"
+},
+{
+"n": 8,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 9,
+"col": "source_type",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 10,
+"col": "source_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 11,
+"col": "idempotency_key",
+"dflt": null,
+"nn": false,
+"typ": "text"
+}
+],
+"partner_engagement_metrics": [
+{
+"n": 1,
+"col": "partner_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "ultima_compra",
+"dflt": null,
+"nn": false,
+"typ": "timestamp with time zone"
+},
+{
+"n": 3,
+"col": "dias_sem_compra",
+"dflt": null,
+"nn": false,
+"typ": "integer"
+},
+{
+"n": 4,
+"col": "pedidos_30d",
+"dflt": "0",
+"nn": true,
+"typ": "integer"
+},
+{
+"n": 5,
+"col": "pedidos_90d",
+"dflt": "0",
+"nn": true,
+"typ": "integer"
+},
+{
+"n": 6,
+"col": "top_produtos",
+"dflt": "'[]'::jsonb",
+"nn": true,
+"typ": "jsonb"
+},
+{
+"n": 7,
+"col": "campanhas_usadas",
+"dflt": "'[]'::jsonb",
+"nn": true,
+"typ": "jsonb"
+},
+{
+"n": 8,
+"col": "updated_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+}
+],
+"partner_financial_settings": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "partner_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "billing_trigger",
+"dflt": "'na_entrega'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 4,
+"col": "payment_terms_days",
+"dflt": "7",
+"nn": true,
+"typ": "integer"
+},
+{
+"n": 5,
+"col": "default_payment_method",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 6,
+"col": "credit_limit",
+"dflt": null,
+"nn": false,
+"typ": "numeric(14,2)"
+},
+{
+"n": 7,
+"col": "block_if_overdue",
+"dflt": "false",
+"nn": true,
+"typ": "boolean"
+},
+{
+"n": 8,
+"col": "auto_generate_receivable",
+"dflt": "true",
+"nn": true,
+"typ": "boolean"
+},
+{
+"n": 9,
+"col": "active",
+"dflt": "true",
+"nn": true,
+"typ": "boolean"
+},
+{
+"n": 10,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 11,
+"col": "updated_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 12,
+"col": "credit_limit_action",
+"dflt": "'block'::text",
+"nn": true,
+"typ": "text"
+},
+{
+"n": 13,
+"col": "overdue_tolerance_days",
+"dflt": "0",
+"nn": true,
+"typ": "integer"
+},
+{
+"n": 14,
+"col": "credit_alert_threshold_1",
+"dflt": "80",
+"nn": true,
+"typ": "integer"
+},
+{
+"n": 15,
+"col": "credit_alert_threshold_2",
+"dflt": "90",
+"nn": true,
+"typ": "integer"
+}
+],
+"partner_order_audit_logs": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "order_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "partner_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 4,
+"col": "usuario_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 5,
+"col": "acao",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 6,
+"col": "dados_anteriores",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+},
+{
+"n": 7,
+"col": "dados_novos",
+"dflt": null,
+"nn": false,
+"typ": "jsonb"
+},
+{
+"n": 8,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+}
+],
+"production_order_link": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "partner_order_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "partner_order_item_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 4,
+"col": "planning_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 5,
+"col": "ordem_servico_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 6,
+"col": "created_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 7,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+}
+],
+"production_planning": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "partner_order_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "partner_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 4,
+"col": "status",
+"dflt": "'aguardando_planejamento'::production_planning_status",
+"nn": true,
+"typ": "production_planning_status"
+},
+{
+"n": 5,
+"col": "planned_start_date",
+"dflt": null,
+"nn": false,
+"typ": "date"
+},
+{
+"n": 6,
+"col": "planned_finish_date",
+"dflt": null,
+"nn": false,
+"typ": "date"
+},
+{
+"n": 7,
+"col": "production_notes",
+"dflt": null,
+"nn": false,
+"typ": "text"
+},
+{
+"n": 8,
+"col": "created_by",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 9,
+"col": "created_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 10,
+"col": "updated_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+}
+],
+"production_timeline_events": [
+{
+"n": 1,
+"col": "id",
+"dflt": "gen_random_uuid()",
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 2,
+"col": "partner_order_id",
+"dflt": null,
+"nn": true,
+"typ": "uuid"
+},
+{
+"n": 3,
+"col": "event_type",
+"dflt": null,
+"nn": true,
+"typ": "text"
+},
+{
+"n": 4,
+"col": "event_at",
+"dflt": "now()",
+"nn": true,
+"typ": "timestamp with time zone"
+},
+{
+"n": 5,
+"col": "actor_id",
+"dflt": null,
+"nn": false,
+"typ": "uuid"
+},
+{
+"n": 6,
+"col": "meta",
+"dflt": "'{}'::jsonb",
+"nn": true,
+"typ": "jsonb"
+}
+]
+}
