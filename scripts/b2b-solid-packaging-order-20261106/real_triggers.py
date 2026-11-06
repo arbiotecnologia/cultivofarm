@@ -80,6 +80,8 @@ CREATE TABLE IF NOT EXISTS public.production_timeline_events(id uuid DEFAULT gen
 CREATE TABLE IF NOT EXISTS public.partner_financial_settings(partner_id uuid, auto_generate_receivable boolean DEFAULT false);
 CREATE TABLE IF NOT EXISTS public.company_fiscal_settings(organization_id uuid);
 CREATE TABLE IF NOT EXISTS public.partner_engagement_metrics(partner_id uuid);
+CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(u uuid) RETURNS boolean LANGUAGE sql STABLE AS
+ $$ SELECT EXISTS (SELECT 1 FROM public.profiles p WHERE p.user_id = u AND p.ativo) $$;
 CREATE TABLE IF NOT EXISTS platform_private.seam_entitlements(user_id uuid, feature_key text);
 CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(u uuid) RETURNS TABLE(feature_key text) LANGUAGE sql STABLE AS
  $$ SELECT e.feature_key FROM platform_private.seam_entitlements e WHERE e.user_id = u $$;
@@ -87,13 +89,16 @@ CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(u uuid) RETURN
 SEAMS_DECLARED = [
     "tabelas de 2º nível mínimas: commercial_audit_log, production_order_link, production_planning, production_timeline_events, partner_financial_settings, company_fiscal_settings, partner_engagement_metrics",
     "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
+    "platform_private.platform_actor_access_ready = perfil ativo (sem lease/sessão real)",
     "FKs para clientes/auth.users/partner_simulations omitidas (tabelas inexistentes no PG descartável)",
 ]
 
 
 def real_triggers_sql() -> str:
     parts = [DEP_SEAMS]
-    for p in sorted((TRIG / "helpers").glob("*.sql")):
+    # platform_private primeiro (funções SQL validam dependências na criação); ordem fixa b2b_internal_origin_valid antes dos que o usam.
+    helpers = sorted((TRIG / "helpers").glob("*.sql"), key=lambda p: (not p.name.startswith("platform_private."), "origin_valid" not in p.name, p.name))
+    for p in helpers:
         parts.append(_body(p))
     for p in sorted(TRIG.glob("*.live-20261106.sql")):
         if not p.name.startswith("_"):
