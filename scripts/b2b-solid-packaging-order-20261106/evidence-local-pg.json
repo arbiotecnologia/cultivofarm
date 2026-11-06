@@ -56,7 +56,7 @@
     },
     "install.rerun_refused": {
       "pass": true,
-      "detail": "psql:/tmp/b2bpack-8gk7rc3r/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+      "detail": "psql:/tmp/b2bpack-3o8gjdey/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
     },
     "reader.solid_products_without_price_listed": {
       "pass": true,
@@ -209,7 +209,7 @@
     "create.solid_ok": {
       "pass": true,
       "detail": {
-        "id": "4501ca14-dbf1-43e3-9b16-bd2b3504a2f2",
+        "id": "6d4e9c00-dba7-4981-ac5e-5e14126fa94a",
         "total": 324.0,
         "numero": "PB-1",
         "status": "em_analise_comercial",
@@ -222,7 +222,7 @@
         "quote_required": false,
         "discount_amount": 36.0,
         "idempotency_key": "TESTE-PED-20261106-K1",
-        "payment_terms_id": "faa400a3-ed35-4f3f-b269-e54b9680483f",
+        "payment_terms_id": "f90e003a-009a-49ea-b81e-be7a7cca20e0",
         "credit_reason_code": "NO_LIMIT",
         "credit_block_reason": null,
         "financial_approval_status": "not_required",
@@ -439,7 +439,7 @@
       "pass": true,
       "detail": [
         {
-          "id": "fcfeb203-c5fe-42da-9d8a-884254007f38",
+          "id": "99e2d1b3-324c-4b3f-82ba-d9f0e5998556",
           "total": 243.0,
           "numero": "PB-5",
           "status": "em_analise_comercial",
@@ -452,7 +452,7 @@
           "quote_required": false,
           "discount_amount": 27.0,
           "idempotency_key": "TESTE-PED-20261106-CC",
-          "payment_terms_id": "11b93c1d-a70b-4cff-98f8-3cb08433faa1",
+          "payment_terms_id": "4b436fc6-fbcc-4482-8d3a-b62a5d3e2f0d",
           "credit_reason_code": "NO_LIMIT",
           "credit_block_reason": null,
           "financial_approval_status": "not_required",
