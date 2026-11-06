@@ -1,0 +1,399 @@
+{
+ "kind": "disposable_pg",
+ "hosted": false,
+ "remote_writes": false,
+ "package": "COMMERCIAL_KPIS_TENANT_V1",
+ "synthetic_seams": [
+  "auth.uid/auth.jwt locais",
+  "esquema mínimo",
+  "enum de status reduzido"
+ ],
+ "pg_version": "17.11",
+ "matrix": {
+  "admin_a": [
+   null,
+   {
+    "pedidos_total": 5,
+    "parceiros_novos": 2,
+    "parceiros_ativos": 2,
+    "receita_aprovada": 100,
+    "receita_prevista": 180,
+    "pedidos_aprovados": 1,
+    "pedidos_em_negociacao": 1,
+    "pedidos_aguardando_ajuste": 1
+   }
+  ],
+  "gestor_a": [
+   null,
+   {
+    "pedidos_total": 5,
+    "parceiros_novos": 2,
+    "parceiros_ativos": 2,
+    "receita_aprovada": 100,
+    "receita_prevista": 180,
+    "pedidos_aprovados": 1,
+    "pedidos_em_negociacao": 1,
+    "pedidos_aguardando_ajuste": 1
+   }
+  ],
+  "admin_f": [
+   null,
+   {
+    "pedidos_total": 3,
+    "parceiros_novos": 1,
+    "parceiros_ativos": 1,
+    "receita_aprovada": 1000,
+    "receita_prevista": 1454.2,
+    "pedidos_aprovados": 1,
+    "pedidos_em_negociacao": 1,
+    "pedidos_aguardando_ajuste": 0
+   }
+  ],
+  "consultor_a": [
+   "ERR",
+   "forbidden"
+  ],
+  "financeiro_a": [
+   "ERR",
+   "forbidden"
+  ],
+  "parceiro_a": [
+   "ERR",
+   "forbidden"
+  ],
+  "inativo_a": [
+   "ERR",
+   "forbidden"
+  ],
+  "provisorio_a": [
+   "ERR",
+   "forbidden"
+  ],
+  "convite_a": [
+   "ERR",
+   "forbidden"
+  ],
+  "org_inativa": [
+   "ERR",
+   "forbidden"
+  ],
+  "sem_perfil": [
+   "ERR",
+   "forbidden"
+  ],
+  "revogado_a": [
+   null,
+   {
+    "pedidos_total": 5,
+    "parceiros_novos": 2,
+    "parceiros_ativos": 2,
+    "receita_aprovada": 100,
+    "receita_prevista": 180,
+    "pedidos_aprovados": 1,
+    "pedidos_em_negociacao": 1,
+    "pedidos_aguardando_ajuste": 1
+   }
+  ],
+  "anon": [
+   "ERR",
+   "permission denied for function rpc_commercial_kpis"
+  ],
+  "no_sub": [
+   "ERR",
+   "forbidden"
+  ],
+  "service_role": [
+   "ERR",
+   "forbidden"
+  ]
+ },
+ "checks": {
+  "captured_bodies_reproduce_production_pins": {
+   "pass": true,
+   "detail": {
+    "public.rpc_commercial_kpis(date,date,uuid,uuid,text)": "96771c88d76993b92267bfe66113fc9d",
+    "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84",
+    "platform_private.has_role(uuid,public.app_role)": "c5af5b55de6d79da9b73a33948746ae2"
+   }
+  },
+  "before_vulnerable_cross_tenant_leak_reproduced": {
+   "pass": true,
+   "detail": {
+    "pedidos_total": 8,
+    "parceiros_novos": 3,
+    "parceiros_ativos": 3,
+    "receita_aprovada": 1100,
+    "receita_prevista": 1634.2,
+    "pedidos_aprovados": 2,
+    "pedidos_em_negociacao": 2,
+    "pedidos_aguardando_ajuste": 1
+   }
+  },
+  "pre_all_true": {
+   "pass": true,
+   "detail": "t|t|t|t|t|t"
+  },
+  "install_ok": {
+   "pass": true
+  },
+  "post_all_true": {
+   "pass": true,
+   "detail": "t|t|t|t|t|t|t|t"
+  },
+  "rerun_aborts_pre_drift": {
+   "pass": true
+  },
+  "positive_admin_a_exact_sums": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "pedidos_total": 5,
+     "parceiros_novos": 2,
+     "parceiros_ativos": 2,
+     "receita_aprovada": 100,
+     "receita_prevista": 180,
+     "pedidos_aprovados": 1,
+     "pedidos_em_negociacao": 1,
+     "pedidos_aguardando_ajuste": 1
+    }
+   ]
+  },
+  "positive_gestor_a_same_tenant": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "pedidos_total": 5,
+     "parceiros_novos": 2,
+     "parceiros_ativos": 2,
+     "receita_aprovada": 100,
+     "receita_prevista": 180,
+     "pedidos_aprovados": 1,
+     "pedidos_em_negociacao": 1,
+     "pedidos_aguardando_ajuste": 1
+    }
+   ]
+  },
+  "positive_admin_f_only_own_tenant": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "pedidos_total": 3,
+     "parceiros_novos": 1,
+     "parceiros_ativos": 1,
+     "receita_aprovada": 1000,
+     "receita_prevista": 1454.2,
+     "pedidos_aprovados": 1,
+     "pedidos_em_negociacao": 1,
+     "pedidos_aguardando_ajuste": 0
+    }
+   ]
+  },
+  "contract_keys_unchanged": {
+   "pass": true
+  },
+  "deny_consultor_a": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_financeiro_a": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_parceiro_a": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_inativo_a": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_provisorio_a": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_convite_a": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_org_inativa": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_sem_perfil": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_anon": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "permission denied for function rpc_commercial_kpis"
+   ]
+  },
+  "deny_no_sub": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_service_role": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "forbidden"
+   ]
+  },
+  "deny_foreign_partner_filter": {
+   "pass": true
+  },
+  "deny_foreign_partner_filter_f_to_a": {
+   "pass": true
+  },
+  "deny_unknown_partner_same_message": {
+   "pass": true
+  },
+  "own_partner_filter": {
+   "pass": true,
+   "detail": {
+    "pedidos_total": 2,
+    "parceiros_novos": 2,
+    "parceiros_ativos": 1,
+    "receita_aprovada": 0,
+    "receita_prevista": 0,
+    "pedidos_aprovados": 0,
+    "pedidos_em_negociacao": 0,
+    "pedidos_aguardando_ajuste": 1
+   }
+  },
+  "consultor_filter_own_only": {
+   "pass": true,
+   "detail": {
+    "pedidos_total": 2,
+    "parceiros_novos": 1,
+    "parceiros_ativos": 1,
+    "receita_aprovada": 0,
+    "receita_prevista": 0,
+    "pedidos_aprovados": 0,
+    "pedidos_em_negociacao": 0,
+    "pedidos_aguardando_ajuste": 1
+   }
+  },
+  "region_filter_own_only": {
+   "pass": true,
+   "detail": {
+    "pedidos_total": 2,
+    "parceiros_novos": 1,
+    "parceiros_ativos": 1,
+    "receita_aprovada": 0,
+    "receita_prevista": 0,
+    "pedidos_aprovados": 0,
+    "pedidos_em_negociacao": 0,
+    "pedidos_aguardando_ajuste": 1
+   }
+  },
+  "region_foreign_only_zero": {
+   "pass": true,
+   "detail": {
+    "pedidos_total": 0,
+    "parceiros_novos": 0,
+    "parceiros_ativos": 0,
+    "receita_aprovada": 0,
+    "receita_prevista": 0,
+    "pedidos_aprovados": 0,
+    "pedidos_em_negociacao": 0,
+    "pedidos_aguardando_ajuste": 0
+   }
+  },
+  "period_includes_old_own_only": {
+   "pass": true,
+   "detail": {
+    "pedidos_total": 6,
+    "parceiros_novos": 3,
+    "parceiros_ativos": 3,
+    "receita_aprovada": 1099,
+    "receita_prevista": 1179,
+    "pedidos_aprovados": 2,
+    "pedidos_em_negociacao": 1,
+    "pedidos_aguardando_ajuste": 1
+   }
+  },
+  "revocation_denies_next_call": {
+   "pass": true,
+   "detail": [
+    [
+     null,
+     {
+      "pedidos_total": 5,
+      "parceiros_novos": 2,
+      "parceiros_ativos": 2,
+      "receita_aprovada": 100,
+      "receita_prevista": 180,
+      "pedidos_aprovados": 1,
+      "pedidos_em_negociacao": 1,
+      "pedidos_aguardando_ajuste": 1
+     }
+    ],
+    [
+     "ERR",
+     "forbidden"
+    ]
+   ]
+  },
+  "tenant_switch_follows_profile": {
+   "pass": true,
+   "detail": {
+    "pedidos_total": 3,
+    "parceiros_novos": 1,
+    "parceiros_ativos": 1,
+    "receita_aprovada": 1000,
+    "receita_prevista": 1454.2,
+    "pedidos_aprovados": 1,
+    "pedidos_em_negociacao": 1,
+    "pedidos_aguardando_ajuste": 0
+   }
+  },
+  "acl_no_anon_no_public": {
+   "pass": true,
+   "detail": "postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres"
+  },
+  "rollback_ok": {
+   "pass": true
+  },
+  "rollback_denies_admin": {
+   "pass": true
+  },
+  "rollback_never_restores_vulnerable": {
+   "pass": true
+  }
+ },
+ "result": "PASS"
+}

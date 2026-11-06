@@ -22715,6 +22715,10 @@ export type Database = {
               valor_litro_brl: number
             }[]
           }
+      get_partner_catalog_volumes_secure: {
+        Args: { p_partner_id: string }
+        Returns: Json
+      }
       get_partner_papel: { Args: { _user_id: string }; Returns: string }
       get_partner_user_lifecycle:
         | { Args: { p_partner_id: string; p_user_id: string }; Returns: Json }
@@ -26571,6 +26575,7 @@ export type Database = {
           total: number
         }[]
       }
+      tenant_display_name_v1: { Args: never; Returns: Json }
       tenant_email_settings_get: { Args: never; Returns: Json }
       tenant_email_settings_save: {
         Args: {
