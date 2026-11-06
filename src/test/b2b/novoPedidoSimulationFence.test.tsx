@@ -1,6 +1,5 @@
 import { act, cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { withPaymentMethod, pickTestPix } from "@/test/helpers/b2bPaymentMethodMock";
-import { withPaymentMethod, pickTestPix } from "@/test/helpers/b2bPaymentMethodMock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -63,7 +62,7 @@ beforeEach(() => {
     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
     return { select: () => ({ eq: () => response([]) }) };
   });
-  state.rpc.mockImplementation(withPaymentMethod(withPaymentMethod((name: string, args?: { p_partner_id?: string }) => {
+  state.rpc.mockImplementation(withPaymentMethod((name: string, args?: { p_partner_id?: string }) => {
     if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
     const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
@@ -95,8 +94,8 @@ beforeEach(() => {
       valor_litro_brl: 10, preco_parceiro: 10, desconto_percentual: 0, unidade_preco_principal: "litro", ficha_aprovada: false,
     }]);
     state.writes(name); throw new Error(`Unexpected RPC: ${name}`);
-  });
-, (n: string, a?: Record<string, unknown>) => state.rpc(n, a), (n: string, a?: Record<string, unknown>) => state.rpc(n, a)))));
+  }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
+});
 afterEach(() => { cleanup(); sessionStorage.clear(); });
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -129,13 +128,13 @@ const sendBtn = () => screen.getByRole("button", { name: /Enviar pedido para anÃ
 beforeEach(() => {
   sims = [];
   const orig = state.rpc.getMockImplementation()!;
-  state.rpc.mockImplementation(withPaymentMethod(withPaymentMethod((name: string, args?: Record<string, unknown>) => {
+  state.rpc.mockImplementation(withPaymentMethod((name: string, args?: Record<string, unknown>) => {
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([plan(CASH, "A vista", "cash"), plan(PA, "Plano A", "short_term"), plan(PB, "Plano B", "short_term")]);
     if (name === "simulate_b2b_payment_plan_secure") return new Promise((resolve) => sims.push({ plan: String(args?.p_payment_plan_id), items: args?.p_items, resolve }));
     if (name === "create_partner_order_secure") { state.writes(name); return Promise.resolve({ data: null, error: { message: "blocked in test" } }); }
     return orig(name, args);
-  });
-, (n: string, a?: Record<string, unknown>) => state.rpc(n, a), (n: string, a?: Record<string, unknown>) => state.rpc(n, a)))));
+  }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
+});
 async function openWithCart(qty = 2) {
   state.pk = "offer";
   state.draft = { partnerId: state.partner, addItemId: null, requestedDeliveryDate: null, items: [{ itemId: state.partner, packagingId: PKG, quantity: qty }] };

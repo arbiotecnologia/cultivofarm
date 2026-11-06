@@ -1,6 +1,5 @@
 import 'fake-indexeddb/auto';
 import { withPaymentMethod, pickTestPix } from "@/test/helpers/b2bPaymentMethodMock";
-import { withPaymentMethod, pickTestPix } from "@/test/helpers/b2bPaymentMethodMock";
 import { IDBFactory } from 'fake-indexeddb';
 import { webcrypto } from 'node:crypto';
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -76,7 +75,7 @@ beforeEach(() => {
     }) }) }) };
     throw new Error(`Unexpected table read: ${table}`);
   });
-  state.rpc.mockImplementation(withPaymentMethod(withPaymentMethod((name: string, args?: Record<string, unknown>) => {
+  state.rpc.mockImplementation(withPaymentMethod((name: string, args?: Record<string, unknown>) => {
     if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
     const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actorOverride ?? state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
@@ -112,8 +111,8 @@ beforeEach(() => {
     });
     if (name === "log_my_access_denied_secure") return response(null);
     state.writes(name); throw new Error(`Unexpected RPC: ${name}`);
-  });
-, (n: string, a?: Record<string, unknown>) => state.rpc(n, a), (n: string, a?: Record<string, unknown>) => state.rpc(n, a)))));
+  }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
+});
 afterEach(cleanup);
 let client!: QueryClient;
 const tree=()=><QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
@@ -143,7 +142,7 @@ beforeEach(()=>{
   vi.stubGlobal('indexedDB',new IDBFactory()); vi.stubGlobal('crypto',webcrypto);
   srv={key:K1,gen:1,order:ID1,numero:'PB-001033'}; hold=null;
   const base=state.rpc.getMockImplementation()!;
-  state.rpc.mockImplementation(withPaymentMethod(withPaymentMethod((name:string,args?:Args)=>{
+  state.rpc.mockImplementation(withPaymentMethod((name:string,args?:Args)=>{
     if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:{contract:CT,enabled:true,actor_id:state.actorOverride??state.actor,organization_id:state.tenant,partner_id:state.partner},error:null});
     if(name==='recover_partner_order_attempt_v1'){
       const cur={contract:CT,key:srv.key,generation:srv.gen,state:'committed',order_id:srv.order,numero:srv.numero};
@@ -154,8 +153,8 @@ beforeEach(()=>{
       return (hold??Promise.resolve()).then(()=>({data:out,error:null}));
     }
     return base(name,args);
-  });
-, (n: string, a?: Record<string, unknown>) => state.rpc(n, a), (n: string, a?: Record<string, unknown>) => state.rpc(n, a)))));
+  }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
+});
 async function waitCart(){ await waitFor(()=>expect(screen.getAllByRole('button',{name:'Continuar para condição de pagamento'})[0]).toBeEnabled()); }
 const ackBtn=()=>screen.findByRole('button',{name:'Confirmar pedido existente e iniciar novo'});
 async function openDialog(){ await screen.findAllByText('Produto local'); fireEvent.click(await ackBtn()); return screen.findByRole('alertdialog'); }
@@ -191,9 +190,9 @@ it('estado do servidor muda com o diálogo aberto (outra aba): não confirma ger
   const NEXT='77777777-7777-4777-8777-777777777777';
   srv={key:K2,gen:2,order:NEXT,numero:'PB-001034'};
   const base=state.rpc.getMockImplementation()!;
-  state.rpc.mockImplementation(withPaymentMethod(withPaymentMethod((n:string,a?:Args)=>n==='recover_partner_order_attempt_v1'&&!a?.p_advance
+  state.rpc.mockImplementation(withPaymentMethod((n:string,a?:Args)=>n==='recover_partner_order_attempt_v1'&&!a?.p_advance
     ? Promise.resolve({data:{contract:CT,key:K2,generation:2,state:'committed',order_id:NEXT,numero:'PB-001034',predecessors:[{key:K1,generation:1,state:'committed',order_id:ID1,numero:'PB-001033'}]},error:null})
-    : base(n,a));
+    : base(n,a), (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
   const ok=screen.getByRole('button',{name:'Confirmar e iniciar novo'});
   // Releitura do controlador real (como outra aba) com o diálogo aberto.
   await act(async()=>{ await recoverOrderJournal(JSON.stringify([state.actor,state.tenant,state.partner]),state.partner,()=>true); });
@@ -202,7 +201,7 @@ it('estado do servidor muda com o diálogo aberto (outra aba): não confirma ger
   await act(async()=>{});
   expect(advances()).toHaveLength(0);
   expect(await screen.findByText(/PB-001034/)).toBeTruthy();
-, (n: string, a?: Record<string, unknown>) => state.rpc(n, a), (n: string, a?: Record<string, unknown>) => state.rpc(n, a)))));
+});
 it('revogação/troca de contexto com o diálogo aberto nega o avanço',async()=>{
   mount(); await openDialog();
   state.revoked=true;
