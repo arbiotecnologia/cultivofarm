@@ -31,3 +31,23 @@ describe("Salvar preço da embalagem (fixture TESTE R$ 10,00)", () => {
     expect(rpcMock.mock.calls[0][1]).toMatchObject({ p_packaging_id: PK, p_preco_centavos: 1000, p_valid_from: "2026-11-06", p_expected_price_id: null });
   });
 });
+describe("caminhos sem envio", () => {
+  it("lease pausada no clique", async () => {
+    let ok = true; auth.value.checkAuthzAccess = () => ok;
+    mk(); ok = false; fill("10,00", "2026-11-06");
+    await new Promise(r => setTimeout(r, 50));
+    console.log("LEASE", rpcMock.mock.calls.length, JSON.stringify(toastMock.error.mock.calls));
+  });
+  it("papéis sem edição", async () => {
+    auth.value.roles = ["administrador", "parceiro_b2b"];
+    mk(); fill("10,00", "2026-11-06");
+    await new Promise(r => setTimeout(r, 50));
+    console.log("ROLES", rpcMock.mock.calls.length, JSON.stringify(toastMock.error.mock.calls));
+  });
+  it("authz not ready", async () => {
+    auth.value.authzReady = false;
+    mk(); fill("10,00", "2026-11-06");
+    await new Promise(r => setTimeout(r, 50));
+    console.log("READY", rpcMock.mock.calls.length, JSON.stringify(toastMock.error.mock.calls));
+  });
+});
