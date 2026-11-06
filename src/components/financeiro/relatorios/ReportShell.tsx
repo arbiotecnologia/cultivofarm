@@ -30,7 +30,6 @@ interface ReportShellProps<TData = unknown> {
 }
 
 export function ReportShell<TData = unknown>(props: ReportShellProps<TData>) {
-  const { label: tenantLabel } = useActiveTenantName();
   const access = useStorageAccessScope(`report:${props.reportType}`);
   const { error } = useAuth();
   return <ScopedReportShell<TData> key={JSON.stringify([access.scope, !!error])} {...props} />;
@@ -45,6 +44,7 @@ function ScopedReportShell<TData = unknown>({
   renderPreview,
   requiresCustomer,
 }: ReportShellProps<TData>) {
+  const { label: tenantLabel } = useActiveTenantName();
   const { user, profile, error: authError } = useAuth();
   const access = useStorageAccessScope(`report:${reportType}`);
   // Same resource as the parent key: any scope change remounts and revokes Blobs.
