@@ -36,12 +36,26 @@ export function weightKg(text: string, unit: "kg" | "g"): number {
   if (!Number.isFinite(kg) || kg <= 0 || kg >= 1e9 || Math.abs(kg * 1000 - Math.round(kg * 1000)) > 1e-7) throw new Error("Peso deve ser exato em gramas");
   return kg;
 }
-export function cents(text: string): number {
-  if (!/^\d+(?:[.,]\d{1,2})?$/.test(text)) throw new Error("Preço inválido");
-  const [whole, decimal = ""] = text.replace(",", ".").split(".");
+/** Preço pt-BR estrito: "10", "10,00", "10.00", "R$ 10,00", "1.234,56". Nunca adivinha separador ambíguo. */
+export function cents(input: string): number {
+  const text = input.replace(/^\s*R\$\s*/i, "").trim();
+  const invalid = "Preço inválido: use reais com até 2 casas, ex.: 10,00";
+  let normalized: string;
+  if (/^\d+$/.test(text) || /^\d+[.,]\d{1,2}$/.test(text)) normalized = text.replace(",", ".");
+  else if (/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(text)) normalized = text.replace(/\./g, "").replace(",", ".");
+  else throw new Error(invalid);
+  const [whole, decimal = ""] = normalized.split(".");
   const value = Number(whole) * 100 + Number(decimal.padEnd(2, "0"));
-  if (!Number.isSafeInteger(value) || value <= 0 || value > 99999999999999) throw new Error("Preço inválido");
+  if (!Number.isSafeInteger(value) || value <= 0 || value > 99999999999999) throw new Error("Preço deve ser maior que zero");
   return value;
+}
+/** Vigência como data civil ISO válida (o input date entrega AAAA-MM-DD). */
+export function civilDate(text: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  const d = m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null;
+  if (!m || !d || d.getUTCFullYear() !== +m[1] || d.getUTCMonth() !== +m[2] - 1 || d.getUTCDate() !== +m[3])
+    throw new Error("Vigência inválida: escolha a data no calendário");
+  return text;
 }
 export function validatePackagingAck(raw: unknown, command: Command): Record<string, unknown> {
   const d = obj(raw); const a = command.args;
@@ -71,7 +85,8 @@ export class PackagingAttempt {
     return this.send(rpc, scope, current, this.retained.command, reconcile);
   }
   async send(rpc: Rpc, scope: string, current: () => boolean, command: Command, reconcile: () => Promise<void>) {
-    if (this.busy || !current()) throw new Error("Aguarde ou confirme o contexto atual");
+    if (this.busy) throw new Error("Aguarde a alteração em andamento terminar.");
+    if (!current()) throw new Error("Sessão em revalidação ou contexto alterado. Nada foi gravado; aguarde alguns segundos e clique novamente.");
     const signature = JSON.stringify([scope, command]);
     if (this.retained && this.retained.signature !== signature) throw new Error("Reconcilie a mesma tentativa antes de mudar a intenção");
     this.busy = true;

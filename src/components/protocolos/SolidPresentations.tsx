@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePackagingAdminSave } from "@/hooks/usePackagingAdmin";
-import { cents, weightKg, type AdminState, type Command, type Offer } from "@/lib/catalogo/packagingAdminContract";
+import { cents, civilDate, weightKg, type AdminState, type Command, type Offer } from "@/lib/catalogo/packagingAdminContract";
 import { toast } from "sonner";
 
 /** Administrative content of the existing presentation dialog, never a buyer/order surface. */
@@ -16,17 +16,22 @@ export function SolidPresentations({ state, active = true, onLockChange }: { sta
   const [code, setCode] = useState(""); const [label, setLabel] = useState(""); const [weight, setWeight] = useState("");
   const [editing, setEditing] = useState<Offer | null>(null);
   const [price, setPrice] = useState(""); const [date, setDate] = useState(""); const [priceOffer, setPriceOffer] = useState("");
+  // Motivo persistente de não-envio/falha do preço: nunca um clique sem resposta visível.
+  const [priceError, setPriceError] = useState<string | null>(null);
   const unit = state.unidade_conteudo === "g" ? "g" : "kg";
   const run = async (command: Command | null) => {
-    if (running.current || !active) return;
+    const isPrice = command?.rpc === "solid_pack_price_set_v1";
+    if (running.current) { toast.error("Aguarde a alteração em andamento terminar."); if (isPrice) setPriceError("Aguarde a alteração em andamento terminar."); return; }
+    if (!active) { const m = "Formulário desatualizado para a sessão atual. Nada foi gravado; feche e reabra as apresentações."; toast.error(m); if (isPrice) setPriceError(m); return; }
     running.current = true; onLockChange?.(true);
     try {
       await save.mutateAsync(command);
+      if (isPrice) setPriceError(null);
       if (command === null || command.rpc === "solid_pack_offer_save_v1") { setEditing(null); setCode(""); setLabel(""); setWeight(""); }
       if (command === null || command.rpc === "solid_pack_price_set_v1") { setPriceOffer(""); setPrice(""); setDate(""); }
       toast.success("Alteração confirmada");
     }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Alteração não confirmada"); }
+    catch (error) { const m = error instanceof Error ? error.message : "Alteração não confirmada"; toast.error(m); if (isPrice) setPriceError(m); }
     finally { running.current = false; }
   };
   const offerCommand = () => {
@@ -37,11 +42,15 @@ export function SolidPresentations({ state, active = true, onLockChange }: { sta
   const submitPrice = () => {
     try {
       const offer = state.offers.find(o => o.packaging_id === priceOffer && o.ativo);
-      if (!offer || !date) throw new Error("Selecione a apresentação e a vigência");
+      if (!offer) throw new Error("Apresentação indisponível ou arquivada; reabra a lista");
+      if (!date) throw new Error("Informe a vigência");
+      civilDate(date);
+      const centavos = cents(price);
       const candidates = offer.prices.filter(p => p.ativo && p.valid_from <= date && (p.valid_until === null || p.valid_until >= date));
-      if (candidates.length > 1) throw new Error("Preço vigente ambíguo");
-      void run({ rpc: "solid_pack_price_set_v1", args: { p_packaging_id: offer.packaging_id, p_preco_centavos: cents(price), p_valid_from: date, p_expected_price_id: candidates[0]?.price_id ?? null } });
-    } catch (error) { toast.error((error as Error).message); }
+      if (candidates.length > 1) throw new Error("Há mais de um preço vigente nesta data; fale com o suporte antes de alterar");
+      setPriceError(null);
+      void run({ rpc: "solid_pack_price_set_v1", args: { p_packaging_id: offer.packaging_id, p_preco_centavos: centavos, p_valid_from: date, p_expected_price_id: candidates[0]?.price_id ?? null } });
+    } catch (error) { const m = (error as Error).message; setPriceError(m); toast.error(m); }
   };
   return <div className="space-y-4">
     {save.retained && <div role="alert"><p>Alteração não confirmada. Retome a tentativa original antes de fazer outra alteração.</p><Button disabled={save.isPending || !active} onClick={() => void run(null)}>Retomar tentativa original</Button></div>}
@@ -65,6 +74,8 @@ export function SolidPresentations({ state, active = true, onLockChange }: { sta
       <div><Label htmlFor="pack-price">Preço por embalagem (R$)</Label><Input id="pack-price" value={price} disabled={locked || !active} onChange={e => setPrice(e.target.value)} /></div>
       <div><Label htmlFor="pack-date">Vigência</Label><Input id="pack-date" type="date" value={date} disabled={locked || !active} onChange={e => setDate(e.target.value)} /></div>
       <Button disabled={locked || !active} onClick={submitPrice}>Salvar preço</Button>
+      {!active && <p role="status" className="sm:col-span-3 text-sm text-muted-foreground">Formulário desatualizado para a sessão atual; feche e reabra as apresentações.</p>}
+      {priceError && <p role="alert" className="sm:col-span-3 text-sm text-destructive">{priceError}</p>}
     </div>}
   </div>;
 }
