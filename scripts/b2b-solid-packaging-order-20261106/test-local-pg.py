@@ -336,6 +336,8 @@ def main():
                 GRANT EXECUTE ON FUNCTION public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date), public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) TO authenticated, service_role;
                 GRANT EXECUTE ON FUNCTION public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date), public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric) TO service_role;""")
         psql(FIXTURES)
+        if REAL:
+            psql(RT.fixtures_sql([UB, UT, UB2, UADM, UADMF, UINACT, UCONS, USUP]))
 
         # ---------- ANTES: linha líquida de referência e sólido bloqueado pelo legado
         before_liq = j(sim(UB, PLD, items(L())))

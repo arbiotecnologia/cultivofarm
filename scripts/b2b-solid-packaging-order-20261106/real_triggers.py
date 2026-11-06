@@ -111,3 +111,10 @@ def real_triggers_sql() -> str:
         parts.append(f"DROP TRIGGER IF EXISTS {tg} ON {tbl};")
     parts.append((TRIG / "_triggerdefs.live-20261106.sql").read_text())
     return "\n".join(parts)
+
+
+def fixtures_sql(users) -> str:
+    """Direitos contratados sintéticos: pedidos_b2b e catalogo_precos para todos os usuários do cenário (a autorização por
+    papel/vínculo continua nos guards reais). O caso negativo remove o direito do comprador em check próprio."""
+    return "INSERT INTO platform_private.seam_entitlements VALUES " + ",".join(
+        f"('{u}','{k}')" for u in users for k in ("pedidos_b2b", "catalogo_precos")) + ";\n"
