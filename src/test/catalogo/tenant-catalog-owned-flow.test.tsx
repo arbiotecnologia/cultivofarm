@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 const AR = "org-ar"; const FSF = "org-fsf";
 const db = { rows: [] as Array<Record<string, unknown>>, calls: [] as string[], seq: 0, readDelay: null as Promise<void> | null,
   writes: [] as Array<Record<string, unknown>>, writeDelay: null as Promise<void> | null, failComposition: false, uncertain: false,
-  receipts: new Map<string, unknown>() };
+  receipts: new Map<string, unknown>(), unitCapability: "positive" as "positive" | "absent" | "denied" };
 const auth = { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, loading: false, roles: ["administrador"] };
 const toastFns = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock("sonner", () => ({ toast: toastFns }));
@@ -22,6 +22,17 @@ function query(table: string) {
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: query, rpc: (fn: string, args: Record<string, unknown>) => {
   const run = async () => {
     db.calls.push(fn);
+    // Contrato PRODUCT_UNIT_V2 explícito: capability positiva só onde o cenário declara; unidade vem do próprio produto.
+    if (fn === "tenant_product_unit_capability_v1") {
+      if (db.unitCapability === "absent") return { data: null, error: { code: "PGRST202", message: "Could not find the function" } };
+      if (db.unitCapability === "denied") return { data: null, error: { code: "42501", message: "forbidden" } };
+      return { data: { contract: "PRODUCT_UNIT_V2", writer: "tenant_product_save", units: ["kg", "g", "ml", "l"] }, error: null };
+    }
+    if (fn === "solid_pack_offers_admin_v1") {
+      const row = db.rows.find(r => r.id === args.p_product && r.owner_organization_id === auth.profile.organization_id);
+      if (!row) return { data: null, error: { code: "P0002", message: "not_found" } };
+      return { data: { contract: "SOLID_PACK_ADMIN_V1", product_id: row.id, config_version: 0, unidade_conteudo: row.unidade_conteudo ?? null, offers: [] }, error: null };
+    }
     if (fn === "tenant_product_list") return { data: structuredClone(db.rows.filter(r => r.entity === "produto" && r.owner_organization_id === auth.profile.organization_id && (args.p_include_archived || r.ativo))), error: null };
     if (fn === "tenant_product_save") {
       db.writes.push(args);
@@ -92,7 +103,7 @@ async function confirm(reason = "motivo suficiente") {
 
 describe("culturas próprias na aba existente", () => {
   beforeEach(() => {
-    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
+    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map(), unitCapability: "positive" });
     Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, roles: ["administrador"] });
     Object.values(toastFns).forEach((fn) => fn.mockReset());
   });
@@ -173,7 +184,7 @@ describe("culturas próprias na aba existente", () => {
 
 describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
   beforeEach(() => {
-    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
+    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map(), unitCapability: "positive" });
     Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, roles: ["administrador"] });
   });
   it.each([
@@ -181,7 +192,7 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
     ["microrganismo", MicrorganismosTab, "Micro Local", { tipo: "bacteria", nome_cientifico: "Bacillus declarado" }],
   ] as const)("%s próprio aparece, reabre com detalhe e persiste edição", async (entity, Component, nome, extra) => {
     db.rows.push({ id: "owned-local", entity, nome, descricao: "Descrição fornecida", ativo: true, archived_at: null,
-      owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z", b2b_enabled: false, e_insumo: false, ...extra });
+      owner_organization_id: AR, updated_at: "2026-10-15T00:00:00Z", b2b_enabled: false, e_insumo: false, unidade_conteudo: "kg", ...extra });
     app(Component);
     expect(await screen.findByText(nome)).toBeTruthy();
     if (entity === "produto") {
@@ -201,13 +212,13 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
 
 describe("salvamento único de identificação/composição", () => {
   beforeEach(() => {
-    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map() });
+    Object.assign(db, { rows: [], calls: [], seq: 0, readDelay: null, writes: [], writeDelay: null, failComposition: false, uncertain: false, receipts: new Map(), unitCapability: "positive" });
     Object.assign(auth, { user: { id: "u-ar" }, profile: { user_id: "u-ar", organization_id: AR, ativo: true }, roles: ["administrador"] });
     Object.values(toastFns).forEach((fn) => fn.mockReset());
   });
   async function openDeclared() {
     db.rows.push({ id: "declared", entity: "produto", nome: "Produto declarado", tipo: "solo", familia_catalogo: "quimico", classe_catalogo: "fungicida",
-      ativo: true, owner_organization_id: AR, archived_at: null, updated_at: "2026-10-15T00:00:00Z", b2b_enabled: false, e_insumo: false, composition_status: "rascunho",
+      ativo: true, owner_organization_id: AR, archived_at: null, updated_at: "2026-10-15T00:00:00Z", b2b_enabled: false, e_insumo: false, composition_status: "rascunho", unidade_conteudo: "l",
       declarations: [{ ordem: 1, tipo_componente: "ingrediente_ativo", microrganismo_id: null, componente_nome: "Fornecido", quantidade: 50,
         unidade: "g/L", base: "por_volume_produto", natureza: "concentracao_declarada" }] });
     const view = app(ProdutosTab);
@@ -226,6 +237,18 @@ describe("salvamento único de identificação/composição", () => {
     expect(JSON.stringify(db.rows[0].declarations)).toBe(declarations);
     expect(db.calls).not.toContain("tenant_catalog_formulacoes_replace");
     expect(db.writes[0].p_expected_updated_at).toBe("2026-10-15T00:00:00Z");
+    expect(db.writes[0].p_payload).toMatchObject({ unidade_conteudo: "l" });
+  });
+  it.each(["absent", "denied"] as const)("capability de unidade %s mantém edição fechada com zero dispatch", async mode => {
+    db.unitCapability = mode;
+    await openDeclared();
+    fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Não deve sair" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+    await waitFor(() => expect(toastFns.error).toHaveBeenCalledWith(expect.stringMatching(/Unidade do produto não confirmada/)));
+    expect(db.writes).toHaveLength(0);
+    expect(db.calls).not.toContain("tenant_product_save");
+    expect(db.calls).not.toContain("solid_pack_offers_admin_v1");
+    expect(db.rows[0].nome).toBe("Produto declarado");
   });
   it("mudança de composição declarativa incompatível recusa tudo antes do produto, sem salvar parcialmente", async () => {
     await openDeclared();
