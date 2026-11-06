@@ -68,23 +68,32 @@ function sortVolumes(list: CatalogoVolume[]): CatalogoVolume[] {
   });
 }
 
-export function useCatalogoVolumes() {
+export async function fetchCatalogoVolumesDirect(signal: AbortSignal) {
+  const { data, error } = await supabase
+    .from("catalogo_volumes" as any)
+    .select("*")
+    .eq("ativo", true).abortSignal(signal);
+  if (error) throw error;
+  const rows = ((data ?? []) as any[]).map((r) => ({
+    ...r,
+    volume_ml: Number(r.volume_ml),
+    preco_brl: Number(r.preco_brl),
+    ordem: Number(r.ordem ?? 0),
+  })) as CatalogoVolume[];
+  return indexVolumes(rows);
+}
+
+export function useCatalogoVolumes(enabled = true) {
   return useScopedPortalQuery({
     queryKey: ["catalogo-volumes"],
     staleTime: 60_000,
-    queryFn: async signal => {
-      const { data, error } = await supabase
-        .from("catalogo_volumes" as any)
-        .select("*")
-        .eq("ativo", true).abortSignal(signal);
-      if (error) throw error;
-      const rows = ((data ?? []) as any[]).map((r) => ({
-        ...r,
-        volume_ml: Number(r.volume_ml),
-        preco_brl: Number(r.preco_brl),
-        ordem: Number(r.ordem ?? 0),
-      })) as CatalogoVolume[];
+    enabled,
+    queryFn: fetchCatalogoVolumesDirect,
+  });
+}
 
+export function indexVolumes(rows: CatalogoVolume[]) {
+  {
       const porProdutoId = new Map<string, CatalogoVolume[]>();
       const porMicrorganismoId = new Map<string, CatalogoVolume[]>();
       rows.forEach((v) => {
@@ -103,6 +112,5 @@ export function useCatalogoVolumes() {
       porMicrorganismoId.forEach((arr, k) => porMicrorganismoId.set(k, sortVolumes(arr)));
 
       return { porProdutoId, porMicrorganismoId, rows };
-    },
-  });
+  }
 }
