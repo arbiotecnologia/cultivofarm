@@ -15,7 +15,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Trash2, Sparkles, Wand2 } from "lucide-react";
-import { useCatalogoVolumes, CatalogoVolume, formatVolumeLabel } from "@/hooks/useCatalogoVolumes";
+import { CatalogoVolume, formatVolumeLabel } from "@/hooks/useCatalogoVolumes";
+import { supplierLabel } from "@/lib/comercial/supplierName";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import { brl } from "@/lib/financial/format";
 import { round2, roundVolume, labelUnidadeCurta } from "@/lib/catalogo/formatUnidades";
@@ -47,6 +48,11 @@ interface Props {
   descontoPct?: number | null;
   /** Recebe uma lista — um item por linha de vasilhame (combinação possível). */
   onConfirm: (payloads: AddToCartPayload[]) => void;
+  /** Volumes do leitor escopado do comprador (nunca leitura global). */
+  volumesCat?: { porProdutoId: Map<string, CatalogoVolume[]>; porMicrorganismoId: Map<string, CatalogoVolume[]> } | null;
+  volumesStatus?: "pending" | "error" | "success";
+  /** Nome do vendedor resolvido no servidor; ausente → rótulo neutro. */
+  supplierName?: string | null;
 }
 
 export function AddToCartDialog({
@@ -59,8 +65,10 @@ export function AddToCartDialog({
   valorLitroCheio,
   descontoPct,
   onConfirm,
+  volumesCat,
+  volumesStatus = "success",
+  supplierName,
 }: Props) {
-  const { data: volumesCat } = useCatalogoVolumes();
   const volumesDisponiveis = useMemo<CatalogoVolume[]>(() => {
     if (!row) return [];
     const map = row.tipo === "produto" ? volumesCat?.porProdutoId : volumesCat?.porMicrorganismoId;
@@ -284,10 +292,18 @@ export function AddToCartDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {volumesDisponiveis.length === 0 ? (
+        {volumesStatus === "pending" ? (
+          <p role="status" className="text-xs text-muted-foreground">Carregando apresentações…</p>
+        ) : volumesStatus === "error" ? (
+          <Alert role="alert">
+            <AlertDescription className="text-xs">
+              Não foi possível carregar as apresentações deste item. Tente novamente em instantes.
+            </AlertDescription>
+          </Alert>
+        ) : volumesDisponiveis.length === 0 ? (
           <Alert className="border-amber-300 bg-amber-50">
             <AlertDescription className="text-xs text-amber-900">
-              Nenhum volume comercial cadastrado para este item. Solicite à Cultivo Farm.
+              Nenhum volume comercial cadastrado para este item. Solicite à {supplierLabel(supplierName)}.
             </AlertDescription>
           </Alert>
         ) : (

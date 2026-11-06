@@ -37,7 +37,7 @@ import { TotaisCarrinho } from "@/components/comercial/TotaisCarrinho";
 import {
   minDeliveryDateISO,
   isDeliveryDateValid,
-  MIN_DELIVERY_HINT,
+  minDeliveryHint,
   MIN_DELIVERY_ERROR,
 } from "@/lib/b2bDeliveryDate";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -55,6 +55,8 @@ import {
 import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
 import { round2 } from "@/lib/catalogo/formatUnidades";
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
+import { usePartnerCatalogVolumes } from "@/hooks/usePartnerCatalogVolumes";
+import { supplierLabel } from "@/lib/comercial/supplierName";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useCloseOrderAttempt } from "@/hooks/useCloseOrderAttempt";
 import { useOrderJournal } from '@/hooks/useOrderJournal';
@@ -130,7 +132,12 @@ export default function NovoPedido() {
   const catalog: CatalogItem[] = isSimulationMode
     ? (catalogTecnico.data ?? [])
     : (catalogGestor.data ?? []);
-  const createOrder = useCreatePartnerOrder();
+  // Comprador: leitor escopado pelo guard canônico do vendedor; técnico/simulação mantém a leitura existente.
+  const legacyVolumes = useCatalogoVolumes(isSimulationMode);
+  const partnerVolumes = usePartnerCatalogVolumes(isSimulationMode ? null : partner?.id);
+  const volumes = isSimulationMode ? legacyVolumes : partnerVolumes;
+  const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? null;
+  const createOrder = useCreatePartnerOrder(supplierName);
   const createSimulation = useCreatePartnerSimulation();
   const navigate = useNavigate();
 
@@ -147,7 +154,6 @@ export default function NovoPedido() {
   const [requestedDate, setRequestedDate] = useState<string>("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [addRow, setAddRow] = useState<CatalogoUnificadoRow | null>(null);
-  const volumes = useCatalogoVolumes();
   const renewalApplied = useRef(false);
   // Natural renewal never restores prices/hash/plan/text or a submit receipt.
   // Rebuild only choices present in the freshly authorized catalogue/volumes.
@@ -793,7 +799,7 @@ export default function NovoPedido() {
                       )}
                       {semPreco && (
                         <p className="text-[11px] text-destructive">
-                          Item sem preço configurado. Remova do carrinho ou solicite preço à Cultivo Farm.
+                          Item sem preço configurado. Remova do carrinho ou solicite preço à {supplierLabel(supplierName)}.
                         </p>
                       )}
 
@@ -814,7 +820,7 @@ export default function NovoPedido() {
                   min={minDeliveryDateISO()}
                 />
                 <p className="text-[10px] text-muted-foreground italic">
-                  {MIN_DELIVERY_HINT}
+                  {minDeliveryHint(supplierName)}
                 </p>
                 {requestedDate && !isDeliveryDateValid(requestedDate) && (
                   <Alert variant="destructive" className="py-2">
@@ -903,6 +909,9 @@ export default function NovoPedido() {
 
       {/* Add to cart dialog */}
       <AddToCartDialog
+        volumesCat={volumes.data ?? null}
+        volumesStatus={volumes.isError ? "error" : volumes.isSuccess ? "success" : "pending"}
+        supplierName={supplierName}
         open={!!addRow}
         onOpenChange={(v) => !v && setAddRow(null)}
         row={addRow}

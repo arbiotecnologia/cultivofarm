@@ -1,3 +1,4 @@
+import { supplierLabel } from "@/lib/comercial/supplierName";
 /**
  * Padrão único do sistema para prazo mínimo de previsão/entrega de pedidos B2B.
  *
@@ -24,8 +25,10 @@ export function isDeliveryDateValid(iso: string | null | undefined): boolean {
   return iso >= minDeliveryDateISO();
 }
 
-export const MIN_DELIVERY_HINT =
-  "Prazo mínimo de 8 dias. A data efetiva é confirmada pelo comercial Cultivo Farm após análise do pedido.";
+export function minDeliveryHint(supplierName?: string | null): string {
+  return `Prazo mínimo de 8 dias. A data efetiva é confirmada pelo comercial da ${supplierLabel(supplierName)} após análise do pedido.`;
+}
+export const MIN_DELIVERY_HINT = minDeliveryHint(null);
 
 export const MIN_DELIVERY_ERROR =
   "Data inválida: escolha uma data com no mínimo 8 dias a partir de hoje.";

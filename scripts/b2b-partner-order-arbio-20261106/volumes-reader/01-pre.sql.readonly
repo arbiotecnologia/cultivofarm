@@ -1,0 +1,7 @@
+-- READ ONLY. Confirmar antes que o projeto conectado é swzpzcwiasxmjutrmvkm.
+SELECT
+  md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) = 'bd985484b69c8fa6e63a920eff518369' AS reader_pin_ok,
+  md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) = '6b56cfb144ebc8dd947473e90e2d7768' AS catalog1_pin_ok,
+  md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid,boolean)'::regprocedure)) = '1391adc2133b922e2dcea4b1d3e26820' AS catalog2_pin_ok,
+  to_regprocedure('public.get_partner_catalog_volumes_secure(uuid)') IS NULL AS target_absent,
+  (SELECT count(*) FROM pg_policy WHERE polrelid = 'public.catalogo_volumes'::regclass) AS volume_policy_count; -- captura 06/11: 11

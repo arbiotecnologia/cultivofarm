@@ -79,6 +79,8 @@ beforeEach(() => {
     if (name === "get_my_commercial_partner_projection") return response({ ...context, id: state.partner, ativo: true,
       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: true, sheets_read: true },
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: true } });
+    // Pré-instalação: leitor escopado ausente (PGRST202) mantém a leitura de volumes anterior.
+    if (name === "get_partner_catalog_volumes_secure") { const p = Promise.resolve({ data: null, error: { code: "PGRST202", message: "absent" } }); return Object.assign(p, { abortSignal: () => p }); }
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
       produto_nome: "Produto local", produto_codigo: "LOCAL", familia_catalogo: "biologico",
