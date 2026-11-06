@@ -552,6 +552,7 @@ it("unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobr
   };
   const close = async () => { fireEvent.click(screen.getByRole("button", { name: "Close" })); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull()); };
   await edit("Produto A"); await unitLoaded("kg"); await close();
+  await edit("Produto A"); await unitLoaded("kg"); await close(); // mesmo produto, mesma chave em cache
   await edit("Produto B"); await unitLoaded("g"); await close();
   const readsBefore = state.unitCalls.filter(n => n === "solid_pack_offers_admin_v1").length;
   await edit("Produto A"); await unitLoaded("kg"); // cache estável: hidrata sem depender de nova leitura
