@@ -1,3 +1,8 @@
+## 06/11 — Confirmação controlada de publicação de atribuição
+- [ ] Reproduzir o confirm nativo antes do fence e substituir por diálogo controlado, sem SQL/publicação.
+- [ ] Preservar contexto da abertura, fences antes/depois, duplo clique, erros persistentes e invalidação atual.
+- [ ] Cobrir desktop/mobile, cancelamento, lease/renovação, revogação/troca de alvo, typecheck/build; prova real fica com o auditor.
+
 ## 03/11 — Unificação Catálogo → Produtos (local, sem SQL/publicação)
 - [x] Revisão9a88256: ACK/rascunho visíveis, intenção/handlers congelados até replay exato; falha definitiva e ACK perdido sem duplicação, alteração negada; 68/1067 e5/5 PASS. Patch final consolidado, RBAC restrito, sem SQL/publicação; provas reais/isolado pendentes do auditor.
 - [x] Consolidar RBAC independente: Financeiro restrito a Produtos/link fiscal com gates existentes, Gestor CRUD próprio; 68/1064 Vitest e5/5 separação PASS, patch atualizado sem DDL/publicação. Associação fiscal real/espelho/JWT dependem do auditor.
