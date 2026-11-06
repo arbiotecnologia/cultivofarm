@@ -64,6 +64,10 @@ def S(q=1):
     return {"item_id": SP.SOL, "item_tipo": "produto", "packaging_id": SP.PK25, "quantidade": q}
 
 
+def SF(q=1):
+    return {"item_id": SP.FSOL, "item_tipo": "produto", "packaging_id": SP.PKF, "quantidade": q}
+
+
 def js(x):
     return json.dumps(x).replace("'", "''")
 
@@ -239,7 +243,7 @@ def main():
         # ---------- sem ativação: contrato atual para todos ----------
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-0")
         check("sem ativação: comprador segue contrato atual (nenhum bloqueio global)", r.returncode == 0, r.stderr[-200:])
-        r = legacy(UB2, PLD, [L(1)], "TESTE-LEG-F0", partner=PF)
+        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F0", partner=PF)
         check("sem ativação: outro tenant segue contrato atual", r.returncode == 0, (r.stderr or "").strip().splitlines()[:1])
 
         # ---------- configuração ----------
@@ -416,7 +420,7 @@ def main():
         check("ator interno: barreira LIVE de origem interna preservada nos dois caminhos (sem bypass por meio)", r.returncode != 0 and j is None
               and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in e_leg and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in (e or "")
               and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key IN ('TESTE-LEG-INT','TESTE-INT-1')").stdout.strip() == "0", (e_leg, e))
-        r = legacy(UB2, PLD, [L(1)], "TESTE-LEG-F1", partner=PF)
+        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F1", partner=PF)
         check("piloto de A não afeta comprador de F (contrato atual)", r.returncode == 0, r.stderr[-200:])
         r = psql(session(UB, f"BEGIN; SELECT {create_sql(P, PLD, [L(1)], hc, 'TESTE-DEF', cash, 2)}; DELETE FROM public.partner_order_payment_method_snapshots; COMMIT;"), check=False)
         check("gatilho DEFERRED: snapshot removido na mesma transação -> recusado (imutável/obrigatório)", r.returncode != 0)
@@ -440,7 +444,7 @@ def main():
         denied("após rollback: opções negadas", call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"), "permission denied")
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-2")
         check("após rollback: empresa ativada continua bloqueada (nunca reabre fallback)", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr)
-        r = legacy(UB2, PLD, [L(1)], "TESTE-LEG-F2", partner=PF)
+        r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F2", partner=PF)
         check("após rollback: empresa não ativada segue contrato atual", r.returncode == 0, r.stderr[-200:])
         check("após rollback: snapshots/histórico preservados", int(psql("SELECT count(*) FROM public.partner_order_payment_method_snapshots").stdout.strip()) >= 4
               and int(psql("SELECT count(*) FROM public.b2b_payment_method_config_versions").stdout.strip()) >= 8)
