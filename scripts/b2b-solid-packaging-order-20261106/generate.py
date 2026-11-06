@@ -171,7 +171,7 @@ SET search_path TO ''
 AS $function$
 -- Trava (FOR SHARE, ordem determinística por id) embalagens e preços vigentes citados no carrinho, para que
 -- arquivamento/troca de preço concorrente espere o pedido ou seja vista por ele (sem mudança de estado aqui).
-DECLARE v_ids uuid[];
+DECLARE v_ids uuid[]; v_products uuid[];
 BEGIN
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN RETURN; END IF;
   SELECT array_agg(DISTINCT (l->>'packaging_id')::uuid ORDER BY (l->>'packaging_id')::uuid) INTO v_ids
@@ -179,6 +179,15 @@ BEGIN
    WHERE jsonb_typeof(l) = 'object' AND jsonb_typeof(l->'packaging_id') = 'string'
      AND (l->>'packaging_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
   IF v_ids IS NULL THEN RETURN; END IF;
+  -- Ordem fixa entre tabelas (produto -> unidade -> volume -> embalagem -> preço) e por id dentro de cada uma: alteração concorrente
+  -- de b2b_enabled/ativo do produto, da unidade de venda, do volume/apresentação ou do preço espera este pedido terminar.
+  SELECT array_agg(DISTINCT (l->>'item_id')::uuid ORDER BY (l->>'item_id')::uuid) INTO v_products
+    FROM jsonb_array_elements(p_items) l
+   WHERE jsonb_typeof(l) = 'object' AND jsonb_typeof(l->'packaging_id') = 'string' AND jsonb_typeof(l->'item_id') = 'string'
+     AND (l->>'item_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+  PERFORM 1 FROM public.produtos p WHERE p.id = ANY(v_products) ORDER BY p.id FOR SHARE;
+  PERFORM 1 FROM public.product_sale_units su WHERE su.product_id = ANY(v_products) ORDER BY su.product_id FOR SHARE;
+  PERFORM 1 FROM public.catalogo_volumes cv WHERE cv.id = ANY(v_ids) ORDER BY cv.id FOR SHARE;
   PERFORM 1 FROM public.product_packagings pp WHERE pp.id = ANY(v_ids) ORDER BY pp.id FOR SHARE;
   PERFORM 1 FROM public.catalogo_precos_embalagem c WHERE c.packaging_id = ANY(v_ids) AND c.ativo IS TRUE ORDER BY c.id FOR SHARE;
 END $function$;

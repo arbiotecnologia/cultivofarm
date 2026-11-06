@@ -499,12 +499,36 @@ def main():
         th = threading.Thread(target=lambda: holder.communicate(holder_sql)); th.start(); time.sleep(1.2)
         r1 = psql(f"SET lock_timeout='400ms'; UPDATE public.catalogo_precos_embalagem SET valid_until = current_date WHERE id = '{PR40}'", check=False)
         r2 = psql(f"SET lock_timeout='400ms'; UPDATE public.product_packagings SET descricao = 'x' WHERE id = '{PK40}'", check=False)
+        r4 = psql(f"SET lock_timeout='400ms'; UPDATE public.produtos SET b2b_enabled = false WHERE id = '{SOL}'", check=False)
+        r5 = psql(f"SET lock_timeout='400ms'; UPDATE public.product_sale_units SET version = version + 1 WHERE product_id = '{SOL}'", check=False)
+        r6 = psql(f"SET lock_timeout='400ms'; UPDATE public.catalogo_volumes SET ativo = false WHERE id = '{PK40}'", check=False)
         r3 = j(create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-CC"))   # mesma chave em paralelo: espera e devolve replay
         th.join()
         n_cc = psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key = 'TESTE-PED-20261106-CC'").stdout.strip()
         chk("concurrency.price_row_locked", r1.returncode != 0 and "lock timeout" in r1.stderr, err(r1))
         chk("concurrency.packaging_row_locked", r2.returncode != 0 and "lock timeout" in r2.stderr, err(r2))
         chk("concurrency.same_key_single_order", r3 is not None and n_cc == "1", (r3, n_cc))
+        for nm, rr in (("product_b2b_disable", r4), ("sale_unit_change", r5), ("volume_deactivate", r6)):
+            chk(f"concurrency.{nm}_waits_for_order", rr.returncode != 0 and "lock timeout" in rr.stderr, err(rr))
+        # Depois do commit: a mesma alteração ocorre e o PRÓXIMO pedido vê o estado final (sem pedido incoerente).
+        psql(f"UPDATE public.produtos SET b2b_enabled = false WHERE id = '{SOL}'")
+        r = create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-B2BOFF")
+        chk("concurrency.after_b2b_disable_rejected", r.returncode != 0, err(r))
+        psql(f"UPDATE public.produtos SET b2b_enabled = true WHERE id = '{SOL}'")
+        # Corrida real em 2 conexões na direção oposta: alteração commitada ANTES do pedido terminar de travar => pedido recusado, nunca parcial.
+        blocker = subprocess.Popen(su() + ["psql", "-X", "-q", "-t", "-A", "-h", SOCK[0], "-p", PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1"],
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        th2 = threading.Thread(target=lambda: blocker.communicate(
+            f"BEGIN; UPDATE public.product_sale_units SET unidade_conteudo = 'g' WHERE product_id = '{SOL}'; SELECT pg_sleep(2); COMMIT;\n"))
+        th2.start(); time.sleep(0.8)
+        hb = hc
+        rb = create(UB, PLD, items(S(PK40, 1)), hb, "TESTE-PED-20261106-UNITCHG")   # espera o commit da troca de unidade e revalida
+        th2.join()
+        nb = psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key = 'TESTE-PED-20261106-UNITCHG'").stdout.strip()
+        chk("concurrency.unit_change_committed_first_not_mixed", (rb.returncode != 0 and nb == "0") or
+            (rb.returncode == 0 and psql(f"SELECT packaging_unidade_conteudo_snapshot FROM public.partner_order_items i JOIN public.partner_order_idempotency x ON x.order_id = i.order_id WHERE x.idempotency_key = 'TESTE-PED-20261106-UNITCHG'").stdout.strip() == "g"),
+            (err(rb), nb))
+        psql(f"UPDATE public.product_sale_units SET unidade_conteudo = 'kg' WHERE product_id = '{SOL}'")
         psql(f"BEGIN; UPDATE public.product_packagings SET ativo = false WHERE id = '{PK40}'; UPDATE public.catalogo_volumes SET ativo = false WHERE id = '{PK40}'; COMMIT;")
         r = create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-ARQ"); chk("archived_after_simulation_rejected", "B2B_PACKAGING_INACTIVE" in (err(r) or ""), err(r))
 

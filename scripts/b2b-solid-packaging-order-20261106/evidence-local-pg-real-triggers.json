@@ -110,7 +110,7 @@
     },
     "install.rerun_refused": {
       "pass": true,
-      "detail": "psql:/tmp/b2bpack-ynk1oy6q/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+      "detail": "psql:/tmp/b2bpack-tkv1tpgi/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
     },
     "reader.buyer_exact_offers": {
       "pass": true,
@@ -254,7 +254,7 @@
     "create.solid_ok": {
       "pass": true,
       "detail": {
-        "id": "5b6c0c03-6cff-4f9f-8261-e0ea80b0a973",
+        "id": "19af3c95-03e5-43ce-b467-974ccb753725",
         "total": 324.0,
         "numero": "PB-000001",
         "status": "em_analise_comercial",
@@ -267,7 +267,7 @@
         "quote_required": false,
         "discount_amount": 36.0,
         "idempotency_key": "TESTE-PED-20261106-K1",
-        "payment_terms_id": "be62bcc2-abe0-4f57-8c2b-9d7396117be2",
+        "payment_terms_id": "83323fce-3373-443f-a2df-cd43d19d076c",
         "credit_reason_code": "NO_LIMIT",
         "credit_block_reason": null,
         "financial_approval_status": "not_required",
@@ -476,7 +476,7 @@
       "pass": true,
       "detail": [
         {
-          "id": "07454a67-7a8d-4768-a643-855b1af6326a",
+          "id": "244dbc34-41fb-495b-8147-6848cdd46b12",
           "total": 243.0,
           "numero": "PB-000005",
           "status": "em_analise_comercial",
@@ -489,7 +489,7 @@
           "quote_required": false,
           "discount_amount": 27.0,
           "idempotency_key": "TESTE-PED-20261106-CC",
-          "payment_terms_id": "adf19377-d253-4109-bd66-2b5145d98cda",
+          "payment_terms_id": "ff010813-76b2-49ae-ba76-6d3bf9a91fc1",
           "credit_reason_code": "NO_LIMIT",
           "credit_block_reason": null,
           "financial_approval_status": "not_required",
@@ -498,6 +498,28 @@
           "requires_financial_approval": false
         },
         "1"
+      ]
+    },
+    "concurrency.product_b2b_disable_waits_for_order": {
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
+    },
+    "concurrency.sale_unit_change_waits_for_order": {
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
+    },
+    "concurrency.volume_deactivate_waits_for_order": {
+      "pass": false
+    },
+    "concurrency.after_b2b_disable_rejected": {
+      "pass": true,
+      "detail": "ERROR:  product_unavailable"
+    },
+    "concurrency.unit_change_committed_first_not_mixed": {
+      "pass": true,
+      "detail": [
+        "ERROR:  B2B_PACKAGING_NOT_PUBLISHED",
+        "0"
       ]
     },
     "archived_after_simulation_rejected": {
@@ -531,7 +553,7 @@
       "detail": "ERROR:  B2B_PACKAGING_SNAPSHOT_IMMUTABLE"
     }
   },
-  "result": "PASS",
-  "passed": 95,
-  "total": 95
+  "result": "FAIL",
+  "passed": 99,
+  "total": 100
 }
