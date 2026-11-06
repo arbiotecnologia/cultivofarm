@@ -309,6 +309,7 @@ def main():
     ok = True; checks = {}
 
     def chk(name, cond, detail=None):
+        if not cond and os.environ.get("B2BPACK_DEBUG"): print("DEBUG", name, detail)
         nonlocal ok
         checks[name] = {"pass": bool(cond), **({"detail": detail} if detail is not None else {})}; ok &= bool(cond)
     try:
