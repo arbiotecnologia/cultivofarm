@@ -1,3 +1,4 @@
+- Pausado até o auditor escolher entre este pacote e B2B_PAYMENT_CONDITION_V1 (RECONCILIATION-PRIOR-CANDIDATE.md); nunca manter os dois contratos — evita duplicação.
 - Preparação apenas: nunca aplicar 02/04 hospedado, publicar, cadastrar meios/configurações remotas ou tocar PB-001036/teste4; o auditor revisa e instala — evita mudança financeira não revisada.
 - 01–04 são gerados por generate.py com pins LIVE (create c34e7404, simulate 37d4f45e, leitor bd985484, h15, leitor de condição efb3d18c e colunas); nunca editar à mão nem alterar corpos LIVE — wrappers reusam o contrato existente.
 - Vendedor sempre pelo b2b_partner_catalog_reader / h15 do ator, nunca do payload; planos globais não ganham colunas nem escritores — evita configuração vazando entre empresas.
