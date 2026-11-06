@@ -144,6 +144,15 @@ async function openWithCart(qty = 2) {
   return m;
 }
 const pick = (name: string) => fireEvent.click(screen.getByText(name).closest('[role="button"]')!);
+// Troca de época pode fechar/remontar o diálogo; se fechou, reabre — nunca reaproveita o resultado antigo.
+async function reopenIfClosed(planName: string) {
+  await new Promise((r) => setTimeout(r, 20));
+  if (!screen.queryByText(planName)) {
+    fireEvent.click((await screen.findAllByRole("button", { name: /Continuar para condição de pagamento/ }))[0]);
+    await screen.findByText(planName);
+    pick(planName);
+  }
+}
 const settle = async (p: Pending, v: unknown) => { await act(async () => { p.resolve(v); await Promise.resolve(); }); };
 
 it("A→B→A: resposta atrasada do primeiro A não é adotada; só a do A atual", async () => {
@@ -188,6 +197,8 @@ it("revogação/troca de época na mesma identidade descarta resultado e respost
   const before = sims.length;
   state.epoch += 1; m.update();
   expect(has(brl(77.77))).toBe(false);                               // nenhum render com valor da época anterior
+  await reopenIfClosed("Plano A");
+  expect(has(brl(77.77))).toBe(false);
   expect(sendBtn()).toBeDisabled();
   await waitFor(() => expect(sims.length).toBeGreaterThan(before));
   const inflightOld = sims[before - 1];
@@ -200,7 +211,8 @@ it("referência à vista atrasada de contexto anterior não aparece como diferen
   pick("Plano A"); await waitFor(() => expect(sims.some((s) => s.plan === CASH) && sims.some((s) => s.plan === PA)).toBe(true));
   const oldCash = last(CASH);
   state.epoch += 1; m.update();
-  await waitFor(() => expect(sims.filter((s) => s.plan === CASH).length).toBe(2));
+  await reopenIfClosed("Plano A");
+  await waitFor(() => expect(sims.filter((s) => s.plan === CASH).length).toBeGreaterThanOrEqual(2));
   await settle(oldCash, reply(CASH, 10));                           // diferença velha seria +R$ 90,00
   await settle(last(PA), reply(PA, 100));
   await waitFor(() => expect(has(brl(100))).toBe(true));
