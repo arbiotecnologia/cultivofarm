@@ -90,7 +90,7 @@ CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(u uuid) RETURN
  $$ SELECT e.feature_key FROM platform_private.seam_entitlements e WHERE e.user_id = u $$;
 """
 SEAMS_DECLARED = [
-    "tabelas de 2º nível com colunas reais, SEM seus próprios gatilhos/constraints/FKs: commercial_audit_log, notificacoes_operacionais, partner_engagement_metrics, partner_financial_settings, partner_order_audit_logs, production_order_link, production_planning, production_timeline_events",
+    "tabelas de 2º nível com colunas reais, chaves/únicos/CHECKs reais, SEM seus próprios gatilhos e FKs: commercial_audit_log, notificacoes_operacionais, partner_engagement_metrics, partner_financial_settings, partner_order_audit_logs, production_order_link, production_planning, production_timeline_events",
     "company_fiscal_settings/clientes mínimas (colunas usadas pelos guards reais)",
     "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
     "platform_private.platform_actor_access_ready = perfil ativo (sem lease/sessão real)",
@@ -108,7 +108,24 @@ def dep_tables_sql() -> str:
         out.append(f"DROP TABLE IF EXISTS public.{t} CASCADE;")
         out.append(f"CREATE TABLE public.{t} (\n" + ",\n".join(
             f"  {c['col']} {c['typ']}" + (f" DEFAULT {c['dflt']}" if c['dflt'] is not None else "") + (" NOT NULL" if c['nn'] else "") for c in cs) + "\n);")
+    out += DEP_KEYS
     return "\n".join(out) + "\n"
+
+
+# Chaves/índices únicos e CHECKs reais das tabelas de 2º nível (ON CONFLICT dos corpos reais depende deles).
+DEP_KEYS = [
+    "ALTER TABLE platform_private.authz_tickets ADD CONSTRAINT authz_tickets_pkey PRIMARY KEY (txid, scope, target);",
+    "ALTER TABLE public.commercial_audit_log ADD PRIMARY KEY (id);", "ALTER TABLE public.notificacoes_operacionais ADD PRIMARY KEY (id);",
+    "CREATE UNIQUE INDEX ux_notif_op_idempotency ON public.notificacoes_operacionais USING btree (idempotency_key) WHERE (idempotency_key IS NOT NULL);",
+    "ALTER TABLE public.partner_engagement_metrics ADD PRIMARY KEY (partner_id);",
+    "ALTER TABLE public.partner_financial_settings ADD PRIMARY KEY (id), ADD UNIQUE (partner_id), "
+    "ADD CHECK ((billing_trigger = ANY (ARRAY['na_aprovacao'::text, 'na_producao_finalizada'::text, 'na_entrega'::text, 'manual'::text]))), "
+    "ADD CHECK ((payment_terms_days >= 0)), ADD CHECK ((credit_limit_action = ANY (ARRAY['block'::text, 'approval_required'::text]))), ADD CHECK ((overdue_tolerance_days >= 0));",
+    "ALTER TABLE public.partner_order_audit_logs ADD PRIMARY KEY (id);",
+    "ALTER TABLE public.production_order_link ADD PRIMARY KEY (id), ADD UNIQUE (partner_order_item_id);",
+    "ALTER TABLE public.production_planning ADD PRIMARY KEY (id), ADD UNIQUE (partner_order_id);",
+    "ALTER TABLE public.production_timeline_events ADD PRIMARY KEY (id);",
+]
 
 
 def real_triggers_sql() -> str:
