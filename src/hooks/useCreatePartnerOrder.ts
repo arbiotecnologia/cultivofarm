@@ -48,6 +48,11 @@ export interface CreateOrderInput {
   first_due_date?: string | null;
   installment_count?: number | null;
   /**
+   * Meio escolhido (B2B_PAYMENT_METHOD_V1): config+versão do vendedor. Quando presente, o envio vai
+   * pelo wrapper com meio; parcelas/vencimento vêm do servidor (estimados, base emissão da NF).
+   */
+  payment_method?: { config_id: string; version: number } | null;
+  /**
    * Assinatura da simulação autoritativa devolvida pelo servidor.
    * Obrigatória: sem ela o backend recusa o pedido com `cart_hash_required`.
    */
@@ -134,7 +139,20 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
 
       let response: { data: unknown; error: { message?: string; code?: string } | null };
       try {
-        response = await supabase.rpc(
+        response = input.payment_method ? await supabase.rpc(
+        "create_partner_order_with_method_secure" as any,
+        {
+          p_partner_id: input.partner_id,
+          p_observacoes: input.observacoes ?? null,
+          p_items: payload,
+          p_requested_delivery_date: input.requested_delivery_date ?? null,
+          p_payment_plan_id: input.payment_plan_id ?? null,
+          p_expected_cart_hash: input.expected_cart_hash,
+          p_idempotency_key: dispatchKey,
+          p_method_config_id: input.payment_method.config_id,
+          p_method_config_version: input.payment_method.version,
+        },
+      ) as typeof response : await supabase.rpc(
         "create_partner_order_secure" as any,
         {
           p_partner_id: input.partner_id,
