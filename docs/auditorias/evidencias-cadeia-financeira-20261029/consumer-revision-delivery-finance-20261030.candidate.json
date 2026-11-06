@@ -1,0 +1,8 @@
+{
+ "src/hooks/useDeliveryFinanceReconciliation.ts": {
+  "historical_md5": "a8fac0db1d11083375bab059354311c1",
+  "current_md5": "045be9c926880c8434219495bf9f0dfc",
+  "commit": "91609839d8f9d72be3ce8a15f7d2b507ee72b032",
+  "reason": "CANDIDATO (não aprovado): commit 91609839 de 30/10 tornou a reconciliação somente leitura — remove o callback local reject, acrescenta estados indisponivel/carregando/nenhum_titulo e mensagens por estado, e bloqueia reconsulta durante busca. Nenhuma RPC, escrita, dispatch ou leitura nova; mesma consulta escopada. Requer aprovação do revisor antes de ser passado ao teste."
+ }
+}
