@@ -106,10 +106,6 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.get_partner_catalog_secure(p_partner_id) c WHERE c.item_id = v_iid AND c.item_tipo = 'produto') THEN
     RAISE EXCEPTION 'B2B_PACKAGING_NOT_PUBLISHED' USING ERRCODE='42501'; END IF;
 
-  SELECT s.unidade_conteudo INTO v_unit FROM public.product_sale_units s
-   WHERE s.product_id = v_iid AND s.owner_organization_id = v_seller AND s.unidade_conteudo IN ('kg','g','ml','l');
-  IF v_unit IS NULL THEN RAISE EXCEPTION 'B2B_PACKAGING_SALE_UNIT_MISSING' USING ERRCODE='42501'; END IF;
-
   SELECT pp.* INTO k FROM public.product_packagings pp WHERE pp.id = v_pid;
   IF NOT FOUND OR k.product_id IS DISTINCT FROM v_iid OR k.owner_organization_id IS DISTINCT FROM v_seller THEN
     RAISE EXCEPTION 'B2B_PACKAGING_FOREIGN' USING ERRCODE='42501'; END IF;
@@ -118,6 +114,9 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.catalogo_volumes cv WHERE cv.id = k.id AND cv.medida = 'embalagem' AND cv.ativo IS TRUE
                    AND cv.produto_id = v_iid AND cv.owner_organization_id = v_seller) THEN
     RAISE EXCEPTION 'B2B_PACKAGING_NOT_PUBLISHED' USING ERRCODE='42501'; END IF;
+  SELECT s.unidade_conteudo INTO v_unit FROM public.product_sale_units s
+   WHERE s.product_id = v_iid AND s.owner_organization_id = v_seller AND s.unidade_conteudo IN ('kg','g','ml','l');
+  IF v_unit IS NULL THEN RAISE EXCEPTION 'B2B_PACKAGING_SALE_UNIT_MISSING' USING ERRCODE='42501'; END IF;
 
   SELECT count(*), min(c.id::text)::uuid, min(c.preco_brl) INTO v_n, v_price_id, v_base
     FROM public.catalogo_precos_embalagem c

@@ -433,7 +433,7 @@ def main():
         it_id = psql(f"SELECT id FROM public.partner_order_items WHERE order_id = '{cq['id']}'").stdout.strip()
         r = as_user(UADM, f"""SELECT public.respond_b2b_order_quote_secure('{cq['id']}','[{{"item_id":"{it_id}","unit_price":170}}]'::jsonb)::text;""")
         qrow = psql(f"SELECT subtotal||'|'||packaging_id_snapshot||'|'||packaging_price_id_snapshot FROM public.partner_order_items WHERE id = '{it_id}'").stdout.strip()
-        chk("quote.respond_keeps_packaging_snapshot", r.returncode == 0 and qrow == f"340|{PK25}|{PR25}", (err(r), qrow))
+        chk("quote.respond_keeps_packaging_snapshot", r.returncode == 0 and qrow == f"340.00|{PK25}|{PR25}", (err(r), qrow))
         r = as_user(UADMF, f"""SELECT public.respond_b2b_order_quote_secure('{cq['id']}','[{{"item_id":"{it_id}","unit_price":1}}]'::jsonb);""")
         chk("quote.other_tenant_denied", r.returncode != 0, err(r))
 
@@ -465,7 +465,7 @@ def main():
         chk("concurrency.price_row_locked", r1.returncode != 0 and "lock timeout" in r1.stderr, err(r1))
         chk("concurrency.packaging_row_locked", r2.returncode != 0 and "lock timeout" in r2.stderr, err(r2))
         chk("concurrency.same_key_single_order", r3 is not None and n_cc == "1", (r3, n_cc))
-        psql(f"UPDATE public.product_packagings SET ativo = false WHERE id = '{PK40}'; UPDATE public.catalogo_volumes SET ativo = false WHERE id = '{PK40}';")
+        psql(f"BEGIN; UPDATE public.product_packagings SET ativo = false WHERE id = '{PK40}'; UPDATE public.catalogo_volumes SET ativo = false WHERE id = '{PK40}'; COMMIT;")
         r = create(UB, PLD, items(S(PK40, 1)), hc, "TESTE-PED-20261106-ARQ"); chk("archived_after_simulation_rejected", "B2B_PACKAGING_INACTIVE" in (err(r) or ""), err(r))
 
         # ---------- rollback deny-only
