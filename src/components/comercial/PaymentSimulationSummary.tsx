@@ -6,9 +6,11 @@ import type { SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
 interface Props {
   simulation: SimulateResult;
   cashReferenceAmount?: number | null;
+  /** Nome já resolvido pelo chamador: vendedor autorizado (portal B2B) ou tenant ativo (interno). */
+  responsavelNome?: string | null;
 }
 
-export function PaymentSimulationSummary({ simulation, cashReferenceAmount }: Props) {
+export function PaymentSimulationSummary({ simulation, cashReferenceAmount, responsavelNome }: Props) {
   const { amounts, schedule, warnings } = simulation;
   const diffVsCash =
     cashReferenceAmount != null && cashReferenceAmount > 0
@@ -21,7 +23,7 @@ export function PaymentSimulationSummary({ simulation, cashReferenceAmount }: Pr
         <Alert className="py-2">
           <AlertDescription className="text-xs">
             Esta condição comercial é <strong>sob consulta</strong>. O pedido será enviado para
-            cotação e o valor final será definido pela equipe comercial da Cultivo Farm.
+            cotação e o valor final será definido pela equipe comercial da {responsavelNome?.trim() || "empresa fornecedora"}.
           </AlertDescription>
         </Alert>
         {warnings.length > 0 && (
