@@ -97,7 +97,10 @@ SEAMS_DECLARED = [
 def real_triggers_sql() -> str:
     parts = [DEP_SEAMS]
     # platform_private primeiro (funções SQL validam dependências na criação); ordem fixa b2b_internal_origin_valid antes dos que o usam.
-    helpers = sorted((TRIG / "helpers").glob("*.sql"), key=lambda p: (not p.name.startswith("platform_private."), "origin_valid" not in p.name, p.name))
+    order = ["platform_private.b2b_internal_origin_valid", "platform_private.c2_external_origin_contract_valid", "platform_private.has_ticket",
+             "platform_private.h15_actor_organization", "platform_private.c2_accounting_promotion_ok", "platform_private.c2_external_origin_assert"]
+    rank = lambda p: order.index(p.name.split(".live")[0].rsplit(".", 1)[0]) if p.name.split(".live")[0].rsplit(".", 1)[0] in order else 99
+    helpers = sorted((TRIG / "helpers").glob("*.sql"), key=lambda p: (rank(p), p.name))
     for p in helpers:
         parts.append(_body(p))
     for p in sorted(TRIG.glob("*.live-20261106.sql")):
