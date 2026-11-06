@@ -72,12 +72,6 @@ def real_tables_sql() -> str:
 
 # Dependências de segundo nível que NÃO existem no esquema mínimo (costuras declaradas; nunca autorizam por si).
 DEP_SEAMS = r"""
-CREATE TABLE IF NOT EXISTS public.commercial_audit_log(id uuid DEFAULT gen_random_uuid(), entity_type text, entity_id uuid, action text, actor_id uuid,
-  before_data jsonb, after_data jsonb, created_at timestamptz DEFAULT now());
-CREATE TABLE IF NOT EXISTS public.production_order_link(partner_order_id uuid);
-CREATE TABLE IF NOT EXISTS public.production_planning(id uuid DEFAULT gen_random_uuid(), partner_order_id uuid, status text);
-CREATE TABLE IF NOT EXISTS public.production_timeline_events(id uuid DEFAULT gen_random_uuid(), partner_order_id uuid, evento text, descricao text, created_by uuid, created_at timestamptz DEFAULT now());
-CREATE TABLE IF NOT EXISTS public.partner_financial_settings(partner_id uuid, auto_generate_receivable boolean DEFAULT false);
 CREATE TABLE IF NOT EXISTS public.company_fiscal_settings(id uuid DEFAULT gen_random_uuid(), organization_id uuid, is_active boolean DEFAULT true,
   configuration_status text, accounting_validated_at timestamptz, legal_name text, cnpj text, configuration_version integer DEFAULT 1);
 ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
@@ -96,7 +90,8 @@ CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(u uuid) RETURN
  $$ SELECT e.feature_key FROM platform_private.seam_entitlements e WHERE e.user_id = u $$;
 """
 SEAMS_DECLARED = [
-    "tabelas de 2º nível mínimas: commercial_audit_log, production_order_link, production_planning, production_timeline_events, partner_financial_settings, company_fiscal_settings, partner_engagement_metrics",
+    "tabelas de 2º nível com colunas reais, SEM seus próprios gatilhos/constraints/FKs: commercial_audit_log, notificacoes_operacionais, partner_engagement_metrics, partner_financial_settings, partner_order_audit_logs, production_order_link, production_planning, production_timeline_events",
+    "company_fiscal_settings/clientes mínimas (colunas usadas pelos guards reais)",
     "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
     "platform_private.platform_actor_access_ready = perfil ativo (sem lease/sessão real)",
     "platform_private.c2_owner_order_create_allowed = comprador ativo vinculado com papel parceiro_b2b (B1/capacidade C2 assumida aberta; não verificada em produção)",
@@ -105,8 +100,19 @@ SEAMS_DECLARED = [
 ]
 
 
+def dep_tables_sql() -> str:
+    """Tabelas de 2º nível com COLUNAS/TIPOS/DEFAULTS/NOT NULL reais (sem os gatilhos/constraints/FKs delas)."""
+    cols = json.loads((TRIG / "_columns-deps.live-20261106.json").read_text())
+    out = ["DO $$ BEGIN CREATE TYPE public.production_planning_status AS ENUM ('aguardando_planejamento','planejado','em_producao','produzido','entregue','cancelado','replanejar'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;"]
+    for t, cs in cols.items():
+        out.append(f"DROP TABLE IF EXISTS public.{t} CASCADE;")
+        out.append(f"CREATE TABLE public.{t} (\n" + ",\n".join(
+            f"  {c['col']} {c['typ']}" + (f" DEFAULT {c['dflt']}" if c['dflt'] is not None else "") + (" NOT NULL" if c['nn'] else "") for c in cs) + "\n);")
+    return "\n".join(out) + "\n"
+
+
 def real_triggers_sql() -> str:
-    parts = [DEP_SEAMS]
+    parts = [dep_tables_sql(), DEP_SEAMS]
     # platform_private primeiro (funções SQL validam dependências na criação); ordem fixa b2b_internal_origin_valid antes dos que o usam.
     order = ["platform_private.issue_ticket", "platform_private.b2b_internal_origin_valid", "platform_private.c2_external_origin_contract_valid", "platform_private.has_ticket",
              "platform_private.h15_actor_organization", "platform_private.c2_accounting_promotion_ok", "platform_private.c2_external_origin_assert"]
