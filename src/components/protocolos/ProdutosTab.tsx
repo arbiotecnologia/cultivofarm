@@ -273,11 +273,15 @@ export function ProdutosTab() {
 
   const [unit, setUnit] = useState<ProductUnit | "">("");
   const unitTouched = useRef(false);
+  // Geração de hidratação: cada abertura/edição/troca de escopo reaplica a unidade canônica já lida (mesmo em cache)
+  // ao produto atual, sem sobrescrever escolha do usuário.
+  const [unitHydration, setUnitHydration] = useState(0);
+  const resetUnit = () => { setUnit(""); unitTouched.current = false; setUnitHydration(g => g + 1); };
   const unitCapability = useProductUnitCapability(open && editor.canEdit);
   const unitRead = useProductUnitAdmin(form.id, open && editor.canEdit && unitCapability.data === true);
   useEffect(() => {
-    if (unitRead.isSuccess && !unitTouched.current) setUnit(unitRead.data ?? "");
-  }, [unitRead.data, unitRead.isSuccess]);
+    if (open && form.id && unitRead.isSuccess && !unitTouched.current) setUnit(unitRead.data ?? "");
+  }, [unitRead.data, unitRead.isSuccess, unitHydration, form.id, open]);
 
   const fetch = async () => { await Promise.all([productList.refetch(), details.refetch()]); };
   const localGeneration = useRef(0);
@@ -286,7 +290,7 @@ export function ProdutosTab() {
   const profileStatusMap = Object.fromEntries((details.data?.profiles ?? []).map(p => [p.produto_id, p.status_validacao]));
   useEffect(() => {
     localGeneration.current += 1;
-    setUnit(""); unitTouched.current = false;
+    resetUnit();
     // Escopo mudou: descarta rascunho/exportação retidos (nunca reutilizados em outro ator/tenant).
     retainedSave.current = null; retainedForm.current = null;
     setPartialMessage(null);
@@ -456,7 +460,7 @@ export function ProdutosTab() {
   };
 
   const resetForm = () => {
-    setUnit(""); unitTouched.current = false;
+    resetUnit();
     setForm({
       id: "",
       updated_at: "",
@@ -487,7 +491,7 @@ export function ProdutosTab() {
 
   const handleEdit = (p: Produto) => {
     if (retainedSave.current || savingRef.current) return;
-    setUnit(""); unitTouched.current = false;
+    resetUnit();
     let dose = p.valor_dose_brl;
     let litro = p.valor_litro_brl;
     const ha = p.valor_ha_brl;
