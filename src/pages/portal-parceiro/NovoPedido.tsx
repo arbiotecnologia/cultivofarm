@@ -132,7 +132,12 @@ export default function NovoPedido() {
   const catalog: CatalogItem[] = isSimulationMode
     ? (catalogTecnico.data ?? [])
     : (catalogGestor.data ?? []);
-  const createOrder = useCreatePartnerOrder();
+  // Comprador: leitor escopado pelo guard canônico do vendedor; técnico/simulação mantém a leitura existente.
+  const legacyVolumes = useCatalogoVolumes(isSimulationMode);
+  const partnerVolumes = usePartnerCatalogVolumes(isSimulationMode ? null : partner?.id);
+  const volumes = isSimulationMode ? legacyVolumes : partnerVolumes;
+  const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? null;
+  const createOrder = useCreatePartnerOrder(supplierName);
   const createSimulation = useCreatePartnerSimulation();
   const navigate = useNavigate();
 
@@ -149,11 +154,6 @@ export default function NovoPedido() {
   const [requestedDate, setRequestedDate] = useState<string>("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [addRow, setAddRow] = useState<CatalogoUnificadoRow | null>(null);
-  // Comprador: leitor escopado pelo guard canônico do vendedor; técnico/simulação mantém a leitura existente.
-  const legacyVolumes = useCatalogoVolumes(isSimulationMode);
-  const partnerVolumes = usePartnerCatalogVolumes(isSimulationMode ? null : partner?.id);
-  const volumes = isSimulationMode ? legacyVolumes : partnerVolumes;
-  const supplierName = isSimulationMode ? null : partnerVolumes.data?.sellerName ?? null;
   const renewalApplied = useRef(false);
   // Natural renewal never restores prices/hash/plan/text or a submit receipt.
   // Rebuild only choices present in the freshly authorized catalogue/volumes.
