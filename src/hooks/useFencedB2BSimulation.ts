@@ -33,10 +33,13 @@ export interface FencedSimulationArgs {
   method?: { config_id: string; version: number } | null;
 }
 
-export interface EstimatedInstallment { installment_number: number; estimated_due_date: string; amount: number; principal_amount: number; interest_amount: number }
+/**
+ * Resposta com meio: o servidor gera a simulação a partir do mesmo corpo LIVE e devolve UMA verdade monetária —
+ * amounts/final_amount/credit/cart_hash/schedule já incluem o meio (Price quando configurado). Datas são estimadas.
+ */
 export type MethodSimulateResult = SimulateResult & {
   payment_method: { config_id: string; version: number; method_kind: string; payment_method_name: string; due_days: number; installment_count: number };
-  schedule_estimated: true; due_basis: "nf_issue"; estimated_schedule: EstimatedInstallment[]; estimated_total: number | null;
+  schedule_estimated: true; due_basis: "nf_issue"; installment_count: number;
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -47,9 +50,14 @@ function validReply(r: unknown, partnerId: string, planId: string, method?: { co
     typeof x.amounts.final_amount === "number" && Number.isFinite(x.amounts.final_amount);
   if (!base || !method) return base;
   const pm = x.payment_method;
-  return !!pm && pm.config_id === method.config_id && pm.version === method.version && x.schedule_estimated === true &&
-    x.due_basis === "nf_issue" && Array.isArray(x.estimated_schedule) &&
-    x.estimated_schedule.every((s) => !!s && typeof s.amount === "number" && Number.isFinite(s.amount) && typeof s.estimated_due_date === "string" && DATE.test(s.estimated_due_date));
+  if (!pm || pm.config_id !== method.config_id || pm.version !== method.version || x.schedule_estimated !== true || x.due_basis !== "nf_issue") return false;
+  if (x.quote_required) return Array.isArray(x.schedule) && x.schedule.length === 0;
+  const sched = x.schedule as Array<{ amount?: unknown; due_date?: unknown }> | undefined;
+  if (!Array.isArray(sched) || sched.length !== pm.installment_count || x.installment_count !== pm.installment_count) return false;
+  if (!sched.every((s) => !!s && typeof s.amount === "number" && Number.isFinite(s.amount) && typeof s.due_date === "string" && DATE.test(s.due_date))) return false;
+  // Uma verdade: soma das parcelas (centavos) = final_amount = amounts.final_amount.
+  const cents = sched.reduce((acc, s) => acc + Math.round((s.amount as number) * 100), 0);
+  return cents === Math.round(x.amounts!.final_amount * 100) && Math.round(Number(x.final_amount) * 100) === cents;
 }
 
 export function useFencedB2BSimulation(a: FencedSimulationArgs) {

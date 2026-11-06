@@ -23,11 +23,22 @@ export interface PaymentMethodOption {
 
 export interface PaymentMethodChoice { config_id: string; version: number }
 
+/**
+ * mode "required": a empresa vendedora ativou o contrato para este parceiro (piloto ou geral) — o servidor recusa pedido
+ * sem meio. mode "legacy": empresa não ativada; o contrato atual continua valendo no servidor. Pré-instalação (PGRST202
+ * exato) equivale a legacy porque o servidor ainda não tem a exigência; qualquer outro erro falha fechado.
+ */
 export type PaymentMethodOptionsResult =
-  | { status: "ok"; options: PaymentMethodOption[] }
+  | { status: "ok"; mode: "required" | "legacy"; options: PaymentMethodOption[] }
   | { status: "not_installed" };
 
 /** Parser estrito do leitor do comprador. Qualquer divergência = contrato indisponível (nunca lista vazia silenciosa). */
+export function parsePaymentMethodMode(raw: unknown): "required" | "legacy" {
+  const m = (raw as Record<string, unknown> | null)?.mode;
+  if (m !== "required" && m !== "legacy") throw new Error("payment_method_contract_unavailable");
+  return m;
+}
+
 export function parsePaymentMethodOptions(raw: unknown, partnerId: string, planId: string): PaymentMethodOption[] {
   const fail = () => { throw new Error("payment_method_contract_unavailable"); };
   const d = raw as Record<string, unknown> | null;
@@ -40,10 +51,10 @@ export function parsePaymentMethodOptions(raw: unknown, partnerId: string, planI
     const kind = o.method_kind as MethodKind;
     if (typeof o.config_id !== "string" || !UUID.test(o.config_id) || seen.has(o.config_id) || !Number.isInteger(o.version) ||
         (o.version as number) < 1 || !METHOD_KINDS.includes(kind) || typeof o.available !== "boolean") fail();
-    // Promissória/crédito ainda não definidos: nunca selecionáveis, mesmo que o servidor diga o contrário.
-    if (o.available && (kind === "promissoria" || kind === "credito")) fail();
+    // Todos os seis meios são configuráveis pelo vendedor; os limites de parcelas por tipo espelham os CHECKs do servidor.
+    const maxN = kind === "boleto" ? 3 : kind === "promissoria" || kind === "credito" ? 36 : 1;
     if (o.available && (typeof o.payment_method_name !== "string" || !Number.isInteger(o.due_days) || !Number.isInteger(o.installment_count) ||
-        (o.installment_count as number) < 1 || (o.installment_count as number) > 3)) fail();
+        (o.installment_count as number) < 1 || (o.installment_count as number) > maxN)) fail();
     seen.add(o.config_id as string);
     return {
       config_id: o.config_id as string, version: o.version as number, method_kind: kind, available: o.available as boolean,
@@ -70,7 +81,7 @@ export async function fetchPaymentMethodOptions(partnerId: string, planId: strin
     if (isOptionsRpcAbsent(error)) return { status: "not_installed" };
     throw error;
   }
-  return { status: "ok", options: parsePaymentMethodOptions(data, partnerId, planId) };
+  return { status: "ok", mode: parsePaymentMethodMode(data), options: parsePaymentMethodOptions(data, partnerId, planId) };
 }
 
 export function useB2BPaymentMethodOptions(partnerId: string | null | undefined, planId: string | null | undefined, enabled: boolean) {
