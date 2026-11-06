@@ -1,0 +1,9 @@
+{
+  "01-pre.sql.readonly": "7825a3644deea5a61e7763588e6ff4bf",
+  "02-upgrade.sql.review": "80e2b7a595ad0d5337cac200b2fe2328",
+  "03-post.sql.readonly": "b73302521e08527711a9535fa301bc4d",
+  "04-rollback-to-v1.sql.review": "ebe95265a0ca8e69aaf28be3af497780",
+  "helper.installed_v1": "ca57c1616d6804ad124250189b03d6f5",
+  "helper.v2": "cf2403a8cdbebd0813ee037fa50971b9",
+  "motor.installed_unchanged": "6bc0e12a53adbb84426de8e6835dc931"
+}

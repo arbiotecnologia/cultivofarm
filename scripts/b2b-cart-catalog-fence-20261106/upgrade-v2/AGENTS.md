@@ -1,0 +1,3 @@
+- Preparação apenas: nunca aplicar 02/04 hospedado nem publicar; o auditor instala — evita mudança não revisada.
+- Parte do estado INSTALADO (helper ca57c161 + motor 6bc0e12a do 9c99095); troca só o corpo do helper; nunca reenviar o 02 original — ele exige o pré-estado antigo.
+- Rollback volta ao helper instalado (compradores aprovados continuam), nunca à negação nem ao motor antigo; fence/wrappers/funções expostas ficam pinados.

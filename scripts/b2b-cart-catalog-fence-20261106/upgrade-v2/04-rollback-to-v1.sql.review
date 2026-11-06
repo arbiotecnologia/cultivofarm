@@ -1,0 +1,127 @@
+-- 04 ROLLBACK: volta ao helper instalado (ca57c161), mantendo compradores aprovados; não toca motor/fence.
+BEGIN;
+DO $$ BEGIN
+  IF to_regprocedure('platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric)'::regprocedure)) <> 'cf2403a8cdbebd0813ee037fa50971b9' THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric) divergente'; END IF;
+  IF to_regprocedure('platform_private.tenant_catalog_fence(text,uuid[])') IS NULL OR md5(pg_get_functiondef('platform_private.tenant_catalog_fence(text,uuid[])'::regprocedure)) <> '8c6e3eca826410f7e8a504a86ae9381f' THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.tenant_catalog_fence(text,uuid[]) divergente'; END IF;
+  IF to_regprocedure('platform_private.catalog_tenant_actor(text)') IS NULL OR md5(pg_get_functiondef('platform_private.catalog_tenant_actor(text)'::regprocedure)) <> '5e0ce9cc9122f1c21d76e29a13de8b59' THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.catalog_tenant_actor(text) divergente'; END IF;
+  IF to_regprocedure('public.can_view_catalog_internal(uuid)') IS NULL OR md5(pg_get_functiondef('public.can_view_catalog_internal(uuid)'::regprocedure)) <> 'b04164dd8464d16f52cb69e7bcf83de7' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.can_view_catalog_internal(uuid) divergente'; END IF;
+  IF to_regprocedure('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)') IS NULL OR md5(pg_get_functiondef('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)'::regprocedure)) <> 'b201e49e0158bde0140e018282c047fc' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric) divergente'; END IF;
+  IF to_regprocedure('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)') IS NULL OR md5(pg_get_functiondef('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)'::regprocedure)) <> '87418209039589320959c9891e97916c' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date) divergente'; END IF;
+  IF to_regprocedure('platform_private.b2b_partner_catalog_reader(uuid)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) <> 'bd985484b69c8fa6e63a920eff518369' THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.b2b_partner_catalog_reader(uuid) divergente'; END IF;
+  IF to_regprocedure('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)'::regprocedure)) <> '61e545e6138485ba995f989d2011590a' THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date) divergente'; END IF;
+  IF to_regprocedure('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)') IS NULL OR md5(pg_get_functiondef('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)'::regprocedure)) <> '7b7f90ddb519a281b4411c528813d927' THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric) divergente'; END IF;
+  IF to_regprocedure('public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)') IS NULL OR md5(pg_get_functiondef('public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)'::regprocedure)) <> '507077a4a5d43f04022c8c7235aef6f3' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date) divergente'; END IF;
+  IF to_regprocedure('platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)'::regprocedure)) <> 'c8fbde6ba0fba4ea5109b001077849f6' THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.b2b_packaging_line(uuid,uuid,jsonb,date) divergente'; END IF;
+  IF to_regprocedure('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)') IS NULL OR md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) <> '37d4f45e388ed7b38f6f397b672629ee' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) divergente'; END IF;
+  IF to_regprocedure('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)') IS NULL OR md5(pg_get_functiondef('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure)) <> '32f75a12cf353fa7050c6ba6ffe1e5d3' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente'; END IF;
+  IF to_regprocedure('public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)') IS NULL OR md5(pg_get_functiondef('public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)'::regprocedure)) <> '4a224f498fdbde78ece45ab655030c87' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb) divergente'; END IF;
+  IF to_regprocedure('public.get_partner_catalog_tecnico_secure()') IS NULL OR md5(pg_get_functiondef('public.get_partner_catalog_tecnico_secure()'::regprocedure)) <> 'f0cfc0c6bc8f875c2d269417508c78b5' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.get_partner_catalog_tecnico_secure() divergente'; END IF;
+  IF to_regprocedure('public.get_partner_catalog_tecnico_secure(boolean)') IS NULL OR md5(pg_get_functiondef('public.get_partner_catalog_tecnico_secure(boolean)'::regprocedure)) <> 'f682465d6ffbb145076cfd8d011f685e' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.get_partner_catalog_tecnico_secure(boolean) divergente'; END IF;
+  IF to_regprocedure('public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)') IS NULL OR md5(pg_get_functiondef('public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)'::regprocedure)) <> '953c73011730214094577bfb55d46e87' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean) divergente'; END IF;
+  IF to_regprocedure('public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)') IS NULL OR md5(pg_get_functiondef('public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure)) <> '6bc0e12a53adbb84426de8e6835dc931' THEN
+    RAISE EXCEPTION 'ROLLBACK: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a
+             WHERE p.oid = 'platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric)'::regprocedure AND a.privilege_type = 'EXECUTE'
+               AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN
+    RAISE EXCEPTION 'ROLLBACK: platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric) executável por cliente'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a
+             WHERE p.oid = 'public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure AND a.privilege_type = 'EXECUTE'
+               AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN
+    RAISE EXCEPTION 'ROLLBACK: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) executável por cliente'; END IF;
+END $$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_partner_cart_volume_price(p_partner_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric)
+ RETURNS numeric
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+-- B2B_CART_CATALOG_FENCE_V1. Sem EXECUTE para clientes; só chamado por fn_resolve_commercial_price (escopo partner).
+DECLARE v_seller uuid;
+BEGIN
+  BEGIN
+    v_seller := platform_private.b2b_partner_catalog_reader(p_partner_id);   -- guard canônico: técnico/superadmin/outro parceiro/inativo negam
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_seller := NULL;
+  END;
+  IF v_seller IS NULL THEN
+    -- Não é leitor B2B autorizado deste parceiro: caminho anterior, inalterado, com tenant_catalog_fence.
+    RETURN public.fn_catalogo_preco_canonico(p_product_id, p_microrganismo_id, p_unit_type, p_volume_ml);
+  END IF;
+  IF num_nonnulls(p_product_id, p_microrganismo_id) <> 1 THEN RETURN NULL; END IF;
+  IF p_product_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.produtos z WHERE z.id = p_product_id
+       AND z.owner_organization_id = v_seller AND z.ativo IS TRUE AND z.b2b_enabled IS TRUE
+       AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility cv WHERE cv.organization_id = ANY(platform_private.c1b_catalog_visibility_scope(p_partner_id))
+                       AND cv.entity_type = 'produto' AND cv.hidden IS TRUE AND cv.produto_id = z.id)) THEN
+    RAISE EXCEPTION 'b2b_catalog_item_denied' USING ERRCODE='42501'; END IF;
+  IF p_microrganismo_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.microrganismos z WHERE z.id = p_microrganismo_id
+       AND z.owner_organization_id = v_seller AND z.ativo IS TRUE AND z.b2b_enabled IS TRUE
+       AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility cv WHERE cv.organization_id = ANY(platform_private.c1b_catalog_visibility_scope(p_partner_id))
+                       AND cv.entity_type = 'microrganismo' AND cv.hidden IS TRUE AND cv.microrganismo_id = z.id)) THEN
+    RAISE EXCEPTION 'b2b_catalog_item_denied' USING ERRCODE='42501'; END IF;
+  RETURN platform_private.fn_catalogo_preco_canonico__tenant_core(p_product_id, p_microrganismo_id, p_unit_type, p_volume_ml);
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric) FROM PUBLIC, anon, authenticated;
+DO $$ BEGIN
+  IF to_regprocedure('platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric)'::regprocedure)) <> 'ca57c1616d6804ad124250189b03d6f5' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric) divergente'; END IF;
+  IF to_regprocedure('platform_private.tenant_catalog_fence(text,uuid[])') IS NULL OR md5(pg_get_functiondef('platform_private.tenant_catalog_fence(text,uuid[])'::regprocedure)) <> '8c6e3eca826410f7e8a504a86ae9381f' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.tenant_catalog_fence(text,uuid[]) divergente'; END IF;
+  IF to_regprocedure('platform_private.catalog_tenant_actor(text)') IS NULL OR md5(pg_get_functiondef('platform_private.catalog_tenant_actor(text)'::regprocedure)) <> '5e0ce9cc9122f1c21d76e29a13de8b59' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.catalog_tenant_actor(text) divergente'; END IF;
+  IF to_regprocedure('public.can_view_catalog_internal(uuid)') IS NULL OR md5(pg_get_functiondef('public.can_view_catalog_internal(uuid)'::regprocedure)) <> 'b04164dd8464d16f52cb69e7bcf83de7' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.can_view_catalog_internal(uuid) divergente'; END IF;
+  IF to_regprocedure('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)') IS NULL OR md5(pg_get_functiondef('public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)'::regprocedure)) <> 'b201e49e0158bde0140e018282c047fc' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric) divergente'; END IF;
+  IF to_regprocedure('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)') IS NULL OR md5(pg_get_functiondef('public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date)'::regprocedure)) <> '87418209039589320959c9891e97916c' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.fn_b2b_resolve_base_unit_price(uuid,uuid,uuid,text,numeric,date) divergente'; END IF;
+  IF to_regprocedure('platform_private.b2b_partner_catalog_reader(uuid)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) <> 'bd985484b69c8fa6e63a920eff518369' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.b2b_partner_catalog_reader(uuid) divergente'; END IF;
+  IF to_regprocedure('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date)'::regprocedure)) <> '61e545e6138485ba995f989d2011590a' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.b2b_partner_catalog_item_price(uuid,uuid,uuid,text,numeric,date) divergente'; END IF;
+  IF to_regprocedure('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)') IS NULL OR md5(pg_get_functiondef('platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric)'::regprocedure)) <> '7b7f90ddb519a281b4411c528813d927' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.fn_catalogo_preco_canonico__tenant_core(uuid,uuid,text,numeric) divergente'; END IF;
+  IF to_regprocedure('public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)') IS NULL OR md5(pg_get_functiondef('public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)'::regprocedure)) <> '507077a4a5d43f04022c8c7235aef6f3' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date) divergente'; END IF;
+  IF to_regprocedure('platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)') IS NULL OR md5(pg_get_functiondef('platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)'::regprocedure)) <> 'c8fbde6ba0fba4ea5109b001077849f6' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.b2b_packaging_line(uuid,uuid,jsonb,date) divergente'; END IF;
+  IF to_regprocedure('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)') IS NULL OR md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) <> '37d4f45e388ed7b38f6f397b672629ee' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) divergente'; END IF;
+  IF to_regprocedure('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)') IS NULL OR md5(pg_get_functiondef('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure)) <> '32f75a12cf353fa7050c6ba6ffe1e5d3' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente'; END IF;
+  IF to_regprocedure('public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)') IS NULL OR md5(pg_get_functiondef('public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)'::regprocedure)) <> '4a224f498fdbde78ece45ab655030c87' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb) divergente'; END IF;
+  IF to_regprocedure('public.get_partner_catalog_tecnico_secure()') IS NULL OR md5(pg_get_functiondef('public.get_partner_catalog_tecnico_secure()'::regprocedure)) <> 'f0cfc0c6bc8f875c2d269417508c78b5' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.get_partner_catalog_tecnico_secure() divergente'; END IF;
+  IF to_regprocedure('public.get_partner_catalog_tecnico_secure(boolean)') IS NULL OR md5(pg_get_functiondef('public.get_partner_catalog_tecnico_secure(boolean)'::regprocedure)) <> 'f682465d6ffbb145076cfd8d011f685e' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.get_partner_catalog_tecnico_secure(boolean) divergente'; END IF;
+  IF to_regprocedure('public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)') IS NULL OR md5(pg_get_functiondef('public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)'::regprocedure)) <> '953c73011730214094577bfb55d46e87' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean) divergente'; END IF;
+  IF to_regprocedure('public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)') IS NULL OR md5(pg_get_functiondef('public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure)) <> '6bc0e12a53adbb84426de8e6835dc931' THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a
+             WHERE p.oid = 'platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric)'::regprocedure AND a.privilege_type = 'EXECUTE'
+               AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric) executável por cliente'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a
+             WHERE p.oid = 'public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure AND a.privilege_type = 'EXECUTE'
+               AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN
+    RAISE EXCEPTION 'ROLLBACK_POST: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) executável por cliente'; END IF;
+END $$;
+COMMIT;

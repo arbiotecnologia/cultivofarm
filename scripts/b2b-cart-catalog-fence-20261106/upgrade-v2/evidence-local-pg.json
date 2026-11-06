@@ -1,0 +1,208 @@
+{
+  "package": "B2B_CART_CATALOG_FENCE_V2_UPGRADE",
+  "hosted_proof": false,
+  "passed": 40,
+  "total": 40,
+  "checks": [
+    {
+      "name": "estado instalado (02 do 9c99095) reproduzido",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "helper local == helper LIVE ca57c161",
+      "ok": true,
+      "detail": "ca57c1616d6804ad124250189b03d6f5"
+    },
+    {
+      "name": "motor local == motor LIVE 6bc0e12a",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "instalado: comprador misto 21/2.10/18.90 (aprovado pelo auditor)",
+      "ok": true,
+      "detail": "{'table_amount': 21.0, 'discount_amount': 2.1, 'net_amount_after_discount': 18.9}"
+    },
+    {
+      "name": "instalado: v1 libera hectare ao comprador (motivo do upgrade)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "01-pre.sql.readonly",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/upgrade-v2/01-pre.sql.readonly:48: NOTICE:  PRE_OK\n"
+    },
+    {
+      "name": "02-upgrade.sql.review",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "03-post.sql.readonly",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/upgrade-v2/03-post.sql.readonly:48: NOTICE:  POST_OK\n"
+    },
+    {
+      "name": "rerun do upgrade recusado",
+      "ok": true,
+      "detail": " platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric) divergente\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\n"
+    },
+    {
+      "name": "02 original recusado sobre estado instalado",
+      "ok": true,
+      "detail": "ve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\n"
+    },
+    {
+      "name": "post: comprador líquido 1L (1/0.10/0.90)",
+      "ok": true,
+      "detail": "{'table_amount': 1.0, 'discount_amount': 0.1, 'net_amount_after_discount': 0.9}"
+    },
+    {
+      "name": "post: comprador embalagem 2x25kg (20/2/18)",
+      "ok": true,
+      "detail": "{'table_amount': 20.0, 'discount_amount': 2.0, 'net_amount_after_discount': 18.0}"
+    },
+    {
+      "name": "post: comprador misto 2x25kg + 1L (21/2.10/18.90)",
+      "ok": true,
+      "detail": "{'table_amount': 21.0, 'discount_amount': 2.1, 'net_amount_after_discount': 18.9}"
+    },
+    {
+      "name": "post: misto devolve fontes packaging_price + catalog_volume_price",
+      "ok": true,
+      "detail": "['packaging_price', 'catalog_volume_price']"
+    },
+    {
+      "name": "post: comprador microrganismo 1L (5/0.5/4.5)",
+      "ok": true,
+      "detail": "{'table_amount': 5.0, 'discount_amount': 0.5, 'net_amount_after_discount': 4.5}"
+    },
+    {
+      "name": "post: preço enviado pelo cliente na linha líquida é ignorado (servidor 1/0.9)",
+      "ok": true,
+      "detail": "{'table_amount': 1.0, 'discount_amount': 0.1, 'net_amount_after_discount': 0.9}"
+    },
+    {
+      "name": "post: preço enviado pelo cliente na embalagem é recusado",
+      "ok": true,
+      "detail": "ERROR:  B2B_PACKAGING_CLIENT_PRICE_FORBIDDEN"
+    },
+    {
+      "name": "post: admin interno do vendedor continua (1/0.1/0.9)",
+      "ok": true,
+      "detail": "{'table_amount': 1.0, 'discount_amount': 0.1, 'net_amount_after_discount': 0.9}"
+    },
+    {
+      "name": "post: produto de outro tenant no carrinho do comprador",
+      "ok": true,
+      "detail": "ERROR:  b2b_catalog_item_denied"
+    },
+    {
+      "name": "post: produto oculto para o parceiro",
+      "ok": true,
+      "detail": "ERROR:  b2b_catalog_item_denied"
+    },
+    {
+      "name": "post: comprador simulando outro parceiro do mesmo vendedor",
+      "ok": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    {
+      "name": "post: comprador de outro tenant simulando o parceiro",
+      "ok": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    {
+      "name": "post: admin de outro tenant simulando o parceiro",
+      "ok": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    {
+      "name": "post: técnico do parceiro",
+      "ok": true,
+      "detail": "ERROR:  forbidden_financial_terms"
+    },
+    {
+      "name": "post: comprador inativo",
+      "ok": true,
+      "detail": "ERROR:  C2_SCOPE_INACTIVE"
+    },
+    {
+      "name": "post: superadmin com vínculo de parceiro",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: authenticated sem sessão",
+      "ok": true,
+      "detail": "ERROR:  auth_required"
+    },
+    {
+      "name": "post: anônimo sem EXECUTE",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function simulate_b2b_payment_plan_secure"
+    },
+    {
+      "name": "post: wrapper público cercado continua negando o comprador",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: helper privado sem EXECUTE para authenticated",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function b2b_partner_cart_volume_price"
+    },
+    {
+      "name": "post: rota nova não vale para hectare (catálogo técnico/comercial inalterado)",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: rota nova não vale para litro/dose",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: técnico chamando helper cai no wrapper cercado",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: admin interno usa o wrapper cercado (mesmo preço 1)",
+      "ok": true,
+      "detail": "1.000000\n"
+    },
+    {
+      "name": "post: comprador acumulando administrador segue o wrapper cercado (fence decide, autoriza ator interno)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "post: comprador sem recurso catalogo_precos negado",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: motor fn_resolve_commercial_price sem EXECUTE cliente",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function fn_resolve_commercial_price"
+    },
+    {
+      "name": "04 rollback para v1",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback: helper volta a ca57c161",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback: comprador misto continua 18.90",
+      "ok": true,
+      "detail": "{'table_amount': 21.0, 'discount_amount': 2.1, 'net_amount_after_discount': 18.9}"
+    }
+  ]
+}
