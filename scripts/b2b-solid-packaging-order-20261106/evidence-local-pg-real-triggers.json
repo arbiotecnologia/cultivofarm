@@ -112,7 +112,13 @@
     },
     "install.rerun_refused": {
       "pass": true,
-      "detail": "psql:/tmp/b2bpack-da276j5o/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+      "detail": "psql:/tmp/b2bpack-atzdmslf/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+    },
+    "reader.solid_products_without_price_listed": {
+      "pass": true,
+      "detail": [
+        "00000000-0000-0000-0000-000000000032"
+      ]
     },
     "reader.buyer_exact_offers": {
       "pass": true,
@@ -256,7 +262,7 @@
     "create.solid_ok": {
       "pass": true,
       "detail": {
-        "id": "e746394e-c820-4331-9eaa-83f3d919ec53",
+        "id": "88fae615-9f2e-4ddb-8544-1f6086dbe4ba",
         "total": 324.0,
         "numero": "PB-000001",
         "status": "em_analise_comercial",
@@ -269,7 +275,7 @@
         "quote_required": false,
         "discount_amount": 36.0,
         "idempotency_key": "TESTE-PED-20261106-K1",
-        "payment_terms_id": "ba28eccc-3084-4180-8078-b97266de422e",
+        "payment_terms_id": "cb675407-5e3e-48f9-a9c5-6afac9a2ff14",
         "credit_reason_code": "NO_LIMIT",
         "credit_block_reason": null,
         "financial_approval_status": "not_required",
@@ -481,7 +487,7 @@
       "pass": true,
       "detail": [
         {
-          "id": "d9192d0a-2b3d-402b-8654-e6972d2adc54",
+          "id": "1acc1c7c-cee6-42db-9538-154029ecffd5",
           "total": 243.0,
           "numero": "PB-000005",
           "status": "em_analise_comercial",
@@ -494,7 +500,7 @@
           "quote_required": false,
           "discount_amount": 27.0,
           "idempotency_key": "TESTE-PED-20261106-CC",
-          "payment_terms_id": "39dd9bbb-5d94-4a2b-96c1-6f4aff313c28",
+          "payment_terms_id": "94a56dc7-8163-4df5-ab40-8112f0785f64",
           "credit_reason_code": "NO_LIMIT",
           "credit_block_reason": null,
           "financial_approval_status": "not_required",
@@ -560,6 +566,6 @@
     }
   },
   "result": "PASS",
-  "passed": 101,
-  "total": 101
+  "passed": 102,
+  "total": 102
 }

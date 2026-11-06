@@ -773,7 +773,7 @@ SET search_path TO ''
 AS $function$
 -- Leitor do comprador: embalagens inteiras ativas, publicadas e com preço vigente do vendedor do parceiro.
 -- Mesmo guard canônico do catálogo; preco_tabela_brl é só exibição — o pedido é sempre recalculado no servidor.
-DECLARE v_seller uuid; v_offers jsonb;
+DECLARE v_seller uuid; v_offers jsonb; v_solids jsonb;
 BEGIN
   v_seller := platform_private.b2b_partner_catalog_reader(p_partner_id);
   IF v_seller IS NULL THEN RAISE EXCEPTION 'partner_not_found' USING ERRCODE='42501'; END IF;
@@ -792,7 +792,14 @@ BEGIN
                    WHERE c.packaging_id = k.id AND c.produto_id = k.product_id AND c.owner_organization_id = v_seller AND c.ativo IS TRUE
                      AND c.valid_from <= current_date AND (c.valid_until IS NULL OR c.valid_until >= current_date)) c ON c.n = 1
    WHERE k.owner_organization_id = v_seller AND k.ativo IS TRUE AND k.valid_from <= now() AND (k.valid_to IS NULL OR k.valid_to > now());
-  RETURN jsonb_build_object('contract', 'B2B_PARTNER_PACKAGING_ORDER_V1', 'partner_id', p_partner_id, 'offers', v_offers);
+  -- Sólidos confirmados (kg/g) do catálogo autorizado, COM ou SEM oferta vigente: o comprador nunca cai no modo líquido
+  -- por falta de preço/apresentação; a ausência de oferta é dita como tal. Sem preço, sem embalagem.
+  SELECT COALESCE(jsonb_agg(jsonb_build_object('product_id', pr.id, 'unidade_conteudo', s.unidade_conteudo) ORDER BY pr.id), '[]'::jsonb)
+    INTO v_solids
+    FROM (SELECT DISTINCT g.item_id FROM public.get_partner_catalog_secure(p_partner_id) g WHERE g.item_tipo = 'produto') g
+    JOIN public.produtos pr ON pr.id = g.item_id AND pr.owner_organization_id = v_seller AND pr.ativo IS TRUE AND COALESCE(pr.b2b_enabled, true) IS TRUE
+    JOIN public.product_sale_units s ON s.product_id = pr.id AND s.owner_organization_id = v_seller AND s.unidade_conteudo IN ('kg','g');
+  RETURN jsonb_build_object('contract', 'B2B_PARTNER_PACKAGING_ORDER_V1', 'partner_id', p_partner_id, 'offers', v_offers, 'solid_products', v_solids);
 END $function$;
 REVOKE ALL ON FUNCTION public.get_partner_packaging_offers_secure(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_partner_packaging_offers_secure(uuid) TO authenticated;

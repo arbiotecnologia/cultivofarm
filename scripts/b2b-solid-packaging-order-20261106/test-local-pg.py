@@ -356,6 +356,8 @@ def main():
 
         # ---------- leitor
         rd = j(as_user(UB, f"SELECT public.get_partner_packaging_offers_secure('{P}')::text;"))
+        sol_ids = sorted(x["product_id"] for x in (rd or {}).get("solid_products", []))
+        chk("reader.solid_products_without_price_listed", sol_ids == sorted([SOL]) and all(set(x) == {"product_id", "unidade_conteudo"} for x in rd["solid_products"]), sol_ids)
         ids = sorted(o["packaging_id"] for o in (rd or {}).get("offers", []))
         chk("reader.buyer_exact_offers", rd and rd["contract"] == "B2B_PARTNER_PACKAGING_ORDER_V1" and ids == sorted([PK25, PK40]), ids)
         chk("reader.offer_fields", rd and all(set(o) == {"product_id", "unidade_conteudo", "packaging_id", "codigo", "descricao", "rotulo", "peso_liquido_kg",
