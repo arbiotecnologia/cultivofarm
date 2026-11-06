@@ -22737,6 +22737,10 @@ export type Database = {
         Args: { p_partner_id: string }
         Returns: Json
       }
+      get_partner_order_payment_terms_secure: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       get_partner_packaging_offers_secure: {
         Args: { p_partner_id: string }
         Returns: Json
