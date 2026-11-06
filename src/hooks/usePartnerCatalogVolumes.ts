@@ -51,11 +51,10 @@ export function parsePartnerVolumes(raw: unknown, partnerId: string): PartnerVol
  * falhar fechado, nunca cair na leitura direta.
  */
 const ENDPOINT_RE = /\bpublic\.get_partner_catalog_volumes_secure\(\s*p_partner_id\s*\)/;
-export function isRpcAbsent(error: { code?: string; message?: string; details?: unknown } | null | undefined): boolean {
+export function isRpcAbsent(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error || error.code !== "PGRST202" || typeof error.message !== "string") return false;
   if (!/^Could not find the function /.test(error.message) || !ENDPOINT_RE.test(error.message)) return false;
-  const details = typeof error.details === "string" ? error.details : "";
-  return !/get_partner_catalog_volumes_secure\s*\(\s*p_partner_id\s*\)\s*but/.test(details) || true;
+  return true;
 }
 
 export function usePartnerCatalogVolumes(partnerId: string | null | undefined) {
