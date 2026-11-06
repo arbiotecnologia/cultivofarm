@@ -26,6 +26,7 @@ DO $$BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object THEN NULL;
 DO $$BEGIN CREATE ROLE service_role; EXCEPTION WHEN duplicate_object THEN NULL; END$$;
 CREATE SCHEMA auth; CREATE SCHEMA platform_private;
 GRANT USAGE ON SCHEMA public, auth TO anon, authenticated;
+GRANT USAGE ON SCHEMA platform_private TO authenticated;  -- costura: produção concede USAGE ao wrapper INVOKER
 CREATE TABLE public.organizations(id uuid PRIMARY KEY, ativo boolean, status text, nome text, nome_fantasia text, razao_social text, cnpj text, email_corporativo text);
 CREATE TABLE public.profiles(user_id uuid PRIMARY KEY, organization_id uuid, ativo boolean, senha_provisoria boolean);
 CREATE TABLE public.platform_org_admin_invites(user_id uuid, access_operation_status text, access_valid_after timestamptz);

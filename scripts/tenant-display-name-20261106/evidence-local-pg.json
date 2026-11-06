@@ -245,31 +245,96 @@
    "pass": true
   },
   "projection_permitted_buyer_gets_seller": {
-   "pass": false,
+   "pass": true,
    "detail": [
-    "ERR",
-    "permission denied for schema platform_private"
+    null,
+    {
+     "id": "7e52de9a-0000-0000-0000-000000000001",
+     "mode": "commercial_owner",
+     "ativo": true,
+     "papel": "gestor",
+     "codigo": "P-001",
+     "seller": {
+      "name": "AR Bio",
+      "organization_id": "a0000000-0000-0000-0000-00000000000a"
+     },
+     "manager": true,
+     "actor_id": "00000000-0000-0000-0000-000000000005",
+     "contract": "C2_MULTIPROFILE_V1",
+     "tenant_id": "a0000000-0000-0000-0000-00000000000a",
+     "technician": false,
+     "capabilities": {
+      "contract": "C2_CAT_V1",
+      "sheets_read": true,
+      "catalog_read": true
+     },
+     "razao_social": "Parceiro Comprador LTDA",
+     "nome_fantasia": "Comprador Teste",
+     "external_roles": [
+      "parceiro_b2b"
+     ],
+     "order_capabilities": {
+      "contract": "C2_OWNER_ORDER_V1",
+      "order_create": true
+     },
+     "finance_capabilities": {
+      "contract": "C2_OWN_OBLIGATIONS_V1",
+      "obligations_read": false
+     },
+     "producer_links_valid": true
+    }
    ]
   },
   "projection_other_keys_unchanged": {
-   "pass": false
+   "pass": true
   },
   "projection_not_permitted_seller_null": {
-   "pass": false,
+   "pass": true,
    "detail": [
-    "ERR",
-    "permission denied for schema platform_private"
+    null,
+    {
+     "id": "7e52de9a-0000-0000-0000-000000000001",
+     "mode": "commercial_owner",
+     "ativo": true,
+     "papel": "gestor",
+     "codigo": "P-001",
+     "seller": null,
+     "manager": true,
+     "actor_id": "00000000-0000-0000-0000-000000000006",
+     "contract": "C2_MULTIPROFILE_V1",
+     "tenant_id": "a0000000-0000-0000-0000-00000000000a",
+     "technician": false,
+     "capabilities": {
+      "contract": "C2_CAT_V1",
+      "sheets_read": false,
+      "catalog_read": false
+     },
+     "razao_social": "Parceiro Comprador LTDA",
+     "nome_fantasia": "Comprador Teste",
+     "external_roles": [
+      "parceiro_b2b"
+     ],
+     "order_capabilities": {
+      "contract": "C2_OWNER_ORDER_V1",
+      "order_create": false
+     },
+     "finance_capabilities": {
+      "contract": "C2_OWN_OBLIGATIONS_V1",
+      "obligations_read": false
+     },
+     "producer_links_valid": true
+    }
    ]
   },
   "projection_non_partner_still_null": {
-   "pass": false,
+   "pass": true,
    "detail": [
-    "ERR",
-    "permission denied for schema platform_private"
+    null,
+    null
    ]
   },
   "seller_never_buyer_partner_name": {
-   "pass": false
+   "pass": true
   },
   "rollback_ok": {
    "pass": true
@@ -284,5 +349,5 @@
    "pass": true
   }
  },
- "result": "FAIL"
+ "result": "PASS"
 }
