@@ -1,6 +1,6 @@
 # B2B_PAYMENT_METHOD_V1 — escolha do meio de pagamento pelo comprador (B3)
 
-Status: **PREPARADO, NÃO APLICADO.** Nenhum SQL remoto, publicação, cadastro de meio, cobrança, documento ou envio.
+Status: **PAUSADO — não candidato a instalação** até reconciliar com B2B_PAYMENT_CONDITION_V1 (ver RECONCILIATION-PRIOR-CANDIDATE.md). **NÃO APLICADO.** Nenhum SQL remoto, publicação, cadastro de meio, cobrança, documento ou envio.
 Leituras de produção feitas somente em `swzpzcwiasxmjutrmvkm` (read-only) em 2026-11-06.
 
 ## Estado LIVE que motivou o pacote
