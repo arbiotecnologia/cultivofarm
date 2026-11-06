@@ -788,6 +788,11 @@ export default function NovoPedido() {
                           Informe uma quantidade maior que zero.
                         </p>
                       )}
+                      {i.unidade_pedido === "embalagem" && i.peso_liquido_kg && i.quantidade > 0 && (
+                        <div className="text-[10px] text-muted-foreground">
+                          Peso para frete: {nfmt.format(i.peso_liquido_kg * i.quantidade)} kg
+                        </div>
+                      )}
                       {totalLitros !== null && i.quantidade > 0 && (
                         <div className="text-[10px] text-muted-foreground">
                           Total: {nfmt.format(totalLitros)} L
@@ -1283,7 +1288,8 @@ export default function NovoPedido() {
               <Label htmlFor="fav-star" className="text-xs">Marcar como favorito (aparece primeiro)</Label>
             </div>
             <div className="text-xs text-muted-foreground">
-              {cartList.length} item(ns) serão salvos.
+              {cartList.filter((i) => i.unidade_pedido !== "embalagem").length} item(ns) serão salvos.
+              {cartList.some((i) => i.unidade_pedido === "embalagem") && " Embalagens não são salvas em modelos."}
             </div>
           </div>
           <DialogFooter>
