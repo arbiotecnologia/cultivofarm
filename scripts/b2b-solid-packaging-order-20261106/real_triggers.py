@@ -80,9 +80,13 @@ CREATE TABLE IF NOT EXISTS public.production_timeline_events(id uuid DEFAULT gen
 CREATE TABLE IF NOT EXISTS public.partner_financial_settings(partner_id uuid, auto_generate_receivable boolean DEFAULT false);
 CREATE TABLE IF NOT EXISTS public.company_fiscal_settings(organization_id uuid);
 CREATE TABLE IF NOT EXISTS public.partner_engagement_metrics(partner_id uuid);
+CREATE TABLE IF NOT EXISTS platform_private.seam_entitlements(user_id uuid, feature_key text);
+CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(u uuid) RETURNS TABLE(feature_key text) LANGUAGE sql STABLE AS
+ $$ SELECT e.feature_key FROM platform_private.seam_entitlements e WHERE e.user_id = u $$;
 """
 SEAMS_DECLARED = [
     "tabelas de 2º nível mínimas: commercial_audit_log, production_order_link, production_planning, production_timeline_events, partner_financial_settings, company_fiscal_settings, partner_engagement_metrics",
+    "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
     "FKs para clientes/auth.users/partner_simulations omitidas (tabelas inexistentes no PG descartável)",
 ]
 
