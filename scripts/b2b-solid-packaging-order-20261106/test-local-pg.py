@@ -48,7 +48,28 @@ def psql(sql, db="t", check=True):
     return r
 
 
+SEAM_PINS = ["public.get_partner_catalog_secure(uuid)", "public.get_partner_catalog_secure(uuid,boolean)",
+             "public.get_partner_catalog_volumes_secure(uuid)", "public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text)",
+             "public.solid_pack_offers_admin_v1(uuid)"]
+LOCAL_FILES = {}
+
+
+def localize(p):
+    """Cópia local do arquivo com SOMENTE os pins das funções-costura trocados pelo md5 local (declarado).
+    Pins dos corpos REAIS ficam com o md5 LIVE e precisam bater."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gen", HERE / "generate.py"); g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
+    text = p.read_text()
+    for sig in SEAM_PINS:
+        live = g.PINS[sig]; loc = psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))").stdout.strip()
+        text = text.replace(f"'{sig}'::regprocedure)) <> '{live}'", f"'{sig}'::regprocedure)) <> '{loc}'")
+    out = pathlib.Path(SOCK[0]) / ("local-" + p.name); out.write_text(text); out.chmod(0o644)
+    return out
+
+
 def runfile(p):
+    if p.name != "04-rollback-deny.sql.review":
+        p = localize(p)
     return subprocess.run(su() + ["psql", "-X", "-q", "-t", "-A", "-h", SOCK[0], "-p", PORT, "-U", "postgres", "-d", "t",
                                   "-v", "ON_ERROR_STOP=1", "-f", str(p)], capture_output=True, text=True)
 
