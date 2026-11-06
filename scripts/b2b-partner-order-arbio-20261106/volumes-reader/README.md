@@ -31,3 +31,18 @@ Este pacote não amplia RLS, não cria tabela e não duplica volumes. A leitura 
 | anon | sem EXECUTE |
 | Superadmin | 42501 `b2b_catalog_platform_actor_denied` |
 | volume inativo, `volume_ml = 0` ou de produto oculto/não B2B | ausente |
+
+## Frontend (local, sem publicação)
+- `src/hooks/usePartnerCatalogVolumes.ts`: parser estrito do contrato. Se o RPC não existir (PGRST202/42883, antes da instalação), mantém a leitura direta anterior; qualquer outro erro mostra falha de leitura.
+- `NovoPedido.tsx`: o comprador usa o leitor escopado; técnico e simulação mantêm `useCatalogoVolumes`.
+- `AddToCartDialog.tsx`: recebe volumes, estado e nome do fornecedor; mostra "Carregando apresentações…" e erro distinto, sem afirmar ausência.
+- Nome do fornecedor: `src/lib/comercial/supplierName.ts`, com rótulo neutro "empresa fornecedora". Aplicado no aviso de volume, no aviso de item sem preço, nos toasts de preço, no prazo de entrega, na linha do tempo, nos clientes vinculados e nas fichas técnicas.
+- `PortalParceiroLayout.tsx` (acompanhamento de pedidos e usuário sem vínculo) usa o rótulo neutro: buscar o nome ali exigiria uma leitura nova. Pendente: incluir o nome do vendedor numa projeção já autorizada.
+- Login e cabeçalho mantêm a marca do sistema.
+
+## Testes (06/11, `--maxWorkers=2`)
+- `src/test/comercial/partnerVolumesReader.test.tsx`: 12/12 (AR Bio, outro tenant, nome ausente, carregando, erro, contrato inválido, ausência exata do RPC).
+- `partnerOutletNovoPedido.test.tsx`, com layout, guard e tela reais: o "antes" reproduz o bloqueio com aviso neutro; o "depois" mostra o volume 1 L sem leitura direta e sem escrita, 9/9.
+- Regressão pedidos/catálogo/comercial/estoque/fiscal relacionada: 82 arquivos, 1.223/1.223, antes das duas reproduções novas. Typecheck OK.
+- Fixtures antigas: único acréscimo é a resposta PGRST202 (pré-instalação) do novo RPC; nenhuma asserção alterada.
+- SQL: não executado em PG descartável nem hospedado; negativas reais NOT RUN.

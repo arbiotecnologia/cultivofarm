@@ -2,3 +2,5 @@
 - Continue the original nine-stage plan; never fork a parallel order/payment/billing system — prevents duplicate writers.
 - Solid items are whole packagings priced server-side by packaging id; the client never sends a price and weight is used only for freight — prevents client-side pricing.
 - Characterization tests stay BLOCKED until the contract is installed and the types are regenerated; they never prove JWT/RLS — prevents false certification.
+- Buyer volume reads go only through get_partner_catalog_volumes_secure (canonical b2b_partner_catalog_reader + catalog item set, no prices); never widen catalogo_volumes/produtos RLS — prevents cross-tenant catalog exposure.
+- Supplier names shown to buyers come only from the server-resolved seller context, with a neutral fallback; never the buyer tenant or the system brand — prevents misattributing the supplier.
