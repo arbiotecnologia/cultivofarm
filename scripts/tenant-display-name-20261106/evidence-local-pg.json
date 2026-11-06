@@ -1,0 +1,288 @@
+{
+ "kind": "disposable_pg",
+ "hosted": false,
+ "remote_writes": false,
+ "package": "TENANT_DISPLAY_NAME_V1",
+ "synthetic_seams": [
+  "auth.uid/auth.jwt locais",
+  "esquema mínimo",
+  "helpers da projeção B2B (stubs)"
+ ],
+ "pg_version": "17.11",
+ "matrix": {
+  "admin_a": [
+   null,
+   {
+    "name": "AR Bio",
+    "contract": "TENANT_DISPLAY_NAME_V1",
+    "organization_id": "a0000000-0000-0000-0000-00000000000a"
+   }
+  ],
+  "consultor_a": [
+   null,
+   {
+    "name": "AR Bio",
+    "contract": "TENANT_DISPLAY_NAME_V1",
+    "organization_id": "a0000000-0000-0000-0000-00000000000a"
+   }
+  ],
+  "financeiro_a": [
+   null,
+   {
+    "name": "AR Bio",
+    "contract": "TENANT_DISPLAY_NAME_V1",
+    "organization_id": "a0000000-0000-0000-0000-00000000000a"
+   }
+  ],
+  "cliente_a": [
+   null,
+   {
+    "name": "AR Bio",
+    "contract": "TENANT_DISPLAY_NAME_V1",
+    "organization_id": "a0000000-0000-0000-0000-00000000000a"
+   }
+  ],
+  "buyer_a": [
+   null,
+   {
+    "name": "AR Bio",
+    "contract": "TENANT_DISPLAY_NAME_V1",
+    "organization_id": "a0000000-0000-0000-0000-00000000000a"
+   }
+  ],
+  "buyer_revoked": [
+   null,
+   {
+    "name": "AR Bio",
+    "contract": "TENANT_DISPLAY_NAME_V1",
+    "organization_id": "a0000000-0000-0000-0000-00000000000a"
+   }
+  ],
+  "user_f": [
+   null,
+   {
+    "name": "FSF Agro",
+    "contract": "TENANT_DISPLAY_NAME_V1",
+    "organization_id": "f0000000-0000-0000-0000-00000000000f"
+   }
+  ],
+  "inativo": [
+   "ERR",
+   "tenant_display_forbidden"
+  ],
+  "provisorio": [
+   "ERR",
+   "tenant_display_forbidden"
+  ],
+  "convite_processando": [
+   "ERR",
+   "tenant_display_forbidden"
+  ],
+  "org_inativa": [
+   "ERR",
+   "tenant_display_forbidden"
+  ],
+  "sem_perfil": [
+   "ERR",
+   "tenant_display_forbidden"
+  ],
+  "anon": [
+   "ERR",
+   "permission denied for function tenant_display_name_v1"
+  ],
+  "no_sub": [
+   "ERR",
+   "auth_required"
+  ]
+ },
+ "checks": {
+  "captured_bodies_reproduce_production_pins": {
+   "pass": true,
+   "detail": {
+    "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84",
+    "platform_private.b2b_commercial_partner_projection()": "ebd6bf6f252676ba21445427a7057588",
+    "public.get_my_commercial_partner_projection()": "730a17482e07d1bc350edfaea907cd1f"
+   }
+  },
+  "pre_all_true": {
+   "pass": true,
+   "detail": "t|t|t|t|t|t"
+  },
+  "install_ok": {
+   "pass": true
+  },
+  "post_all_true": {
+   "pass": true,
+   "detail": "t|t|t|t|t|t|t"
+  },
+  "rerun_aborts": {
+   "pass": true
+  },
+  "display_grant_only_authenticated": {
+   "pass": true,
+   "detail": "postgres=X/postgres,authenticated=X/postgres"
+  },
+  "onboarding_state_absent_untouched": {
+   "pass": true
+  },
+  "allow_admin_a": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "name": "AR Bio",
+     "contract": "TENANT_DISPLAY_NAME_V1",
+     "organization_id": "a0000000-0000-0000-0000-00000000000a"
+    }
+   ]
+  },
+  "allow_consultor_a": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "name": "AR Bio",
+     "contract": "TENANT_DISPLAY_NAME_V1",
+     "organization_id": "a0000000-0000-0000-0000-00000000000a"
+    }
+   ]
+  },
+  "allow_financeiro_a": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "name": "AR Bio",
+     "contract": "TENANT_DISPLAY_NAME_V1",
+     "organization_id": "a0000000-0000-0000-0000-00000000000a"
+    }
+   ]
+  },
+  "allow_cliente_a": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "name": "AR Bio",
+     "contract": "TENANT_DISPLAY_NAME_V1",
+     "organization_id": "a0000000-0000-0000-0000-00000000000a"
+    }
+   ]
+  },
+  "allow_buyer_a": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "name": "AR Bio",
+     "contract": "TENANT_DISPLAY_NAME_V1",
+     "organization_id": "a0000000-0000-0000-0000-00000000000a"
+    }
+   ]
+  },
+  "allow_user_f": {
+   "pass": true,
+   "detail": [
+    null,
+    {
+     "name": "FSF Agro",
+     "contract": "TENANT_DISPLAY_NAME_V1",
+     "organization_id": "f0000000-0000-0000-0000-00000000000f"
+    }
+   ]
+  },
+  "deny_inativo": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "tenant_display_forbidden"
+   ]
+  },
+  "deny_provisorio": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "tenant_display_forbidden"
+   ]
+  },
+  "deny_convite_processando": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "tenant_display_forbidden"
+   ]
+  },
+  "deny_org_inativa": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "tenant_display_forbidden"
+   ]
+  },
+  "deny_sem_perfil": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "tenant_display_forbidden"
+   ]
+  },
+  "deny_anon": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "permission denied for function tenant_display_name_v1"
+   ]
+  },
+  "deny_no_sub": {
+   "pass": true,
+   "detail": [
+    "ERR",
+    "auth_required"
+   ]
+  },
+  "no_sensitive_keys": {
+   "pass": true
+  },
+  "projection_permitted_buyer_gets_seller": {
+   "pass": false,
+   "detail": [
+    "ERR",
+    "permission denied for schema platform_private"
+   ]
+  },
+  "projection_other_keys_unchanged": {
+   "pass": false
+  },
+  "projection_not_permitted_seller_null": {
+   "pass": false,
+   "detail": [
+    "ERR",
+    "permission denied for schema platform_private"
+   ]
+  },
+  "projection_non_partner_still_null": {
+   "pass": false,
+   "detail": [
+    "ERR",
+    "permission denied for schema platform_private"
+   ]
+  },
+  "seller_never_buyer_partner_name": {
+   "pass": false
+  },
+  "rollback_ok": {
+   "pass": true
+  },
+  "rollback_projection_exact_capture": {
+   "pass": true
+  },
+  "rollback_display_denied": {
+   "pass": true
+  },
+  "rollback_projection_output_restored": {
+   "pass": true
+  }
+ },
+ "result": "FAIL"
+}
