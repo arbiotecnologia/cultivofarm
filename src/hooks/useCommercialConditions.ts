@@ -84,6 +84,8 @@ export function conditionErrorMessage(message: string | undefined): string {
   if (msg.includes("no_items")) return "Selecione ao menos um item.";
   if (msg.includes("duplicate key")) return "Já existe registro publicado para essa combinação e vigência.";
   if (msg.includes("violates check constraint")) return "Dados inválidos: revise modo, preço/desconto, unidade e vigência.";
+  if (msg.includes("commercial_context_unavailable")) return "Sessão ou contexto indisponível. Reabra a confirmação após revalidar o acesso.";
+  if (msg.includes("commercial_context_changed")) return "O contexto mudou durante a publicação. Não houve confirmação na tela; reabra a atribuição e verifique o estado atual.";
   return msg || "Não foi possível concluir a operação.";
 }
 
@@ -181,7 +183,8 @@ export function useSubmitAssignment() {
 export function usePublishAssignment() {
   const qc = useQueryClient();
   const fence = useStorageAccessScope("commercial-conditions-assignments");
-  return useMutation({
+  const mutation = useMutation({
+    retry: false,
     mutationFn: async ({ id, motivo }: { id: string; motivo?: string | null }) => {
       const current = fence.capture();
       if (!current()) throw new Error("commercial_context_unavailable");
@@ -198,6 +201,7 @@ export function usePublishAssignment() {
       await qc.invalidateQueries({ queryKey: ["commercial-payment-plans", "selectable"] });
     },
   });
+  return { ...mutation, capture: fence.capture, ready: fence.ready, scope: fence.scope };
 }
 
 export function useArchiveAssignment() {

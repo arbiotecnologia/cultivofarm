@@ -5,7 +5,7 @@
  * publicada. Preparação: administrador, financeiro, gestor comercial.
  * Publicação: administrador e financeiro.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   usePlanAssignments,
   useSaveAssignment,
@@ -28,6 +28,16 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
@@ -54,6 +64,22 @@ const emptyForm: AssignmentInput = {
   motivo: null,
 };
 
+type PublishConfirmation = {
+  assignment: PlanAssignment;
+  conditionLabel: string;
+  destinationLabel: string;
+  scope: string;
+};
+
+const PUBLISH_CONTEXT_ERROR = "A sessão, a empresa, o perfil ou a atribuição mudou desde a abertura. Feche esta janela e abra a publicação novamente após a revalidação do acesso.";
+
+function samePublishTarget(current: PlanAssignment | undefined, expected: PlanAssignment) {
+  return !!current && current.id === expected.id && current.plan_id === expected.plan_id
+    && current.buyer_scope === expected.buyer_scope && current.partner_id === expected.partner_id
+    && current.customer_id === expected.customer_id && current.status === expected.status
+    && current.valid_from === expected.valid_from && current.valid_until === expected.valid_until;
+}
+
 export function AtribuicoesPlanosTab() {
   const { roles } = useAuth();
   const canPublish = roles.includes("administrador") || roles.includes("financeiro");
@@ -69,6 +95,10 @@ export function AtribuicoesPlanosTab() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<AssignmentInput>(emptyForm);
+  const [publishTarget, setPublishTarget] = useState<PublishConfirmation | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const publishOpening = useRef<(() => boolean) | null>(null);
+  const publishLock = useRef(false);
 
   const planName = useMemo(() => {
     const m = new Map<string, string>();
@@ -88,6 +118,49 @@ export function AtribuicoesPlanosTab() {
     if (a.buyer_scope === "partner") return partnerName.get(a.partner_id ?? "") ?? "Parceiro";
     if (a.buyer_scope === "producer") return "Produtor";
     return "Tabela padrão";
+  }
+
+  const publishContextValid = !!publishTarget && publish.ready && publish.scope === publishTarget.scope
+    && publishOpening.current?.() === true
+    && samePublishTarget(assignments.find((a) => a.id === publishTarget.assignment.id), publishTarget.assignment);
+
+  function resetPublishConfirmation() {
+    publishOpening.current = null;
+    setPublishTarget(null);
+    setPublishError(null);
+  }
+
+  function openPublishConfirmation(a: PlanAssignment) {
+    if (!canPublish || !publish.ready || publish.isPending || publishLock.current) return;
+    publishOpening.current = publish.capture();
+    setPublishError(null);
+    setPublishTarget({
+      assignment: { ...a },
+      conditionLabel: planName.get(a.plan_id) ?? a.plan_id,
+      destinationLabel: a.buyer_scope === "partner"
+        ? partnerName.get(a.partner_id ?? "") ?? `Parceiro ${a.partner_id ?? "não identificado"}`
+        : a.buyer_scope === "producer" ? `Produtor ${a.customer_id ?? "não identificado"}` : "Tabela padrão",
+      scope: publish.scope,
+    });
+  }
+
+  function handlePublishConfirmation() {
+    const target = publishTarget;
+    if (!target || publishLock.current || publish.isPending) return;
+    if (!publishContextValid) {
+      setPublishError(PUBLISH_CONTEXT_ERROR);
+      return;
+    }
+    publishLock.current = true;
+    setPublishError(null);
+    publish.mutate({ id: target.assignment.id }, {
+      onSuccess: () => {
+        toast.success("Atribuição publicada");
+        resetPublishConfirmation();
+      },
+      onError: (e) => setPublishError(conditionErrorMessage((e as Error)?.message)),
+      onSettled: () => { publishLock.current = false; },
+    });
   }
 
   function onError(e: unknown) {
@@ -127,11 +200,8 @@ export function AtribuicoesPlanosTab() {
                       )}
                       {canPublish && a.status !== "published" && a.status !== "archived" && (
                         <Button
-                          size="sm" disabled={submit.isPending || publish.isPending || archive.isPending}
-                          onClick={() => {
-                            if (!confirm("Publicar esta atribuição? O plano passa a ficar elegível para o destino.")) return;
-                            publish.mutate({ id: a.id }, { onSuccess: () => toast.success("Atribuição publicada"), onError });
-                          }}
+                          size="sm" disabled={submit.isPending || publish.isPending || archive.isPending || !publish.ready}
+                          onClick={() => openPublishConfirmation(a)}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Publicar
                         </Button>
@@ -342,6 +412,59 @@ export function AtribuicoesPlanosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!publishTarget}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !publish.isPending) resetPublishConfirmation();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publicar atribuição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A condição passa a ficar elegível somente para o destino conferido abaixo. A publicação só é confirmada após a resposta do servidor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {publishTarget && (
+            <dl className="space-y-3 rounded-md border p-4 text-sm">
+              <div>
+                <dt className="font-medium">Condição</dt>
+                <dd className="text-muted-foreground">{publishTarget.conditionLabel}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Destino</dt>
+                <dd className="text-muted-foreground">{publishTarget.destinationLabel}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Vigência</dt>
+                <dd className="text-muted-foreground">
+                  {formatDateDisplay(publishTarget.assignment.valid_from)} → {publishTarget.assignment.valid_until ? formatDateDisplay(publishTarget.assignment.valid_until) : "sem data final"}
+                </dd>
+              </div>
+            </dl>
+          )}
+          {(publishError || (publishTarget && !publishContextValid)) && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{publishError ?? PUBLISH_CONTEXT_ERROR}</AlertDescription>
+            </Alert>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publish.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={publish.isPending || !publishContextValid}
+              onClick={(event) => {
+                event.preventDefault();
+                handlePublishConfirmation();
+              }}
+            >
+              {publish.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              {publish.isPending ? "Publicando…" : "Confirmar publicação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
