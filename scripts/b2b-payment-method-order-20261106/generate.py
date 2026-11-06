@@ -293,9 +293,9 @@ END $function$;
 
 CREATE OR REPLACE FUNCTION platform_private.b2b_payment_method_hash(p_base text, p_pm jsonb, p_total numeric)
  RETURNS text LANGUAGE sql IMMUTABLE SET search_path TO '' AS $function$
-  SELECT encode(extensions.digest(convert_to('b2bpm_hash_v1|' || p_base || '|cfg=' || (p_pm->>'config_id') || '|v=' || (p_pm->>'version')
+  SELECT encode(pg_catalog.sha256(convert_to('b2bpm_hash_v1|' || p_base || '|cfg=' || (p_pm->>'config_id') || '|v=' || (p_pm->>'version')
     || '|kind=' || (p_pm->>'method_kind') || '|n=' || (p_pm->>'installment_count') || '|due=' || (p_pm->>'due_days')
-    || '|rate=' || COALESCE(p_pm->>'price_monthly_rate_percent', '-') || '|total=' || to_char(round(p_total, 2), 'FM9999999999990.00'), 'UTF8'), 'sha256'), 'hex')
+    || '|rate=' || COALESCE(p_pm->>'price_monthly_rate_percent', '-') || '|total=' || to_char(round(p_total, 2), 'FM9999999999990.00'), 'UTF8')), 'hex')
 $function$;
 
 -- Empresa vendedora do pedido: comprador externo -> leitor canônico; ator interno -> própria empresa (h15), que precisa
