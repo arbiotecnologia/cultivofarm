@@ -1,0 +1,9 @@
+-- READ ONLY após instalação.
+SELECT
+  md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure)) = '350c34b62f113c11e24614b740dbbe95' AS projection_post_pin,
+  (SELECT coalesce(array_to_string(proacl, ','), '') FROM pg_proc WHERE oid = 'platform_private.b2b_commercial_partner_projection()'::regprocedure) = 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres' AS projection_acl_unchanged,
+  md5(pg_get_functiondef('public.get_my_commercial_partner_projection()'::regprocedure)) = '730a17482e07d1bc350edfaea907cd1f' AS wrapper_unchanged,
+  md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) = '64e10608403238a41a9baf92857ca881' AS guard_unchanged,
+  (SELECT prosecdef FROM pg_proc WHERE oid = 'public.tenant_display_name_v1()'::regprocedure) AS display_definer,
+  NOT has_function_privilege('anon', 'public.tenant_display_name_v1()', 'EXECUTE') AS display_anon_denied,
+  has_function_privilege('authenticated', 'public.tenant_display_name_v1()', 'EXECUTE') AS display_authenticated_ok;

@@ -1,0 +1,8 @@
+-- READ ONLY. Confirmar antes que o projeto conectado é swzpzcwiasxmjutrmvkm.
+SELECT
+  md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure)) = '64e10608403238a41a9baf92857ca881' AS pin_0,
+  md5(pg_get_functiondef('platform_private.platform_actor_access_ready(uuid)'::regprocedure)) = '048249c0c2106c3761e26eacb8d0de84' AS pin_1,
+  md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure)) = 'ebd6bf6f252676ba21445427a7057588' AS pin_2,
+  md5(pg_get_functiondef('public.get_my_commercial_partner_projection()'::regprocedure)) = '730a17482e07d1bc350edfaea907cd1f' AS pin_3,
+  (SELECT coalesce(array_to_string(proacl, ','), '') FROM pg_proc WHERE oid = 'platform_private.b2b_commercial_partner_projection()'::regprocedure) = 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres' AS proj_acl_ok,
+  to_regprocedure('public.tenant_display_name_v1()') IS NULL AS target_absent;
