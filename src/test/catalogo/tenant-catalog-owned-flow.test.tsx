@@ -198,6 +198,7 @@ describe("reabrir próprios nas abas Produtos e Microrganismos", () => {
     if (entity === "produto") {
       fireEvent.click(screen.getByRole("button", { name: "Editar" }));
       await waitFor(() => expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe(nome));
+      await waitFor(() => expect(screen.getByLabelText("Unidade do produto *").textContent).toBe("kg"));
       fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: nome + " editado" } });
       fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
     } else {
@@ -224,6 +225,8 @@ describe("salvamento único de identificação/composição", () => {
     const view = app(ProdutosTab);
     await screen.findByText("Produto declarado"); fireEvent.click(screen.getByRole("button", { name: "Editar" }));
     await waitFor(() => expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe("Produto declarado"));
+    if (db.unitCapability === "positive") await waitFor(() => expect(screen.getByLabelText("Unidade do produto *").textContent).toBe("L"));
+    else await waitFor(() => expect(db.calls).toContain("tenant_product_unit_capability_v1"));
     return view;
   }
   it("declaração existente permanece intacta quando só identificação muda", async () => {
