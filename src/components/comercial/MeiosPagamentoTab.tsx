@@ -90,7 +90,8 @@ export function MeiosPagamentoTab() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Exigência do meio no pedido</CardTitle>
-          <CardDescription>Situação atual: <Badge data-testid="pm-mode">{MODE_LABEL[d.activation.mode]}</Badge>. Piloto vale só para os parceiros marcados.</CardDescription>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">Situação atual: <Badge data-testid="pm-mode">{MODE_LABEL[d.activation.mode]}</Badge></div>
+          <CardDescription>Piloto vale só para os parceiros marcados; os demais seguem o contrato atual.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
