@@ -8,6 +8,8 @@ import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/cat
 import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyPartner } from "@/hooks/useMyPartner";
+import { usePartnerCatalogVolumes } from "@/hooks/usePartnerCatalogVolumes";
+import { supplierLabel } from "@/lib/comercial/supplierName";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -72,6 +74,10 @@ export default function PortalParceiroLayout() {
   const isStaff = role === "administrador" || role === "gestor_comercial";
   const isTecnico = !externalManager && role === "parceiro_b2b_tecnico";
   const commercialOwner = ownPartner?.mode === "commercial_owner";
+  // Nome do vendedor só do contexto autorizado pelo servidor; somente no acompanhamento do comprador.
+  const sellerContext = usePartnerCatalogVolumes(partnerReady && !partnerError && commercialOwner && externalManager &&
+    ownerOrdersRoute(location.pathname) ? ownPartner?.id : null);
+  const sellerName = sellerContext.data?.sellerName ?? null;
   const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
     .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && (ownerCatalogRoute(item.route, ownPartner?.capabilities) || ownerOrdersRoute(item.route) || (entitlements.status === "ready" && ownFinanceRoute(item.route, ownPartner?.financeRead === true, entitlements.features))))) && isPathEntitled(item.route, entitlements)) }))
     .filter((group) => group.items.length > 0);
