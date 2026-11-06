@@ -15,3 +15,13 @@ it.each(["05/11/2026", "2026-11-5", "not-a-date", "2026-11-05T00:00:00Z", "'; dr
   const draft = safePartnerOrderDraft({ partnerId: "partner", addItemId: null, requestedDeliveryDate, items: [{ itemId: "item", volumeId: "volume", quantity: 1 }] });
   expect(draft?.requestedDeliveryDate).toBeNull();
 });
+it("retains a whole-packaging choice (identity + integer quantity only)", () => {
+  const raw = { partnerId: "p", addItemId: null, requestedDeliveryDate: null, items: [{ itemId: "i", packagingId: "pk", quantity: 3, preco: 1, peso: 25 }] };
+  expect(safePartnerOrderDraft(raw as never)).toEqual({ partnerId: "p", addItemId: null, requestedDeliveryDate: null, items: [{ itemId: "i", packagingId: "pk", quantity: 3 }] });
+});
+it.each([1.5, 0, -2])("rejects fractional/invalid packaging quantity %s", quantity => {
+  expect(safePartnerOrderDraft({ partnerId: "p", addItemId: null, requestedDeliveryDate: null, items: [{ itemId: "i", packagingId: "pk", quantity }] })).toBeNull();
+});
+it("rejects a line mixing volume and packaging", () => {
+  expect(safePartnerOrderDraft({ partnerId: "p", addItemId: null, requestedDeliveryDate: null, items: [{ itemId: "i", packagingId: "pk", volumeId: "v", quantity: 1 } as never] })).toBeNull();
+});
