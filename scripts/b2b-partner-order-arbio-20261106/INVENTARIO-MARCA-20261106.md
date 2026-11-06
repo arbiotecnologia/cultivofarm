@@ -64,3 +64,5 @@ Dinâmicos (nome real quando o contexto autorizado responde; neutro só em carre
 - `ReportShell.tsx` revertido byte a byte (pin financeiro `0ec06253`): cabeçalho/rodapé dos relatórios financeiros voltam a "Cultivo Farm" — PENDENTE de revisão de diff da evidência financeira.
 - Fornecedor gravado/seed de microrganismos: mantido (dado, não mensagem).
 - Neutros fixos remanescentes (sem projeção): laudo `PortalOrdensServico.tsx:212`, `FichaProdutorDrawer.tsx:145`, `AccountingPendingNotice.tsx`, aviso de usuário sem vínculo `PortalParceiroLayout.tsx` (sem parceiro não há vendedor).
+- Etiquetas: placeholders de conservação/uso voltaram a neutro fixo "Padrão da empresa responsável" para não montar leitura secundária na tela de envase contida; o cabeçalho da etiqueta impressa usa o nome do tenant (após instalação).
+- Telas internas de pedidos B2B (PedidosB2B/SolicitacoesB2B): o nome só é lido com o diálogo aberto, para a lista não montar leitura secundária.
