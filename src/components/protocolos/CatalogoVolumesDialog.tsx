@@ -89,7 +89,8 @@ export function CatalogoVolumesDialog({ open, onOpenChange, itemId, itemTipo, it
   const isLoading = owned ? tenantVolumes.isLoading : globalRead.isLoading;
   const readError = owned ? tenantVolumes.error : globalRead.error;
   useEffect(() => {
-    if (open) { frozenScope.current = scopeKey; }
+    // Re-render after freezing: a mount already open (cached read) must not keep a stale inactive child.
+    if (open) { frozenScope.current = scopeKey; renderLock(value => value + 1); }
     // Freeze scope only at opening; a new scope must close the dialog.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, itemId]);
