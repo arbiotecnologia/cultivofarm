@@ -18,6 +18,7 @@ import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoR
 import { initialRoleChangeReresolve, onExpire as roleChangeOnExpire, onValid as roleChangeOnValid, type RoleChangeReresolveState } from "@/lib/authz/roleChangeReresolve";
 import { clearAllPauseStates } from "@/lib/authz/pauseRetainedState";
 import { safePartnerOrderDraft, type SafePartnerOrderDraft } from "@/lib/authz/safePartnerOrderDraft";
+import { clearAllPartnerOrderDrafts } from "@/lib/authz/partnerOrderDraftStore";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -309,6 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (profile.ativo === false) {
+        clearAllPartnerOrderDrafts();
         partnerRenewalRef.current = null;
         renewalRef.current = null;
         loadedUserIdRef.current = null;
@@ -428,6 +430,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeUserIdRef.current = nextUserId;
         const identityChanged = !!(lastUserId && lastUserId !== nextUserId);
         const authorizationChanged = event === "TOKEN_REFRESHED" || event === "USER_UPDATED";
+        // Escolhas retidas após reload: renovação natural preserva; saída/troca de identidade apaga.
+        if (identityChanged || !nextUserId) clearAllPartnerOrderDrafts();
         if (identityChanged || authorizationChanged || !nextUserId) {
           const monitor = authzMonitorRef.current;
           const fingerprint = monitor?.currentFingerprint();
@@ -730,6 +734,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthzState(next);
       },
       onEpochChange: () => {
+        clearAllPartnerOrderDrafts();
         partnerRenewalRef.current = null;
         partnerDraftRef.current = null;
         renewalRef.current = null;
@@ -750,6 +755,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void refresh();
       },
       onExpire: (reason) => {
+        clearAllPartnerOrderDrafts();
         partnerRenewalRef.current = null;
         partnerDraftRef.current = null;
         renewalRef.current = null;
@@ -1003,6 +1009,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningOutUserId(prev => (prev === leavingUserId ? null : prev));
     };
     if (leavingUserId) setSigningOutUserId(leavingUserId);
+    clearAllPartnerOrderDrafts();
     partnerRenewalRef.current = null;
     partnerDraftRef.current = null;
     clearResume();
