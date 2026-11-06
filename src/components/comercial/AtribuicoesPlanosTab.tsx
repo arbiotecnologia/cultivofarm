@@ -412,6 +412,59 @@ export function AtribuicoesPlanosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!publishTarget}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !publish.isPending) resetPublishConfirmation();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publicar atribuição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A condição passa a ficar elegível somente para o destino conferido abaixo. A publicação só é confirmada após a resposta do servidor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {publishTarget && (
+            <dl className="space-y-3 rounded-md border p-4 text-sm">
+              <div>
+                <dt className="font-medium">Condição</dt>
+                <dd className="text-muted-foreground">{publishTarget.conditionLabel}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Destino</dt>
+                <dd className="text-muted-foreground">{publishTarget.destinationLabel}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Vigência</dt>
+                <dd className="text-muted-foreground">
+                  {formatDateDisplay(publishTarget.assignment.valid_from)} → {publishTarget.assignment.valid_until ? formatDateDisplay(publishTarget.assignment.valid_until) : "sem data final"}
+                </dd>
+              </div>
+            </dl>
+          )}
+          {(publishError || (publishTarget && !publishContextValid)) && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{publishError ?? PUBLISH_CONTEXT_ERROR}</AlertDescription>
+            </Alert>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publish.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={publish.isPending || !publishContextValid}
+              onClick={(event) => {
+                event.preventDefault();
+                handlePublishConfirmation();
+              }}
+            >
+              {publish.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              {publish.isPending ? "Publicando…" : "Confirmar publicação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
