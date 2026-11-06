@@ -6,3 +6,5 @@
 - Superfície de autoridade: nenhuma RPC/tabela nova, nenhuma escrita/dispatch, mesma `queryKey`/escopo; reduz callbacks. Compatível com a regra de AGENTS de reconciliação somente leitura.
 - Mecanismo previsto pelo próprio script: `--consumer-revision` exige `historical_md5` igual ao pin original e um motivo; o pin histórico NÃO foi alterado.
 - Arquivo candidato: `consumer-revision-delivery-finance-20261030.candidate.json`. O teste vitest NÃO foi religado a ele — segue FAIL até aprovação do revisor.
+- Achado adicional: o script para na primeira falha e mascarava uma segunda divergência — `src/components/financeiro/relatorios/ReportShell.tsx` (pin `0ec06253`), causada pela rodada de nome do tenant de 06/11 (commits bc635d0e1/f751604b1, ausente em 607c0d3f). Esse arquivo foi RESTAURADO byte a byte a `0ec06253` (sem rever pin); o cabeçalho/rodapé dos relatórios financeiros voltam a exibir a marca e ficam como pendência sujeita a revisão própria.
+- Com o candidato passado via `--consumer-revision`, o script completo passa (exit 0) em cópia de trabalho; sem ele, falha somente no pin preexistente da reconciliação.
