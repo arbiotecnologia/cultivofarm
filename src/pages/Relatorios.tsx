@@ -27,6 +27,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { formatOS } from "@/lib/osLabel";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 
 const CHART_COLORS = [
@@ -50,10 +51,10 @@ function getMonthRange(startDate: string, endDate: string) {
   return { start: startDate, end: endDate };
 }
 
-function exportPDF(title: string, headers: string[], rows: string[][]) {
+function exportPDF(title: string, headers: string[], rows: string[][], empresa: string) {
   const doc = new jsPDF();
   doc.setFontSize(16);
-  doc.text(`Cultivo Farm — ${title}`, 14, 20);
+  doc.text(`${empresa} — ${title}`, 14, 20);
   doc.setFontSize(9);
   doc.text(`Gerado em: ${formatDateDisplay(new Date())}`, 14, 28);
   autoTable(doc, { head: [headers], body: rows, startY: 34, styles: { fontSize: 8 } });
@@ -70,6 +71,7 @@ function exportExcel(title: string, headers: string[], rows: string[][]) {
 const chartConfig = { value: { label: "Valor", color: "hsl(var(--primary))" } };
 
 export default function Relatorios() {
+  const { label: tenantLabel } = useActiveTenantName();
   const isMobile = useIsMobile();
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
@@ -326,7 +328,7 @@ export default function Relatorios() {
       l.data_producao, l.codigo_lote, l.produtos?.nome || "—",
       l.volume_produzido ? (l.volume_produzido / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "0", l.status,
     ]);
-    format === "pdf" ? exportPDF("Relatório de Produção", headers, rows) : exportExcel("Produção", headers, rows);
+    format === "pdf" ? exportPDF("Relatório de Produção", headers, rows, tenantLabel) : exportExcel("Produção", headers, rows);
   };
 
   const exportEntregas = (format: "pdf" | "excel") => {
@@ -339,7 +341,7 @@ export default function Relatorios() {
       e.motorista || "—", e.veiculo || "—", e.data_saida || "—", e.status,
     ]);
     if (format === "pdf") {
-      exportPDF("Relatório de Entregas", headers, rows);
+      exportPDF("Relatório de Entregas", headers, rows, tenantLabel);
     } else {
       // Excel com duas abas: detalhe + agregação por produto
       const ws1 = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -360,7 +362,7 @@ export default function Relatorios() {
       o.clientes?.nome || "—", o.fazendas?.nome || "—", o.produtos?.nome || "—",
       String(o.area_hectares || 0), String(o.volume_total_ml || 0), o.status,
     ]);
-    format === "pdf" ? exportPDF("Relatório de Área Atendida", headers, rows) : exportExcel("Área Atendida", headers, rows);
+    format === "pdf" ? exportPDF("Relatório de Área Atendida", headers, rows, tenantLabel) : exportExcel("Área Atendida", headers, rows);
   };
 
   const exportVistorias = (format: "pdf" | "excel") => {
@@ -377,7 +379,7 @@ export default function Relatorios() {
       v.longitude ? String(v.longitude) : "—",
       v.status || "—",
     ]);
-    format === "pdf" ? exportPDF("Relatório de Vistorias", headers, rows) : exportExcel("Vistorias", headers, rows);
+    format === "pdf" ? exportPDF("Relatório de Vistorias", headers, rows, tenantLabel) : exportExcel("Vistorias", headers, rows);
   };
 
   const exportMatrizCSV = () => {

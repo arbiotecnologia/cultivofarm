@@ -78,6 +78,7 @@ import { mensagemAmigavelVisita, codigoTecnicoVisita } from "@/lib/visita/visita
 import { resolveVisitaAcoes } from "@/lib/visita/acoesPersistencia";
 import { resolveEtapasAcionaveis, clampPercentualArea } from "@/lib/visita/etapasVisita";
 import { preserveMonitoringPlan } from "@/lib/visita/preserveMonitoringPlan";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 // ---------- Helpers ----------
 function translateError(msg: string): string {
@@ -115,6 +116,7 @@ import { formatOS } from "@/lib/osLabel";
 
 // ---------- Page ----------
 export default function VisitaTecnica() {
+  const { label: tenantLabel } = useActiveTenantName();
   const isMobile = useIsMobile();
   const { id } = useParams<{ id: string }>();
   const workspaceQuery = useVisitaWorkspace(id ?? null);
@@ -1012,7 +1014,7 @@ export default function VisitaTecnica() {
     }));
 
     return {
-      empresa: { nome: config?.nome_empresa || "Cultivo Farm" },
+      empresa: { nome: tenantLabel },
       cliente: v.clientes?.nome,
       fazenda: v.fazendas?.nome,
       talhao: v.talhoes?.nome,

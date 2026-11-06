@@ -32,6 +32,7 @@ import {
   validarAnexoComprovante,
   type PathPendente,
 } from "@/lib/entregas/anexoComprovante";
+import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
@@ -101,6 +102,7 @@ function mesmoRecebedor(a: RecebedorPayload, b: RecebedorPayload) {
 }
 
 export function EntregaComprovantePanel({ entrega }: Props) {
+  const { label: tenantLabel } = useActiveTenantName();
   const qc = useQueryClient();
   const { user, role } = useAuth();
   const access = useStorageAccessScope(`comprovante:${entrega?.id}`);
@@ -752,7 +754,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             <Button size="sm" variant="outline" onClick={openForm}>
               <Printer className="h-4 w-4 mr-1" /> Imprimir formulário
             </Button>
-            <Button size="sm" variant="outline" onClick={openForm2Vias} title="Imprime 2 vias: Cliente e Cultivo Farm">
+            <Button size="sm" variant="outline" onClick={openForm2Vias} title={`Imprime 2 vias: Cliente e ${tenantLabel}`}>
               <Copy className="h-4 w-4 mr-1" /> Imprimir 2 vias
             </Button>
             {!somenteConsulta && status !== "confirmado" && status !== "dispensado" && (
