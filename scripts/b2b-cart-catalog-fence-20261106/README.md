@@ -16,12 +16,23 @@ O harness anterior (`b2b-solid-packaging-order-20261106/test-local-pg.py`) subst
 2. `fn_resolve_commercial_price`: só a linha do preço canônico muda, e só para `p_buyer_scope='partner'`.
 Nada mais muda (pins em generate.py: fence, ator, papéis, wrappers, leitores, carrinho, embalagem, simulação).
 
+## Escopo estrito da rota nova
+Só para linha por volume (`unidade` + `volume_ml>0`) e comprador externo puro (`parceiro_b2b` sem `administrador`/`gestor_comercial`).
+Exige o leitor canônico (superadmin, técnico, inativo, outro parceiro, sem `catalogo_precos` negam) + item do vendedor ativo/B2B/não oculto.
+Hectare/litro/dose, técnicos, atores internos e papéis acumulados seguem o wrapper cercado anterior. Preço = mesmo núcleo do wrapper.
+
+## Funções expostas revisadas (corpos pinados, não alterados)
+- `simulate_b2b_payment_plan_secure`, `create_partner_order_secure` (via carrinho), `convert_partner_simulation_to_order_secure`: comprador próprio passa a obter o preço da linha por volume; demais guards intactos.
+- `rpc_resolve_commercial_prices`: comprador próprio (escopo canônico) passa a obter a mesma linha por volume — igual ao carrinho.
+- `rpc_cc_simulate_price`: só ator interno (`fn_cc_can_prepare`) → wrapper, sem mudança.
+- `get_partner_catalog_tecnico_secure` (2 overloads): usa hectare/litro/dose → wrapper, sem mudança.
+
 ## Arquivos
 `01-pre.sql.readonly`, `02-install.sql.review`, `03-post.sql.readonly`, `04-rollback-deny.sql.review` (md5 em
 `generated-md5.json`), `captured/` (corpos LIVE com md5), `test-local-pg.py`, `evidence-local-pg.json`.
 Antes de rodar: confirmar fora do SQL o ref `swzpzcwiasxmjutrmvkm`.
 
-## Resultado local: 45/45 (PG descartável)
+## Resultado local: 56/56 (PG descartável)
 Pré: comprador líquido/misto negado pela fence; embalagem passava. Pós: líquido 1/0,10/0,90; embalagem 20/2/18; misto
 21/2,10/18,90; micro; preço do cliente ignorado/recusado; admin interno inalterado; negados: item de outro tenant,
 item oculto, outro parceiro, comprador/admin de outro tenant, técnico, inativo, superadmin, sem sessão, anônimo;
