@@ -27,6 +27,8 @@ CAP = HERE / "captured"
 
 SEAMS = [
     "accounts_receivable/accounts_receivable_installments/partner_order_financial_links com colunas reais, SEM gatilhos/FKs (fixture de inadimplência inserida como postgres)",
+    "partner_order_payment_schedule ganha a coluna real id (o guard real ordena por s.id)",
+    "zz_c2_accounting_pending também testado ISOLADO (demais gatilhos de partner_orders desligados numa transação desfeita)",
     "commercial_payment_plans ganha superseded_by_id/valid_from/valid_until reais para o fn_b2b_plan_selectable REAL",
     "request.jwt.claims por GUC local (PG descartável) para recorte_a_actor_fresh REAL; não é sessão hospedada",
     "gatilhos de catalogo_volumes sync_catalogo_volumes_calc/trg_zz_catalogo_volumes_sync_mestre/touch_version/updated_at omitidos (podem travar produtos/volumes no hospedado)",
@@ -168,6 +170,7 @@ DROP FUNCTION public.fn_b2b_plan_selectable(uuid);
     settings(None)
 
     # ------------------------------------------------------------------ 2. c2_accounting_pending_guard REAL
+    psql("ALTER TABLE public.partner_order_payment_schedule ADD COLUMN IF NOT EXISTS id uuid NOT NULL DEFAULT gen_random_uuid();")
     contract = psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id = '{ORD_ANALISE}'").stdout.strip()
     chk("accounting.order_carries_pending_contract", contract == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1", contract)
     for nm, oid, setc in (
@@ -182,7 +185,12 @@ DROP FUNCTION public.fn_b2b_plan_selectable(uuid);
         # Ator = admin do vendedor (auth.uid por GUC local) para que os guards anteriores não neguem por ausência de sessão;
         # a asserção exige a mensagem do c2_accounting_pending_guard, não "qualquer negação".
         r = psql(f"SELECT set_config('request.jwt.claim.sub','{UADM}',false) \\g /dev/null\nUPDATE public.partner_orders SET {setc} WHERE id = '{oid}'", check=False)
-        chk(f"accounting.pending_guard_denies.{nm}", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, err(r))
+        chk(f"accounting.integrated_stack_denies.{nm}", r.returncode != 0, err(r))
+        # Isolado: SÓ o gatilho real zz_c2_accounting_pending ativo (demais desligados numa transação desfeita) — prova que ELE nega,
+        # não apenas que "algum guard" negou.
+        r = psql("BEGIN; ALTER TABLE public.partner_orders DISABLE TRIGGER USER; ALTER TABLE public.partner_orders ENABLE TRIGGER zz_c2_accounting_pending;\n"
+                 f"SELECT set_config('request.jwt.claim.sub','{UADM}',true) \\g /dev/null\nUPDATE public.partner_orders SET {setc} WHERE id = '{oid}';\nROLLBACK;", check=False)
+        chk(f"accounting.pending_guard_alone_denies.{nm}", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, err(r))
     st = psql(f"SELECT status||'|'||coalesce(receivable_generated,false)||'|'||coalesce(ready_for_production,false) FROM public.partner_orders WHERE id = '{ORD_ANALISE}'").stdout.strip()
     chk("accounting.order_unchanged_after_denials", st == "em_analise_comercial|false|false", st)
     r = psql(f"UPDATE public.partner_orders SET status = 'cancelado' WHERE id = '{ORD_CREDIT}'", check=False)
