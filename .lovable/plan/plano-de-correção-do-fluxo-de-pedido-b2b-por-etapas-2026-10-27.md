@@ -12,6 +12,10 @@
 
 Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, migration, fixture, sessão, runtime ou publicação. Instalações externas já relatadas são preservadas, não reaplicadas. Captura LIVE histórica não é recertificação atual. Contabilidade/fiscal reais e SU-518022 permanecem pendentes.
 
+### Continuidade 06/11 — pedido pelo parceiro AR Bio (comprador fictício)
+- [x] Inventário/bloqueios em `scripts/b2b-partner-order-arbio-20261106/README.md`; B1 capability servidor não verificada, B2 sólido sem contrato de pedido, B3 meio de pagamento, B4 recebível por NF. Testes 9/9 BLOCKED-caracterização. Sem hosted/SQL/publicação.
+- [ ] Contrato servidor revisado de embalagem inteira; capability real em sessão do comprador.
+
 ## Etapa 1 — Testes da tela da empresa parceira (concluída)
 - [x] Simulação atualizada; 7/7 no resultado histórico.
 - [ ] Aceite integral por perfil/tenant pertence à Etapa 9; estes sete testes não certificam o fluxo.
