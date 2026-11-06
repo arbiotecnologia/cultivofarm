@@ -7,8 +7,7 @@ itens/condição. Resolvedores REAIS de crédito/juros/plano (213ac31f/806e5d87/
 parceiro REAL (bd985484), carrinho/hash REAIS. O pacote gera os RPCs com meio a partir desses corpos por deltas exatos.
 
 COSTURAS DECLARADAS (não são prova): as do harness B2 (auth.uid por GUC, has_role/get_user_partner_id/b2b_actor_scope,
-c2_* mínimos, entitlements, tabelas de 2º nível sem gatilhos); payment_methods mínima; platform_actor_access_ready = perfil
-ativo; get_partner_order_payment_terms_secure = portas mínimas (comprador do parceiro ou admin do vendedor). Os pins de
+c2_* mínimos, entitlements, tabelas de 2º nível sem gatilhos); payment_methods mínima; get_partner_order_payment_terms_secure = portas mínimas (comprador do parceiro ou admin do vendedor). Os pins de
 colunas/leitor de condição são trocados SÓ na cópia temporária. Nunca prova JWT/RLS/PostgREST hospedado.
 Dados 100% fictícios (TESTE): vendedor A (papel AR Bio) e F (outro tenant).
 """
@@ -134,8 +133,6 @@ def parallel(sqls, delays):
 
 SEAMS = f"""
 CREATE TABLE public.payment_methods(id uuid PRIMARY KEY, name text NOT NULL, active boolean NOT NULL DEFAULT true);
-CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS
- $$ SELECT EXISTS (SELECT 1 FROM public.profiles p WHERE p.user_id = $1 AND p.ativo) $$;
 CREATE FUNCTION public.get_partner_order_payment_terms_secure(p_order_id uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM partner_orders o JOIN partner_accounts pa ON pa.id = o.partner_id WHERE o.id = p_order_id AND (
