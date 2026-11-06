@@ -971,7 +971,7 @@ export default function NovoPedido() {
       </div>
 
       {/* Sticky resumo mobile */}
-      {cartList.length > 0 && (
+      {(cartList.length > 0 || pendingPackaging.length > 0) && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t bg-background p-3 z-20 space-y-2 shadow-lg">
           {pendingPackaging.length > 0 && (
             <p role="status" className="text-xs text-destructive">
