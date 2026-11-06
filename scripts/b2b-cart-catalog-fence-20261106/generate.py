@@ -45,8 +45,18 @@ HELPER = r"""CREATE OR REPLACE FUNCTION platform_private.b2b_partner_cart_volume
  SET search_path TO ''
 AS $function$
 -- B2B_CART_CATALOG_FENCE_V1. Sem EXECUTE para clientes; só chamado por fn_resolve_commercial_price (escopo partner).
-DECLARE v_seller uuid;
+DECLARE v_seller uuid; v_uid uuid := auth.uid();
 BEGIN
+  -- Rota nova SOMENTE para: linha de carrinho por volume (unidade + volume_ml > 0) e comprador externo puro
+  -- (parceiro_b2b sem administrador/gestor_comercial). Unidades hectare/litro/dose (catálogos técnico/comercial)
+  -- e atores internos seguem exatamente o wrapper cercado anterior.
+  IF p_unit_type IS DISTINCT FROM 'unidade' OR COALESCE(p_volume_ml, 0) <= 0
+     OR v_uid IS NULL
+     OR public.has_role(v_uid, 'parceiro_b2b'::public.app_role) IS NOT TRUE
+     OR public.has_role(v_uid, 'administrador'::public.app_role) IS NOT FALSE
+     OR public.has_role(v_uid, 'gestor_comercial'::public.app_role) IS NOT FALSE THEN
+    RETURN public.fn_catalogo_preco_canonico(p_product_id, p_microrganismo_id, p_unit_type, p_volume_ml);
+  END IF;
   BEGIN
     v_seller := platform_private.b2b_partner_catalog_reader(p_partner_id);   -- guard canônico: técnico/superadmin/outro parceiro/inativo negam
   EXCEPTION WHEN insufficient_privilege THEN
@@ -95,6 +105,14 @@ UNCHANGED = {
     "platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)": cap("platform_private.b2b_packaging_line")[1],
     "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": cap("public.simulate_b2b_payment_plan_secure")[1],
 }
+# Funções expostas que chamam o motor: pinadas sem mudança (revisão de impacto no README).
+UNCHANGED.update({
+    "public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": cap("public.rpc_cc_simulate_price")[1],
+    "public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)": cap("public.rpc_resolve_commercial_prices")[1],
+    "public.get_partner_catalog_tecnico_secure()": cap("public.get_partner_catalog_tecnico_secure.f0cfc0c6")[1],
+    "public.get_partner_catalog_tecnico_secure(boolean)": cap("public.get_partner_catalog_tecnico_secure.f682465d")[1],
+    "public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)": cap("public.convert_partner_simulation_to_order_secure")[1],
+})
 CRP_SIG = "public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)"
 
 

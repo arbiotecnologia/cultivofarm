@@ -140,7 +140,9 @@ REAL_BODIES = ["platform_private.h15_actor_organization", "platform_private.cata
                "platform_private.b2b_actor_scope", "public.get_user_partner_id", "platform_private.c1b_catalog_visibility_scope",
                "platform_private.b2b_partner_catalog_reader", "platform_private.b2b_partner_catalog_item_price", "public.get_partner_catalog_secure.6b56cfb1",
                "public.recorte_a_legacy_solid", "public.fn_b2b_cart_hash", "public.fn_b2b_apply_interest", "public.fn_resolve_commercial_price",
-               "platform_private.b2b_packaging_line", "public.fn_resolve_b2b_cart.507077a4", "public.simulate_b2b_payment_plan_secure"]
+               "platform_private.b2b_packaging_line", "public.fn_resolve_b2b_cart.507077a4", "public.simulate_b2b_payment_plan_secure", "public.rpc_cc_simulate_price",
+               "public.rpc_resolve_commercial_prices", "public.get_partner_catalog_tecnico_secure.f0cfc0c6", "public.get_partner_catalog_tecnico_secure.f682465d",
+               "public.convert_partner_simulation_to_order_secure"]
 
 ACL = """
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public, platform_private FROM PUBLIC;
@@ -247,6 +249,19 @@ def matrix(phase):
     denied(f"{tag}: helper privado sem EXECUTE para authenticated",
            as_user(UB, f"SELECT platform_private.b2b_partner_cart_volume_price('{P}','{LIQ}',NULL,'unidade',1000);"),
            "permission denied" if tag != "rollback" else "permission denied")
+    H = "SELECT platform_private.b2b_partner_cart_volume_price('%s','%s',NULL,'%s',%s);"
+    denied(f"{tag}: rota nova não vale para hectare (catálogo técnico/comercial inalterado)", as_user(UB, H % (P, LIQ, "hectare", "NULL"), "postgres"), "tenant_catalog_fence_denied")
+    denied(f"{tag}: rota nova não vale para litro/dose", as_user(UB, H % (P, LIQ, "litro", "NULL"), "postgres"), "tenant_catalog_fence_denied")
+    denied(f"{tag}: técnico chamando helper cai no wrapper cercado", as_user(UT, H % (P, LIQ, "unidade", 1000), "postgres"), "tenant_catalog_fence_denied")
+    j = as_user(UADM, H % (P, LIQ, "unidade", 1000), "postgres")
+    check(f"{tag}: admin interno usa o wrapper cercado (mesmo preço 1)", j.returncode == 0 and j.stdout.strip().splitlines()[-1] in ("1", "1.00", "1.000000"), j.stdout + j.stderr)
+    psql(f"INSERT INTO public.user_roles VALUES ('{UB}','administrador')")
+    j = as_user(UB, H % (P, LIQ, "unidade", 1000), "postgres")
+    check(f"{tag}: comprador acumulando administrador segue o wrapper cercado (fence decide, autoriza ator interno)", j.returncode == 0, j.stderr)
+    psql(f"DELETE FROM public.user_roles WHERE user_id='{UB}' AND role='administrador'")
+    psql(f"DELETE FROM public.feature_grants WHERE user_id='{UB}'")
+    denied(f"{tag}: comprador sem recurso catalogo_precos negado", sim(UB, P, [LIQ_LINE]), "")
+    psql(f"INSERT INTO public.feature_grants VALUES ('{UB}','catalogo_precos')")
     denied(f"{tag}: motor fn_resolve_commercial_price sem EXECUTE cliente",
            as_user(UB, f"SELECT public.fn_resolve_commercial_price('partner','{P}',NULL,'{PLD}','{LIQ}',NULL,'unidade',1000);"), "permission denied")
 

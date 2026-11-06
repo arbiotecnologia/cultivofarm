@@ -23,11 +23,16 @@
     "public.fn_resolve_commercial_price",
     "platform_private.b2b_packaging_line",
     "public.fn_resolve_b2b_cart.507077a4",
-    "public.simulate_b2b_payment_plan_secure"
+    "public.simulate_b2b_payment_plan_secure",
+    "public.rpc_cc_simulate_price",
+    "public.rpc_resolve_commercial_prices",
+    "public.get_partner_catalog_tecnico_secure.f0cfc0c6",
+    "public.get_partner_catalog_tecnico_secure.f682465d",
+    "public.convert_partner_simulation_to_order_secure"
   ],
   "seams": "ver docstring",
-  "passed": 45,
-  "total": 45,
+  "passed": 56,
+  "total": 56,
   "checks": [
     {
       "name": "corpo real carregado byte a byte: platform_private.tenant_catalog_fence(text,uuid[])",
@@ -85,6 +90,31 @@
       "detail": "37d4f45e388ed7b38f6f397b672629ee != 37d4f45e388ed7b38f6f397b672629ee"
     },
     {
+      "name": "corpo real carregado byte a byte: public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)",
+      "ok": true,
+      "detail": "32f75a12cf353fa7050c6ba6ffe1e5d3 != 32f75a12cf353fa7050c6ba6ffe1e5d3"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)",
+      "ok": true,
+      "detail": "4a224f498fdbde78ece45ab655030c87 != 4a224f498fdbde78ece45ab655030c87"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.get_partner_catalog_tecnico_secure()",
+      "ok": true,
+      "detail": "f0cfc0c6bc8f875c2d269417508c78b5 != f0cfc0c6bc8f875c2d269417508c78b5"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.get_partner_catalog_tecnico_secure(boolean)",
+      "ok": true,
+      "detail": "f682465d6ffbb145076cfd8d011f685e != f682465d6ffbb145076cfd8d011f685e"
+    },
+    {
+      "name": "corpo real carregado byte a byte: public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)",
+      "ok": true,
+      "detail": "953c73011730214094577bfb55d46e87 != 953c73011730214094577bfb55d46e87"
+    },
+    {
       "name": "corpo real carregado byte a byte: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)",
       "ok": true,
       "detail": "0df0d9005d46b667db4433d3eae59e27 != 0df0d9005d46b667db4433d3eae59e27"
@@ -92,7 +122,7 @@
     {
       "name": "01 PRE_OK",
       "ok": true,
-      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/01-pre.sql.readonly:33: NOTICE:  PRE_OK\n"
+      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/01-pre.sql.readonly:43: NOTICE:  PRE_OK\n"
     },
     {
       "name": "pre: comprador líquido reproduz tenant_catalog_fence_denied",
@@ -122,12 +152,12 @@
     {
       "name": "03 POST_OK",
       "ok": true,
-      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/03-post.sql.readonly:38: NOTICE:  POST_OK\n"
+      "detail": "psql:/dev-server/scripts/b2b-cart-catalog-fence-20261106/03-post.sql.readonly:48: NOTICE:  POST_OK\n"
     },
     {
       "name": "rerun: PRE recusa após instalação",
       "ok": true,
-      "detail": "-pre.sql.readonly:33: ERROR:  PRE: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\n"
+      "detail": "-pre.sql.readonly:43: ERROR:  PRE: public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\n"
     },
     {
       "name": "post: comprador líquido 1L (1/0.10/0.90)",
@@ -228,6 +258,36 @@
       "name": "post: helper privado sem EXECUTE para authenticated",
       "ok": true,
       "detail": "ERROR:  permission denied for function b2b_partner_cart_volume_price"
+    },
+    {
+      "name": "post: rota nova não vale para hectare (catálogo técnico/comercial inalterado)",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: rota nova não vale para litro/dose",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: técnico chamando helper cai no wrapper cercado",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
+    },
+    {
+      "name": "post: admin interno usa o wrapper cercado (mesmo preço 1)",
+      "ok": true,
+      "detail": "1.000000\n"
+    },
+    {
+      "name": "post: comprador acumulando administrador segue o wrapper cercado (fence decide, autoriza ator interno)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "post: comprador sem recurso catalogo_precos negado",
+      "ok": true,
+      "detail": "ERROR:  tenant_catalog_fence_denied"
     },
     {
       "name": "post: motor fn_resolve_commercial_price sem EXECUTE cliente",

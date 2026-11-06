@@ -2,3 +2,4 @@
 - Nunca alterar/relaxar tenant_catalog_fence, catalog_tenant_actor, can_view_catalog_internal ou os wrappers públicos de preço (pins em generate.py) — preserva o catálogo interno fechado ao parceiro.
 - O preço líquido do comprador só sai do núcleo privado depois de b2b_partner_catalog_reader autorizar o parceiro e o item pertencer ao vendedor, ativo, B2B e não oculto; negado o leitor, volta ao wrapper cercado — nunca catch-and-retry após a fence.
 - 01–04 são gerados por generate.py com âncora de contagem exata e md5; nunca editar à mão. O PG descartável carrega corpos LIVE reais da fence; costuras declaradas não provam JWT/RLS hospedado.
+- A rota nova vale só para linha por volume (unidade) e comprador parceiro_b2b sem papel interno; funções expostas que chamam o motor ficam pinadas e revisadas no README — evita abrir preço no catálogo técnico ou mudar atores internos.

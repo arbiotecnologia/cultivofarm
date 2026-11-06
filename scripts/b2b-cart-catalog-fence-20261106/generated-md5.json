@@ -1,8 +1,8 @@
 {
-  "01-pre.sql.readonly": "bfb9d6295f5ff188be47305b4eb28d25",
-  "02-install.sql.review": "96ec0eee26f2c6a8c2522f20d0e45227",
-  "03-post.sql.readonly": "17a5889a42208ae1a4ebe1ad7a33312f",
-  "04-rollback-deny.sql.review": "a7deda92a850a53a8d7fe4804464b49c",
+  "01-pre.sql.readonly": "739be31950153e80c485da7da7ac2f89",
+  "02-install.sql.review": "e628d86120be3cb4ce69bb11e18f040b",
+  "03-post.sql.readonly": "876f9b7b63642ad431d9ef56e3aba060",
+  "04-rollback-deny.sql.review": "c3273d72a51d50928dbc8200f2122a14",
   "fn_resolve_commercial_price.pre": "0df0d9005d46b667db4433d3eae59e27",
   "fn_resolve_commercial_price.post": "6bc0e12a53adbb84426de8e6835dc931"
 }
