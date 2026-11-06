@@ -110,6 +110,7 @@ UNCHANGED.update({
     "public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": cap("public.rpc_cc_simulate_price")[1],
     "public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)": cap("public.rpc_resolve_commercial_prices")[1],
     "public.get_partner_catalog_tecnico_secure()": cap("public.get_partner_catalog_tecnico_secure.f0cfc0c6")[1],
+    "public.get_partner_catalog_tecnico_secure(boolean)": cap("public.get_partner_catalog_tecnico_secure.f682465d")[1],
     "public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)": cap("public.convert_partner_simulation_to_order_secure")[1],
 })
 CRP_SIG = "public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)"

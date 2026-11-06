@@ -24,6 +24,16 @@ DO $$ BEGIN
     RAISE EXCEPTION 'POST: platform_private.b2b_packaging_line(uuid,uuid,jsonb,date) divergente'; END IF;
   IF to_regprocedure('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)') IS NULL OR md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) <> '37d4f45e388ed7b38f6f397b672629ee' THEN
     RAISE EXCEPTION 'POST: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) divergente'; END IF;
+  IF to_regprocedure('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)') IS NULL OR md5(pg_get_functiondef('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure)) <> '32f75a12cf353fa7050c6ba6ffe1e5d3' THEN
+    RAISE EXCEPTION 'POST: public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) divergente'; END IF;
+  IF to_regprocedure('public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)') IS NULL OR md5(pg_get_functiondef('public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)'::regprocedure)) <> '4a224f498fdbde78ece45ab655030c87' THEN
+    RAISE EXCEPTION 'POST: public.rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb) divergente'; END IF;
+  IF to_regprocedure('public.get_partner_catalog_tecnico_secure()') IS NULL OR md5(pg_get_functiondef('public.get_partner_catalog_tecnico_secure()'::regprocedure)) <> 'f0cfc0c6bc8f875c2d269417508c78b5' THEN
+    RAISE EXCEPTION 'POST: public.get_partner_catalog_tecnico_secure() divergente'; END IF;
+  IF to_regprocedure('public.get_partner_catalog_tecnico_secure(boolean)') IS NULL OR md5(pg_get_functiondef('public.get_partner_catalog_tecnico_secure(boolean)'::regprocedure)) <> 'f682465d6ffbb145076cfd8d011f685e' THEN
+    RAISE EXCEPTION 'POST: public.get_partner_catalog_tecnico_secure(boolean) divergente'; END IF;
+  IF to_regprocedure('public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)') IS NULL OR md5(pg_get_functiondef('public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)'::regprocedure)) <> '953c73011730214094577bfb55d46e87' THEN
+    RAISE EXCEPTION 'POST: public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean) divergente'; END IF;
   IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a
              WHERE p.oid = 'platform_private.b2b_partner_cart_volume_price(uuid,uuid,uuid,text,numeric)'::regprocedure AND a.privilege_type = 'EXECUTE'
                AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN
