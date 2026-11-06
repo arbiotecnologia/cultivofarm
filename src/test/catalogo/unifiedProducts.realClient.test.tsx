@@ -436,6 +436,7 @@ it("recusa definitiva persistente: sem replay inútil, rascunho exportável e vo
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Identificação" }), { button: 0, ctrlKey: false });
   expect(((await screen.findByLabelText("Nome Comercial *")) as HTMLInputElement).value).toBe("Novo parcial");
   expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
+  await unitLoaded("mL"); // unidade relida do MESMO produto, não herdada do rascunho
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial revisado" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
