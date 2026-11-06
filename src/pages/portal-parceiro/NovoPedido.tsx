@@ -496,7 +496,7 @@ export default function NovoPedido() {
   const selSim = useFencedB2BSimulation({ enabled: simEnabled && methodMode !== null, scope: pageScope, userId: user?.id,
     organizationId: profile?.organization_id, partnerId: partner?.id, planId: selectedPlanId, items: simulationItems,
     requireMethod, method: requireMethod ? selectedMethod : null });
-  const cashSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
+  const cashSim = useFencedB2BSimulation({ enabled: simEnabled && methodMode !== null, scope: pageScope, userId: user?.id,
     organizationId: profile?.organization_id, partnerId: partner?.id, planId: cashPlan?.id, items: simulationItems });
   const simulation = selSim.result;
   const cashSimulation = cashSim.result;
