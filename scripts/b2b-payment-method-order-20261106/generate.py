@@ -140,7 +140,7 @@ END $function$;
 
 -- Resolve e (opcionalmente) trava a configuração dentro da transação. Vendedor SOMENTE pelo leitor canônico.
 CREATE OR REPLACE FUNCTION platform_private.b2b_payment_method_resolve(p_partner_id uuid, p_plan_id uuid, p_config_id uuid, p_version integer, p_lock boolean)
- RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+ RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $function$
 DECLARE v_seller uuid; c record; v_pm record; v_plan record; v_n integer;
 BEGIN
   IF p_config_id IS NULL OR p_version IS NULL THEN RAISE EXCEPTION 'payment_method_required' USING ERRCODE='P0001'; END IF;
