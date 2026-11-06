@@ -118,7 +118,7 @@ def main():
         err, r = case("internal_A_P1", "internal_A", P1)
         chk("supplier_internal_commercial_actor_allowed_by_canonical_reader", err is None and r["seller"]["name"] == "AR Bio", err)
         err, r = case("buyer_z_PZ", "buyer_z", PZ)
-        chk("other_tenant_buyer_never_sees_AR_volumes", err is not None or all(v["id"] not in VOL.values() or False for v in (r or {}).get("volumes", [])), {"err": err})
+        chk("other_tenant_buyer_never_sees_AR_volumes", err is None and r["volumes"] == [] and r["seller"]["name"] is None, {"err": err})
         rep["matrix"] = {k: {"err": list(e) if e else None, "n": (len(v["volumes"]) if v else None)} for k, (e, v) in m.items()}
 
         x = v2.runfile(HERE / "04-rollback-deny.sql.review"); chk("rollback_ok", x.returncode == 0, x.stderr[-400:] or None)

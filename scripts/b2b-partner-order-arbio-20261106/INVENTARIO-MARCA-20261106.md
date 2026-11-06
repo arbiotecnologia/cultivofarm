@@ -48,3 +48,11 @@ Fontes do nome:
 ## Testes
 `src/test/comercial/activeTenantName.test.tsx` (6): AR Bio × FSF, carregamento/troca sem nome anterior, resposta de outro tenant recusada, erro/logout/sessão carregando neutros sem consulta, marca `APP_NAME` preservada, aviso de cotação com vendedor/fallback. Testes existentes que montam telas sem QueryClient receberam mock do hook (`reportShell.*`, `cancelamentoContido`) e o sandbox do PDF da visita recebeu `tenantLabel`; nenhuma asserção foi removida.
 Limite: sem JWT/RLS real; não se comprovou em sessão hospedada que `org_onboarding_state` responde para todos os papéis — se recusar, a tela mostra o neutro.
+
+## Revisão 607c0d3f — onde ainda resta rótulo neutro FIXO (não é nome dinâmico)
+Estes pontos NÃO estão concluídos como nome dinâmico; falta projeção autorizada do nome no contexto:
+- src/pages/portal/PortalOrdensServico.tsx:212 — fallback do laudo "Laboratório da empresa responsável" (quando o laudo não traz responsável).
+- src/components/catalogo/FichaProdutorDrawer.tsx:145 — "em validação pela empresa responsável"; usado no portal B2B (CatalogoCardsGrid) e na recomendação ao produtor (TalhaoRecomendacaoCard) sem nome do vendedor/tenant nas props.
+- Acompanhamento de pedidos B2B (TimelinePedidoDialog e lista) — fonte atual não traz o vendedor.
+- Pedido B2B antes da instalação do SQL: o fallback legado retorna `sellerName=null` → "empresa fornecedora" até o leitor escopado existir.
+Dinâmicos (nome real quando o contexto autorizado responde; neutro só em carregamento/troca/logout/erro): demais itens da tabela ALTERADAS.
