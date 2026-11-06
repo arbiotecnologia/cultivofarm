@@ -24,10 +24,11 @@ export function parsePartnerVolumes(raw: unknown, partnerId: string): PartnerVol
   if (sellerRaw !== null && typeof sellerRaw !== "string") throw new Error("partner_volumes_contract_unavailable");
   const ids = new Set<string>();
   const rows: CatalogoVolume[] = d.volumes.map((r) => {
+    if (!r || typeof r !== "object" || Array.isArray(r)) throw new Error("partner_volumes_contract_unavailable");
     const v = r as Record<string, unknown>;
-    const ml = Number(v.volume_ml);
+    const ml = typeof v.volume_ml === "number" ? v.volume_ml : NaN;
     const tipo = v.item_tipo;
-    if (!v || typeof v.id !== "string" || !UUID.test(v.id) || ids.has(v.id) ||
+    if (typeof v.id !== "string" || !UUID.test(v.id) || ids.has(v.id) ||
         (tipo !== "produto" && tipo !== "microrganismo") || !Number.isFinite(ml) || ml <= 0 ||
         (tipo === "produto" ? typeof v.produto_id !== "string" : typeof v.microrganismo_id !== "string"))
       throw new Error("partner_volumes_contract_unavailable");
@@ -43,9 +44,32 @@ export function parsePartnerVolumes(raw: unknown, partnerId: string): PartnerVol
   return { ...indexVolumes(rows), sellerName, source: "scoped" };
 }
 
-/** Ausência EXATA do RPC (pré-instalação) mantém a leitura direta anterior; qualquer outro erro falha fechado. */
-export function isRpcAbsent(error: { code?: string } | null | undefined): boolean {
-  return error?.code === "PGRST202" || error?.code === "42883";
+/**
+ * Ausência EXATA do endpoint (pré-instalação): somente PGRST202 do PostgREST cuja
+ * mensagem nomeia public.get_partner_catalog_volumes_secure. 42883 NÃO é aceito: com o
+ * endpoint instalado ele indica função interna ausente (instalação quebrada) e deve
+ * falhar fechado, nunca cair na leitura direta.
+ */
+const ENDPOINT_RE = /\bpublic\.get_partner_catalog_volumes_secure\(\s*p_partner_id\s*\)/;
+export function isRpcAbsent(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error || error.code !== "PGRST202" || typeof error.message !== "string") return false;
+  if (!/^Could not find the function /.test(error.message) || !ENDPOINT_RE.test(error.message)) return false;
+  return true;
+}
+
+/** Leitura escopada; REST direto só na ausência exata do endpoint (isRpcAbsent). */
+export async function fetchPartnerCatalogVolumes(partnerId: string, signal: AbortSignal): Promise<PartnerVolumesResult> {
+  const { data, error } = await supabase
+    .rpc("get_partner_catalog_volumes_secure" as never, { p_partner_id: partnerId } as never)
+    .abortSignal(signal);
+  if (error) {
+    if (isRpcAbsent(error)) {
+      const legacy = await fetchCatalogoVolumesDirect(signal);
+      return { ...legacy, sellerName: null, source: "legacy_direct" };
+    }
+    throw error;
+  }
+  return parsePartnerVolumes(data, partnerId);
 }
 
 export function usePartnerCatalogVolumes(partnerId: string | null | undefined) {
@@ -54,19 +78,9 @@ export function usePartnerCatalogVolumes(partnerId: string | null | undefined) {
     enabled: !!partnerId,
     retry: false,
     staleTime: 60_000,
-    queryFn: async (signal): Promise<PartnerVolumesResult> => {
+    queryFn: (signal) => {
       if (!partnerId) throw new Error("partner_required");
-      const { data, error } = await supabase
-        .rpc("get_partner_catalog_volumes_secure" as never, { p_partner_id: partnerId } as never)
-        .abortSignal(signal);
-      if (error) {
-        if (isRpcAbsent(error)) {
-          const legacy = await fetchCatalogoVolumesDirect(signal);
-          return { ...legacy, sellerName: null, source: "legacy_direct" };
-        }
-        throw error;
-      }
-      return parsePartnerVolumes(data, partnerId);
+      return fetchPartnerCatalogVolumes(partnerId, signal);
     },
   });
 }

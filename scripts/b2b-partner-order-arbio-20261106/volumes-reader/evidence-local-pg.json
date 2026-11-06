@@ -1,0 +1,351 @@
+{
+ "kind": "disposable_pg",
+ "hosted": false,
+ "remote_writes": false,
+ "package": "B2B_PARTNER_VOLUMES_V1",
+ "synthetic_seams": [
+  "auth.uid/auth.jwt locais",
+  "entitlements_for_user",
+  "is_valid_b2b_partner_user",
+  "esquema mínimo + colunas acrescidas"
+ ],
+ "composition_pins": {
+  "platform_private.b2b_partner_catalog_reader(uuid)": "bd985484b69c8fa6e63a920eff518369",
+  "public.get_partner_catalog_secure(uuid)": "6b56cfb144ebc8dd947473e90e2d7768",
+  "public.get_partner_catalog_secure(uuid,boolean)": "1391adc2133b922e2dcea4b1d3e26820"
+ },
+ "post_output": "t|{\"search_path=\\\"\\\"\"}|{postgres=X/postgres,authenticated=X/postgres}|t|t|t|f",
+ "matrix": {
+  "buyer_P1": {
+   "err": null,
+   "n": 3
+  },
+  "anon_P1": {
+   "err": [
+    "42501",
+    "permission denied for function get_partner_catalog_volumes_secure"
+   ],
+   "n": null
+  },
+  "buyer_other_partner_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "buyer_other_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "fsf_admin_rh_PF": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "buyer_tenant_mismatch_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "buyer_revoked_link_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "buyer_inactive_profile_P1": {
+   "err": [
+    "42501",
+    "forbidden_role"
+   ],
+   "n": null
+  },
+  "buyer_provisional_P1": {
+   "err": [
+    "42501",
+    "forbidden_role"
+   ],
+   "n": null
+  },
+  "buyer_no_feature_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "tecnico_P1": {
+   "err": [
+    "42501",
+    "forbidden_financial_terms"
+   ],
+   "n": null
+  },
+  "buyer_and_tecnico_P1": {
+   "err": [
+    "42501",
+    "forbidden_financial_terms"
+   ],
+   "n": null
+  },
+  "super_P1": {
+   "err": [
+    "42501",
+    "b2b_catalog_platform_actor_denied"
+   ],
+   "n": null
+  },
+  "no_role_P1": {
+   "err": [
+    "42501",
+    "forbidden_role"
+   ],
+   "n": null
+  },
+  "internal_F_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "buyer_inactive_partner": {
+   "err": [
+    "42501",
+    "partner_not_found"
+   ],
+   "n": null
+  },
+  "buyer_z_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "buyer_two_links_P1": {
+   "err": [
+    "42501",
+    "forbidden_partner"
+   ],
+   "n": null
+  },
+  "internal_A_P1": {
+   "err": null,
+   "n": 3
+  },
+  "buyer_z_PZ": {
+   "err": null,
+   "n": 0
+  }
+ },
+ "checks": {
+  "composition_pins_equal_install_pins": {
+   "pass": true,
+   "detail": {
+    "platform_private.b2b_partner_catalog_reader(uuid)": "bd985484b69c8fa6e63a920eff518369",
+    "public.get_partner_catalog_secure(uuid)": "6b56cfb144ebc8dd947473e90e2d7768",
+    "public.get_partner_catalog_secure(uuid,boolean)": "1391adc2133b922e2dcea4b1d3e26820"
+   }
+  },
+  "pre_runs_readonly_and_reports_ok": {
+   "pass": true,
+   "detail": "t|t|t|t|0"
+  },
+  "install_ok": {
+   "pass": true
+  },
+  "post_runs": {
+   "pass": true,
+   "detail": "t|{\"search_path=\\\"\\\"\"}|{postgres=X/postgres,authenticated=X/postgres}|t|t|t|f"
+  },
+  "rerun_aborts_target_exists": {
+   "pass": true
+  },
+  "grant_only_authenticated": {
+   "pass": true,
+   "detail": {
+    "acl": {
+     "anon": false,
+     "authenticated": true,
+     "service_role": false
+    },
+    "proacl": "postgres=X/postgres,authenticated=X/postgres"
+   }
+  },
+  "definer_and_search_path": {
+   "pass": true
+  },
+  "policies_unchanged": {
+   "pass": true
+  },
+  "buyer_P1_lists_only_catalog_visible_seller_volumes": {
+   "pass": true,
+   "detail": {
+    "err": null,
+    "ids": [
+     "44444444-0000-0000-0000-000000000008",
+     "44444444-0000-0000-0000-000000000001",
+     "44444444-0000-0000-0000-000000000002"
+    ]
+   }
+  },
+  "buyer_P1_seller_name_is_seller_tenant": {
+   "pass": true
+  },
+  "buyer_P1_no_price_fields": {
+   "pass": true
+  },
+  "deny_anon_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "permission denied for function get_partner_catalog_volumes_secure"
+   ]
+  },
+  "deny_buyer_other_partner_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_buyer_other_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_fsf_admin_rh_PF": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_buyer_tenant_mismatch_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_buyer_revoked_link_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_buyer_inactive_profile_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_role"
+   ]
+  },
+  "deny_buyer_provisional_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_role"
+   ]
+  },
+  "deny_buyer_no_feature_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_tecnico_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_financial_terms"
+   ]
+  },
+  "deny_buyer_and_tecnico_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_financial_terms"
+   ]
+  },
+  "deny_super_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "b2b_catalog_platform_actor_denied"
+   ]
+  },
+  "deny_no_role_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_role"
+   ]
+  },
+  "deny_internal_F_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_buyer_inactive_partner": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "partner_not_found"
+   ]
+  },
+  "deny_buyer_z_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "deny_buyer_two_links_P1": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "forbidden_partner"
+   ]
+  },
+  "supplier_internal_commercial_actor_allowed_by_canonical_reader": {
+   "pass": true
+  },
+  "other_tenant_buyer_never_sees_AR_volumes": {
+   "pass": true,
+   "detail": {
+    "err": null
+   }
+  },
+  "rollback_ok": {
+   "pass": true
+  },
+  "after_rollback_denied_or_absent": {
+   "pass": true,
+   "detail": [
+    "42501",
+    "permission denied for function get_partner_catalog_volumes_secure"
+   ]
+  },
+  "after_rollback_policies_unchanged": {
+   "pass": true
+  }
+ },
+ "result": "PASS"
+}

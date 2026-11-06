@@ -70,7 +70,7 @@ beforeEach(() => {
     // Pré-instalação: leitor escopado ausente (PGRST202) mantém a leitura de volumes anterior.
     if (name === "get_partner_catalog_volumes_secure" && state.scoped) return response({ contract: "B2B_PARTNER_VOLUMES_V1", partner_id: args?.p_partner_id,
       seller: { name: state.scoped.name }, volumes: [{ id: "b86f2fe8-e6b7-43e4-8345-53bd9e2a3b03", item_tipo: "produto", produto_id: args?.p_partner_id, microrganismo_id: null, volume_ml: 1000, rotulo: "1 L", ordem: 0 }] });
-    if (name === "get_partner_catalog_volumes_secure") { const p = Promise.resolve({ data: null, error: { code: "PGRST202", message: "absent" } }); return Object.assign(p, { abortSignal: () => p }); }
+    if (name === "get_partner_catalog_volumes_secure") { const p = Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find the function public.get_partner_catalog_volumes_secure(p_partner_id) in the schema cache" } }); return Object.assign(p, { abortSignal: () => p }); }
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
       produto_nome: `Produto ${state.tenant}/${args?.p_partner_id}`, produto_codigo: "LOCAL", familia_catalogo: "biologico",

@@ -46,3 +46,14 @@ Este pacote não amplia RLS, não cria tabela e não duplica volumes. A leitura 
 - Regressão pedidos/catálogo/comercial/estoque/fiscal relacionada: 82 arquivos, 1.223/1.223, antes das duas reproduções novas. Typecheck OK.
 - Fixtures antigas: único acréscimo é a resposta PGRST202 (pré-instalação) do novo RPC; nenhuma asserção alterada.
 - SQL: não executado em PG descartável nem hospedado; negativas reais NOT RUN.
+
+## Teste PostgreSQL descartável (2026-11-06)
+`python3 test-local-pg.py` → `evidence-local-pg.json` (PASS). Cluster local em /tmp, sem rede/hospedagem/writes remotos.
+Composição de produção do pacote v2 (corpos reais capturados; pins do leitor/catálogo na composição = pins do 02-install).
+Executa 01/02/03/04 como entregues: pre OK, install OK, reexecução aborta, ACL só `authenticated` (anon/PUBLIC negados),
+DEFINER + search_path vazio, policies inalteradas. Matriz: comprador P1 vê 3 volumes (1 L químico, 20 L, 500 mL micro) e
+"AR Bio", sem campos de preço; negados (42501) anon, outro parceiro, outro comprador, admin FSF, tenant divergente, vínculo
+revogado, perfil inativo, senha provisória, sem feature, técnico, comprador+técnico, superadmin, sem papel, interno FSF,
+parceiro inativo, dois vínculos; comercial interno do vendedor permitido pelo leitor canônico; comprador de outro vendedor
+sem itens recebe lista vazia e nome nulo. Rollback deny-only nega. Costuras sintéticas declaradas no script: não é prova
+JWT/RLS hospedada. SQL ainda NÃO executado em homolog/produção.

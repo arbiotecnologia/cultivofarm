@@ -3,7 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { supplierLabel, NEUTRAL_SUPPLIER } from "@/lib/comercial/supplierName";
-import { parsePartnerVolumes, isRpcAbsent, PARTNER_VOLUMES_CONTRACT } from "@/hooks/usePartnerCatalogVolumes";
+const { rpcMock, fromMock } = vi.hoisted(() => ({ rpcMock: vi.fn(), fromMock: vi.fn() }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
+import { parsePartnerVolumes, isRpcAbsent, fetchPartnerCatalogVolumes, PARTNER_VOLUMES_CONTRACT } from "@/hooks/usePartnerCatalogVolumes";
+const ABSENT = "Could not find the function public.get_partner_catalog_volumes_secure(p_partner_id) in the schema cache";
+const resp = (v: unknown) => { const p = Promise.resolve(v); return Object.assign(p, { abortSignal: () => p }); };
 import { minDeliveryHint } from "@/lib/b2bDeliveryDate";
 import { AddToCartDialog } from "@/components/catalogo/AddToCartDialog";
 
@@ -47,10 +51,40 @@ describe("parser B2B_PARTNER_VOLUMES_V1", () => {
       null, []];
     for (const raw of bad) expect(() => parsePartnerVolumes(raw, PARTNER)).toThrow("partner_volumes_contract_unavailable");
   });
-  it("só ausência exata do RPC permite a leitura anterior", () => {
-    expect(isRpcAbsent({ code: "PGRST202" })).toBe(true);
-    expect(isRpcAbsent({ code: "42883" })).toBe(true);
-    for (const code of ["42501", "PGRST301", "22023", undefined]) expect(isRpcAbsent({ code })).toBe(false);
+  it("só ausência exata do endpoint permite a leitura anterior; 42883 nunca", () => {
+    expect(isRpcAbsent({ code: "PGRST202", message: ABSENT })).toBe(true);
+    for (const e of [{ code: "PGRST202" }, { code: "PGRST202", message: "absent" },
+      { code: "PGRST202", message: "Could not find the function public.get_partner_catalog_secure(p_partner_id) in the schema cache" },
+      { code: "PGRST202", message: "Could not find the function public.get_partner_catalog_volumes_secure(p_other) in the schema cache" },
+      { code: "42883", message: ABSENT }, { code: "42883", message: "function platform_private.b2b_partner_catalog_reader(uuid) does not exist" },
+      { code: "42501" }, { code: "PGRST301" }, { code: "22023" }, null, undefined])
+      expect(isRpcAbsent(e as never)).toBe(false);
+  });
+  it("parser recusa linhas nulas/primitivas/arrays e volume não numérico antes de ler campos", () => {
+    for (const row of [null, undefined, 7, "x", [], { id: VOLUME, item_tipo: "produto", produto_id: PRODUCT, volume_ml: "1000" }])
+      expect(() => parsePartnerVolumes(ack({ volumes: [row] }), PARTNER)).toThrow("partner_volumes_contract_unavailable");
+  });
+});
+
+describe("fetchPartnerCatalogVolumes — sem REST direto quando a instalação está quebrada", () => {
+  beforeEach(() => { rpcMock.mockReset(); fromMock.mockReset(); });
+  const signal = new AbortController().signal;
+  it("42883 de função interna propaga erro e não consulta catalogo_volumes", async () => {
+    rpcMock.mockReturnValue(resp({ data: null, error: { code: "42883", message: "function platform_private.b2b_partner_catalog_reader(uuid) does not exist" } }));
+    await expect(fetchPartnerCatalogVolumes(PARTNER, signal)).rejects.toMatchObject({ code: "42883" });
+    expect(fromMock).not.toHaveBeenCalled();
+  });
+  it("PGRST202 genérico também falha fechado sem REST", async () => {
+    rpcMock.mockReturnValue(resp({ data: null, error: { code: "PGRST202", message: "absent" } }));
+    await expect(fetchPartnerCatalogVolumes(PARTNER, signal)).rejects.toMatchObject({ code: "PGRST202" });
+    expect(fromMock).not.toHaveBeenCalled();
+  });
+  it("ausência exata do endpoint usa a leitura anterior", async () => {
+    rpcMock.mockReturnValue(resp({ data: null, error: { code: "PGRST202", message: ABSENT } }));
+    const q = { select: () => q, eq: () => q, abortSignal: () => Promise.resolve({ data: [], error: null }) };
+    fromMock.mockReturnValue(q);
+    await expect(fetchPartnerCatalogVolumes(PARTNER, signal)).resolves.toMatchObject({ source: "legacy_direct", sellerName: null });
+    expect(fromMock).toHaveBeenCalledWith("catalogo_volumes");
   });
 });
 
