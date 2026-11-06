@@ -135,7 +135,7 @@ describe("confirmação controlada de publicação da atribuição", () => {
     const confirm = screen.getByRole("button", { name: "Confirmar publicação" });
     fireEvent.click(confirm);
     fireEvent.click(confirm);
-    expect(rpcMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
     expect(screen.getByRole("button", { name: "Publicando…" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
     await act(async () => resolve({ error: null }));
