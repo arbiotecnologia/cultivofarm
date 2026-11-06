@@ -1249,6 +1249,43 @@ export default function NovoPedido() {
                   loading={selSim.pending}
                 />
 
+                {selectedPlanId && (
+                  <div className="space-y-1" data-testid="b2b-payment-method">
+                    <div className="text-xs font-semibold uppercase text-muted-foreground">Meio de pagamento</div>
+                    {methodOptions.isLoading ? (
+                      <p className="text-xs text-muted-foreground">Carregando meios permitidos…</p>
+                    ) : methodOptions.isError || methodOptions.data?.status !== "ok" ? (
+                      <Alert variant="destructive" className="py-2" role="alert" data-testid="b2b-payment-method-error">
+                        <AlertDescription className="text-xs space-y-2">
+                          <p>Não foi possível confirmar os meios de pagamento desta condição. O pedido não pode ser enviado agora.</p>
+                          <Button type="button" size="sm" variant="outline" onClick={() => void methodOptions.refetch()}>
+                            Tentar carregar novamente
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    ) : methodList.filter((o) => o.available).length === 0 ? (
+                      <p className="text-xs text-muted-foreground" data-testid="b2b-payment-method-empty">
+                        A empresa fornecedora ainda não configurou meios de pagamento para esta condição.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Meio de pagamento">
+                        {methodList.filter((o) => o.available).map((o) => {
+                          const on = selectedMethod?.config_id === o.config_id && selectedMethod.version === o.version;
+                          return (
+                            <Button key={o.config_id} type="button" size="sm" role="radio" aria-checked={on}
+                              variant={on ? "default" : "outline"}
+                              onClick={() => setSelectedMethod({ config_id: o.config_id, version: o.version })}>
+                              {METHOD_KIND_LABEL[o.method_kind]}
+                              {o.installment_count && o.installment_count > 1 ? ` · ${o.installment_count}x` : ""}
+                              {o.due_days != null ? ` · ${o.due_days} dias após a NF` : ""}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {visibleSimFailure && (
                   <Alert variant="destructive" className="py-2" role="alert" data-testid="b2b-simulation-error">
                     <AlertDescription className="text-xs space-y-2">
@@ -1269,6 +1306,10 @@ export default function NovoPedido() {
                     simulation={visibleSimulation}
                     cashReferenceAmount={cashSimulation?.amounts.final_amount ?? null}
                     responsavelNome={supplierName}
+                    estimated={(visibleSimulation as Partial<MethodSimulateResult>).estimated_schedule ? {
+                      methodLabel: (visibleSimulation as MethodSimulateResult).payment_method.payment_method_name,
+                      schedule: (visibleSimulation as MethodSimulateResult).estimated_schedule,
+                    } : null}
                   />
                 )}
                 {!selectedPlanId && (
