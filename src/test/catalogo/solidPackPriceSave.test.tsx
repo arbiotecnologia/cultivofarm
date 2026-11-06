@@ -60,6 +60,8 @@ describe("diálogo real", () => {
       const p = Promise.resolve(v); return Object.assign(p, { abortSignal: () => p });
     });
     render(<QueryClientProvider client={new QueryClient()}><CatalogoVolumesDialog open onOpenChange={() => {}} itemId={PROD} itemTipo="produto" itemNome="SOLO-5" owned /></QueryClientProvider>);
+    await new Promise(r => setTimeout(r, 300));
+    console.log("BODY", document.body.textContent?.slice(0, 600), JSON.stringify(rpcMock.mock.calls.map(c => c[0])));
     await screen.findByRole("button", { name: "Preço" });
     for (let i = 0; i < 5; i++) { await new Promise(r => setTimeout(r, 100)); console.log("T", i, screen.queryAllByRole("button", { name: "Preço" }).length, JSON.stringify(rpcMock.mock.calls.map(c => c[0]))); }
     console.log("PRICEBTN disabled", (screen.getByRole("button", { name: "Preço" }) as HTMLButtonElement).disabled);
