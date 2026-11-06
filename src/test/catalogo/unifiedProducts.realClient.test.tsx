@@ -436,10 +436,8 @@ it("recusa definitiva persistente: sem replay inútil, rascunho exportável e vo
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Identificação" }), { button: 0, ctrlKey: false });
   expect(((await screen.findByLabelText("Nome Comercial *")) as HTMLInputElement).value).toBe("Novo parcial");
   expect(screen.getByLabelText("Rascunho exportável")).toBeTruthy();
-  // Observação: a leitura de unidade de p1 já está em cache desde o ACK parcial; ao reabrir, o seletor volta vazio
-  // (fail-closed) e a unidade precisa ser confirmada de novo pelo usuário — nunca herdada silenciosamente.
-  expect(state.unitCalls.filter(n => n === "solid_pack_offers_admin_v1").length).toBeGreaterThanOrEqual(1);
-  await chooseUnit("ml");
+  // Regressão: a unidade canônica de p1 (já em cache desde o ACK parcial) é reidratada sem nova escolha manual.
+  await unitLoaded("mL");
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial revisado" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -450,6 +448,7 @@ it("recusa definitiva persistente: sem replay inútil, rascunho exportável e vo
   expect(rpcCalls("tenant_catalog_formulacoes_replace")).toHaveLength(1);
   expect(ctl.inserts).toBe(1); expect(state.rows).toHaveLength(1);
   expect(state.rows[0].nome).toBe("Novo parcial revisado");
+  expect(saves[1].p_payload.unidade_conteudo).toBe("ml");
 });
 
 it("resposta perdida: saída explícita mantém pendência/chaves, bloqueia novas intenções e retomada faz replay único", async () => {
@@ -530,3 +529,55 @@ it("Financeiro em consulta não consulta capability de unidade nem apresentaçõ
   expect(screen.queryByRole("button", { name: "Novo produto" })).toBeNull();
   expect(state.unitCalls).toHaveLength(0);
 });
+
+it("unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio", async () => {
+  state.unitCap = "positive"; const qc = client();
+  state.rows = [
+    { id: "pa", nome: "Produto A", tipo: "solo", unidade_conteudo: "kg", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" },
+    { id: "pb", nome: "Produto B", tipo: "solo", unidade_conteudo: "g", ativo: true, b2b_enabled: false, e_insumo: false, updated_at: stamp, owner_organization_id: "org-A" },
+    { id: "px", nome: "Produto outra empresa", tipo: "solo", unidade_conteudo: "l", ativo: true, updated_at: stamp, owner_organization_id: "org-B" },
+  ];
+  state.fetch.mockImplementation(async (url, init) => {
+    const name = String(url).split("/rpc/")[1];
+    if (name === "tenant_product_list") return json(state.rows.filter(r => r.owner_organization_id === state.tenant));
+    if (name === "tenant_product_save") { const a = JSON.parse(init.body); return json({ product_id: a.p_product_id, updated_at: stamp, replayed: false }); }
+    if (name) throw new Error(`RPC inesperada ${name}`);
+    return json([]);
+  });
+  render(<ProdutosTab />, { wrapper });
+  const edit = async (nome: string) => {
+    const row = (await screen.findByText(nome)).closest("tr") as HTMLElement;
+    fireEvent.click(row.querySelector('button[aria-label="Editar"], button[title="Editar"]') ?? screen.getAllByRole("button", { name: "Editar" })[nome === "Produto A" ? 0 : 1]);
+    await waitFor(() => expect((screen.getByLabelText("Nome Comercial *") as HTMLInputElement).value).toBe(nome));
+  };
+  const close = async () => { fireEvent.click(screen.getByRole("button", { name: "Close" })); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull()); };
+  await edit("Produto A"); await unitLoaded("kg"); await close();
+  await edit("Produto B"); await unitLoaded("g"); await close();
+  const readsBefore = state.unitCalls.filter(n => n === "solid_pack_offers_admin_v1").length;
+  await edit("Produto A"); await unitLoaded("kg"); // cache estável: hidrata sem depender de nova leitura
+  expect(screen.queryByText("Produto outra empresa")).toBeNull();
+  // escolha do usuário (rascunho sujo) não é sobrescrita por refetch com valor diferente
+  await chooseUnit("l");
+  state.rows[0].unidade_conteudo = "g";
+  await act(async () => { await qc.invalidateQueries({ predicate: q => q.queryKey[0] === "product-packaging-admin" }); });
+  await waitFor(() => expect(state.unitCalls.filter(n => n === "solid_pack_offers_admin_v1").length).toBeGreaterThan(readsBefore));
+  expect(screen.getByLabelText("Unidade do produto *").textContent).toBe("L");
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await waitFor(() => expect(rpcCalls("tenant_product_save")).toHaveLength(1));
+  expect(rpcCalls("tenant_product_save")[0]).toMatchObject({ p_product_id: "pa", p_expected_updated_at: stamp, p_payload: { unidade_conteudo: "l" } });
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  // reabrir A sem escolha manual hidrata a unidade canônica atual e salva o MESMO produto/CAS
+  await edit("Produto A"); await unitLoaded("g");
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await waitFor(() => expect(rpcCalls("tenant_product_save")).toHaveLength(2));
+  expect(rpcCalls("tenant_product_save")[1]).toMatchObject({ p_product_id: "pa", p_expected_updated_at: stamp, p_payload: { unidade_conteudo: "g" } });
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  // novo produto continua vazio/obrigatório
+  fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
+  await waitFor(() => expect(screen.getByLabelText("Unidade do produto *").matches(":disabled")).toBe(false));
+  expect(screen.getByLabelText("Unidade do produto *").textContent).toBe("kg, g, mL ou L");
+  fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo sem unidade" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Produto" }));
+  await new Promise(r => setTimeout(r, 50));
+  expect(rpcCalls("tenant_product_save")).toHaveLength(2);
+}, 20_000);
