@@ -57,25 +57,30 @@ export function isRpcAbsent(error: { code?: string; message?: string } | null | 
   return true;
 }
 
+/** Leitura escopada; REST direto só na ausência exata do endpoint (isRpcAbsent). */
+export async function fetchPartnerCatalogVolumes(partnerId: string, signal: AbortSignal): Promise<PartnerVolumesResult> {
+  const { data, error } = await supabase
+    .rpc("get_partner_catalog_volumes_secure" as never, { p_partner_id: partnerId } as never)
+    .abortSignal(signal);
+  if (error) {
+    if (isRpcAbsent(error)) {
+      const legacy = await fetchCatalogoVolumesDirect(signal);
+      return { ...legacy, sellerName: null, source: "legacy_direct" };
+    }
+    throw error;
+  }
+  return parsePartnerVolumes(data, partnerId);
+}
+
 export function usePartnerCatalogVolumes(partnerId: string | null | undefined) {
   return useScopedPortalQuery({
     queryKey: ["partner-catalog-volumes", PARTNER_VOLUMES_CONTRACT, partnerId],
     enabled: !!partnerId,
     retry: false,
     staleTime: 60_000,
-    queryFn: async (signal): Promise<PartnerVolumesResult> => {
+    queryFn: (signal) => {
       if (!partnerId) throw new Error("partner_required");
-      const { data, error } = await supabase
-        .rpc("get_partner_catalog_volumes_secure" as never, { p_partner_id: partnerId } as never)
-        .abortSignal(signal);
-      if (error) {
-        if (isRpcAbsent(error)) {
-          const legacy = await fetchCatalogoVolumesDirect(signal);
-          return { ...legacy, sellerName: null, source: "legacy_direct" };
-        }
-        throw error;
-      }
-      return parsePartnerVolumes(data, partnerId);
+      return fetchPartnerCatalogVolumes(partnerId, signal);
     },
   });
 }
