@@ -213,6 +213,7 @@ describe("confirmação controlada de publicação da atribuição", () => {
     const view = renderTab();
     openPublish();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar publicação" }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
     act(() => {
       state.tenant = "outro-tenant";
       state.epoch += 1;
