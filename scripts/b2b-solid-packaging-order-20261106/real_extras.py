@@ -193,8 +193,10 @@ DROP FUNCTION public.fn_b2b_plan_selectable(uuid);
         chk(f"accounting.pending_guard_alone_denies.{nm}", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, err(r))
     st = psql(f"SELECT status||'|'||coalesce(receivable_generated,false)||'|'||coalesce(ready_for_production,false) FROM public.partner_orders WHERE id = '{ORD_ANALISE}'").stdout.strip()
     chk("accounting.order_unchanged_after_denials", st == "em_analise_comercial|false|false", st)
-    r = psql(f"UPDATE public.partner_orders SET status = 'cancelado' WHERE id = '{ORD_CREDIT}'", check=False)
-    chk("accounting.pending_allows_cancel_control", r.returncode == 0 or "C2_ACCOUNTING_PENDING" not in r.stderr, err(r))
+    # Controle positivo do guard isolado: cancelar continua permitido por ELE (o resto da pilha decide à parte).
+    r = psql("BEGIN; ALTER TABLE public.partner_orders DISABLE TRIGGER USER; ALTER TABLE public.partner_orders ENABLE TRIGGER zz_c2_accounting_pending;\n"
+             f"UPDATE public.partner_orders SET status = 'cancelado' WHERE id = '{ORD_CREDIT}';\nROLLBACK;", check=False)
+    chk("accounting.pending_guard_alone_allows_cancel", r.returncode == 0, err(r))
 
     # ------------------------------------------------------------------ 3. cotação: autorizado x indevidos
     qs = j(sim(UB, PLQ, items(S(PK25, 1))))
