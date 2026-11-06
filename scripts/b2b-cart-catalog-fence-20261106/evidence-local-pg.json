@@ -31,7 +31,7 @@
     "public.convert_partner_simulation_to_order_secure"
   ],
   "seams": "ver docstring",
-  "passed": 55,
+  "passed": 56,
   "total": 56,
   "checks": [
     {
@@ -280,9 +280,9 @@
       "detail": "1.000000\n"
     },
     {
-      "name": "post: comprador acumulando administrador volta ao caminho anterior (fence decide)",
-      "ok": false,
-      "detail": "sucesso indevido"
+      "name": "post: comprador acumulando administrador segue o wrapper cercado (fence decide, autoriza ator interno)",
+      "ok": true,
+      "detail": ""
     },
     {
       "name": "post: comprador sem recurso catalogo_precos negado",
