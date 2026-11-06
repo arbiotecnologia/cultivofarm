@@ -401,8 +401,8 @@ def main():
 
         # ---------- criação, snapshot, replay e conflitos
         h = s1["cart_hash"]
-        c1 = j(create(UB, PLD, items(S()), h, "TESTE-PED-20261106-K1"))
-        chk("create.solid_ok", c1 and float(c1["total"]) == 324 and c1["status"] == "em_analise_comercial", c1)
+        r1 = create(UB, PLD, items(S()), h, "TESTE-PED-20261106-K1"); c1 = j(r1)
+        chk("create.solid_ok", c1 and float(c1["total"]) == 324 and c1["status"] == "em_analise_comercial", c1 or err(r1))
         row = psql(f"""SELECT row_to_json(i)::text FROM (SELECT quantidade, preco_unitario, subtotal, unidade_medida, volume_ml, packaging_id_snapshot,
                  packaging_codigo_snapshot, packaging_version_snapshot, packaging_peso_liquido_kg_snapshot, packaging_unidade_conteudo_snapshot,
                  packaging_price_id_snapshot, price_source_snapshot, base_price_snapshot FROM public.partner_order_items WHERE order_id = '{c1['id']}') i""").stdout.strip()
