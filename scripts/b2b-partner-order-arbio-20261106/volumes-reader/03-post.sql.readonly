@@ -1,0 +1,8 @@
+-- READ ONLY após instalação.
+SELECT
+  p.prosecdef AS definer, p.proconfig::text AS config, p.proacl::text AS acl,
+  NOT has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_denied,
+  has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_ok,
+  md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) = 'bd985484b69c8fa6e63a920eff518369' AS reader_unchanged,
+  (SELECT count(*) FROM pg_policy WHERE polrelid = 'public.catalogo_volumes'::regclass) = 11 AS volume_policies_unchanged
+FROM pg_proc p WHERE p.oid = 'public.get_partner_catalog_volumes_secure(uuid)'::regprocedure;

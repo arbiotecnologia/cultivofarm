@@ -1,0 +1,56 @@
+-- B2B_PARTNER_VOLUMES_V1 — leitor escopado de volumes comerciais do comprador B2B.
+-- REVISÃO: não aplicar sem 01-pre aprovado no ref swzpzcwiasxmjutrmvkm. Não altera RLS, policies,
+-- catalogo_volumes, produtos, o leitor canônico nem os wrappers de catálogo/preço.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+
+DO $pre$
+BEGIN
+  IF md5(pg_get_functiondef('platform_private.b2b_partner_catalog_reader(uuid)'::regprocedure)) <> 'bd985484b69c8fa6e63a920eff518369'
+  OR md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) <> '6b56cfb144ebc8dd947473e90e2d7768'
+  OR md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid,boolean)'::regprocedure)) <> '1391adc2133b922e2dcea4b1d3e26820'
+  THEN RAISE EXCEPTION 'PRE_DRIFT: leitor/catalogo divergente da captura 06/11'; END IF;
+  IF to_regprocedure('public.get_partner_catalog_volumes_secure(uuid)') IS NOT NULL THEN
+    RAISE EXCEPTION 'PRE_DRIFT: get_partner_catalog_volumes_secure já existe'; END IF;
+END $pre$;
+
+CREATE FUNCTION public.get_partner_catalog_volumes_secure(p_partner_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE v_seller uuid; v_name text; v_volumes jsonb;
+BEGIN
+  -- Guard canônico do comprador/vendedor (técnico, Superadmin, outro parceiro e outra empresa negados).
+  v_seller := platform_private.b2b_partner_catalog_reader(p_partner_id);
+  IF v_seller IS NULL THEN RAISE EXCEPTION 'partner_not_found' USING ERRCODE = '42501'; END IF;
+
+  SELECT COALESCE(NULLIF(btrim(o.nome_fantasia), ''), NULLIF(btrim(o.nome), ''), NULLIF(btrim(o.razao_social), ''))
+    INTO v_name FROM public.organizations o WHERE o.id = v_seller;
+
+  -- Somente volumes de itens que o próprio catálogo canônico do comprador lista
+  -- (dono = vendedor, ativo, b2b_enabled, não oculto). Sem preço: o preço vem só do motor canônico.
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'id', v.id, 'item_tipo', v.item_tipo, 'produto_id', v.produto_id,
+           'microrganismo_id', v.microrganismo_id, 'volume_ml', v.volume_ml,
+           'rotulo', v.rotulo, 'ordem', v.ordem)
+         ORDER BY v.ordem, v.volume_ml, v.id), '[]'::jsonb)
+    INTO v_volumes
+    FROM public.catalogo_volumes v
+    JOIN (SELECT DISTINCT c.item_id, c.item_tipo FROM public.get_partner_catalog_secure(p_partner_id) c) c
+      ON (c.item_tipo = 'produto' AND v.produto_id = c.item_id)
+      OR (c.item_tipo = 'microrganismo' AND v.produto_id IS NULL AND v.microrganismo_id = c.item_id)
+   WHERE v.ativo IS TRUE
+     AND v.item_tipo = c.item_tipo
+     AND v.owner_organization_id = v_seller
+     AND v.volume_ml > 0;
+
+  RETURN jsonb_build_object('contract', 'B2B_PARTNER_VOLUMES_V1', 'partner_id', p_partner_id,
+    'seller', jsonb_build_object('name', v_name), 'volumes', v_volumes);
+END $function$;
+
+REVOKE ALL ON FUNCTION public.get_partner_catalog_volumes_secure(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_partner_catalog_volumes_secure(uuid) TO authenticated;
+
+COMMIT;
