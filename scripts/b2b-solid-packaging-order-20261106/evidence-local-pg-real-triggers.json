@@ -1,0 +1,462 @@
+{
+  "kind": "disposable_pg",
+  "hosted": false,
+  "remote_writes": false,
+  "package": "B2B_PARTNER_PACKAGING_ORDER_V1",
+  "postgres": "17.11",
+  "real_bodies": [
+    "platform_private.b2b_partner_catalog_reader.bd985484.live-20261106.sql",
+    "platform_private.partner_order_items_catalog_tenant_guard.211a5c4d.live-20261106.sql",
+    "platform_private.solid_pack_presentation_link.a912476c.live-20261106.sql",
+    "public.create_partner_order_secure.7ec41e17.live-20261106.sql",
+    "public.fn_b2b_cart_hash.26fd3c77.live-20261106.sql",
+    "public.fn_b2b_guard_order_items_immutable.bc1c4dca.live-20261106.sql",
+    "public.fn_resolve_b2b_cart.e8df5383.live-20261106.sql",
+    "public.fn_resolve_commercial_price.0df0d900.live-20261106.sql",
+    "public.recorte_a_legacy_solid.63f70a9e.live-20261106.sql",
+    "public.respond_b2b_order_quote_secure.e57d3a64.live-20261106.sql",
+    "public.simulate_b2b_payment_plan_secure.37d4f45e.live-20261106.sql"
+  ],
+  "synthetic_seams": [
+    "auth.uid por GUC",
+    "has_role/get_user_partner_id/is_platform_superadmin/b2b_actor_scope sobre tabelas mínimas",
+    "c2_* guards e journal mínimos",
+    "crédito sem limite, juros 0, plano selecionável",
+    "get_partner_catalog_secure chama o leitor REAL",
+    "fn_catalogo_preco_canonico mínimo",
+    "tabelas de 2º nível com colunas reais, chaves/únicos/CHECKs reais, SEM seus próprios gatilhos e FKs: commercial_audit_log, notificacoes_operacionais, partner_engagement_metrics, partner_financial_settings, partner_order_audit_logs, production_order_link, production_planning, production_timeline_events",
+    "company_fiscal_settings/clientes mínimas (colunas usadas pelos guards reais)",
+    "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
+    "platform_private.platform_actor_access_ready = perfil ativo (sem lease/sessão real)",
+    "platform_private.c2_owner_order_create_allowed = comprador ativo vinculado com papel parceiro_b2b (B1/capacidade C2 assumida aberta; não verificada em produção)",
+    "company_fiscal_settings vazia => contrato real C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1 (sem emitente inventado)",
+    "FKs para clientes/auth.users/partner_simulations omitidas (tabelas inexistentes no PG descartável)"
+  ],
+  "real_triggers": [
+    "_notify_role.e056d90a.live-20261106.sql",
+    "_saas_trg_require_feature.13ed4883.live-20261106.sql",
+    "_saas_user_has_feature.501dd958.live-20261106.sql",
+    "_triggerdefs.live-20261106.sql",
+    "audit_partner_order_payment_terms.96b68bec.live-20261106.sql",
+    "fn_b2b_guard_credit_approval_fields.8902498e.live-20261106.sql",
+    "fn_b2b_guard_order_items_immutable.bc1c4dca.live-20261106.sql",
+    "fn_b2b_status_is_operational.1b397fd4.live-20261106.sql",
+    "fn_cc_can_prepare.439d9c28.live-20261106.sql",
+    "fn_h6c_set_canonical_payment_terms.92eb0a19.live-20261106.sql",
+    "h15_actor_organization.55edafec.live-20261106.sql",
+    "partner_order_has_production.0cfac180.live-20261106.sql",
+    "partner_orders_audit_trigger.df139ef0.live-20261106.sql",
+    "platform_private.b2b_internal_child_snapshot_guard.f9fcfca4.live-20261106.sql",
+    "platform_private.b2b_internal_order_snapshot_guard.9cad2aaa.live-20261106.sql",
+    "platform_private.b2b_internal_origin_valid.70a7c317.live-20261106.sql",
+    "platform_private.c2_accounting_pending_guard.669b1949.live-20261106.sql",
+    "platform_private.c2_accounting_promotion_ok.05938c5e.live-20261106.sql",
+    "platform_private.c2_attempt_closure_guard.123db8ad.live-20261106.sql",
+    "platform_private.c2_attempt_journal_write_guard.692f55bb.live-20261106.sql",
+    "platform_private.c2_external_final_state_guard.3f1a5a6b.live-20261106.sql",
+    "platform_private.c2_external_origin_assert.999e5e9f.live-20261106.sql",
+    "platform_private.c2_external_origin_contract_valid.369fd07c.live-20261106.sql",
+    "platform_private.c2p1_internal_actor.97bab975.live-20261106.sql",
+    "platform_private.c2p1_settings_allowed.57baa5fd.live-20261106.sql",
+    "platform_private.cpe_guard.1aa135cb.live-20261106.sql",
+    "platform_private.delivery_order_transition_guard_20261030.c6a1ddec.live-20261106.sql",
+    "platform_private.h15_actor_organization.64e10608.live-20261106.sql",
+    "platform_private.has_ticket.29adae33.live-20261106.sql",
+    "platform_private.issue_ticket.c32ad23a.live-20261106.sql",
+    "platform_private.partner_order_items_catalog_tenant_guard.211a5c4d.live-20261106.sql",
+    "platform_private.solid_mass_immutable.b0611f3e.live-20261106.sql",
+    "platform_private.solid_mass_packaging_guard.1494933c.live-20261106.sql",
+    "platform_private.solid_pack_presentation_link.a912476c.live-20261106.sql",
+    "refresh_partner_engagement.7a52c546.live-20261106.sql",
+    "tg_audit_partner_order_commercial.b537eb68.live-20261106.sql",
+    "tg_auto_b2b_receivable.0f679538.live-20261106.sql",
+    "tg_b2b_enforce_plan_selectable.3477a02b.live-20261106.sql",
+    "tg_block_partner_order_delete.55b4f2fa.live-20261106.sql",
+    "tg_block_partner_order_edit_after_op.2884dea0.live-20261106.sql",
+    "tg_block_partner_order_items_after_op.6e7c1a8a.live-20261106.sql",
+    "tg_notify_payment_terms_pending.671f9cb3.live-20261106.sql",
+    "tg_partner_order_items_resolve_pending.2e80e713.live-20261106.sql",
+    "tg_partner_orders_credit_guard.b24a3c30.live-20261106.sql",
+    "tg_partner_orders_require_items.2b756289.live-20261106.sql",
+    "tg_refresh_engagement.87b1de28.live-20261106.sql",
+    "trg_partner_order_timeline.833de323.live-20261106.sql",
+    "trg_partner_order_to_planning_fn.e5915037.live-20261106.sql",
+    "update_updated_at_column.b1930ed5.live-20261106.sql"
+  ],
+  "checks": {
+    "before.liquid_simulates": {
+      "pass": true,
+      "detail": 2.7
+    },
+    "before.solid_packaging_unsupported": {
+      "pass": true,
+      "detail": "ERROR:  A_SOLID_PACKAGING_FLOW_REQUIRED"
+    },
+    "before.solid_legacy_blocked": {
+      "pass": true,
+      "detail": "ERROR:  A_SOLID_PACKAGING_FLOW_REQUIRED"
+    },
+    "pre.ok": {
+      "pass": true,
+      "detail": ""
+    },
+    "install.ok": {
+      "pass": true,
+      "detail": ""
+    },
+    "post.ok": {
+      "pass": true,
+      "detail": ""
+    },
+    "install.rerun_refused": {
+      "pass": true,
+      "detail": "psql:/tmp/b2bpack-d3j8bb0m/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+    },
+    "reader.buyer_exact_offers": {
+      "pass": true,
+      "detail": [
+        "00000000-0000-0000-0000-000000000051",
+        "00000000-0000-0000-0000-000000000052"
+      ]
+    },
+    "reader.offer_fields": {
+      "pass": true
+    },
+    "reader.denied.tech": {
+      "pass": true,
+      "detail": "ERROR:  forbidden_financial_terms"
+    },
+    "reader.denied.other_partner_buyer": {
+      "pass": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    "reader.denied.inactive_profile": {
+      "pass": true,
+      "detail": "ERROR:  forbidden_role"
+    },
+    "reader.denied.other_tenant_admin": {
+      "pass": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    "reader.denied.consultant": {
+      "pass": true,
+      "detail": "ERROR:  forbidden_role"
+    },
+    "reader.denied.superadmin": {
+      "pass": true,
+      "detail": "ERROR:  b2b_catalog_platform_actor_denied"
+    },
+    "reader.denied.anon_acl": {
+      "pass": true,
+      "detail": "ERROR:  permission denied for function get_partner_packaging_offers_secure"
+    },
+    "reader.internal_seller_admin": {
+      "pass": true
+    },
+    "acl.private_denied.platform_private.b2b_packaging_line": {
+      "pass": true,
+      "detail": "ERROR:  permission denied for function b2b_packaging_line"
+    },
+    "acl.private_denied.platform_private.b2b_packaging_lock": {
+      "pass": true,
+      "detail": "ERROR:  permission denied for function b2b_packaging_lock"
+    },
+    "liquid.no_regression_hash_amount": {
+      "pass": true
+    },
+    "solid.simulate_server_price": {
+      "pass": true,
+      "detail": {
+        "table_amount": 360.0,
+        "final_amount": 324.0
+      }
+    },
+    "mixed.simulate": {
+      "pass": true,
+      "detail": 245.7
+    },
+    "neg.client_price": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_CLIENT_PRICE_FORBIDDEN"
+    },
+    "neg.client_total": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_CLIENT_PRICE_FORBIDDEN"
+    },
+    "neg.volume_mixed": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_VOLUME_MIXED"
+    },
+    "neg.unidade_mixed": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_VOLUME_MIXED"
+    },
+    "neg.qty_fraction": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_QTY_NOT_INTEGER"
+    },
+    "neg.qty_zero": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_QTY_NOT_INTEGER"
+    },
+    "neg.qty_negative": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_QTY_NOT_INTEGER"
+    },
+    "neg.qty_string": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_QTY_NOT_INTEGER"
+    },
+    "neg.unknown_key": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_LINE_INVALID"
+    },
+    "neg.foreign_packaging": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_FOREIGN"
+    },
+    "neg.foreign_product": {
+      "pass": true,
+      "detail": "ERROR:  product_unavailable"
+    },
+    "neg.inactive_packaging": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_INACTIVE"
+    },
+    "neg.unpriced": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_UNPRICED"
+    },
+    "neg.unpublished_product": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_NOT_PUBLISHED"
+    },
+    "neg.packaging_other_product": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_FOREIGN"
+    },
+    "neg.micro_packaging": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_PRODUCT_ONLY"
+    },
+    "neg.bad_uuid": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_LINE_INVALID"
+    },
+    "neg.duplicate_packaging_line": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_DUPLICATE_LINE"
+    },
+    "neg.fixed_price_mode_unsupported": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_PRICING_MODE_UNSUPPORTED"
+    },
+    "create.solid_ok": {
+      "pass": true,
+      "detail": {
+        "id": "46a2e7c1-c0ff-48c3-9240-be1bb72e776b",
+        "total": 324.0,
+        "numero": "PB-000001",
+        "status": "em_analise_comercial",
+        "subtotal": 360.0,
+        "cart_hash": "c114918aa8ff7c7de5e47f100686c3b0091bc42d6ee3eb08e1109888836588d1",
+        "final_amount": 324.0,
+        "pricing_mode": "discount_from_base",
+        "table_amount": 360.0,
+        "desconto_total": 36.0,
+        "quote_required": false,
+        "discount_amount": 36.0,
+        "idempotency_key": "TESTE-PED-20261106-K1",
+        "payment_terms_id": "5ea66cb7-c331-4e40-b960-41c294618251",
+        "credit_reason_code": "NO_LIMIT",
+        "credit_block_reason": null,
+        "financial_approval_status": "not_required",
+        "financial_interest_amount": 0.0,
+        "net_amount_after_discount": 324.0,
+        "requires_financial_approval": false
+      }
+    },
+    "create.snapshot_exact": {
+      "pass": true,
+      "detail": {
+        "quantidade": 2.0,
+        "preco_unitario": 162.0,
+        "subtotal": 324.0,
+        "unidade_medida": "unidade",
+        "volume_ml": null,
+        "packaging_id_snapshot": "00000000-0000-0000-0000-000000000051",
+        "packaging_codigo_snapshot": "SC25",
+        "packaging_version_snapshot": 1,
+        "packaging_peso_liquido_kg_snapshot": 25.0,
+        "packaging_unidade_conteudo_snapshot": "kg",
+        "packaging_price_id_snapshot": "00000000-0000-0000-0000-000000000061",
+        "price_source_snapshot": "packaging_price",
+        "base_price_snapshot": 180.0
+      }
+    },
+    "replay.same_key_same_order": {
+      "pass": true
+    },
+    "replay.other_packaging_conflict": {
+      "pass": true,
+      "detail": "ERROR:  idempotency_conflict"
+    },
+    "replay.other_qty_conflict": {
+      "pass": true,
+      "detail": "ERROR:  idempotency_conflict"
+    },
+    "create.tampered_hash": {
+      "pass": true,
+      "detail": "ERROR:  price_changed"
+    },
+    "create.client_price": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_CLIENT_PRICE_FORBIDDEN"
+    },
+    "create.tech_denied": {
+      "pass": true,
+      "detail": "ERROR:  partner_tech_cannot_create_order"
+    },
+    "create.other_partner_denied": {
+      "pass": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    "create.inactive_denied": {
+      "pass": true,
+      "detail": "ERROR:  C2_SCOPE_INACTIVE"
+    },
+    "create.other_tenant_admin_denied": {
+      "pass": true,
+      "detail": "ERROR:  forbidden_partner"
+    },
+    "create.anon_acl": {
+      "pass": true,
+      "detail": "ERROR:  permission denied for function create_partner_order_secure"
+    },
+    "create.mixed_lines": {
+      "pass": true,
+      "detail": [
+        245.7,
+        "1/1"
+      ]
+    },
+    "create.liquid_no_regression": {
+      "pass": true
+    },
+    "price_changed_after_simulation": {
+      "pass": true,
+      "detail": "ERROR:  price_changed"
+    },
+    "price_row_immutable_or_unguarded": {
+      "pass": true,
+      "detail": "ERROR:  PACK_PRICE_IMMUTABLE"
+    },
+    "price_overlap_rejected_gist": {
+      "pass": true,
+      "detail": "ERROR:  conflicting key value violates exclusion constraint \"cpe_no_overlap\""
+    },
+    "quote.created_waiting": {
+      "pass": true
+    },
+    "quote.respond_keeps_packaging_snapshot": {
+      "pass": false,
+      "detail": [
+        "ERROR:  relation \"platform_private.delivery_context_20261030\" does not exist",
+        "0.00|00000000-0000-0000-0000-000000000051|00000000-0000-0000-0000-000000000061"
+      ]
+    },
+    "quote.other_tenant_denied": {
+      "pass": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied"
+    },
+    "immutable.change_packaging": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_SNAPSHOT_IMMUTABLE"
+    },
+    "immutable.change_qty": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_SNAPSHOT_IMMUTABLE"
+    },
+    "immutable.legacy_gains_packaging": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_SNAPSHOT_IMMUTABLE"
+    },
+    "snapshot.forged_weight_rejected": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_SNAPSHOT_MISMATCH"
+    },
+    "snapshot.fraction_rejected": {
+      "pass": false,
+      "detail": "ERROR:  auth_required"
+    },
+    "concurrency.price_row_locked": {
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
+    },
+    "concurrency.packaging_row_locked": {
+      "pass": true,
+      "detail": "ERROR:  canceling statement due to lock timeout"
+    },
+    "concurrency.same_key_single_order": {
+      "pass": true,
+      "detail": [
+        {
+          "id": "e9484c84-e684-4196-81eb-3e05e6a4eca5",
+          "total": 243.0,
+          "numero": "PB-000005",
+          "status": "em_analise_comercial",
+          "subtotal": 270.0,
+          "cart_hash": "b73376916985175fc648211393ae9416024c006ff857e9f9513457aa00680d66",
+          "final_amount": 243.0,
+          "pricing_mode": "discount_from_base",
+          "table_amount": 270.0,
+          "desconto_total": 27.0,
+          "quote_required": false,
+          "discount_amount": 27.0,
+          "idempotency_key": "TESTE-PED-20261106-CC",
+          "payment_terms_id": "d30b310f-148a-4941-bd82-fb36bab49c7f",
+          "credit_reason_code": "NO_LIMIT",
+          "credit_block_reason": null,
+          "financial_approval_status": "not_required",
+          "financial_interest_amount": 0.0,
+          "net_amount_after_discount": 243.0,
+          "requires_financial_approval": false
+        },
+        "1"
+      ]
+    },
+    "archived_after_simulation_rejected": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_INACTIVE"
+    },
+    "rollback.ok": {
+      "pass": true,
+      "detail": ""
+    },
+    "rollback.reader_closed": {
+      "pass": true,
+      "detail": "ERROR:  permission denied for function get_partner_packaging_offers_secure"
+    },
+    "rollback.packaging_line_closed": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_ORDER_CLOSED"
+    },
+    "rollback.liquid_still_works": {
+      "pass": true
+    },
+    "rollback.history_preserved": {
+      "pass": true,
+      "detail": [
+        "4",
+        "4"
+      ]
+    },
+    "rollback.snapshot_still_immutable": {
+      "pass": true,
+      "detail": "ERROR:  B2B_PACKAGING_SNAPSHOT_IMMUTABLE"
+    }
+  },
+  "result": "FAIL",
+  "passed": 74,
+  "total": 76
+}

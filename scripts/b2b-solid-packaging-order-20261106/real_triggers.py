@@ -77,6 +77,9 @@ CREATE TABLE IF NOT EXISTS public.company_fiscal_settings(id uuid DEFAULT gen_ra
 ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
 ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS partner_account_id uuid;
 CREATE TABLE IF NOT EXISTS public.clientes(id uuid PRIMARY KEY, organization_id uuid);
+CREATE TABLE IF NOT EXISTS platform_private.solid_pack_presentation_tx(txid bigint NOT NULL PRIMARY KEY, created_at timestamptz DEFAULT now() NOT NULL);
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'gestor';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'administrativo';
 DROP FUNCTION IF EXISTS platform_private.issue_ticket(text, uuid);
 -- B1 (capacidade C2 de criação externa) assumida ABERTA para o comprador vinculado e ativo: o estado real em produção não foi verificado.
 CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(uuid, uuid) RETURNS boolean LANGUAGE sql STABLE AS
@@ -133,7 +136,9 @@ def real_triggers_sql() -> str:
     # platform_private primeiro (funções SQL validam dependências na criação); ordem fixa b2b_internal_origin_valid antes dos que o usam.
     order = ["platform_private.issue_ticket", "platform_private.b2b_internal_origin_valid", "platform_private.c2_external_origin_contract_valid", "platform_private.has_ticket",
              "platform_private.h15_actor_organization", "platform_private.c2_accounting_promotion_ok", "platform_private.c2_external_origin_assert"]
-    rank = lambda p: order.index(p.name.split(".live")[0].rsplit(".", 1)[0]) if p.name.split(".live")[0].rsplit(".", 1)[0] in order else 99
+    late = ["platform_private.c2p1_internal_actor", "platform_private.c2p1_settings_allowed"]   # dependem de public.h15_actor_organization
+    key = lambda p: p.name.split(".live")[0].rsplit(".", 1)[0]
+    rank = lambda p: order.index(key(p)) if key(p) in order else (200 + late.index(key(p)) if key(p) in late else 99)
     helpers = sorted((TRIG / "helpers").glob("*.sql"), key=lambda p: (rank(p), p.name))
     for p in helpers:
         parts.append(_body(p))
