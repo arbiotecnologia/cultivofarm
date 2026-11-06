@@ -21,7 +21,6 @@ import { generateSimulacaoPdf } from "@/lib/pdf/simulacaoPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { DetalheSimulacaoDrawer } from "@/components/pedidos-b2b/DetalheSimulacaoDrawer";
 import { formatarArea, formatarMoeda } from "@/lib/catalogo/formatUnidades";
-import { useMyPartner } from "@/hooks/useMyPartner";
 
 const STATUS_LABEL: Record<PartnerSimulationStatus, string> = {
   rascunho: "Rascunho",
@@ -283,7 +282,6 @@ function SimulacaoDrawerComPdf({
   sims: any[];
 }) {
   const sim = detalheId ? sims.find((s) => s.id === detalheId) : null;
-  const { data: myPartnerSeller } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const { profile, role } = useAuth();
   const { data: items = [] } = usePartnerSimulationItems(detalheId);
@@ -307,7 +305,7 @@ function SimulacaoDrawerComPdf({
   const handleDownloadPdf = async () => {
     if (!sim) return;
     const { blobUrl, filename } = await generateSimulacaoPdf({
-      empresaNome: myPartnerSeller?.sellerName ?? null,
+      empresaNome: partner?.sellerName ?? null,
       simulacao: sim,
       parceiro_nome: partner?.nome_fantasia ?? partner?.razao_social ?? null,
       tecnico_nome: tecnicoNome,

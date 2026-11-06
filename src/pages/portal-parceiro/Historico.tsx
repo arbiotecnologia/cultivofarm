@@ -11,10 +11,8 @@ import {
   partnerOrderStatusVariantForPartner,
 } from "@/lib/partnerOrderStatus";
 import { DetalhePedidoDrawer } from "@/components/pedidos-b2b/DetalhePedidoDrawer";
-import { useMyPartner } from "@/hooks/useMyPartner";
 
 export default function Historico() {
-  const { data: myPartnerSeller } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const { data: orders = [], isLoading } = usePartnerOrders(partner?.id);
   const [detalheId, setDetalheId] = useState<string | null>(null);
@@ -94,7 +92,7 @@ export default function Historico() {
       </Card>
 
       <DetalhePedidoDrawer
-        empresaNome={myPartnerSeller?.sellerName ?? null}
+        empresaNome={partner?.sellerName ?? null}
         orderId={detalheId}
         open={!!detalheId}
         onOpenChange={(o) => !o && setDetalheId(null)}

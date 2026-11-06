@@ -20,12 +20,10 @@ import {
   partnerOrderStatusLabelForPartner,
   partnerOrderStatusVariantForPartner,
 } from "@/lib/partnerOrderStatus";
-import { useMyPartner } from "@/hooks/useMyPartner";
 
 const TERMINAL = ["entregue", "faturado", "cancelado", "reprovado"];
 
 export default function MeusPedidos() {
-  const { data: myPartner } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const { data: orders = [], isLoading } = usePartnerOrders(partner?.id);
   const [timelineOrderId, setTimelineOrderId] = useState<string | null>(null);
@@ -216,7 +214,7 @@ export default function MeusPedidos() {
       </Card>
 
       <TimelinePedidoDialog
-        supplierName={myPartner?.sellerName ?? null}
+        supplierName={partner?.sellerName ?? null}
         orderId={timelineOrderId}
         open={!!timelineOrderId}
         onOpenChange={(o) => !o && setTimelineOrderId(null)}
@@ -230,7 +228,7 @@ export default function MeusPedidos() {
       />
 
       <DetalhePedidoDrawer
-        empresaNome={myPartner?.sellerName ?? null}
+        empresaNome={partner?.sellerName ?? null}
         orderId={detalheId}
         open={!!detalheId}
         onOpenChange={(o) => !o && setDetalheId(null)}

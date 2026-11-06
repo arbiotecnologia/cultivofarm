@@ -33,7 +33,6 @@ import { DetalhePedidoDrawer } from "@/components/pedidos-b2b/DetalhePedidoDrawe
 import { DetalheSimulacaoDrawer } from "@/components/pedidos-b2b/DetalheSimulacaoDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useMyPartner } from "@/hooks/useMyPartner";
 
 const SIM_STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho",
@@ -51,7 +50,6 @@ function withinRange(iso: string, from: string, to: string) {
 }
 
 export default function Solicitacoes() {
-  const { data: myPartnerSeller } = useMyPartner();
   const { partner } = useOutletContext<{ partner: any }>();
   const { data: pedidos = [], isLoading: loadingPed } = usePartnerOrders(partner?.id);
   const { data: sims = [], isLoading: loadingSim } = usePartnerSimulationsWithClient(
@@ -534,7 +532,7 @@ export default function Solicitacoes() {
       </Tabs>
 
       <DetalhePedidoDrawer
-        empresaNome={myPartnerSeller?.sellerName ?? null}
+        empresaNome={partner?.sellerName ?? null}
         orderId={openPedido}
         open={!!openPedido}
         onOpenChange={(o) => !o && setOpenPedido(null)}
