@@ -1,0 +1,18 @@
+{
+  "install": {
+    "save": "45759f6f03ed148b407ccbc46a500276",
+    "list": "6b2267c23072a68bec19f5c9b8046f1f",
+    "options": "d5ecaea6be5bb7fa9395cb2420fde29b",
+    "sim": "3fc7aff096ad61f23ef686589b29b133",
+    "create": "c2a2878620cd4c632ff67688ea7ddc04",
+    "read": "7eb8864f421d6439fe2cc53bbd8987aa"
+  },
+  "deny": {
+    "save": "5fb5d830b0eac706fd2832b58c3dc937",
+    "list": "144a812e7101ccec50dfcd3da410ea09",
+    "options": "f89bfea9d8748583616e2b4f187aed50",
+    "sim": "8bc26955e341751dcc2a3d2da60f3651",
+    "create": "103459f3931a748e8dd00db8a53f514a",
+    "read": "60e8db6a6b59e98ee82b13ec0a1685c2"
+  }
+}
