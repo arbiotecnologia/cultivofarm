@@ -26,6 +26,8 @@
     "fn_catalogo_preco_canonico mínimo",
     "sem RLS/policies (partner_order_items com GRANT direto): não prova RLS",
     "sem JWT/PostgREST",
+    "platform_private.delivery_context_20261030 e solid_pack_presentation_tx com colunas/PK reais, vazias (sem contexto de entrega/apresentação emitido)",
+    "app_role ganha 'gestor'/'administrativo' só para compilar c2p1_settings_allowed/c2p1_internal_actor REAIS (md5 57baa5fd/97bab975)",
     "tabelas de 2º nível com colunas reais, chaves/únicos/CHECKs reais, SEM seus próprios gatilhos e FKs: commercial_audit_log, notificacoes_operacionais, partner_engagement_metrics, partner_financial_settings, partner_order_audit_logs, production_order_link, production_planning, production_timeline_events",
     "company_fiscal_settings/clientes mínimas (colunas usadas pelos guards reais)",
     "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
@@ -112,7 +114,7 @@
     },
     "install.rerun_refused": {
       "pass": true,
-      "detail": "psql:/tmp/b2bpack-atzdmslf/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
+      "detail": "psql:/tmp/b2bpack-9qbbjmgk/local-02-install.sql.review:59: ERROR:  PRE_DRIFT: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) divergente da captura 06/11\nCONTEXT: "
     },
     "reader.solid_products_without_price_listed": {
       "pass": true,
@@ -262,7 +264,7 @@
     "create.solid_ok": {
       "pass": true,
       "detail": {
-        "id": "88fae615-9f2e-4ddb-8544-1f6086dbe4ba",
+        "id": "e274e5fa-a323-4ccb-ba17-12d4074412e3",
         "total": 324.0,
         "numero": "PB-000001",
         "status": "em_analise_comercial",
@@ -275,7 +277,7 @@
         "quote_required": false,
         "discount_amount": 36.0,
         "idempotency_key": "TESTE-PED-20261106-K1",
-        "payment_terms_id": "cb675407-5e3e-48f9-a9c5-6afac9a2ff14",
+        "payment_terms_id": "6bb52887-c363-464b-b22f-f006ba290952",
         "credit_reason_code": "NO_LIMIT",
         "credit_block_reason": null,
         "financial_approval_status": "not_required",
@@ -487,7 +489,7 @@
       "pass": true,
       "detail": [
         {
-          "id": "1acc1c7c-cee6-42db-9538-154029ecffd5",
+          "id": "41024250-4701-4ee6-aff0-14d1a3e58861",
           "total": 243.0,
           "numero": "PB-000005",
           "status": "em_analise_comercial",
@@ -500,7 +502,7 @@
           "quote_required": false,
           "discount_amount": 27.0,
           "idempotency_key": "TESTE-PED-20261106-CC",
-          "payment_terms_id": "94a56dc7-8163-4df5-ab40-8112f0785f64",
+          "payment_terms_id": "27eec2ca-d470-4c45-9e0e-1b4fda278753",
           "credit_reason_code": "NO_LIMIT",
           "credit_block_reason": null,
           "financial_approval_status": "not_required",

@@ -95,6 +95,8 @@ CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(u uuid) RETURN
  $$ SELECT e.feature_key FROM platform_private.seam_entitlements e WHERE e.user_id = u $$;
 """
 SEAMS_DECLARED = [
+    "platform_private.delivery_context_20261030 e solid_pack_presentation_tx com colunas/PK reais, vazias (sem contexto de entrega/apresentação emitido)",
+    "app_role ganha 'gestor'/'administrativo' só para compilar c2p1_settings_allowed/c2p1_internal_actor REAIS (md5 57baa5fd/97bab975)",
     "tabelas de 2º nível com colunas reais, chaves/únicos/CHECKs reais, SEM seus próprios gatilhos e FKs: commercial_audit_log, notificacoes_operacionais, partner_engagement_metrics, partner_financial_settings, partner_order_audit_logs, production_order_link, production_planning, production_timeline_events",
     "company_fiscal_settings/clientes mínimas (colunas usadas pelos guards reais)",
     "platform_private.entitlements_for_user sobre tabela de direitos sintética (o gate real _saas_trg_require_feature/_saas_user_has_feature permanece)",
