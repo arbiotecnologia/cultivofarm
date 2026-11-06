@@ -37,7 +37,7 @@ import { TotaisCarrinho } from "@/components/comercial/TotaisCarrinho";
 import {
   minDeliveryDateISO,
   isDeliveryDateValid,
-  MIN_DELIVERY_HINT,
+  minDeliveryHint,
   MIN_DELIVERY_ERROR,
 } from "@/lib/b2bDeliveryDate";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -820,7 +820,7 @@ export default function NovoPedido() {
                   min={minDeliveryDateISO()}
                 />
                 <p className="text-[10px] text-muted-foreground italic">
-                  {MIN_DELIVERY_HINT}
+                  {minDeliveryHint(supplierName)}
                 </p>
                 {requestedDate && !isDeliveryDateValid(requestedDate) && (
                   <Alert variant="destructive" className="py-2">

@@ -230,7 +230,7 @@ export default function PortalParceiroLayout() {
             <h1 className="text-2xl font-semibold">Meus pedidos</h1>
             <CommercialOwnOrders partnerId={ownPartner.id} />
             <p className="text-sm text-muted-foreground">
-              Pedidos enviados seguem para análise comercial da Cultivo Farm. Aprovação, cobrança,
+              Pedidos enviados seguem para análise comercial da {supplierLabel(sellerName)}. Aprovação, cobrança,
               nota fiscal e entrega dependem de validações internas e podem permanecer bloqueadas —
               este acompanhamento não garante nenhuma dessas etapas.
             </p>
@@ -249,7 +249,7 @@ export default function PortalParceiroLayout() {
         ) : !partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
 
           <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-            Seu usuário ainda não está vinculado a um parceiro B2B. Entre em contato com a Cultivo Farm.
+            Seu usuário ainda não está vinculado a um parceiro B2B. Entre em contato com a empresa fornecedora.
           </div>
         ) : !partner ? (
           <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
