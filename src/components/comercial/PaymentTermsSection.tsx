@@ -45,7 +45,9 @@ export function PaymentTermsSection({
   requiresCreditApproval,
   requiresGuarantee,
 }: Props) {
-  const { data: terms, isLoading } = usePartnerOrderPaymentTerms(partnerOrderId);
+  const termsQuery = usePartnerOrderPaymentTerms(partnerOrderId);
+  const read = termsQuery.data;
+  const terms = read?.state === "present" ? read.terms : null;
   const approve = useApprovePaymentTerms();
   const reject = useRejectPaymentTerms();
   const adjust = useRequestPaymentTermsAdjustment();
@@ -54,7 +56,19 @@ export function PaymentTermsSection({
   const [dialog, setDialog] = useState<null | "reject" | "adjust" | "note">(null);
   const [text, setText] = useState("");
 
-  if (isLoading) return <div className="text-sm text-muted-foreground">Carregando condição comercial...</div>;
+  if (termsQuery.isError || read?.state === "unverified") {
+    return (
+      <Card data-testid="payment-terms-unavailable">
+        <CardHeader><CardTitle className="text-base">Condição Comercial e Financeira</CardTitle></CardHeader>
+        <CardContent className="text-sm space-y-2">
+          <p className="text-destructive">Não foi possível carregar a condição de pagamento deste pedido agora.</p>
+          <p className="text-muted-foreground text-xs">Isso não significa que o pedido esteja sem condição. Nenhuma ação foi tomada.</p>
+          <Button size="sm" variant="outline" onClick={() => void termsQuery.refetch()} disabled={termsQuery.isFetching}>Tentar novamente</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+  if (!read) return <div className="text-sm text-muted-foreground">Carregando condição comercial...</div>;
   if (!terms) {
     return (
       <Card>

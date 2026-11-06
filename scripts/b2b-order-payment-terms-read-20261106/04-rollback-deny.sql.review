@@ -1,0 +1,21 @@
+-- 04 ROLLBACK deny-only: leitor passa a negar (UI mostra indisponível, nunca 'sem condição'); nada mais muda.
+BEGIN;
+DO $$ BEGIN
+  IF to_regprocedure('public.get_partner_order_payment_terms_secure(uuid)') IS NULL OR md5(pg_get_functiondef('public.get_partner_order_payment_terms_secure(uuid)'::regprocedure)) <> 'efb3d18c65088d7d69471fc5aa9ac859' THEN RAISE EXCEPTION 'ROLLBACK: leitor divergente'; END IF;
+END $$;
+CREATE OR REPLACE FUNCTION public.get_partner_order_payment_terms_secure(p_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+  RAISE EXCEPTION 'payment_terms_reader_rolled_back' USING ERRCODE='42501';
+END $function$;
+REVOKE ALL ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) FROM PUBLIC, anon, authenticated;
+DO $$ BEGIN
+  IF to_regprocedure('public.get_partner_order_payment_terms_secure(uuid)') IS NULL OR md5(pg_get_functiondef('public.get_partner_order_payment_terms_secure(uuid)'::regprocedure)) <> '4105ec87c0134c916196c909d341604a' THEN RAISE EXCEPTION 'ROLLBACK_POST: leitor divergente'; END IF;
+  IF (SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''), '|' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.partner_order_payment_terms'::regclass) IS DISTINCT FROM 'ddbf3800745ee333bfdb552a905078c0' THEN RAISE EXCEPTION 'policies de partner_order_payment_terms mudaram'; END IF;
+  IF (SELECT md5(relacl::text) FROM pg_class WHERE oid='public.partner_order_payment_terms'::regclass) IS DISTINCT FROM '46875263bd6598c4534e2df7d1847a5e' THEN RAISE EXCEPTION 'ACL da tabela mudou'; END IF;
+END $$;
+COMMIT;

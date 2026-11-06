@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useScopedPortalQuery } from "./useScopedPortalQuery";
 
 export interface PartnerOrderPaymentTerms {
   id: string;
@@ -24,18 +25,58 @@ export interface PartnerOrderPaymentTerms {
   approval_notes: string | null;
 }
 
+export type PaymentTermsRead =
+  | { state: "present"; terms: PartnerOrderPaymentTerms }
+  /** Ausência confirmada pelo leitor canônico do servidor. */
+  | { state: "absent" }
+  /** Pré-instalação: leitura direta sem linha NÃO prova ausência (RLS pode filtrar) — mostrar indisponível. */
+  | { state: "unverified" };
+
+const READER = "get_partner_order_payment_terms_secure";
+const CONTRACT = "B2B_ORDER_PAYMENT_TERMS_READ_V1";
+
+function isReaderAbsent(error: unknown): boolean {
+  const e = error as { code?: unknown; message?: unknown } | null;
+  return !!e && e.code === "PGRST202" && typeof e.message === "string" &&
+    e.message.includes(`public.${READER}(p_order_id)`);
+}
+
+const num = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+function parseTerms(t: unknown, orderId: string): PartnerOrderPaymentTerms {
+  const x = t as Record<string, unknown> | null;
+  if (!x || typeof x !== "object" || x.partner_order_id !== orderId || typeof x.id !== "string" ||
+      typeof x.plan_name_snapshot !== "string" || !num(x.final_amount) || !num(x.table_amount) ||
+      typeof x.approval_status !== "string") throw new Error("payment_terms_contract_invalid");
+  return { approved_by: null, ...(x as unknown as PartnerOrderPaymentTerms) };
+}
+
+/** Exportado para teste: interpreta a resposta do leitor canônico estritamente. */
+export function parsePaymentTermsReply(data: unknown, orderId: string): PaymentTermsRead {
+  const d = data as Record<string, unknown> | null;
+  if (!d || d.contract !== CONTRACT || d.order_id !== orderId || typeof d.present !== "boolean")
+    throw new Error("payment_terms_contract_invalid");
+  if (!d.present) { if (d.terms != null) throw new Error("payment_terms_contract_invalid"); return { state: "absent" }; }
+  return { state: "present", terms: parseTerms(d.terms, orderId) };
+}
+
+/**
+ * Condição de pagamento de UM pedido via leitor canônico (pedido+tenant+papel no servidor), com cache/respostas
+ * cercados pelo escopo de auth. Erro => indisponível (nunca "sem condição"). Fallback de leitura direta só na
+ * ausência exata do RPC (PGRST202 nomeando o endpoint), e sem linha ali vira "unverified".
+ */
 export function usePartnerOrderPaymentTerms(partnerOrderId: string | null | undefined) {
-  return useQuery({
+  return useScopedPortalQuery<PaymentTermsRead>({
     queryKey: ["partner-order-payment-terms", partnerOrderId],
     enabled: !!partnerOrderId,
-    queryFn: async (): Promise<PartnerOrderPaymentTerms | null> => {
-      const { data, error } = await (supabase as any)
-        .from("partner_order_payment_terms")
-        .select("*")
-        .eq("partner_order_id", partnerOrderId)
-        .maybeSingle();
-      if (error) throw error;
-      return data as PartnerOrderPaymentTerms | null;
+    queryFn: async (signal) => {
+      const orderId = partnerOrderId as string;
+      const { data, error } = await (supabase.rpc as any)(READER, { p_order_id: orderId }).abortSignal(signal);
+      if (!error) return parsePaymentTermsReply(data, orderId);
+      if (!isReaderAbsent(error)) throw error;
+      const legacy = await (supabase as any).from("partner_order_payment_terms").select("*")
+        .eq("partner_order_id", orderId).abortSignal(signal).maybeSingle();
+      if (legacy.error) throw legacy.error;
+      return legacy.data ? { state: "present", terms: parseTerms(legacy.data, orderId) } : { state: "unverified" };
     },
   });
 }
