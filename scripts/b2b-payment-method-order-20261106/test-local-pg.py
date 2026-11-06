@@ -407,7 +407,6 @@ def main():
         # ---------- ativação por empresa ----------
         denied("financeiro não ativa", activation(UFIN, "pilot", [P], 0), "forbidden")
         denied("piloto com parceiro de outro tenant recusado", activation(UADM, "pilot", [PF], 0), "payment_method_pilot_partner_invalid")
-        denied("F sem config ativa não ativa", activation(UADMF, "enforced", [], 0) if False else save(UADMF, pixF, PLD, "pix", M_PIX, 2, 1, None, "revoked", 1), "x") if False else None
         j, e = activation(UADM, "pilot", [P], 0); check("admin A ativa piloto só para o parceiro P", j and j["activation"]["mode"] == "pilot" and j["activation"]["version"] == 1, e)
         denied("ativação com CAS antigo recusada", activation(UADM, "enforced", [], 0), "payment_method_activation_stale")
         j, e = call(UB, f"public.b2b_list_payment_method_options_secure('{P}','{PLD}')"); check("piloto: comprador P vê mode required", j and j["mode"] == "required", e)
