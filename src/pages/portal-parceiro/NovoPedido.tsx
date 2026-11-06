@@ -47,7 +47,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCommercialPaymentPlans } from "@/hooks/useCommercialPaymentPlans";
 import { useSimulateB2BPaymentPlan, type SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
-import { simulationKey, describeSimulationFailure, type SimulationFailure } from "@/lib/b2bSimulationState";
+import { useFencedB2BSimulation } from "@/hooks/useFencedB2BSimulation";
 import { PaymentPlanSelector } from "@/components/comercial/PaymentPlanSelector";
 import { PaymentSimulationSummary } from "@/components/comercial/PaymentSimulationSummary";
 
@@ -297,10 +297,6 @@ export default function NovoPedido() {
     useCommercialPaymentPlans(!isSimulationMode);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [simulation, setSimulation] = useState<SimulateResult | null>(null);
-  const [cashSimulation, setCashSimulation] = useState<SimulateResult | null>(null);
-  const simulateSelectedPlan = useSimulateB2BPaymentPlan();
-  const simulateCashReference = useSimulateB2BPaymentPlan();
   // Tentativa de envio: chave/estado vivem fora do componente (memória volátil
   // por ator+empresa+papéis+parceiro) para sobreviver a remontagem do boundary.
   const pageScope = useStorageAccessScope("partner-order-page");
@@ -472,66 +468,18 @@ export default function NovoPedido() {
     [paymentPlans, selectedPlanId],
   );
 
-  // Dispara simulação sempre que plano/itens/contexto mudam. Só a resposta da chave atual é adotada;
-  // falhas ficam visíveis até nova tentativa manual ou mudança de contexto (sem retry automático).
-  const currentSimKey = simulationKey({ userId: user?.id, organizationId: profile?.organization_id,
-    partnerId: partner?.id, planId: selectedPlanId, items: simulationItems });
-  const simKeyRef = useRef<string | null>(null);
-  simKeyRef.current = currentSimKey;
-  const [simFailure, setSimFailure] = useState<SimulationFailure | null>(null);
-  const [simRetryTick, setSimRetryTick] = useState(0);
-  useEffect(() => {
-    if (isSimulationMode || !confirmOpen) return;
-    setSimulation(null);
-    setSimFailure(null);
-    if (!partner?.id || !selectedPlanId || !currentSimKey || cartInvalid) return;
-    const key = currentSimKey;
-    simulateSelectedPlan.mutate(
-      { partner_id: partner.id, payment_plan_id: selectedPlanId, items: simulationItems },
-      {
-        onSuccess: (res) => {
-          if (simKeyRef.current !== key) return;
-          if (!res || res.partner_id !== partner.id || res.payment_plan?.id !== selectedPlanId) {
-            setSimFailure(describeSimulationFailure(key, { message: "invalid_simulation_reply" }));
-            return;
-          }
-          setSimulation(res);
-        },
-        onError: (err) => {
-          if (simKeyRef.current !== key) return;
-          setSimulation(null);
-          setSimFailure(describeSimulationFailure(key, err));
-        },
-      },
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSimKey, confirmOpen, isSimulationMode, cartInvalid, simRetryTick]);
-  const visibleSimFailure = simFailure && simFailure.key === currentSimKey ? simFailure : null;
-  const visibleSimulation = simulation && simulation.partner_id === partner?.id && simulation.payment_plan?.id === selectedPlanId ? simulation : null;
-
-  // Referência à vista (para diferença) — recalcula sempre que carrinho/parceiro/plano mudam
-  useEffect(() => {
-    if (isSimulationMode || !confirmOpen || !cashPlan || !partner?.id || simulationItems.length === 0 || cartInvalid) {
-      setCashSimulation(null);
-      return;
-    }
-    const t = setTimeout(() => {
-      simulateCashReference.mutate(
-        { partner_id: partner.id, payment_plan_id: cashPlan.id, items: simulationItems },
-        { onSuccess: (res) => setCashSimulation(res), onError: () => setCashSimulation(null) },
-      );
-    }, 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cashPlan?.id, simulationItems, partner?.id, confirmOpen, isSimulationMode, cartInvalid]);
-
-  // Limpa simulações quando o modal fecha ou o carrinho esvazia
-  useEffect(() => {
-    if (!confirmOpen || simulationItems.length === 0) {
-      setSimulation(null);
-      setCashSimulation(null);
-    }
-  }, [confirmOpen, simulationItems.length]);
+  // Simulações cercadas: estado atômico por chave (contexto+escopo canônico+itens+plano), seq por disparo
+  // e fence capturado. Diálogo fechado/carrinho inválido => chave nula, o que aposenta respostas em voo.
+  const simEnabled = !isSimulationMode && confirmOpen && !cartInvalid;
+  const selSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
+    organizationId: profile?.organization_id, partnerId: partner?.id, planId: selectedPlanId, items: simulationItems });
+  const cashSim = useFencedB2BSimulation({ enabled: simEnabled, scope: pageScope, userId: user?.id,
+    organizationId: profile?.organization_id, partnerId: partner?.id, planId: cashPlan?.id, items: simulationItems });
+  const simulation = selSim.result;
+  const cashSimulation = cashSim.result;
+  const visibleSimulation = simulation;
+  const visibleSimFailure = selSim.pending ? null : selSim.failure;
+  const setSimRetryTick = (_: unknown) => selSim.retry();
 
 
   const liveInputRef = useRef<Parameters<typeof orderAttemptFingerprint>[0]>({ partner_id: "", items: [] });
@@ -613,7 +561,9 @@ export default function NovoPedido() {
       toast.error("Selecione uma condição de pagamento antes de finalizar o pedido.");
       return;
     }
-    if (!simulation?.cart_hash) {
+    // Revalida no clique: só o resultado da chave/seq/fence atuais autoriza o envio.
+    const currentSim = selSim.take();
+    if (!currentSim?.cart_hash) {
       toast.error("Aguarde a validação de preços pelo servidor antes de enviar o pedido.");
       return;
     }
@@ -632,9 +582,9 @@ export default function NovoPedido() {
       requested_delivery_date: requestedDate || null,
       items,
       payment_plan_id: selectedPlanId,
-      first_due_date: simulation?.schedule?.[0]?.due_date ?? null,
+      first_due_date: currentSim.schedule?.[0]?.due_date ?? null,
       installment_count: selectedPlan?.installment_count ?? null,
-      expected_cart_hash: simulation.cart_hash,
+      expected_cart_hash: currentSim.cart_hash,
     };
     const fingerprint = orderAttemptFingerprint(input);
     // Mesmo payload => mesma chave (servidor deduplica). Payload alterado após
@@ -1279,10 +1229,10 @@ export default function NovoPedido() {
                   finalAmountByPlan={
                     simulation ? { [simulation.payment_plan.id]: simulation.amounts.final_amount } : {}
                   }
-                  loading={simulateSelectedPlan.isPending}
+                  loading={selSim.pending}
                 />
 
-                {visibleSimFailure && !simulateSelectedPlan.isPending && (
+                {visibleSimFailure && (
                   <Alert variant="destructive" className="py-2" role="alert" data-testid="b2b-simulation-error">
                     <AlertDescription className="text-xs space-y-2">
                       <p className="font-medium">{visibleSimFailure.title}</p>
@@ -1410,7 +1360,7 @@ export default function NovoPedido() {
               <Button
                 onClick={() => handleSubmit()}
                 disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
-                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || simulateSelectedPlan.isPending || !visibleSimulation || !!visibleSimFailure}
+                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || selSim.pending || !visibleSimulation || !!visibleSimFailure}
               >
                 {createOrder.isPending
                   ? "Enviando..."
