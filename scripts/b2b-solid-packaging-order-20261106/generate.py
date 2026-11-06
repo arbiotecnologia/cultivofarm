@@ -136,7 +136,7 @@ BEGIN
     v_final := round(v_base * (1 - v_disc / 100.0), 2);
     IF v_final <= 0 THEN RAISE EXCEPTION 'ITEM_WITHOUT_PRICE' USING ERRCODE='P0001'; END IF;
   ELSE
-    -- fixed_item_price não tem regra por embalagem no contrato atual: recusa, nunca inventa preço.
+    -- Decisão do proprietário (06/11/2026): fixed_item_price recusado sem configuração específica de embalagem.
     RAISE EXCEPTION 'B2B_PACKAGING_PRICING_MODE_UNSUPPORTED' USING ERRCODE='P0001';
   END IF;
 
