@@ -84,6 +84,8 @@ export function conditionErrorMessage(message: string | undefined): string {
   if (msg.includes("no_items")) return "Selecione ao menos um item.";
   if (msg.includes("duplicate key")) return "Já existe registro publicado para essa combinação e vigência.";
   if (msg.includes("violates check constraint")) return "Dados inválidos: revise modo, preço/desconto, unidade e vigência.";
+  if (msg.includes("commercial_context_unavailable")) return "Sessão ou contexto indisponível. Reabra a confirmação após revalidar o acesso.";
+  if (msg.includes("commercial_context_changed")) return "O contexto mudou durante a publicação. Não houve confirmação na tela; reabra a atribuição e verifique o estado atual.";
   return msg || "Não foi possível concluir a operação.";
 }
 

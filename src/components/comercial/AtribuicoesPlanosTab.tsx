@@ -5,7 +5,7 @@
  * publicada. Preparação: administrador, financeiro, gestor comercial.
  * Publicação: administrador e financeiro.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   usePlanAssignments,
   useSaveAssignment,
