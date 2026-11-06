@@ -471,19 +471,42 @@ export default function NovoPedido() {
     [paymentPlans, selectedPlanId],
   );
 
-  // Dispara simulação sempre que plano/itens mudam
+  // Dispara simulação sempre que plano/itens/contexto mudam. Só a resposta da chave atual é adotada;
+  // falhas ficam visíveis até nova tentativa manual ou mudança de contexto (sem retry automático).
+  const currentSimKey = simulationKey({ userId: user?.id, organizationId: profile?.organization_id,
+    partnerId: partner?.id, planId: selectedPlanId, items: simulationItems });
+  const simKeyRef = useRef<string | null>(null);
+  simKeyRef.current = currentSimKey;
+  const [simFailure, setSimFailure] = useState<SimulationFailure | null>(null);
+  const [simRetryTick, setSimRetryTick] = useState(0);
   useEffect(() => {
     if (isSimulationMode || !confirmOpen) return;
-    if (!partner?.id || !selectedPlanId || simulationItems.length === 0 || cartInvalid) {
-      setSimulation(null);
-      return;
-    }
+    setSimulation(null);
+    setSimFailure(null);
+    if (!partner?.id || !selectedPlanId || !currentSimKey || cartInvalid) return;
+    const key = currentSimKey;
     simulateSelectedPlan.mutate(
       { partner_id: partner.id, payment_plan_id: selectedPlanId, items: simulationItems },
-      { onSuccess: (res) => setSimulation(res), onError: () => setSimulation(null) },
+      {
+        onSuccess: (res) => {
+          if (simKeyRef.current !== key) return;
+          if (!res || res.partner_id !== partner.id || res.payment_plan?.id !== selectedPlanId) {
+            setSimFailure(describeSimulationFailure(key, { message: "invalid_simulation_reply" }));
+            return;
+          }
+          setSimulation(res);
+        },
+        onError: (err) => {
+          if (simKeyRef.current !== key) return;
+          setSimulation(null);
+          setSimFailure(describeSimulationFailure(key, err));
+        },
+      },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanId, simulationItems, partner?.id, confirmOpen, isSimulationMode, cartInvalid]);
+  }, [currentSimKey, confirmOpen, isSimulationMode, cartInvalid, simRetryTick]);
+  const visibleSimFailure = simFailure && simFailure.key === currentSimKey ? simFailure : null;
+  const visibleSimulation = simulation && simulation.partner_id === partner?.id && simulation.payment_plan?.id === selectedPlanId ? simulation : null;
 
   // Referência à vista (para diferença) — recalcula sempre que carrinho/parceiro/plano mudam
   useEffect(() => {
