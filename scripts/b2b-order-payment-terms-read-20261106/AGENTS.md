@@ -1,0 +1,4 @@
+- Preparação apenas: nunca aplicar 02/04 hospedado nem publicar; o auditor instala — evita mudança não revisada.
+- O leitor exige as mesmas portas do guard de SELECT de partner_orders (phase1_partner_visible OR owner_internal_partner_readable) e a regra de papel de popt_select; nunca alterar policies/grants da tabela nem b2b_phase1_order_visible — não amplia acesso direto.
+- Somente leitura: não aprova/ajusta condição, crédito, fiscal ou pedido; credit_decision_snapshot não é exposto.
+- Rollback é deny-only (UI mostra indisponível). Pins de policy/ACL LIVE ficam no pacote; o PG descartável troca só na cópia temporária (costura declarada) e não prova JWT/RLS hospedado.
