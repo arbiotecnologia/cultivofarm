@@ -1,0 +1,4 @@
+- Review/preparation only for the AR Bio partner-order flow; never run hosted SQL, create users, change roles or publish from here — the owner creates TESTE fixtures through authorized flows.
+- Continue the original nine-stage plan; never fork a parallel order/payment/billing system — prevents duplicate writers.
+- Solid items are whole packagings priced server-side by packaging id; the client never sends a price and weight is used only for freight — prevents client-side pricing.
+- Characterization tests stay BLOCKED until the contract is installed and the types are regenerated; they never prove JWT/RLS — prevents false certification.
