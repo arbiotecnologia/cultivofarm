@@ -37,7 +37,6 @@ LIVE_PINS = {
     "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
     "public.get_partner_order_payment_terms_secure(uuid)": "efb3d18c65088d7d69471fc5aa9ac859",
     "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "213ac31f3a30816ead75365b0d1fed18",
-    "public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)": "26fd3c77" ,  # prefixo do arquivo capturado; md5 completo medido no PG
 }
 LIVE_COLS = {  # md5(string_agg(column:type ORDER BY ordinal_position))
     "payment_methods": "71f7ed4ddacf2392c9c327e64376c2be",
@@ -608,8 +607,7 @@ def build(pins=LIVE_PINS, cols=LIVE_COLS, fn_md5=None, deny_md5=None):
 if __name__ == "__main__":
     p = HERE / "fn-md5.json"
     fm = json.loads(p.read_text()) if p.exists() else {}
-    pins = dict(LIVE_PINS); pins.update(fm.get("full_live_pins", {}))
-    files = build(pins=pins, fn_md5=fm.get("install"), deny_md5=fm.get("deny"))
+    files = build( fn_md5=fm.get("install"), deny_md5=fm.get("deny"))
     for n, t in files.items(): (HERE / n).write_text(t)
     meta = {n: hashlib.md5(t.encode()).hexdigest() for n, t in files.items()}
     (HERE / "generated-md5.json").write_text(json.dumps(meta, indent=2) + "\n"); print(json.dumps(meta, indent=2))

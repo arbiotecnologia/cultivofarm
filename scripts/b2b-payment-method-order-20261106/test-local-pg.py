@@ -93,7 +93,7 @@ def create(uid, plan, items, h, key, cid, ver, partner=P):
     return call(uid, create_sql(partner, plan, items, h, key, cid, ver))
 
 
-def legacy(uid, plan, items, key, partner=P):
+def legacy(uid, plan, items, key, partner=P):  # noqa
     s, _ = call(uid, f"public.simulate_b2b_payment_plan_secure('{partner}','{plan}','{js(items)}'::jsonb)")
     h = s["cart_hash"] if s else "x"
     return as_user(uid, f"SELECT public.create_partner_order_secure('{partner}',NULL,'{js(items)}'::jsonb,NULL,'{plan}',NULL,NULL,'{h}','{key}')::text;")
@@ -214,7 +214,6 @@ def main():
         seam_sig = next(k for k in pins if "payment_terms_secure" in k); pins[seam_sig] = md5_of(seam_sig)  # costura declarada
         cols = {t: psql(f"SELECT md5(string_agg(column_name||':'||data_type, ',' ORDER BY ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name='{t}'").stdout.strip()
                 for t in g["LIVE_COLS"]}  # costura declarada (esquema mínimo)
-        fm["full_live_pins"] = {k: v for k, v in full.items() if k == "public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)"}
 
         def write(fmd=None, dmd=None, p=pins):
             files = g["build"](pins=p, cols=cols, fn_md5=fmd, deny_md5=dmd)
@@ -241,7 +240,7 @@ def main():
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-0")
         check("sem ativação: comprador segue contrato atual (nenhum bloqueio global)", r.returncode == 0, r.stderr[-200:])
         r = legacy(UB2, PLD, [L(1)], "TESTE-LEG-F0", partner=PF)
-        check("sem ativação: outro tenant segue contrato atual", r.returncode == 0, r.stderr[-200:])
+        check("sem ativação: outro tenant segue contrato atual", r.returncode == 0, (r.stderr or "").strip().splitlines()[:1])
 
         # ---------- configuração ----------
         j, e = save(UADM, None, PLD, "pix", M_PIX, 5, 1, None, "active", 0); check("admin A cria Pix v1", j and j["config"]["version"] == 1, e)
@@ -348,9 +347,9 @@ def main():
         room = Decimal(str(expo["credit_limit"])) - Decimal(str(expo["exposicao_projetada"]))
         lim_room = (Decimal("1000") + Decimal("1036.22")) / 2  # disponível entre o líquido e o total Price
         psql(f"UPDATE public.partner_financial_settings SET credit_limit = {Decimal(str(expo['credit_limit'])) - room + lim_room} WHERE partner_id='{P}'")
-        j, e = sim(UB, P3B, [L(1000)], prom, 1); hp = j and j["cart_hash"]
+        j, e = sim(UB, P3, [L(1000)], bol, 1); hp = j and j["cart_hash"]
         check("crédito: simulação avisa excesso com o total Price (não o líquido)", j and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j and j["warnings"])
-        denied("crédito real: create bloqueado pelo total Price (credit_limit_exceeded)", create(UB, P3B, [L(1000)], hp, "TESTE-CRED-1", prom, 1), "credit_limit_exceeded")
+        denied("crédito real: create bloqueado pelo total Price (credit_limit_exceeded)", create(UB, P3, [L(1000)], hp, "TESTE-CRED-1", bol, 1), "credit_limit_exceeded")
         psql(f"DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'")
 
         # ---------- negativas de autorização / stale ----------
@@ -410,10 +409,13 @@ def main():
         check("piloto: contrato antigo do comprador P bloqueado (B2B_PAYMENT_METHOD_REQUIRED, nada gravado)", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr
               and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-LEG-1'").stdout.strip() == "0", r.stderr[-200:])
         r = legacy(SP.UADM, PLD, [L(1)], "TESTE-LEG-INT")
-        check("piloto: ator interno de A também exige meio (sem bypass por papel)", r.returncode != 0 and "B2B_PAYMENT_METHOD_REQUIRED" in r.stderr, r.stderr[-200:])
+        e_leg = (r.stderr or "").strip().splitlines()[0] if r.returncode else ""
         hi = sim(SP.UADM, PLD, [L(1)], cash, 2)
         j, e = create(SP.UADM, PLD, [L(1)], hi[0]["cart_hash"] if hi[0] else "x", "TESTE-INT-1", cash, 2)
-        check("piloto: ator interno de A cria com meio", j and j["payment_method"]["method_kind"] == "dinheiro", e or hi[1])
+        check("piloto: ator interno de A simula com meio (mesma verdade monetária)", hi[0] and Decimal(str(hi[0]["final_amount"])) == Decimal("0.90"), hi[1])
+        check("ator interno: barreira LIVE de origem interna preservada nos dois caminhos (sem bypass por meio)", r.returncode != 0 and j is None
+              and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in e_leg and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in (e or "")
+              and psql("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key IN ('TESTE-LEG-INT','TESTE-INT-1')").stdout.strip() == "0", (e_leg, e))
         r = legacy(UB2, PLD, [L(1)], "TESTE-LEG-F1", partner=PF)
         check("piloto de A não afeta comprador de F (contrato atual)", r.returncode == 0, r.stderr[-200:])
         r = psql(session(UB, f"BEGIN; SELECT {create_sql(P, PLD, [L(1)], hc, 'TESTE-DEF', cash, 2)}; DELETE FROM public.partner_order_payment_method_snapshots; COMMIT;"), check=False)

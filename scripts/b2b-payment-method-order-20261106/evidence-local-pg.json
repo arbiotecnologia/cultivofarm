@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_METHOD_V1",
   "revision": 2,
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 94,
-  "total": 102,
+  "passed": 98,
+  "total": 101,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -38,11 +38,6 @@
       "ok": true
     },
     {
-      "name": "corpo REAL = LIVE: public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)",
-      "ok": false,
-      "detail": "e268d3d3a9857c3ec8cbc2bf1f6c2fd6 != 26fd3c77"
-    },
-    {
       "name": "02 com corpo LIVE divergente aborta sem deixar objetos",
       "ok": true
     },
@@ -73,7 +68,7 @@
     {
       "name": "sem ativação: outro tenant segue contrato atual",
       "ok": false,
-      "detail": "e->>'unidade_conteudo', NULLIF(v_line->>'packaging_price_id','')::uuid\n    )\"\nPL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 221 at SQL statement\n"
+      "detail": "['ERROR:  tenant_catalog_cross_tenant_reference']"
     },
     {
       "name": "admin A cria Pix v1",
@@ -257,13 +252,11 @@
     },
     {
       "name": "crédito: simulação avisa excesso com o total Price (não o líquido)",
-      "ok": false,
-      "detail": "[]"
+      "ok": true
     },
     {
       "name": "crédito real: create bloqueado pelo total Price (credit_limit_exceeded)",
-      "ok": false,
-      "detail": "esperado 'credit_limit_exceeded'; obtido {'id': '74a8cf24-2c59-4cc1-b74a-c164ff6a39c2', 'total': 1000.0, 'numero': 'PB-000006', 'status': 'em_analise_comercial', 'schedule': [{'amount': 333.33, 'interest_amount': 0.0, 'principal_amount': 333.33, 'estimated_due_date': '2026-12-06', 'installment_number': 1}, {'amount': 333.33, 'interest_amount': 0.0, 'principal_amount': 333.33, 'estimated_due_date':"
+      "ok": true
     },
     {
       "name": "sem meio: payment_method_required",
@@ -366,14 +359,12 @@
       "ok": true
     },
     {
-      "name": "piloto: ator interno de A também exige meio (sem bypass por papel)",
-      "ok": false,
-      "detail": "te_required' ELSE 'defined' END,\n    v_block_reason\n  ) RETURNING id, numero\"\nPL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 209 at SQL statement\n"
+      "name": "piloto: ator interno de A simula com meio (mesma verdade monetária)",
+      "ok": true
     },
     {
-      "name": "piloto: ator interno de A cria com meio",
-      "ok": false,
-      "detail": "ERROR:  B2B_INTERNAL_ISSUER_AMBIGUOUS\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 60 at RAISE\nSQL statement \"INSERT INTO public.partner_orders(\n    partner_id, status, subtotal, desconto_total, total, observacoes, created_by,\n    requested_delivery_date, ready_for_production, payment_plan_id, payment_condition_status,\n    credit_block_reason\n  ) VALUES (\n "
+      "name": "ator interno: barreira LIVE de origem interna preservada nos dois caminhos (sem bypass por meio)",
+      "ok": true
     },
     {
       "name": "piloto de A não afeta comprador de F (contrato atual)",

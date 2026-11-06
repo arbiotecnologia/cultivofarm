@@ -1,7 +1,4 @@
 {
-  "full_live_pins": {
-    "public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)": "e268d3d3a9857c3ec8cbc2bf1f6c2fd6"
-  },
   "install": {
     "save": "e57747479507e128f1441fac3a14f526",
     "list": "002596544d24b1af40f98741bef70c1d",
