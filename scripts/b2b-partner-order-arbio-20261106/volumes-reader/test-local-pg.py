@@ -87,7 +87,9 @@ def main():
         x = v2.runfile(HERE / "02-install.sql.review"); chk("install_ok", x.returncode == 0, x.stderr[-400:] or None)
         post = subprocess.run(["psql", "-X", "-At", "-h", str(tmp), "-p", v2.PORT, "-U", "postgres", "-d", "prod", "-f", str(HERE / "03-post.sql.readonly")], capture_output=True, text=True)
         rep["post_output"] = post.stdout.strip() or post.stderr[-300:]
-        chk("post_runs", post.returncode == 0 and "f" not in post.stdout.strip().split("|")[:4], rep["post_output"])
+        cols = post.stdout.strip().split("|")
+        # definer, anon_denied, authenticated_ok, reader_unchanged; a contagem 11 de policies é da produção (disposable não tem policies).
+        chk("post_runs", post.returncode == 0 and len(cols) == 7 and [cols[i] for i in (0, 3, 4, 5)] == ["t"] * 4, rep["post_output"])
         x = v2.runfile(HERE / "02-install.sql.review"); chk("rerun_aborts_target_exists", x.returncode != 0 and "já existe" in x.stderr)
         acl = {r: p(f"SELECT has_function_privilege('{r}','{SIG}','EXECUTE')").stdout.strip() == "t" for r in ("anon", "authenticated", "service_role")}
         public_acl = p(f"SELECT coalesce(array_to_string(proacl,','),'') FROM pg_proc WHERE oid='{SIG}'::regprocedure").stdout.strip()
@@ -112,6 +114,8 @@ def main():
                                    ("buyer_z_P1", "buyer_z", P1), ("buyer_two_links_P1", "buyer_two_links", P1)]:
             err, r = case(name, who, partner)
             chk(f"deny_{name}", err is not None and r is None, err)
+        err, r = case("internal_A_P1", "internal_A", P1)
+        chk("supplier_internal_commercial_actor_allowed_by_canonical_reader", err is None and r["seller"]["name"] == "AR Bio", err)
         err, r = case("buyer_z_PZ", "buyer_z", PZ)
         chk("other_tenant_buyer_never_sees_AR_volumes", err is not None or all(v["id"] not in VOL.values() or False for v in (r or {}).get("volumes", [])), {"err": err})
         rep["matrix"] = {k: {"err": e, "n": (len(v["volumes"]) if v else None)} for k, (e, v) in m.items()}
