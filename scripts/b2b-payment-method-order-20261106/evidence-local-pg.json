@@ -32,7 +32,7 @@
     {
       "name": "01 PRE_OK",
       "ok": true,
-      "detail": "psql:/tmp/tmp_4npa_t0/01-pre.sql.readonly:13: NOTICE:  PRE_OK\n"
+      "detail": "psql:/tmp/tmpsf3asgl1/01-pre.sql.readonly:13: NOTICE:  PRE_OK\n"
     },
     {
       "name": "02 install",
@@ -42,7 +42,7 @@
     {
       "name": "03 POST_OK",
       "ok": true,
-      "detail": "psql:/tmp/tmp_4npa_t0/03-post.sql.readonly:39: NOTICE:  POST_OK\n"
+      "detail": "psql:/tmp/tmpsf3asgl1/03-post.sql.readonly:39: NOTICE:  POST_OK\n"
     },
     {
       "name": "rerun do install recusado",
@@ -152,7 +152,7 @@
     {
       "name": "comprador F vê só o Pix de F",
       "ok": true,
-      "detail": "{'options': [{'version': 1, 'due_days': 2, 'available': True, 'config_id': '718afec9-90a3-4195-bcab-04ad5eb7a77e', 'method_kind': 'pix', 'installment_count': 1, 'payment_method_id': '00000000-0000-0000-0000-000000000091', 'payment_method_name': 'Pix TESTE', 'price_monthly_rate_percent': None}], 'con"
+      "detail": "{'options': [{'version': 1, 'due_days': 2, 'available': True, 'config_id': '23a1f1a1-6746-441d-9331-78aabc9d0dcb', 'method_kind': 'pix', 'installment_count': 1, 'payment_method_id': '00000000-0000-0000-0000-000000000091', 'payment_method_name': 'Pix TESTE', 'price_monthly_rate_percent': None}], 'con"
     },
     {
       "name": "comprador P pedindo parceiro F negado",
@@ -182,12 +182,12 @@
     {
       "name": "plano 3x: boleto disponível, Pix indisponível (parcelas incompatíveis)",
       "ok": true,
-      "detail": "{'boleto': {'version': 1, 'due_days': 10, 'available': True, 'config_id': '091e45d5-7e62-434d-a3aa-4c27d8e2d349', 'method_kind': 'boleto', 'installment_count': 3, 'payment_method_id': '00000000-0000-0000-0000-000000000092', 'payment_method_name': 'Boleto TESTE', 'price_monthly_rate_percent': 2.5}, '"
+      "detail": "{'boleto': {'version': 1, 'due_days': 10, 'available': True, 'config_id': 'a5e6c5b5-de9c-422f-a38d-563d4c8f085d', 'method_kind': 'boleto', 'installment_count': 3, 'payment_method_id': '00000000-0000-0000-0000-000000000092', 'payment_method_name': 'Boleto TESTE', 'price_monthly_rate_percent': 2.5}, '"
     },
     {
       "name": "plano com juros próprios: boleto Price indisponível (juros em dobro)",
       "ok": true,
-      "detail": "{'options': [{'reason': 'payment_method_price_interest_conflict', 'version': 1, 'available': False, 'config_id': '90e6ca59-2d04-4865-8d31-ffbeab393aa5', 'method_kind': 'boleto'}], 'contract': 'B2B_PAYMENT_METHOD_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'pay"
+      "detail": "{'options': [{'reason': 'payment_method_price_interest_conflict', 'version': 1, 'available': False, 'config_id': '16ad5f61-b193-4dcc-b7dc-8cc6299acd9f', 'method_kind': 'boleto'}], 'contract': 'B2B_PAYMENT_METHOD_V1', 'due_basis': 'nf_issue', 'partner_id': '00000000-0000-0000-0000-000000000011', 'pay"
     },
     {
       "name": "simulação Pix líquido: R$ 0.90 em 1 parcela estimada base+5d",
@@ -277,12 +277,12 @@
     {
       "name": "pedido misto com Pix: criado com snapshot do meio (estimado, base NF)",
       "ok": true,
-      "detail": "{'id': '3a893344-cfd1-44a2-9c6e-6c7a4dcd98d5', 'total': 18.9, 'numero': 'PB-TESTE', 'cart_hash': 'fd911dbf44a37bf6e86e78c83ed6d1b363d408e89413ea023d18ea4ccc710afd', 'payment_method': {'version': 1, 'due_days': 5, 'config_id': '350ef5ea-27f7-4b29-b5d5-7c3aaf13a9af', 'due_basis': 'nf_issue', 'method_k"
+      "detail": "{'id': '4a6cfc47-74a8-4313-bc5e-85da9b834448', 'total': 18.9, 'numero': 'PB-TESTE', 'cart_hash': 'fd911dbf44a37bf6e86e78c83ed6d1b363d408e89413ea023d18ea4ccc710afd', 'payment_method': {'version': 1, 'due_days': 5, 'config_id': '5cb8f51c-3c7e-43f2-85da-28ca43a24bb6', 'due_basis': 'nf_issue', 'method_k"
     },
     {
       "name": "repetição mesma chave+meio: mesmo pedido",
       "ok": true,
-      "detail": "{'id': '3a893344-cfd1-44a2-9c6e-6c7a4dcd98d5', 'total': 18.9, 'numero': 'PB-TESTE', 'cart_hash': 'fd911dbf44a37bf6e86e78c83ed6d1b363d408e89413ea023d18ea4ccc710afd', 'payment_method': {'version': 1, 'due_days': 5, 'config_id': '350ef5ea-27f7-4b29-b5d5-7c3aaf13a9af', 'due_basis': 'nf_issue', 'method_k"
+      "detail": "{'id': '4a6cfc47-74a8-4313-bc5e-85da9b834448', 'total': 18.9, 'numero': 'PB-TESTE', 'cart_hash': 'fd911dbf44a37bf6e86e78c83ed6d1b363d408e89413ea023d18ea4ccc710afd', 'payment_method': {'version': 1, 'due_days': 5, 'config_id': '5cb8f51c-3c7e-43f2-85da-28ca43a24bb6', 'due_basis': 'nf_issue', 'method_k"
     },
     {
       "name": "um único snapshot após repetição",
@@ -312,7 +312,7 @@
     {
       "name": "boleto 3x: snapshot 3 parcelas Price (n do plano, nunca do cliente)",
       "ok": true,
-      "detail": "{'id': '51d61797-ea19-4130-81c4-f998035dfd6c', 'total': 18.0, 'numero': 'PB-TESTE', 'cart_hash': '4372c74258ad1e75caab1ad5bbe3cb7774866426a5f81ca55c2ec6f02134c1fe', 'payment_method': {'version': 1, 'due_days': 10, 'config_id': '091e45d5-7e62-434d-a3aa-4c27d8e2d349', 'due_basis': 'nf_issue', 'method_"
+      "detail": "{'id': '7ce63cbb-0abe-44e8-b17d-3cf81ec4df27', 'total': 18.0, 'numero': 'PB-TESTE', 'cart_hash': '4372c74258ad1e75caab1ad5bbe3cb7774866426a5f81ca55c2ec6f02134c1fe', 'payment_method': {'version': 1, 'due_days': 10, 'config_id': 'a5e6c5b5-de9c-422f-a38d-563d4c8f085d', 'due_basis': 'nf_issue', 'method_"
     },
     {
       "name": "admin A altera Pix (v2) com CAS",
@@ -362,7 +362,7 @@
     {
       "name": "revogado sai das opções",
       "ok": true,
-      "detail": "{'options': [{'version': 1, 'due_days': 0, 'available': True, 'config_id': 'afe7d0dd-56ca-4f38-a696-d7ad13e1b24d', 'method_kind': 'dinheiro', 'installment_count': 1, 'payment_method_id': '00000000-0000-0000-0000-000000000093', 'payment_method_name': 'Dinheiro TESTE', 'price_monthly_rate_percent': No"
+      "detail": "{'options': [{'version': 1, 'due_days': 0, 'available': True, 'config_id': '9c57b195-6325-4c5a-90f0-3adf420a79a1', 'method_kind': 'dinheiro', 'installment_count': 1, 'payment_method_id': '00000000-0000-0000-0000-000000000093', 'payment_method_name': 'Dinheiro TESTE', 'price_monthly_rate_percent': No"
     },
     {
       "name": "duas requisições paralelas com a mesma chave: um pedido",
@@ -372,7 +372,7 @@
     {
       "name": "comprador lê meio do pedido (presente, estimado)",
       "ok": true,
-      "detail": "{'present': True, 'contract': 'B2B_PAYMENT_METHOD_V1', 'order_id': '3a893344-cfd1-44a2-9c6e-6c7a4dcd98d5', 'payment_method': {'due_days': 5, 'due_basis': 'nf_issue', 'method_kind': 'pix', 'config_version': 1, 'estimated_total': 18.9, 'installment_count': 1, 'estimated_schedule': [{'amount': 18.9, 'i"
+      "detail": "{'present': True, 'contract': 'B2B_PAYMENT_METHOD_V1', 'order_id': '4a6cfc47-74a8-4313-bc5e-85da9b834448', 'payment_method': {'due_days': 5, 'due_basis': 'nf_issue', 'method_kind': 'pix', 'config_version': 1, 'estimated_total': 18.9, 'installment_count': 1, 'estimated_schedule': [{'amount': 18.9, 'i"
     },
     {
       "name": "admin do vendedor lê meio do pedido",
