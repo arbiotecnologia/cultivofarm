@@ -650,6 +650,19 @@ export default function NovoPedido() {
 
   const addRowCatalogItem = addRow ? catalogMap.get(addRow.id) : null;
   const addRowOffers = addRow && addRowCatalogItem?.item_tipo === "produto" ? offersFor(addRow.id) : [];
+  // Modo do item aberto. Líquido só quando o leitor de embalagens confirmou que NÃO é sólido, ou na ausência
+  // exata do endpoint (pré-instalação). Carregando/erro/contrato inválido nunca abrem o modo líquido nem dizem "sem volume".
+  const addRowMode: "none" | "liquid" | "packaging" | "packaging_loading" | "packaging_error" | "solid_unavailable" = (() => {
+    if (!addRow) return "none";
+    if (isSimulationMode || addRowCatalogItem?.item_tipo !== "produto") return "liquid";
+    const pk = packagingOffers.data;
+    if (packagingOffers.isError) return "packaging_error";
+    if (!pk) return "packaging_loading";
+    if (pk.state === "not_installed") return "liquid";
+    if (addRowOffers.length > 0) return "packaging";
+    return pk.solidProducts.has(addRow.id) ? "solid_unavailable" : "liquid";
+  })();
+  const packagingContractInvalid = packagingOffers.error instanceof Error && packagingOffers.error.message === "packaging_contract_unavailable";
   const doseRefHa = doseLitroHaFor(addRowCatalogItem ?? undefined);
 
   return (
@@ -909,9 +922,26 @@ export default function NovoPedido() {
         </div>
       )}
 
+      {/* Sólido/indefinido sem modo líquido: estado explícito, sem ação de compra */}
+      <Dialog open={addRowMode === "packaging_loading" || addRowMode === "packaging_error" || addRowMode === "solid_unavailable"}
+              onOpenChange={(v) => !v && setAddRow(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{addRow?.nome ?? "Produto"}</DialogTitle></DialogHeader>
+          <p role="status" data-testid="packaging-state" className="text-sm text-muted-foreground">
+            {addRowMode === "packaging_loading"
+              ? "Confirmando as apresentações disponíveis deste produto…"
+              : addRowMode === "packaging_error"
+                ? (packagingContractInvalid
+                    ? "A resposta de apresentações do fornecedor veio em formato não reconhecido. Nada foi adicionado; tente novamente mais tarde."
+                    : "Não foi possível confirmar as apresentações deste produto agora. Nada foi adicionado; tente novamente.")
+                : `Este produto é vendido em embalagem inteira, mas ${supplierName ?? "a empresa fornecedora"} ainda não tem embalagem ativa com preço vigente para ele.`}
+          </p>
+          <DialogFooter><Button variant="outline" onClick={() => setAddRow(null)}>Fechar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Add to cart dialog */}
       <AddPackagingToCartDialog
-        open={!!addRow && addRowOffers.length > 0}
+        open={addRowMode === "packaging"}
         onOpenChange={(v) => !v && setAddRow(null)}
         nome={addRow?.nome ?? null}
         offers={addRowOffers}
@@ -937,7 +967,7 @@ export default function NovoPedido() {
         volumesCat={volumes.data ?? null}
         volumesStatus={volumes.isError ? "error" : volumes.isSuccess ? "success" : "pending"}
         supplierName={supplierName}
-        open={!!addRow && addRowOffers.length === 0}
+        open={addRowMode === "liquid"}
         onOpenChange={(v) => !v && setAddRow(null)}
         row={addRow}
         doseRecomendadaLitroHa={doseRefHa}
