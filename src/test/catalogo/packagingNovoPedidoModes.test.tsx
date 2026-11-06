@@ -95,7 +95,7 @@ beforeEach(() => {
     state.writes(name); throw new Error(`Unexpected RPC: ${name}`);
   });
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); sessionStorage.clear(); });
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const tree = () => <QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
@@ -145,10 +145,57 @@ it("rascunho de renovação restaura embalagem revalidada e bloqueia modelo mist
   expect(screen.getByRole("button", { name: "Salvar favorito" })).toBeDisabled();
   expect(state.writes).not.toHaveBeenCalled();
 });
-it.each(["error", "solid_unpriced"] as const)("rascunho com embalagem que não revalida (%s) não volta e avisa", async (mode) => {
-  state.pk = mode;
+it("rascunho com embalagem cuja oferta sumiu (leitura bem-sucedida) não volta e avisa", async () => {
+  state.pk = "solid_unpriced";
   state.draft = { partnerId: state.partner, addItemId: null, requestedDeliveryDate: null, items: [{ itemId: state.partner, packagingId: PKG, quantity: 3 }] };
   mount(); await screen.findByText(product());
   await waitFor(() => expect(state.toastWarn).toHaveBeenCalledTimes(1));
+  expect(screen.queryByText(/Saco 25 kg/)).toBeNull();
+  expect(screen.queryByTestId("pending-packaging")).toBeNull();
+});
+it("erro transitório do leitor NÃO apaga a embalagem: fica pendente, bloqueia e volta após nova leitura com preço atual", async () => {
+  state.pk = "error";
+  state.draft = { partnerId: state.partner, addItemId: null, requestedDeliveryDate: null, items: [{ itemId: state.partner, packagingId: PKG, quantity: 3 }] };
+  mount(); await screen.findByText(product());
+  expect(await screen.findByTestId("pending-packaging")).toHaveTextContent(/1 embalagem\(ns\).*aguardam confirmação/);
+  expect(state.toastWarn).not.toHaveBeenCalled();
+  expect(screen.queryByText(/Saco 25 kg/)).toBeNull();
+  const saved = JSON.parse(sessionStorage.getItem(draftKey()) ?? "null");
+  expect(saved?.draft.items).toEqual([{ itemId: state.partner, packagingId: PKG, quantity: 3 }]);   // retido, sem preço
+  state.pk = "offer";
+  fireEvent.click(screen.getByRole("button", { name: "Tentar confirmar agora" }));
+  expect((await screen.findAllByText(/Saco 25 kg/)).length).toBeGreaterThan(0);
+  await waitFor(() => expect(screen.queryByTestId("pending-packaging")).toBeNull());
+  expect(state.toastWarn).not.toHaveBeenCalled();
+});
+const draftKey = (tenant = state.tenant, partner = state.partner) => `cf:b2b-order-draft:v1:${state.actor}:${tenant}:${partner}`;
+const seed = (items: unknown[], over: Record<string, unknown> = {}, key = draftKey()) => {
+  const now = Date.now();
+  sessionStorage.setItem(key, JSON.stringify({ v: 1, u: state.actor, t: state.tenant, p: state.partner, savedAt: now, expiresAt: now + 3600_000,
+    draft: { partnerId: state.partner, addItemId: null, requestedDeliveryDate: null, items }, ...over }));
+};
+it("recarregar (montagem nova sem recibo de renovação) restaura embalagem revalidada a partir da retenção escopada", async () => {
+  state.pk = "offer"; seed([{ itemId: state.partner, packagingId: PKG, quantity: 2 }]);
+  mount();
+  expect((await screen.findAllByText(/Saco 25 kg/)).length).toBeGreaterThan(0);
+  const raw = sessionStorage.getItem(draftKey()) ?? "";
+  expect(raw).not.toMatch(/preco|price|hash|token|idempot/i);
+});
+it("recarregar com pedido misto restaura líquido e embalagem", async () => {
+  state.pk = "offer"; state.scoped = { name: "AR Bio" };
+  seed([{ itemId: state.partner, volumeId: "b86f2fe8-e6b7-43e4-8345-53bd9e2a3b03", quantity: 4 }, { itemId: state.partner, packagingId: PKG, quantity: 1 }]);
+  mount();
+  expect((await screen.findAllByText(/Saco 25 kg/)).length).toBeGreaterThan(0);
+  expect((await screen.findAllByText(/1 L/)).length).toBeGreaterThan(0);
+});
+it.each([
+  ["outro tenant", () => seed([{ itemId: "x", packagingId: PKG, quantity: 2 }], { t: "99999999-9999-4999-8999-999999999999" }, draftKey("99999999-9999-4999-8999-999999999999"))],
+  ["expirado", () => seed([{ itemId: "x", packagingId: PKG, quantity: 2 }], { savedAt: Date.now() - 9 * 3600_000, expiresAt: Date.now() - 3600_000 })],
+  ["corrompido", () => sessionStorage.setItem(draftKey(), "{nao-json")],
+  ["com preço injetado", () => seed([{ itemId: "x", packagingId: PKG, quantity: 2, preco: 1 }])],
+] as const)("retenção %s é ignorada", async (_n, prep) => {
+  state.pk = "offer"; prep();
+  mount(); await screen.findByText(product());
+  await new Promise((r) => setTimeout(r, 50));
   expect(screen.queryByText(/Saco 25 kg/)).toBeNull();
 });
