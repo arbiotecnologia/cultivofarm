@@ -139,7 +139,7 @@ async function openWithCart(qty = 2) {
   state.draft = { partnerId: state.partner, addItemId: null, requestedDeliveryDate: null, items: [{ itemId: state.partner, packagingId: PKG, quantity: qty }] };
   const m = mount();
   expect((await screen.findAllByText(/Saco 25 kg/)).length).toBeGreaterThan(0);
-  fireEvent.click(await screen.findByRole("button", { name: /Continuar para condição de pagamento/ }));
+  fireEvent.click((await screen.findAllByRole("button", { name: /Continuar para condição de pagamento/ }))[0]);
   await screen.findByText("Plano A");
   return m;
 }
@@ -216,7 +216,7 @@ it("fechar e reabrir aposenta resposta em voo e exige simulação nova antes do 
   fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   await waitFor(() => expect(screen.queryByText("Plano A")).toBeNull());
   await settle(a1, reply(PA, 12.34));
-  fireEvent.click(screen.getByRole("button", { name: /Continuar para condição de pagamento/ }));
+  fireEvent.click(screen.getAllByRole("button", { name: /Continuar para condição de pagamento/ })[0]);
   await screen.findByText("Plano A");
   expect(has(brl(12.34))).toBe(false);
   expect(sendBtn()).toBeDisabled();
@@ -233,7 +233,7 @@ it("mudar itens com o mesmo plano invalida o resultado e a resposta antiga", asy
   await waitFor(() => expect(screen.queryByText("Plano A")).toBeNull());
   const qty = screen.getAllByRole("spinbutton")[0];
   fireEvent.change(qty, { target: { value: "3" } });
-  fireEvent.click(screen.getByRole("button", { name: /Continuar para condição de pagamento/ }));
+  fireEvent.click(screen.getAllByRole("button", { name: /Continuar para condição de pagamento/ })[0]);
   await screen.findByText("Plano A");
   await waitFor(() => expect(sims.filter((s) => s.plan === PA).length).toBe(2));
   const a2 = last(PA);
