@@ -973,6 +973,12 @@ export default function NovoPedido() {
       {/* Sticky resumo mobile */}
       {cartList.length > 0 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t bg-background p-3 z-20 space-y-2 shadow-lg">
+          {pendingPackaging.length > 0 && (
+            <p role="status" className="text-xs text-destructive">
+              {pendingPackaging.length} embalagem(ns) aguardam confirmação; envio bloqueado.{" "}
+              <button type="button" className="underline" onClick={() => void packagingOffers.refetch()}>Tentar confirmar</button>
+            </p>
+          )}
           <div className="flex justify-between text-sm items-end gap-2">
             <span className="text-muted-foreground">{cartList.length} item(s)</span>
             <PrecoComDesconto
