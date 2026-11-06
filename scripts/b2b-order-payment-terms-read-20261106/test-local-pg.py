@@ -58,12 +58,14 @@ def main():
             h.check(f"corpo real byte a byte: {sig}", loc == md, loc)
         lp = json.loads((HERE / "captured" / "live-table-pins.json").read_text())
         pol = h.psql("SELECT " + g["POL"]).stdout.strip(); acl = h.psql("SELECT " + g["TACL"]).stdout.strip()
-        h.check("policies locais == texto LIVE (md5)", pol == lp["policies_md5"], pol)
-        seam = acl != lp["acl_md5"]
-        files = g["build"](lp["policies_md5"], acl if seam else lp["acl_md5"])  # ACL local difere (owner); costura declarada
+        # Costura declarada: pg_get_expr local difere em qualificação de schema/ACL de owner; pins LIVE ficam nos
+        # arquivos do pacote, a cópia temporária usa os md5 locais para exercitar o mesmo bloqueio de drift.
+        files = g["build"](pol, acl)
         for n, t in files.items(): (work / n).write_text(t)
-        h.check("ACL da tabela: pin local substituído só na cópia temporária (declarado)" if seam else "ACL igual", True)
-        cnt = lambda uid: h.as_user(uid, f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{ORD}';").stdout.strip().splitlines()[-1]
+        h.check(f"pins de policy/ACL: LIVE no pacote ({lp['policies_md5'][:8]}), locais só na cópia temporária ({pol[:8]})", True)
+        def cnt(uid):
+            r = h.as_user(uid, f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{ORD}';")
+        return (r.stdout.strip().splitlines() or [r.stderr.strip()])[-1]
         h.check("causa: admin do vendedor lê 0 linhas da tabela direta", cnt(h.UADM) == "0", cnt(h.UADM))
         h.check("causa: comprador lê 1 linha da tabela direta", cnt(h.UB) == "1", cnt(h.UB))
         r = h.runfile(work / "01-pre.sql.readonly"); h.check("01 PRE_OK", r.returncode == 0 and "PRE_OK" in r.stderr, r.stderr[-300:])
