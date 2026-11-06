@@ -284,6 +284,7 @@ it.each(["resposta perdida"])("novo produto com %s da composição mantém ACK/c
   await screen.findByText("Nenhum produto encontrado");
   fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial" } });
+  await chooseUnit("ml");
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
   fireEvent.click(await screen.findByRole("button", { name: "+ Microrganismo" }));
   fireEvent.click(screen.getByRole("combobox", { name: "" }));
@@ -317,11 +318,11 @@ it("composição pendente bloqueia alteração de rascunho/novo INSERT antes de 
     return json({ ok: true, produto_id: "p1", updated_at: stamp, items: 1 });
   });
   const { result } = renderHook(useSaveTenantProduct, { wrapper });
-  const input = { id: null, expectedUpdatedAt: null, draft: { nome: "Novo parcial", tipo: "solo" }, composition: [{ microrganismo_id: "m1", volume_ml: 200, concentracao: 3, unidade: "mL" }] };
+  const input = { id: null, expectedUpdatedAt: null, draft: { nome: "Novo parcial", tipo: "solo", unidade_conteudo: "ml" } as never, composition: [{ microrganismo_id: "m1", volume_ml: 200, concentracao: 3, unidade: "mL" }] };
   await act(async () => { expect((await result.current.mutateAsync(input)).compositionError).toBeTruthy(); });
   const calls = state.fetch.mock.calls.length;
   await act(async () => {
-    await expect(result.current.mutateAsync({ ...input, draft: { nome: "Outra intenção", tipo: "solo" } })).rejects.toThrow(/Reconcilie/);
+    await expect(result.current.mutateAsync({ ...input, draft: { nome: "Outra intenção", tipo: "solo", unidade_conteudo: "ml" } as never })).rejects.toThrow(/Reconcilie/);
     await expect(result.current.mutateAsync({ ...input, composition: [{ microrganismo_id: "m2", volume_ml: 300 }] })).rejects.toThrow(/Reconcilie/);
   });
   expect(state.fetch).toHaveBeenCalledTimes(calls);
@@ -395,6 +396,7 @@ async function submitNewWithComponent() {
   await screen.findByText("Nenhum produto encontrado");
   fireEvent.click(screen.getByRole("button", { name: "Novo produto" }));
   fireEvent.change(screen.getByLabelText("Nome Comercial *"), { target: { value: "Novo parcial" } });
+  await chooseUnit("ml");
   fireEvent.mouseDown(screen.getByRole("tab", { name: "Composição" }), { button: 0, ctrlKey: false });
   fireEvent.click(await screen.findByRole("button", { name: "+ Microrganismo" }));
   fireEvent.click(screen.getByRole("combobox", { name: "" }));
