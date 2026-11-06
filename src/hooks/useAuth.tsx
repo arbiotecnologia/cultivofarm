@@ -86,6 +86,8 @@ interface AuthContextType {
   revalidateAuthz: () => void;
   /** Monitored session re-resolved into an unmonitored scope: stays paused until fresh login. */
   authzLatchBlocked: boolean;
+  /** Logout voluntário em andamento para a identidade atual (nunca autoriza). */
+  authzSigningOut: boolean;
   /** Gestor or consultor left from a monitored pair in this session: monitored by the same probe. */
   authzResidualScope: boolean;
   setSafeOSDraft: (draft: SafeOSRenewalDraft | null) => void;
@@ -111,6 +113,7 @@ const AuthContext = createContext<AuthContextType>({
   checkAuthzAccess: () => true,
   revalidateAuthz: () => {},
   authzLatchBlocked: false,
+  authzSigningOut: false,
   authzResidualScope: false,
   setSafeOSDraft: () => {},
   takeSafeOSDraft: () => null,
@@ -853,6 +856,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
   useEffect(() => { observeResumePrincipal(resumePrincipal, loading); }, [resumePrincipal, loading]);
   useEffect(() => { observeResumeLatch(latchBlocked, loading); }, [latchBlocked, loading]);
+  // Logout voluntário: válido apenas enquanto a MESMA identidade ainda está
+  // presente. SIGNED_OUT (user=null) ou troca de usuário encerram a marca.
+  const [signingOutUserId, setSigningOutUserId] = useState<string | null>(null);
+  useEffect(() => {
+    if (signingOutUserId && signingOutUserId !== user?.id) setSigningOutUserId(null);
+  }, [user?.id, signingOutUserId]);
+  const authzSigningOut = !!signingOutUserId && signingOutUserId === user?.id;
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
@@ -968,6 +978,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   revalidateAuthzRef.current = revalidateAuthz;
 
   const signOut = async () => {
+    // Marca logout VOLUNTÁRIO só para a identidade atual. Não altera readiness
+    // (conteúdo continua oculto); apenas troca a mensagem de pausa por "Saindo".
+    const leavingUserId = user?.id ?? null;
+    if (leavingUserId) setSigningOutUserId(leavingUserId);
     partnerRenewalRef.current = null;
     partnerDraftRef.current = null;
     clearResume();
@@ -992,7 +1006,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* noop */
     }
-    await supabase.auth.signOut();
+    let failed = false;
+    try {
+      const { error: signOutError } = (await supabase.auth.signOut()) ?? { error: null };
+      failed = !!signOutError;
+    } catch (err) {
+      failed = true;
+      if (mountedRef.current) setSigningOutUserId(null);
+      throw err;
+    }
+    // Rejeição: sessão pode continuar; volta ao estado honesto (pausa/retry).
+    if (failed && mountedRef.current) setSigningOutUserId(null);
   };
 
 
@@ -1013,6 +1037,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authzEpoch,
         authzState: latchBlocked && !loading ? "expired" : authzState,
         authzLatchBlocked: latchBlocked && !loading,
+        authzSigningOut,
         authzResidualScope: residualContextOnly,
         checkAuthzAccess,
         // Consumidores (botão Tentar novamente) só disparam o Retry MANUAL.

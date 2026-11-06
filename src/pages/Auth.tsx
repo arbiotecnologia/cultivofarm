@@ -14,6 +14,19 @@ import logoCultivoFarm from "@/assets/logo-cultivofarm.png.asset.json";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { traduzirErroAuth } from "@/lib/auth-errors";
 
+// Inicia o download da marca local já no carregamento do módulo, em paralelo à
+// leitura de configuracoes_sistema (antes era serial: config → imagem).
+if (typeof window !== "undefined" && typeof Image !== "undefined") {
+  const preload = new Image();
+  preload.decoding = "async";
+  preload.src = logoCultivoFarm.url;
+}
+
+/** Skeleton só durante a PRIMEIRA tentativa da config; falhas/retries mostram a marca local. */
+export function shouldShowLogoSkeleton(isLoading: boolean, failureCount: number) {
+  return isLoading && failureCount === 0;
+}
+
 export default function Auth() {
   const [searchParams, setSearchParams] = useSearchParams();
   const recovery = searchParams.get("recovery") === "1";
@@ -24,7 +37,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const { config, defaults, isLoading: configLoading } = useSystemConfig();
+  const { config, defaults, isLoading: configLoading, failureCount: configFailures } = useSystemConfig();
 
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
   const logoUrl = config?.logo_url || logoCultivoFarm.url;
@@ -67,12 +80,16 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-6">
-            {configLoading ? (
+            {shouldShowLogoSkeleton(configLoading, configFailures) ? (
               <Skeleton className="h-36 w-96 rounded-xl" />
             ) : (
               <img
                 src={logoUrl}
                 alt={nomeEmpresa}
+                width={1111}
+                height={285}
+                decoding="async"
+                fetchPriority="high"
                 className="h-36 sm:h-44 w-auto max-w-full object-contain"
               />
             )}

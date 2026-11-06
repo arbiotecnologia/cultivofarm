@@ -19,9 +19,19 @@ import { Loader2, ShieldAlert } from "lucide-react";
  *   rascunhos, seleções e objectURLs via cleanup de unmount dos consumidores.
  */
 export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
-  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked } = useAuth();
+  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked, authzSigningOut } = useAuth();
 
   if (!AUTHZ_CACHE_FOUNDATION_ENABLED) return <>{children}</>;
+
+  if (!authzReady && authzSigningOut) {
+    // Logout voluntário: mantém tudo oculto, sem "pausa" nem Retry.
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-6" role="status">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Saindo da sua conta…</span>
+      </div>
+    );
+  }
 
   if (!authzReady) {
     const checking = authzState === "pending" || authzState === "idle";

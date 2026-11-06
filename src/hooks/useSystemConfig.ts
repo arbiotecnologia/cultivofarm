@@ -71,5 +71,8 @@ export function useSystemConfig() {
     config: query.data,
     defaults: DEFAULTS,
     isLoading: query.isLoading,
+    // Exposto para a tela de login não esperar o backoff de retries antes de
+    // mostrar a marca local padrão; configuração válida tardia ainda substitui.
+    failureCount: query.failureCount,
   };
 }
