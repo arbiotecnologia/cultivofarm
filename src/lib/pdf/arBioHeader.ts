@@ -3,7 +3,8 @@ import logoAsset from "@/assets/logo-cultivofarm.png.asset.json";
 
 const logoUrl = logoAsset.url;
 
-const COMPANY_NAME = "Cultivo Farm";
+/** Rótulo neutro quando o nome da empresa emitente/fornecedora não está comprovado no contexto. */
+export const NEUTRAL_EMITTER = "Empresa responsável";
 const DISCLAIMER =
   "Documento gerado pelo Cultivo Farm. Recomendações de bioinsumos exigem prescrição agronômica detalhada.";
 
@@ -29,16 +30,21 @@ async function getLogoDataUrl(): Promise<string | null> {
 
 export interface ArBioHeaderOptions {
   subtitulo: string;
+  /**
+   * Empresa emitente/fornecedora do documento (tenant ativo interno ou vendedor B2B autorizado), já resolvida
+   * pelo chamador. Logo e rodapé continuam com a marca do SISTEMA. Ausente → rótulo neutro, nunca marca do sistema.
+   */
+  empresaNome: string | null | undefined;
   totalRegistros?: number;
 }
 
 /**
- * Desenha cabeçalho padronizado Cultivo Farm no topo da página atual.
+ * Desenha cabeçalho padronizado (logo do sistema + nome da empresa emitente) no topo da página atual.
  * Retorna a coordenada Y abaixo do cabeçalho, pronta para o conteúdo.
  */
 export async function drawArBioHeader(
   doc: jsPDF,
-  { subtitulo, totalRegistros }: ArBioHeaderOptions
+  { subtitulo, totalRegistros, empresaNome }: ArBioHeaderOptions
 ): Promise<number> {
   const margin = 40;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -57,7 +63,7 @@ export async function drawArBioHeader(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.setTextColor(20, 60, 35);
-  doc.text(COMPANY_NAME, textX, 42);
+  doc.text((typeof empresaNome === "string" && empresaNome.trim()) || NEUTRAL_EMITTER, textX, 42);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
