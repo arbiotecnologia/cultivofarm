@@ -118,7 +118,7 @@ it.each(["administrador", "gestor"])("%s cadastra, edita, arquiva e reativa no m
   fireEvent.click(screen.getByRole("button", { name: "Reativar" }));
   await screen.findByRole("button", { name: "Arquivar" });
   expect(rpcCalls("tenant_product_set_archived").map(a => a.p_archived)).toEqual([true, false]);
-});
+}, 20_000); // fluxo montado completo (criar/editar/arquivar/reativar): o padrão de 5 s estourava sob carga da suíte inteira
 it.each(["financeiro", "consultor_tecnico", "parceiro_b2b", "parceiro_b2b_tecnico", "superadmin"])("%s não recebe CRUD próprio nem bypass global", role => {
   state.roles = [role]; client(); const { result } = renderHook(useTenantCatalogEditor, { wrapper });
   expect(result.current.canEdit).toBe(false);
