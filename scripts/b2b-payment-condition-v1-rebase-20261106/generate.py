@@ -194,10 +194,8 @@ def prior_objects():
                 "(principal numeric,rate numeric,n int,issue date,deadline int)", "P0 sem calendário")
     sch = delta(sch, "'nominal_due_date',nom,'due_date',platform_private.b2b_business_day(nom,cal),'received_amount',0",
                 "'nominal_due_date',nom,'due_date',nom,'estimated',true,'business_day_adjusted',false", "P1 datas estimadas")
-    # A elegibilidade da taxa por meio/parcelas pertence à versão imutável; a Price aceita n=1 com taxa explícita.
-    # Não há taxa/default novo aqui: rate sempre vem da versão resolvida no servidor.
-    sch = delta(sch, "OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 THEN",
-                "OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 THEN", "P2 Price admite n=1 com taxa explícita")
+    # A elegibilidade da taxa por meio/parcelas pertence à versão imutável. A Price ORIGINAL já aceita n=1 com taxa
+    # explícita: não há delta nem taxa/default novo; rate sempre vem da versão resolvida no servidor.
     return ver, asg, snap, ret, choice, res, sch
 
 

@@ -54,13 +54,28 @@ it("formulário novo começa com o prazo padrão do servidor (30 dias), sem taxa
   expect(await screen.findByLabelText(/Prazo da 1ª parcela/)).toHaveValue("30");
 });
 
-it("regras locais espelham o servidor: boleto ≤3, parcela única sem juros, prazo ≤ condição, plano com juros recusado", () => {
+it("regras locais espelham o servidor: taxa explícita em 1x só para boleto/promissória/crédito", () => {
+  for (const method of ["boleto", "promissoria", "cartao_credito"] as const)
+    expect(validateConfig({ ...base, method, installment_count: 1, monthly_rate: 1.8 }, PLAN)).toBeNull();
+  for (const method of ["dinheiro", "pix", "cartao_debito"] as const)
+    expect(validateConfig({ ...base, method, installment_count: 1, monthly_rate: 1.8 }, PLAN)).toMatch(/sem juros/);
   expect(validateConfig({ ...base, method: "promissoria", installment_count: 3, monthly_rate: 0 }, PLAN)).toBeNull();
   expect(validateConfig({ ...base, method: "boleto", installment_count: 4, monthly_rate: 1 }, PLAN)).toMatch(/1 a 3/);
-  expect(validateConfig({ ...base, method: "boleto", installment_count: 1, monthly_rate: 1 }, PLAN)).toMatch(/Parcela única/);
   expect(validateConfig({ ...base, method: "pix", installment_count: 1, monthly_rate: 0, deadline_days: 91 }, PLAN)).toMatch(/90 dias/);
   expect(validateConfig({ ...base, method: "boleto", installment_count: 3, monthly_rate: 1.8 }, { ...PLAN, monthly_interest_percent: 2 })).toMatch(/juros próprios/);
   expect(validateConfig({ ...base, method: "cartao_credito", installment_count: 2, monthly_rate: NaN }, PLAN)).toMatch(/taxa Price/);
+});
+
+it("UI publica boleto sintético em 1x com 1,8% explícito e não oculta a taxa", async () => {
+  state.rpc.mockImplementation((n: string) => n === "b2b_payment_condition_config_list"
+    ? ok(list({ conditions: [{ ...COND, installment_count: 1, monthly_rate: 1.8 }] }))
+    : Promise.resolve({ data: { contract: "B2B_PAYMENT_CONDITION_V1" }, error: null }));
+  mount();
+  expect(await screen.findByText("1,8% a.m.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Nova versão" }));
+  fireEvent.click(screen.getByRole("button", { name: /Publicar versão/ }));
+  await waitFor(() => expect(calls("b2b_payment_condition_publish")).toHaveLength(1));
+  expect(calls("b2b_payment_condition_publish")[0]).toMatchObject({ p_method: "boleto", p_installment_count: 1, p_monthly_rate: 1.8, p_expected_version: 4 });
 });
 
 it("liberar parceiro envia a versão vigente; aposentar envia CAS", async () => {
