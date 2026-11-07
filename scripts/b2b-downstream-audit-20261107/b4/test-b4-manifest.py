@@ -3,11 +3,12 @@
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import sys
 
 H = pathlib.Path(__file__).resolve().parent
-OUT = H / "review-458b6012/live-absence-4097d4e2"
+OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))
 HISTORICAL = H / "review-458b6012/historical-63"
 
 
