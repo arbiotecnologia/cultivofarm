@@ -159,6 +159,7 @@ def main():
         for position, current in enumerate(scenarios, start=1):
             order_id, item_id = make_order(current["lines"])
             current.update(order_id=order_id, item_id=item_id, doc_id=B3.u(600 + position))
+        split_order, split_item = make_order([B3.S(2)])
 
         for current in scenarios:
             name = current["name"]
