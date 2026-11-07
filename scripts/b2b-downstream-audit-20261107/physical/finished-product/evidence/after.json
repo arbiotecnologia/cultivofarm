@@ -35,7 +35,7 @@
       }
     },
     {
-      "name": "FAIL ERROR:  DELIVERY_SEND_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 47 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\n",
+      "name": "FAIL ERROR:  LAB_ITEM_NOT_MANUFACTURABLE\nHINT:  Somente produtos biológicos e microrganismos podem gerar fabricação laboratorial.\nCONTEXT:  PL/pgSQL function platform_private.lab_assert_manufacturable(uuid,uuid) line 4 at RAISE\nSQL statement \"SELECT platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id)\"\nPL/pgSQL function platform_private.trg_lab_programming_biological_only() line 5 at PERFORM\nSQL statement \"INSERT INTO public.programacao_producao\n      (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)\n    VALUES\n      (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,\n       COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id)\n    RETURNING id\"\nPL/pgSQL function fn_sync_os_classica_downstream() line 16 at SQL statement\nSQL statement \"UPDATE public.ordens_servico SET status = v_proximo::public.status_os WHERE id = p_os_id\"\nPL/pgSQL function _avancar_os_status(text,uuid,text) line 28 at SQL statement\nSQL statement \"SELECT public._avancar_os_status(p_origem_os, p_os_id, 'entregue')\"\nPL/pgSQL function _rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid) line 115 at PERFORM\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 81 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\n",
       "status": "PASS"
     }
   ],
