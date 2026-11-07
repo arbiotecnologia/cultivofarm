@@ -280,7 +280,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
             actual_indexes = B3.psql("SELECT jsonb_agg(jsonb_build_object('name',indexname,'definition',indexdef) ORDER BY indexname) FROM pg_indexes WHERE schemaname='public' AND tablename='accounts_receivable'").stdout.strip()
             print("PRE_INDEX_DEBUG actual=" + actual_indexes, flush=True)
             print("PRE_INDEX_DEBUG expected=" + json.dumps(json.loads(MONEY.read_text())["indexes"]), flush=True)
-        check("PRE confirma writers/índice e ausência de todos os overloads da projeção", pre.returncode == 0 and "PRE_OK" in pre.stderr, pre.stderr[-1200:])
+        check("PRE confirma writers/índice e ausência de todos os overloads da projeção", pre.returncode == 0 and "PRE_OK" in (pre.stdout + pre.stderr), (pre.stdout + pre.stderr)[-1200:])
         install = runfile(H / "02-install.sql.review")
         if install.returncode != 0 and "B4_POST_BODY:" in install.stderr:
             function_objects = [x for x in json.loads((H / "b4-object-manifest.json").read_text())["objects"] if x["kind"] == "function"]
