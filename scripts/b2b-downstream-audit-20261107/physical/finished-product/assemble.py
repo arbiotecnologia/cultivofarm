@@ -14,7 +14,11 @@ CURRENT = json.loads((DELIVERY / "capture/current.json").read_text())
 
 
 def extract(text, qualified):
-    m = re.search(r"CREATE (?:OR REPLACE )?FUNCTION " + re.escape(qualified) + r"\b.*?END \$\$;", text, re.S)
+    m = None
+    if qualified == "platform_private.envase_insert_guard_v1":
+        m = re.search(r"CREATE (?:OR REPLACE )?FUNCTION " + re.escape(qualified) + r"\b.*?END\s*\$entry\$;", text, re.S)
+    if m is None:
+        m = re.search(r"CREATE (?:OR REPLACE )?FUNCTION " + re.escape(qualified) + r"\b.*?END \$\$;", text, re.S)
     if not m:
         m = re.search(r"CREATE (?:OR REPLACE )?FUNCTION " + re.escape(qualified) + r"\b.*?END;\s*\$function\$", text, re.S)
     if not m:
