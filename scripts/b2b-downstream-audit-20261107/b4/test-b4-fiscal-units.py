@@ -104,8 +104,9 @@ def admin_writer(sql):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", choices=["before", "after"], required=True)
+    parser.add_argument("--candidate", help="candidato explícito para repetir a mesma matriz antes/depois")
     args = parser.parse_args()
-    candidate = H / "b4-candidate.sql.review"
+    candidate = pathlib.Path(args.candidate) if args.candidate else H / "b4-candidate.sql.review"
     candidate_sha = hashlib.sha256(candidate.read_bytes()).hexdigest()
     tmp = B3.boot()
     work = pathlib.Path(tempfile.mkdtemp(prefix="b4-fiscal-units-", dir="/tmp"))
@@ -199,14 +200,16 @@ def main():
         gram_order, gram_item = make_order([gram_line])
         gram_snapshot = T.sql_json(f"""SELECT jsonb_build_object('quantity',i.quantidade,'unit',i.unidade_medida,
         'content_kg',i.packaging_peso_liquido_kg_snapshot,'display_unit',i.packaging_unidade_conteudo_snapshot,
-        'volume',i.volume_ml,'unit_price',i.preco_unitario_final_snapshot,'order_total',o.total)
+        'volume',i.volume_ml,'unit_price',i.preco_unitario_final_snapshot,'order_net',o.net_amount_after_discount,
+        'order_interest',o.financial_interest_amount,'order_final',o.final_amount_with_interest)
         FROM public.partner_order_items i JOIN public.partner_orders o ON o.id=i.order_id WHERE i.id='{gram_item}'""")
         gram_ok = (gram_snapshot and Decimal(str(gram_snapshot["quantity"])) == 2
                    and Decimal(str(gram_snapshot["content_kg"])) == Decimal("0.500")
                    and gram_snapshot["display_unit"] == "g" and gram_snapshot["volume"] is None
                    and Decimal(str(gram_snapshot["unit_price"])) == Decimal("90")
-                   and Decimal(str(gram_snapshot["order_total"])) == Decimal("180"))
-        check("pedido REAL de 2 UN congela 0,500 kg por embalagem e preço total R$180", gram_ok, gram_snapshot)
+                   and Decimal(str(gram_snapshot["order_net"])) == Decimal("180")
+                   and Decimal(str(gram_snapshot["order_final"])) == Decimal(str(gram_snapshot["order_net"])) + Decimal(str(gram_snapshot["order_interest"])))
+        check("pedido REAL de 2 UN congela 0,500 kg, preço comercial R$180 e juros B3 separados", gram_ok, gram_snapshot)
         freight_kg = Decimal(str(gram_snapshot["quantity"])) * Decimal(str(gram_snapshot["content_kg"]))
         check("frete dimensional do pedido de 500 g permanece 1 kg", freight_kg == Decimal("1.000"), freight_kg)
         liquid_order, liquid_item = make_order([B3.L(2)])
