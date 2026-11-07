@@ -406,7 +406,9 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
             "b3_overloads_restored": False,
             "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência",
         }
-        (H / "evidence-b4-b3.json").write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
+        evidence_path = H / "review-458b6012/evidence-b4-shared-impact.json"
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_path.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
     return result_code
 
 
