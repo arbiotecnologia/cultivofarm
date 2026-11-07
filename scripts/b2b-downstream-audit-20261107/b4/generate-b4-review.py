@@ -15,6 +15,7 @@ H = pathlib.Path(__file__).resolve().parent
 ROOT = H.parents[2]
 CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"
 MONEY = ROOT / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
+LIVE_FACTS_PATH = H / "live-readonly-4097d4e2.json"
 HISTORICAL = H / "review-458b6012/historical-63/b4-candidate.sql.review"
 EXPECTED_HISTORICAL_SHA256 = "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894"
 
