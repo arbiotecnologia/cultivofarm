@@ -1,0 +1,43 @@
+{
+  "kind": "USER_REPORTED_LIVE_READONLY_FACTS_NOT_AGENT_QUERY",
+  "review": "4097d4e2",
+  "reported_at_utc": "2026-11-07T17:56:00Z",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted_write": false,
+  "projection": {
+    "name": "public.rpc_receivable_money_projection_v1",
+    "candidate_signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+    "pg_proc_overloads": 0,
+    "absence_required_before_install": true,
+    "baseline_body_md5": null
+  },
+  "functions": {
+    "public.fn_generate_receivable_installments()": {
+      "body_md5": "f632f15c9f46cb9889082fc533a27ea1",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    "public.rpc_register_receivable_payment(uuid,jsonb)": {
+      "body_md5": "db41f7e2cfcb196ef64536f62746f365",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    }
+  },
+  "index": {
+    "name": "ux_ar_one_active_per_b2b_order",
+    "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
+  },
+  "auth_dependencies": {
+    "evidence": "dffd",
+    "count": 14,
+    "status": "AUTH_DEPENDENCIES_PRE_OK_NO_WRITE",
+    "seller_scope_approved": false
+  },
+  "manual_origin_rule": {
+    "forge_provenance": false,
+    "delete_history": false,
+    "non_b2b_without_partner": "PRESERVE_LEGACY_INSTALLMENTS_AND_PAYMENT",
+    "partner_affecting_unknown_origin": "EXPLICIT_MONEY_ORIGIN_UNPROVEN_BLOCK",
+    "current_order_live_impact": "REQUIRES_INDEPENDENT_DATA_PREFLIGHT_BEFORE_RELEASE"
+  }
+}

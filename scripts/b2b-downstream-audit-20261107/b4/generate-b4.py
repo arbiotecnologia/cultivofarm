@@ -207,6 +207,29 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
     # Crédito/pagamento/gerador/shared guard extraídos SEM os overloads create/simulate históricos.
     credit = fn(deltas, "public.fn_b2b_credit_exposure")
     payment = fn(deltas, "public.rpc_register_receivable_payment")
+    # Revisão 4097d4e2: a baixa MANUAL não B2B sem parceiro conserva exatamente
+    # a matemática legada. Somente origem B2B ou título que afeta parceiro exige
+    # prova monetária; nenhuma proveniência é inventada para o ramo legado.
+    payment = delta(payment, " v_proven jsonb;\n",
+                    " v_proven jsonb; v_origin public.accounts_receivable%ROWTYPE; v_interest numeric; v_financed numeric;\n",
+                    "payment origin declarations")
+    payment = delta(payment,
+        "  SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;\n  IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;",
+        """  SELECT * INTO v_origin FROM public.accounts_receivable WHERE id=v_inst.receivable_id AND organization_id=v_org;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  IF v_origin.origin_type='B2B_ORDER' OR v_origin.partner_id IS NOT NULL THEN
+   SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;
+   IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+   v_interest:=(v_proven->>'interest_amount')::numeric;
+   v_financed:=(v_proven->>'financed_interest_amount')::numeric;
+  ELSE
+   -- Caminho capturado para MANUAL não B2B sem parceiro; não é prova de origem B4.
+   v_interest:=v_inst.interest_amount; v_financed:=0;
+  END IF;""", "partner-scoped money proof, non-B2B legacy preservation")
+    payment = delta(payment,
+        "v_inst.original_amount + ((v_proven->>'interest_amount')::numeric-(v_proven->>'financed_interest_amount')::numeric) + COALESCE(v_inst.penalty_amount,0)",
+        "v_inst.original_amount + (v_interest-v_financed) + COALESCE(v_inst.penalty_amount,0)",
+        "payment legacy/proven balance separation")
     generator = fn(deltas, "public.fn_generate_receivable_installments")
     shared_guard = fn(deltas, "platform_private.b2b_shared_receivable_credit_guard")
     config = extract(shared, "CREATE FUNCTION platform_private.b2b_credit_config_block", "END $$;\n", "credit config")
