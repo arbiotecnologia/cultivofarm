@@ -14,8 +14,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 23,
-  "total": 24,
+  "passed": 41,
+  "total": 53,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -110,9 +110,136 @@
       "ok": true
     },
     {
+      "name": "instalação descartável cria projeção nova e passa PRE+POST íntegros",
+      "ok": true
+    },
+    {
+      "name": "POST confirma exatamente um overload owner-only e metadata completa",
+      "ok": true
+    },
+    {
+      "name": "instalação não habilita a dependência fiscal/contábil",
+      "ok": true
+    },
+    {
+      "name": "rerun falha fechado ao encontrar overload/objetos já criados",
+      "ok": true
+    },
+    {
+      "name": "instalação não substitui dependência operacional por stub",
+      "ok": true
+    },
+    {
+      "name": "32 gatilhos reais carregados pelo harness B3 continuam habilitados",
+      "ok": true
+    },
+    {
+      "name": "B3 create/simulate antigos não foram restaurados nem alterados",
+      "ok": true
+    },
+    {
+      "name": "autorização fiscal continua service-only e sem integração de recebível",
+      "ok": true
+    },
+    {
+      "name": "gate fiscal/contábil não comprovado permanece fechado",
+      "ok": true
+    },
+    {
+      "name": "cliente não invoca alocador privado",
+      "ok": true
+    },
+    {
+      "name": "stub operacional existe só no harness depois da negação real",
+      "ok": true
+    },
+    {
+      "name": "shared fence preserva título MANUAL não B2B sem devedor parceiro",
+      "ok": false,
+      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\n"
+    },
+    {
+      "name": "projeção nova não inventa proveniência para MANUAL sem parceiro",
+      "ok": false,
+      "detail": "ERROR:  MONEY_ORIGIN_ACCESS_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_receivable_money_projection_v1(uuid,integer,integer) line 6 at RAISE"
+    },
+    {
+      "name": "baixa MANUAL não B2B sem parceiro preserva o writer legado",
+      "ok": false,
+      "detail": "ERROR:  invalid input syntax for type uuid: \"\"\nLINE 1: SELECT public.rpc_register_receivable_payment('','{\"amount_r...\n                                                      ^\n"
+    },
+    {
+      "name": "shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado",
+      "ok": false,
+      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\n"
+    },
+    {
+      "name": "bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}"
+    },
+    {
+      "name": "pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1037.26, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998961.74, 'credit_limit_action': 'block', 'exposicao_projetada': 1038.26, 'percentual_utilizado': 0.1, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1036.22}"
+    },
+    {
+      "name": "baixa de origem desconhecida que afeta parceiro também falha fechado",
+      "ok": false,
+      "detail": "ERROR:  invalid input syntax for type uuid: \"\"\nLINE 1: SELECT public.rpc_register_receivable_payment('','{\"amount_r...\n                                                      ^"
+    },
+    {
+      "name": "novo pedido do mesmo parceiro fica indisponível durante a inconsistência",
+      "ok": false,
+      "detail": "{'items': [{'nome': 'Biológico líquido TESTE', 'codigo': 'LIQ-1', 'item_id': '00000000-0000-0000-0000-000000000031', 'rule_id': None, 'item_tipo': 'produto', 'volume_ml': 1000.0, 'base_price': 1.0, 'quantidade': 1.0, 'reason_code': 'OK', 'min_quantity': 0.0, 'price_source': 'catalog_volume_price', 'pricing_mode': 'discount_from_base', 'quote_required': False, 'unidade_medida': 'unidade', 'condition_price': None, 'final_unit_price': 1.0, 'line_final_amount': 1.0, 'line_table_amount': 1.0, 'plan_discount_percent': 0.0}], 'credit': {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.04, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'credit_checked': True, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998650.81, 'credit_limit_action': 'block', 'exposicao_projetada': 1349.19, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}, 'amounts': {'final_amount': 1.04, 'table_amount': 1.0, 'discount_amount': 0.0, 'financial_interest_amount': 0.04, 'net_amount_after_discount': 1.0}, 'schedule': [{'amo"
+    },
+    {
+      "name": "impacto medido não altera pedidos atuais nem cria pedido novo",
+      "ok": true
+    },
+    {
+      "name": "fixtures MANUAL canceladas após medição não contaminam a bateria seguinte",
+      "ok": true
+    },
+    {
+      "name": "pedido interno não autorizado pelo downstream B4 é contido",
+      "ok": true
+    },
+    {
+      "name": "contenção interna não cria título nem alocação",
+      "ok": true
+    },
+    {
+      "name": "writer integral antigo também permanece fechado para pedido interno",
+      "ok": true
+    },
+    {
+      "name": "primeira NF parcial autorizada fictícia gera título",
+      "ok": false,
+      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\nSQL statement \"INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)\n VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id)\"\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 122 at SQL statement"
+    },
+    {
+      "name": "conversão não duplica exposição",
+      "ok": true
+    },
+    {
+      "name": "residual = pedido restante + títulos sem dupla contagem",
+      "ok": true
+    },
+    {
+      "name": "replay da mesma autorização devolve mesmo título",
+      "ok": false,
+      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\nSQL statement \"INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)\n VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id)\"\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 122 at SQL statement"
+    },
+    {
+      "name": "replay não duplica alocação",
+      "ok": false,
+      "detail": ""
+    },
+    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('instalação oficial falhou; diagnóstico de hashes concluído fora do aceite')"
+      "detail": "RuntimeError('ERROR:  invalid input syntax for type uuid: \"None\"\\nLINE 1: ...nts_receivable_installments i WHERE receivable_id=\\'None\\')::t...\\n                                                             ^\\n')"
     }
   ],
   "hosted": "NOT_RUN",
