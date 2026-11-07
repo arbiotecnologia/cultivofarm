@@ -291,57 +291,68 @@ $guard$;"""
 
 
 def build():
-    base = source_body()
-    candidate = candidate_body()
-    candidate_md5 = hashlib.md5(candidate.encode()).hexdigest()
+    candidates = {
+        "request": candidate_body(),
+        "approve": decision_candidate_body("approve"),
+        "reject": decision_candidate_body("reject"),
+    }
+    candidate_md5s = {kind: hashlib.md5(body.encode()).hexdigest() for kind, body in candidates.items()}
+    baseline_md5s = {kind: meta["md5"] for kind, meta in DECISION_SOURCES.items()}
     pre = (
         "-- READ ONLY. Capturas LOCAIS; o auditor deve confrontar corpos, owners e ACLs LIVE antes de qualquer uso.\n"
-        f"{assertions(BASE_MD5)}\nSELECT 'PRE_OK' AS status;\n"
+        f"{assertions(baseline_md5s)}\nSELECT 'PRE_OK' AS status;\n"
     )
+    candidate_sql = "\n\n".join(candidates[kind] + ";" for kind in ("request", "approve", "reject"))
     install = f"""-- CANDIDATO INATIVO. Não aplicar sem revisão e preflight LIVE independente.
 -- CREATE OR REPLACE preserva owner/ACL; nenhuma concessão de privilégio é executada.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 SET LOCAL statement_timeout = '30s';
-{assertions(BASE_MD5)}
+{assertions(baseline_md5s)}
 
-{candidate};
+{candidate_sql}
 
-{assertions(candidate_md5)}
+{assertions(candidate_md5s)}
 COMMIT;
 """
-    post = f"""-- READ ONLY. Confere corpo, owner e ACL do writer e de wrappers/núcleos privados.
-{assertions(candidate_md5)}
+    post = f"""-- READ ONLY. Confere corpo, owner e ACL dos writers e de wrappers/núcleos privados.
+{assertions(candidate_md5s)}
 SELECT 'POST_OK' AS status;
 """
-    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura o corpo que permitia pending→pending/escopo legado.
+    revokes = "\n".join(
+        f"REVOKE ALL ON FUNCTION {meta['signature']} FROM PUBLIC, anon;\nREVOKE EXECUTE ON FUNCTION {meta['signature']} FROM authenticated;"
+        for meta in DECISION_SOURCES.values()
+    )
+    deny_conditions = "\n  ".join(
+        f"IF has_function_privilege('authenticated', '{meta['signature']}', 'EXECUTE') OR has_function_privilege('anon', '{meta['signature']}', 'EXECUTE') OR NOT has_function_privilege('service_role', '{meta['signature']}', 'EXECUTE') THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED'; END IF;\n"
+        f"  IF md5(pg_get_functiondef('{meta['signature']}'::regprocedure)) <> '{candidate_md5s[kind]}' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;"
+        for kind, meta in DECISION_SOURCES.items()
+    )
+    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura corpos sem lock/reautorização/contabilidade.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
-{assertions(candidate_md5)}
-REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION {SIG} FROM authenticated;
+{assertions(candidate_md5s)}
+{revokes}
 DO $deny$
 BEGIN
-  IF has_function_privilege('authenticated', '{SIG}', 'EXECUTE')
-     OR has_function_privilege('anon', '{SIG}', 'EXECUTE')
-     OR NOT has_function_privilege('service_role', '{SIG}', 'EXECUTE') THEN
-    RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED';
-  END IF;
-  IF md5(pg_get_functiondef('{SIG}'::regprocedure)) <> '{candidate_md5}' THEN
-    RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED';
-  END IF;
+  {deny_conditions}
 END
 $deny$;
 COMMIT;
 """
     files = {
-        "captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql": base + "\n",
-        "candidate/public.request_b2b_payment_terms_adjustment_secure.sql.review": candidate + "\n",
+        "captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql": source_body() + "\n",
+        "candidate/public.request_b2b_payment_terms_adjustment_secure.sql.review": candidates["request"] + "\n",
         "01-pre.sql.readonly": pre,
         "02-install.sql.review": install,
         "03-post.sql.readonly": post,
         "04-rollback-deny.sql.review": rollback,
     }
+    for kind in ("approve", "reject"):
+        meta = DECISION_SOURCES[kind]
+        name = meta["signature"].split("(")[0]
+        files[f"captured/{name}.{meta['md5'][:8]}.local-20261030.sql"] = captured(meta["source"], meta["md5"])["body"] + "\n"
+        files[f"candidate/{name}.sql.review"] = candidates[kind] + "\n"
     dependencies = {}
     for reg, (source_signature, md5, filename) in DEPENDENCIES.items():
         row = captured(source_signature, md5)
