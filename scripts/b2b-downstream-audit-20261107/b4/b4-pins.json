@@ -37,11 +37,11 @@
   "candidate_md5": {
     "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "cafd0ca7233b7b1db79d9f4990fbff1a",
     "public.rpc_register_receivable_payment(uuid,jsonb)": "a0f9219c8f0531609044d247acd832a5",
-    "public.generate_b2b_receivable_secure_impl(uuid)": "d886462b7eefee5b99995303ad4e1ac8",
-    "public.tg_auto_b2b_receivable()": "00f8755ddab7fdcc0314cfc80302d835",
-    "platform_private.b2b_allocate_document(uuid)": "237dc90e435c97c08e39846755261324",
-    "platform_private.b2b_order_residual(uuid)": "fc028b46d9ead684a8036d2ffba2b72a",
-    "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)": "141ba7cba669261c9c08dbb1f0a35868"
+    "public.generate_b2b_receivable_secure_impl(uuid)": "bcb2a5e3d79fafbf7858868acdc33aac",
+    "public.tg_auto_b2b_receivable()": "954419c4172f8164721dbcf5e3dbe540",
+    "platform_private.b2b_allocate_document(uuid)": "bded25347954cf70f3e71ede0d62cb9c",
+    "platform_private.b2b_order_residual(uuid)": "53766e91c4b3a4b16d3962791f9412b1",
+    "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)": "c5c7efbcf37a8f43a31b43bd58581c08"
   },
   "calendar": {
     "version": "paracatu-mg-2026-2027-v2",
