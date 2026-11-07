@@ -457,7 +457,9 @@ def main():
                 "path": "organizations.partner_account_id com partner_accounts.commercial_owner_organization_id coerente",
                 "roles": ["administrador", "financeiro", "gestor_comercial"],
                 "superadmin_used": False,
-                "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS"
+                "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS",
+                "legacy_only": True,
+                "external_validated": "DENIED_BY_REAL_C2_EXTERNAL_ORIGIN_DENIED_FOR_ALL_THREE_ROLES"
             },
             "partner_users_semantics": "caminho externo capturado; admin+parceiro sem organizations.partner_account_id foi negado e não promovido a vendedor",
             "dependencies": pins["dependencies"],
