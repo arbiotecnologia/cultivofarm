@@ -391,22 +391,44 @@ END;$purchase$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
 """
     bodies = [ddl, purchase, reservar, criar, merge, confirm, send, sync, lot_guard, lab_guard, entry_validate, entry_guard, entry_final]
-    pre = ["-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."]
+    downstream_signatures = {
+        "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+        "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    }
+    foundation_entries = [x for x in BASE["functions"] if x["signature"] not in downstream_signatures]
+    downstream_entries = [x for x in BASE["functions"] if x["signature"] in downstream_signatures]
+    if len(foundation_entries) != 9 or len(downstream_entries) != 2:
+        raise AssertionError("layer function count drift")
+
+    def metadata_pre():
+        blocks = []
+        for entry in BASE.get("dependency_functions", []):
+            blocks.append(function_pin(entry))
+        for entry in BASE.get("dependency_triggers", []):
+            blocks.append(trigger_pin(entry))
+        for rel in BASE["relations"]:
+            schema = rel.get("schema", "public")
+            blocks.append(f"DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['owner'])} OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {schema}.{rel['name']}';END IF;END$$;")
+        for col in BASE.get("catalog_columns", []):
+            blocks.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name={lit(col['table'])} AND column_name={lit(col['column'])} AND data_type={lit(col['type'])} AND is_nullable={lit(col['nullable'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT {col['table']}.{col['column']}';END IF;END$$;")
+        for con in BASE.get("catalog_constraints", []):
+            blocks.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname={lit(con['table'])} AND x.conname={lit(con['name'])} AND pg_get_constraintdef(x.oid)={lit(con['definition'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT {con['table']}.{con['name']}';END IF;END$$;")
+        return blocks
+
+    absence_pre = "DO $$BEGIN IF to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL OR to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL THEN RAISE EXCEPTION 'FINISHED_PRE_OBJECT_ALREADY_EXISTS';END IF;END$$;"
+    header = "-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."
+    pre = [header]
     for entry in BASE["functions"]:
-        pre.append(function_pin(entry))
-    for entry in BASE.get("dependency_functions", []):
-        pre.append(function_pin(entry))
-    for entry in BASE.get("dependency_triggers", []):
-        pre.append(trigger_pin(entry))
-    for rel in BASE["relations"]:
-        schema = rel.get("schema", "public")
-        pre.append(f"DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['owner'])} OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {schema}.{rel['name']}';END IF;END$$;")
-    for col in BASE.get("catalog_columns", []):
-        pre.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name={lit(col['table'])} AND column_name={lit(col['column'])} AND data_type={lit(col['type'])} AND is_nullable={lit(col['nullable'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT {col['table']}.{col['column']}';END IF;END$$;")
-    for con in BASE.get("catalog_constraints", []):
-        pre.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname={lit(con['table'])} AND x.conname={lit(con['name'])} AND pg_get_constraintdef(x.oid)={lit(con['definition'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT {con['table']}.{con['name']}';END IF;END$$;")
-    pre.append("DO $$BEGIN IF to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL OR to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL THEN RAISE EXCEPTION 'FINISHED_PRE_OBJECT_ALREADY_EXISTS';END IF;END$$;")
+        pre.append(dependency_pin(entry) if entry["signature"] in downstream_signatures else function_pin(entry))
+    pre += metadata_pre() + [absence_pre]
+    foundation_pre = [header + " Camada de entrada: não pressupõe confirmação/envio instalados."]
+    foundation_pre += [function_pin(x) for x in foundation_entries] + metadata_pre() + [absence_pre]
+
     candidate = "\n\n".join(bodies) + "\n"
+    foundation_bodies = [ddl, purchase, reservar, criar, merge, sync, lot_guard, lab_guard, entry_validate, entry_guard, entry_final]
+    downstream_bodies = [confirm, send]
+    foundation_candidate = "\n\n".join(foundation_bodies) + "\n"
+    downstream_candidate = "\n\n".join(downstream_bodies) + "\n"
     post = []
     post_capture_path = HERE / "evidence/post-install-functions.json"
     post_capture = json.loads(post_capture_path.read_text())["functions"] if post_capture_path.exists() else []
