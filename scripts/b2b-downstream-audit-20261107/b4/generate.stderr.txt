@@ -1,1 +1,1 @@
-FUNCTION public.generate_b2b_receivable_secure_impl: ocorrências=0
+CANDIDATE_PIN_FUNCTION platform_private.b4_schedule_from_nf: 0
