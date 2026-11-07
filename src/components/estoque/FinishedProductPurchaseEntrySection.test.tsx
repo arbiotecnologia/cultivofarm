@@ -43,7 +43,7 @@ describe("entrada de revenda condicionada à capability", () => {
     expect(screen.getByText("envase biológico preservado")).toBeInTheDocument();
     expect(mocks.purchaseForm).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("tab", { name: "Compra para revenda" }));
-    expect(screen.getByText("formulário de compra montado")).toBeInTheDocument();
+    expect(await screen.findByText("formulário de compra montado")).toBeInTheDocument();
     expect(mocks.purchaseForm).toHaveBeenCalled();
   });
 });
