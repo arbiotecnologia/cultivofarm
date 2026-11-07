@@ -15,6 +15,7 @@ H = pathlib.Path(__file__).resolve().parent
 ROOT = H.parents[2]
 CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"
 MONEY = ROOT / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
+LIVE_FACTS_PATH = H / "live-readonly-4097d4e2.json"
 HISTORICAL = H / "review-458b6012/historical-63/b4-candidate.sql.review"
 EXPECTED_HISTORICAL_SHA256 = "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894"
 
@@ -29,8 +30,11 @@ def load(name, path):
 G = load("b4_base_generator", H / "generate-b4.py")
 CAP = json.loads(CAPTURE.read_text())
 FIN = json.loads(MONEY.read_text())
+LIVE_FACTS = json.loads(LIVE_FACTS_PATH.read_text())
 if CAPTURE and FIN.get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_CAPTURE_REF_DRIFT")
+if LIVE_FACTS.get("canonical_ref") != "swzpzcwiasxmjutrmvkm" or LIVE_FACTS.get("hosted_write") is not False:
+    raise SystemExit("B4_LIVE_FACTS_REF_OR_WRITE_DRIFT")
 if hashlib.sha256(HISTORICAL.read_bytes()).hexdigest() != EXPECTED_HISTORICAL_SHA256:
     raise SystemExit("B4_HISTORICAL_CANDIDATE_DRIFT")
 
@@ -49,6 +53,7 @@ SIGS = {
     "platform_private.b2b_legacy_money_row": "platform_private.b2b_legacy_money_row(uuid)",
     "platform_private.b2b_allocation_money_row": "platform_private.b2b_allocation_money_row(uuid)",
     "platform_private.b2b_proven_money_row": "platform_private.b2b_proven_money_row(uuid)",
+    "platform_private.b2b_proven_money_row_internal": "platform_private.b2b_proven_money_row_internal(uuid,uuid)",
     "public.rpc_receivable_money_projection_v1": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
     "platform_private.b2b_order_residual": "platform_private.b2b_order_residual(uuid)",
     "platform_private.b2b_credit_balances": "platform_private.b2b_credit_balances(uuid,uuid)",
@@ -66,10 +71,10 @@ REPLACED = {
     "public.fn_b2b_credit_exposure",
     "public.rpc_register_receivable_payment",
     "public.fn_generate_receivable_installments",
-    "public.rpc_receivable_money_projection_v1",
     "public.generate_b2b_receivable_secure_impl",
     "public.tg_auto_b2b_receivable",
 }
+PROJECTION = "public.rpc_receivable_money_projection_v1"
 NEW_TABLES = [
     "platform_private.holiday_calendars", "platform_private.price_schedule_snapshots",
     "platform_private.b2b_authorized_documents", "platform_private.b2b_document_allocations",
@@ -237,6 +242,15 @@ def absence_guard(names, kind, code):
     return "DO $guard$ BEGIN\n" + "\n".join(checks) + "\nEND $guard$;"
 
 
+def projection_overload_guard(expected, code):
+    # A ausência/presença é medida pelo nome no catálogo, não por uma assinatura.
+    return f"""DO $guard$ BEGIN
+ IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+     WHERE n.nspname='public' AND p.proname='rpc_receivable_money_projection_v1')<>{expected}
+ THEN RAISE EXCEPTION '{code}' USING ERRCODE='42501'; END IF;
+END $guard$;"""
+
+
 def new_relation_post_guard():
     lines = []
     for relation in NEW_TABLES + [NEW_VIEW]:
@@ -275,27 +289,45 @@ def build():
 
     baselines = {name: baseline_function(name) for name in sorted(REPLACED)}
     missing = [SIGS[name] for name, meta in baselines.items() if meta["status"] == "MISSING_BLOCKS_INSTALL"]
-    if missing != ["public.rpc_receivable_money_projection_v1(uuid,integer,integer)"]:
+    if missing:
         raise SystemExit(f"B4_UNEXPECTED_BASELINE_COMPLETENESS {missing}")
+    baselines[PROJECTION] = {
+        "status": "ABSENCE_CONFIRMED_BY_AUDITOR_READONLY",
+        "source": "live-readonly-4097d4e2.json#projection",
+        "body_md5": None, "owner": None, "acl": None,
+    }
+    if any(f["name"] == "rpc_receivable_money_projection_v1" for f in CAP["functions"]) or any(
+            f["signature"].split("(", 1)[0] == "rpc_receivable_money_projection_v1" for f in FIN["functions"]):
+        raise SystemExit("B4_PROJECTION_FALSE_BASELINE_PRESENT")
+    for sig, fact in LIVE_FACTS["functions"].items():
+        name = next(name for name, candidate_sig in SIGS.items() if candidate_sig == sig)
+        baseline = baselines[name]
+        if (baseline.get("body_md5"), baseline.get("owner"), baseline.get("acl")) != (fact["body_md5"], fact["owner"], fact["acl"]):
+            raise SystemExit(f"B4_REPORTED_LIVE_FUNCTION_MISMATCH {sig}")
 
     ar = next(t for t in FIN["tables"] if t["name"] == "accounts_receivable")
     ar_indexes = [x for x in FIN["indexes"] if x["table"] == "accounts_receivable"]
+    reported_index = LIVE_FACTS["index"]
+    captured_index = next(x for x in ar_indexes if x["name"] == reported_index["name"])
+    if captured_index["definition"] != reported_index["definition"]:
+        raise SystemExit("B4_REPORTED_LIVE_INDEX_MISMATCH")
     ar_triggers = ar["triggers"]
+    ar_constraints = sorted(ar["constraints"], key=lambda x: x["name"])
     baseline_schema = {
         "source": str(MONEY.relative_to(ROOT)) + "#accounts_receivable",
         "owner": next((x.get("owner") for x in CAP.get("relations", []) if x.get("schema") == "public" and x.get("name") == "accounts_receivable"), "postgres"),
         "acl": ar["acl"], "rls": ar["rls"], "force_rls": ar["force"],
-        "columns": ar["columns"], "constraints": ar["constraints"], "indexes": ar_indexes, "triggers": ar_triggers,
+        "columns": ar["columns"], "constraints": ar_constraints, "indexes": ar_indexes, "triggers": ar_triggers,
         "columns_md5": rows_digest(ar["columns"], ["name", "type", "default", "notnull"]),
         "constraints_md5": rows_digest(ar["constraints"], ["name", "definition"]),
         "indexes_md5": rows_digest(ar_indexes, ["name", "definition", "valid"]),
         "triggers_md5": rows_digest(ar_triggers, ["name", "definition", "enabled"]),
     }
     # Os campos Python bool precisam virar os mesmos textos t/f do SQL.
-    column_query = "SELECT md5(string_agg(column_name||'|'||data_type||'|'||coalesce(column_default,'')||'|'||is_nullable,'^' ORDER BY ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable'"
+    column_query = "SELECT md5(string_agg(c.column_name||'|'||format_type(a.atttypid,a.atttypmod)||'|'||coalesce(c.column_default,'')||'|'||c.is_nullable,'^' ORDER BY c.ordinal_position)) FROM information_schema.columns c JOIN pg_attribute a ON a.attrelid='public.accounts_receivable'::regclass AND a.attname=c.column_name WHERE c.table_schema='public' AND c.table_name='accounts_receivable'"
     # rows_digest usa True/False; a consulta SQL produz YES/NO para is_nullable.
     baseline_schema["columns_md5"] = md5_text("^".join("|".join([c["name"], c["type"], c.get("default") or "", "NO" if c["notnull"] else "YES"]) for c in ar["columns"]))
-    baseline_schema["constraints_md5"] = md5_text("^".join(f"{c['name']}|{c['definition']}" for c in ar["constraints"]))
+    baseline_schema["constraints_md5"] = md5_text("^".join(f"{c['name']}|{c['definition']}" for c in ar_constraints))
     ar_indexes = sorted(ar_indexes, key=lambda x: x["name"])
     ar_triggers = sorted(ar_triggers, key=lambda x: x["name"])
     baseline_schema["indexes"] = ar_indexes
@@ -303,7 +335,7 @@ def build():
     baseline_schema["indexes_md5"] = md5_text("^".join(f"{x['name']}|{x['definition']}|{'t' if x['valid'] else 'f'}" for x in ar_indexes))
     baseline_schema["triggers_md5"] = md5_text("^".join(f"{x['name']}|{x['definition']}|{x['enabled']}" for x in ar_triggers))
     constraint_query = "SELECT md5(string_agg(c.conname||'|'||pg_get_constraintdef(c.oid),'^' ORDER BY c.conname)) FROM pg_constraint c WHERE c.conrelid='public.accounts_receivable'::regclass"
-    index_query = "SELECT md5(string_agg(c.relname||'|'||pg_get_indexdef(c.oid)||'|'||i.indisvalid::text,'^' ORDER BY c.relname)) FROM pg_class c JOIN pg_index i ON i.indexrelid=c.oid WHERE i.indrelid='public.accounts_receivable'::regclass"
+    index_query = "SELECT md5(string_agg(c.relname||'|'||pg_get_indexdef(c.oid)||'|'||CASE WHEN i.indisvalid THEN 't' ELSE 'f' END,'^' ORDER BY c.relname)) FROM pg_class c JOIN pg_index i ON i.indexrelid=c.oid WHERE i.indrelid='public.accounts_receivable'::regclass"
     trigger_query = "SELECT md5(string_agg(t.tgname||'|'||pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text,'^' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.accounts_receivable'::regclass AND NOT t.tgisinternal"
     post_columns = ar["columns"] + [{"name": "b2b_document_id", "type": "uuid", "default": None, "notnull": False}]
     post_columns_md5 = md5_text("^".join("|".join([c["name"], c["type"], c.get("default") or "", "NO" if c["notnull"] else "YES"]) for c in post_columns))
@@ -337,6 +369,7 @@ def build():
                                   (trigger_query, baseline_schema["triggers_md5"], "B4_PRE_TRIGGERS")]:
         pre += digest_guard(query, expected, code)
     pre += absence_guard([SIGS[name] for name in new_names], "function", "B4_PRE_UNEXPECTED_EXISTING_FUNCTION")
+    pre += projection_overload_guard(0, "B4_PRE_PROJECTION_ANY_OVERLOAD_EXISTS")
     pre += absence_guard(NEW_TABLES + [NEW_VIEW, NEW_INDEX], "relation", "B4_PRE_UNEXPECTED_EXISTING_RELATION")
     pre += absence_guard([], "trigger", "B4_PRE_UNEXPECTED_EXISTING_TRIGGER")
     pre += "DO $guard$ BEGIN\n IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='b2b_document_id') THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_COLUMN' USING ERRCODE='42501'; END IF;\nEND $guard$;"
@@ -344,15 +377,16 @@ def build():
         expected = md5_text(trigger["definition"] + "|" + trigger["enabled"])
         query = f"SELECT md5(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text) FROM pg_trigger t WHERE t.tgname='{trigger['name']}' AND t.tgrelid='{trigger['schema']}.{trigger['table']}'::regclass AND NOT t.tgisinternal"
         pre += digest_guard(query, expected, "B4_PRE_AUTO_TRIGGER:" + trigger["name"])
-    pre += "DO $guard$ BEGIN\n RAISE EXCEPTION 'B4_BASELINE_CAPTURE_REQUIRED:public.rpc_receivable_money_projection_v1(uuid,integer,integer)' USING ERRCODE='42501';\nEND $guard$;\nSELECT 'PRE_OK' AS status;\n"
+    pre += "SELECT 'PRE_OK' AS status;\n"
 
-    post = "-- READONLY. Só pode passar depois que a baseline ausente for capturada e o PRE revisto.\n"
+    post = "-- READONLY. Exige instalação candidata íntegra; operação continua fechada.\n"
     post += function_guard([(SIGS[name], {**baselines[name], "body_md5": candidate_funcs[name]["body_md5"]})
                             for name in sorted(REPLACED) if baselines[name]["status"] == "CAPTURED_REQUIRES_LIVE_RECHECK" and name not in {"public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"}], "B4_POST_SHARED")
-    owner_only = [SIGS[name] for name in new_names] + [SIGS["public.rpc_receivable_money_projection_v1"], SIGS["public.generate_b2b_receivable_secure_impl"], SIGS["public.tg_auto_b2b_receivable"]]
+    owner_only = [SIGS[name] for name in new_names] + [SIGS["public.generate_b2b_receivable_secure_impl"], SIGS["public.tg_auto_b2b_receivable"]]
     post += owner_only_function_guard(owner_only, "B4_POST")
+    post += projection_overload_guard(1, "B4_POST_PROJECTION_OVERLOAD_COUNT_DRIFT")
     # Corpos das funções owner-only também são pinados, sem exigir uma ACL inexistente.
-    for name in new_names + ["public.rpc_receivable_money_projection_v1", "public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"]:
+    for name in new_names + ["public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"]:
         post += digest_guard(f"SELECT md5(pg_get_functiondef('{SIGS[name]}'::regprocedure))", candidate_funcs[name]["body_md5"], "B4_POST_BODY:" + SIGS[name])
     post += relation_acl_guard(baseline_schema["owner"], ar["acl"], "B4_POST")
     for query, expected, code in [(column_query, post_columns_md5, "B4_POST_COLUMNS"),
@@ -383,7 +417,7 @@ def build():
         {"kind": "view", "object": NEW_VIEW, "operation": "CREATE_OWNER_ONLY", "baseline": {"status": "ABSENCE_REQUIRED"}, "candidate": {"owner": "postgres", "acl": "OWNER_ONLY"}},
         {"kind": "column+foreign_key", "object": "public.accounts_receivable.b2b_document_id", "operation": "ADD", "baseline": {"status": "ABSENCE_REQUIRED", "table_schema": baseline_schema}, "candidate": {"type": "uuid", "nullable": True, "references": "platform_private.b2b_authorized_documents(id)"}},
         {"kind": "index", "object": NEW_INDEX, "operation": "CREATE", "baseline": {"status": "ABSENCE_REQUIRED"}, "candidate": {"unique": True, "valid": True}},
-        {"kind": "index", "object": REPLACED_INDEX, "operation": "DROP_AND_RECREATE", "baseline": {"status": "CAPTURED_REQUIRES_LIVE_RECHECK", "source": str(MONEY.relative_to(ROOT)), "definition": next(x for x in ar_indexes if x["name"] == "ux_ar_one_active_per_b2b_order")}, "candidate": {"unique": True, "valid": True, "predicate_adds": "b2b_document_id IS NULL"}},
+        {"kind": "index", "object": REPLACED_INDEX, "operation": "DROP_AND_RECREATE", "baseline": {"status": "CAPTURED_REQUIRES_LIVE_RECHECK", "source": str(MONEY.relative_to(ROOT)), "definition": next(x for x in ar_indexes if x["name"] == "ux_ar_one_active_per_b2b_order")["definition"]}, "candidate": {"unique": True, "valid": True, "predicate_adds": "b2b_document_id IS NULL"}},
     ])
     for name, tables in NEW_TRIGGERS.items():
         for table in tables.split("|"):
@@ -391,21 +425,24 @@ def build():
     entries.append({"kind": "trigger+shared_table", "object": "public.accounts_receivable.*", "operation": "PRESERVE_BASELINE_AND_ADD_LISTED", "baseline": baseline_schema, "candidate": {"table_acl": "UNCHANGED", "old_constraints": "UNCHANGED_PLUS_B2B_DOCUMENT_FK"}})
 
     manifest = {
-        "review": "458b6012", "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+        "review": "458b6012+4097d4e2", "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
         "canonical_ref": "swzpzcwiasxmjutrmvkm", "hosted": "NOT_RUN",
         "historical_candidate_sha256": EXPECTED_HISTORICAL_SHA256,
         "candidate_sha256": sha_text(body), "object_count": len(entries), "objects": entries,
         "duplicate_definitions_in_historical_body": duplicate_names,
         "missing_baseline": missing,
+        "projection_absence": LIVE_FACTS["projection"],
+        "reported_live_readonly": LIVE_FACTS,
         "dependent_trigger_pins": auto_triggers,
         "post_shared_schema_md5": {"columns": post_columns_md5, "constraints": post_constraints_md5, "indexes": post_indexes_md5, "triggers": post_triggers_md5},
         "operation_separation": {"installation_grants_operation": False, "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL", "test_stub_allowed_in_install": False},
-        "shared_impact": "testado separadamente em PG descartável; resultado não autoriza regressão nem instalação",
-        "limitations": ["capturas não são nova leitura LIVE", "POST não é prova JWT/RLS/PostgREST/Storage", "63/63 históricos preservados separadamente e não somados"],
+        "shared_impact": "MANUAL não B2B sem parceiro preserva parcelas/baixa; origem desconhecida que afeta parceiro bloqueia exposição/baixa; impacto em dados LIVE ainda exige preflight",
+        "limitations": ["fatos LIVE 4097d4e2 foram relatados pelo auditor, não lidos pelo agente", "POST não é prova JWT/RLS/PostgREST/Storage", "63/63 históricos preservados separadamente e não somados", "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release"],
     }
     files = dict(base_files)
     files.update({"b4-candidate.sql.review": body, "01-pre.sql.readonly": pre, "02-install.sql.review": install,
                   "03-post.sql.readonly": post, "04-rollback-deny.sql.review": rollback,
+                  "live-readonly-4097d4e2.json": json.dumps(LIVE_FACTS, ensure_ascii=False, indent=2) + "\n",
                   "b4-object-manifest.json": json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"})
     files["SHA256SUMS"] = "".join(f"{sha_text(text)}  {name}\n" for name, text in sorted(files.items()) if name != "SHA256SUMS")
     return files

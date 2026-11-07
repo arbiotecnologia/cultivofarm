@@ -1,11 +1,11 @@
 {
-  "review": "458b6012",
-  "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+  "review": "458b6012+4097d4e2",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "hosted": "NOT_RUN",
   "historical_candidate_sha256": "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894",
-  "candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd",
-  "object_count": 54,
+  "candidate_sha256": "3b7bd7f1756fb73036ca4a80e3a38aeb5041f0e72dfe208e419b9819a5e64b98",
+  "object_count": 55,
   "objects": [
     {
       "kind": "function",
@@ -31,8 +31,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_allocation_money_row(uuid)",
-        "body_md5": "c41dc00a22c7cc4f494cce9ac69bfae6",
-        "definition_sha256": "e8fe31fc62ac8bf1d4dd0ad5b8030ae07e59efca78acb44d3d3a15f6656870fc",
+        "body_md5": "2c8e4c323d1625bd06b9756c5fc7891d",
+        "definition_sha256": "473cee996de75f3728846e3b9283433c55a0277c7f5b6a0e6d1cc6dfcdf33263",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -61,8 +61,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_credit_balances(uuid,uuid)",
-        "body_md5": "53c290771f25d48bd3a08d7bd954d6c6",
-        "definition_sha256": "e6fd3bf0855016f898a551733aa664d38ac6815e2bbc3df030630fe3f21cf200",
+        "body_md5": "7cba13a917d910cc1186424f6f70e83f",
+        "definition_sha256": "2b3a7a64c7529af72af4b5f530113cc20e33b70f5829375c94c007caa5eae940",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -76,8 +76,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_credit_config_block(uuid)",
-        "body_md5": "1b9e3870ef3f944c11e8b094885dc195",
-        "definition_sha256": "81c0f895e8da82f877e13c28ddaab8a6d4e04039e73ca7f0cc68051229b0a4f7",
+        "body_md5": "4a2cd7347536582746625ad572ad327f",
+        "definition_sha256": "1d649164739da53dfe06be96ab161c9bf739dc239da9bf6b1161b50290c10c6a",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -91,8 +91,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_debtor_partner(uuid,uuid)",
-        "body_md5": "2a0390b9cf3e2dfb84c8d6933fd4029f",
-        "definition_sha256": "59628d74448d97fb7fe1b9b588fbd9236efa499efbaf67b797d79137f48f1597",
+        "body_md5": "19d096e643067fc3c73d0a0a1546d0ea",
+        "definition_sha256": "660c7f57f2deea119b8717570e03e2c1e998bfd0da844274c19b1049d85b3a32",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -136,8 +136,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_legacy_money_row(uuid)",
-        "body_md5": "57c3763d01f16d8f63bff65814239dd0",
-        "definition_sha256": "07016dd06e8e8067ce99b8ec4fabd5b9cebf5044683242e7adb482db1707368c",
+        "body_md5": "72d0b11083230fa663da46df31b7af22",
+        "definition_sha256": "4c0a300bff690b0b216f6372fb2bfa418f6730cad013a619d42b976c5090b118",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -151,8 +151,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_order_residual(uuid)",
-        "body_md5": "ffd5b7695bd51e1ef2913f2759d0821c",
-        "definition_sha256": "99f6f4ae7121f4236ff1c773e17614c1ebbe33f01a3354eda3eb20fa02da03cf",
+        "body_md5": "93769163bfc7c72a4bbc722e62313179",
+        "definition_sha256": "e496143b478f88e503ae03623592cb56c8686d0baf581acd855847a3bdb8ad97",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -166,8 +166,23 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_proven_money_row(uuid)",
-        "body_md5": "85ffe4a63e365b6907eaf0957865f3ef",
-        "definition_sha256": "3aa0cc35983d79c06c27f9fcfb5af1ec274df3bc03a89abcd97d6fccde4f72b6",
+        "body_md5": "8966df7474276af347bfd40c474b52a8",
+        "definition_sha256": "2d2f821b28733f24d8f7be037c07b19fe8bfb6375eb5002a16de7fffa27733d8",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_proven_money_row_internal(uuid,uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_proven_money_row_internal(uuid,uuid)",
+        "body_md5": "b4cfcf65495322ce3c3b911a3597abe2",
+        "definition_sha256": "073f49766824bfee5aab4f042826b0b0117fa362d6a43a20823da11f3e6293ca",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -181,8 +196,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_reverse_allocation(uuid,uuid)",
-        "body_md5": "e8f483d839da20cb49dd86af5b5047aa",
-        "definition_sha256": "eefef2c034b7f6a828cd99ebd8f28d7c842605e54eb0a223dd3b15c5663d7cf6",
+        "body_md5": "a8fa031cd834bf6525222dc7cc1f330a",
+        "definition_sha256": "3aa48495d799cb92d5bd67a66aa599d1772753b3f6fd2d08ece4c76f2df8e475",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -226,8 +241,8 @@
       },
       "candidate": {
         "signature": "platform_private.b4_assert_order_eligible(uuid)",
-        "body_md5": "1155fd3d213192f7f8ef1489fe95b3af",
-        "definition_sha256": "56c6908d55337d35b891b9047f4be7276cc71fd9202939728ea11ebf4bb21cd7",
+        "body_md5": "b0e81f44de310fc38ae9ea3cdebd628b",
+        "definition_sha256": "6990b82e973e0406b867c4a82100d183306cf57f6b9903b9fba55b22b6e2d574",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -367,20 +382,20 @@
     {
       "kind": "function",
       "object": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
-      "operation": "REPLACE",
+      "operation": "CREATE",
       "baseline": {
-        "status": "MISSING_BLOCKS_INSTALL",
-        "source": null,
+        "status": "ABSENCE_CONFIRMED_BY_AUDITOR_READONLY",
+        "source": "live-readonly-4097d4e2.json#projection",
         "body_md5": null,
         "owner": null,
         "acl": null
       },
       "candidate": {
         "signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
-        "body_md5": "64607d04d66831252f7d7b0e6371ff42",
-        "definition_sha256": "357d0e1686b0c780e4bd238491196e43a26d4a8eaca1b37a5b0a07e836e2ba24",
+        "body_md5": "7c5d3fa0a4c9516ab1c40b058a529578",
+        "definition_sha256": "6d4beb9edd48e83e3e2bf33d00c28e08a2fdd8331efca239b7b2feabd54325b0",
         "owner": "postgres",
-        "acl": "BASELINE_PRESERVED"
+        "acl": "OWNER_ONLY"
       }
     },
     {
@@ -396,8 +411,8 @@
       },
       "candidate": {
         "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
-        "body_md5": "98f577574e8b1889416d59cbfb00c437",
-        "definition_sha256": "c5664767d7365c530ab87f6ae88bfdad72db6c957b7225c6d97cf4548a242799",
+        "body_md5": "ceabe6ed0d1862256e891552d2c81cbe",
+        "definition_sha256": "e3894dc5fe03c26a35bc4e230f640571c77a7c1cb524a70d31f7ea9d98404c88",
         "owner": "postgres",
         "acl": "BASELINE_PRESERVED"
       }
@@ -1021,13 +1036,7 @@
       "baseline": {
         "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
         "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json",
-        "definition": {
-          "name": "ux_ar_one_active_per_b2b_order",
-          "table": "accounts_receivable",
-          "valid": true,
-          "unique": true,
-          "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
-        }
+        "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
       },
       "candidate": {
         "unique": true,
@@ -1689,9 +1698,57 @@
   "duplicate_definitions_in_historical_body": [
     "platform_private.b2b_shared_receivable_credit_guard"
   ],
-  "missing_baseline": [
-    "public.rpc_receivable_money_projection_v1(uuid,integer,integer)"
-  ],
+  "missing_baseline": [],
+  "projection_absence": {
+    "name": "public.rpc_receivable_money_projection_v1",
+    "candidate_signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+    "pg_proc_overloads": 0,
+    "absence_required_before_install": true,
+    "baseline_body_md5": null
+  },
+  "reported_live_readonly": {
+    "kind": "USER_REPORTED_LIVE_READONLY_FACTS_NOT_AGENT_QUERY",
+    "review": "4097d4e2",
+    "reported_at_utc": "2026-11-07T17:56:00Z",
+    "canonical_ref": "swzpzcwiasxmjutrmvkm",
+    "hosted_write": false,
+    "projection": {
+      "name": "public.rpc_receivable_money_projection_v1",
+      "candidate_signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+      "pg_proc_overloads": 0,
+      "absence_required_before_install": true,
+      "baseline_body_md5": null
+    },
+    "functions": {
+      "public.fn_generate_receivable_installments()": {
+        "body_md5": "f632f15c9f46cb9889082fc533a27ea1",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}"
+      },
+      "public.rpc_register_receivable_payment(uuid,jsonb)": {
+        "body_md5": "db41f7e2cfcb196ef64536f62746f365",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+      }
+    },
+    "index": {
+      "name": "ux_ar_one_active_per_b2b_order",
+      "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
+    },
+    "auth_dependencies": {
+      "evidence": "dffd",
+      "count": 14,
+      "status": "AUTH_DEPENDENCIES_PRE_OK_NO_WRITE",
+      "seller_scope_approved": false
+    },
+    "manual_origin_rule": {
+      "forge_provenance": false,
+      "delete_history": false,
+      "non_b2b_without_partner": "PRESERVE_LEGACY_INSTALLMENTS_AND_PAYMENT",
+      "partner_affecting_unknown_origin": "EXPLICIT_MONEY_ORIGIN_UNPROVEN_BLOCK",
+      "current_order_live_impact": "REQUIRES_INDEPENDENT_DATA_PREFLIGHT_BEFORE_RELEASE"
+    }
+  },
   "dependent_trigger_pins": [
     {
       "name": "trg_auto_b2b_receivable",
@@ -1712,10 +1769,11 @@
     "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL",
     "test_stub_allowed_in_install": false
   },
-  "shared_impact": "testado separadamente em PG descartável; resultado não autoriza regressão nem instalação",
+  "shared_impact": "MANUAL não B2B sem parceiro preserva parcelas/baixa; origem desconhecida que afeta parceiro bloqueia exposição/baixa; impacto em dados LIVE ainda exige preflight",
   "limitations": [
-    "capturas não são nova leitura LIVE",
+    "fatos LIVE 4097d4e2 foram relatados pelo auditor, não lidos pelo agente",
     "POST não é prova JWT/RLS/PostgREST/Storage",
-    "63/63 históricos preservados separadamente e não somados"
+    "63/63 históricos preservados separadamente e não somados",
+    "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release"
   ]
 }

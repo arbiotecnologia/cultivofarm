@@ -1,0 +1,38 @@
+{
+  "review": "458b6012+4097d4e2",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "object_count": 55,
+  "candidate_sha256": "3b7bd7f1756fb73036ca4a80e3a38aeb5041f0e72dfe208e419b9819a5e64b98",
+  "install_sha256": "4ffd113cbeb89c5f4b50b67f156ab6656e9256f6f73d817eec9541e4dd4cd3ed",
+  "projection": {
+    "reported_live_overloads": 0,
+    "baseline_invented": false,
+    "pre_requires_overloads": 0,
+    "post_requires_overloads": 1,
+    "acl": "OWNER_ONLY"
+  },
+  "independent_results_not_added": {
+    "static_manifest": {"passed": 53, "total": 53, "exit_code": 0},
+    "disposable_pre_install_post_operation_rollback": {"passed": 79, "total": 79, "exit_code": 0},
+    "fiscal_units_current_candidate": {"passed": 132, "total": 132, "exit_code": 0},
+    "historical": {"passed": 63, "total": 63, "added": false, "path": "../historical-63/evidence-b4-b3.json"}
+  },
+  "shared_impact": {
+    "manual_non_b2b_without_partner": "LEGACY_INSTALLMENT_AND_PAYMENT_PRESERVED",
+    "manual_with_partner": "EXPOSURE_AND_PAYMENT_MONEY_ORIGIN_UNPROVEN",
+    "current_orders": "STATE_AND_HASH_UNCHANGED_IN_DISPOSABLE_FIXTURES",
+    "new_simulation_same_partner": "DENIED_NO_ORDER_CREATED",
+    "live_existing_data_impact": "NOT_MEASURED_BLOCKS_RELEASE"
+  },
+  "operation_separation": "INSTALL_PASS_IN_DISPOSABLE_PG; REAL_DEPENDENCY_ALWAYS_DENY; HARNESS_STUB_ONLY_AFTER_REAL_DENIAL",
+  "pending": [
+    "medir READONLY impacto nos dados LIVE e duplicidades do índice",
+    "conferência LIVE independente de todos os corpos/owners/ACLs/relações",
+    "reconciliação MANUAL parceiro sem origem inventada ou backfill",
+    "JWT/RLS/Storage/PostgREST/browser e homologação real NOT_RUN"
+  ],
+  "real_nf_charges_accounting_messages_or_publication": false,
+  "delegation": false
+}

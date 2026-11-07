@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validação estática determinística da revisão B4; sem banco/rede e sem somar 63 históricos."""
+"""Validação estática determinística B4 4097d4e2; sem banco/rede e sem somar históricos."""
 import hashlib
 import importlib.util
 import json
@@ -7,7 +7,8 @@ import pathlib
 import sys
 
 H = pathlib.Path(__file__).resolve().parent
-OUT = H / "review-458b6012"
+OUT = H / "review-458b6012/live-absence-4097d4e2"
+HISTORICAL = H / "review-458b6012/historical-63"
 
 
 def load(name, path):
@@ -37,28 +38,33 @@ def main():
     rollback = files["04-rollback-deny.sql.review"]
     objects = manifest["objects"]
     by_object = {x["object"]: x for x in objects}
-    check("status permanece inativo/bloqueado/não aprovado", manifest["status"] == "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED")
-    check("manifesto cobre 54 alterações sem contagem de testes sobreposta", manifest["object_count"] == len(objects) == 54)
-    check("histórico 63 preservado byte a byte", hashlib.sha256((OUT / "historical-63/b4-candidate.sql.review").read_bytes()).hexdigest() == R.EXPECTED_HISTORICAL_SHA256)
+    projection = "public.rpc_receivable_money_projection_v1(uuid,integer,integer)"
+    payment = "public.rpc_register_receivable_payment(uuid,jsonb)"
+    installments = "public.fn_generate_receivable_installments()"
+    index = "public.ux_ar_one_active_per_b2b_order"
+
+    check("status permanece inativo/bloqueado/não aprovado", manifest["status"] == "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED")
+    check("manifesto cobre 55 alterações sem contagem de testes sobreposta", manifest["object_count"] == len(objects) == 55)
+    check("histórico 63 preservado byte a byte", hashlib.sha256((HISTORICAL / "b4-candidate.sql.review").read_bytes()).hexdigest() == R.EXPECTED_HISTORICAL_SHA256)
     check("histórico não é promovido nem somado", "63/63 históricos preservados separadamente e não somados" in manifest["limitations"])
     check("ref canônico explícito", manifest["canonical_ref"] == "swzpzcwiasxmjutrmvkm" and manifest["hosted"] == "NOT_RUN")
 
-    required = ["public.rpc_register_receivable_payment(uuid,jsonb)", "public.fn_generate_receivable_installments()",
-                "public.rpc_receivable_money_projection_v1(uuid,integer,integer)", "public.ux_ar_one_active_per_b2b_order"]
-    check("quatro achados do revisor têm entradas próprias", all(x in by_object for x in required), required)
-    check("funções compartilhadas são REPLACE, nunca ausência presumida", all(by_object[x]["operation"] == "REPLACE" for x in required[:3]))
-    check("índice compartilhado é DROP_AND_RECREATE com baseline capturada", by_object[required[3]]["operation"] == "DROP_AND_RECREATE" and by_object[required[3]]["baseline"]["status"] == "CAPTURED_REQUIRES_LIVE_RECHECK")
-    check("projeção sem captura LIVE bloqueia instalação", manifest["missing_baseline"] == [required[2]] and "B4_BASELINE_CAPTURE_REQUIRED:" + required[2] in pre)
-    check("demais substituições têm corpo/owner/ACL capturados", all(by_object[x]["baseline"].get("body_md5") and by_object[x]["baseline"].get("owner") and by_object[x]["baseline"].get("acl") for x in required[:2]))
+    check("quatro achados do revisor têm entradas próprias", all(x in by_object for x in [payment, installments, projection, index]))
+    check("writers compartilhados são REPLACE com baseline", all(by_object[x]["operation"] == "REPLACE" and by_object[x]["baseline"]["status"] == "CAPTURED_REQUIRES_LIVE_RECHECK" for x in [payment, installments]))
+    check("projeção é CREATE com ausência LIVE relatada", by_object[projection]["operation"] == "CREATE" and by_object[projection]["baseline"]["status"] == "ABSENCE_CONFIRMED_BY_AUDITOR_READONLY")
+    check("não há baseline de projeção inventada", manifest["missing_baseline"] == [] and by_object[projection]["baseline"]["body_md5"] is None)
+    check("PRE exige zero overloads pelo catálogo pg_proc", "p.proname='rpc_receivable_money_projection_v1'" in pre and "<>0" in pre and "B4_PRE_PROJECTION_ANY_OVERLOAD_EXISTS" in pre)
+    check("POST exige exatamente um overload da projeção", "B4_POST_PROJECTION_OVERLOAD_COUNT_DRIFT" in post and "<>1" in post)
+    check("índice compartilhado é DROP_AND_RECREATE com definição LIVE relatada", by_object[index]["operation"] == "DROP_AND_RECREATE" and by_object[index]["baseline"]["definition"] == R.LIVE_FACTS["index"]["definition"])
     check("todos os objetos têm baseline e candidato", all(x.get("baseline") and x.get("candidate") for x in objects))
-    check("objetos novos exigem ausência no PRE", all(x["baseline"]["status"] == "ABSENCE_REQUIRED" for x in objects if x["operation"].startswith("CREATE") or x["operation"] == "ADD"))
+    check("objetos novos exigem ausência no PRE", all(x["baseline"]["status"] in {"ABSENCE_REQUIRED", "ABSENCE_CONFIRMED_BY_AUDITOR_READONLY"} for x in objects if x["operation"].startswith("CREATE") or x["operation"] == "ADD"))
 
     funcs = R.function_sources(body)
     check("inventário de funções cobre exatamente o corpo candidato", set(funcs) == set(R.SIGS))
     check("duplicidade histórica do guard compartilhado fica visível", manifest["duplicate_definitions_in_historical_body"] == ["platform_private.b2b_shared_receivable_credit_guard"])
     check("toda função candidata tem MD5 no manifesto", all(x["candidate"].get("body_md5") for x in objects if x["kind"] == "function"))
     check("todo MD5 de função nova aparece no POST", all(x["candidate"]["body_md5"] in post for x in objects if x["kind"] == "function" and x["operation"] == "CREATE"))
-    check("owners e ACLs de substituições aparecem no PRE", all(by_object[x]["baseline"]["owner"] in pre and R.acl_md5(by_object[x]["baseline"]["acl"], "f") in pre for x in required[:2]))
+    check("MD5/owner/ACL dos writers relatados aparecem no PRE", all(R.LIVE_FACTS["functions"][x]["body_md5"] in pre and R.LIVE_FACTS["functions"][x]["owner"] in pre and R.acl_md5(R.LIVE_FACTS["functions"][x]["acl"], "f") in pre for x in [payment, installments]))
 
     table = by_object["public.accounts_receivable.b2b_document_id"]
     baseline = table["baseline"]["table_schema"]
@@ -70,18 +76,26 @@ def main():
     check("trigger automático dependente também é pinado", len(manifest["dependent_trigger_pins"]) == 1 and "B4_PRE_AUTO_TRIGGER" in pre and "B4_POST_AUTO_TRIGGER" in post)
     check("coluna/FK novas exigem ausência e têm pós-condição", table["baseline"]["status"] == "ABSENCE_REQUIRED" and table["candidate"]["references"] == "platform_private.b2b_authorized_documents(id)" and "B4_PRE_UNEXPECTED_COLUMN" in pre)
 
+    check("baixa não B2B sem parceiro usa matemática legada", "v_interest:=v_inst.interest_amount; v_financed:=0;" in body and "v_inst.original_amount + (v_interest-v_financed)" in body)
+    check("prova obrigatória limitada a B2B ou parceiro", "IF v_origin.origin_type='B2B_ORDER' OR v_origin.partner_id IS NOT NULL THEN" in body)
+    check("origem desconhecida de parceiro continua explicitamente bloqueada", "MONEY_ORIGIN_UNPROVEN" in body and "IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN'" in body)
+    check("crédito usa prova monetária interna no tenant vendedor", "row:=platform_private.b2b_proven_money_row_internal(i.id,org);" in body)
+    check("residual legado não usa projeção do ator comprador", "PERFORM platform_private.b2b_proven_money_row_internal(i.id,org)" in body and "PERFORM public.rpc_receivable_money_projection_v1(l.receivable_id" not in body)
+    check("projeção pública conserva guard de ator, papel e tenant", "RETURN platform_private.b2b_proven_money_row_internal(p_id,org);" in body and "public.is_financial_staff(auth.uid()) IS NOT TRUE" in body)
+    check("resolvedor interno é função nova owner-only", by_object["platform_private.b2b_proven_money_row_internal(uuid,uuid)"]["operation"] == "CREATE" and by_object["platform_private.b2b_proven_money_row_internal(uuid,uuid)"]["candidate"]["acl"] == "OWNER_ONLY")
     check("blocos DO do PRE balanceados", pre.count("DO $guard$") == pre.count("END $guard$"))
     check("blocos DO do POST balanceados", post.count("DO $guard$") == post.count("END $guard$"))
-    check("instalação é transacional e contém PRE+POST", install.startswith("-- CANDIDATO B4 INATIVO/BLOQUEADO") and "BEGIN;" in install and "COMMIT;" in install and "B4_BASELINE_CAPTURE_REQUIRED" in install and "B4_POST_COLUMNS" in install)
+    check("instalação é transacional e contém PRE+POST", install.startswith("-- CANDIDATO B4 INATIVO/BLOQUEADO") and "BEGIN;" in install and "COMMIT;" in install and "B4_PRE_PROJECTION_ANY_OVERLOAD_EXISTS" in install and "B4_POST_COLUMNS" in install)
     check("instalação não contém GRANT", "GRANT " not in install)
     check("instalação não injeta stub operacional", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in install)
     check("dependência operacional real permanece sempre deny", "CREATE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void" in body and "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN" in body)
     check("separação instalação/operação declarada", manifest["operation_separation"] == {"installation_grants_operation": False, "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL", "test_stub_allowed_in_install": False})
     check("funções novas não herdam EXECUTE de PUBLIC", "nenhuma função nova herda EXECUTE implícito de PUBLIC" in body and "REVOKE ALL ON FUNCTION" in body)
     check("rollback é deny-only e exige POST completo", "DENY-ONLY" in rollback and "B4_POST_COLUMNS" in rollback and "DROP TABLE" not in rollback and "DROP FUNCTION" not in rollback)
+    check("impacto em dados LIVE continua bloqueio explícito", "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release" in manifest["limitations"])
     check("hashes gerados cobrem os artefatos", all(hashlib.sha256(text.encode()).hexdigest() in files["SHA256SUMS"] for name, text in files.items() if name != "SHA256SUMS"))
 
-    report = {"kind": "STATIC_B4_REVIEW_458B6012_NO_HOSTED", "status": manifest["status"],
+    report = {"kind": "STATIC_B4_REVIEW_4097D4E2_NO_HOSTED", "status": manifest["status"],
               "historical_63_added": False, "passed": sum(x["ok"] for x in CHECKS), "total": len(CHECKS), "checks": CHECKS}
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "evidence-manifest-tests.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")

@@ -1,0 +1,93 @@
+
+### platform_private.b2b_credit_balances(uuid,uuid)
+
+--- canonical
++++ pg_get_functiondef
+@@ -1,3 +1,3 @@
+-CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances(p_partner uuid, p_exclude uuid DEFAULT NULL)
++CREATE OR REPLACE FUNCTION platform_private.b2b_credit_balances(p_partner uuid, p_exclude uuid DEFAULT NULL::uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+@@ -23,2 +23,3 @@
+  RETURN jsonb_build_object('saldo_em_aberto',open_amount,'saldo_vencido',overdue,'comprometido_nao_faturado',committed,'comprometido_pendente',pending);
+ END $function$
++
+
+### platform_private.b2b_credit_config_block(uuid)
+
+--- canonical
++++ pg_get_functiondef
+@@ -2,6 +2,5 @@
+  RETURNS text
+  LANGUAGE sql
+- STABLE
+- SECURITY DEFINER
++ STABLE SECURITY DEFINER
+  SET search_path TO ''
+ AS $function$
+@@ -13,2 +12,3 @@
+       AND s.block_if_overdue IS NOT NULL AND s.credit_limit_action IN ('block','approval_required')) THEN 'configuracao_financeira_incompleta'
+   END $function$
++
+
+### platform_private.b2b_debtor_partner(uuid,uuid)
+
+--- canonical
++++ pg_get_functiondef
+@@ -2,6 +2,5 @@
+  RETURNS uuid[]
+  LANGUAGE sql
+- STABLE
+- SECURITY DEFINER
++ STABLE SECURITY DEFINER
+  SET search_path TO ''
+ AS $function$
+@@ -9,2 +8,3 @@
+    WHERE pa.client_id = p_customer AND pa.commercial_owner_organization_id = p_org
+      AND pa.ativo IS TRUE AND pa.deleted_at IS NULL $function$
++
+
+### platform_private.b2b_reverse_allocation(uuid,uuid)
+
+--- canonical
++++ pg_get_functiondef
+@@ -1,3 +1,3 @@
+-CREATE OR REPLACE FUNCTION platform_private.b2b_reverse_allocation(p_document uuid, p_replacement uuid DEFAULT NULL)
++CREATE OR REPLACE FUNCTION platform_private.b2b_reverse_allocation(p_document uuid, p_replacement uuid DEFAULT NULL::uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+@@ -37,2 +37,3 @@
+  RETURN jsonb_build_object('success',true,'replayed',false);
+ END $function$
++
+
+### platform_private.b4_assert_order_eligible(uuid)
+
+--- canonical
++++ pg_get_functiondef
+@@ -2,6 +2,5 @@
+  RETURNS void
+  LANGUAGE plpgsql
+- STABLE
+- SECURITY DEFINER
++ STABLE SECURITY DEFINER
+  SET search_path TO ''
+ AS $function$
+@@ -16,2 +15,3 @@
+   RAISE EXCEPTION 'B2B_ORDER_NOT_BILLABLE:%',coalesce(e->>'reason_code','UNKNOWN') USING ERRCODE='PT409'; END IF;
+ END $function$
++
+
+### public.rpc_receivable_money_projection_v1(uuid,integer,integer)
+
+--- canonical
++++ pg_get_functiondef
+@@ -1,3 +1,3 @@
+-CREATE OR REPLACE FUNCTION public.rpc_receivable_money_projection_v1(p_receivable_id uuid DEFAULT NULL, p_offset integer DEFAULT 0, p_limit integer DEFAULT 1000)
++CREATE OR REPLACE FUNCTION public.rpc_receivable_money_projection_v1(p_receivable_id uuid DEFAULT NULL::uuid, p_offset integer DEFAULT 0, p_limit integer DEFAULT 1000)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+@@ -16,2 +16,3 @@
+  RETURN result;
+ END $function$
++

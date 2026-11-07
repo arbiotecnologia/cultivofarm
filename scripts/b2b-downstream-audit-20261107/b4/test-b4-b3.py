@@ -131,14 +131,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS partner_order_financial_links_partner_order_id
 CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETURNS jsonb LANGUAGE sql AS $$SELECT '[]'::jsonb$$;
 """)
     live = json.loads(MONEY.read_text())
+    # Referências exigidas pelas FKs capturadas de accounts_receivable.
+    for table in ["financial_cost_centers", "fiscal_requirement_exemptions", "recurring_financial_templates"]:
+        B3.psql(f"CREATE TABLE IF NOT EXISTS public.{table}(id uuid PRIMARY KEY)")
+    B3.psql("CREATE TABLE IF NOT EXISTS auth.users(id uuid PRIMARY KEY,email text)")
+    for uid in [B3.UADM, B3.UFIN, B3.UB, B3.UT]:
+        B3.psql(f"INSERT INTO auth.users(id) VALUES('{uid}') ON CONFLICT(id) DO NOTHING")
     names = ["accounts_receivable", "accounts_receivable_installments", "receivable_payments", "financial_receipts", "financial_audit_log"]
     for name in names:
         table = next(t for t in live["tables"] if t["name"] == name)
         cols = [f"{c['name']} {c['type']}" + (" DEFAULT " + c["default"] if c["default"] else "") + (" NOT NULL" if c["notnull"] else "") for c in table["columns"]]
-        constraints = [f"CONSTRAINT {c['name']} {c['definition']}" for c in table["constraints"] if not c["definition"].startswith("FOREIGN KEY")]
+        constraints = [f"CONSTRAINT {c['name']} {c['definition']}" for c in table["constraints"] if name == "accounts_receivable" or not c["definition"].startswith("FOREIGN KEY")]
         B3.psql(f"CREATE TABLE public.{name} (" + ",".join(cols + constraints) + ")")
+    # Metadata LIVE de accounts_receivable: ACL ampla por papel + RLS obrigatória.
+    # As policies não são promovidas a prova; os writers testados são definer/owner.
+    B3.psql("""GRANT ALL PRIVILEGES ON TABLE public.accounts_receivable TO anon,authenticated,service_role;
+ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;""")
+    B3.psql(f"""INSERT INTO platform_private.seam_entitlements VALUES
+('{B3.UADM}','contas_receber'),('{B3.UFIN}','contas_receber');""")
     for index in live["indexes"]:
-        if index["unique"] and not index["name"].endswith("_pkey"):
+        if not index["name"].endswith("_pkey"):
             exists = B3.psql(f"SELECT to_regclass('{index['name']}') IS NOT NULL").stdout.strip()
             if exists != "t":
                 B3.psql(index["definition"] + ";")
@@ -150,13 +162,23 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
     for sig in signatures:
         function = next(f for f in live["functions"] if f["signature"] == sig)
         B3.psql(function["body"] + ";")
+    for sig in ["d51_5_validate_financial_tenant_links()", "guard_tenant_organization_id()", "update_updated_at_column()",
+                "fn_h6d_block_hard_delete()", "_saas_trg_require_feature()", "tg_sync_b2b_financial_status()"]:
+        function = next((f for f in live["functions"] if f["signature"] == sig), None)
+        B3.psql((function or captured_function(sig.split("(")[0]))["body"] + ";")
+    # O PostgreSQL descartável concede PUBLIC EXECUTE por padrão; reproduzir as
+    # ACLs LIVE informadas, sem alterar os pinos ou ampliar o candidato.
+    B3.psql("""REVOKE ALL ON FUNCTION public.fn_generate_receivable_installments() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_generate_receivable_installments() TO service_role;
+REVOKE ALL ON FUNCTION public.rpc_register_receivable_payment(uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_register_receivable_payment(uuid,jsonb) TO authenticated,service_role;""")
     included = {"trg_ar_gen_installments", "trg_h6_ar_snapshot", "trg_audit_ar", "trg_h6_ari_snapshot", "trg_h6_rp_append_only",
                 "trg_recalc_ar_inst", "trg_audit_rp", "trg_assign_receipt_metadata", "trg_sync_receipt_aliases"}
     for table in live["tables"]:
         if table["name"] in names + ["partner_order_payment_schedule"]:
             for trigger in table["triggers"] or []:
-                if trigger["name"] in included:
-                    exists = B3.psql(f"SELECT count(*) FROM pg_trigger WHERE tgname='{trigger['name']}'").stdout.strip()
+                if trigger["name"] in included or table["name"] == "accounts_receivable":
+                    exists = B3.psql(f"SELECT count(*) FROM pg_trigger WHERE tgname='{trigger['name']}' AND tgrelid='public.{table['name']}'::regclass").stdout.strip()
                     if exists == "0":
                         B3.psql(trigger["definition"] + ";")
 
@@ -207,6 +229,7 @@ CREATE FUNCTION platform_private.c2_order_partner_recipients(uuid) RETURNS SETOF
             B3.psql(function["body"] + ";")
         B3.psql("""REVOKE ALL ON FUNCTION public.generate_b2b_receivable_secure(uuid) FROM PUBLIC,anon;GRANT EXECUTE ON FUNCTION public.generate_b2b_receivable_secure(uuid) TO authenticated,service_role;
 REVOKE ALL ON FUNCTION public.generate_b2b_receivable_secure_impl(uuid) FROM PUBLIC,anon,authenticated;GRANT EXECUTE ON FUNCTION public.generate_b2b_receivable_secure_impl(uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.tg_auto_b2b_receivable() FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.tg_auto_b2b_receivable() TO service_role;
 REVOKE ALL ON FUNCTION public.fn_generate_receivable_from_entrega(uuid,jsonb) FROM PUBLIC,anon;GRANT EXECUTE ON FUNCTION public.fn_generate_receivable_from_entrega(uuid,jsonb) TO authenticated,service_role;
 REVOKE ALL ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) FROM PUBLIC,anon,authenticated;GRANT EXECUTE ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) TO service_role;
 ALTER TABLE public.partner_order_payment_schedule ADD COLUMN IF NOT EXISTS id uuid NOT NULL DEFAULT gen_random_uuid();""")
@@ -251,15 +274,40 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
 
         finance_schema()
         pre = runfile(H / "01-pre.sql.readonly")
-        check("PRE revisado falha fechado sobre baseline incompleta", pre.returncode != 0 and "B4_" in pre.stderr, pre.stderr[-1200:])
+        if pre.returncode != 0 and "B4_PRE_COLUMNS" in pre.stderr:
+            actual_columns = B3.psql("SELECT jsonb_agg(jsonb_build_object('name',column_name,'type',data_type,'default',column_default,'notnull',is_nullable) ORDER BY ordinal_position) FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable'").stdout.strip()
+            print("PRE_COLUMN_DEBUG actual=" + actual_columns, flush=True)
+            print("PRE_COLUMN_DEBUG expected=" + json.dumps(next(x for x in json.loads(MONEY.read_text())["tables"] if x["name"] == "accounts_receivable")["columns"]), flush=True)
+        if pre.returncode != 0 and "B4_PRE_INDEXES" in pre.stderr:
+            actual_indexes = B3.psql("SELECT jsonb_agg(jsonb_build_object('name',indexname,'definition',indexdef) ORDER BY indexname) FROM pg_indexes WHERE schemaname='public' AND tablename='accounts_receivable'").stdout.strip()
+            print("PRE_INDEX_DEBUG actual=" + actual_indexes, flush=True)
+            print("PRE_INDEX_DEBUG expected=" + json.dumps(json.loads(MONEY.read_text())["indexes"]), flush=True)
+        check("PRE confirma writers/índice e ausência de todos os overloads da projeção", pre.returncode == 0 and "PRE_OK" in (pre.stdout + pre.stderr), (pre.stdout + pre.stderr)[-1200:])
         install = runfile(H / "02-install.sql.review")
-        check("instalação não sobrescreve desconhecido nem cria objetos", install.returncode != 0 and B3.psql("SELECT to_regclass('platform_private.b2b_authorized_documents') IS NULL").stdout.strip() == "t", install.stderr[-1200:])
-        # COMPONENTE SOMENTE NO PG DESCARTÁVEL: o pacote instalável continua bloqueado.
-        # Executar o corpo aqui não é PRE/POST nem evidência de instalação/produção.
-        component = runfile(H / "b4-candidate.sql.review")
-        check("corpo B4 executável apenas como componente descartável", component.returncode == 0, component.stderr[-1200:])
+        if install.returncode != 0 and "B4_POST_BODY:" in install.stderr:
+            # Diagnóstico fora do aceite: a transação oficial já fez rollback.
+            diagnostic_install = runfile(H / "b4-candidate.sql.review")
+            if diagnostic_install.returncode != 0:
+                raise RuntimeError("diagnóstico do corpo falhou: " + diagnostic_install.stderr[-900:])
+            function_objects = [x for x in json.loads((H / "b4-object-manifest.json").read_text())["objects"] if x["kind"] == "function"]
+            values = ",".join("('" + x["candidate"]["signature"] + "','" + x["candidate"]["body_md5"] + "')" for x in function_objects)
+            mismatch_sql = "SELECT x.sig||'|'||x.expected||'|'||coalesce(md5(pg_get_functiondef(x.sig::regprocedure)),'MISSING') FROM (VALUES " + values + ") x(sig,expected) WHERE to_regprocedure(x.sig) IS NULL OR md5(pg_get_functiondef(x.sig::regprocedure)) IS DISTINCT FROM x.expected ORDER BY x.sig"
+            mismatch_output = B3.psql(mismatch_sql).stdout
+            print("POST_FUNCTION_HASH_DEBUG\n" + mismatch_output, flush=True)
+            actual_definitions = {}
+            for line in mismatch_output.strip().splitlines():
+                sig = line.split("|", 1)[0]
+                actual_definitions[sig] = B3.psql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)").stdout
+            diagnostic_path = H / "review-458b6012/live-absence-4097d4e2/diagnostic-function-definitions.json"
+            diagnostic_path.write_text(json.dumps(actual_definitions, indent=2) + "\n")
+            raise RuntimeError("instalação oficial falhou; diagnóstico de hashes concluído fora do aceite")
+        check("instalação descartável cria projeção nova e passa PRE+POST íntegros", install.returncode == 0, install.stderr[-1400:])
+        post = runfile(H / "03-post.sql.readonly")
+        check("POST confirma exatamente um overload owner-only e metadata completa", post.returncode == 0 and "POST_OK" in (post.stdout + post.stderr), (post.stdout + post.stderr)[-1200:])
+        check("instalação não habilita a dependência fiscal/contábil", B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure) LIKE '%B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN%'").stdout.strip() == "t")
+        real_dependencies = B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)").stdout
         rerun = runfile(H / "02-install.sql.review")
-        check("rerun continua bloqueado e não reinstala", rerun.returncode != 0 and "B4_" in rerun.stderr, rerun.stderr[-700:])
+        check("rerun falha fechado ao encontrar overload/objetos já criados", rerun.returncode != 0 and "B4_" in rerun.stderr, rerun.stderr[-700:])
         check("instalação não substitui dependência operacional por stub", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
         trigger_count = B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip()
         check("32 gatilhos reais carregados pelo harness B3 continuam habilitados", trigger_count == "32", trigger_count)
@@ -275,11 +323,14 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
         check("stub operacional existe só no harness depois da negação real", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
 
-        # Impacto dos fences compartilhados: títulos não B2B preservam seus caminhos;
-        # origem monetária desconhecida continua indisponível, sem backfill.
+        # Impacto dos fences compartilhados: MANUAL não B2B sem parceiro conserva
+        # parcelas/baixa; origem desconhecida que afeta parceiro fica explicitamente
+        # bloqueada, sem backfill, proveniência fictícia ou alteração de pedidos.
         category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
         unlinked_customer = B3.u(302)
         B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}')")
+        current_orders_before = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
+        order_count_before = B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip()
         def manual_title(title_id, customer_id, amount):
             return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
               (id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
@@ -287,11 +338,23 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         plain_title = B3.u(340)
         plain_result = manual_title(plain_title, unlinked_customer, "7.00")
         check("shared fence preserva título MANUAL não B2B sem devedor parceiro", plain_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip() == "1", plain_result.stderr[-900:])
-        deny("projeção de origem legada desconhecida permanece fail-closed", server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
+        deny("projeção nova não inventa proveniência para MANUAL sem parceiro", server_call(B3.UADM, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
+        plain_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip()
+        plain_payment = {"amount_received": 7, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-PLAIN"}
+        plain_pay_result = B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{plain_installment}','{js(plain_payment)}'::jsonb)::text;")
+        check("baixa MANUAL não B2B sem parceiro preserva o writer legado", plain_pay_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.receivable_payments WHERE installment_id='{plain_installment}' AND amount_received=7").stdout.strip() == "1", (plain_pay_result.stderr + plain_pay_result.stdout)[-1200:])
         partner_title = B3.u(341)
         partner_result = manual_title(partner_title, CUSTOMER, "8.00")
         check("shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado", partner_result.returncode == 0 and B3.psql(f"SELECT partner_id FROM public.accounts_receivable WHERE id='{partner_title}'").stdout.strip() == str(B3.P), partner_result.stderr[-1200:])
-        deny("impacto compartilhado: título manual de parceiro sem origem monetária bloqueia exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        deny("bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        deny("pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',1,'{quote_order}')"), "MONEY_ORIGIN_UNPROVEN")
+        partner_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{partner_title}'").stdout.strip()
+        partner_payment = {"amount_received": 8, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-PARTNER"}
+        deny("baixa de origem desconhecida que afeta parceiro também falha fechado", B3.out(B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{partner_installment}','{js(partner_payment)}'::jsonb);")), "MONEY_ORIGIN_UNPROVEN")
+        impacted_sim, impacted_sim_error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
+        check("novo pedido do mesmo parceiro fica indisponível durante a inconsistência", impacted_sim is None and "MONEY_ORIGIN_UNPROVEN" in (impacted_sim_error or ""), impacted_sim_error or impacted_sim)
+        current_orders_after = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
+        check("impacto medido não altera pedidos atuais nem cria pedido novo", current_orders_after == current_orders_before and B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip() == order_count_before)
         # Cleanup exclusivamente da fixture descartável, após medir o impacto; não é rollback de produção.
         B3.psql(f"""UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id IN ('{plain_title}','{partner_title}');
                     UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ('{plain_title}','{partner_title}');""")
@@ -339,7 +402,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("datas finais partem da emissão e calendário selado", rows1[0]["due_date"] == "2026-11-03", rows1)
         check("juros financiados não são somados duas vezes", all(Decimal(str(r["original_amount"])) == Decimal(str(r["net_amount"])) and Decimal(str(r["interest_amount"])) == 0 for r in rows1), rows1)
 
-        projection, projection_error = server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{title1}',0,1000)")
+        projection, projection_error = server_call(B3.UADM, f"public.rpc_receivable_money_projection_v1('{title1}',0,1000)")
         check("projeção financeira usa ator e tenant autorizados", projection is not None, projection_error)
         installment1 = projection[0]["id"]
         payment = {"amount_received": 10, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-PAY-1"}
@@ -395,11 +458,15 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("corrida não duplica título nem residual", residual(direct_order) == 0 and B3.psql(f"SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{direct_order}'").stdout.strip() == "2")
 
         allocations_before = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
+        # Remove somente a costura operacional do harness antes do POST/rollback;
+        # o corpo real always-deny instalado é restaurado byte a byte.
+        B3.psql(real_dependencies + ";")
         rollback = runfile(H / "04-rollback-deny.sql.review")
-        check("rollback exige POST completo e falha fechado sem baseline íntegra", rollback.returncode != 0 and "B4_" in rollback.stderr, rollback.stderr[-900:])
-        check("rollback bloqueado preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
+        check("rollback deny-only passa com PRE/POST e metadados íntegros", rollback.returncode == 0, rollback.stderr[-1200:])
+        check("rollback preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
               and B3.psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip() >= "3")
-        check("rollback bloqueado não faz revogação parcial", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE')").stdout.strip() == "t")
+        check("rollback fecha writer legado sem apagar projeção nem histórico", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE')").stdout.strip() == "f"
+              and B3.psql("SELECT to_regprocedure('public.rpc_receivable_money_projection_v1(uuid,integer,integer)') IS NOT NULL").stdout.strip() == "t")
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
     except Exception as exc:
         check("execução sem exceção de harness", False, repr(exc))
@@ -407,20 +474,21 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
     finally:
         subprocess.run(B3.SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         evidence = {
-            "kind": "DISPOSABLE_B4_REVIEW_458B6012_COMPONENTS_INSTALL_BLOCKED_NOT_HOSTED_E2E",
-            "review": "458b6012",
-            "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+            "kind": "DISPOSABLE_B4_REVIEW_4097D4E2_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
+            "review": "458b6012+4097d4e2",
+            "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
             "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
             "object_manifest": "b4-object-manifest.json",
-            "installation": "BLOCKED_BY_PRE; candidate body executed separately only as disposable component",
-            "shared_impact_scope": ["MANUAL não B2B sem parceiro", "MANUAL não B2B com parceiro", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
+            "live_facts": "USER_REPORTED_READONLY_4097D4E2; projection absent all overloads; writer/index pins matched local captures",
+            "installation": "DISPOSABLE_PRE_INSTALL_POST_PASS; operation dependency remains real always-deny until harness-only stub",
+            "shared_impact_scope": ["MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
             "passed": sum(c["ok"] for c in CHECKS), "total": len(CHECKS), "checks": CHECKS,
             "hosted": "NOT_RUN", "jwt_rls_storage": "NOT_RUN",
             "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
             "b3_overloads_restored": False,
             "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência",
         }
-        evidence_path = H / "review-458b6012/evidence-b4-shared-impact.json"
+        evidence_path = H / "review-458b6012/live-absence-4097d4e2/evidence-b4-shared-impact.json"
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
         evidence_path.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
     return result_code

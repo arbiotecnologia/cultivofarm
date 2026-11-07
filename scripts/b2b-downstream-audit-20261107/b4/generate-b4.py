@@ -88,13 +88,18 @@ def canonical_function(src):
     signature, returns, language, attributes, _tag, body = match.groups()
     signature = re.sub(r",\s*", ", ", signature)
     signature = re.sub(r"\bint\b", "integer", signature)
+    signature = re.sub(r"\b(uuid|text|integer|numeric|boolean|date|jsonb)(\s+DEFAULT\s+)NULL(?!::)",
+                       r"\1\2NULL::\1", signature)
     header = f"{signature}\n RETURNS {returns}\n LANGUAGE {language}\n"
+    function_attributes = []
     if re.search(r"\bIMMUTABLE\b", attributes):
-        header += " IMMUTABLE\n"
+        function_attributes.append("IMMUTABLE")
     elif re.search(r"\bSTABLE\b", attributes):
-        header += " STABLE\n"
+        function_attributes.append("STABLE")
     if re.search(r"\bSECURITY DEFINER\b", attributes):
-        header += " SECURITY DEFINER\n"
+        function_attributes.append("SECURITY DEFINER")
+    if function_attributes:
+        header += " " + " ".join(function_attributes) + "\n"
     path = re.search(r"SET search_path\s*(?:=|TO)\s*'([^']*)'", attributes)
     if path:
         header += f" SET search_path TO '{path.group(1)}'\n"
@@ -207,11 +212,76 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
     # Crédito/pagamento/gerador/shared guard extraídos SEM os overloads create/simulate históricos.
     credit = fn(deltas, "public.fn_b2b_credit_exposure")
     payment = fn(deltas, "public.rpc_register_receivable_payment")
+    # Revisão 4097d4e2: a baixa MANUAL não B2B sem parceiro conserva exatamente
+    # a matemática legada. Somente origem B2B ou título que afeta parceiro exige
+    # prova monetária; nenhuma proveniência é inventada para o ramo legado.
+    payment = delta(payment, " v_proven jsonb;\n",
+                    " v_proven jsonb; v_origin public.accounts_receivable%ROWTYPE; v_interest numeric; v_financed numeric;\n",
+                    "payment origin declarations")
+    payment = delta(payment,
+        "  SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;\n  IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;",
+        """  SELECT * INTO v_origin FROM public.accounts_receivable WHERE id=v_inst.receivable_id AND organization_id=v_org;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  IF v_origin.origin_type='B2B_ORDER' OR v_origin.partner_id IS NOT NULL THEN
+   SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;
+   IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+   v_interest:=(v_proven->>'interest_amount')::numeric;
+   v_financed:=(v_proven->>'financed_interest_amount')::numeric;
+  ELSE
+   -- Caminho capturado para MANUAL não B2B sem parceiro; não é prova de origem B4.
+   v_interest:=v_inst.interest_amount; v_financed:=0;
+  END IF;""", "partner-scoped money proof, non-B2B legacy preservation")
+    payment = delta(payment,
+        "v_inst.original_amount + ((v_proven->>'interest_amount')::numeric-(v_proven->>'financed_interest_amount')::numeric) + COALESCE(v_inst.penalty_amount,0)",
+        "v_inst.original_amount + (v_interest-v_financed) + COALESCE(v_inst.penalty_amount,0)",
+        "payment legacy/proven balance separation")
     generator = fn(deltas, "public.fn_generate_receivable_installments")
     shared_guard = fn(deltas, "platform_private.b2b_shared_receivable_credit_guard")
     config = extract(shared, "CREATE FUNCTION platform_private.b2b_credit_config_block", "END $$;\n", "credit config")
     debtor = extract(shared, "CREATE FUNCTION platform_private.b2b_debtor_partner", "END $$;\n", "debtor partner")
     shared_trigger = "CREATE TRIGGER zz_b2b_shared_credit_guard BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_shared_receivable_credit_guard();\n"
+
+    # Revisão 4097d4e2: crédito do comprador resolve dinheiro no tenant vendedor.
+    # A projeção pública mantém ator+papel+tenant; somente o núcleo privado recebe
+    # a organização já autorizada pelo integration_actor, sem grant de cliente.
+    proven_block = extract(origin, "CREATE FUNCTION platform_private.b2b_proven_money_row",
+                           "REVOKE ALL ON FUNCTION platform_private.b2b_proven_money_row(uuid) FROM PUBLIC,anon,authenticated,service_role;\n",
+                           "actor-bound money resolver")
+    proven_function = proven_block.split("REVOKE ALL ON FUNCTION", 1)[0]
+    internal_money = delta(proven_function,
+        "CREATE FUNCTION platform_private.b2b_proven_money_row(p_id uuid) RETURNS jsonb",
+        "CREATE FUNCTION platform_private.b2b_proven_money_row_internal(p_id uuid,p_org uuid) RETURNS jsonb",
+        "internal money resolver signature")
+    internal_money = delta(internal_money,
+        "DECLARE org uuid:=public.h15_actor_organization(); i public.accounts_receivable_installments; row jsonb; r jsonb;",
+        "DECLARE org uuid:=p_org; i public.accounts_receivable_installments; row jsonb; r jsonb;",
+        "internal money resolver organization")
+    internal_money = delta(internal_money,
+        " IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;",
+        " IF org IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;",
+        "internal money resolver boundary")
+    actor_money = """CREATE FUNCTION platform_private.b2b_proven_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=public.h15_actor_organization();
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.b2b_proven_money_row_internal(p_id,org);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_proven_money_row(uuid),platform_private.b2b_proven_money_row_internal(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+"""
+    origin = origin.replace(proven_block, internal_money + actor_money)
+    origin = delta(origin,
+        " org uuid:=public.h15_actor_organization(); sealed jsonb; sch jsonb; terms jsonb; audit jsonb;",
+        " org uuid; sealed jsonb; sch jsonb; terms jsonb; audit jsonb;",
+        "legacy money organization declaration")
+    origin = delta(origin,
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=org;\n SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=org;",
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;\n org:=i.organization_id;\n SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=org;",
+        "legacy money organization resolution")
+    origin = delta(origin,
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=public.h15_actor_organization();",
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;",
+        "allocation money organization resolution")
 
     # Elegibilidade canônica e gates de origem/contabilidade, revalidados depois das esperas.
     eligible = """CREATE OR REPLACE FUNCTION platform_private.b4_assert_order_eligible(p_order uuid) RETURNS void
@@ -234,6 +304,21 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
                     "SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;", "residual effective B3 snapshot")
     partial = delta(partial, "SELECT * INTO s FROM platform_private.b2b_order_condition_snapshots WHERE order_id=d.order_id AND organization_id=org AND partner_id=d.partner_id;",
                     "SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=d.order_id AND organization_id=org AND partner_id=d.partner_id;", "allocation effective B3 snapshot")
+    partial = delta(partial,
+        "DECLARE po public.partner_orders; s platform_private.b4_order_condition_snapshots; allocated numeric; total numeric;",
+        "DECLARE po public.partner_orders; s platform_private.b4_order_condition_snapshots; allocated numeric; total numeric; org uuid;",
+        "residual seller organization declaration")
+    partial = delta(partial,
+        " SELECT * INTO po FROM public.partner_orders WHERE id=p_order;\n SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;",
+        " SELECT * INTO po FROM public.partner_orders WHERE id=p_order;\n SELECT pa.commercial_owner_organization_id INTO org FROM public.partner_accounts pa WHERE pa.id=po.partner_id;\n IF org IS NULL THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;\n SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;",
+        "residual seller organization resolution")
+    partial = delta(partial, "row:=platform_private.b2b_proven_money_row(i.id);",
+                    "row:=platform_private.b2b_proven_money_row_internal(i.id,org);",
+                    "seller-scoped internal money proof")
+    partial = delta(partial,
+        "  PERFORM public.rpc_receivable_money_projection_v1(l.receivable_id,0,1000) FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order;",
+        "  PERFORM platform_private.b2b_proven_money_row_internal(i.id,org) FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id JOIN public.accounts_receivable_installments i ON i.receivable_id=a.id WHERE l.partner_order_id=p_order;",
+        "residual legacy internal money proof")
     partial = delta(partial, "PERFORM 1 FROM public.partner_orders WHERE id=d.order_id FOR UPDATE;\n PERFORM platform_private.b2b_integration_actor(d.partner_id,true);",
                     "PERFORM 1 FROM public.partner_orders WHERE id=d.order_id FOR UPDATE;\n PERFORM platform_private.b2b_integration_actor(d.partner_id,true);\n PERFORM platform_private.b4_assert_order_eligible(d.order_id);", "eligibility after order lock")
     partial = delta(partial, "SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_document FOR SHARE;\n PERFORM platform_private.b2b_integration_actor(d.partner_id,true);",
