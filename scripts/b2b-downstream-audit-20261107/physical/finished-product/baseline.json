@@ -69,6 +69,24 @@
       "signature": "public.validate_estoque_entrada()"
     }
   ],
+  "dependency_functions": [
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "320c65430734d75b9a215d5d99840b63",
+      "owner": "postgres",
+      "signature": "platform_private.estoque_produto_catalog_tenant_guard()"
+    }
+  ],
+  "dependency_triggers": [
+    {
+      "name": "a000_estoque_produto_catalog_tenant_guard",
+      "type": 23,
+      "table": "estoque_produto",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a000_estoque_produto_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.estoque_produto_catalog_tenant_guard()"
+    }
+  ],
   "relations": [
     {
       "acl": "",
@@ -103,6 +121,12 @@
     {
       "acl": "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}",
       "name": "lotes",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "microrganismos",
       "owner": "postgres",
       "schema": "public"
     },
@@ -143,6 +167,12 @@
       "table": "catalogo_volumes",
       "column": "volume_ml",
       "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "microrganismos",
+      "column": "owner_organization_id",
+      "nullable": "NO"
     },
     {
       "type": "boolean",
@@ -261,6 +291,16 @@
   ],
   "catalog_constraints": [
     {
+      "name": "catalogo_volumes_owner_organization_id_fkey",
+      "table": "catalogo_volumes",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "microrganismos_owner_organization_id_fkey",
+      "table": "microrganismos",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
       "name": "pp_codigo_version",
       "table": "product_packagings",
       "definition": "UNIQUE (product_id, codigo, version)"
@@ -329,6 +369,11 @@
       "name": "product_sale_units_version_check",
       "table": "product_sale_units",
       "definition": "CHECK ((version >= 1))"
+    },
+    {
+      "name": "produtos_owner_organization_id_fkey",
+      "table": "produtos",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
     }
   ],
   "existing_candidate_columns": []
