@@ -211,6 +211,10 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
 
     # Crédito/pagamento/gerador/shared guard extraídos SEM os overloads create/simulate históricos.
     credit = fn(deltas, "public.fn_b2b_credit_exposure")
+    credit = delta(credit,
+        "    WHEN v_limit <= 0 THEN 'NO_LIMIT_DEFINED'\n",
+        "",
+        "zero limit uses positive projected exposure and limit-exceeded semantics")
     partial = delta(partial,
         "DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int;",
         "DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int; debtor uuid;",
@@ -253,6 +257,10 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
     generator = fn(deltas, "public.fn_generate_receivable_installments")
     shared_guard = fn(deltas, "platform_private.b2b_shared_receivable_credit_guard")
     config = extract(shared, "CREATE FUNCTION platform_private.b2b_credit_config_block", "END $$;\n", "credit config")
+    config = delta(config,
+        "s.credit_limit > 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')",
+        "s.credit_limit IS NOT NULL AND s.credit_limit >= 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')",
+        "zero is an explicit valid credit limit; only NULL is undefined")
     debtor = extract(shared, "CREATE FUNCTION platform_private.b2b_debtor_partner", "END $$;\n", "debtor partner")
     receivable_scope = """CREATE FUNCTION platform_private.b2b_receivable_partner_scope(p_receivable uuid) RETURNS uuid
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$

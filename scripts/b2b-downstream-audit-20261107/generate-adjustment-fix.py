@@ -255,6 +255,24 @@ def seller_candidate_body(kind):
   WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
   FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501'; END IF;
+
+  -- O FOR UPDATE dos termos também pode esperar. Reler pedido+termos e repetir
+  -- toda a autorização depois dessa espera, sem confiar no escopo anterior.
+  SELECT po.partner_id, po.c2_external_origin_snapshot
+    INTO v_partner_id, v_origin
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id AND po.payment_terms_id=v_terms_id;
+  IF NOT FOUND OR NOT EXISTS (
+    SELECT 1 FROM public.partner_order_payment_terms pt
+    WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
+  ) THEN
+    RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501';
+  END IF;
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
 """
     body = replace_between(
         body,

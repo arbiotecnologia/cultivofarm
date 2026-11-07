@@ -87,6 +87,8 @@ def main():
     check("não há backfill dos cinco títulos nem cancelamento LIVE", "UPDATE public.accounts_receivable SET partner_id" not in body and manifest["reported_manual_null_live_readonly"]["manual_titles"]["cancel_or_backfill_authorized"] is False)
     check("forma LIVE relatada 4 OPEN/1 OVERDUE permanece bloqueio de aprovação", manifest["reported_manual_null_live_readonly"]["manual_titles"]["status_counts"] == {"OPEN": 4, "OVERDUE": 1} and manifest["status"].startswith("INACTIVE_BLOCKED"))
     check("crédito usa prova monetária interna no tenant vendedor", "row:=platform_private.b2b_proven_money_row_internal(i.id,org);" in body)
+    check("limite zero é configuração válida; NULL/negativo/NaN continuam fechados", "s.credit_limit IS NOT NULL AND s.credit_limit >= 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')" in body)
+    check("limite zero positivo usa limite excedido, nunca NO_LIMIT_DEFINED", "WHEN v_limit <= 0 THEN 'NO_LIMIT_DEFINED'" not in body and "WHEN v_proj > v_limit THEN 'LIMIT_EXCEEDED_BLOCK'" in body)
     check("residual legado não usa projeção do ator comprador", "PERFORM platform_private.b2b_proven_money_row_internal(i.id,org)" in body and "PERFORM public.rpc_receivable_money_projection_v1(l.receivable_id" not in body)
     check("projeção pública conserva guard de ator, papel e tenant", "RETURN platform_private.b2b_proven_money_row_internal(p_id,org);" in body and "public.is_financial_staff(auth.uid()) IS NOT TRUE" in body)
     check("resolvedor interno é função nova owner-only", by_object["platform_private.b2b_proven_money_row_internal(uuid,uuid)"]["operation"] == "CREATE" and by_object["platform_private.b2b_proven_money_row_internal(uuid,uuid)"]["candidate"]["acl"] == "OWNER_ONLY")
