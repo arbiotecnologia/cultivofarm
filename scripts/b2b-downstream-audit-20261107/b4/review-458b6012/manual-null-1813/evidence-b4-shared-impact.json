@@ -186,7 +186,7 @@
     {
       "name": "tentativa de baixa não altera o título histórico nem cria pagamento",
       "ok": false,
-      "detail": ""
+      "detail": " stdout=0|true\n installment=345d5730-2740-482f-9531-694e977424eb"
     },
     {
       "name": "nova decisão do parceiro fica pendente de reconciliação na forma real",

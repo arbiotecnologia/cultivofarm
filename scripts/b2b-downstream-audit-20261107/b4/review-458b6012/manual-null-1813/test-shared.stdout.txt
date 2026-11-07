@@ -38,7 +38,8 @@ PASS stub operacional existe só no harness depois da negação real
 PASS instalação não faz backfill dos cinco históricos
 PASS MANUAL real partner NULL + cliente único não pode ser omitido da exposição
 PASS baixa MANUAL real partner NULL também exige reconciliação
-FAIL tentativa de baixa não altera o título histórico nem cria pagamento :: 
+FAIL tentativa de baixa não altera o título histórico nem cria pagamento ::  stdout=0|true
+ installment=345d5730-2740-482f-9531-694e977424eb
 PASS nova decisão do parceiro fica pendente de reconciliação na forma real
 PASS falha na forma real não cria pedido
 PASS OVERDUE partner NULL continua explícito após cancelar somente os quatro OPEN locais
