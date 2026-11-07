@@ -304,7 +304,7 @@ COMMIT;
         "status": "INACTIVE_NOT_APPROVED",
         "source": str(SOURCE.relative_to(ROOT)),
         "source_md5": BASE_MD5,
-        "request_owner": request_owner() if False else captured(REQUEST_SOURCE, BASE_MD5)["owner"],
+        "request_owner": captured(REQUEST_SOURCE, BASE_MD5)["owner"],
         "request_acl": captured(REQUEST_SOURCE, BASE_MD5)["acl"],
         "scope_md5": VISIBLE_MD5,
         "private_scope_md5": PRIVATE_VISIBLE_MD5,
