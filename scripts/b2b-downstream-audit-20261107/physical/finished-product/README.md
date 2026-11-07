@@ -71,9 +71,9 @@ A bateria anterior 37/37 está preservada em `history/pre-live-entry-guards/` e 
 
 1. **Dependências downstream ausentes em LIVE, conforme relato do auditor:** `delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)` e `delivery_send_apply_v1(uuid,timestamptz,text)` precisam ser instaladas por seus pacotes canônicos antes da camada downstream. Os demais seis corpos/owners/ACLs foram relatados como coincidentes; todos os pins permanecem. Nenhuma ausência foi tratada como permissão para criar atalho ou remover verificação.
 2. **Conferência LIVE independente pendente:** os MD5 dos dois guards foram relatados pelo auditor e reproduzidos localmente; owners/ACLs/trigger/relações, os demais corpos e o schema de catálogo ainda exigem conferência independente. A costura local não prova paridade integral com produção.
-2. **Sem exposição ao aplicativo:** a entrada privada não tem grant nem UI/caller liberado. Os positivos usam chamada interna privilegiada e claims sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser.
-3. **Dados reais não homologados:** produtos, embalagens, fornecedores, lotes, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
-4. **B2B/OnFarm permanece fechado** com `DELIVERY_SCOPE_DENIED`. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real.
-5. Nenhum efeito fiscal, financeiro, contábil, SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG, NF e recebíveis continuam fora deste pacote.
+3. **Sem exposição ao aplicativo:** a entrada privada não tem grant nem UI/caller liberado. Os positivos usam chamada interna privilegiada e claims sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser.
+4. **Dados reais não homologados:** produtos, embalagens, fornecedores, lotes, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
+5. **B2B/OnFarm permanece fechado** com `DELIVERY_SCOPE_DENIED`. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real.
+6. Nenhum efeito fiscal, financeiro, contábil, SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG, NF e recebíveis continuam fora deste pacote.
 
 Os históricos físicos 119/119, 21/21 e 123/123 permanecem em `../evidence/`; não foram somados às contagens deste recorte nem apresentados como E2E real.
