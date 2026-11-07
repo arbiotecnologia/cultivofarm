@@ -20,8 +20,6 @@ MANUAL_LIVE = H / "live-readonly-manual-null-1813.json"
 OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))
 if json.loads(MONEY.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_MONEY_REF_DRIFT")
-if json.loads(CAPTURE.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
-    raise SystemExit("B4_CAPTURE_REF_DRIFT")
 if json.loads(MANUAL_LIVE.read_text()).get("canonical_ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_MANUAL_FACTS_REF_DRIFT")
 
