@@ -560,21 +560,21 @@ WHERE s.partner_id='{B3.P}';""")
     finally:
         subprocess.run(B3.SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         evidence = {
-            "kind": "DISPOSABLE_B4_REVIEW_4097D4E2_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
-            "review": "458b6012+4097d4e2",
+            "kind": "DISPOSABLE_B4_REVIEW_MANUAL_NULL_1813_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
+            "review": "458b6012+4097d4e2+manual-null-1813",
             "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
             "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
             "object_manifest": "b4-object-manifest.json",
-            "live_facts": "USER_REPORTED_READONLY_4097D4E2; projection absent all overloads; writer/index pins matched local captures",
+            "live_facts": ["USER_REPORTED_READONLY_4097D4E2", "USER_REPORTED_READONLY_MANUAL_NULL_1813; cinco títulos não lidos nem alterados pelo agente"],
             "installation": "DISPOSABLE_PRE_INSTALL_POST_PASS; operation dependency remains real always-deny until harness-only stub",
-            "shared_impact_scope": ["MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
+            "shared_impact_scope": ["cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE", "múltiplos parceiros no mesmo cliente", "conflito partner_id/customer_id/owner", "MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
             "passed": sum(c["ok"] for c in CHECKS), "total": len(CHECKS), "checks": CHECKS,
             "hosted": "NOT_RUN", "jwt_rls_storage": "NOT_RUN",
-            "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
+            "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "títulos históricos criados antes do trigger candidato com os nove gatilhos capturados ativos; nenhum backfill", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
             "b3_overloads_restored": False,
             "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência",
         }
-        evidence_path = H / "review-458b6012/live-absence-4097d4e2/evidence-b4-shared-impact.json"
+        evidence_path = OUT / "evidence-b4-shared-impact.json"
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
         evidence_path.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
     return result_code
