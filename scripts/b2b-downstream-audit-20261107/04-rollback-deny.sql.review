@@ -60,7 +60,7 @@ BEGIN
     RAISE EXCEPTION 'ADJUSTMENT_HELPER_MISSING';
   END IF;
   IF md5(pg_get_functiondef('platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '9e111e584803d1ed3cb14f74e823095e' THEN
-    RAISE EXCEPTION 'ADJUSTMENT_HELPER_PIN_DRIFT';
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_PIN_DRIFT: actual=% expected=%', md5(pg_get_functiondef('platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure)), '9e111e584803d1ed3cb14f74e823095e';
   END IF;
   IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure) IS DISTINCT FROM 'postgres' THEN
     RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: platform_private.b2b_seller_financial_scope_error(uuid,uuid)';
