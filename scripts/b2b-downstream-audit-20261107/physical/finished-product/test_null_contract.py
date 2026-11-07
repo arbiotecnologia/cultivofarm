@@ -2,6 +2,7 @@
 """Prova nulidade fail-closed do contrato físico; somente PostgreSQL descartável."""
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -58,7 +59,8 @@ def main():
                     B.fail(f"gate {gate_enabled}: helper nega {label} sem NULL", helper)
 
                 probe_id = B.T.u(12000 + index + (100 if not gate_enabled else 0))
-                with_id = dict(overrides, id=str(probe_id))
+                # Evita que o índice de entrada agregada por lote mascare o CHECK sob teste.
+                with_id = dict(overrides, id=str(probe_id), quantidade_reservada=1)
                 statement = "SET session_replication_role=replica;" + f"""
                 INSERT INTO public.estoque_produto
                 SELECT (jsonb_populate_record(s,'{json.dumps(with_id)}'::jsonb)).*
@@ -84,8 +86,11 @@ def main():
             "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
             "public.validate_estoque_entrada()",
         ):
-            body = B.last(f"SELECT pg_get_functiondef('{signature}'::regprocedure);")
-            uses_fail_closed = "finished_product_" not in body or " IS NOT TRUE" in body
+            body = B.sql(f"SELECT pg_get_functiondef('{signature}'::regprocedure);")
+            references_helper = re.search(r"platform_private\.finished_product_(?:stock|delivery)_valid_v1\s*\(", body) is not None
+            legacy_predicate = re.search(r"\bNOT\s+platform_private\.finished_product_(?:stock|delivery)_valid_v1\s*\(", body) is not None
+            fail_closed_predicate = re.search(r"platform_private\.finished_product_(?:stock|delivery)_valid_v1\s*\([^)]*\)\s+IS\s+NOT\s+TRUE", body) is not None
+            uses_fail_closed = not references_helper or (not legacy_predicate and fail_closed_predicate)
             if uses_fail_closed:
                 B.ok(f"caller usa IS NOT TRUE: {signature}")
             else:
