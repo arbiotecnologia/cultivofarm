@@ -176,7 +176,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_register_receivable_payment(uuid,jsonb) TO 
         if table["name"] in names + ["partner_order_payment_schedule"]:
             for trigger in table["triggers"] or []:
                 if trigger["name"] in included or table["name"] == "accounts_receivable":
-                    exists = B3.psql(f"SELECT count(*) FROM pg_trigger WHERE tgname='{trigger['name']}'").stdout.strip()
+                    exists = B3.psql(f"SELECT count(*) FROM pg_trigger WHERE tgname='{trigger['name']}' AND tgrelid='public.{table['name']}'::regclass").stdout.strip()
                     if exists == "0":
                         B3.psql(trigger["definition"] + ";")
 
