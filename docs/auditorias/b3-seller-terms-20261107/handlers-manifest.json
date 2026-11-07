@@ -1,0 +1,41 @@
+{
+  "scope": "Complemento UI 15:14; sem SQL/dados/publicação",
+  "tests_passed": 67,
+  "tests_failed": 0,
+  "exit_code": 0,
+  "previous_regressions_included": 31,
+  "automatic_build": "build OK",
+  "automatic_build_exit_code": null,
+  "separate_typecheck": "NOT_RUN",
+  "full_suite": "NOT_RUN",
+  "postgres": "NOT_RUN; caso legado com triggers não testado, sem vulnerabilidade demonstrada",
+  "hosted_guards": "READONLY relatado pelo auditor; nenhuma execução agente",
+  "authenticated_browser": "NOT_RUN; auditor mantém sessões",
+  "artifacts": [
+    {
+      "path": "handlers-tests.txt",
+      "bytes": 2003065,
+      "sha256": "8aa0acaa2eb639c98515f16c08a156b19f4e5c20a552e616e06ff6c1ab9c8880"
+    },
+    {
+      "path": "handlers-results.json",
+      "bytes": 19555,
+      "sha256": "9502e2f28f7b3efb7dd2ad3ed13a5fe5963bd0d02dd15f45063714023af6ab54"
+    },
+    {
+      "path": "handlers-exitcode.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "handlers-automatic-build.txt",
+      "bytes": 252,
+      "sha256": "6312962d107b0612259b72b10b05da74f861b67abaa651ec643c6be1c77bc70f"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5511,
+      "sha256": "56c6bcf44733ec82f29bb30e64248dc02c4368d5c10c2c5da2621f72de861f68"
+    }
+  ]
+}
