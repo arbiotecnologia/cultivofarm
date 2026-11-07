@@ -96,7 +96,9 @@ def main():
         values = ",".join("('" + x.replace("'", "''") + "')" for x in signatures)
         post_functions = json.loads(B.last(f"""SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',r.rolname,'acl',coalesce(p.proacl::text,'')) ORDER BY v.signature),'[]'::jsonb) FROM (VALUES {values}) v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature) JOIN pg_roles r ON r.oid=p.proowner;"""))
         assert len(post_functions) == len(signatures)
-        (RESULTS / "post-install-functions.json").write_text(json.dumps({"source": "disposable_post_install", "functions": post_functions}, ensure_ascii=False, indent=2) + "\n")
+        import hashlib
+        candidate_sha256 = hashlib.sha256((HERE / "candidate.sql.review").read_bytes()).hexdigest()
+        (RESULTS / "post-install-functions.json").write_text(json.dumps({"source": "disposable_post_install", "candidate_sha256": candidate_sha256, "functions": post_functions}, ensure_ascii=False, indent=2) + "\n")
         assert B.last("SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton;") == "f"
         B.ok("instalação permanece operacionalmente desligada")
 

@@ -465,7 +465,9 @@ GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uui
     downstream_candidate = "\n\n".join(downstream_bodies) + "\n"
     post_blocks = {}
     post_capture_path = HERE / "evidence/post-install-functions.json"
-    post_capture = json.loads(post_capture_path.read_text())["functions"] if post_capture_path.exists() else []
+    post_capture_data = json.loads(post_capture_path.read_text()) if post_capture_path.exists() else {}
+    candidate_source_sha256 = hashlib.sha256(candidate.encode()).hexdigest()
+    post_capture = post_capture_data.get("functions", []) if post_capture_data.get("candidate_sha256") == candidate_source_sha256 else []
     post_by_signature = {x["signature"]: x for x in post_capture}
     body_by_signature = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync, "platform_private.guard_manual_lot_write_v1": lot_guard, "platform_private.trg_lab_lot_biological_only": lab_guard, "public.validate_estoque_entrada": entry_validate, "platform_private.envase_insert_guard_v1": entry_guard, "platform_private.envase_insert_final_v1": entry_final}
     for entry in BASE["functions"]:
