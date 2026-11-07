@@ -11,6 +11,7 @@ export interface StockQuantityLike {
   conteudo_por_unidade?: number | string | null;
   unidade_conteudo?: string | null;
   quantidade_conteudo?: number | string | null;
+  quantidade_reservada?: number | string | null;
 }
 
 export interface StockContent {

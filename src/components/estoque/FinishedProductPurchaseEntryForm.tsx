@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTenantProducts } from "@/hooks/useTenantProducts";
 import { useTenantProductVolumes } from "@/hooks/useTenantProductVolumes";
-import { useProductUnitAdmin } from "@/hooks/useProductUnitAdmin";
+import { useProductPackagingState } from "@/hooks/useProductUnitAdmin";
 import { useFinishedProductPurchaseEntry } from "@/hooks/useFinishedProductPurchase";
 import { formatStockValue, type StockContentUnit } from "@/lib/estoque/stockUnits";
 import type { FinishedProductPurchaseAck, FinishedProductPurchaseDraft } from "@/lib/estoque/finishedProductPurchase";
@@ -31,7 +31,7 @@ export function FinishedProductPurchaseEntryForm({ onSuccess }: { onSuccess: (ac
   const [draft, setDraft] = useState<FinishedProductPurchaseDraft>(emptyDraft);
   const entry = useFinishedProductPurchaseEntry();
   const products = useTenantProducts(false);
-  const packaging = useProductUnitAdmin(draft.produto_id, !!draft.produto_id);
+  const packaging = useProductPackagingState(draft.produto_id, !!draft.produto_id);
   const volumes = useTenantProductVolumes(draft.produto_id, !!draft.produto_id);
   const unit = packaging.data?.unidade_conteudo ?? null;
 

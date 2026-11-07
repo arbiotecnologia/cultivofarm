@@ -55,7 +55,7 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
     enabled: open && !!target?.lote_id,
     queryFn: async ({ signal }) => {
       if (!target?.lote_id || !target.os_id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("estoque_produto")
         .select("id, quantidade, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo, embalagem_id, embalagem_versao, validade, status, produto_id, microrganismo_id, lote_id, envase_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote), produtos(nome), microrganismos(nome)")
         .eq("lote_id", target.lote_id)
