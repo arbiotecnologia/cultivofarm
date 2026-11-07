@@ -87,7 +87,7 @@ def main():
         fractional = finished("quimico", "kg", 25, 2)
         B.reject("0,5 embalagem é negada na reserva whole-pack", B.reserve(fractional["os"], fractional["stock"], 0.5, "after-fractional"), "23514", "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED")
         B.reject("peso não pode ser gravado como volume_total",
-                 f"UPDATE public.estoque_produto SET volume_total=50 WHERE id='{fractional['stock']}';",
+                 "SET session_replication_role=replica;" + f"UPDATE public.estoque_produto SET volume_total=50 WHERE id='{fractional['stock']}';SET session_replication_role=origin;", 
                  "23514", "finished_product_unit_contract")
 
         b2b = finished("quimico", "l", 1, 2)
