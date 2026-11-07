@@ -1,0 +1,153 @@
+{
+  "review": "31430566",
+  "status": "INACTIVE_NOT_APPROVED",
+  "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+  "source_md5": "f9bf8f543564af480d08e7bebd111b88",
+  "request_owner": "postgres",
+  "request_acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "scope_md5": "8812508716f279a88e3d5a31b15621d8",
+  "private_scope_md5": "8504f07fbc3a7975accf919f386d00eb",
+  "role_md5": "4d90e93d521a4819d9085f28d742030f",
+  "private_role_md5": "c5af5b55de6d79da9b73a33948746ae2",
+  "accounting_guard_md5": "669b19490a7a9700f0158db4b31885ad",
+  "candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+  "decision_candidates": {
+    "request": {
+      "signature": "public.request_b2b_payment_terms_adjustment_secure(uuid,text)",
+      "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
+      "candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "approve": {
+      "signature": "public.approve_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "a61daa8542058bdbf239903d655c2a1b",
+      "candidate_md5": "9e9b3cb27dd669d6d5f7575e6ecb2ac7",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "reject": {
+      "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
+      "candidate_md5": "ff2ca3bf69aae9e51348df03c1373037",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    }
+  },
+  "contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
+  "temporary_pin_substitution": false,
+  "dependencies": {
+    "platform_private.platform_actor_access_ready(uuid)": {
+      "source_signature": "platform_private.platform_actor_access_ready(p_user uuid)",
+      "md5": "048249c0c2106c3761e26eacb8d0de84",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.platform_actor_access_ready.048249c0.sql"
+    },
+    "platform_private.entitlements_for_user(uuid)": {
+      "source_signature": "platform_private.entitlements_for_user(_uid uuid)",
+      "md5": "7f4ec7facaebbdf35444dd490fdebe56",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/platform_private.entitlements_for_user.7f4ec7fa.sql"
+    },
+    "platform_private.has_role(uuid,public.app_role)": {
+      "source_signature": "platform_private.has_role(_user_id uuid, _role app_role)",
+      "md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.has_role.c5af5b55.sql"
+    },
+    "public.has_role(uuid,public.app_role)": {
+      "source_signature": "public.has_role(_user_id uuid, _role app_role)",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.has_role.4d90e93d.sql"
+    },
+    "public.is_platform_superadmin(uuid)": {
+      "source_signature": "public.is_platform_superadmin(_user_id uuid)",
+      "md5": "3dfe79d976821244d9b7a7f893d765f2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.is_platform_superadmin.3dfe79d9.sql"
+    },
+    "public.is_valid_b2b_partner_user(uuid,uuid)": {
+      "source_signature": "public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)",
+      "md5": "0bb0dea04be8ca84c66db7ca6329876c",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.is_valid_b2b_partner_user.0bb0dea0.sql"
+    },
+    "platform_private.b2b_actor_scope(uuid)": {
+      "source_signature": "platform_private.b2b_actor_scope(_uid uuid)",
+      "md5": "c3f2997746f24bc2efd15db5c0ccc862",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/platform_private.b2b_actor_scope.c3f29977.sql"
+    },
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": {
+      "source_signature": "platform_private.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+      "md5": "915f516e605af7cc14584e2e762a2661",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.b2b_phase1_partner_visible.915f516e.sql"
+    },
+    "public.b2b_phase1_partner_visible(uuid,boolean)": {
+      "source_signature": "public.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+      "md5": "6b3defc01a66040146562c60ad224f03",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.b2b_phase1_partner_visible.6b3defc0.sql"
+    },
+    "platform_private.b2b_phase1_order_visible(uuid)": {
+      "source_signature": "platform_private.b2b_phase1_order_visible(p_order uuid)",
+      "md5": "8504f07fbc3a7975accf919f386d00eb",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.b2b_phase1_order_visible.8504f07f.sql"
+    },
+    "public.b2b_phase1_order_visible(uuid)": {
+      "source_signature": "public.b2b_phase1_order_visible(p_order uuid)",
+      "md5": "8812508716f279a88e3d5a31b15621d8",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.b2b_phase1_order_visible.88125087.sql"
+    },
+    "public._saas_user_has_feature(uuid,text)": {
+      "source_signature": "public._saas_user_has_feature(_uid uuid, _feature_key text)",
+      "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/public._saas_user_has_feature.501dd958.sql"
+    },
+    "public._saas_trg_require_feature()": {
+      "source_signature": "public._saas_trg_require_feature()",
+      "md5": "13ed48832f81cbb35434688ca35fda4b",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/public._saas_trg_require_feature.13ed4883.sql"
+    },
+    "platform_private.c2_accounting_pending_guard()": {
+      "source_signature": "platform_private.c2_accounting_pending_guard()",
+      "md5": "669b19490a7a9700f0158db4b31885ad",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+      "capture": "captured/auth-scoping/platform_private.c2_accounting_pending_guard.669b1949.sql"
+    }
+  }
+}
