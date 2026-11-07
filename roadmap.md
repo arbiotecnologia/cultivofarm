@@ -1,3 +1,8 @@
+## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
+- [ ] Conferir e reproduzir localmente `b2b_credit_config_block`: `credit_limit=0` é limite válido zero e bloqueia exposição positiva; somente NULL é não definido; negativo/NaN permanecem inválidos, sem alterar configuração LIVE.
+- [ ] Revisar request/approve/reject para revalidar ator/escopo e integridade pedido↔condição também após toda espera/lock em `partner_order_payment_terms`, não apenas após `FOR UPDATE` do pedido.
+- [ ] Provar revogação/troca de termos em duas sessões PostgreSQL descartáveis, rollback deny-only e regressões focadas; preservar fila, 38 gatilhos, B3/gates e candidato INATIVO/NÃO APROVADO, sem hosted/publicação/NF/cobrança/envios/delegação.
+
 ## 07/11 18:25 — Revisão 1f4073: snapshot em gramas continua armazenado em kg
 - [x] Reproduzir com writers reais locais uma apresentação de 500 g gravada como `0,500 kg`, pedido canônico de 2 UN, preço/frete preservados e NF parcial fictícia de 1 UN; líquido sem pack segue por `volume_ml` e writer líquido whole-pack negou `PACK_PRODUCT_NOT_SOLID`.
 - [x] Corrigir somente o candidato B4 por gerador: `packaging_peso_liquido_kg_snapshot` é sempre kg; `packaging_unidade_conteudo_snapshot='g'` é unidade de exibição, não a dimensão do valor armazenado. Antes 163/168 com cinco falhas funcionais; depois 177/177: 1 UN=500 g=0,5 kg=1 pack e 1 UN/0,5 g negado sem título/alocação. Preço comercial R$180, juros B3 R$6,52 e frete 1 kg preservados.
