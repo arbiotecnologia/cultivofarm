@@ -113,6 +113,7 @@ def main():
     work.chmod(0o777)
     result_code = 1
     sequence = 0
+    canonical_fixture = {"status": "NOT_RUN"}
 
     try:
         check("boot B3 com gatilhos reais", all(c["ok"] for c in B3.CHECKS), B3.CHECKS)
