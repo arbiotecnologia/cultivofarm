@@ -1,5 +1,6 @@
 {
   "source": "disposable_post_install",
+  "candidate_sha256": "597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef",
   "functions": [
     {
       "acl": "{postgres=X/postgres}",

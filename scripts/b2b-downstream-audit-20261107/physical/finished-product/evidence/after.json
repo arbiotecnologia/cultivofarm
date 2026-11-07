@@ -1,5 +1,5 @@
 {
-  "status": "FAIL",
+  "status": "PASS",
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -73,12 +73,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "9a70b9a6-f607-4fc1-8e7d-75c4ba7f9ed8",
+        "lote_id": "79b983ab-c32b-4d33-8607-57f522a6f7a0",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "1ea2f952-00dd-4f88-9720-2ce2ec435b9e",
+        "movimentacao_id": "3e8939f3-3423-44d4-acc4-fdb092e671a0",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "4e4678ce-5158-404d-9c08-73d2659e400b",
+        "estoque_produto_id": "4ee3c558-7556-4104-91ff-6159cbb6eb65",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -89,12 +89,12 @@
       "detail": {
         "ok": true,
         "replay": true,
-        "lote_id": "9a70b9a6-f607-4fc1-8e7d-75c4ba7f9ed8",
+        "lote_id": "79b983ab-c32b-4d33-8607-57f522a6f7a0",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "1ea2f952-00dd-4f88-9720-2ce2ec435b9e",
+        "movimentacao_id": "3e8939f3-3423-44d4-acc4-fdb092e671a0",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "4e4678ce-5158-404d-9c08-73d2659e400b",
+        "estoque_produto_id": "4ee3c558-7556-4104-91ff-6159cbb6eb65",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -125,12 +125,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "1b9246f1-c98b-4448-b0fc-a64dca151f53",
+        "lote_id": "d4d5e50d-0048-41dc-bb34-c3fdabc4c808",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "d534c04a-3cae-40f8-ba32-71644cad77a8",
+        "movimentacao_id": "a5964242-0720-4a06-9d8a-d829dc28578f",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "1ab36ec9-768f-4c00-b4a5-7f955b651409",
+        "estoque_produto_id": "c1b9eae0-6149-4970-80ba-d475f9051d27",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -156,12 +156,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "fdfc6029-13df-4fd5-a2bb-75b464449c14",
+        "lote_id": "157ea72d-c804-4caf-a6de-c3f3c0b57716",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "6f27c7c9-0155-4f0c-b976-2574c5da84f6",
+        "movimentacao_id": "a9620ea1-fb8d-4a7a-a0bf-4f6037e31bd2",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "c6371b83-e850-43d2-9a1f-9bd2171d544d",
+        "estoque_produto_id": "15ddf7ed-c1f8-40c3-8e54-01227c66f6eb",
         "quantidade_conteudo": 50000.0,
         "conteudo_por_unidade": 25000.0
       }
@@ -187,12 +187,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "d7c3e3ff-8f7f-4ade-9b93-9c0e9be31282",
+        "lote_id": "7f062e46-70aa-48e1-91f4-c9ebcb56ff18",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "e00c1b77-44bd-4574-931f-066a298fb513",
+        "movimentacao_id": "39c288fb-103f-42a8-8c43-0a1f2ca0753d",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "a4fef8e0-a501-4cff-9cb3-da37e1c20194",
+        "estoque_produto_id": "111ae760-3619-4c15-8e3c-19d97c72cc2f",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -218,12 +218,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "3adfd74f-d0d2-4cf6-b41f-f28a812e7ca8",
+        "lote_id": "b7c239fb-008b-4aab-bc3b-b36e3b6f01fb",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "10f871be-38b6-427d-87b5-f0ed5f701be4",
+        "movimentacao_id": "2633bc8a-8c28-49a7-a045-df0ea5c8ce22",
         "embalagem_versao": 1,
         "unidade_conteudo": "ml",
-        "estoque_produto_id": "cda8856b-3d23-4f37-8cd2-f81de1ce8773",
+        "estoque_produto_id": "235ba871-9950-4ddb-a51a-c702481759a1",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -301,12 +301,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "cff2d598-2ff8-42ee-a8df-6726a2b5378c",
+        "lote_id": "7ba233a0-0e48-40fe-b3e1-4cd4cb14a29b",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "8a7780e7-dc7d-44df-9eee-c9efd848e36a",
+        "movimentacao_id": "889083bd-07f5-425f-a07b-07cffff50f20",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "d292a3ee-826b-4445-83d2-1de1ddc8598d",
+        "estoque_produto_id": "22e1bf12-ca6f-4e17-82f0-93743e1ca4e4",
         "quantidade_conteudo": 75.0,
         "conteudo_por_unidade": 25.0
       }
@@ -325,12 +325,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "eafcb704-eba4-4646-a7cd-9c50b1922923",
+        "lote_id": "b6536fa7-e5e9-4b48-aa22-21742ddcdf20",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "0ef02c39-fcfe-4742-931a-4b21013193ec",
+        "movimentacao_id": "b80e716d-b3e1-4fc8-bf2a-c45aff6cbaa4",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "813e502c-7046-4082-94f6-b398da848255",
+        "estoque_produto_id": "70634a03-df92-4b3b-a41a-f9fc576743a9",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -351,12 +351,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "db4d9960-76ae-4ce0-831a-38e31f0ba37c",
+        "lote_id": "67ecb5fe-fbf8-4d6b-8969-9be255bad0c5",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "0a3d2a65-2e41-4ef6-8097-619dafe933f5",
+        "movimentacao_id": "20c1805a-9bb3-48bd-9f51-ae648245f7dc",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "2746d221-a1d6-481d-bddb-aff50a46714c",
+        "estoque_produto_id": "8adfd3eb-0916-4834-9a41-ba95bf055c9d",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -379,7 +379,25 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL ERROR:  P0001: FINISHED_PRE_FUNCTION_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\nTraceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 272, in main\n    assert loaded.returncode == 0, loaded.stderr\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  P0001: FINISHED_PRE_FUNCTION_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n",
+      "name": "POST confirma gate fechado após a bateria",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback deny-only executa sem restaurar grants ou apagar objetos",
+      "status": "PASS"
+    },
+    {
+      "name": "compra interna após rollback permanece fechada",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
+    },
+    {
+      "name": "wrapper público após rollback perde EXECUTE sem reabrir writer",
+      "status": "PASS",
+      "detail": "permission denied for function rpc_finished_product_purchase_entry_v1"
+    },
+    {
+      "name": "rollback preserva compras, estoque, entregas e histórico integralmente",
       "status": "PASS"
     }
   ],
