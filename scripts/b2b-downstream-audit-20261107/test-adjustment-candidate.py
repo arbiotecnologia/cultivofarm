@@ -306,12 +306,39 @@ def main():
                        to_jsonb(src)||jsonb_build_object('id','{terms_id}'::uuid,'partner_order_id','{legacy_id}'::uuid,'approval_status','pending'))).*
                  FROM public.partner_order_payment_terms src WHERE src.partner_order_id='{validated['id']}';
                  ALTER TABLE public.partner_orders ENABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms ENABLE TRIGGER USER; COMMIT;""")
-        psql(f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'")
         check("TODOS os gatilhos reais religados antes das chamadas legadas", triggers_ok())
         before = state(legacy_id)
         r = request(SP.UADMF, legacy_id, "TESTE legado estrangeiro")
-        check("admin estrangeiro negado no legado sem snapshot pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+        check("FSF/admin estrangeiro negado no legado sem snapshot pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação legada preserva estado integral", state(legacy_id) == before)
+        r = request(UCUMUL, legacy_id, "TESTE cumulativo sem vínculo da organização")
+        check("admin+parceiro com apenas partner_users único não vira positivo interno", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+        check("negação do caminho partner_users para admin cumulativo preserva estado", state(legacy_id) == before)
+
+        # Positivo INTERNO SINTÉTICO: usa o caminho real organizations.partner_account_id,
+        # com o parceiro pertencente à mesma organização. Não certifica nenhum admin hospedado.
+        psql(f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'")
+        seller_path = psql(f"""SELECT o.partner_account_id=pa.id
+                                      AND pa.commercial_owner_organization_id=o.id
+                                      AND o.ativo AND o.status='ativa'
+                                      AND pa.ativo AND pa.deleted_at IS NULL
+                               FROM public.organizations o
+                               JOIN public.partner_accounts pa ON pa.id=o.partner_account_id
+                               WHERE o.id='{SP.A}' AND pa.id='{SP.P}'""").stdout.strip()
+        check("fixture do positivo interno tem caminho organização→parceiro→dono vendedor coerente", seller_path == "t", seller_path)
+        internal_roles = psql(f"""SELECT NOT EXISTS(
+                                      SELECT 1 FROM public.user_roles
+                                      WHERE user_id IN ('{SP.UADM}','{UFIN}','{UGC}')
+                                        AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin')
+                                    )""").stdout.strip()
+        check("positivos internos não dependem de superadmin nem papel externo", internal_roles == "t", internal_roles)
+        scope = SP.as_user(SP.UADM, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
+        foreign_scope = SP.as_user(SP.UADMF, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
+        check("escopo real admite o caminho interno sintético e preserva a negação FSF", scope.returncode == 0 and scope.stdout.strip() == "t" and foreign_scope.returncode == 0 and foreign_scope.stdout.strip() == "f", (scope.stdout, scope.stderr, foreign_scope.stdout, foreign_scope.stderr))
+
+        for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
+            r = request(uid, validated["id"], "TESTE positivo interno " + label)
+            check(f"controle sintético {label}: caminho dono vendedor solicita ajuste validado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
 
         def during_lock(label, mutation, token, restore):
             before = state(legacy_id)
