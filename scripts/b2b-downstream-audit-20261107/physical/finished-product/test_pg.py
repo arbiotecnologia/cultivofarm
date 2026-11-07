@@ -120,9 +120,9 @@ def restore_checkpoint():
     ok("writers de confirmação/envio ativados somente no PostgreSQL descartável")
 
 
-def group(os_id, stock_id, quantity, key):
-    observed_os = last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';")
-    observed_stock = last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';")
+def group(os_id, stock_id, quantity, key, observed=None):
+    observed_os = (observed[0] if observed else None) or last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';")
+    observed_stock = (observed[1] if observed else None) or last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';")
     items = [{"item_id": stock_id, "quantidade": quantity, "observed_updated_at": observed_stock}]
     return T.actor() + "SELECT public.rpc_cockpit_criar_entrega_v1('%s','manual','%s'::jsonb,'%s','{}'::jsonb,'%s'::timestamptz);" % (
         os_id, json.dumps(items), key, observed_os)

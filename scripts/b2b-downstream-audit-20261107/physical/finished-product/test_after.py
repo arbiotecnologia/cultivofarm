@@ -46,7 +46,8 @@ def main():
             item = finished(group, unit, per_unit)
             key = group + "-" + unit
             reserved = json.loads(B.last(B.reserve(item["os"], item["stock"], 2, "after-reserve-" + key)))["itens"][0]
-            grouped = json.loads(B.last(B.group(item["os"], reserved, 2, "after-group-" + key)))
+            observed = (B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{item['os']}';"), B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{reserved}';"))
+            grouped = json.loads(B.last(B.group(item["os"], reserved, 2, "after-group-" + key, observed)))
             delivery = grouped["itens"][0]["entrega_id"]
             expected_ml = "NULL" if unit in ("kg", "g") else str(per_unit * 2)
             actual = json.loads(B.last(f"SELECT jsonb_build_object('qty',quantidade_entregue,'content',quantidade_conteudo,'unit',unidade_conteudo,'ml',volume_entregue_ml,'origin',origem_estoque) FROM public.entregas WHERE id='{delivery}';"))
@@ -54,7 +55,7 @@ def main():
             assert (actual["ml"] is None if unit in ("kg", "g") else actual["ml"] == per_unit * 2)
             assert B.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE referencia_tipo='entrega' AND referencia_id='{delivery}' AND acao='expedicao';") == "1"
             B.ok(f"{group} {unit}: pedido/OS → reserva → baixa; 2 UN = {per_unit * 2} {unit}; volume_ml={expected_ml}", actual)
-            replay = json.loads(B.last(B.group(item["os"], reserved, 2, "after-group-" + key)))
+            replay = json.loads(B.last(B.group(item["os"], reserved, 2, "after-group-" + key, observed)))
             assert replay["replay"] is True
             sent = json.loads(B.last(B.send(delivery, "after-send-" + key)))
             assert sent["success"] is True and sent["status"] == "em_rota"
@@ -111,7 +112,7 @@ def main():
     finally:
         out = {"status": "PASS" if status == 0 else "FAIL", "checks": B.CHECKS, "hosted": False, "real_nf_or_receivable": False}
         (RESULTS / "after.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
-        print(f"RESULT {sum(x['ok'] for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
+        print(f"RESULT {sum(x['status'] == 'PASS' for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
     return status
 
 
