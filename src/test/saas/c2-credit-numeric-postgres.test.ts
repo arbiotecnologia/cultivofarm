@@ -1,8 +1,10 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { expect, it } from "vitest";
 
-it("credit arithmetic keeps exact decisions, atomic create and delivery billing containment", () => {
-  const output = execFileSync("python3", ["scripts/owner-orders-20261023/credit-numeric-20261024/test-local.py"], { encoding: "utf8", timeout: 180_000 });
+it("credit arithmetic keeps exact decisions, atomic create and delivery billing containment", async () => {
+  // Assíncrono: um execFileSync > 60 s bloqueia o event loop do worker e estoura o RPC onTaskUpdate do Vitest.
+  const { stdout: output } = await promisify(execFile)("python3", ["scripts/owner-orders-20261023/credit-numeric-20261024/test-local.py"], { encoding: "utf8", timeout: 180_000 });
   expect(output).toContain("TOTAL 123 PASS; synthetic Auth, no hosted JWT/RLS certification");
   expect(output).toContain("credit overflow fixed");
   expect(output).toContain("credit small limit large exposure");
