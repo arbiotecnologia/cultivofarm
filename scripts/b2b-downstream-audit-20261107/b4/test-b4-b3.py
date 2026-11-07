@@ -145,7 +145,7 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
     B3.psql("""GRANT ALL PRIVILEGES ON TABLE public.accounts_receivable TO anon,authenticated,service_role;
 ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;""")
     for index in live["indexes"]:
-        if index["unique"] and not index["name"].endswith("_pkey"):
+        if not index["name"].endswith("_pkey"):
             exists = B3.psql(f"SELECT to_regclass('{index['name']}') IS NOT NULL").stdout.strip()
             if exists != "t":
                 B3.psql(index["definition"] + ";")
