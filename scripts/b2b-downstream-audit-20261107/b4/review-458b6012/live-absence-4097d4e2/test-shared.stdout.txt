@@ -20,4 +20,4 @@ PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
 PASS fixture contábil pendente separada
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  relation "auth.users" does not exist\n')
+FAIL execução sem exceção de harness :: AttributeError("module 'b3_for_b4' has no attribute 'UA'")
