@@ -1,0 +1,78 @@
+{
+  "kind": "DISPOSABLE_PG_CAPTURED_RPC_ALL_REAL_TRIGGERS_NOT_HOSTED_PROOF",
+  "mode": "baseline_reproduction",
+  "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+  "source_function_md5": "f9bf8f543564af480d08e7bebd111b88",
+  "live_source_still_requires_auditor_confirmation": true,
+  "b3_installed_or_modified": false,
+  "real_trigger_count": 38,
+  "synthetic_seams": [
+    "Auth por GUC local",
+    "has_role/b2b_phase1_order_visible e escopo mínimos do harness",
+    "schema e dependências de segundo nível do harness B2/B3",
+    "sem JWT/RLS/PostgREST/Storage"
+  ],
+  "passed": 10,
+  "total": 12,
+  "checks": [
+    {
+      "name": "captura LOCAL identificada sem ambiguidade",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "hash da captura LOCAL f9bf8f54 conferido",
+      "ok": true
+    },
+    {
+      "name": "corpo executado é byte-equivalente à captura LOCAL",
+      "ok": true,
+      "detail": "f9bf8f543564af480d08e7bebd111b88"
+    },
+    {
+      "name": "TODOS os 38 gatilhos reais capturados estão habilitados",
+      "ok": true,
+      "detail": "{'expected': 38, 'missing': []}"
+    },
+    {
+      "name": "pedido fictício canônico criado para a reprodução",
+      "ok": true,
+      "detail": "{'id': 'd4ffbf49-f906-48b0-a4aa-7af9b9d8610d', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-BASELINE', 'payment_terms_id': 'aed490fa-dfca-434e-9768-b3ecf5e4f0a6', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "fixture contábil está pending→pending e com contrato REAL",
+      "ok": false,
+      "detail": "{'origin': 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1', 'order': 'pending|defined', 'terms': 'pending'}"
+    },
+    {
+      "name": "LACUNA CONFIRMADA LOCALMENTE: pending→pending conclui apesar do contrato contábil",
+      "ok": true,
+      "detail": "('', 'pending|adjustment_requested', 'pending|TESTE pending para pending')"
+    },
+    {
+      "name": "pedido fictício validado criado pelo writer canônico",
+      "ok": true,
+      "detail": "{'id': 'daea809c-5113-447c-9285-5d3dc822f0ed', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-SCOPE-BASELINE', 'payment_terms_id': '1cc48dfa-5861-456d-b9c3-a335c3586167', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "controle de escopo não depende do contrato de pendência",
+      "ok": true,
+      "detail": "C2_EXTERNAL_ORDER_ORIGIN_V1"
+    },
+    {
+      "name": "LACUNA DE ESCOPO CONFIRMADA LOCALMENTE: admin de outro tenant altera pedido legado B3",
+      "ok": false,
+      "detail": "('ERROR:  C2_EXTERNAL_OWNER_DENIED\\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 22 at RAISE\\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\\nSQL statement \"UPDATE public.partner_order_payment_terms\\n     SET approval_status = \\'pending\\',\\n         approval_notes = p_notes,\\n         updated_at = now()\\n   WHERE id = v_terms_id\"\\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 25 at SQL statement\\n', '')"
+    },
+    {
+      "name": "controle: o gatilho contábil REAL nega pending→approved",
+      "ok": true,
+      "detail": "ERROR:  C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function platform_private.c2_accounting_pending_guard() line 32 at RAISE\n"
+    },
+    {
+      "name": "nenhum gatilho ficou desabilitado após o controle transacional revertido",
+      "ok": true,
+      "detail": "0"
+    }
+  ]
+}
