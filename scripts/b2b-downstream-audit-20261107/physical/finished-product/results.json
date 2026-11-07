@@ -3,7 +3,7 @@
   "hosted": false,
   "publication": false,
   "real_nf_receivable_accounting_or_delivery": false,
-  "candidate_sha256": "96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e",
+  "candidate_sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd",
   "changed_functions_pinned": 11,
   "immutable_dependency_functions_pinned": 1,
   "immutable_dependency_triggers_pinned": 1,
@@ -22,6 +22,17 @@
     "biological_entry_without_envase_still_denied": true,
     "product_and_micro_cross_tenant_denied": "tenant_catalog_cross_tenant_reference"
   },
+  "review_093712ec": {
+    "source": "relato do auditor; nenhuma consulta hosted pelo agente",
+    "full_pre_stopped_at": "FINISHED_PRE_FUNCTION_DRIFT platform_private.delivery_confirm_apply_v1",
+    "delivery_confirm_apply_v1": "ABSENT",
+    "delivery_send_apply_v1": "ABSENT",
+    "other_six_bodies_owners_acls": "REPORTED_MATCH; todos os demais PRE pins preservados",
+    "foundation_changed_functions": 9,
+    "downstream_changed_functions": 2,
+    "foundation_requires_confirm_or_send": false,
+    "downstream_requires_exact_foundation_post_and_original_dependencies": true
+  },
   "purchase_entry": {
     "function": "platform_private.finished_product_purchase_entry_v1",
     "private_no_client_execute": true,
@@ -36,7 +47,10 @@
   "batteries": {
     "before": {"passed": 17, "total": 17, "exit_code": 0, "meaning": "reproducao_das_lacunas"},
     "after": {"passed": 49, "total": 49, "exit_code": 0, "meaning": "compra_guards_live_informados_downstream_e_rollback_local"},
-    "legacy_candidate": {"passed": 6, "total": 6, "exit_code": 0, "meaning": "biologico_com_candidato_instalado_e_desligado"}
+    "legacy_candidate": {"passed": 6, "total": 6, "exit_code": 0, "meaning": "biologico_com_candidato_instalado_e_desligado"},
+    "null_contract_before": {"passed": 27, "total": 51, "exit_code": 1, "meaning": "24_falhas_funcionais_de_nulidade_antes_da_correcao"},
+    "null_contract_after": {"passed": 51, "total": 51, "exit_code": 0, "meaning": "null_e_dimensoes_fechados_com_gate_on_off_e_seis_callers"},
+    "layers": {"passed": 16, "total": 16, "exit_code": 0, "meaning": "entrada_sem_downstream_e_composicao_posterior_com_dependencias_exatas"}
   },
   "units": {
     "kg": "2 embalagens x 25 kg = 50 kg; volume_entregue_ml NULL",
@@ -44,19 +58,21 @@
     "l": "2 embalagens x 1 L = 2 L; volume_entregue_ml 2000",
     "ml": "2 embalagens x 500 ml = 1000 ml; volume_entregue_ml 1000"
   },
-  "artifact_review": {"passed": 23, "total": 23, "exit_code": 0, "evidence": "evidence/review.json"},
+  "artifact_review": {"passed": 35, "total": 35, "exit_code": 0, "evidence": "evidence/review.json"},
   "whole_pack_fraction_denied": true,
   "partial_cancel_merge": "2 de 3 sacos 25 kg; split/cancelamento/merge = 75 kg; sem litros",
   "b2b_delivery_scope": "DELIVERY_SCOPE_DENIED",
   "rollback": "deny-only; compra fechada; lotes/estoque/entregas/ledger preservados",
   "blockers": [
+    "confirmar instalação das dependências canônicas delivery_confirm_apply_v1/delivery_send_apply_v1 antes da camada downstream; ausência relatada não autoriza remover pins",
     "conferência independente LIVE dos demais corpos, owners, ACLs, trigger, relações e catálogo; MD5s LIVE são relatos do auditor",
     "dados e composição real ARBio, JWT/RLS/Storage/PostgREST/browser não executados",
     "entrada privada sem caller/UI liberado; instalação e operação não aprovadas"
   ],
-  "historical_not_added": "119/119, 21/21 e 123/123 permanecem evidências anteriores separadas; 37/37 anterior está em history/pre-live-entry-guards/",
+  "historical_not_added": "119/119, 21/21 e 123/123 permanecem evidências anteriores separadas; 37/37 anterior está em history/pre-live-entry-guards/; 19/19 físico e as baterias B3/B4 também permanecem separados",
   "superseded_local_candidates": [
     "history/pre-purchase-decision/",
-    "history/pre-live-entry-guards/"
+    "history/pre-live-entry-guards/",
+    "review-093712ec/null-layer/artifacts-before/"
   ]
 }
