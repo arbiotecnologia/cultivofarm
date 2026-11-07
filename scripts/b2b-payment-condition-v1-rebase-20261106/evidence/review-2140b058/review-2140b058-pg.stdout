@@ -1,0 +1,11 @@
+183/185
+FAIL cotação: revogação do vendedor durante espera nega e restaura itens/termos napshot            = v_price,
+      condition_price_snapshot       = v_price,
+      plan_discount_percent_snapshot = 0
+    WHERE id = v_item.id"
+PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 123 at SQL statement
+
+FAIL replay com recibo existente: papel revogado durante espera bloqueia devolução do ACK .c2_external_origin_assert(jsonb,uuid,uuid) line 22 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(v_order.c2_external_origin_snapshot,v_order.partner_id,v_order.cliente_id)"
+PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 54 at PERFORM
+

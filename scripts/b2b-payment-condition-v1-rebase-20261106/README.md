@@ -75,6 +75,11 @@ Costuras declaradas: as do harness B2, `payment_methods`/`financial_categories` 
 pins de colunas trocados só na cópia temporária. A injeção transitória ocorre só no PG descartável e o corpo REAL de crédito
 é restaurado byte a byte e conferido por md5.
 
+Revisão 2140b058: 13 verificações novas cobrem replay com recibo existente sob revogação de papel/perfil/tenant, guards de
+origem interna e externa REAIS, ordem estática e concorrente versão→crédito com create/config_publish/quote, e os dois lados
+do limite zero (AR Bio com condição bloqueia; FSF legado preserva `>0`). As tentativas 183/185 e 184/185 foram preservadas;
+a final passou 185/185, exit 0. Nenhuma suíte Vitest foi repetida neste delta. Evidências em `evidence/review-2140b058/`.
+
 Suíte concorrente: a base limpa `347baf8`, com os mesmos dois workers, reproduziu exatamente **27 unhandled errors**
 (760 arquivos/10.769 testes aprovados; exit 1). 25 eram a fixture `financialOpenSession` sem resposta para
 `tenant_display_name_v1`; 2 eram timeouts internos `onTaskUpdate` do worker. Somente a fixture foi corrigida, sem mudança

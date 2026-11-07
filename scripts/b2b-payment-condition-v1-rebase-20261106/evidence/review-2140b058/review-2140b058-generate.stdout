@@ -1,0 +1,7 @@
+{
+  "01-pre.sql.readonly": "d3ef95f35a02632c6465f50bd7a010e3",
+  "02-install.sql.review": "4e41520aea9041d05d103f570027c8ce",
+  "03-post.sql.readonly": "8e09bf10eab8c5e8af9b67bd3fb86c74",
+  "04-rollback-deny.sql.review": "909708da5d64d0a31d7b22f0e74af946",
+  "prior_schema_sha256": "b1416978e38d792a20e05a05d88f063068b92a138d9a98d382b1df0e59c56a75"
+}
