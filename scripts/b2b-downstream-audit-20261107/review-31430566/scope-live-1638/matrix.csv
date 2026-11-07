@@ -1,0 +1,13 @@
+cenario,resultado,evidencia,risco_pendente
+"partner_visible/actor_scope/access_ready","3 MD5 LOCAIS = RELATO LIVE","adjustment-candidate.json","não é nova leitura LIVE; demais dependências ainda exigem conferência"
+"Admin+parceiro somente com partner_users único","b2b_phase1_scope_denied; ZERO EFEITOS","stdout.txt","controle sintético; não redefine autorização de produção"
+"Admin/financeiro/comercial interno comum","CAMINHO organizations.partner_account_id + DONO COERENTE; SEM SUPERADMIN","adjustment-candidate.json","vínculo é fixture, não elegibilidade ARBio real"
+"Externo validado: administrador/financeiro/comercial","C2_EXTERNAL_ORIGIN_DENIED; ESTADO ÍNTEGRO","stdout.txt","sem positivo validado; guard real não contornado"
+"Legado: administrador/financeiro/comercial","3 CONTROLES POSITIVOS SINTÉTICOS","stdout.txt","não aprova instalação nem prova produção"
+"FSF com vínculo próprio","NEGADO EM VALIDADO E LEGADO; ZERO EFEITOS","adjustment-candidate.json","sem JWT/RLS real"
+"Comprador sem papel autorizado","unauthorized","stdout.txt","sessão real não testada"
+"C2 pending→pending","C2_ACCOUNTING_PENDING; ESTADO PRESERVADO","adjustment-candidate.json","contabilidade real não aprovada/testada"
+"Senha provisória/convite processing/access_valid_after durante lock","TODOS NEGADOS; ZERO EFEITOS","stdout.txt","JWT/iat real não testado"
+"Papel/perfil/vínculo/feature durante lock","TODOS NEGADOS; ZERO EFEITOS","adjustment-candidate.json","assinatura/vínculos sintéticos"
+"PRE/POST/rollback/owner/ACL/38 gatilhos","PASS; SEM GRANT; HISTÓRICO PRESERVADO","stdout.txt","não executado hosted"
+"Consolidado","76/76; EXIT 0; INATIVO/NÃO APROVADO","adjustment-candidate.json; exitcode.txt","nenhuma implantação autorizada"
