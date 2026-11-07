@@ -1,3 +1,8 @@
+## 07/11 16:56 — Complemento B4: normalização fiscal e embalagem inteira
+- [ ] Reproduzir isoladamente 2 embalagens de 25 kg, NF parcial de 1 embalagem=25 kg e tentativas de 0,5 embalagem, 50 kg tratados como 50 embalagens e quantidade/unidade divergentes, sem documento real.
+- [ ] Demonstrar a composição dos guards de snapshot, alocação e normalização kg/g/L/ml; corrigir somente lacuna comprovada, sem converter peso em volume nem abrir grants/writers.
+- [ ] Consolidar evidências, pins, hashes e limites com a revisão B4 458b6012, mantendo tudo inativo e sem hosted/publicação/cobranças/envios/delegação.
+
 ## 07/11 16:45 — Revisão independente B4 458b6012 e decisões financeiras
 - [x] Inventariar 54 alterações B4 com funções compartilhadas, índice, gatilhos, tabela/35 colunas/16 constraints/13 índices/9 gatilhos, owners e ACLs. Manifesto estático 42/42, exit 0; PRE/install/POST/rollback fail-closed e sem sobrescrever desconhecido.
 - [x] Bloquear instalação por baseline LIVE não capturada de `rpc_receivable_money_projection_v1(uuid,integer,integer)`; corpos antigos homônimos não foram promovidos a baseline. Instalação e rollback não concluíram no harness e não causaram revogação parcial.
