@@ -429,7 +429,7 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
     fence_legacy = extract(old_fences, "-- Approval/delivery/production", "REVOKE ALL ON FUNCTION platform_private.b2b_title_insert_fence(),public.generate_b2b_receivable_secure_impl(uuid),public.tg_auto_b2b_receivable() FROM PUBLIC,anon,authenticated,service_role;\n", "legacy writer deny")
     fence_reader = extract(old_fences, "-- Captured broad internal-own-finance reader", "REVOKE ALL ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) FROM PUBLIC,anon,authenticated,service_role;\n", "own reader closed")
 
-    parts = price_objects + [calendar_sql] + tables + [schedule, config, debtor, eligible, origin, partial, credit, payment, generator, shared_guard, shared_trigger, fence_title, fence_legacy, fence_reader]
+    parts = price_objects + [calendar_sql] + tables + [schedule, config, debtor, receivable_scope, eligible, origin, partial, credit, payment, generator, shared_guard, shared_trigger, fence_title, fence_legacy, fence_reader]
     body = "\n".join(parts)
     forbidden = ["create_partner_order_secure(", "simulate_b2b_payment_plan_secure(", "partner_payment_condition_capability_v1", "rpc_create_price_receivable_candidate"]
     if any(x in body for x in forbidden):
