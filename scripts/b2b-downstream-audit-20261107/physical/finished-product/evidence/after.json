@@ -1,5 +1,5 @@
 {
-  "status": "FAIL",
+  "status": "PASS",
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -49,12 +49,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "a1efc580-c972-4f4c-8c95-2944c082e723",
+        "lote_id": "d38d2cd6-48ad-4e04-90ea-96954f703faf",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "5099bc6a-159d-4967-85a2-69fe1439bcd6",
+        "movimentacao_id": "340c4585-31c7-4186-9d42-33a03d19e4d3",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "0453f603-ca73-4e84-9adb-bff84fc5b34b",
+        "estoque_produto_id": "af9a74df-9762-4dec-8c92-38ba247967ec",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -80,12 +80,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "9268f786-5bae-4b59-8cd1-ba13013a4b0c",
+        "lote_id": "ceb8cc93-8467-4baf-8608-4f29361a30ac",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "cd4af061-2ae6-4d97-9154-e26c24826b93",
+        "movimentacao_id": "4b1717df-6fad-4cea-8599-ecb89a6dd854",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "9d1f253c-d6e4-4f08-bbe3-fbd12c6894f6",
+        "estoque_produto_id": "25880bf2-0924-4253-b7be-d549359ee31c",
         "quantidade_conteudo": 50000.0,
         "conteudo_por_unidade": 25000.0
       }
@@ -111,12 +111,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "c694cf5a-4231-41a4-8868-0e5b7e68c5b4",
+        "lote_id": "f337a009-eb8c-43cd-929d-e097fdc5d64b",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "e0c910ad-16ee-4178-9ec5-ccd7a4bea1a0",
+        "movimentacao_id": "fad608fd-efc9-4d9c-bec4-84daa9a09db2",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "f0e35d6c-bae2-4354-9f02-e16ca39ea718",
+        "estoque_produto_id": "1dcb03e2-8f96-41fd-b37c-dffc1246eef3",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -142,12 +142,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "f0b0b8ee-0a6a-4b66-942f-41add7176830",
+        "lote_id": "f0774e3f-9b07-4c44-9462-c55620112bc2",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "cd501dee-3eac-43bd-832b-a390545ed3a9",
+        "movimentacao_id": "712ccf0a-5a4d-436c-93fe-01025cac8d3e",
         "embalagem_versao": 1,
         "unidade_conteudo": "ml",
-        "estoque_produto_id": "5e0cb142-7d55-4260-90d5-5d6c723756be",
+        "estoque_produto_id": "ed46fdd2-49c6-4230-9340-2507cb529936",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -182,12 +182,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "a6e8810f-5e11-4f18-9a65-8b509d689718",
+        "lote_id": "c2ea7d4b-50bd-4da0-a80e-d013a18f270d",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "b52c2088-8b37-427d-8bdf-a12c8b5536af",
+        "movimentacao_id": "06cb456d-cb90-4f0c-83e0-1c601dc37632",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "0e7caf8b-89c0-4daf-8bea-90228ecd46cf",
+        "estoque_produto_id": "2367ba0b-7dfd-4b89-a3e3-f0a6dc315dca",
         "quantidade_conteudo": 75.0,
         "conteudo_por_unidade": 25.0
       }
@@ -202,12 +202,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "ba8e9cff-79f8-4af1-a83c-f38c1a82a88a",
+        "lote_id": "8a636b25-4347-4869-b995-4cee643ef889",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "dc1225da-9d1f-4205-84ba-db73032bb207",
+        "movimentacao_id": "72294b27-5c19-4270-943a-aab646fa5bcd",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "4df5161c-fb42-45c4-a512-b503f5a3c5c3",
+        "estoque_produto_id": "529e6712-5172-47a2-a57b-824a9e7f7eae",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -228,12 +228,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "e6616253-5931-45b9-a961-7a57763d03ea",
+        "lote_id": "59a996f1-57d5-4dc0-a46b-13152ed3154b",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "a1ab9d88-b379-4bfa-8028-f857422d5061",
+        "movimentacao_id": "fb8dcc70-b4f7-42c7-9565-6d70b8bdfb94",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "c026feab-fda7-4b40-9eba-5a5c859a1b4f",
+        "estoque_produto_id": "ea66c9ca-9c74-4739-bf47-ba1c2851e8b6",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -252,7 +252,11 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL {\"ok\": true, \"replay\": false, \"lote_id\": \"8b68df25-a729-459c-b558-3a5e2f656b2f\", \"origem_estoque\": \"compra_produto_acabado_revenda\", \"movimentacao_id\": \"27c5ce47-ac9d-47d6-a38f-208920ba375f\", \"embalagem_versao\": 1, \"unidade_conteudo\": \"g\", \"estoque_produto_id\": \"f1ee3b56-50db-495c-b2a4-634a3c216d30\", \"quantidade_conteudo\": 50000.0, \"conteudo_por_unidade\": 25000.0}\n\nTraceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 192, in main\n    assert not err and '\"replay\": true' in out, out + err\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {\"ok\": true, \"replay\": false, \"lote_id\": \"8b68df25-a729-459c-b558-3a5e2f656b2f\", \"origem_estoque\": \"compra_produto_acabado_revenda\", \"movimentacao_id\": \"27c5ce47-ac9d-47d6-a38f-208920ba375f\", \"embalagem_versao\": 1, \"unidade_conteudo\": \"g\", \"estoque_produto_id\": \"f1ee3b56-50db-495c-b2a4-634a3c216d30\", \"quantidade_conteudo\": 50000.0, \"conteudo_por_unidade\": 25000.0}\n\n",
+      "name": "duas compras concorrentes com a mesma chave geram uma única entrada e replay",
+      "status": "PASS"
+    },
+    {
+      "name": "POST confirma gate fechado após a bateria",
       "status": "PASS"
     }
   ],

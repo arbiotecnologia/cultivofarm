@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.8s
+CHECKPOINT sql_calls=1 elapsed=2.1s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -19,7 +19,7 @@ PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou e
 PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
-CHECKPOINT sql_calls=100 elapsed=13.2s
+CHECKPOINT sql_calls=100 elapsed=15.8s
 PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
 PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
@@ -33,13 +33,6 @@ PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou e
 PASS B2B permanece fechado mesmo com compra e produto acabado válidos
 PASS nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação
 PASS revogação durante espera da compra é revalidada antes de criar lote/estoque
-PASS FAIL {"ok": true, "replay": false, "lote_id": "8b68df25-a729-459c-b558-3a5e2f656b2f", "origem_estoque": "compra_produto_acabado_revenda", "movimentacao_id": "27c5ce47-ac9d-47d6-a38f-208920ba375f", "embalagem_versao": 1, "unidade_conteudo": "g", "estoque_produto_id": "f1ee3b56-50db-495c-b2a4-634a3c216d30", "quantidade_conteudo": 50000.0, "conteudo_por_unidade": 25000.0}
-
-Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 192, in main
-    assert not err and '"replay": true' in out, out + err
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: {"ok": true, "replay": false, "lote_id": "8b68df25-a729-459c-b558-3a5e2f656b2f", "origem_estoque": "compra_produto_acabado_revenda", "movimentacao_id": "27c5ce47-ac9d-47d6-a38f-208920ba375f", "embalagem_versao": 1, "unidade_conteudo": "g", "estoque_produto_id": "f1ee3b56-50db-495c-b2a4-634a3c216d30", "quantidade_conteudo": 50000.0, "conteudo_por_unidade": 25000.0}
-
-
-RESULT 33 / 33 exit 1
+PASS duas compras concorrentes com a mesma chave geram uma única entrada e replay
+PASS POST confirma gate fechado após a bateria
+RESULT 34 / 34 exit 0
