@@ -2,8 +2,8 @@
   "kind": "STATIC_B4_REVIEW_4097D4E2_NO_HOSTED",
   "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "historical_63_added": false,
-  "passed": 49,
-  "total": 49,
+  "passed": 53,
+  "total": 53,
   "checks": [
     {
       "name": "gerado determinístico: b4-candidate.sql.review",
@@ -46,7 +46,7 @@
       "ok": true
     },
     {
-      "name": "manifesto cobre 54 alterações sem contagem de testes sobreposta",
+      "name": "manifesto cobre 55 alterações sem contagem de testes sobreposta",
       "ok": true
     },
     {
@@ -155,6 +155,22 @@
     },
     {
       "name": "origem desconhecida de parceiro continua explicitamente bloqueada",
+      "ok": true
+    },
+    {
+      "name": "crédito usa prova monetária interna no tenant vendedor",
+      "ok": true
+    },
+    {
+      "name": "residual legado não usa projeção do ator comprador",
+      "ok": true
+    },
+    {
+      "name": "projeção pública conserva guard de ator, papel e tenant",
+      "ok": true
+    },
+    {
+      "name": "resolvedor interno é função nova owner-only",
       "ok": true
     },
     {

@@ -4,8 +4,8 @@
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "hosted": "NOT_RUN",
   "historical_candidate_sha256": "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894",
-  "candidate_sha256": "4641ac21f93af52ada05dc28040f83d3267e5942b2f981fd2b237cc437ab43dc",
-  "object_count": 54,
+  "candidate_sha256": "18075e61b8b50db8d2ff1f5c84d076c461286324d440b666ebf691f9d9c07c40",
+  "object_count": 55,
   "objects": [
     {
       "kind": "function",
@@ -31,8 +31,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_allocation_money_row(uuid)",
-        "body_md5": "c41dc00a22c7cc4f494cce9ac69bfae6",
-        "definition_sha256": "e8fe31fc62ac8bf1d4dd0ad5b8030ae07e59efca78acb44d3d3a15f6656870fc",
+        "body_md5": "2c8e4c323d1625bd06b9756c5fc7891d",
+        "definition_sha256": "473cee996de75f3728846e3b9283433c55a0277c7f5b6a0e6d1cc6dfcdf33263",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -136,8 +136,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_legacy_money_row(uuid)",
-        "body_md5": "57c3763d01f16d8f63bff65814239dd0",
-        "definition_sha256": "07016dd06e8e8067ce99b8ec4fabd5b9cebf5044683242e7adb482db1707368c",
+        "body_md5": "72d0b11083230fa663da46df31b7af22",
+        "definition_sha256": "4c0a300bff690b0b216f6372fb2bfa418f6730cad013a619d42b976c5090b118",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -151,8 +151,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_order_residual(uuid)",
-        "body_md5": "ffd5b7695bd51e1ef2913f2759d0821c",
-        "definition_sha256": "99f6f4ae7121f4236ff1c773e17614c1ebbe33f01a3354eda3eb20fa02da03cf",
+        "body_md5": "136fe5095a83b2a776cc34e7b0b022cd",
+        "definition_sha256": "f100122c83f181fb0ee34475e089488f0e78af7461051b9e58adbfbfb5126694",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -166,8 +166,23 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_proven_money_row(uuid)",
-        "body_md5": "85ffe4a63e365b6907eaf0957865f3ef",
-        "definition_sha256": "3aa0cc35983d79c06c27f9fcfb5af1ec274df3bc03a89abcd97d6fccde4f72b6",
+        "body_md5": "8966df7474276af347bfd40c474b52a8",
+        "definition_sha256": "2d2f821b28733f24d8f7be037c07b19fe8bfb6375eb5002a16de7fffa27733d8",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_proven_money_row_internal(uuid,uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_proven_money_row_internal(uuid,uuid)",
+        "body_md5": "b4cfcf65495322ce3c3b911a3597abe2",
+        "definition_sha256": "073f49766824bfee5aab4f042826b0b0117fa362d6a43a20823da11f3e6293ca",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -377,8 +392,8 @@
       },
       "candidate": {
         "signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
-        "body_md5": "7c5d3fa0a4c9516ab1c40b058a529578",
-        "definition_sha256": "6d4beb9edd48e83e3e2bf33d00c28e08a2fdd8331efca239b7b2feabd54325b0",
+        "body_md5": "a185267436d3b07e3048eeb2a9464fc4",
+        "definition_sha256": "4f4a4ead73334f7044a067f541d6c4503673efbe714fd18c9ee9aced0cd3caa3",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
