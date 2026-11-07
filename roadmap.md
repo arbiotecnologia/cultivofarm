@@ -1,8 +1,10 @@
 ## 07/11 16:38 — Achado LIVE de escopo vendedor no ajuste B2B
-- [ ] Rebaixar a evidência 60/60: ela não prova elegibilidade do administrador vendedor nem produção; o positivo superadmin e o vínculo sintético organização-parceiro não sustentam implantação.
-- [ ] Confrontar as capturas reais `b2b_phase1_partner_visible`/`b2b_actor_scope`/`platform_actor_access_ready` com os novos MD5/semântica LIVE; não inventar stubs nem presumir `commercial_owner_organization_id` como escopo.
-- [ ] Refazer a matriz com vendedor versus comprador explícitos: positivo interno somente por caminho dono vendedor comprovado, FSF/comprador sem papel/C2 pending negados e revogações preservadas; marcar NOT_RUN/BLOCKED o que exigir fonte ou fixture real ausente.
-- [ ] Consolidar artefatos pequenos separados para revisão, mantendo o candidato INATIVO/NÃO APROVADO, sem hosted, publicação, instalação ou delegação.
+- [x] Rebaixar a evidência 60/60 a histórico: ela não prova elegibilidade do administrador vendedor nem produção; o positivo superadmin foi removido da matriz atual e script/evidência antigos ficaram preservados separadamente.
+- [x] Confirmar que as capturas locais executadas de `b2b_phase1_partner_visible`, `b2b_actor_scope` e `platform_actor_access_ready` têm exatamente os MD5 relatados LIVE `915f516e…`, `c3f29977…` e `048249c0…`; nenhum stub novo. Isso não é nova leitura LIVE, e as demais fontes continuam pendentes de conferência.
+- [x] Matriz descartável revisada 76/76, exit 0: admin/financeiro/gestor comercial comuns usam `organizations.partner_account_id` com dono comercial coerente, sem superadmin/papel externo; admin+parceiro apenas com `partner_users` único foi negado. FSF com vínculo próprio, comprador sem papel e C2 pending continuaram negados sem efeitos.
+- [x] Resultado restritivo preservado: no externo validado, os três papéis passaram pelo escopo mas foram negados pelo gatilho real `C2_EXTERNAL_ORIGIN_DENIED`, com estado íntegro; positivos ocorreram somente no legado e são controles sintéticos. Revogações sob lock incluíram senha provisória, convite processing e access_valid_after/JWT iat.
+- [x] Artefatos separados em `review-31430566/scope-live-1638/`, candidato SQL inalterado MD5 `7eb3b5be33552f6bd4eecd56796502ed`, INATIVO/NÃO APROVADO; nenhuma operação hospedada, instalação, publicação ou delegação.
+- [ ] Elegibilidade real do vendedor ARBio e reteste autenticado vendedor/comprador/FSF/contabilidade permanecem NOT_RUN com o auditor; nenhum PASS sintético autoriza implantação.
 
 ## 07/11 16:29 — Revisão independente 31430566 do ajuste B2B
 - [x] Substituir as costuras mínimas de `has_role`/`b2b_phase1_order_visible` pelos corpos reais capturados e por 14 dependências de Auth/escopo/SaaS; manter os 38 gatilhos reais e todas as contenções. Evidência antiga 29/29 preservada apenas como histórico.

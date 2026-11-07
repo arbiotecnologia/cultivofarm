@@ -17,9 +17,9 @@ Fonte local identificada: `scripts/delivery-atomic-hardening-20261030/capture/cu
 
 Evidência: `evidence/adjustment-baseline.json`, `evidence-adjustment-baseline-sixth.*`. As tentativas anteriores com erros de harness/fixture foram preservadas.
 
-### Candidato inativo — revisão 31430566, 60/60, exit 0
+### Candidato inativo — revisão 31430566 + achado de escopo 16:38, 76/76, exit 0
 
-A rodada anterior **29/29** foi preservada em `evidence/adjustment-candidate-minimal-29.json`, mas não é suficiente: usava guards mínimos e localizava um pin em `/tmp`. A revisão atual a substitui e permanece **não aprovada e não aplicada**.
+As rodadas **29/29** e **60/60** são históricas e não bastam para implantação. A primeira usava guards mínimos/localização de pin; a segunda ainda usava superadmin como positivo. A revisão de escopo vendedor/comprador passou **76/76**, sem alterar o SQL candidato, e permanece **não aprovada e não aplicada**. Evidência atual: `review-31430566/scope-live-1638/`; evidência 60/60 preservada em `review-31430566/historical-60/`.
 
 `generate-adjustment-fix.py` gera, sem edição manual dos SQL:
 
