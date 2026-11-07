@@ -94,11 +94,8 @@ UPDATE public.partner_users pu SET tenant_id=pa.commercial_owner_organization_id
   FROM public.partner_accounts pa WHERE pa.id=pu.partner_id;
 -- Atores internos comuns: nenhum é superadmin nem recebe papel externo para forçar escopo.
 INSERT INTO public.profiles(user_id,organization_id,ativo,senha_provisoria,created_at) VALUES
-  ('{UFIN}','{SP.A}',true,false,now()),
-  ('{UGC}','{SP.A}',true,false,now()),
   ('{UCUMUL}','{SP.A}',true,false,now());
 INSERT INTO public.user_roles VALUES
-  ('{UFIN}','financeiro'), ('{UGC}','gestor_comercial'),
   ('{UCUMUL}','administrador'), ('{UCUMUL}','parceiro_b2b');
 -- Controle negativo: partner_users único não transforma o cumulativo em vendedor interno,
 -- pois is_valid_b2b_partner_user rejeita papel administrativo na composição capturada.
