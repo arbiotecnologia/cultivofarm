@@ -54,6 +54,11 @@ def call(uid, expression):
     return B3.call(uid, expression)
 
 
+def server_call(uid, expression):
+    """Adaptador local privilegiado: GUC sintético, sem SET ROLE; não prova JWT/RLS."""
+    return B3.out(B3.psql(f"SELECT set_config('request.jwt.claim.sub','{uid}',false) \\g /dev/null\nSELECT ({expression})::text;"))
+
+
 def deny(name, result, token):
     data, error = result
     check(name, data is None and token in (error or ""), error or data)
