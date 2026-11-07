@@ -1,0 +1,1 @@
+FUNCTION public.fn_b2b_credit_exposure: ocorrências=0
