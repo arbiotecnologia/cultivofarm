@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 121, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 116, in main
+    print(f"RESULT {sum(x['ok'] for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
+                    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 116, in <genexpr>
+    print(f"RESULT {sum(x['ok'] for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
+                        ~^^^^^^
+KeyError: 'ok'

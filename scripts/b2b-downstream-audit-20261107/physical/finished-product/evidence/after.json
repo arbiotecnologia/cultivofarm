@@ -1,0 +1,20 @@
+{
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL candidate PRE/install failed\nERROR:  42703: column v.owner_organization_id does not exist\nLINE 4: ...c.lotes l ON l.id=s.lote_id AND l.organization_id=v.owner_or...\n                                                             ^\nLOCATION:  errorMissingColumn, parse_relation.c:3721\n",
+      "status": "PASS"
+    }
+  ],
+  "hosted": false,
+  "real_nf_or_receivable": false
+}

@@ -1,0 +1,10 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.9s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS FAIL candidate PRE/install failed
+ERROR:  42703: column v.owner_organization_id does not exist
+LINE 4: ...c.lotes l ON l.id=s.lote_id AND l.organization_id=v.owner_or...
+                                                             ^
+LOCATION:  errorMissingColumn, parse_relation.c:3721
+
