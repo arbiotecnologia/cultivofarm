@@ -15,7 +15,7 @@
     "writer integral antigo"
   ],
   "passed": 22,
-  "total": 26,
+  "total": 24,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -111,19 +111,9 @@
       "detail": ""
     },
     {
-      "name": "instalação descartável cria projeção nova e passa PRE+POST íntegros",
-      "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:1262: ERROR:  B4_POST_BODY:platform_private.b2b_credit_balances(uuid,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\n"
-    },
-    {
-      "name": "POST confirma exatamente um overload owner-only e metadata completa",
-      "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/03-post.sql.readonly:12: ERROR:  B4_POST_SHARED_BODY:public.fn_b2b_credit_exposure(uuid,numeric,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
-    },
-    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  function \"platform_private.b2b_integration_dependencies()\" does not exist\\nLINE 1: SELECT pg_get_functiondef(\\'platform_private.b2b_integration_...\\n                                  ^\\n')"
+      "detail": "RuntimeError('ERROR:  function \"platform_private.b2b_allocate_document(uuid)\" does not exist\\n')"
     }
   ],
   "hosted": "NOT_RUN",
