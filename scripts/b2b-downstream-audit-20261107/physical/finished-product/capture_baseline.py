@@ -14,6 +14,7 @@ NAMES = [
     "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
     "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "public.fn_sync_os_classica_downstream()",
 ]
 
 def main():
