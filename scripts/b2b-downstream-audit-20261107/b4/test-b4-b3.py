@@ -282,6 +282,11 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         partner_title = B3.u(341)
         partner_result = manual_title(partner_title, CUSTOMER, "8.00")
         check("shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado", partner_result.returncode == 0 and B3.psql(f"SELECT partner_id FROM public.accounts_receivable WHERE id='{partner_title}'").stdout.strip() == str(B3.P), partner_result.stderr[-1200:])
+        deny("impacto compartilhado: título manual de parceiro sem origem monetária bloqueia exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        # Cleanup exclusivamente da fixture descartável, após medir o impacto; não é rollback de produção.
+        B3.psql(f"""UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id IN ('{plain_title}','{partner_title}');
+                    UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ('{plain_title}','{partner_title}');""")
+        check("fixtures MANUAL canceladas após medição não contaminam a bateria seguinte", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")[0] is not None)
 
         # Pedido INTERNO sintético separado: os gatilhos são pausados apenas para montar
         # a fixture e religados antes de qualquer chamada; nenhuma contenção é removida.
