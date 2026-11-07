@@ -298,6 +298,30 @@ WHERE s.partner_id='{B3.P}';""")
         check("fixture contábil pendente separada", B3.psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{pending_order}'").stdout.strip() == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1")
 
         finance_schema()
+        category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
+
+        def manual_title(title_id, customer_id, amount, status="OPEN", due="2026-11-03", partner_id=None):
+            partner_sql = f"'{partner_id}'" if partner_id else "NULL"
+            return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
+              (id,organization_id,origin_type,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
+              VALUES('{title_id}','{B3.A}','MANUAL','{customer_id}',{partner_sql},'TESTE SHARED MANUAL','{category_id}','{amount}','2026-10-01',{due},1,'{status}','{B3.M_BOL}','{B3.UFIN}');""")
+
+        # Os cinco títulos e os conflitos são históricos: existem ANTES do trigger
+        # candidato. Todos os nove gatilhos capturados da tabela seguem ativos;
+        # nenhum UPDATE de partner_id/backfill é usado para montar a forma real.
+        check("trigger compartilhado candidato ainda ausente antes dos históricos", B3.psql("SELECT count(*) FROM pg_trigger WHERE tgname='zz_b2b_shared_credit_guard' AND tgrelid='public.accounts_receivable'::regclass").stdout.strip() == "0")
+        real_results = [manual_title(title, CUSTOMER, str(index + 1), "OVERDUE" if index == 4 else "OPEN", "CURRENT_DATE-30" if index == 4 else "CURRENT_DATE+30")
+                        for index, title in enumerate(REAL_MANUAL)]
+        check("cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL", all(r.returncode == 0 for r in real_results)
+              and B3.psql(f"SELECT count(*) FILTER(WHERE status='OPEN')||'|'||count(*) FILTER(WHERE status='OVERDUE')||'|'||count(*) FILTER(WHERE partner_id IS NULL) FROM public.accounts_receivable WHERE id IN ({','.join(repr(x) for x in REAL_MANUAL)})").stdout.strip() == "4|1|5", [r.stderr[-500:] for r in real_results])
+        historical_results = [
+            manual_title(AMBIGUOUS_TITLE, SHARED_CUSTOMER, "10.00", "CANCELED"),
+            manual_title(CONFLICT_TITLE, CUSTOMER, "11.00", "CANCELED", partner_id=B3.PO),
+            manual_title(OWNER_CONFLICT_TITLE, CUSTOMER, "12.00", "CANCELED", partner_id=B3.PF),
+        ]
+        check("históricos de ambiguidade/conflito são preservados sem correção retroativa", all(r.returncode == 0 for r in historical_results)
+              and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE id IN ('{AMBIGUOUS_TITLE}','{CONFLICT_TITLE}','{OWNER_CONFLICT_TITLE}') AND status='CANCELED'").stdout.strip() == "3", [r.stderr[-500:] for r in historical_results])
+
         pre = runfile(H / "01-pre.sql.readonly")
         if pre.returncode != 0 and "B4_PRE_COLUMNS" in pre.stderr:
             actual_columns = B3.psql("SELECT jsonb_agg(jsonb_build_object('name',column_name,'type',data_type,'default',column_default,'notnull',is_nullable) ORDER BY ordinal_position) FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable'").stdout.strip()
