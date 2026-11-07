@@ -1,0 +1,149 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "candidato e resultados têm o mesmo SHA256",
+      "status": "PASS"
+    },
+    {
+      "name": "status continua inativo e não aprovado",
+      "status": "PASS"
+    },
+    {
+      "name": "nenhuma operação hosted/publicação foi registrada",
+      "status": "PASS"
+    },
+    {
+      "name": "nenhum grant foi adicionado",
+      "status": "PASS"
+    },
+    {
+      "name": "MD5 descartável coincide com o relato LIVE: public.validate_estoque_entrada()",
+      "status": "PASS"
+    },
+    {
+      "name": "MD5 descartável coincide com o relato LIVE: platform_private.estoque_produto_catalog_tenant_guard()",
+      "status": "PASS"
+    },
+    {
+      "name": "guard de tenant não é regravado pelo candidato",
+      "status": "PASS"
+    },
+    {
+      "name": "PRE pina guard e trigger de tenant",
+      "status": "PASS"
+    },
+    {
+      "name": "POST preserva guard e trigger de tenant",
+      "status": "PASS"
+    },
+    {
+      "name": "manifesto separa 11 alterações e uma dependência imutável",
+      "status": "PASS"
+    },
+    {
+      "name": "compra insere entrada agregada com reserva NULL",
+      "status": "PASS"
+    },
+    {
+      "name": "retorno de reserva exige contexto para origem compra",
+      "status": "PASS"
+    },
+    {
+      "name": "guard de imagem também exige reserva NULL na compra",
+      "status": "PASS"
+    },
+    {
+      "name": "entrada biológica sem envase permanece fechada",
+      "status": "PASS"
+    },
+    {
+      "name": "lote do fornecedor é obrigatório e entra no fingerprint/snapshots",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback é deny-only e não destrói histórico",
+      "status": "PASS"
+    },
+    {
+      "name": "before: 17/17 e exit 0",
+      "status": "PASS"
+    },
+    {
+      "name": "before: stderr vazio",
+      "status": "PASS"
+    },
+    {
+      "name": "after: 49/49 e exit 0",
+      "status": "PASS"
+    },
+    {
+      "name": "after: stderr vazio",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy-candidate: 6/6 e exit 0",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy-candidate: stderr vazio",
+      "status": "PASS"
+    },
+    {
+      "name": "evidência anterior 37/37 permanece preservada",
+      "status": "PASS"
+    },
+    {
+      "name": "matriz de nulidade passa com gate ligado e desligado",
+      "status": "PASS"
+    },
+    {
+      "name": "instalação em camadas passa com dependências ausentes e recompostas",
+      "status": "PASS"
+    },
+    {
+      "name": "CHECK e helpers tornam nulidade e resultado booleano explícitos",
+      "status": "PASS"
+    },
+    {
+      "name": "todos os callers negam helper NULL com IS NOT TRUE",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: candidate-foundation.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: candidate-downstream.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: install-foundation.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: install-downstream.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: postflight-foundation.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: postflight-downstream.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "entrada não pressupõe downstream e downstream mantém pins explícitos de ausência",
+      "status": "PASS"
+    },
+    {
+      "name": "manifesto registra as camadas e o estado LIVE relatado sem certificá-lo",
+      "status": "PASS"
+    }
+  ],
+  "passed": 35,
+  "total": 35,
+  "hosted": false,
+  "candidate_sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd"
+}

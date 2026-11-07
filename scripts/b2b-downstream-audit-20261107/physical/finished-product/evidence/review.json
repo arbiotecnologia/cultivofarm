@@ -92,10 +92,58 @@
     {
       "name": "evidência anterior 37/37 permanece preservada",
       "status": "PASS"
+    },
+    {
+      "name": "matriz de nulidade passa com gate ligado e desligado",
+      "status": "PASS"
+    },
+    {
+      "name": "instalação em camadas passa com dependências ausentes e recompostas",
+      "status": "PASS"
+    },
+    {
+      "name": "CHECK e helpers tornam nulidade e resultado booleano explícitos",
+      "status": "PASS"
+    },
+    {
+      "name": "todos os callers negam helper NULL com IS NOT TRUE",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: candidate-foundation.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: candidate-downstream.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: install-foundation.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: install-downstream.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: postflight-foundation.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "artefato de camada presente e não vazio: postflight-downstream.sql.review",
+      "status": "PASS"
+    },
+    {
+      "name": "entrada não pressupõe downstream e downstream mantém pins explícitos de ausência",
+      "status": "PASS"
+    },
+    {
+      "name": "manifesto registra as camadas e o estado LIVE relatado sem certificá-lo",
+      "status": "PASS"
     }
   ],
-  "passed": 23,
-  "total": 23,
+  "passed": 35,
+  "total": 35,
   "hosted": false,
-  "candidate_sha256": "96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e"
+  "candidate_sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd"
 }
