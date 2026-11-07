@@ -8,4 +8,41 @@ PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
 PASS B3 01-pre.sql.readonly
 PASS B3 02-install.sql.review
 PASS B3 03-post.sql.readonly
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  relation "public.entregas" does not exist\nCONTEXT:  compilation of PL/pgSQL function "fn_generate_receivable_from_entrega" near line 4\n')
+PASS publicação B3 usada pelo B4
+PASS publicação B3 usada pelo B4
+PASS piloto B3 restrito ao parceiro fictício
+PASS cotação B3 criada sem título
+PASS resposta de cotação B3 com centavos
+FAIL aprovação comercial canônica do pedido :: ERROR:  function platform_private.c2_order_partner_recipients(uuid) does not exist
+LINE 1: SELECT r FROM platform_private.c2_order_partner_recipients(v...
+                      ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r
+CONTEXT:  PL/pgSQL function approve_partner_order(uuid,text,date) line 94 at FOR over SELECT rows
+
+PASS aprovação canônica dos termos
+FAIL pedido aprovado e economicamente selado :: em_analise_comercial|approved|false
+FAIL aprovação comercial canônica do pedido :: ERROR:  function platform_private.c2_order_partner_recipients(uuid) does not exist
+LINE 1: SELECT r FROM platform_private.c2_order_partner_recipients(v...
+                      ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r
+CONTEXT:  PL/pgSQL function approve_partner_order(uuid,text,date) line 94 at FOR over SELECT rows
+
+PASS aprovação canônica dos termos
+FAIL pedido aprovado e economicamente selado :: em_analise_comercial|approved|false
+PASS fixture contábil pendente separada
+FAIL B4 01-pre.sql.readonly :: 
+FAIL B4 02-install.sql.review :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:1101: ERROR:  B4_INSTALL_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
+
+FAIL B4 03-post.sql.readonly :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/03-post.sql.readonly:10: ERROR:  B4_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
+
+FAIL rerun aborta pelo pin da baseline, sem reinstalar :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:1101: ERROR:  B4_INSTALL_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
+
+FAIL 38 gatilhos reais do pedido continuam habilitados :: 
+PASS B3 create/simulate antigos não foram restaurados nem alterados
+PASS autorização fiscal continua service-only e sem integração de recebível
+FAIL execução sem exceção de harness :: RuntimeError('ERROR:  relation "platform_private.b2b_authorized_documents" does not exist\nLINE 1: INSERT INTO platform_private.b2b_authorized_documents VALUES...\n                    ^\n')
