@@ -397,7 +397,7 @@ def main():
         j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
         check("limite 1018,11 (entre principal 1000 e Price 1036,22): simulação avisa, nunca usa principal para liberar",
               j and Decimal(str(j["credit"]["credit_limit"])) == Decimal("1018.11") and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j)
-        denied("limite 1018,11: create bloqueado pelo total 1036,22 e nada gravado", create(UBC, P3, [L(1000)], j[0]["cart_hash"] if j else "x", "TESTE-PC-BETWEEN", BOL, partner=PC), "credit_limit_exceeded")
+        denied("limite 1018,11: create bloqueado pelo total 1036,22 e nada gravado", create(UBC, P3, [L(1000)], j["cart_hash"] if j else "x", "TESTE-PC-BETWEEN", BOL, partner=PC), "credit_limit_exceeded")
         check("limite entre valores: falha atômica sem idempotência", idem("TESTE-PC-BETWEEN") == "0")
         pc_limit("NULL")
         denied("limite NULL: simulação indisponível (não vira apto)", sim(UBC, P3, [L(1000)], BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
@@ -408,7 +408,7 @@ def main():
         check("zero EXPLÍCITO é limite zero (não ausente nem ilimitado): simulação informa excesso",
               j and Decimal(str(j["credit"]["credit_limit"])) == 0 and j["credit"]["credit_checked"] is True
               and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j)
-        denied("zero explícito: create excede limite, não CREDIT_SETTINGS_INCOMPLETE", create(UBC, P3, [L(1000)], j[0]["cart_hash"] if j else "x", "TESTE-PC-ZERO", BOL, partner=PC), "credit_limit_exceeded")
+        denied("zero explícito: create excede limite, não CREDIT_SETTINGS_INCOMPLETE", create(UBC, P3, [L(1000)], j["cart_hash"] if j else "x", "TESTE-PC-ZERO", BOL, partner=PC), "credit_limit_exceeded")
         for label, value, key in (("negativo", "-1", "NEG"), ("NaN", "'NaN'::numeric", "NAN")):
             pc_limit(value)
             denied(f"limite {label}: simulação bloqueada", sim(UBC, P3, [L(1000)], BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
@@ -428,7 +428,7 @@ BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;"""
         j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
         check("limite exatamente 1036,22: simulação apta com o MESMO total Price", j and Decimal(str(j["final_amount"])) == Decimal("1036.22")
               and not any("excede o limite" in w for w in j["warnings"]), e or j)
-        j, e = create(UBC, P3, [L(1000)], j[0]["cart_hash"] if j else "x", "TESTE-PC-EXACT", BOL, partner=PC)
+        j, e = create(UBC, P3, [L(1000)], j["cart_hash"] if j else "x", "TESTE-PC-EXACT", BOL, partner=PC)
         check("limite exatamente 1036,22: create positivo no limite, sem folga inventada", j and Decimal(str(j["total"])) == Decimal("1036.22"), e or j)
 
         # ---------- negativas / stale ----------
