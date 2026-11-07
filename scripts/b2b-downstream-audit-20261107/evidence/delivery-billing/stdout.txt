@@ -1,0 +1,48 @@
+PASS A fatura própria: 1 título, BILLED, 1 auditoria
+PASS replay devolve mesmo id
+PASS replay sem novo título nem auditoria
+PASS B não reaproveita/obtém id de entrega faturada de A 42501
+PASS B não fatura entrega de A 42501
+PASS B→A sem escrita
+PASS B não marca sem cobrança entrega de A 42501
+PASS entrega sem empresa negada 42501
+PASS consultor sem papel financeiro negado 42501
+PASS sem sessão negado (faturar) 42501
+PASS sem sessão negado (marcar) 42501
+PASS anon sem EXECUTE 42501
+PASS perfil inativo negado 42501
+PASS categoria DESPESA recusada 23514
+PASS categoria RECEITA inativa recusada 23514
+PASS sem forma de pagamento recusado 23514
+PASS forma de pagamento inativa recusada 23514
+PASS recusas de categoria/forma sem escrita
+PASS parcela repetida recusada 23514
+PASS número fora de 1..n recusado 23514
+PASS vencimento nulo recusado 23514
+PASS vencimento antes da emissão recusado 23514
+PASS parcela negativa recusada 23514
+PASS parcelas não-array recusadas 23514
+PASS total NaN recusado 23514
+PASS primeiro vencimento antes da emissão recusado 23514
+PASS recusas de parcelas sem escrita
+PASS parcelas válidas fora de ordem aceitas
+PASS entrega cancelada → PT409 PT409
+PASS entrega não entregue → PT409 PT409
+PASS entrega NOT_BILLABLE → PT409 PT409
+PASS marcar já faturada → PT409 PT409
+PASS marcar própria sem cobrança
+PASS faturar após marcar → PT409 PT409
+PASS falha injetada na auditoria injected
+PASS rollback: nenhum título/parcela/estado
+PASS rollback: nenhuma parcela
+PASS duas chamadas simultâneas: 1 título, 1 auditoria
+PASS segunda chamada recebe mesmo id
+PASS revogação durante espera → 42501
+PASS revogação: nenhuma escrita
+PASS ordem inversa: revogação aguarda o faturamento
+PASS ordem inversa: faturamento comprometido antes, revogação depois
+PASS após revogação, nova chamada negada 42501
+PASS lock_timeout=3s configurado
+PASS gate preso >3s → 55P03 sem escrita 55P03
+PASS timeout sem escrita
+47 checks passed

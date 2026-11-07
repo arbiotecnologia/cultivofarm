@@ -1,0 +1,8 @@
+{
+  "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+  "source_md5": "f9bf8f543564af480d08e7bebd111b88",
+  "scope_md5": "8812508716f279a88e3d5a31b15621d8",
+  "accounting_guard_md5": "669b19490a7a9700f0158db4b31885ad",
+  "candidate_md5": "55996e9496ffb123504adaeaa502c81f",
+  "contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1"
+}

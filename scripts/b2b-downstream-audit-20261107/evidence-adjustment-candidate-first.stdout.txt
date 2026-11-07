@@ -1,0 +1,56 @@
+16/29
+PASS gerador determinístico: 01–04/candidato/captura byte a byte 
+PASS artefatos revisáveis conservam o pin LIVE; localização existe só em /tmp 
+PASS 01 PRE_OK com a captura pinada 
+PASS pin divergente aborta sem trocar a função psql:/tmp/b2b-adjustment-candidate-alkx_fjs/bad-install.sql:17: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+
+FAIL 02 instala o candidato transacionalmente psql:/tmp/b2b-adjustment-candidate-alkx_fjs/02-install.sql.review:92: ERROR:  syntax error at or near "REVOKE"
+LINE 72: REVOKE ALL ON FUNCTION public.request_b2b_payment_terms_adju...
+         ^
+
+FAIL candidato executado tem o MD5 gerado {'actual': 'f9bf8f543564af480d08e7bebd111b88', 'expected': '55996e9496ffb123504adaeaa502c81f'}
+FAIL 03 POST_OK e ACL preservada psql:/tmp/b2b-adjustment-candidate-alkx_fjs/03-post.sql.readonly:14: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+
+PASS rerun sobre o candidato aborta pelo pin da baseline psql:/tmp/b2b-adjustment-candidate-alkx_fjs/02-install.sql.review:92: ERROR:  syntax error at or near "REVOKE"
+LINE 72: REVOKE ALL ON FUNCTION public.request_b2b_payment_terms_adju...
+         ^
+
+PASS TODOS os 38 gatilhos reais habilitados após instalar 
+PASS fixture de pendência criada pelo writer canônico {'id': 'c945b7c5-d9db-48a7-97b8-486e3ec83a98', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '1d7c0455-598e-4830-953f-40e0cf2fd888', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+FAIL C2_ACCOUNTING_PENDING nega pending→pending 
+FAIL negação contábil preserva pedido/termos/auditoria/notificações 
+PASS fixture validada criada pelo writer canônico {'id': 'bb61d154-ab92-473e-bd70-968080d225b3', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'a9b428cf-df4c-4c6f-bf2c-0f39d9363fd6', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+FAIL admin estrangeiro negado pelo escopo canônico no pedido validado ERROR:  C2_EXTERNAL_OWNER_DENIED
+CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 22 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
+SQL statement "UPDATE public.partner_order_payment_terms
+     SET approval_status = 'pending',
+         approval_notes = p_notes,
+         updated_at = now()
+   WHERE id = v_terms_id"
+PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 25 at SQL statement
+
+PASS negação de escopo validado preserva estado integral 
+PASS TODOS os gatilhos reais religados antes das chamadas legadas 
+FAIL admin estrangeiro negado no legado sem snapshot 
+FAIL negação legada preserva estado integral 
+FAIL revogação durante o lock é vista pela segunda autorização 
+FAIL revogação sob espera não grava efeitos 
+PASS mesmo tenant ainda solicita ajuste em pedido validado 
+PASS mesmo tenant ainda solicita ajuste no legado 
+PASS comprador sem papel financeiro continua negado ERROR:  unauthorized
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 12 at RAISE
+
+PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-candidate-alkx_fjs/bad-rollback.sql:16: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+
+FAIL 04 rollback deny-only conclui psql:/tmp/b2b-adjustment-candidate-alkx_fjs/04-rollback-deny.sql.review:16: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+
+FAIL rollback nega EXECUTE ao cliente sem restaurar corpo vulnerável 
+FAIL rollback não apaga nem reescreve histórico 
+PASS TODOS os 38 gatilhos continuam habilitados no fim 
+PASS B3 não foi instalado nem modificado nesta bateria 
