@@ -619,7 +619,7 @@ def main():
             "synthetic_seams": [
                 "Auth por GUC local; auth.jwt sintético apenas para transportar sub/iat ao corpo real de readiness",
                 "esquema mínimo e fixtures de assinatura/feature; resolvedores e gatilhos SaaS são corpos reais capturados",
-                "vínculos organizations.partner_account_id e partner_users montados em schema reduzido; positivos são controles sintéticos e não provam vínculo/elegibilidade de admin vendedor hospedado",
+                "owner comercial, organizations.partner_account_id NULL e partner_users montados em schema reduzido; PASS de componente não prova vínculo/elegibilidade hospedados",
                 "demais dependências de segundo nível B2/B3",
                 "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
                 "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted",
