@@ -552,7 +552,7 @@ ROLLBACK;
                 terms_integrity = psql(f"""SELECT o.financial_approval_status='pending'
                     AND o.payment_condition_status='pending'
                     AND t.partner_order_id='{validated['id']}'
-                    AND t.approval_status=(SELECT approval_status FROM public.partner_order_payment_terms WHERE id='{terms_id}')
+                    AND t.approval_status='pending'
                     AND NOT EXISTS(SELECT 1 FROM public.partner_order_payment_terms x WHERE x.id='{terms_id}' AND x.partner_order_id=o.id)
                     FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id
                     WHERE o.id='{legacy_id}'""").stdout.strip()
