@@ -88,13 +88,18 @@ def canonical_function(src):
     signature, returns, language, attributes, _tag, body = match.groups()
     signature = re.sub(r",\s*", ", ", signature)
     signature = re.sub(r"\bint\b", "integer", signature)
+    signature = re.sub(r"\b(uuid|text|integer|numeric|boolean|date|jsonb)(\s+DEFAULT\s+)NULL(?!::)",
+                       r"\1\2NULL::\1", signature)
     header = f"{signature}\n RETURNS {returns}\n LANGUAGE {language}\n"
+    function_attributes = []
     if re.search(r"\bIMMUTABLE\b", attributes):
-        header += " IMMUTABLE\n"
+        function_attributes.append("IMMUTABLE")
     elif re.search(r"\bSTABLE\b", attributes):
-        header += " STABLE\n"
+        function_attributes.append("STABLE")
     if re.search(r"\bSECURITY DEFINER\b", attributes):
-        header += " SECURITY DEFINER\n"
+        function_attributes.append("SECURITY DEFINER")
+    if function_attributes:
+        header += " " + " ".join(function_attributes) + "\n"
     path = re.search(r"SET search_path\s*(?:=|TO)\s*'([^']*)'", attributes)
     if path:
         header += f" SET search_path TO '{path.group(1)}'\n"
