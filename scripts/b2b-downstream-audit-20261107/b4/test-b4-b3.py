@@ -426,13 +426,14 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
     finally:
         subprocess.run(B3.SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         evidence = {
-            "kind": "DISPOSABLE_B4_REVIEW_458B6012_COMPONENTS_INSTALL_BLOCKED_NOT_HOSTED_E2E",
-            "review": "458b6012",
-            "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+            "kind": "DISPOSABLE_B4_REVIEW_4097D4E2_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
+            "review": "458b6012+4097d4e2",
+            "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
             "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
             "object_manifest": "b4-object-manifest.json",
-            "installation": "BLOCKED_BY_PRE; candidate body executed separately only as disposable component",
-            "shared_impact_scope": ["MANUAL não B2B sem parceiro", "MANUAL não B2B com parceiro", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
+            "live_facts": "USER_REPORTED_READONLY_4097D4E2; projection absent all overloads; writer/index pins matched local captures",
+            "installation": "DISPOSABLE_PRE_INSTALL_POST_PASS; operation dependency remains real always-deny until harness-only stub",
+            "shared_impact_scope": ["MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
             "passed": sum(c["ok"] for c in CHECKS), "total": len(CHECKS), "checks": CHECKS,
             "hosted": "NOT_RUN", "jwt_rls_storage": "NOT_RUN",
             "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
