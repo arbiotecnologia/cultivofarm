@@ -13,6 +13,7 @@ na preparação e os religa antes das RPCs.
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -37,7 +38,7 @@ B = load("b3h_candidate", B3_DIR / "test-local-pg.py")
 G = load("adjustment_generator", HERE / "generate-adjustment-fix.py")
 SP = B.SP
 SP.PORT = "55472"
-EVIDENCE = HERE / "review-31430566/seller-team-1744/decision-candidates.json"
+EVIDENCE = pathlib.Path(os.environ.get("ADJUSTMENT_EVIDENCE_OUT", str(HERE / "review-31430566/seller-team-1744/decision-candidates.json")))
 UFIN, UGC = B.UFIN, B.UGC
 UCUMUL = "20000000-0000-0000-0000-000000000031"
 UMIXC = "20000000-0000-0000-0000-000000000032"
@@ -511,6 +512,57 @@ def main():
             "feature restaurada pelo resolvedor real de entitlements",
             psql(f"SELECT public._saas_user_has_feature('{SP.UADM}','pedidos_b2b')").stdout.strip() == "t",
         )
+
+        # Revisão final 18:33: a espera pode ocorrer DEPOIS do lock do pedido,
+        # no FOR UPDATE dos termos. Exatamente duas sessões: a bloqueadora muda
+        # o estado antes de COMMIT; a chamadora reage e executa ROLLBACK explícito.
+        def during_terms_lock(operation, label, mutation, token, restore):
+            before = state(legacy_id)
+            blocker_result = {}
+            caller_result = {}
+
+            def blocker():
+                blocker_result["r"] = psql(
+                    f"BEGIN; SELECT 1 FROM public.partner_order_payment_terms WHERE id='{terms_id}' FOR UPDATE; SELECT pg_sleep(1.5); {mutation}; COMMIT;",
+                    check=False,
+                )
+
+            def transactional_caller():
+                time.sleep(0.25)
+                function = "request_b2b_payment_terms_adjustment_secure" if operation == "request" else f"{operation}_b2b_payment_terms_secure"
+                command = SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t"]
+                sql = f"""\\set ON_ERROR_STOP off
+SELECT set_config('request.jwt.claim.sub','{SP.UADM}',false);
+BEGIN;
+SELECT public.{function}('{legacy_id}','TESTE terms-lock {label}');
+ROLLBACK;
+"""
+                caller_result["r"] = subprocess.run(command, input=sql, text=True, capture_output=True, timeout=10)
+
+            first = threading.Thread(target=blocker)
+            second = threading.Thread(target=transactional_caller)
+            first.start(); second.start()
+            time.sleep(0.65)
+            check(f"terms-lock {operation}/{label}: duas sessões ainda concorrentes durante a espera", first.is_alive() and second.is_alive())
+            first.join(10); second.join(10)
+            check(f"terms-lock {operation}/{label}: sessão bloqueadora concluiu a mutação", blocker_result.get("r") is not None and blocker_result["r"].returncode == 0, blocker_result.get("r").stderr if blocker_result.get("r") is not None else "sem retorno")
+            revoked = caller_result.get("r")
+            check(f"terms-lock {operation}/{label}: revogação após espera é negada", revoked is not None and token in revoked.stderr, revoked.stderr if revoked is not None else "sem retorno")
+            check(f"terms-lock {operation}/{label}: rollback preserva todo o estado", state(legacy_id) == before)
+            psql(restore)
+
+        # A integridade pedido↔termos já é testada acima nas três operações.
+        # Não usar UPDATE cruzado nesta corrida: com order→terms no chamador e
+        # terms→order pelo gatilho real, a fixture intencionalmente deadlockaria
+        # antes da revalidação, sem provar o predicado pós-espera.
+        for operation in ("request", "approve", "reject"):
+            during_terms_lock(
+                operation,
+                "papel revogado",
+                f"DELETE FROM public.user_roles WHERE user_id='{SP.UADM}' AND role='administrador'",
+                "unauthorized",
+                f"INSERT INTO public.user_roles VALUES ('{SP.UADM}','administrador')",
+            )
         during_lock(
             "approve com papel administrativo revogado",
             f"DELETE FROM public.user_roles WHERE user_id='{SP.UADM}' AND role='administrador'",
@@ -586,7 +638,7 @@ def main():
 
         report = {
             "kind": "DISPOSABLE_PG_CANDIDATE_REAL_AUTH_SCOPING_ALL_REAL_TRIGGERS_NOT_HOSTED_PROOF",
-            "review": "02c23d82",
+            "review": "final-credit-terms-1833",
             "status": "INACTIVE_NOT_APPROVED",
             "source": str(G.SOURCE.relative_to(ROOT)),
             "live_source_still_requires_auditor_confirmation": True,
@@ -602,7 +654,9 @@ def main():
             "baseline_md5": G.BASE_MD5,
             "candidate_md5": expected_candidate_md5,
             "request_candidate_sql_changed_in_seller_scope_review": True,
-            "decision_review": "02c23d82",
+            "decision_review": "final-credit-terms-1833",
+            "post_terms_lock_revalidation": "request/approve/reject releem pedido+termos, pertencimento, escopo e C2 após FOR UPDATE dos termos; revogação em duas sessões com ROLLBACK explícito",
+            "historical_175_evidence": "review-31430566/seller-team-1744/decision-candidates.json",
             "decision_candidates": pins["decision_candidates"],
             "seller_scope_helper": helper_pin,
             "historical_134_evidence": "review-31430566/scope-live-1638/decision-candidates.json",

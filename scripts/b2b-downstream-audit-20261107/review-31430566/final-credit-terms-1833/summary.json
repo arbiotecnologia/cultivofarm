@@ -1,0 +1,57 @@
+{
+  "review": "final-credit-terms-1833",
+  "status": "INACTIVE_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "hosted_writes": false,
+  "real_documents_charges_or_deliveries": false,
+  "before": {
+    "passed": 184,
+    "total": 187,
+    "functional_failures": 3,
+    "exit_code": 1,
+    "evidence": "before/decision-candidates.json",
+    "failures": [
+      "request aceitou papel revogado durante o FOR UPDATE dos termos",
+      "approve aceitou papel revogado durante o FOR UPDATE dos termos",
+      "reject aceitou papel revogado durante o FOR UPDATE dos termos"
+    ]
+  },
+  "candidate": {
+    "install_sha256": "74a924effe1c7597f3f614170bc595a20d0b87ca60d99bb663368e9519404731",
+    "request_md5": "2f28a6e87a8f72ea54cafd0bfd852219",
+    "approve_md5": "4cf1c4ccdb2d1acec705c11bd0cfdfd0",
+    "reject_md5": "99cdc4eb7b286e75d1ce14332c42bf29",
+    "diff": "terms-postlock.diff.txt",
+    "changed_scope": "somente revalidação após o FOR UPDATE dos termos nos três writers",
+    "grants_added": false,
+    "rollback": "DENY_ONLY_PASS"
+  },
+  "post_terms_lock_revalidation": [
+    "relê o pedido vinculado ao mesmo payment_terms_id",
+    "exige que os termos pertençam ao pedido",
+    "repete escopo vendedor, perfil, organização, papéis, readiness, owner e feature",
+    "repete a contenção C2_ACCOUNTING_PENDING"
+  ],
+  "after": {
+    "passed": 187,
+    "total": 187,
+    "exit_code": 0,
+    "evidence": "final/decision-candidates.json",
+    "real_triggers_enabled": 38,
+    "two_session_terms_lock_cases": ["request", "approve", "reject"],
+    "explicit_caller_rollback": true,
+    "state_preserved": true
+  },
+  "harness_attempt_not_counted": {
+    "result": "187/199",
+    "reason": "UPDATE cruzado de termos com locks em ordem inversa ao gatilho real causou deadlock; não prova o predicado pós-espera",
+    "evidence": "before/deadlock-harness-attempt.stdout.txt"
+  },
+  "pending": [
+    "revisão independente do diff e da integridade pedido↔termos",
+    "conferência LIVE de corpos, owners, ACLs e relações",
+    "homologação JWT/RLS/Storage/PostgREST/browser NOT_RUN",
+    "instalação e operação continuam não autorizadas"
+  ]
+}

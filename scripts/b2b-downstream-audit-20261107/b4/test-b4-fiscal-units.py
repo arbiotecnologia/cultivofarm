@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -17,7 +18,7 @@ from decimal import Decimal
 
 H = pathlib.Path(__file__).resolve().parent
 ROOT = H.parents[2]
-OUT = H / "review-458b6012" / "fiscal-units-grams-1f4073"
+OUT = pathlib.Path(os.environ.get("B4_FISCAL_EVIDENCE_OUT", str(H / "review-458b6012" / "fiscal-units-grams-1f4073")))
 PACK = ROOT / "scripts/b2b-solid-packaging-order-20261106"
 
 

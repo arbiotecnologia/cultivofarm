@@ -1,0 +1,54 @@
+{
+  "review": "final-credit-terms-1833",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "hosted_writes": false,
+  "live_credit_settings_changed": false,
+  "real_documents_charges_or_deliveries": false,
+  "before": {
+    "candidate_sha256": "818da9e4f001494bdc50c2265e3adfa9d04ec3cd421454c3e1a2ce7ca17b6a8b",
+    "passed": 107,
+    "total": 112,
+    "functional_failures": 5,
+    "exit_code": 1,
+    "evidence": "before/",
+    "failures": [
+      "credit_limit=0 retornava limite_nao_definido",
+      "exposição zero sem novo valor era CREDIT_SETTINGS_INCOMPLETE",
+      "exposição positiva com limite zero era CREDIT_SETTINGS_INCOMPLETE",
+      "approval_required com limite zero não chegava a LIMIT_EXCEEDED_APPROVAL",
+      "título positivo local com limite zero era CREDIT_NO_LIMIT_DEFINED"
+    ]
+  },
+  "candidate": {
+    "sha256": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
+    "install_sha256": "88e4d394b8719ddd0ddaed3a323a0be8ce89e62c7cc89834c48aaced066ecb5f",
+    "object_count": 56,
+    "changed_functions": [
+      "platform_private.b2b_credit_config_block(uuid)",
+      "public.fn_b2b_credit_exposure(uuid,numeric,uuid)"
+    ],
+    "diff": "credit-zero.diff.txt",
+    "grants_added": false,
+    "rollback": "DENY_ONLY_PRE_POST_PASS"
+  },
+  "confirmed_rule": {
+    "zero": "configuração válida; exposição zero sem novo valor=OK; exposição positiva=LIMIT_EXCEEDED_BLOCK ou LIMIT_EXCEEDED_APPROVAL; título positivo negado sem nascer",
+    "null": "limite_nao_definido e CREDIT_SETTINGS_INCOMPLETE",
+    "negative": "limite_nao_definido e CREDIT_SETTINGS_INCOMPLETE",
+    "nan": "limite_nao_definido e CREDIT_SETTINGS_INCOMPLETE",
+    "zero_no_longer_no_limit_defined": true
+  },
+  "independent_results_not_added": {
+    "shared_b4": {"passed": 112, "total": 112, "exit_code": 0, "evidence": "final/evidence-b4-shared-impact.json"},
+    "static_manifest": {"passed": 61, "total": 61, "exit_code": 0, "evidence": "final/evidence-manifest-tests.json"},
+    "fiscal_units": {"passed": 177, "total": 177, "exit_code": 0, "evidence": "fiscal/evidence-after.json"}
+  },
+  "pending": [
+    "revisão independente do diff e da semântica de limite zero",
+    "impactos READONLY LIVE e reconciliação dos títulos MANUAL sem backfill/cancelamento",
+    "conferência LIVE de corpos, owners, ACLs, triggers e relações",
+    "JWT/RLS/Storage/PostgREST/browser e homologação real NOT_RUN"
+  ]
+}

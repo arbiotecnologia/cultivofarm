@@ -1,0 +1,1097 @@
+{
+  "kind": "DISPOSABLE_PG_CANDIDATE_REAL_AUTH_SCOPING_ALL_REAL_TRIGGERS_NOT_HOSTED_PROOF",
+  "review": "02c23d82",
+  "status": "INACTIVE_NOT_APPROVED",
+  "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+  "live_source_still_requires_auditor_confirmation": true,
+  "auditor_reported_live_md5": {
+    "public.b2b_phase1_order_visible(uuid)": "8812508716f279a88e3d5a31b15621d8",
+    "platform_private.b2b_phase1_order_visible(uuid)": "8504f07fbc3a7975accf919f386d00eb",
+    "public.has_role(uuid,public.app_role)": "4d90e93d521a4819d9085f28d742030f",
+    "platform_private.has_role(uuid,public.app_role)": "c5af5b55de6d79da9b73a33948746ae2",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "915f516e605af7cc14584e2e762a2661",
+    "platform_private.b2b_actor_scope(uuid)": "c3f2997746f24bc2efd15db5c0ccc862",
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84"
+  },
+  "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
+  "candidate_md5": "1698b9355688d0068246292cbe652a79",
+  "request_candidate_sql_changed_in_seller_scope_review": true,
+  "decision_review": "02c23d82",
+  "decision_candidates": {
+    "request": {
+      "signature": "public.request_b2b_payment_terms_adjustment_secure(uuid,text)",
+      "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
+      "candidate_md5": "1698b9355688d0068246292cbe652a79",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "approve": {
+      "signature": "public.approve_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "a61daa8542058bdbf239903d655c2a1b",
+      "candidate_md5": "20fa5eee63ab89fe56cf46b4f9fe01a2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "reject": {
+      "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
+      "candidate_md5": "b1ee789f30e5612a4cd1c27f9dda578f",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    }
+  },
+  "seller_scope_helper": {
+    "signature": "platform_private.b2b_seller_financial_scope_error(uuid,uuid)",
+    "candidate_md5": "c46617ec2a1320c9c05e3da33af8a350",
+    "owner": "postgres",
+    "acl": "{postgres=X/postgres}",
+    "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+    "capture": "candidate/platform_private.b2b_seller_financial_scope_error.sql.review",
+    "client_execute": false
+  },
+  "historical_134_evidence": "review-31430566/scope-live-1638/decision-candidates.json",
+  "supersedes_request_candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+  "positive_internal_seller": {
+    "classification": "DISPOSABLE_COMPONENT_PASS_NOT_HOSTED_PROOF",
+    "path": "partner_accounts.commercial_owner_organization_id=ator.organização; organizations.partner_account_id NULL; zero partner_users",
+    "roles": [
+      "administrador",
+      "financeiro",
+      "gestor_comercial"
+    ],
+    "superadmin_used": false,
+    "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS",
+    "legacy_only": false,
+    "external_validated": "REQUEST_APPROVE_REJECT_PASS_FOR_ALL_THREE_ROLES_WITH_REAL_C2_GUARDS",
+    "forbidden_origin_shape_still_denied": true
+  },
+  "partner_users_semantics": "positivo vendedor não usa partner_users; papéis B2B/cliente/superadmin mistos são negados nas três operações",
+  "dependencies": {
+    "platform_private.platform_actor_access_ready(uuid)": {
+      "source_signature": "platform_private.platform_actor_access_ready(p_user uuid)",
+      "md5": "048249c0c2106c3761e26eacb8d0de84",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.platform_actor_access_ready.048249c0.sql"
+    },
+    "platform_private.h15_actor_organization()": {
+      "source_signature": "platform_private.h15_actor_organization()",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.h15_actor_organization.64e10608.sql"
+    },
+    "public.h15_actor_organization()": {
+      "source_signature": "public.h15_actor_organization()",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.h15_actor_organization.55edafec.sql"
+    },
+    "platform_private.entitlements_for_user(uuid)": {
+      "source_signature": "platform_private.entitlements_for_user(_uid uuid)",
+      "md5": "7f4ec7facaebbdf35444dd490fdebe56",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/platform_private.entitlements_for_user.7f4ec7fa.sql"
+    },
+    "platform_private.has_role(uuid,public.app_role)": {
+      "source_signature": "platform_private.has_role(_user_id uuid, _role app_role)",
+      "md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.has_role.c5af5b55.sql"
+    },
+    "public.has_role(uuid,public.app_role)": {
+      "source_signature": "public.has_role(_user_id uuid, _role app_role)",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.has_role.4d90e93d.sql"
+    },
+    "public.is_platform_superadmin(uuid)": {
+      "source_signature": "public.is_platform_superadmin(_user_id uuid)",
+      "md5": "3dfe79d976821244d9b7a7f893d765f2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.is_platform_superadmin.3dfe79d9.sql"
+    },
+    "public.is_valid_b2b_partner_user(uuid,uuid)": {
+      "source_signature": "public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)",
+      "md5": "0bb0dea04be8ca84c66db7ca6329876c",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.is_valid_b2b_partner_user.0bb0dea0.sql"
+    },
+    "platform_private.b2b_actor_scope(uuid)": {
+      "source_signature": "platform_private.b2b_actor_scope(_uid uuid)",
+      "md5": "c3f2997746f24bc2efd15db5c0ccc862",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/platform_private.b2b_actor_scope.c3f29977.sql"
+    },
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": {
+      "source_signature": "platform_private.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+      "md5": "915f516e605af7cc14584e2e762a2661",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.b2b_phase1_partner_visible.915f516e.sql"
+    },
+    "public.b2b_phase1_partner_visible(uuid,boolean)": {
+      "source_signature": "public.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+      "md5": "6b3defc01a66040146562c60ad224f03",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.b2b_phase1_partner_visible.6b3defc0.sql"
+    },
+    "platform_private.b2b_phase1_order_visible(uuid)": {
+      "source_signature": "platform_private.b2b_phase1_order_visible(p_order uuid)",
+      "md5": "8504f07fbc3a7975accf919f386d00eb",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.b2b_phase1_order_visible.8504f07f.sql"
+    },
+    "public.b2b_phase1_order_visible(uuid)": {
+      "source_signature": "public.b2b_phase1_order_visible(p_order uuid)",
+      "md5": "8812508716f279a88e3d5a31b15621d8",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.b2b_phase1_order_visible.88125087.sql"
+    },
+    "public._saas_user_has_feature(uuid,text)": {
+      "source_signature": "public._saas_user_has_feature(_uid uuid, _feature_key text)",
+      "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/public._saas_user_has_feature.501dd958.sql"
+    },
+    "public._saas_trg_require_feature()": {
+      "source_signature": "public._saas_trg_require_feature()",
+      "md5": "13ed48832f81cbb35434688ca35fda4b",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/public._saas_trg_require_feature.13ed4883.sql"
+    },
+    "platform_private.c2_accounting_pending_guard()": {
+      "source_signature": "platform_private.c2_accounting_pending_guard()",
+      "md5": "669b19490a7a9700f0158db4b31885ad",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+      "capture": "captured/auth-scoping/platform_private.c2_accounting_pending_guard.669b1949.sql"
+    }
+  },
+  "actual_dependency_md5": {
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84",
+    "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
+    "public.h15_actor_organization()": "55edafec08bcc84a00f1526c14334a2c",
+    "platform_private.entitlements_for_user(uuid)": "7f4ec7facaebbdf35444dd490fdebe56",
+    "platform_private.has_role(uuid,public.app_role)": "c5af5b55de6d79da9b73a33948746ae2",
+    "public.has_role(uuid,public.app_role)": "4d90e93d521a4819d9085f28d742030f",
+    "public.is_platform_superadmin(uuid)": "3dfe79d976821244d9b7a7f893d765f2",
+    "public.is_valid_b2b_partner_user(uuid,uuid)": "0bb0dea04be8ca84c66db7ca6329876c",
+    "platform_private.b2b_actor_scope(uuid)": "c3f2997746f24bc2efd15db5c0ccc862",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "915f516e605af7cc14584e2e762a2661",
+    "public.b2b_phase1_partner_visible(uuid,boolean)": "6b3defc01a66040146562c60ad224f03",
+    "platform_private.b2b_phase1_order_visible(uuid)": "8504f07fbc3a7975accf919f386d00eb",
+    "public.b2b_phase1_order_visible(uuid)": "8812508716f279a88e3d5a31b15621d8",
+    "public._saas_user_has_feature(uuid,text)": "501dd958e117d2df8a4d38f6bcbeed04",
+    "public._saas_trg_require_feature()": "13ed48832f81cbb35434688ca35fda4b",
+    "platform_private.c2_accounting_pending_guard()": "669b19490a7a9700f0158db4b31885ad"
+  },
+  "temporary_pin_substitution": false,
+  "real_trigger_count": 38,
+  "b3_installed_or_modified": false,
+  "synthetic_seams": [
+    "Auth por GUC local; auth.jwt sintético apenas para transportar sub/iat ao corpo real de readiness",
+    "esquema mínimo e fixtures de assinatura/feature; resolvedores e gatilhos SaaS são corpos reais capturados",
+    "owner comercial, organizations.partner_account_id NULL e partner_users montados em schema reduzido; PASS de componente não prova vínculo/elegibilidade hospedados",
+    "demais dependências de segundo nível B2/B3",
+    "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
+    "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted"
+  ],
+  "passed": 184,
+  "total": 187,
+  "checks": [
+    {
+      "name": "gerador determinístico: capturas/candidato/01–04/pins byte a byte",
+      "ok": true
+    },
+    {
+      "name": "nenhum artefato executa GRANT ou substitui pin temporário",
+      "ok": true
+    },
+    {
+      "name": "todos os pinos públicos/privados estão no PRE/POST/install/rollback",
+      "ok": true
+    },
+    {
+      "name": "helper vendedor novo tem manifesto de corpo/owner/ACL e nenhum EXECUTE de cliente",
+      "ok": true
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.platform_actor_access_ready(uuid)",
+      "ok": true,
+      "detail": "{'actual': '048249c0c2106c3761e26eacb8d0de84', 'expected': '048249c0c2106c3761e26eacb8d0de84'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.h15_actor_organization()",
+      "ok": true,
+      "detail": "{'actual': '64e10608403238a41a9baf92857ca881', 'expected': '64e10608403238a41a9baf92857ca881'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.h15_actor_organization()",
+      "ok": true,
+      "detail": "{'actual': '55edafec08bcc84a00f1526c14334a2c', 'expected': '55edafec08bcc84a00f1526c14334a2c'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.entitlements_for_user(uuid)",
+      "ok": true,
+      "detail": "{'actual': '7f4ec7facaebbdf35444dd490fdebe56', 'expected': '7f4ec7facaebbdf35444dd490fdebe56'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.has_role(uuid,public.app_role)",
+      "ok": true,
+      "detail": "{'actual': 'c5af5b55de6d79da9b73a33948746ae2', 'expected': 'c5af5b55de6d79da9b73a33948746ae2'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.has_role(uuid,public.app_role)",
+      "ok": true,
+      "detail": "{'actual': '4d90e93d521a4819d9085f28d742030f', 'expected': '4d90e93d521a4819d9085f28d742030f'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.is_platform_superadmin(uuid)",
+      "ok": true,
+      "detail": "{'actual': '3dfe79d976821244d9b7a7f893d765f2', 'expected': '3dfe79d976821244d9b7a7f893d765f2'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.is_valid_b2b_partner_user(uuid,uuid)",
+      "ok": true,
+      "detail": "{'actual': '0bb0dea04be8ca84c66db7ca6329876c', 'expected': '0bb0dea04be8ca84c66db7ca6329876c'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.b2b_actor_scope(uuid)",
+      "ok": true,
+      "detail": "{'actual': 'c3f2997746f24bc2efd15db5c0ccc862', 'expected': 'c3f2997746f24bc2efd15db5c0ccc862'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+      "ok": true,
+      "detail": "{'actual': '915f516e605af7cc14584e2e762a2661', 'expected': '915f516e605af7cc14584e2e762a2661'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.b2b_phase1_partner_visible(uuid,boolean)",
+      "ok": true,
+      "detail": "{'actual': '6b3defc01a66040146562c60ad224f03', 'expected': '6b3defc01a66040146562c60ad224f03'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.b2b_phase1_order_visible(uuid)",
+      "ok": true,
+      "detail": "{'actual': '8504f07fbc3a7975accf919f386d00eb', 'expected': '8504f07fbc3a7975accf919f386d00eb'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.b2b_phase1_order_visible(uuid)",
+      "ok": true,
+      "detail": "{'actual': '8812508716f279a88e3d5a31b15621d8', 'expected': '8812508716f279a88e3d5a31b15621d8'}"
+    },
+    {
+      "name": "corpo real capturado executado: public._saas_user_has_feature(uuid,text)",
+      "ok": true,
+      "detail": "{'actual': '501dd958e117d2df8a4d38f6bcbeed04', 'expected': '501dd958e117d2df8a4d38f6bcbeed04'}"
+    },
+    {
+      "name": "corpo real capturado executado: public._saas_trg_require_feature()",
+      "ok": true,
+      "detail": "{'actual': '13ed48832f81cbb35434688ca35fda4b', 'expected': '13ed48832f81cbb35434688ca35fda4b'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.c2_accounting_pending_guard()",
+      "ok": true,
+      "detail": "{'actual': '669b19490a7a9700f0158db4b31885ad', 'expected': '669b19490a7a9700f0158db4b31885ad'}"
+    },
+    {
+      "name": "01 PRE_OK com corpos/owners/ACLs reais, sem localização",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "pin divergente do writer aborta sem trocar a função",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-review-1eid6p2v/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+    },
+    {
+      "name": "pin privado divergente aborta antes da troca",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-review-1eid6p2v/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 33 at RAISE\n"
+    },
+    {
+      "name": "owner divergente de núcleo privado é detectado",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:53: ERROR:  ADJUSTMENT_OWNER_DRIFT: platform_private.has_role(uuid,public.app_role)\nCONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE\n"
+    },
+    {
+      "name": "ACL divergente de núcleo privado é detectada",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:53: ERROR:  ADJUSTMENT_ACL_DRIFT: platform_private.has_role(uuid,public.app_role)\nCONTEXT:  PL/pgSQL function inline_code_block line 48 at RAISE\n"
+    },
+    {
+      "name": "owner/ACL restaurados ao estado capturado voltam a passar no PRE",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "02 instala o candidato transacionalmente sem GRANT",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "candidato executado tem o MD5 gerado",
+      "ok": true,
+      "detail": "{'actual': '1698b9355688d0068246292cbe652a79', 'expected': '1698b9355688d0068246292cbe652a79'}"
+    },
+    {
+      "name": "helper vendedor executado tem MD5 gerado e ACL totalmente privada",
+      "ok": true,
+      "detail": "{'md5': 'c46617ec2a1320c9c05e3da33af8a350', 'closed': 't'}"
+    },
+    {
+      "name": "helper vendedor não pode ser chamado diretamente por authenticated",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function b2b_seller_financial_scope_error\n"
+    },
+    {
+      "name": "candidato approve executado tem owner/ACL preservados e MD5 gerado",
+      "ok": true,
+      "detail": "{'actual': '20fa5eee63ab89fe56cf46b4f9fe01a2', 'expected': '20fa5eee63ab89fe56cf46b4f9fe01a2'}"
+    },
+    {
+      "name": "candidato reject executado tem owner/ACL preservados e MD5 gerado",
+      "ok": true,
+      "detail": "{'actual': 'b1ee789f30e5612a4cd1c27f9dda578f', 'expected': 'b1ee789f30e5612a4cd1c27f9dda578f'}"
+    },
+    {
+      "name": "03 POST_OK confirma wrappers, privados, owners e ACLs",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "rerun sobre o candidato aborta pelo pin da baseline",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/02-install.sql.review:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+    },
+    {
+      "name": "TODOS os 38 gatilhos reais habilitados após instalar",
+      "ok": true
+    },
+    {
+      "name": "pedido inexistente nega como escopo, sem payment_terms_not_defined permissivo",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 16 at RAISE\n"
+    },
+    {
+      "name": "pedido inexistente não produz efeitos nem oráculo de dados",
+      "ok": true
+    },
+    {
+      "name": "pedido NULL também é negado fail-closed",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 16 at RAISE\n"
+    },
+    {
+      "name": "approve: pedido inexistente não revela payment_terms_not_defined",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 16 at RAISE\n"
+    },
+    {
+      "name": "approve: pedido inexistente não produz efeitos",
+      "ok": true
+    },
+    {
+      "name": "reject: pedido inexistente não revela payment_terms_not_defined",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 16 at RAISE\n"
+    },
+    {
+      "name": "reject: pedido inexistente não produz efeitos",
+      "ok": true
+    },
+    {
+      "name": "fixture de pendência criada pelo writer canônico com guards reais",
+      "ok": true,
+      "detail": "{'id': '77df7457-aea7-4029-88fb-73d33b1ce78b', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': 'c9f554c8-e12e-42bf-861e-d9fae440eff8', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível",
+      "ok": true,
+      "detail": "ERROR:  C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 34 at RAISE\n"
+    },
+    {
+      "name": "negação contábil preserva pedido/termos/auditoria/notificações",
+      "ok": true
+    },
+    {
+      "name": "approve: pendência contábil é negada antes de qualquer decisão",
+      "ok": true,
+      "detail": "ERROR:  C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 30 at RAISE\n"
+    },
+    {
+      "name": "approve: pendência contábil preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject: pendência contábil é negada antes de qualquer decisão",
+      "ok": true,
+      "detail": "ERROR:  C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 34 at RAISE\n"
+    },
+    {
+      "name": "reject: pendência contábil preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "fixture validada criada pelo writer canônico com guards reais",
+      "ok": true,
+      "detail": "{'id': '4a064bf2-acd8-48cc-8190-1650be9e2e35', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '05d7c48e-79e7-4aa0-80f3-96ee9aad1ce1', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "FSF/admin estrangeiro com vínculo próprio é negado no pedido validado",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "negação de escopo validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve: FSF/admin estrangeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "approve: negação estrangeira preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject: FSF/admin estrangeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "reject: negação estrangeira preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "TODOS os gatilhos reais religados antes das chamadas legadas",
+      "ok": true
+    },
+    {
+      "name": "FSF/admin estrangeiro negado no legado sem snapshot pelo escopo real",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "negação legada preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve: FSF negado no legado pelo escopo real",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "approve: negação FSF no legado preserva estado",
+      "ok": true
+    },
+    {
+      "name": "reject: FSF negado no legado pelo escopo real",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "reject: negação FSF no legado preserva estado",
+      "ok": true
+    },
+    {
+      "name": "request: administrador+parceiro_b2b é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "request: mistura administrador+parceiro_b2b preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve: administrador+parceiro_b2b é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "approve: mistura administrador+parceiro_b2b preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject: administrador+parceiro_b2b é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "reject: mistura administrador+parceiro_b2b preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "request: administrador+cliente_produtor é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "request: mistura administrador+cliente_produtor preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve: administrador+cliente_produtor é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "approve: mistura administrador+cliente_produtor preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject: administrador+cliente_produtor é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "reject: mistura administrador+cliente_produtor preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "request: administrador+superadmin é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "request: mistura administrador+superadmin preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve: administrador+superadmin é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "approve: mistura administrador+superadmin preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject: administrador+superadmin é negado mesmo no tenant vendedor",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "reject: mistura administrador+superadmin preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "fixture vendedora tem owner direto, organizations.partner_account_id NULL e zero partner_users",
+      "ok": true,
+      "detail": "t"
+    },
+    {
+      "name": "positivos internos não dependem de superadmin nem papel externo/cliente",
+      "ok": true,
+      "detail": "t"
+    },
+    {
+      "name": "administrador: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/administrador: positivo C2 validado com guard de origem ativa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/administrador: pedido e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "administrador: nova solicitação não duplica a condição",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/administrador: positivo C2 validado com guard de origem ativa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/administrador: pedido e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "financeiro: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/financeiro: positivo C2 validado com guard de origem ativa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/financeiro: pedido e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "financeiro: nova solicitação não duplica a condição",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/financeiro: positivo C2 validado com guard de origem ativa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/financeiro: pedido e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/gestor_comercial: positivo C2 validado com guard de origem ativa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/gestor_comercial: pedido e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: nova solicitação não duplica a condição",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/gestor_comercial: positivo C2 validado com guard de origem ativa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/gestor_comercial: pedido e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "guard C2 real continua negando organizations.partner_account_id no parceiro do pedido",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 45 at SQL statement\n"
+    },
+    {
+      "name": "negação da guarda C2 preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "request: condição associada a outro pedido é negada",
+      "ok": true,
+      "detail": "ERROR:  payment_terms_order_mismatch\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 42 at RAISE\n"
+    },
+    {
+      "name": "request: mismatch não altera pedido/condição/auditoria/notificações",
+      "ok": true
+    },
+    {
+      "name": "approve: condição associada a outro pedido é negada",
+      "ok": true,
+      "detail": "ERROR:  payment_terms_order_mismatch\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 38 at RAISE\n"
+    },
+    {
+      "name": "approve: mismatch não altera pedido/condição/auditoria/notificações",
+      "ok": true
+    },
+    {
+      "name": "reject: condição associada a outro pedido é negada",
+      "ok": true,
+      "detail": "ERROR:  payment_terms_order_mismatch\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 42 at RAISE\n"
+    },
+    {
+      "name": "reject: mismatch não altera pedido/condição/auditoria/notificações",
+      "ok": true
+    },
+    {
+      "name": "pedido do vendedor sem condição falha fechado",
+      "ok": true,
+      "detail": "ERROR:  payment_terms_not_defined\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 36 at RAISE\n"
+    },
+    {
+      "name": "condição ausente não produz efeitos",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: papel administrativo é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: papel administrativo preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: perfil inativado é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: perfil inativado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: senha provisória reaberta é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: senha provisória reaberta preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: dono comercial vendedor revogado é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: dono comercial vendedor revogado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: organização vendedora inativada é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: organização vendedora inativada preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: parceiro vendedor inativado é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: parceiro vendedor inativado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: papel B2B misto concedido durante o lock é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: papel B2B misto concedido durante o lock preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: convite administrativo em processing é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: convite administrativo em processing preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: access_valid_after posterior ao JWT iat é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: access_valid_after posterior ao JWT iat preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: feature pedidos_b2b revogada é negada",
+      "ok": true,
+      "detail": "ERROR:  saas_feature_not_entitled\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: feature pedidos_b2b revogada preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "feature restaurada pelo resolvedor real de entitlements",
+      "ok": true
+    },
+    {
+      "name": "terms-lock request/papel revogado: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock request/papel revogado: sessão bloqueadora concluiu a mutação",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock request/papel revogado: revogação após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock request/papel revogado: rollback preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "terms-lock approve/papel revogado: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock approve/papel revogado: sessão bloqueadora concluiu a mutação",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock approve/papel revogado: revogação após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock approve/papel revogado: rollback preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "terms-lock reject/papel revogado: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock reject/papel revogado: sessão bloqueadora concluiu a mutação",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock reject/papel revogado: revogação após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock reject/papel revogado: rollback preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: approve com papel administrativo revogado é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 28 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: approve com papel administrativo revogado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: reject com dono comercial revogado é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: reject com dono comercial revogado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: approve com organização inativada é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 28 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: approve com organização inativada preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: reject com feature revogada é negada",
+      "ok": true,
+      "detail": "ERROR:  saas_feature_not_entitled\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: reject com feature revogada preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "controle sintético administrador: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "controle sintético financeiro: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "controle sintético gestor_comercial: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "administrador: prepara approve somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/administrador: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/administrador: estados financeiro e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "administrador: prepara reject somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/administrador: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/administrador: estados financeiro e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "financeiro: prepara approve somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/financeiro: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/financeiro: estados financeiro e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "financeiro: prepara reject somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/financeiro: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/financeiro: estados financeiro e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: prepara approve somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/gestor_comercial: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/gestor_comercial: estados financeiro e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: prepara reject somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/gestor_comercial: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/gestor_comercial: estados financeiro e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "comprador sem papel financeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "approve: comprador sem papel financeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "approve: negação do comprador preserva estado",
+      "ok": true
+    },
+    {
+      "name": "reject: comprador sem papel financeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE\n"
+    },
+    {
+      "name": "reject: negação do comprador preserva estado",
+      "ok": true
+    },
+    {
+      "name": "rollback com pin divergente aborta sem revogar",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-review-1eid6p2v/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+    },
+    {
+      "name": "04 rollback deny-only conclui",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback nega EXECUTE ao cliente sem restaurar corpo vulnerável",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function request_b2b_payment_terms_adjustment_secure\n"
+    },
+    {
+      "name": "rollback fecha approve sem restaurar corpo anterior",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function approve_b2b_payment_terms_secure\n"
+    },
+    {
+      "name": "rollback fecha reject sem restaurar corpo anterior",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function reject_b2b_payment_terms_secure\n"
+    },
+    {
+      "name": "rollback não apaga nem reescreve histórico",
+      "ok": true
+    },
+    {
+      "name": "rollback mantém helper sem EXECUTE de cliente",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function b2b_seller_financial_scope_error\n"
+    },
+    {
+      "name": "TODOS os 38 gatilhos continuam habilitados no fim",
+      "ok": true
+    },
+    {
+      "name": "B3 não foi instalado nem modificado nesta bateria",
+      "ok": true
+    }
+  ]
+}

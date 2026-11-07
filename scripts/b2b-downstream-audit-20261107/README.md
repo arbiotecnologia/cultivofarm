@@ -43,6 +43,10 @@ Além dos quatro pinos anteriores, os MD5 LIVE relatados de `b2b_phase1_partner_
 
 Os 76 testes anteriores foram preservados em `review-31430566/historical-76/` e não somados. Request/approve/reject agora compartilham o mesmo escopo canônico, `FOR UPDATE`, reautorização pós-lock e bloqueio `C2_ACCOUNTING_PENDING`, com owner/ACL preservados e sem grants. FSF, comprador, pedido ausente e pendência contábil foram negados sem efeitos; revogações durante lock também fecharam approve/reject. Nos três papéis internos, positivos ocorreram somente no legado sintético; no externo validado, o guard real de origem negou todos. Rollback deny-only fechou os três writers sem apagar histórico. Evidência atual: `review-31430566/scope-live-1638/decision-candidates.json`; **INATIVO/NÃO APROVADO**.
 
+### Revisão final 18:33 — revalidação após lock dos termos, 187/187
+
+Antes **184/187, exit 1**: request/approve/reject aceitaram papel revogado durante o `FOR UPDATE` dos termos. Os três candidatos agora releem pedido+termos, pertencimento, escopo vendedor e C2 também depois dessa espera. Depois **187/187, exit 0**, com duas sessões, rollback explícito e todos os 38 gatilhos reais habilitados. Evidência e hashes em `review-31430566/final-credit-terms-1833/`; candidatos continuam INATIVOS/NÃO APROVADOS. Uma tentativa de troca cruzada com ordem inversa de locks causou deadlock e foi arquivada separadamente, sem promovê-la a prova do predicado pós-espera.
+
 ## 2. Resultados downstream executados
 
 | Componente | Resultado atual | Evidência | Limite |

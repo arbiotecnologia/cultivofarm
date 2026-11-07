@@ -3,9 +3,9 @@ DO $guard$
 DECLARE d record;
 BEGIN
   FOR d IN SELECT * FROM (VALUES
-    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '1698b9355688d0068246292cbe652a79', 'postgres', '04e771375e06113da45adc7fa45d56af'),
-    ('public.approve_b2b_payment_terms_secure(uuid,text)', '20fa5eee63ab89fe56cf46b4f9fe01a2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
-    ('public.reject_b2b_payment_terms_secure(uuid,text)', 'b1ee789f30e5612a4cd1c27f9dda578f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '2f28a6e87a8f72ea54cafd0bfd852219', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.approve_b2b_payment_terms_secure(uuid,text)', '4cf1c4ccdb2d1acec705c11bd0cfdfd0', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.reject_b2b_payment_terms_secure(uuid,text)', '99cdc4eb7b286e75d1ce14332c42bf29', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.h15_actor_organization()', '64e10608403238a41a9baf92857ca881', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('public.h15_actor_organization()', '55edafec08bcc84a00f1526c14334a2c', 'postgres', '04e771375e06113da45adc7fa45d56af'),
