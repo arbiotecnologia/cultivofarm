@@ -316,6 +316,11 @@ def main():
         r = request(SP.UADMF, validated["id"], "TESTE estrangeiro")
         check("FSF/admin estrangeiro com vínculo próprio é negado no pedido validado", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação de escopo validado preserva estado integral", state(validated["id"]) == before)
+        for kind in ("approve", "reject"):
+            before_decision = state(validated["id"])
+            r = decision(SP.UADMF, kind, validated["id"], "TESTE estrangeiro")
+            check(f"{kind}: FSF/admin estrangeiro continua negado", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+            check(f"{kind}: negação estrangeira preserva estado integral", state(validated["id"]) == before_decision)
 
         # Fixture legada sem origem; preparação explícita, todos os gatilhos religados antes das chamadas.
         legacy_id = "10000000-0000-0000-0000-000000000001"
