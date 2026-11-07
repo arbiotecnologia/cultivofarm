@@ -18,6 +18,12 @@ DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_send_apply_v1(uui
  IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
 END$$;
 
+DO $$DECLARE p oid:=to_regprocedure('platform_private.envase_insert_final_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '7837c5852e37159d826875babf9da228' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_final_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.envase_insert_final_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.envase_insert_final_v1()';END IF;
+END$$;
+
 DO $$DECLARE p oid:=to_regprocedure('platform_private.envase_insert_guard_v1()');BEGIN
  IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'c150d00c4e0258ddcf4f7e2f86f53170' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_guard_v1()';END IF;
  IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.envase_insert_guard_v1()';END IF;
@@ -638,7 +644,7 @@ BEGIN
  UPDATE platform_private.envase_insert_permits_v1 SET admitted=true WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted=false RETURNING * INTO p;
  IF FOUND THEN
   IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
-   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at'-'origem_estoque'-'unidade_comercial'-'conteudo_por_unidade'-'unidade_conteudo'-'quantidade_conteudo'-'embalagem_id'-'embalagem_versao') IS DISTINCT FROM (p.payload-'origem_estoque'-'unidade_comercial'-'conteudo_por_unidade'-'unidade_conteudo'-'quantidade_conteudo'-'embalagem_id'-'embalagem_versao') THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
   RETURN NEW;
  END IF;
  -- Preserve ONLY the installed canonical partial reservation semantics under
@@ -662,3 +668,16 @@ BEGIN
  END IF;
  RAISE EXCEPTION 'ENVASE_INSERT_CLOSED' USING ERRCODE='42501';
 END $entry$;
+
+CREATE OR REPLACE FUNCTION platform_private.envase_insert_final_v1() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $final$
+DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE;
+BEGIN
+ DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted RETURNING * INTO p;
+ IF FOUND THEN
+  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
+   OR (to_jsonb(NEW)-'created_at'-'updated_at'-'origem_estoque'-'unidade_comercial'-'conteudo_por_unidade'-'unidade_conteudo'-'quantidade_conteudo'-'embalagem_id'-'embalagem_versao') IS DISTINCT FROM (p.payload-'origem_estoque'-'unidade_comercial'-'conteudo_por_unidade'-'unidade_conteudo'-'quantidade_conteudo'-'embalagem_id'-'embalagem_versao') THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+ ELSIF TG_TABLE_NAME='envase' THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISSING' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $final$;

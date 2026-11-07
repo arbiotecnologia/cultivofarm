@@ -1,21 +1,9 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=1.7s
+CHECKPOINT sql_calls=1 elapsed=2.3s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado e gate permanece desligado para o legado
-PASS FAIL ERROR:  ENVASE_INSERT_PERMIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE
-SQL statement "INSERT INTO public.estoque_produto (id,
-        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,
-        validade, status, reservado_para_os_id, reservado_para_os_tipo,
-        reservado_para_cliente_id, reservado_para_partner_order_id,
-        quantidade_reservada, reservado_por, reservado_em
-      ) VALUES (
-        v_estoque_id,v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,
-        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,
-        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,
-        v_reservadas, v_uid, now()
-      ) RETURNING id"
-PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 172 at SQL statement
-
-RESULT 4 / 4 exit 1
+PASS legado biológico mantém programação, envio e confirmação canônicos com gate desligado
+PASS legado biológico mantém cancelamento e recomposição de estoque
+PASS legado sem envase continua negado pelo writer físico
+RESULT 6 / 6 exit 0

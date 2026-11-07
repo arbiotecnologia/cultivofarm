@@ -6,6 +6,7 @@
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
     "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
     "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "platform_private.envase_insert_final_v1()",
     "platform_private.envase_insert_guard_v1()",
     "public.fn_sync_os_classica_downstream()",
     "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
@@ -28,20 +29,20 @@
   "new_grants": [],
   "files": {
     "baseline.json": {
-      "sha256": "d0b2b5941de00828edaae7857020fdcd3ec9bfbf895bb4568ccf4ea108fbd982",
-      "bytes": 2210
+      "sha256": "53da0d92f309e5b7022d5ae29a8b06e2067fc2b5da86098b5d04ce81cb51b748",
+      "bytes": 2400
     },
     "candidate.sql.review": {
-      "sha256": "2b018513470c17b8079f154865214a76f165ddf11ee5d24d08148ca8155e7155",
-      "bytes": 49944
+      "sha256": "551824126877d3ec589b998e472a15d1c428f17b5ae2f8fd3673497af6ed0081",
+      "bytes": 51303
     },
     "install.sql.review": {
-      "sha256": "87546872d608235a7423aac3444785040e594dca193d65d3a945142cc5bf908c",
-      "bytes": 57280
+      "sha256": "324dee9dc944627402fbe0c8096ab89cfb608e1690ed9d2c47a277ec4d9c4dec",
+      "bytes": 59352
     },
     "postflight.sql.review": {
-      "sha256": "4935e6ebf5475ff5b97d70cc0364b198f62848fd8158ba09b6e47d403db0ebe7",
-      "bytes": 1337
+      "sha256": "aa62dabae454dab2639c6f3e1438d16cb1e1dc1a7d13bdd9c1a4a3801c9c4150",
+      "bytes": 1488
     },
     "rollback.sql.review": {
       "sha256": "be726eba72da3eed65ef94d2b4a3be2dc1015615caf0c11c1635cd0d1df1b2f5",
