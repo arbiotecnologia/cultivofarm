@@ -3,8 +3,8 @@
   "phase": "before",
   "status": "FAIL",
   "exit_code": 1,
-  "passed": 4,
-  "total": 5,
+  "passed": 11,
+  "total": 12,
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -26,9 +26,47 @@
       "detail": "10000000-0000-4000-8000-000000001122"
     },
     {
+      "name": "quimico: entrega sem unidade de conteúdo é fechada antes da baixa",
+      "status": "PASS",
+      "detail": "COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO"
+    },
+    {
+      "name": "quimico: nenhuma entrega/movimento de expedição após a negação",
+      "status": "PASS",
+      "detail": true
+    },
+    {
+      "name": "fertilizante: pedido/OS → reserva canônica de 2 embalagens sem envase",
+      "status": "PASS",
+      "detail": "10000000-0000-4000-8000-000000001132"
+    },
+    {
+      "name": "fertilizante: entrega sem unidade de conteúdo é fechada antes da baixa",
+      "status": "PASS",
+      "detail": "COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO"
+    },
+    {
+      "name": "fertilizante: nenhuma entrega/movimento de expedição após a negação",
+      "status": "PASS",
+      "detail": true
+    },
+    {
+      "name": "REPRODUZIDO: 50 kg em volume_total viram 50.000 ml; peso não é unidade válida",
+      "status": "PASS",
+      "detail": {
+        "quantity": 2,
+        "volume_ml": 50000.0
+      }
+    },
+    {
+      "name": "apresentação L: pedido/OS → reserva → baixa com 2 UN e 2.000 ml",
+      "status": "PASS",
+      "detail": "af6d77e1-7e47-4dd0-b3a0-964f59e81f32"
+    },
+    {
       "name": "execução terminou no ponto concreto",
       "status": "FAIL",
-      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 205, in main\n    reject(item[\"name\"] + \": entrega sem unidade de conteúdo é fechada antes da baixa\",\n    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n           T.actor() + group(item[\"os\"], reserved, 2, \"finished-group-\" + item[\"name\"]),\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n           \"23514\", \"COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 74, in reject\n    raise AssertionError(name + \" :: \" + result.stdout[-1000:] + result.stderr[-2000:])\nAssertionError: quimico: entrega sem unidade de conteúdo é fechada antes da baixa :: ERROR:  P0001: COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO\nCONTEXT:  PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 89 at RAISE\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 105 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
+      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 227, in main\n    sent = json.loads(last(send(delivery, \"liquid\")))\n                      ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 57, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 53, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_SEND_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_send_apply_v1(uuid,timestamp with time zone,text) line 35 at RAISE\nSQL function \"rpc_entrega_enviar_manual_v1\" statement 1\n\n"
     }
   ],
   "raw": [
@@ -43,9 +81,15 @@
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  P0001: COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO\nCONTEXT:  PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 89 at RAISE\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 105 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "name": "fertilizante: entrega sem unidade de conteúdo é fechada antes da baixa",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO\nCONTEXT:  PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 89 at RAISE\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 105 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
-  "elapsed_seconds": 10.161,
+  "elapsed_seconds": 10.773,
   "synthetic_seams": [
     "Auth por claims/GUC locais, sem JWT/RLS/PostgREST/Storage real",
     "fixtures upstream com session_replication_role=replica; writers testados com triggers habilitados",

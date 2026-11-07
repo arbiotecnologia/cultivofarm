@@ -1,17 +1,28 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.2s
+CHECKPOINT sql_calls=1 elapsed=2.6s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS função real de entrada exige envase quando não há writer de produto acabado
 PASS quimico: pedido/OS → reserva canônica de 2 embalagens sem envase
+PASS quimico: entrega sem unidade de conteúdo é fechada antes da baixa
+PASS quimico: nenhuma entrega/movimento de expedição após a negação
+PASS fertilizante: pedido/OS → reserva canônica de 2 embalagens sem envase
+PASS fertilizante: entrega sem unidade de conteúdo é fechada antes da baixa
+PASS fertilizante: nenhuma entrega/movimento de expedição após a negação
+PASS REPRODUZIDO: 50 kg em volume_total viram 50.000 ml; peso não é unidade válida
+PASS apresentação L: pedido/OS → reserva → baixa com 2 UN e 2.000 ml
 FAIL execução terminou no ponto concreto Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 205, in main
-    reject(item["name"] + ": entrega sem unidade de conteúdo é fechada antes da baixa",
-    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           T.actor() + group(item["os"], reserved, 2, "finished-group-" + item["name"]),
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           "23514", "COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO")
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 74, in reject
-    raise AssertionError(name + " :: " + result.stdout
-RESULT 4 / 5 exit 1
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 227, in main
+    sent = json.loads(last(send(delivery, "liquid")))
+                      ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 53, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR: 
+RESULT 11 / 12 exit 1
