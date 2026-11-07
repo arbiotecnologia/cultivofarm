@@ -10,10 +10,11 @@
     "Auth por GUC local",
     "has_role/b2b_phase1_order_visible e escopo mínimos do harness",
     "schema e dependências de segundo nível do harness B2/B3",
+    "fixture legada mínima inserida com gatilhos de duas tabelas pausados; todos religados e conferidos antes da RPC",
     "sem JWT/RLS/PostgREST/Storage"
   ],
-  "passed": 10,
-  "total": 12,
+  "passed": 14,
+  "total": 14,
   "checks": [
     {
       "name": "captura LOCAL identificada sem ambiguidade",
@@ -37,11 +38,11 @@
     {
       "name": "pedido fictício canônico criado para a reprodução",
       "ok": true,
-      "detail": "{'id': 'd4ffbf49-f906-48b0-a4aa-7af9b9d8610d', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-BASELINE', 'payment_terms_id': 'aed490fa-dfca-434e-9768-b3ecf5e4f0a6', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': '06294b89-fe72-4a82-aa04-7f2b4f1b4600', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-BASELINE', 'payment_terms_id': '1eebb7ef-a697-456a-ab47-833ca07ca0ba', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
-      "name": "fixture contábil está pending→pending e com contrato REAL",
-      "ok": false,
+      "name": "fixture contábil tem financial/terms pending e contrato REAL",
+      "ok": true,
       "detail": "{'origin': 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1', 'order': 'pending|defined', 'terms': 'pending'}"
     },
     {
@@ -52,7 +53,7 @@
     {
       "name": "pedido fictício validado criado pelo writer canônico",
       "ok": true,
-      "detail": "{'id': 'daea809c-5113-447c-9285-5d3dc822f0ed', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-SCOPE-BASELINE', 'payment_terms_id': '1cc48dfa-5861-456d-b9c3-a335c3586167', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': 'bea1fc32-427f-4f4e-b8c9-f981b207855c', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-SCOPE-BASELINE', 'payment_terms_id': 'a942d1a3-f3c0-4565-b4c7-b21a8e15b829', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "controle de escopo não depende do contrato de pendência",
@@ -60,9 +61,18 @@
       "detail": "C2_EXTERNAL_ORDER_ORIGIN_V1"
     },
     {
-      "name": "LACUNA DE ESCOPO CONFIRMADA LOCALMENTE: admin de outro tenant altera pedido legado B3",
-      "ok": false,
+      "name": "controle externo validado: gatilho REAL de origem nega admin estrangeiro",
+      "ok": true,
       "detail": "('ERROR:  C2_EXTERNAL_OWNER_DENIED\\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 22 at RAISE\\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\\nSQL statement \"UPDATE public.partner_order_payment_terms\\n     SET approval_status = \\'pending\\',\\n         approval_notes = p_notes,\\n         updated_at = now()\\n   WHERE id = v_terms_id\"\\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 25 at SQL statement\\n', '')"
+    },
+    {
+      "name": "TODOS os gatilhos reais religados antes da chamada legada",
+      "ok": true
+    },
+    {
+      "name": "LACUNA LEGADA CONFIRMADA LOCALMENTE: sem snapshot de origem, admin estrangeiro altera ajuste",
+      "ok": true,
+      "detail": "('', 'TESTE legado sem origem')"
     },
     {
       "name": "controle: o gatilho contábil REAL nega pending→approved",

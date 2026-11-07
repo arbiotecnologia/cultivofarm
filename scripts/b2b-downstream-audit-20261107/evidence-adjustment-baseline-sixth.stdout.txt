@@ -1,0 +1,17 @@
+14/14
+PASS captura LOCAL identificada sem ambiguidade 1
+PASS hash da captura LOCAL f9bf8f54 conferido 
+PASS corpo executado é byte-equivalente à captura LOCAL f9bf8f543564af480d08e7bebd111b88
+PASS TODOS os 38 gatilhos reais capturados estão habilitados {'expected': 38, 'missing': []}
+PASS pedido fictício canônico criado para a reprodução {'id': '06294b89-fe72-4a82-aa04-7f2b4f1b4600', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-BASELINE', 'payment_terms_id': '1eebb7ef-a697-456a-ab47-833ca07ca0ba', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture contábil tem financial/terms pending e contrato REAL {'origin': 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1', 'order': 'pending|defined', 'terms': 'pending'}
+PASS LACUNA CONFIRMADA LOCALMENTE: pending→pending conclui apesar do contrato contábil ('', 'pending|adjustment_requested', 'pending|TESTE pending para pending')
+PASS pedido fictício validado criado pelo writer canônico {'id': 'bea1fc32-427f-4f4e-b8c9-f981b207855c', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-SCOPE-BASELINE', 'payment_terms_id': 'a942d1a3-f3c0-4565-b4c7-b21a8e15b829', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS controle de escopo não depende do contrato de pendência C2_EXTERNAL_ORDER_ORIGIN_V1
+PASS controle externo validado: gatilho REAL de origem nega admin estrangeiro ('ERROR:  C2_EXTERNAL_OWNER_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 22 at RAISE\nSQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement "UPDATE public.partner_order_payment_terms\n     SET approval_status = \'pending\',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 25 at SQL statement\n', '')
+PASS TODOS os gatilhos reais religados antes da chamada legada 
+PASS LACUNA LEGADA CONFIRMADA LOCALMENTE: sem snapshot de origem, admin estrangeiro altera ajuste ('', 'TESTE legado sem origem')
+PASS controle: o gatilho contábil REAL nega pending→approved ERROR:  C2_ACCOUNTING_PENDING
+CONTEXT:  PL/pgSQL function platform_private.c2_accounting_pending_guard() line 32 at RAISE
+
+PASS nenhum gatilho ficou desabilitado após o controle transacional revertido 0
