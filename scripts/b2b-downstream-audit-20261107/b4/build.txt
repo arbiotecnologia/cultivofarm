@@ -1,0 +1,186 @@
+Build automático do harness; sem exit code numérico.
+=== build 2026-11-07T15:46:53Z ===
+build OK
+
+=== build 2026-11-07T15:50:31Z ===
+build OK
+
+=== build 2026-11-07T15:50:46Z ===
+build OK
+
+=== build 2026-11-07T15:50:59Z ===
+build OK
+
+=== build 2026-11-07T15:51:06Z ===
+build OK
+
+=== build 2026-11-07T15:51:20Z ===
+build OK
+
+=== build 2026-11-07T15:51:25Z ===
+build OK
+
+=== build 2026-11-07T15:51:30Z ===
+build OK
+
+=== build 2026-11-07T15:51:34Z ===
+build OK
+
+=== build 2026-11-07T15:51:46Z ===
+build OK
+
+=== build 2026-11-07T15:51:51Z ===
+build OK
+
+=== build 2026-11-07T15:51:57Z ===
+build OK
+
+=== build 2026-11-07T15:52:02Z ===
+build OK
+
+=== build 2026-11-07T15:52:09Z ===
+build OK
+
+=== build 2026-11-07T15:52:12Z ===
+build OK
+
+=== build 2026-11-07T15:52:18Z ===
+build OK
+
+=== build 2026-11-07T15:52:22Z ===
+build OK
+
+=== build 2026-11-07T15:53:57Z ===
+build OK
+
+=== build 2026-11-07T15:54:11Z ===
+build OK
+
+=== build 2026-11-07T15:54:23Z ===
+build OK
+
+=== build 2026-11-07T15:54:28Z ===
+build OK
+
+=== build 2026-11-07T15:54:39Z ===
+build OK
+
+=== build 2026-11-07T15:55:01Z ===
+build OK
+
+=== build 2026-11-07T15:55:11Z ===
+build OK
+
+=== build 2026-11-07T15:55:34Z ===
+build OK
+
+=== build 2026-11-07T15:55:45Z ===
+build OK
+
+=== build 2026-11-07T15:55:54Z ===
+build OK
+
+=== build 2026-11-07T15:56:08Z ===
+build OK
+
+=== build 2026-11-07T15:56:17Z ===
+build OK
+
+=== build 2026-11-07T15:56:26Z ===
+build OK
+
+=== build 2026-11-07T15:56:33Z ===
+build OK
+
+=== build 2026-11-07T15:56:47Z ===
+build OK
+
+=== build 2026-11-07T15:57:05Z ===
+build OK
+
+=== build 2026-11-07T15:57:10Z ===
+build OK
+
+=== build 2026-11-07T15:57:29Z ===
+build OK
+
+=== build 2026-11-07T15:57:56Z ===
+build OK
+
+=== build 2026-11-07T15:58:27Z ===
+build OK
+
+=== build 2026-11-07T15:58:32Z ===
+build OK
+
+=== build 2026-11-07T15:59:00Z ===
+build OK
+
+=== build 2026-11-07T15:59:50Z ===
+build OK
+
+=== build 2026-11-07T16:00:10Z ===
+build OK
+
+=== build 2026-11-07T16:00:38Z ===
+build OK
+
+=== build 2026-11-07T16:00:55Z ===
+build OK
+
+=== build 2026-11-07T16:01:28Z ===
+build OK
+
+=== build 2026-11-07T16:01:31Z ===
+build OK
+
+=== build 2026-11-07T16:01:34Z ===
+build OK
+
+=== build 2026-11-07T16:01:39Z ===
+build OK
+
+=== build 2026-11-07T16:01:51Z ===
+build OK
+
+=== build 2026-11-07T16:02:10Z ===
+build OK
+
+=== build 2026-11-07T16:02:28Z ===
+build OK
+
+=== build 2026-11-07T16:02:50Z ===
+build OK
+
+=== build 2026-11-07T16:03:06Z ===
+build OK
+
+=== build 2026-11-07T16:03:24Z ===
+build OK
+
+=== build 2026-11-07T16:03:29Z ===
+build OK
+
+=== build 2026-11-07T16:03:42Z ===
+build OK
+
+=== build 2026-11-07T16:03:48Z ===
+build OK
+
+=== build 2026-11-07T16:04:05Z ===
+build OK
+
+=== build 2026-11-07T16:04:10Z ===
+build OK
+
+=== build 2026-11-07T16:04:25Z ===
+build OK
+
+=== build 2026-11-07T16:05:01Z ===
+build OK
+
+=== build 2026-11-07T16:05:19Z ===
+build OK
+
+=== build 2026-11-07T16:05:28Z ===
+build OK

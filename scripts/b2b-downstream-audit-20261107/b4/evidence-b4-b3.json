@@ -260,12 +260,16 @@
   "jwt_rls_storage": "NOT_RUN",
   "synthetic_seams": [
     "Auth por GUC/roles locais",
+    "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente",
     "schema financeiro capturado com FK/RLS externos omitidos",
     "company_fiscal_settings fictícia VALIDATED",
     "autorização/cancelamento fiscal privado fictício sem rede",
     "b2b_integration_dependencies substituída somente após prova de negação",
+    "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação",
     "entregas mínima para o fence"
   ],
   "b3_overloads_restored": false,
-  "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência"
+  "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência",
+  "real_b3_trigger_count": 32,
+  "exit_code": 0
 }
