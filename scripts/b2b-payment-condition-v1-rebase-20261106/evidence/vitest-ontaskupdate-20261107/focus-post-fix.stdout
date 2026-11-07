@@ -12,3 +12,24 @@
    ✓ keeps current-base downstream containment and refuses independent deadlock certification  51145ms
  ✓ src/test/saas/c2-final-integrated-manual-postgres.test.ts (1 test) 100050ms
    ✓ integrates reconciled origin, receipt lock order and the LIVE manual installments correction  100045ms
+ ✓ src/test/saas/c2-orders-origin-composition-postgres.test.ts (1 test) 72653ms
+   ✓ C2 external origin: captured chain, delivery billing denied and numeric blocker in disposable PostgreSQL  72651ms
+ ✓ src/test/saas/c2-final-integrated-postgres.test.ts (1 test) 97756ms
+   ✓ integrates current origin, receipt lock order, tenants and full-command atomic containment  97755ms
+ ✓ src/test/financeiro/initialInstallmentsPostgres.test.ts (1 test) 9736ms
+   ✓ creates exact immutable installments once, with tenant isolation and full transaction rollback  9734ms
+ ✓ src/test/saas/b2b-f2b33a-protocol-postgres.test.ts (1 test) 8023ms
+   ✓ B3.3-A protocolo sintético: ator/alvo, source, CAS, rollback e concorrência; não JWT/RLS real  8020ms
+ ✓ src/test/monitoramento/visitMonitoringPlanPostgres.test.ts (1 test) 5145ms
+   ✓ plano canônico PostgreSQL descartável/Auth sintética: atomicidade/CAS/origem/espera  5143ms
+ ✓ src/test/financeiro/receivableRedGreenPostgres.test.ts (1 test) 9977ms
+   ✓ reproduz P0 red e conserva financiamento e eventos green apenas no PG descartável  9975ms
+ ✓ src/test/saas/c2-credit-numeric-postgres.test.ts (1 test) 83136ms
+   ✓ credit arithmetic keeps exact decisions, atomic create and delivery billing containment  83134ms
+
+ Test Files  12 passed (12)
+      Tests  13 passed (13)
+   Start at  12:36:50
+   Duration  404.67s (transform 178ms, setup 1.71s, collect 340ms, tests 746.44s, environment 10.99s, prepare 1.61s)
+
+JSON report written to /dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/evidence/vitest-ontaskupdate-20261107/focus-post-fix.json
