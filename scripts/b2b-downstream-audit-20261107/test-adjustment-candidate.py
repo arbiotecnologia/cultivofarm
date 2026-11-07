@@ -331,11 +331,13 @@ def main():
         check("positivos internos não dependem de superadmin nem papel externo", internal_roles == "t", internal_roles)
         scope = SP.as_user(SP.UADM, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
         foreign_scope = SP.as_user(SP.UADMF, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
-        check("escopo real admite o caminho interno sintético e preserva a negação FSF", scope.returncode == 0 and scope.stdout.strip() == "t" and foreign_scope.returncode == 0 and foreign_scope.stdout.strip() == "f", (scope.stdout, scope.stderr, foreign_scope.stdout, foreign_scope.stderr))
+        check("escopo real admite o caminho interno sintético e preserva a negação FSF", scope.returncode == 0 and scope.stdout.strip() == "true" and foreign_scope.returncode == 0 and foreign_scope.stdout.strip() == "false", (scope.stdout, scope.stderr, foreign_scope.stdout, foreign_scope.stderr))
 
         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
-            r = request(uid, validated["id"], "TESTE positivo interno " + label)
-            check(f"controle sintético {label}: caminho dono vendedor solicita ajuste validado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
+            before_validated = state(validated["id"])
+            r = request(uid, validated["id"], "TESTE validado interno " + label)
+            check(f"{label}: escopo não basta; guard real nega ajuste no externo validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
+            check(f"{label}: negação de origem no validado preserva estado integral", state(validated["id"]) == before_validated)
 
         def during_lock(label, mutation, token, restore):
             before = state(legacy_id)
