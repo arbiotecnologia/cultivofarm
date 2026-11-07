@@ -824,6 +824,15 @@ def fn_pins(label, md):
                    for k, sig in PUB.items())
 
 
+def all_fn_pins(label, md):
+    if not md:
+        return ""
+    s = fn_pins(label, md)
+    if "quote" in md:
+        s += f"  IF md5(pg_get_functiondef('{QUOTE_SIG}'::regprocedure)) <> '{md['quote']}' THEN RAISE EXCEPTION '{label}: {QUOTE_SIG} divergente'; END IF;\n"
+    return s
+
+
 ABSENT = ("  IF to_regclass('platform_private.b2b_condition_versions') IS NOT NULL OR to_regclass('platform_private.b2b_condition_activation') IS NOT NULL"
           " OR to_regprocedure('public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)') IS NOT NULL"
           " OR to_regclass('public.b2b_payment_method_configs') IS NOT NULL"  # rev.2 superada nunca pode coexistir
@@ -842,18 +851,18 @@ def build(pins=LIVE_PINS, cols=LIVE_COLS, fn_md5=None, deny_md5=None):
             "-- Não altera corpos LIVE, planos, meios, categorias, PB-001036 ou configurações; nenhuma empresa fica ativada.\n"
             "BEGIN;\nSET LOCAL lock_timeout = '3s';\nDO $$ BEGIN\n" + pins_block("INSTALL", pins, cols) + ABSENT + "END $$;\n"
             + "-- [candidata comprovada schema.sql.review sha256 b1416978…; deltas V/N/R/P declarados em generate.py]\n"
-            + ver + asg + snap + ret + EXTRA + choice + "\n" + sch + "\n" + res + WRITERS + build_sim() + build_create() + grants
-            + "DO $$ BEGIN\n" + pins_block("INSTALL_POST", pins, cols) + (fn_pins("INSTALL_POST", md) if md else "") + acl_block("INSTALL_POST")
+            + ver + asg + snap + ret + EXTRA + choice + "\n" + sch + "\n" + res + WRITERS + build_sim() + build_create() + build_quote() + grants
+            + "DO $$ BEGIN\n" + pins_block("INSTALL_POST", pins, cols) + all_fn_pins("INSTALL_POST", md) + acl_block("INSTALL_POST")
             + "  IF EXISTS (SELECT 1 FROM platform_private.b2b_condition_activation) OR EXISTS (SELECT 1 FROM platform_private.b2b_condition_versions) THEN RAISE EXCEPTION 'INSTALL_POST: dados inesperados'; END IF;\n"
             + "END $$;\nCOMMIT;\n")
-    post = ("-- 03 POST (somente leitura).\nDO $$ BEGIN\n" + pins_block("POST", pins, cols) + (fn_pins("POST", md) if md else "") + acl_block("POST")
+    post = ("-- 03 POST (somente leitura).\nDO $$ BEGIN\n" + pins_block("POST", pins, cols) + all_fn_pins("POST", md) + acl_block("POST")
             + "  RAISE NOTICE 'POST_OK';\nEND $$;\n")
     deny = "".join(DENY_TMPL.format(sig=s) for s in DENY_SIGS.values())
     revoke = "".join(f"REVOKE ALL ON FUNCTION {s} FROM PUBLIC, anon, authenticated, service_role;\n" for s in PUB.values())
     rb = ("-- 04 ROLLBACK deny-only: RPCs novos passam a negar; gatilho, ativações, versões, snapshots e histórico PERMANECEM.\n"
           "-- Empresas não ativadas seguem o contrato atual; empresas já ativadas ficam bloqueadas (nega, nunca reabre fallback).\n"
-          "BEGIN;\nDO $$ BEGIN\n" + (fn_pins("ROLLBACK", md) if md else "") + "END $$;\n" + deny + revoke
-          + "DO $$ BEGIN\n" + (fn_pins("ROLLBACK_POST", deny_md5) if deny_md5 else "") + acl_block("ROLLBACK_POST", deny=True) + "END $$;\nCOMMIT;\n")
+          "BEGIN;\nDO $$ BEGIN\n" + all_fn_pins("ROLLBACK", md) + "END $$;\n" + deny + revoke + build_quote(rollback=True)
+          + "DO $$ BEGIN\n" + all_fn_pins("ROLLBACK_POST", deny_md5) + acl_block("ROLLBACK_POST", deny=True) + "END $$;\nCOMMIT;\n")
     return {"01-pre.sql.readonly": pre, "02-install.sql.review": inst, "03-post.sql.readonly": post, "04-rollback-deny.sql.review": rb}
 
 
