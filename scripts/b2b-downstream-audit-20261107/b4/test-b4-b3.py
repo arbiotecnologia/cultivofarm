@@ -172,7 +172,8 @@ def main():
     try:
         check("boot B2/B3 com gatilhos reais", all(c["ok"] for c in B3.CHECKS), B3.CHECKS)
         install_b3(work)
-        B3.psql("CREATE TABLE IF NOT EXISTS public.entregas(id uuid PRIMARY KEY,partner_order_id uuid);CREATE TABLE IF NOT EXISTS public.fiscal_invoices(id uuid);")
+        B3.psql("""CREATE TABLE IF NOT EXISTS public.entregas(id uuid PRIMARY KEY,partner_order_id uuid);CREATE TABLE IF NOT EXISTS public.fiscal_invoices(id uuid);
+CREATE FUNCTION platform_private.c2_order_partner_recipients(uuid) RETURNS SETOF uuid LANGUAGE sql AS $$SELECT NULL::uuid WHERE FALSE$$;""")
         for name in ["approve_b2b_payment_terms_secure", "approve_partner_order", "fn_b2b_order_priceable", "fn_b2b_order_billing_eligibility",
                      "generate_b2b_receivable_secure", "generate_b2b_receivable_secure_impl", "tg_auto_b2b_receivable",
                      "fn_generate_receivable_from_entrega", "rpc_fiscal_invoice_apply_authorization_v1"]:
@@ -225,7 +226,12 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         finance_schema()
         for name, marker in [("01-pre.sql.readonly", "PRE_OK"), ("02-install.sql.review", ""), ("03-post.sql.readonly", "POST_OK")]:
             result = runfile(H / name)
-            check(f"B4 {name}", result.returncode == 0 and marker in result.stderr, result.stderr[-1200:])
+            check(f"B4 {name}", result.returncode == 0 and (not marker or marker in result.stdout + result.stderr), (result.stdout + result.stderr)[-1200:])
+            if name == "02-install.sql.review" and result.returncode != 0:
+                diagnostic = runfile(H / "b4-candidate.sql.review")
+                expected = json.loads((H / "b4-pins.json").read_text())["candidate_md5"]
+                actual = {sig: B3.md5_of(sig) for sig in expected}
+                check("diagnóstico dos pinos após falha de instalação", False, {"diagnostic_exit": diagnostic.returncode, "expected": expected, "actual": actual, "stderr": diagnostic.stderr[-500:]})
         rerun = runfile(H / "02-install.sql.review")
         check("rerun aborta pelo pin da baseline, sem reinstalar", rerun.returncode != 0 and "B4_INSTALL_PRE_DRIFT" in rerun.stderr, rerun.stderr[-500:])
         check("38 gatilhos reais do pedido continuam habilitados", B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip() == "38")

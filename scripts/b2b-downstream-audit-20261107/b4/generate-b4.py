@@ -254,7 +254,7 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
     b3_installed = json.loads((B3 / "fn-md5.json").read_text())["install"]
     b3_md5 = {B3_PUBLIC[name]: md5 for name, md5 in b3_installed.items()}
     pre_pins = {**LIVE_MD5, **b3_md5}
-    pre = "-- READONLY; pinos LIVE relatados pelo auditor + B3 instalado localmente pinado.\n" + assertions(pre_pins, "B4_PRE_DRIFT")
+    pre = "-- READONLY; pinos LIVE relatados pelo auditor + B3 instalado localmente pinado.\n" + assertions(pre_pins, "B4_PRE_DRIFT") + "SELECT 'PRE_OK' AS status;\n"
     install = "-- CANDIDATO B4 INATIVO; exige revisão/PRE LIVE; nunca aplicar automaticamente.\nBEGIN;\nSET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='60s';\n" + assertions(pre_pins, "B4_INSTALL_PRE_DRIFT") + body + "\n" + assertions(candidate_pins, "B4_INSTALL_POST_DRIFT") + "COMMIT;\n"
     post = "-- READONLY.\n" + assertions(candidate_pins, "B4_POST_DRIFT") + "SELECT 'POST_OK' AS status;\n"
     rollback = "-- DENY-ONLY: preserva histórico, snapshots e fences; não restaura writers antigos.\nBEGIN;\n" + assertions(candidate_pins, "B4_ROLLBACK_DRIFT") + """
