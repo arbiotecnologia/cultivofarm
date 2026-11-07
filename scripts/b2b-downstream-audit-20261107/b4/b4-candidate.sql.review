@@ -436,7 +436,7 @@ BEGIN
  IF p_offset IS NULL OR p_offset<0 OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 1000 THEN RAISE EXCEPTION 'MONEY_ORIGIN_PAGE_INVALID' USING ERRCODE='23514'; END IF;
  IF p_receivable_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.accounts_receivable a WHERE a.id=p_receivable_id AND a.organization_id=org) THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
  FOR i IN SELECT s.* FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE s.organization_id=org AND a.organization_id=org AND (p_receivable_id IS NULL OR a.id=p_receivable_id) ORDER BY s.id OFFSET p_offset LIMIT p_limit LOOP
-  row:=platform_private.b2b_proven_money_row_internal(i.id,org);
+  row:=platform_private.b2b_proven_money_row(i.id);
   result:=result||jsonb_build_array(row);
  END LOOP;
  RETURN result;
@@ -452,7 +452,8 @@ AS $function$
 DECLARE po public.partner_orders; s platform_private.b4_order_condition_snapshots; allocated numeric; total numeric; org uuid;
 BEGIN
  SELECT * INTO po FROM public.partner_orders WHERE id=p_order;
- org:=platform_private.b2b_integration_actor(po.partner_id);
+ SELECT pa.commercial_owner_organization_id INTO org FROM public.partner_accounts pa WHERE pa.id=po.partner_id;
+ IF org IS NULL THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;
  SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;
  total:=coalesce(s.financed_total,po.final_amount_with_interest);
  IF total IS NULL OR total<0 OR total::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;
@@ -477,7 +478,7 @@ BEGIN
  SELECT overdue_tolerance_days INTO tolerance FROM public.partner_financial_settings WHERE partner_id=p_partner AND active IS TRUE;
  IF tolerance IS NULL OR tolerance<0 THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='23514'; END IF;
  FOR i IN SELECT s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE a.organization_id=org AND s.organization_id=org AND a.partner_id=p_partner AND a.status<>'CANCELED' AND s.status<>'CANCELED' LOOP
-  row:=platform_private.b2b_proven_money_row(i.id);
+  row:=platform_private.b2b_proven_money_row_internal(i.id,org);
   IF row IS NULL THEN RAISE EXCEPTION 'CREDIT_MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
   balance:=greatest((row->>'original_amount')::numeric+(row->>'interest_amount')::numeric-(row->>'financed_interest_amount')::numeric+(row->>'penalty_amount')::numeric-(row->>'discount_amount')::numeric-(row->>'received_amount')::numeric,0);
   open_amount:=open_amount+balance;

@@ -14,8 +14,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 48,
-  "total": 50,
+  "passed": 79,
+  "total": 79,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -183,8 +183,7 @@
     },
     {
       "name": "novo pedido do mesmo parceiro fica indisponível durante a inconsistência",
-      "ok": false,
-      "detail": "ERROR:  MONEY_ORIGIN_ACCESS_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment\nPL/pgSQL function platform_private.b2b_credit_checked(uuid,numeric,uuid) line 13 at assignment\nPL/pgSQL function simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) line 101 at assignment"
+      "ok": true
     },
     {
       "name": "impacto medido não altera pedidos atuais nem cria pedido novo",
@@ -215,9 +214,124 @@
       "ok": true
     },
     {
-      "name": "execução sem exceção de harness",
-      "ok": false,
-      "detail": "RuntimeError('ERROR:  B2B_ACTOR_DENIED\\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 5 at RAISE\\nPL/pgSQL function platform_private.b2b_order_residual(uuid) line 5 at assignment\\n')"
+      "name": "residual = pedido restante + títulos sem dupla contagem",
+      "ok": true
+    },
+    {
+      "name": "replay da mesma autorização devolve mesmo título",
+      "ok": true
+    },
+    {
+      "name": "replay não duplica alocação",
+      "ok": true
+    },
+    {
+      "name": "datas finais partem da emissão e calendário selado",
+      "ok": true
+    },
+    {
+      "name": "juros financiados não são somados duas vezes",
+      "ok": true
+    },
+    {
+      "name": "projeção financeira usa ator e tenant autorizados",
+      "ok": true
+    },
+    {
+      "name": "baixa parcial local no ledger capturado",
+      "ok": true
+    },
+    {
+      "name": "baixa reduz somente título, não residual do pedido",
+      "ok": true
+    },
+    {
+      "name": "três documentos independentes fecham quantidade e residual",
+      "ok": true
+    },
+    {
+      "name": "três títulos, um por documento",
+      "ok": true
+    },
+    {
+      "name": "crédito após parciais preserva total menos baixa",
+      "ok": true
+    },
+    {
+      "name": "cancelamento de NF paga exige reconciliação",
+      "ok": true
+    },
+    {
+      "name": "cancelamento pago negado preserva histórico e saldo",
+      "ok": true
+    },
+    {
+      "name": "atestação fictícia de cancelamento passa pela guarda com ator",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária cancela somente título não pago",
+      "ok": true
+    },
+    {
+      "name": "cancelamento restaura exatamente principal+juros do documento",
+      "ok": true
+    },
+    {
+      "name": "documento substituto consome residual sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária preserva centavos por item",
+      "ok": true
+    },
+    {
+      "name": "histórico do título cancelado permanece",
+      "ok": true
+    },
+    {
+      "name": "quantidade acima do pedido negada",
+      "ok": true
+    },
+    {
+      "name": "tenant estrangeiro não faz replay nem lê recibo",
+      "ok": true
+    },
+    {
+      "name": "pendência contábil bloqueia antes de qualquer título",
+      "ok": true
+    },
+    {
+      "name": "writer B2B anterior continua negado após instalação",
+      "ok": true
+    },
+    {
+      "name": "snapshot B3 não cotado também aloca",
+      "ok": true
+    },
+    {
+      "name": "fora da cobertura do calendário falha fechado",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: somente uma consome o saldo final",
+      "ok": true
+    },
+    {
+      "name": "corrida não duplica título nem residual",
+      "ok": true
+    },
+    {
+      "name": "rollback deny-only passa com PRE/POST e metadados íntegros",
+      "ok": true
+    },
+    {
+      "name": "rollback preserva alocações, títulos e snapshots",
+      "ok": true
+    },
+    {
+      "name": "rollback fecha writer legado sem apagar projeção nem histórico",
+      "ok": true
     }
   ],
   "hosted": "NOT_RUN",

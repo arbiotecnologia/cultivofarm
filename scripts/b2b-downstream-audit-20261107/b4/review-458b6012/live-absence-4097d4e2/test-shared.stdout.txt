@@ -39,12 +39,7 @@ PASS shared fence preserva MANUAL não B2B com devedor parceiro e crédito confi
 PASS bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição
 PASS pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro
 PASS baixa de origem desconhecida que afeta parceiro também falha fechado
-FAIL novo pedido do mesmo parceiro fica indisponível durante a inconsistência :: ERROR:  MONEY_ORIGIN_ACCESS_DENIED
-CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 4 at RAISE
-PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment
-PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
-PL/pgSQL function platform_private.b2b_credit_checked(uuid,numeric,uuid) line 13 at assignment
-PL/pgSQL function simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) line 101 at assignment
+PASS novo pedido do mesmo parceiro fica indisponível durante a inconsistência
 PASS impacto medido não altera pedidos atuais nem cria pedido novo
 PASS fixtures MANUAL canceladas após medição não contaminam a bateria seguinte
 PASS pedido interno não autorizado pelo downstream B4 é contido
@@ -52,4 +47,33 @@ PASS contenção interna não cria título nem alocação
 PASS writer integral antigo também permanece fechado para pedido interno
 PASS primeira NF parcial autorizada fictícia gera título
 PASS conversão não duplica exposição
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  B2B_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 5 at RAISE\nPL/pgSQL function platform_private.b2b_order_residual(uuid) line 5 at assignment\n')
+PASS residual = pedido restante + títulos sem dupla contagem
+PASS replay da mesma autorização devolve mesmo título
+PASS replay não duplica alocação
+PASS datas finais partem da emissão e calendário selado
+PASS juros financiados não são somados duas vezes
+PASS projeção financeira usa ator e tenant autorizados
+PASS baixa parcial local no ledger capturado
+PASS baixa reduz somente título, não residual do pedido
+PASS três documentos independentes fecham quantidade e residual
+PASS três títulos, um por documento
+PASS crédito após parciais preserva total menos baixa
+PASS cancelamento de NF paga exige reconciliação
+PASS cancelamento pago negado preserva histórico e saldo
+PASS atestação fictícia de cancelamento passa pela guarda com ator
+PASS substituição intermediária cancela somente título não pago
+PASS cancelamento restaura exatamente principal+juros do documento
+PASS documento substituto consome residual sem duplicar
+PASS substituição intermediária preserva centavos por item
+PASS histórico do título cancelado permanece
+PASS quantidade acima do pedido negada
+PASS tenant estrangeiro não faz replay nem lê recibo
+PASS pendência contábil bloqueia antes de qualquer título
+PASS writer B2B anterior continua negado após instalação
+PASS snapshot B3 não cotado também aloca
+PASS fora da cobertura do calendário falha fechado
+PASS duas sessões: somente uma consome o saldo final
+PASS corrida não duplica título nem residual
+PASS rollback deny-only passa com PRE/POST e metadados íntegros
+PASS rollback preserva alocações, títulos e snapshots
+PASS rollback fecha writer legado sem apagar projeção nem histórico
