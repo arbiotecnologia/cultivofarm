@@ -2,6 +2,8 @@
 
 **Status: INATIVO / NÃO APROVADO / NÃO IMPLANTADO.** Somente PostgreSQL descartável; nenhuma operação hospedada, publicação, cobrança, NF, aprovação contábil, envio ou delegação.
 
+> **Atualização 16:38 UTC:** os 60/60 abaixo são histórico, não base de implantação. O positivo superadmin não prova elegibilidade de admin vendedor. A revisão de escopo vendedor/comprador passou 76/76, manteve o candidato inalterado e negou o externo validado para admin/financeiro/comercial pelo guard real. Ver `scope-live-1638/README.md`; script/evidência antigos preservados em `historical-60/`.
+
 ## O que mudou em relação aos 29 PASS
 
 A evidência antiga `../evidence/adjustment-candidate-minimal-29.json` foi preservada como histórico. Ela usava `has_role` e `b2b_phase1_order_visible` mínimos e trocava o pin do wrapper somente numa cópia em `/tmp`; portanto não bastava para revisão de implantação.

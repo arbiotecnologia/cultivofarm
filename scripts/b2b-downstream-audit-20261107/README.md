@@ -17,9 +17,9 @@ Fonte local identificada: `scripts/delivery-atomic-hardening-20261030/capture/cu
 
 Evidência: `evidence/adjustment-baseline.json`, `evidence-adjustment-baseline-sixth.*`. As tentativas anteriores com erros de harness/fixture foram preservadas.
 
-### Candidato inativo — revisão 31430566, 60/60, exit 0
+### Candidato inativo — revisão 31430566 + achado de escopo 16:38, 76/76, exit 0
 
-A rodada anterior **29/29** foi preservada em `evidence/adjustment-candidate-minimal-29.json`, mas não é suficiente: usava guards mínimos e localizava um pin em `/tmp`. A revisão atual a substitui e permanece **não aprovada e não aplicada**.
+As rodadas **29/29** e **60/60** são históricas e não bastam para implantação. A primeira usava guards mínimos/localização de pin; a segunda ainda usava superadmin como positivo. A revisão de escopo vendedor/comprador passou **76/76**, sem alterar o SQL candidato, e permanece **não aprovada e não aplicada**. Evidência atual: `review-31430566/scope-live-1638/`; evidência 60/60 preservada em `review-31430566/historical-60/`.
 
 `generate-adjustment-fix.py` gera, sem edição manual dos SQL:
 
@@ -35,9 +35,9 @@ Delta mínimo:
 4. owner/ACL originais preservados; nenhum papel, grant, writer ou acesso ampliado;
 5. rollback **deny-only**: revoga cliente e mantém o corpo corrigido/histórico, sem restaurar a função vulnerável.
 
-Cobertura: pin divergente do writer/privado, owner/ACL divergentes, PRE/POST, rerun, 38 gatilhos ativos, C2 pending, estrangeiro validado/legado, pedido ausente/NULL, revogação durante lock de papel, perfil, vínculo organização-parceiro, lease e feature `pedidos_b2b`, positivos sem ampliar escopo, comprador negado e rollback com histórico preservado. Candidato MD5 `7eb3b5be33552f6bd4eecd56796502ed`; evidência `evidence/adjustment-candidate.json` e `evidence-adjustment-candidate-review.*`.
+Cobertura atual: pin divergente do writer/privado, owner/ACL divergentes, PRE/POST, rerun, 38 gatilhos ativos, C2 pending, FSF com vínculo próprio negado, pedido ausente/NULL e revogação durante lock de papel, perfil, senha provisória, vínculo organização-parceiro, convite processing/access_valid_after e feature `pedidos_b2b`. Admin/financeiro/gestor comercial comuns tiveram positivos **somente no legado sintético**, pelo caminho `organizations.partner_account_id` com dono comercial coerente; admin+parceiro apenas com `partner_users` único foi negado. No externo validado, os três papéis foram negados pelo guard real `C2_EXTERNAL_ORIGIN_DENIED`, sem efeitos. Candidato MD5 inalterado `7eb3b5be33552f6bd4eecd56796502ed`; evidência `review-31430566/scope-live-1638/adjustment-candidate.json`.
 
-Os quatro pinos principais relatados como LIVE pelo auditor foram reproduzidos nos corpos locais: wrapper/privado de escopo `88125087…`/`8504f07f…` e wrapper/privado de papel `4d90e93d…`/`c5af5b55…`. As demais dependências/owners/ACLs vêm de captura LOCAL e exigem conferência LIVE independente. Detalhes e matriz em `review-31430566/`. **Não aprovado nem aplicado.**
+Além dos quatro pinos anteriores, os MD5 LIVE relatados de `b2b_phase1_partner_visible` (`915f516e…`), `b2b_actor_scope` (`c3f29977…`) e `platform_actor_access_ready` (`048249c0…`) correspondem exatamente às capturas locais executadas. Isso não é nova leitura LIVE. As demais dependências/owners/ACLs vêm de captura LOCAL e exigem conferência independente. Detalhes e matriz em `review-31430566/scope-live-1638/`. **Não aprovado nem aplicado; nenhum positivo sintético certifica o admin vendedor ARBio.**
 
 ## 2. Resultados downstream executados
 
