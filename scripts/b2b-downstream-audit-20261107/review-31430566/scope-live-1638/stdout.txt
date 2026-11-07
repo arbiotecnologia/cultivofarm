@@ -1,0 +1,149 @@
+67/71
+PASS gerador determinístico: capturas/candidato/01–04/pins byte a byte 
+PASS nenhum artefato executa GRANT ou substitui pin temporário 
+PASS todos os pinos públicos/privados estão no PRE/POST/install/rollback 
+PASS corpo real capturado executado: platform_private.platform_actor_access_ready(uuid) {'actual': '048249c0c2106c3761e26eacb8d0de84', 'expected': '048249c0c2106c3761e26eacb8d0de84'}
+PASS corpo real capturado executado: platform_private.entitlements_for_user(uuid) {'actual': '7f4ec7facaebbdf35444dd490fdebe56', 'expected': '7f4ec7facaebbdf35444dd490fdebe56'}
+PASS corpo real capturado executado: platform_private.has_role(uuid,public.app_role) {'actual': 'c5af5b55de6d79da9b73a33948746ae2', 'expected': 'c5af5b55de6d79da9b73a33948746ae2'}
+PASS corpo real capturado executado: public.has_role(uuid,public.app_role) {'actual': '4d90e93d521a4819d9085f28d742030f', 'expected': '4d90e93d521a4819d9085f28d742030f'}
+PASS corpo real capturado executado: public.is_platform_superadmin(uuid) {'actual': '3dfe79d976821244d9b7a7f893d765f2', 'expected': '3dfe79d976821244d9b7a7f893d765f2'}
+PASS corpo real capturado executado: public.is_valid_b2b_partner_user(uuid,uuid) {'actual': '0bb0dea04be8ca84c66db7ca6329876c', 'expected': '0bb0dea04be8ca84c66db7ca6329876c'}
+PASS corpo real capturado executado: platform_private.b2b_actor_scope(uuid) {'actual': 'c3f2997746f24bc2efd15db5c0ccc862', 'expected': 'c3f2997746f24bc2efd15db5c0ccc862'}
+PASS corpo real capturado executado: platform_private.b2b_phase1_partner_visible(uuid,boolean) {'actual': '915f516e605af7cc14584e2e762a2661', 'expected': '915f516e605af7cc14584e2e762a2661'}
+PASS corpo real capturado executado: public.b2b_phase1_partner_visible(uuid,boolean) {'actual': '6b3defc01a66040146562c60ad224f03', 'expected': '6b3defc01a66040146562c60ad224f03'}
+PASS corpo real capturado executado: platform_private.b2b_phase1_order_visible(uuid) {'actual': '8504f07fbc3a7975accf919f386d00eb', 'expected': '8504f07fbc3a7975accf919f386d00eb'}
+PASS corpo real capturado executado: public.b2b_phase1_order_visible(uuid) {'actual': '8812508716f279a88e3d5a31b15621d8', 'expected': '8812508716f279a88e3d5a31b15621d8'}
+PASS corpo real capturado executado: public._saas_user_has_feature(uuid,text) {'actual': '501dd958e117d2df8a4d38f6bcbeed04', 'expected': '501dd958e117d2df8a4d38f6bcbeed04'}
+PASS corpo real capturado executado: public._saas_trg_require_feature() {'actual': '13ed48832f81cbb35434688ca35fda4b', 'expected': '13ed48832f81cbb35434688ca35fda4b'}
+PASS corpo real capturado executado: platform_private.c2_accounting_pending_guard() {'actual': '669b19490a7a9700f0158db4b31885ad', 'expected': '669b19490a7a9700f0158db4b31885ad'}
+PASS 01 PRE_OK com corpos/owners/ACLs reais, sem localização 
+PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE
+
+PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
+CONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE
+
+PASS owner divergente de núcleo privado é detectado psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:49: ERROR:  ADJUSTMENT_OWNER_DRIFT: platform_private.has_role(uuid,public.app_role)
+CONTEXT:  PL/pgSQL function inline_code_block line 32 at RAISE
+
+PASS ACL divergente de núcleo privado é detectada psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:49: ERROR:  ADJUSTMENT_ACL_DRIFT: platform_private.has_role(uuid,public.app_role)
+CONTEXT:  PL/pgSQL function inline_code_block line 44 at RAISE
+
+PASS owner/ACL restaurados ao estado capturado voltam a passar no PRE 
+PASS 02 instala o candidato transacionalmente sem GRANT 
+PASS candidato executado tem o MD5 gerado {'actual': '7eb3b5be33552f6bd4eecd56796502ed', 'expected': '7eb3b5be33552f6bd4eecd56796502ed'}
+PASS 03 POST_OK confirma wrappers, privados, owners e ACLs 
+PASS rerun sobre o candidato aborta pelo pin da baseline psql:/dev-server/scripts/b2b-downstream-audit-20261107/02-install.sql.review:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE
+
+PASS TODOS os 38 gatilhos reais habilitados após instalar 
+PASS pedido inexistente nega como escopo, sem payment_terms_not_defined permissivo ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
+
+PASS pedido inexistente não produz efeitos nem oráculo de dados 
+PASS pedido NULL também é negado fail-closed ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
+
+PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '2e2bbf76-3eb0-4f50-9b74-f56ba01ecb2b', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '9a2beb9d-693b-4605-b648-a82c2971896e', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS C2_ACCOUNTING_PENDING nega pending→pending ERROR:  C2_ACCOUNTING_PENDING
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 37 at RAISE
+
+PASS negação contábil preserva pedido/termos/auditoria/notificações 
+PASS fixture validada criada pelo writer canônico com guards reais {'id': '6ab14017-49f1-4d7e-a0e8-24ec49ee9b2f', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'bcfdd9a1-cda3-414b-8902-3c6dea9db46c', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS FSF/admin estrangeiro com vínculo próprio é negado no pedido validado ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
+
+PASS negação de escopo validado preserva estado integral 
+PASS TODOS os gatilhos reais religados antes das chamadas legadas 
+PASS FSF/admin estrangeiro negado no legado sem snapshot pelo escopo real ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
+
+PASS negação legada preserva estado integral 
+PASS admin+parceiro com apenas partner_users único não vira positivo interno ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
+
+PASS negação do caminho partner_users para admin cumulativo preserva estado 
+PASS fixture do positivo interno tem caminho organização→parceiro→dono vendedor coerente t
+PASS positivos internos não dependem de superadmin nem papel externo t
+FAIL escopo real admite o caminho interno sintético e preserva a negação FSF ('true\n', '', 'false\n', '')
+FAIL controle sintético administrador: caminho dono vendedor solicita ajuste validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
+CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
+SQL statement "UPDATE public.partner_order_payment_terms
+     SET approval_status = 'pending',
+         approval_notes = p_notes,
+         updated_at = now()
+   WHERE id = v_terms_id"
+PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement
+
+FAIL controle sintético financeiro: caminho dono vendedor solicita ajuste validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
+CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
+SQL statement "UPDATE public.partner_order_payment_terms
+     SET approval_status = 'pending',
+         approval_notes = p_notes,
+         updated_at = now()
+   WHERE id = v_terms_id"
+PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement
+
+FAIL controle sintético gestor_comercial: caminho dono vendedor solicita ajuste validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
+CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
+SQL statement "UPDATE public.partner_order_payment_terms
+     SET approval_status = 'pending',
+         approval_notes = p_notes,
+         updated_at = now()
+   WHERE id = v_terms_id"
+PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement
+
+PASS revogação durante lock: papel administrativo é negada ERROR:  unauthorized
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE
+
+PASS revogação durante lock: papel administrativo preserva todo o estado 
+PASS revogação durante lock: perfil inativado é negada ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 29 at RAISE
+
+PASS revogação durante lock: perfil inativado preserva todo o estado 
+PASS revogação durante lock: senha provisória reaberta é negada ERROR:  unauthorized
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE
+
+PASS revogação durante lock: senha provisória reaberta preserva todo o estado 
+PASS revogação durante lock: vínculo organização-parceiro do vendedor removido é negada ERROR:  b2b_phase1_scope_denied
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 29 at RAISE
+
+PASS revogação durante lock: vínculo organização-parceiro do vendedor removido preserva todo o estado 
+PASS revogação durante lock: convite administrativo em processing é negada ERROR:  unauthorized
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE
+
+PASS revogação durante lock: convite administrativo em processing preserva todo o estado 
+PASS revogação durante lock: access_valid_after posterior ao JWT iat é negada ERROR:  unauthorized
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE
+
+PASS revogação durante lock: access_valid_after posterior ao JWT iat preserva todo o estado 
+PASS revogação durante lock: feature pedidos_b2b revogada é negada ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível
+CONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE
+SQL statement "UPDATE public.partner_orders
+     SET financial_approval_status = 'pending',
+         payment_condition_status = 'adjustment_requested',
+         updated_at = now()
+   WHERE id = p_partner_order_id"
+PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 47 at SQL statement
+
+PASS revogação durante lock: feature pedidos_b2b revogada preserva todo o estado 
+PASS feature restaurada pelo resolvedor real de entitlements 
+PASS mesmo tenant ainda solicita ajuste no legado 
+PASS comprador sem papel financeiro continua negado ERROR:  unauthorized
+CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 14 at RAISE
+
+PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE
+
+PASS 04 rollback deny-only conclui 
+PASS rollback nega EXECUTE ao cliente sem restaurar corpo vulnerável ERROR:  permission denied for function request_b2b_payment_terms_adjustment_secure
+
+PASS rollback não apaga nem reescreve histórico 
+PASS TODOS os 38 gatilhos continuam habilitados no fim 
+PASS B3 não foi instalado nem modificado nesta bateria 
