@@ -174,7 +174,10 @@ def main():
         for name in ["approve_b2b_payment_terms_secure", "approve_partner_order", "fn_b2b_order_priceable", "fn_b2b_order_billing_eligibility"]:
             function = captured_function(name)
             B3.psql(function["body"] + ";")
-        B3.psql(f"ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'")
+        B3.psql(f"""ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
+CREATE TABLE IF NOT EXISTS public.clientes(id uuid PRIMARY KEY,nome text NOT NULL,codigo_cliente text NOT NULL,organization_id uuid);
+INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES('{CUSTOMER}','Cliente B4 TESTE','B4-LOCAL','{B3.A}') ON CONFLICT (id) DO NOTHING;
+UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         for plan in [B3.P3, B3.PLQ]:
             data, error = B3.publish(B3.UFIN, plan, "boleto", B3.M_BOL, 30, 3, "1.8", 0)
             check("publicação B3 usada pelo B4", data is not None, error)
