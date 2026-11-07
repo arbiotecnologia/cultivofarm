@@ -96,8 +96,10 @@ def restore_checkpoint():
             sql('ALTER ROLE "' + role["name"] + '" ' + ("BYPASSRLS" if role["bypassrls"] else "NOBYPASSRLS") + ";")
     sql(cached.read_text())
     ok("checkpoint descartável da composição capturada restaurado", hashlib.sha256(cached.read_bytes()).hexdigest())
-    sql((CONF / "install.sql.review").read_text())
-    sql((CONF / "send/install.sql.review").read_text())
+    for installer in (CONF / "install.sql.review", CONF / "send/install.sql.review"):
+        loaded = run_raw(installer.read_text())
+        if loaded.returncode != 0:
+            raise AssertionError("INSTALLER_PIN_FAILED " + installer.name + "\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
     # Ativação exclusivamente no harness; os artefatos de release permanecem fechados.
     sql("GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;")
     ok("writers de confirmação/envio ativados somente no PostgreSQL descartável")
