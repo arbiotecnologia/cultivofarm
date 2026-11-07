@@ -5,7 +5,8 @@
   "real_invoice_or_receivable": false,
   "subagents": false,
   "b3_or_b4_modified": false,
-  "candidate_sql_or_catalog_pins_modified": false,
+  "candidate_sql_or_catalog_pins_modified": true,
+  "finished_product_candidate_updated_for_purchase_decision": true,
   "grants_or_guards_weakened": false,
   "tests": {
     "envase_full": {"passed": 119, "failed": 0, "exit_code": 0, "stderr_bytes": 0},
@@ -25,8 +26,8 @@
   },
   "coverage": {
     "executed": ["biologico_ml", "CQ_estoque_pronto_entrega", "expedicao_em_rota_confirmacao_cancelamento", "tenant_isolation", "observed_lock_revocation", "concurrency", "CAS", "idempotent_replay", "deny_only_rollback"],
-    "finished_product_followup": {"path": "finished-product/", "before": "17/17", "candidate": "19/19", "legacy_candidate": "6/6", "units": ["kg", "g", "L", "ml"], "weight_not_reinterpreted_as_volume": true, "active": false},
-    "not_run": ["entrada_canonica_produto_acabado", "composicao_real_catalogo_B3", "frete_real", "JWT_RLS_Storage_PostgREST_browser_real", "NF_cobranca_real"]
+    "finished_product_followup": {"path": "finished-product/", "before": "17/17", "candidate": "37/37", "legacy_candidate": "6/6", "purchase_entry": "compra_produto_acabado_revenda; catálogo por empresa; lote/estoque/ledger sem fabricação", "units": ["kg", "g", "L", "ml"], "weight_not_reinterpreted_as_volume": true, "active": false},
+    "not_run": ["dados_e_baseline_catalogo_B3_LIVE", "frete_real", "JWT_RLS_Storage_PostgREST_browser_real", "NF_cobranca_real"]
   },
   "adjustment_candidate": {
     "separate_package": "scripts/b2b-downstream-audit-20261107",
