@@ -513,69 +513,52 @@ def main():
         )
 
         # Revisão final 18:33: a espera pode ocorrer DEPOIS do lock do pedido,
-        # no FOR UPDATE dos termos. Cada cenário usa duas sessões PostgreSQL e
-        # um BEGIN explícito no chamador: negação => ROLLBACK; sucesso => COMMIT.
-        def during_terms_lock(operation, label, mutation, token, restore):
+        # no FOR UPDATE dos termos. Exatamente duas sessões: a bloqueadora muda
+        # o estado antes de COMMIT; a chamadora reage e executa ROLLBACK explícito.
+        def during_terms_lock(operation, label, mutation, token, restore, external_terms_change=False):
             before = state(legacy_id)
             blocker_result = {}
             caller_result = {}
 
             def blocker():
                 blocker_result["r"] = psql(
-                    f"BEGIN; SELECT 1 FROM public.partner_order_payment_terms WHERE id='{terms_id}' FOR UPDATE; SELECT pg_sleep(1.5); COMMIT;",
+                    f"BEGIN; SELECT 1 FROM public.partner_order_payment_terms WHERE id='{terms_id}' FOR UPDATE; SELECT pg_sleep(1.5); {mutation}; COMMIT;",
                     check=False,
                 )
 
-            def caller():
-                time.sleep(0.25)
-                target = request(SP.UADM, legacy_id, "TESTE terms-lock " + label) if operation == "request" else decision(SP.UADM, operation, legacy_id, "TESTE terms-lock " + label)
-                # request/decision já executam em sessão própria; para exigir rollback
-                # transacional explícito, a chamada abaixo é refeita em SQL bruto.
-                caller_result["r"] = target
-
-            # A sessão chamadora precisa permanecer aberta até a decisão de COMMIT/
-            # ROLLBACK; SP.as_user não expõe essa sessão, então usar psql interativo.
             def transactional_caller():
                 time.sleep(0.25)
                 function = "request_b2b_payment_terms_adjustment_secure" if operation == "request" else f"{operation}_b2b_payment_terms_secure"
                 command = SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t"]
-                process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                setup = f"SELECT set_config('request.jwt.claim.sub','{SP.UADM}',false); BEGIN; SELECT public.{function}('{legacy_id}','TESTE terms-lock {label}');\n"
-                process.stdin.write(setup)
-                process.stdin.flush()
-                caller_result["process"] = process
-                process.wait(timeout=8)
+                sql = f"""\\set ON_ERROR_STOP off
+SELECT set_config('request.jwt.claim.sub','{SP.UADM}',false);
+BEGIN;
+SELECT public.{function}('{legacy_id}','TESTE terms-lock {label}');
+ROLLBACK;
+"""
+                caller_result["r"] = subprocess.run(command, input=sql, text=True, capture_output=True, timeout=10)
 
             first = threading.Thread(target=blocker)
             second = threading.Thread(target=transactional_caller)
             first.start(); second.start()
-            process = None
-            deadline = time.monotonic() + 4
-            while time.monotonic() < deadline:
-                process = caller_result.get("process")
-                if process is not None:
-                    break
-                time.sleep(0.02)
-            check(f"terms-lock {operation}/{label}: duas sessões e chamador transacional iniciados", process is not None and first.is_alive())
-            if process is not None:
-                time.sleep(0.65)
-                psql(mutation)
-            first.join(8); second.join(8)
-            if process is not None:
-                # A RPC terminou; fechar explicitamente por ROLLBACK também no sucesso,
-                # pois estes casos devem ser negados e nenhum efeito pode persistir.
-                try:
-                    process.stdin.write("ROLLBACK;\n\\q\n")
-                    process.stdin.flush()
-                    process.stdin.close()
-                except (BrokenPipeError, ValueError):
-                    pass
-                process.wait(timeout=8)
-                stderr = process.stderr.read()
-                caller_result["r"] = subprocess.CompletedProcess(process.args, process.returncode, process.stdout.read(), stderr)
+            time.sleep(0.65)
+            check(f"terms-lock {operation}/{label}: duas sessões ainda concorrentes durante a espera", first.is_alive() and second.is_alive())
+            first.join(10); second.join(10)
+            check(f"terms-lock {operation}/{label}: sessão bloqueadora concluiu a mutação", blocker_result.get("r") is not None and blocker_result["r"].returncode == 0, blocker_result.get("r").stderr if blocker_result.get("r") is not None else "sem retorno")
             revoked = caller_result.get("r")
-            check(f"terms-lock {operation}/{label}: revogação/troca após espera é negada", revoked is not None and (token in revoked.stderr or "current transaction is aborted" in revoked.stderr), revoked.stderr if revoked is not None else "sem retorno")
-            check(f"terms-lock {operation}/{label}: rollback preserva todo o estado", state(legacy_id) == before)
+            check(f"terms-lock {operation}/{label}: revogação/troca após espera é negada", revoked is not None and token in revoked.stderr, revoked.stderr if revoked is not None else "sem retorno")
+            after = state(legacy_id)
+            if external_terms_change:
+                terms_integrity = psql(f"""SELECT o.financial_approval_status='pending'
+                    AND o.payment_condition_status='pending'
+                    AND t.partner_order_id='{validated['id']}'
+                    AND t.approval_status=(SELECT approval_status FROM public.partner_order_payment_terms WHERE id='{terms_id}')
+                    AND NOT EXISTS(SELECT 1 FROM public.partner_order_payment_terms x WHERE x.id='{terms_id}' AND x.partner_order_id=o.id)
+                    FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id
+                    WHERE o.id='{legacy_id}'""").stdout.strip()
+                check(f"terms-lock {operation}/{label}: rollback não adiciona efeitos à troca externa", after["order"] == before["order"] and after["audit"] == before["audit"] and after["notifications"] == before["notifications"] and terms_integrity == "t", {"after": after, "before": before, "terms_integrity": terms_integrity})
+            else:
+                check(f"terms-lock {operation}/{label}: rollback preserva todo o estado", after == before, {"after": after, "before": before})
             psql(restore)
 
         for operation in ("request", "approve", "reject"):
@@ -592,6 +575,7 @@ def main():
                 f"UPDATE public.partner_order_payment_terms SET partner_order_id='{validated['id']}' WHERE id='{terms_id}'",
                 "payment_terms_order_mismatch",
                 f"UPDATE public.partner_order_payment_terms SET partner_order_id='{legacy_id}' WHERE id='{terms_id}'",
+                external_terms_change=True,
             )
         during_lock(
             "approve com papel administrativo revogado",
