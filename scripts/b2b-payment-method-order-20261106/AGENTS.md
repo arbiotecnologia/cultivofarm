@@ -1,3 +1,4 @@
+- SUPERADO (2026-11-06): decisão do auditor rebaseou B2B_PAYMENT_CONDITION_V1 em scripts/b2b-payment-condition-v1-rebase-20261106/; este pacote é só histórico — nunca aplicar, regenerar nem reativar B2B_PAYMENT_METHOD_V1.
 - Pausado/NÃO aprovado: nunca aplicar 02/04 hospedado, publicar, cadastrar meios/ativações remotas nem tocar PB-001036/teste4; e nunca manter este contrato junto com B2B_PAYMENT_CONDITION_V1 sem decisão do auditor (RECONCILIATION-PRIOR-CANDIDATE.md) — evita duplicação.
 - RPCs com meio são gerados dos corpos LIVE capturados por deltas de âncora única em generate.py; nunca wrappers sobre o motor antigo nem edição manual de 01–04 — garante uma verdade monetária (crédito/hash/terms/schedule/ACK).
 - Vendedor sempre por leitor canônico (comprador) ou h15 dono comercial (interno), nunca do payload; reautorizar e reler config/plano/atribuição/meio após cada espera na ordem documentada no README — evita autoridade obsoleta.

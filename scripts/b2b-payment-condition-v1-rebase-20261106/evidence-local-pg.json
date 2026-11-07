@@ -1,0 +1,485 @@
+{
+  "contract": "B2B_PAYMENT_CONDITION_V1",
+  "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
+  "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
+  "passed": 119,
+  "total": 119,
+  "checks": [
+    {
+      "name": "estado instalado B2: 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "estado instalado B2: 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "estado instalado B2: 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "candidata comprovada: schema.sql.review/build.py com 14103/13768 caracteres e sha256 pinado",
+      "ok": true
+    },
+    {
+      "name": "02 com corpo LIVE divergente aborta sem deixar objetos",
+      "ok": true
+    },
+    {
+      "name": "01 PRE_OK",
+      "ok": true
+    },
+    {
+      "name": "02 install",
+      "ok": true
+    },
+    {
+      "name": "03 POST_OK",
+      "ok": true
+    },
+    {
+      "name": "rerun do install recusado",
+      "ok": true
+    },
+    {
+      "name": "corpos LIVE originais intactos após install",
+      "ok": true
+    },
+    {
+      "name": "sem dois contratos: nenhum objeto rev.2 B2B_PAYMENT_METHOD_V1 nem create antigo de 10 argumentos",
+      "ok": true
+    },
+    {
+      "name": "sem ativação: comprador segue contrato atual (nenhum bloqueio global)",
+      "ok": true
+    },
+    {
+      "name": "sem ativação: outro tenant (papel FSF) segue contrato atual",
+      "ok": true
+    },
+    {
+      "name": "admin A publica Pix v1 (5 dias)",
+      "ok": true
+    },
+    {
+      "name": "financeiro A publica boleto 3x Price 1,8% em 30 dias",
+      "ok": true
+    },
+    {
+      "name": "promissória personalizável: 3x taxa explícita 0",
+      "ok": true
+    },
+    {
+      "name": "cartão de crédito personalizável: 2x 2,5%",
+      "ok": true
+    },
+    {
+      "name": "débito: parcela única com 1 dia",
+      "ok": true
+    },
+    {
+      "name": "plano com juros próprios recusado (uma fonte de juros)",
+      "ok": true
+    },
+    {
+      "name": "Pix parcelado recusado",
+      "ok": true
+    },
+    {
+      "name": "boleto 4x recusado",
+      "ok": true
+    },
+    {
+      "name": "parcela única com juros recusada",
+      "ok": true
+    },
+    {
+      "name": "meio fora dos seis recusado",
+      "ok": true
+    },
+    {
+      "name": "prazo acima do plano recusado",
+      "ok": true
+    },
+    {
+      "name": "meio inativo no catálogo recusado",
+      "ok": true
+    },
+    {
+      "name": "categoria não RECEITA recusada",
+      "ok": true
+    },
+    {
+      "name": "categoria RECEITA inativa recusada",
+      "ok": true
+    },
+    {
+      "name": "publicação com CAS antigo = stale",
+      "ok": true
+    },
+    {
+      "name": "comprador não configura",
+      "ok": true
+    },
+    {
+      "name": "técnico não configura",
+      "ok": true
+    },
+    {
+      "name": "gestor comercial (só leitura) não configura",
+      "ok": true
+    },
+    {
+      "name": "superadmin não configura",
+      "ok": true
+    },
+    {
+      "name": "admin F publica a própria versão (isolada)",
+      "ok": true
+    },
+    {
+      "name": "admin F atribui ao próprio parceiro",
+      "ok": true
+    },
+    {
+      "name": "admin A não atribui parceiro de F",
+      "ok": true
+    },
+    {
+      "name": "admin F não atribui parceiro de A",
+      "ok": true
+    },
+    {
+      "name": "gestor comercial lê condições de A (sem editar), default 30 dias exposto",
+      "ok": true
+    },
+    {
+      "name": "lista de F não vê condições de A",
+      "ok": true
+    },
+    {
+      "name": "comprador não lista configurações",
+      "ok": true
+    },
+    {
+      "name": "tabela privada fechada ao cliente",
+      "ok": true
+    },
+    {
+      "name": "anônimo sem EXECUTE",
+      "ok": true
+    },
+    {
+      "name": "opções do comprador P: só versões atribuídas de A; mode legacy antes da ativação",
+      "ok": true
+    },
+    {
+      "name": "comprador F vê só o Pix de F (2 dias)",
+      "ok": true
+    },
+    {
+      "name": "comprador P pedindo parceiro F negado",
+      "ok": true
+    },
+    {
+      "name": "técnico negado",
+      "ok": true
+    },
+    {
+      "name": "comprador inativo negado",
+      "ok": true
+    },
+    {
+      "name": "cartão de crédito publicado mas não atribuído: indisponível ao comprador",
+      "ok": true
+    },
+    {
+      "name": "ator interno de A vê opções do parceiro de A",
+      "ok": true
+    },
+    {
+      "name": "ator interno de F não vê parceiro de A",
+      "ok": true
+    },
+    {
+      "name": "exemplo do revisor: 1000 a 1,8% 3x = 345,40/345,40/345,42 (Decimal independente)",
+      "ok": true
+    },
+    {
+      "name": "simulação: final/amounts/juros/cronograma/crédito = 1036,22; 1º vencimento estimado = hoje+30",
+      "ok": true
+    },
+    {
+      "name": "hash com condição ≠ hash LIVE do mesmo carrinho",
+      "ok": true
+    },
+    {
+      "name": "create com hash LIVE (1000) recusado: price_changed",
+      "ok": true
+    },
+    {
+      "name": "prazo adulterado na escolha recusado",
+      "ok": true
+    },
+    {
+      "name": "escolha com campo extra (parcelas do cliente) recusada",
+      "ok": true
+    },
+    {
+      "name": "create Price: ACK total/final/juros 1036,22 e mesmo hash",
+      "ok": true
+    },
+    {
+      "name": "pedido/termos/cronograma/snapshot/idempotência: todos 1036,22 e as mesmas 3 parcelas estimadas",
+      "ok": true
+    },
+    {
+      "name": "replay mesma chave+escolha: mesmo pedido e mesmo ACK",
+      "ok": true
+    },
+    {
+      "name": "replay não duplica snapshot/termos",
+      "ok": true
+    },
+    {
+      "name": "mesma chave com outro meio: conflito",
+      "ok": true
+    },
+    {
+      "name": "Pix líquido com desconto 10%: R$ 0.90 em 1 parcela hoje+5 (estimada)",
+      "ok": true
+    },
+    {
+      "name": "Pix embalagem inteira com desconto 10%: R$ 162.00 em 1 parcela hoje+5 (estimada)",
+      "ok": true
+    },
+    {
+      "name": "Pix misto com desconto 10%: R$ 162.90 em 1 parcela hoje+5 (estimada)",
+      "ok": true
+    },
+    {
+      "name": "pedido misto: snapshots de embalagem inteira + líquido preservados",
+      "ok": true
+    },
+    {
+      "name": "preço client-side ignorado: hash não confere",
+      "ok": true
+    },
+    {
+      "name": "vencimento/parcelas do cliente não existem no contrato",
+      "ok": true
+    },
+    {
+      "name": "cotação: aguardando_cotacao, sem termos, snapshot de escolha sem valor",
+      "ok": true
+    },
+    {
+      "name": "crédito: simulação avisa excesso com o total Price (não o líquido)",
+      "ok": true
+    },
+    {
+      "name": "crédito real: create bloqueado pelo total Price",
+      "ok": true
+    },
+    {
+      "name": "sem escolha: payment_choice_required (sem fallback Pix)",
+      "ok": true
+    },
+    {
+      "name": "create sem escolha: payment_choice_required",
+      "ok": true
+    },
+    {
+      "name": "versão inexistente sem oráculo",
+      "ok": true
+    },
+    {
+      "name": "versão de F pelo comprador de A",
+      "ok": true
+    },
+    {
+      "name": "meio de outra condição",
+      "ok": true
+    },
+    {
+      "name": "promissória sem atribuição em PLD indisponível",
+      "ok": true
+    },
+    {
+      "name": "técnico não simula",
+      "ok": true
+    },
+    {
+      "name": "anônimo sem EXECUTE no create",
+      "ok": true
+    },
+    {
+      "name": "Pix v2 com CAS; atribuições copiadas",
+      "ok": true
+    },
+    {
+      "name": "simulação versão antiga: stale",
+      "ok": true
+    },
+    {
+      "name": "create versão antiga: stale",
+      "ok": true
+    },
+    {
+      "name": "Pix v2 disponível ao mesmo parceiro (7 dias)",
+      "ok": true
+    },
+    {
+      "name": "snapshot histórico preserva v1/5 dias",
+      "ok": true
+    },
+    {
+      "name": "snapshot imutável",
+      "ok": true
+    },
+    {
+      "name": "versões append-only",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: atribuição revogada durante a espera -> create espera a trava e nega",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: versão aposentada durante a espera -> negada",
+      "ok": true
+    },
+    {
+      "name": "dinheiro v2 publicada após aposentar a v1 (nova versão explícita)",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: atribuição comercial LIVE revogada durante a espera -> indisponível",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: meio desativado no catálogo durante a espera -> indisponível",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: categoria RECEITA desativada durante a espera -> indisponível",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: papel do comprador revogado durante a espera de crédito -> negado na revalidação final",
+      "ok": true
+    },
+    {
+      "name": "publish: papel revogado durante a espera do advisory -> forbidden (reautoriza após lock)",
+      "ok": true
+    },
+    {
+      "name": "publish concorrente com o mesmo CAS: exatamente um vence",
+      "ok": true
+    },
+    {
+      "name": "mesma chave em paralelo: um pedido",
+      "ok": true
+    },
+    {
+      "name": "financeiro não ativa",
+      "ok": true
+    },
+    {
+      "name": "piloto com parceiro de outro tenant recusado",
+      "ok": true
+    },
+    {
+      "name": "piloto sem condição atribuída ao parceiro recusado",
+      "ok": true
+    },
+    {
+      "name": "admin A ativa piloto só para o parceiro P",
+      "ok": true
+    },
+    {
+      "name": "ativação com CAS antigo recusada",
+      "ok": true
+    },
+    {
+      "name": "piloto: comprador P vê mode required",
+      "ok": true
+    },
+    {
+      "name": "piloto: contrato antigo do comprador P bloqueado (B2B_PAYMENT_CONDITION_REQUIRED, nada gravado)",
+      "ok": true
+    },
+    {
+      "name": "piloto: ator interno de A simula com condição (mesma verdade monetária)",
+      "ok": true
+    },
+    {
+      "name": "ator interno: barreira LIVE de origem interna preservada nos dois caminhos",
+      "ok": true
+    },
+    {
+      "name": "piloto de A não afeta comprador de F (papel FSF)",
+      "ok": true
+    },
+    {
+      "name": "gatilho DEFERRED isolado: pedido sem snapshot falha no COMMIT",
+      "ok": true
+    },
+    {
+      "name": "comprador lê condição/parcelas do pedido (mesmo total, estimado)",
+      "ok": true
+    },
+    {
+      "name": "admin F não lê pedido de A",
+      "ok": true
+    },
+    {
+      "name": "PB-001036/teste4 fora do escopo: nenhum pedido real no PG descartável",
+      "ok": true
+    },
+    {
+      "name": "04 com pin divergente aborta sem mudar nada",
+      "ok": true
+    },
+    {
+      "name": "04 rollback deny-only",
+      "ok": true
+    },
+    {
+      "name": "após rollback: opções negadas",
+      "ok": true
+    },
+    {
+      "name": "após rollback: empresa ativada continua bloqueada (nunca reabre fallback)",
+      "ok": true
+    },
+    {
+      "name": "após rollback: empresa não ativada segue contrato atual",
+      "ok": true
+    },
+    {
+      "name": "após rollback: snapshots/versões preservados",
+      "ok": true
+    }
+  ]
+}

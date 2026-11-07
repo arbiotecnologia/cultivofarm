@@ -1,0 +1,24 @@
+{
+  "install": {
+    "publish": "5d410cdba3c34298389302fb91d2fb16",
+    "retire": "c90717e0ed75e7cfeaefa0b7628a3643",
+    "assign": "58c003869c6c6159a78fd3009296476a",
+    "activation": "9efe4e6eb5afe29d8e3d9f3ef7077863",
+    "list": "561fa25917c7d3938faa82b1aa7d61de",
+    "options": "8a7f29c199e77e653966ebdb8a4b3ed3",
+    "sim": "d4c50e5880f39ea3a5dfa719c7d1e919",
+    "create": "b4044cf9489a00283e62bf43cfbadd90",
+    "read": "6836dd87a66e9daa58801a1656d6c67e"
+  },
+  "deny": {
+    "publish": "e40a25e08476b1c70a82ce514731f829",
+    "retire": "58c048a7d4f1100ebfa8f650d077b7f3",
+    "assign": "b4f1608ba2ea025b58bd2b17cfb6dc56",
+    "activation": "13a3dbdc4b02e75cda7fce8bb78d2afb",
+    "list": "7866ca84fb6bc242c310c250c8b2b7d2",
+    "options": "44946ff8e6c7d3dcbd818bdbcf1f4b8c",
+    "sim": "fa660fe6201ebdbf54c34a844ef740f3",
+    "create": "68880cbbc3fa3e2461a6feb7ce9d5b2b",
+    "read": "83493dc68466d949f44ea64114f377ef"
+  }
+}

@@ -1,3 +1,5 @@
+> **SUPERADO — somente histórico.** Decisão técnica do auditor (2026-11-06): contrato único B2B_PAYMENT_CONDITION_V1 rebaseado em `../b2b-payment-condition-v1-rebase-20261106/`. Evidências 101/101 abaixo ficam como histórico.
+
 # B2B_PAYMENT_METHOD_V1 rev. 2 — meio de pagamento escolhido no pedido (B3)
 
 Status: **NÃO APROVADO PARA IMPLANTAÇÃO; NÃO APLICADO.** Revisão 9c0d288 tratada só em código e PG descartável.

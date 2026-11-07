@@ -48,7 +48,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCommercialPaymentPlans } from "@/hooks/useCommercialPaymentPlans";
 import { useSimulateB2BPaymentPlan, type SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
 import { useFencedB2BSimulation, type MethodSimulateResult } from "@/hooks/useFencedB2BSimulation";
-import { useB2BPaymentMethodOptions, METHOD_KIND_LABEL, type PaymentMethodChoice } from "@/hooks/useB2BPaymentMethodOptions";
+import { useB2BPaymentMethodOptions, METHOD_KIND_LABEL, sameChoice, type PaymentMethodChoice } from "@/hooks/useB2BPaymentMethodOptions";
 import { PaymentPlanSelector } from "@/components/comercial/PaymentPlanSelector";
 import { PaymentSimulationSummary } from "@/components/comercial/PaymentSimulationSummary";
 
@@ -476,7 +476,7 @@ export default function NovoPedido() {
   // e fence capturado. Diálogo fechado/carrinho inválido => chave nula, o que aposenta respostas em voo.
   const simEnabled = !isSimulationMode && confirmOpen && !cartInvalid;
   // (o modo do meio de pagamento também precisa estar confirmado; ver methodMode abaixo)
-  // B2B_PAYMENT_METHOD_V1: meios permitidos pelo vendedor para a condição; escolha reiniciada a cada condição/parceiro.
+  // B2B_PAYMENT_CONDITION_V1: meios permitidos pelo vendedor para a condição; escolha reiniciada a cada condição/parceiro.
   const methodOptions = useB2BPaymentMethodOptions(partner?.id, selectedPlanId, !isSimulationMode && confirmOpen);
   const methodList = methodOptions.data?.status === "ok" ? methodOptions.data.options : [];
   // Modo vem do servidor por empresa vendedora/parceiro. Pré-instalação exata = contrato atual (o servidor não exige meio).
@@ -488,8 +488,9 @@ export default function NovoPedido() {
   const selectedMethod: PaymentMethodChoice | null = useMemo(() => {
     if (!methodChoice || methodChoice.planId !== selectedPlanId || methodChoice.partnerId !== partner?.id) return null;
     if (methodOptions.data?.status !== "ok") return null;
-    const live = methodOptions.data.options.some((o) => o.available && o.config_id === methodChoice.config_id && o.version === methodChoice.version);
-    return live ? { config_id: methodChoice.config_id, version: methodChoice.version } : null;
+    const live = methodOptions.data.options.some((o) => o.available && sameChoice(o, methodChoice));
+    return live ? { payment_method: methodChoice.payment_method, payment_condition_version: methodChoice.payment_condition_version,
+      payment_deadline_days: methodChoice.payment_deadline_days } : null;
   }, [methodChoice, selectedPlanId, partner?.id, methodOptions.data]);
   const setSelectedMethod = (m: PaymentMethodChoice | null) =>
     setMethodChoice(m && selectedPlanId && partner?.id ? { ...m, planId: selectedPlanId, partnerId: partner.id } : null);
@@ -1285,14 +1286,15 @@ export default function NovoPedido() {
                     ) : (
                       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Meio de pagamento">
                         {methodList.filter((o) => o.available).map((o) => {
-                          const on = selectedMethod?.config_id === o.config_id && selectedMethod.version === o.version;
+                          const on = sameChoice(selectedMethod, o);
                           return (
-                            <Button key={o.config_id} type="button" size="sm" role="radio" aria-checked={on}
+                            <Button key={`${o.payment_method}:${o.payment_condition_version}`} type="button" size="sm" role="radio" aria-checked={on}
                               variant={on ? "default" : "outline"}
-                              onClick={() => setSelectedMethod({ config_id: o.config_id, version: o.version })}>
-                              {METHOD_KIND_LABEL[o.method_kind]}
+                              onClick={() => setSelectedMethod({ payment_method: o.payment_method, payment_condition_version: o.payment_condition_version,
+                                payment_deadline_days: o.payment_deadline_days })}>
+                              {METHOD_KIND_LABEL[o.payment_method]}
                               {o.installment_count && o.installment_count > 1 ? ` · ${o.installment_count}x` : ""}
-                              {o.due_days != null ? ` · ${o.due_days} dias após a NF` : ""}
+                              {o.payment_deadline_days >= 0 ? ` · ${o.payment_deadline_days} dias após a NF` : ""}
                             </Button>
                           );
                         })}
@@ -1322,7 +1324,7 @@ export default function NovoPedido() {
                     cashReferenceAmount={cashSimulation?.amounts.final_amount ?? null}
                     responsavelNome={supplierName}
                     estimatedMethodLabel={(visibleSimulation as Partial<MethodSimulateResult>).schedule_estimated
-                      ? (visibleSimulation as MethodSimulateResult).payment_method.payment_method_name : null}
+                      ? (visibleSimulation as MethodSimulateResult).payment_condition.payment_method_name : null}
                   />
                 )}
                 {!selectedPlanId && (
