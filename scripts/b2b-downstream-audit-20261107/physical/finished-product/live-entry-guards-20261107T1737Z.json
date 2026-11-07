@@ -1,0 +1,25 @@
+{
+  "source": "Fatos READONLY LIVE informados por Renato S. Cunha em 2026-11-07T17:37Z; nenhuma leitura hosted executada pelo agente.",
+  "canonical_project_ref_required": "swzpzcwiasxmjutrmvkm",
+  "hosted_operations_by_agent": false,
+  "functions": {
+    "public.validate_estoque_entrada()": {
+      "reported_md5": "9e24938a8d716a02ba023c9fb7ce24e9",
+      "reported_semantics": [
+        "Retorna cedo quando NEW.quantidade_reservada IS NOT NULL.",
+        "Entrada agregada sem reserva exige EXISTS public.envase para NEW.lote_id.",
+        "O retorno de reserva não pode ser usado como atalho da entrada de compra."
+      ]
+    },
+    "platform_private.estoque_produto_catalog_tenant_guard()": {
+      "reported_md5": "874c9ca8b5b4e307cf995a0197f98efc",
+      "reported_semantics": [
+        "Deriva o tenant de public.lotes.organization_id pelo NEW.lote_id.",
+        "Confere public.produtos.owner_organization_id e public.microrganismos.owner_organization_id."
+      ]
+    }
+  },
+  "inventory_limit": "O auditor não encontrou tabelas public com nomes compra/purchase/entrada/recebimento/inventory/supplier; isso não prova ausência absoluta de módulo.",
+  "decision": "Químicos e fertilizantes ARBio entram exclusivamente por compra de produto acabado para revenda, nunca fabricação.",
+  "release": "INACTIVE_BLOCKED_NOT_APPROVED"
+}
