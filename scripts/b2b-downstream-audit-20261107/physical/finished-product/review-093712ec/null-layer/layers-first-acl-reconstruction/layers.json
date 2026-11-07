@@ -1,0 +1,81 @@
+{
+  "kind": "DISPOSABLE_FINISHED_PRODUCT_LAYERED_INSTALL_NOT_HOSTED",
+  "status": "FAIL",
+  "exit_code": 1,
+  "passed": 12,
+  "total": 13,
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "ausência das duas dependências downstream simulada somente no PG descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "pacote completo falha fechado na primeira dependência ausente",
+      "status": "PASS",
+      "detail": "FINISHED_PRE_DEPENDENCY_MISSING platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+    },
+    {
+      "name": "PRE do pacote completo não cria objetos antes da dependência ausente",
+      "status": "PASS"
+    },
+    {
+      "name": "camada de entrada instala sem presumir confirmação/envio",
+      "status": "PASS"
+    },
+    {
+      "name": "camada de entrada não cria nem remove pins das dependências ausentes",
+      "status": "PASS"
+    },
+    {
+      "name": "POST da entrada confirma seus nove corpos, novos helpers e gate fechado",
+      "status": "PASS"
+    },
+    {
+      "name": "camada downstream continua bloqueada enquanto a dependência não existe",
+      "status": "PASS",
+      "detail": "FINISHED_PRE_DEPENDENCY_MISSING platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+    },
+    {
+      "name": "compra canônica funciona na camada de entrada sem downstream",
+      "status": "PASS",
+      "detail": {
+        "stock": "6957c4f5-4f7f-42d4-8274-6848f7f43957",
+        "lot": "32709c97-0599-4f34-8343-3ac75633f8fe"
+      }
+    },
+    {
+      "name": "dependência reconstituída com o corpo capturado exato: platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+      "status": "PASS"
+    },
+    {
+      "name": "dependência reconstituída com o corpo capturado exato: platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+      "status": "PASS"
+    },
+    {
+      "name": "execução das camadas terminou no ponto concreto",
+      "status": "FAIL",
+      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_layers.py\", line 74, in main\n    raise AssertionError(\"downstream install failed\\n\" + loaded.stdout[-3000:] + loaded.stderr[-8000:])\nAssertionError: downstream install failed\nERROR:  P0001: FINISHED_PRE_ACL_DRIFT platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)\nCONTEXT:  PL/pgSQL function inline_code_block line 5 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
+    }
+  ],
+  "hosted": false,
+  "reported_live_state": {
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)": "ABSENT",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)": "ABSENT",
+    "other_six": "REPORTED_MATCH"
+  },
+  "synthetic_seams": [
+    "ausência simulada por DROP somente na composição descartável; nenhuma nova leitura ou escrita LIVE",
+    "dependências reconstituídas com os corpos capturados e MD5 conferidos antes da camada downstream",
+    "Auth/claims, produto, demanda e comprovante fictícios; sem JWT/RLS/Storage/PostgREST/browser",
+    "nenhum efeito fiscal, financeiro, contábil ou de comunicação"
+  ]
+}

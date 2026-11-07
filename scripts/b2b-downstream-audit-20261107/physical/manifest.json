@@ -93,13 +93,16 @@
   "finished_product": {
     "path": "finished-product/",
     "status": "INACTIVE_BLOCKED_NOT_APPROVED",
-    "candidate_sha256": "96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e",
+    "candidate_sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd",
     "purchase_origin": "compra_produto_acabado_revenda",
     "tests": {
       "before": "17/17",
       "after": "49/49",
       "legacy_candidate": "6/6",
-      "artifact_review": "23/23"
+      "null_contract_before": "27/51 exit 1",
+      "null_contract_after": "51/51",
+      "layered_install": "16/16",
+      "artifact_review": "35/35"
     },
     "live_reported_entry_guards": {
       "source": "finished-product/live-entry-guards-20261107T1737Z.json",

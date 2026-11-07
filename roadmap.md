@@ -1311,3 +1311,10 @@
 - [x] EnvasePage somente consulta; 494 Vitest passaram.
 - [ ] NO-GO: sincronizar hash de prova digital canônica antes da confirmação; PG reproduziu 42501, sem relaxar checks.
 - [ ] Repetir concorrência/revogação e revisar avanço de OS após corrigir prova; release permanece deny-only.
+
+## 07/11 18:44 — revisão física 093712ec: nulidade e camadas de instalação
+- [x] Reproduzir CHECK/helpers anuláveis com origem, versão, conteúdo, unidade, quantidade e dimensões inválidas, gate ligado/desligado: 27/51 antes, 24 falhas funcionais preservadas.
+- [x] Corrigir somente o gerador local com nulidade explícita e IS TRUE/IS NOT TRUE: 51/51 nulidade, 49/49 compra/downstream, 6/6 legado e 35/35 revisão estática.
+- [x] Reconciliar PRE/POST em camadas: entrada com 9 funções sem presumir confirm/send; downstream com 2 funções e pins explícitos de ausência; 16/16 com dependências simuladamente ausentes e recompostas.
+- [x] Preservar B3/B4 e fila anterior; nenhuma escrita hospedada, publicação, NF, cobrança ou envio.
+- [ ] Instalar/homologar as dependências canônicas de confirmação/envio antes da camada downstream; revisão independente LIVE e provas JWT/RLS/Storage/PostgREST/browser continuam pendentes.

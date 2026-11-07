@@ -57,6 +57,18 @@ def main():
     old = json.loads((HERE / "history/pre-live-entry-guards/results.json").read_text())
     check("evidência anterior 37/37 permanece preservada", old["batteries"]["after"] == {"passed": 37, "total": 37, "exit_code": 0, "meaning": "compra_e_downstream_local_com_gate_sintetico_e_rollback"})
 
+    null_after = json.loads((EVIDENCE / "null-contract.json").read_text())
+    check("matriz de nulidade passa com gate ligado e desligado", null_after.get("status") == "PASS" and null_after.get("passed") == 51 and null_after.get("total") == 51)
+    layers = json.loads((EVIDENCE / "layers.json").read_text())
+    check("instalação em camadas passa com dependências ausentes e recompostas", layers.get("status") == "PASS" and layers.get("passed") == 16 and layers.get("total") == 16)
+    check("CHECK e helpers tornam nulidade e resultado booleano explícitos", "quantidade_conteudo IS NOT NULL" in candidate and "embalagem_versao IS NOT NULL" in candidate and ")) IS TRUE;" in candidate)
+    check("todos os callers negam helper NULL com IS NOT TRUE", "IF NOT platform_private.finished_product_" not in candidate and "IS NOT TRUE THEN" in candidate)
+    for name in ("candidate-foundation.sql.review", "candidate-downstream.sql.review", "install-foundation.sql.review", "install-downstream.sql.review", "postflight-foundation.sql.review", "postflight-downstream.sql.review"):
+        check(f"artefato de camada presente e não vazio: {name}", (HERE / name).is_file() and (HERE / name).stat().st_size > 0)
+    foundation_install = (HERE / "install-foundation.sql.review").read_text()
+    downstream_install = (HERE / "install-downstream.sql.review").read_text()
+    check("entrada não pressupõe downstream e downstream mantém pins explícitos de ausência", "delivery_confirm_apply_v1" not in foundation_install and "delivery_send_apply_v1" not in foundation_install and downstream_install.count("FINISHED_PRE_DEPENDENCY_MISSING") == 2)
+    check("manifesto registra as camadas e o estado LIVE relatado sem certificá-lo", manifest.get("layers", {}).get("downstream", {}).get("requires_foundation_postflight") is True and manifest.get("reported_live_state", {}).get("delivery_confirm_apply_v1") == "ABSENT")
     out = {"status": "PASS", "checks": checks, "passed": len(checks), "total": len(checks), "hosted": False, "candidate_sha256": candidate_hash}
     (EVIDENCE / "review.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
     print(f"RESULT {len(checks)}/{len(checks)} exit 0")

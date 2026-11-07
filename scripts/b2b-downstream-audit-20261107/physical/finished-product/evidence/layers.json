@@ -1,0 +1,92 @@
+{
+  "kind": "DISPOSABLE_FINISHED_PRODUCT_LAYERED_INSTALL_NOT_HOSTED",
+  "status": "PASS",
+  "exit_code": 0,
+  "passed": 16,
+  "total": 16,
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "ausência das duas dependências downstream simulada somente no PG descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "pacote completo falha fechado na primeira dependência ausente",
+      "status": "PASS",
+      "detail": "FINISHED_PRE_DEPENDENCY_MISSING platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+    },
+    {
+      "name": "PRE do pacote completo não cria objetos antes da dependência ausente",
+      "status": "PASS"
+    },
+    {
+      "name": "camada de entrada instala sem presumir confirmação/envio",
+      "status": "PASS"
+    },
+    {
+      "name": "camada de entrada não cria nem remove pins das dependências ausentes",
+      "status": "PASS"
+    },
+    {
+      "name": "POST da entrada confirma seus nove corpos, novos helpers e gate fechado",
+      "status": "PASS"
+    },
+    {
+      "name": "camada downstream continua bloqueada enquanto a dependência não existe",
+      "status": "PASS",
+      "detail": "FINISHED_PRE_DEPENDENCY_MISSING platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+    },
+    {
+      "name": "compra canônica funciona na camada de entrada sem downstream",
+      "status": "PASS",
+      "detail": {
+        "stock": "9e84ea3c-b96a-4832-92d6-8c774876c992",
+        "lot": "484b5f0c-7516-41f8-aff6-ef83d701ee31"
+      }
+    },
+    {
+      "name": "dependência reconstituída com o corpo capturado exato: platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+      "status": "PASS"
+    },
+    {
+      "name": "dependência reconstituída com o corpo capturado exato: platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+      "status": "PASS"
+    },
+    {
+      "name": "camada downstream instala somente após dependências e POST da entrada",
+      "status": "PASS"
+    },
+    {
+      "name": "POST downstream confirma os dois corpos alterados e gate fechado",
+      "status": "PASS"
+    },
+    {
+      "name": "camadas compostas preservam reserva→expedição→entrega sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "POST completo coincide com a composição das duas camadas",
+      "status": "PASS"
+    }
+  ],
+  "hosted": false,
+  "reported_live_state": {
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)": "ABSENT",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)": "ABSENT",
+    "other_six": "REPORTED_MATCH"
+  },
+  "synthetic_seams": [
+    "ausência simulada por DROP somente na composição descartável; nenhuma nova leitura ou escrita LIVE",
+    "dependências reconstituídas com os corpos capturados e MD5 conferidos antes da camada downstream",
+    "Auth/claims, produto, demanda e comprovante fictícios; sem JWT/RLS/Storage/PostgREST/browser",
+    "nenhum efeito fiscal, financeiro, contábil ou de comunicação"
+  ]
+}

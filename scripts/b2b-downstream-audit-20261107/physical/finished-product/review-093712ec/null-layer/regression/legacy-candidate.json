@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "candidato instalado e gate permanece desligado para o legado",
+      "status": "PASS"
+    },
+    {
+      "name": "legado biológico mantém programação, envio e confirmação canônicos com gate desligado",
+      "status": "PASS"
+    },
+    {
+      "name": "legado biológico mantém cancelamento e recomposição de estoque",
+      "status": "PASS"
+    },
+    {
+      "name": "legado sem envase continua negado pelo writer físico",
+      "status": "PASS",
+      "detail": "P0001"
+    }
+  ],
+  "candidate_installed": true,
+  "gate_enabled": false,
+  "hosted": false
+}

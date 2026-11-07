@@ -44,22 +44,75 @@
     "embalagem_versao"
   ],
   "new_grants": [],
+  "layers": {
+    "foundation": {
+      "changed_functions": [
+        "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+        "platform_private.envase_insert_final_v1()",
+        "platform_private.envase_insert_guard_v1()",
+        "platform_private.guard_manual_lot_write_v1()",
+        "platform_private.trg_lab_lot_biological_only()",
+        "public.fn_sync_os_classica_downstream()",
+        "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+        "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+        "public.validate_estoque_entrada()"
+      ],
+      "requires_delivery_confirmation_or_send": false
+    },
+    "downstream": {
+      "changed_functions": [
+        "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+        "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
+      ],
+      "requires_delivery_confirmation_or_send": true,
+      "requires_foundation_postflight": true
+    }
+  },
+  "reported_live_state": {
+    "delivery_confirm_apply_v1": "ABSENT",
+    "delivery_send_apply_v1": "ABSENT",
+    "other_six_bodies_owners_acls": "REPORTED_MATCH_REMAINING_PRE_PINS_RETAINED"
+  },
   "files": {
     "baseline.json": {
       "sha256": "e212c238e54d3d5bc5c9922af20e29876a88c0e71fb71f9e1fc74296e8053afc",
       "bytes": 10949
     },
     "candidate.sql.review": {
-      "sha256": "96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e",
-      "bytes": 70331
+      "sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd",
+      "bytes": 71320
+    },
+    "candidate-foundation.sql.review": {
+      "sha256": "06b493cdebf1e1de2ba90fc471a754edd229a7ac9684bddad8cbef93a50344c3",
+      "bytes": 50560
+    },
+    "candidate-downstream.sql.review": {
+      "sha256": "a0773d2d4061e21394ef763050a696021fa9becc0030113f99613c671ddb19a7",
+      "bytes": 20759
     },
     "install.sql.review": {
-      "sha256": "b33a01e11b8b9fbad96e8131956f00fceb8396a3605ca6816919771ebd774cb8",
-      "bytes": 101298
+      "sha256": "0ec8e31adeeb165ff56a8d22c14348f7c6d6819d45719585623833be2947144b",
+      "bytes": 102550
+    },
+    "install-foundation.sql.review": {
+      "sha256": "be2f4ad4ac7bc981613b49fdd73f0e2cfee785c6812adc92c3e17c284f86709b",
+      "bytes": 79964
+    },
+    "install-downstream.sql.review": {
+      "sha256": "4bdd82c66e03a80d141d45a3963a5033c7417b19624ccab8ed94230bfae06843",
+      "bytes": 33997
     },
     "postflight.sql.review": {
-      "sha256": "77cffb88a709972c662f5e8aaba63fc45c8f4198605c6a7565f6a1037308e4bb",
-      "bytes": 12846
+      "sha256": "c7a7bc56149906cbdb72279c25b77805e55e8617da5d756be79d4a00303d85b7",
+      "bytes": 12854
+    },
+    "postflight-foundation.sql.review": {
+      "sha256": "c61f9001a8b227c6e6dfe343f54bb5842c124be9983c4e8770d737ace366237f",
+      "bytes": 11226
+    },
+    "postflight-downstream.sql.review": {
+      "sha256": "6bea34e5b2cbfd15717cc9a5632aaa1d28f1c71bb5a74278c185c8b43bd93cb1",
+      "bytes": 1789
     },
     "rollback.sql.review": {
       "sha256": "9520cc30f3167045cdfb1a45c992ddd943b367409a2fa8666fa418db41a66644",

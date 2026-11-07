@@ -1,0 +1,9 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.5s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS candidato instalado e gate permanece desligado para o legado
+PASS legado biológico mantém programação, envio e confirmação canônicos com gate desligado
+PASS legado biológico mantém cancelamento e recomposição de estoque
+PASS legado sem envase continua negado pelo writer físico
+RESULT 6 / 6 exit 0

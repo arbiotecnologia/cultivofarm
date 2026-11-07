@@ -68,6 +68,16 @@ def function_pin(entry, expected=None):
 END$$;"""
 
 
+def dependency_pin(entry):
+    sig = entry["signature"]
+    return f"""DO $$DECLARE p oid:=to_regprocedure({lit(sig)});BEGIN
+ IF p IS NULL THEN RAISE EXCEPTION 'FINISHED_PRE_DEPENDENCY_MISSING {sig}';END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM {lit(entry['md5'])} THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT {sig}';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM {lit(entry['owner'])} THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT {sig}';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM {lit(entry['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT {sig}';END IF;
+END$$;"""
+
+
 def trigger_pin(entry):
     label = f"{entry['schema']}.{entry['table']}.{entry['name']}"
     return f"""DO $$DECLARE d text;e text;ty smallint;BEGIN
@@ -117,13 +127,13 @@ def build():
    AND c.ctx->'metadata'->>'unidade_conteudo'=NEW.unidade_conteudo
    AND (c.ctx->'metadata'->>'conteudo_por_unidade')::numeric=NEW.conteudo_por_unidade
    AND (c.ctx->'metadata'->>'quantidade_conteudo')::numeric=NEW.quantidade_conteudo
-   AND platform_private.finished_product_stock_valid_v1(NEW)
+   AND platform_private.finished_product_stock_valid_v1(NEW) IS TRUE
    AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
   THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED' USING ERRCODE='42501';
  END IF;
  -- Preserve ONLY the installed canonical partial reservation semantics under""", "entry purchase guard")
-    entry_guard = one_replace(entry_guard, "    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade", "    AND NEW.validade IS NOT DISTINCT FROM parent.validade\n    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))", "entry guard finished split")
+    entry_guard = one_replace(entry_guard, "    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade", "    AND NEW.validade IS NOT DISTINCT FROM parent.validade\n    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) IS TRUE AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))", "entry guard finished split")
     sync = one_replace(sync, "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN", "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL)\n     AND NOT EXISTS(SELECT 1 FROM public.entregas d JOIN public.estoque_produto s ON s.id=d.estoque_produto_id WHERE d.ordem_servico_id=NEW.id AND d.produto_id=NEW.produto_id AND d.status::text<>'cancelada' AND s.origem_estoque='compra_produto_acabado_revenda') THEN", "sync finished product")
 
     lot_guard = one_replace(lot_guard, " -- No JWT/GUC/current_user/service-role escape: only the reviewed insert RPC", """ org:=platform_private.h15_actor_organization();
@@ -159,7 +169,7 @@ def build():
   END IF;""", "purchase reservation shortcut")
     entry_validate = one_replace(entry_validate, "  -- Exigir envase para o lote\n  IF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id) THEN\n    RAISE EXCEPTION 'Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.'\n      USING ERRCODE = 'check_violation';\n  END IF;", """  -- Compra para revenda usa ticket privado e snapshot; demais entradas continuam exigindo envase.
   IF NEW.origem_estoque='compra_produto_acabado_revenda' THEN
-    IF NOT platform_private.finished_product_stock_valid_v1(NEW)
+    IF platform_private.finished_product_stock_valid_v1(NEW) IS NOT TRUE
      OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=pg_catalog.txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id) THEN
       RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_ENTRY_DENIED' USING ERRCODE='42501';
     END IF;
@@ -168,7 +178,7 @@ def build():
       USING ERRCODE = 'check_violation';
   END IF;""", "purchase stock entry guard")
 
-    reservar = one_replace(reservar, "  v_volume_reservado := CASE", """  IF v_item.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_item) THEN
+    reservar = one_replace(reservar, "  v_volume_reservado := CASE", """  IF v_item.origem_estoque IS NOT NULL AND platform_private.finished_product_stock_valid_v1(v_item) IS NOT TRUE THEN
     RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
   END IF;
   IF v_item.unidade_comercial='unidade' AND p_qty<>trunc(p_qty) THEN
@@ -188,7 +198,7 @@ def build():
     RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
   END IF;
   IF v_est.origem_estoque IS NOT NULL THEN
-    IF NOT platform_private.finished_product_stock_valid_v1(v_est) THEN
+    IF platform_private.finished_product_stock_valid_v1(v_est) IS NOT TRUE THEN
       RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
     END IF;
   ELSIF v_est.volume_total IS NULL OR v_est.volume_total <= 0 OR v_est.volume_total::text IN ('NaN','Infinity','-Infinity') THEN
@@ -199,7 +209,7 @@ def build():
     criar = one_replace(criar, "    nullif(p_dados->>'veiculo','')\n  ) RETURNING id INTO v_id;", "    nullif(p_dados->>'veiculo',''),\n    v_est.origem_estoque,v_est.unidade_comercial,v_est.conteudo_por_unidade,v_est.unidade_conteudo,CASE WHEN v_est.origem_estoque='compra_produto_acabado_revenda' THEN p_quantidade*v_est.conteudo_por_unidade ELSE NULL END,v_est.embalagem_id,v_est.embalagem_versao\n  ) RETURNING id INTO v_id;", "entrega insert values")
     criar = one_replace(criar, "    volume_entregue_ml = round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6),", "    volume_entregue_ml = CASE WHEN v_est.origem_estoque='compra_produto_acabado_revenda' AND v_est.unidade_conteudo IN ('kg','g') THEN NULL ELSE round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6) END,", "entrega no weight ml")
 
-    merge = one_replace(merge, " OR v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity')", " OR (v_s.origem_estoque IS NULL AND (v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity'))) OR (v_s.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_s))", "merge source balance")
+    merge = one_replace(merge, " OR v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity')", " OR (v_s.origem_estoque IS NULL AND (v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity'))) OR (v_s.origem_estoque IS NOT NULL AND platform_private.finished_product_stock_valid_v1(v_s) IS NOT TRUE)", "merge source balance")
     merge = one_replace(merge, "v_main.validade IS DISTINCT FROM v_s.validade", "v_main.validade IS DISTINCT FROM v_s.validade OR v_main.origem_estoque IS DISTINCT FROM v_s.origem_estoque OR v_main.unidade_comercial IS DISTINCT FROM v_s.unidade_comercial OR v_main.conteudo_por_unidade IS DISTINCT FROM v_s.conteudo_por_unidade OR v_main.unidade_conteudo IS DISTINCT FROM v_s.unidade_conteudo OR v_main.embalagem_id IS DISTINCT FROM v_s.embalagem_id OR v_main.embalagem_versao IS DISTINCT FROM v_s.embalagem_versao", "merge metadata")
     merge = one_replace(merge, " OR v_main.volume_total IS NULL OR v_main.volume_total<=0 OR v_main.volume_total::text IN ('NaN','Infinity','-Infinity')", " OR (v_main.origem_estoque IS NULL AND (v_main.volume_total IS NULL OR v_main.volume_total<=0 OR v_main.volume_total::text IN ('NaN','Infinity','-Infinity')))", "merge main balance")
     merge = one_replace(merge, "v_total:=v_main.quantidade+v_s.quantidade; v_volume:=v_main.volume_total+v_s.volume_total;", "v_total:=v_main.quantidade+v_s.quantidade; v_volume:=CASE WHEN v_main.volume_total IS NULL AND v_s.volume_total IS NULL THEN NULL ELSE coalesce(v_main.volume_total,0)+coalesce(v_s.volume_total,0) END;", "merge volume sum")
@@ -216,7 +226,7 @@ def build():
         new = f""" IF s.id IS NULL OR l.id IS NULL OR e.lote_id IS DISTINCT FROM l.id
  OR s.produto_id IS DISTINCT FROM l.produto_id OR e.produto_id IS DISTINCT FROM l.produto_id
  OR (s.origem_estoque IS NULL AND (pp.id IS NULL OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL OR pp.produto_id IS DISTINCT FROM l.produto_id))
- OR (s.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_delivery_valid_v1(s,e,l))
+ OR (s.origem_estoque IS NOT NULL AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS NOT TRUE)
  OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
  THEN RAISE EXCEPTION '{error}' USING ERRCODE='42501'; END IF;"""
         changed = one_replace(body, old, new, label + " lineage")
@@ -232,18 +242,45 @@ ALTER TABLE public.estoque_produto ADD COLUMN origem_estoque text,ADD COLUMN uni
 ALTER TABLE public.entregas ADD COLUMN origem_estoque text,ADD COLUMN unidade_comercial text,ADD COLUMN conteudo_por_unidade numeric,ADD COLUMN unidade_conteudo text,ADD COLUMN quantidade_conteudo numeric,ADD COLUMN embalagem_id uuid,ADD COLUMN embalagem_versao integer;
 ALTER TABLE public.estoque_produto ADD CONSTRAINT finished_product_unit_contract CHECK (
  (origem_estoque IS NULL AND unidade_comercial IS NULL AND conteudo_por_unidade IS NULL AND unidade_conteudo IS NULL AND quantidade_conteudo IS NULL AND embalagem_id IS NULL AND embalagem_versao IS NULL)
- OR (origem_estoque='compra_produto_acabado_revenda' AND envase_id IS NULL AND unidade_comercial='unidade' AND conteudo_por_unidade>0 AND conteudo_por_unidade::text NOT IN ('NaN','Infinity','-Infinity') AND unidade_conteudo IN ('kg','g','l','ml') AND quantidade=trunc(quantidade) AND (quantidade_reservada IS NULL OR quantidade_reservada=trunc(quantidade_reservada)) AND quantidade_conteudo=quantidade*conteudo_por_unidade AND embalagem_id IS NOT NULL AND embalagem_versao>0 AND ((unidade_conteudo IN ('kg','g') AND volume_total IS NULL) OR (unidade_conteudo='l' AND volume_total=quantidade_conteudo) OR (unidade_conteudo='ml' AND volume_total=quantidade_conteudo/1000)))
+ OR ((origem_estoque='compra_produto_acabado_revenda' AND envase_id IS NULL
+  AND unidade_comercial IS NOT NULL AND unidade_comercial='unidade'
+  AND conteudo_por_unidade IS NOT NULL AND conteudo_por_unidade>0 AND conteudo_por_unidade::text NOT IN ('NaN','Infinity','-Infinity')
+  AND unidade_conteudo IS NOT NULL AND unidade_conteudo IN ('kg','g','l','ml')
+  AND quantidade IS NOT NULL AND quantidade=trunc(quantidade)
+  AND (quantidade_reservada IS NULL OR quantidade_reservada=trunc(quantidade_reservada))
+  AND quantidade_conteudo IS NOT NULL AND quantidade_conteudo=quantidade*conteudo_por_unidade
+  AND embalagem_id IS NOT NULL AND embalagem_versao IS NOT NULL AND embalagem_versao>0
+  AND ((unidade_conteudo IN ('kg','g') AND volume_total IS NULL)
+    OR (unidade_conteudo='l' AND volume_total IS NOT NULL AND volume_total=quantidade_conteudo)
+    OR (unidade_conteudo='ml' AND volume_total IS NOT NULL AND volume_total=quantidade_conteudo/1000))) IS TRUE)
 );
 -- A referência de embalagem é snapshot imutável; a composição B3 é dependência de revisão, não simulada por FK no catálogo líquido antigo.
 CREATE FUNCTION platform_private.finished_product_stock_valid_v1(s public.estoque_produto) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
- SELECT s.origem_estoque='compra_produto_acabado_revenda' AND s.unidade_comercial='unidade' AND s.conteudo_por_unidade>0 AND s.unidade_conteudo IN ('kg','g','l','ml') AND s.quantidade>0 AND s.quantidade=trunc(s.quantidade) AND s.quantidade_conteudo=s.quantidade*s.conteudo_por_unidade AND s.embalagem_id IS NOT NULL AND s.embalagem_versao>0 AND s.envase_id IS NULL
- AND EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled)
- AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.id=s.lote_id AND l.produto_id=s.produto_id)
- AND ((s.unidade_conteudo IN ('kg','g') AND s.volume_total IS NULL) OR (s.unidade_conteudo='l' AND s.volume_total=s.quantidade_conteudo) OR (s.unidade_conteudo='ml' AND s.volume_total=s.quantidade_conteudo/1000));
+ SELECT (s.origem_estoque='compra_produto_acabado_revenda'
+  AND s.unidade_comercial IS NOT NULL AND s.unidade_comercial='unidade'
+  AND s.conteudo_por_unidade IS NOT NULL AND s.conteudo_por_unidade>0
+  AND s.unidade_conteudo IS NOT NULL AND s.unidade_conteudo IN ('kg','g','l','ml')
+  AND s.quantidade IS NOT NULL AND s.quantidade>0 AND s.quantidade=trunc(s.quantidade)
+  AND s.quantidade_conteudo IS NOT NULL AND s.quantidade_conteudo=s.quantidade*s.conteudo_por_unidade
+  AND s.embalagem_id IS NOT NULL AND s.embalagem_versao IS NOT NULL AND s.embalagem_versao>0 AND s.envase_id IS NULL
+  AND EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.id=s.lote_id AND l.produto_id=s.produto_id)
+  AND ((s.unidade_conteudo IN ('kg','g') AND s.volume_total IS NULL)
+    OR (s.unidade_conteudo='l' AND s.volume_total IS NOT NULL AND s.volume_total=s.quantidade_conteudo)
+    OR (s.unidade_conteudo='ml' AND s.volume_total IS NOT NULL AND s.volume_total=s.quantidade_conteudo/1000))) IS TRUE;
 $$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_stock_valid_v1(public.estoque_produto) FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION platform_private.finished_product_delivery_valid_v1(s public.estoque_produto,e public.entregas,l public.lotes) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
- SELECT platform_private.finished_product_stock_valid_v1(s) AND l.programacao_id IS NULL AND e.origem_estoque=s.origem_estoque AND e.unidade_comercial=s.unidade_comercial AND e.conteudo_por_unidade=s.conteudo_por_unidade AND e.unidade_conteudo=s.unidade_conteudo AND e.quantidade_conteudo=s.quantidade_conteudo AND e.embalagem_id=s.embalagem_id AND e.embalagem_versao=s.embalagem_versao AND e.quantidade_entregue=s.quantidade AND ((s.unidade_conteudo IN ('kg','g') AND e.volume_entregue_ml IS NULL) OR (s.unidade_conteudo='l' AND e.volume_entregue_ml=round(s.quantidade_conteudo*1000,6)) OR (s.unidade_conteudo='ml' AND e.volume_entregue_ml=round(s.quantidade_conteudo,6)));
+ SELECT (platform_private.finished_product_stock_valid_v1(s) IS TRUE AND l.id IS NOT NULL AND l.programacao_id IS NULL
+  AND e.origem_estoque=s.origem_estoque AND e.unidade_comercial IS NOT NULL AND e.unidade_comercial=s.unidade_comercial
+  AND e.conteudo_por_unidade IS NOT NULL AND e.conteudo_por_unidade=s.conteudo_por_unidade
+  AND e.unidade_conteudo IS NOT NULL AND e.unidade_conteudo=s.unidade_conteudo
+  AND e.quantidade_conteudo IS NOT NULL AND e.quantidade_conteudo=s.quantidade_conteudo
+  AND e.embalagem_id=s.embalagem_id AND e.embalagem_versao IS NOT NULL AND e.embalagem_versao=s.embalagem_versao
+  AND e.quantidade_entregue=s.quantidade
+  AND ((s.unidade_conteudo IN ('kg','g') AND e.volume_entregue_ml IS NULL)
+    OR (s.unidade_conteudo='l' AND e.volume_entregue_ml IS NOT NULL AND e.volume_entregue_ml=round(s.quantidade_conteudo*1000,6))
+    OR (s.unidade_conteudo='ml' AND e.volume_entregue_ml IS NOT NULL AND e.volume_entregue_ml=round(s.quantidade_conteudo,6)))) IS TRUE;
 $$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;
 """
@@ -354,56 +391,102 @@ END;$purchase$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
 """
     bodies = [ddl, purchase, reservar, criar, merge, confirm, send, sync, lot_guard, lab_guard, entry_validate, entry_guard, entry_final]
-    pre = ["-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."]
+    downstream_signatures = {
+        "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+        "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    }
+    foundation_entries = [x for x in BASE["functions"] if x["signature"] not in downstream_signatures]
+    downstream_entries = [x for x in BASE["functions"] if x["signature"] in downstream_signatures]
+    if len(foundation_entries) != 9 or len(downstream_entries) != 2:
+        raise AssertionError("layer function count drift")
+
+    def metadata_pre():
+        blocks = []
+        for entry in BASE.get("dependency_functions", []):
+            blocks.append(function_pin(entry))
+        for entry in BASE.get("dependency_triggers", []):
+            blocks.append(trigger_pin(entry))
+        for rel in BASE["relations"]:
+            schema = rel.get("schema", "public")
+            blocks.append(f"DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['owner'])} OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {schema}.{rel['name']}';END IF;END$$;")
+        for col in BASE.get("catalog_columns", []):
+            blocks.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name={lit(col['table'])} AND column_name={lit(col['column'])} AND data_type={lit(col['type'])} AND is_nullable={lit(col['nullable'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT {col['table']}.{col['column']}';END IF;END$$;")
+        for con in BASE.get("catalog_constraints", []):
+            blocks.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname={lit(con['table'])} AND x.conname={lit(con['name'])} AND pg_get_constraintdef(x.oid)={lit(con['definition'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT {con['table']}.{con['name']}';END IF;END$$;")
+        return blocks
+
+    absence_pre = "DO $$BEGIN IF to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL OR to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL THEN RAISE EXCEPTION 'FINISHED_PRE_OBJECT_ALREADY_EXISTS';END IF;END$$;"
+    header = "-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."
+    pre = [header]
     for entry in BASE["functions"]:
-        pre.append(function_pin(entry))
-    for entry in BASE.get("dependency_functions", []):
-        pre.append(function_pin(entry))
-    for entry in BASE.get("dependency_triggers", []):
-        pre.append(trigger_pin(entry))
-    for rel in BASE["relations"]:
-        schema = rel.get("schema", "public")
-        pre.append(f"DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['owner'])} OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {schema}.{rel['name']}';END IF;END$$;")
-    for col in BASE.get("catalog_columns", []):
-        pre.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name={lit(col['table'])} AND column_name={lit(col['column'])} AND data_type={lit(col['type'])} AND is_nullable={lit(col['nullable'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT {col['table']}.{col['column']}';END IF;END$$;")
-    for con in BASE.get("catalog_constraints", []):
-        pre.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname={lit(con['table'])} AND x.conname={lit(con['name'])} AND pg_get_constraintdef(x.oid)={lit(con['definition'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT {con['table']}.{con['name']}';END IF;END$$;")
-    pre.append("DO $$BEGIN IF to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL OR to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL THEN RAISE EXCEPTION 'FINISHED_PRE_OBJECT_ALREADY_EXISTS';END IF;END$$;")
+        pre.append(dependency_pin(entry) if entry["signature"] in downstream_signatures else function_pin(entry))
+    pre += metadata_pre() + [absence_pre]
+    foundation_pre = [header + " Camada de entrada: não pressupõe confirmação/envio instalados."]
+    foundation_pre += [function_pin(x) for x in foundation_entries] + metadata_pre() + [absence_pre]
+
     candidate = "\n\n".join(bodies) + "\n"
-    post = []
+    foundation_bodies = [ddl, purchase, reservar, criar, merge, sync, lot_guard, lab_guard, entry_validate, entry_guard, entry_final]
+    downstream_bodies = [confirm, send]
+    foundation_candidate = "\n\n".join(foundation_bodies) + "\n"
+    downstream_candidate = "\n\n".join(downstream_bodies) + "\n"
+    post_blocks = {}
     post_capture_path = HERE / "evidence/post-install-functions.json"
     post_capture = json.loads(post_capture_path.read_text())["functions"] if post_capture_path.exists() else []
     post_by_signature = {x["signature"]: x for x in post_capture}
+    body_by_signature = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync, "platform_private.guard_manual_lot_write_v1": lot_guard, "platform_private.trg_lab_lot_biological_only": lab_guard, "public.validate_estoque_entrada": entry_validate, "platform_private.envase_insert_guard_v1": entry_guard, "platform_private.envase_insert_final_v1": entry_final}
     for entry in BASE["functions"]:
-        body = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync, "platform_private.guard_manual_lot_write_v1": lot_guard, "platform_private.trg_lab_lot_biological_only": lab_guard, "public.validate_estoque_entrada": entry_validate, "platform_private.envase_insert_guard_v1": entry_guard, "platform_private.envase_insert_final_v1": entry_final}[entry["signature"].split("(", 1)[0]]
-        if entry["signature"] in post_by_signature:
-            measured = post_by_signature[entry["signature"]]
-            if measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
-                raise AssertionError("POST owner/ACL drift " + entry["signature"])
-            post.append(function_pin(entry, measured["md5"]))
-        else:
-            post.append(f"-- POST_RUNTIME_REQUIRED {entry['signature']} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}")
-    for entry in BASE.get("dependency_functions", []):
-        if entry["signature"] in post_by_signature:
-            measured = post_by_signature[entry["signature"]]
-            if measured["md5"] != entry["md5"] or measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
-                raise AssertionError("POST dependency drift " + entry["signature"])
-            post.append(function_pin(entry))
-        else:
-            post.append(f"-- POST_RUNTIME_REQUIRED_DEPENDENCY {entry['signature']}")
-    for entry in BASE.get("dependency_triggers", []):
-        post.append(trigger_pin(entry))
-    for signature in ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]:
+        signature = entry["signature"]
+        body = body_by_signature[signature.split("(", 1)[0]]
         if signature in post_by_signature:
-            post.append(function_pin(post_by_signature[signature]))
+            measured = post_by_signature[signature]
+            if measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
+                raise AssertionError("POST owner/ACL drift " + signature)
+            post_blocks[signature] = function_pin(entry, measured["md5"])
         else:
-            post.append(f"-- POST_RUNTIME_REQUIRED_NEW_OBJECT {signature}")
+            post_blocks[signature] = f"-- POST_RUNTIME_REQUIRED {signature} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}"
+    for entry in BASE.get("dependency_functions", []):
+        signature = entry["signature"]
+        if signature in post_by_signature:
+            measured = post_by_signature[signature]
+            if measured["md5"] != entry["md5"] or measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
+                raise AssertionError("POST dependency drift " + signature)
+            post_blocks[signature] = function_pin(entry)
+        else:
+            post_blocks[signature] = f"-- POST_RUNTIME_REQUIRED_DEPENDENCY {signature}"
+    for entry in BASE.get("dependency_triggers", []):
+        post_blocks["trigger:" + entry["name"]] = trigger_pin(entry)
+    new_signatures = ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]
+    for signature in new_signatures:
+        if signature in post_by_signature:
+            post_blocks[signature] = function_pin(post_by_signature[signature])
+        else:
+            post_blocks[signature] = f"-- POST_RUNTIME_REQUIRED_NEW_OBJECT {signature}"
+
+    post = [post_blocks[x["signature"]] for x in BASE["functions"]]
+    post += [post_blocks[x["signature"]] for x in BASE.get("dependency_functions", [])]
+    post += [post_blocks["trigger:" + x["name"]] for x in BASE.get("dependency_triggers", [])]
+    post += [post_blocks[x] for x in new_signatures]
+    foundation_post = [post_blocks[x["signature"]] for x in foundation_entries]
+    foundation_post += [post_blocks[x["signature"]] for x in BASE.get("dependency_functions", [])]
+    foundation_post += [post_blocks["trigger:" + x["name"]] for x in BASE.get("dependency_triggers", [])]
+    foundation_post += [post_blocks[x] for x in new_signatures]
+    downstream_post = [post_blocks[x["signature"]] for x in downstream_entries]
+    gate_closed = "DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;"
+    downstream_pre = ["-- Camada downstream INATIVA: exige as dependências de confirmação/envio e o POST exato da entrada."]
+    downstream_pre += [dependency_pin(x) for x in downstream_entries] + foundation_post + [gate_closed]
+
     (HERE / "candidate.sql.review").write_text(candidate)
+    (HERE / "candidate-foundation.sql.review").write_text(foundation_candidate)
+    (HERE / "candidate-downstream.sql.review").write_text(downstream_candidate)
     (HERE / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
-    (HERE / "postflight.sql.review").write_text("\n".join(post) + "\nDO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;\n")
+    (HERE / "install-foundation.sql.review").write_text("\n\n".join(foundation_pre) + "\n\n" + foundation_candidate)
+    (HERE / "install-downstream.sql.review").write_text("\n\n".join(downstream_pre) + "\n\n" + downstream_candidate)
+    (HERE / "postflight.sql.review").write_text("\n".join(post) + "\n" + gate_closed + "\n")
+    (HERE / "postflight-foundation.sql.review").write_text("\n".join(foundation_post) + "\n" + gate_closed + "\n")
+    (HERE / "postflight-downstream.sql.review").write_text("\n".join(downstream_post) + "\n" + gate_closed + "\n")
     (HERE / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
-    manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": [], "files": {}}
-    for name in ["baseline.json", "candidate.sql.review", "install.sql.review", "postflight.sql.review", "rollback.sql.review"]:
+    manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": [], "layers": {"foundation": {"changed_functions": [x["signature"] for x in foundation_entries], "requires_delivery_confirmation_or_send": False}, "downstream": {"changed_functions": [x["signature"] for x in downstream_entries], "requires_delivery_confirmation_or_send": True, "requires_foundation_postflight": True}}, "reported_live_state": {"delivery_confirm_apply_v1": "ABSENT", "delivery_send_apply_v1": "ABSENT", "other_six_bodies_owners_acls": "REPORTED_MATCH_REMAINING_PRE_PINS_RETAINED"}, "files": {}}
+    for name in ["baseline.json", "candidate.sql.review", "candidate-foundation.sql.review", "candidate-downstream.sql.review", "install.sql.review", "install-foundation.sql.review", "install-downstream.sql.review", "postflight.sql.review", "postflight-foundation.sql.review", "postflight-downstream.sql.review", "rollback.sql.review"]:
         data = (HERE / name).read_bytes(); manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
     (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({"candidate_sha256": manifest["files"]["candidate.sql.review"]["sha256"], "functions": len(functions), "enabled_by_default": False}))

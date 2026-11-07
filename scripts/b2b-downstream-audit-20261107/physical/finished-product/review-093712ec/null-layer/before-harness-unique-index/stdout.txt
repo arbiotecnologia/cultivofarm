@@ -1,0 +1,55 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.2s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS candidato instalado para matriz isolada de nulidade
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS gate True: helper nega origem inesperada sem NULL
+PASS gate True: CHECK nega origem inesperada
+FAIL gate True: helper nega embalagem_versao NULL sem NULL {'value': None, 'fail_closed_denies': True, 'legacy_if_not_denies': None}
+FAIL gate True: CHECK nega embalagem_versao NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+FAIL gate True: helper nega conteudo_por_unidade NULL sem NULL {'value': None, 'fail_closed_denies': True, 'legacy_if_not_denies': None}
+FAIL gate True: CHECK nega conteudo_por_unidade NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+FAIL gate True: helper nega unidade_conteudo NULL sem NULL {'value': None, 'fail_closed_denies': True, 'legacy_if_not_denies': None}
+FAIL gate True: CHECK nega unidade_conteudo NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+FAIL gate True: helper nega quantidade_conteudo NULL sem NULL {'value': None, 'fail_closed_denies': True, 'legacy_if_not_denies': None}
+FAIL gate True: CHECK nega quantidade_conteudo NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+FAIL gate True: helper nega quantidade NULL sem NULL {'value': None, 'fail_closed_denies': True, 'legacy_if_not_denies': None}
+FAIL gate True: CHECK nega quantidade NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS gate True: helper nega embalagem_id NULL sem NULL
+PASS gate True: CHECK nega embalagem_id NULL
+PASS gate True: helper nega dimensão sólida com volume sem NULL
+PASS gate True: CHECK nega dimensão sólida com volume
+PASS gate True: helper nega dimensão de conteúdo incoerente sem NULL
+PASS gate True: CHECK nega dimensão de conteúdo incoerente
+FAIL gate True: helper nega unidade comercial NULL sem NULL {'value': None, 'fail_closed_denies': True, 'legacy_if_not_denies': None}
+FAIL gate True: CHECK nega unidade comercial NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS gate False: helper nega origem inesperada sem NULL
+PASS gate False: CHECK nega origem inesperada
+PASS gate False: helper nega embalagem_versao NULL sem NULL
+FAIL gate False: CHECK nega embalagem_versao NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS gate False: helper nega conteudo_por_unidade NULL sem NULL
+FAIL gate False: CHECK nega conteudo_por_unidade NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS gate False: helper nega unidade_conteudo NULL sem NULL
+FAIL gate False: CHECK nega unidade_conteudo NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS gate False: helper nega quantidade_conteudo NULL sem NULL
+FAIL gate False: CHECK nega quantidade_conteudo NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS gate False: helper nega quantidade NULL sem NULL
+FAIL gate False: CHECK nega quantidade NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS gate False: helper nega embalagem_id NULL sem NULL
+PASS gate False: CHECK nega embalagem_id NULL
+PASS gate False: helper nega dimensão sólida com volume sem NULL
+PASS gate False: CHECK nega dimensão sólida com volume
+PASS gate False: helper nega dimensão de conteúdo incoerente sem NULL
+PASS gate False: CHECK nega dimensão de conteúdo incoerente
+PASS gate False: helper nega unidade comercial NULL sem NULL
+FAIL gate False: CHECK nega unidade comercial NULL {'returncode': 3, 'stderr': 'ERROR:  23505: duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"\nDETAIL:  Key (lote_id)=(4f7f6d83-a8eb-4e1e-8c74-787fb9cac9c6) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  estoque_produto_lote_legado_unico_idx\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n', 'denied': False}
+PASS caller usa IS NOT TRUE: public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)
+PASS caller usa IS NOT TRUE: public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)
+PASS caller usa IS NOT TRUE: platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)
+PASS caller usa IS NOT TRUE: platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)
+PASS caller usa IS NOT TRUE: platform_private.delivery_send_apply_v1(uuid,timestamptz,text)
+PASS caller usa IS NOT TRUE: public.validate_estoque_entrada()
+PASS controle válido permanece aceito com gate ligado
+PASS controle válido é negado com gate desligado
+RESULT 33 / 51 exit 1

@@ -3,19 +3,19 @@
   "functions": [
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "96344fea5616fda485be977a3d2d2a35",
+      "md5": "9820bb30d293dfea68d41391ae1aaf24",
       "owner": "postgres",
       "signature": "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "d81d459b64ae1e99025a47e12464d5a7",
+      "md5": "dc878c0e49d8d5bc46f088a8a3c952e6",
       "owner": "postgres",
       "signature": "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)"
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "a33f2997a1d6c2422ecbf1ee578ad79a",
+      "md5": "c592075fe3719b69b7768b541bfad533",
       "owner": "postgres",
       "signature": "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
     },
@@ -27,7 +27,7 @@
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "e0298da2cbb8b64c22509041082544d6",
+      "md5": "fbe3ff7e7e5c7e8374a5028a92180103",
       "owner": "postgres",
       "signature": "platform_private.envase_insert_guard_v1()"
     },
@@ -39,7 +39,7 @@
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "f934fb8f77d060e45b53c33d504f1ca5",
+      "md5": "9484dd33aeab3831bccc9ceb83f1823d",
       "owner": "postgres",
       "signature": "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)"
     },
@@ -51,7 +51,7 @@
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "fa220b300712ffb778e34fba2abb856d",
+      "md5": "e1c85b25f63fdcf623f2b782b6383abc",
       "owner": "postgres",
       "signature": "platform_private.finished_product_stock_valid_v1(public.estoque_produto)"
     },
@@ -75,19 +75,19 @@
     },
     {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",
-      "md5": "2703147f9cb900f3a82f3a2ed3c349ad",
+      "md5": "f0ec0838a5ba32584cf0215ca1a4dc44",
       "owner": "postgres",
       "signature": "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)"
     },
     {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",
-      "md5": "2449af7f8cb1263345aad1cfe54a9cd6",
+      "md5": "1e7b2fcf4b7b703fe3d533d01df72eed",
       "owner": "postgres",
       "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
     },
     {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",
-      "md5": "df83fefb547ea7243761816c356467f7",
+      "md5": "19f79cc23c00cd9e85a94393ff1e0bd0",
       "owner": "postgres",
       "signature": "public.validate_estoque_entrada()"
     }

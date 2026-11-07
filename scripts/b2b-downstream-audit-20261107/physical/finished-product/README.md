@@ -47,6 +47,8 @@ Peso é conteúdo para frete/logística e nunca é convertido em volume. A parci
 
 `install.sql.review` pina corpo, owner e ACL de **11 funções alteradas**, mais **1 função e 1 trigger imutáveis de tenant**, owner/ACL de 10 relações, colunas e constraints das dependências de catálogo, além da ausência prévia dos objetos novos. O candidato altera somente as 11 funções já inventariadas; o guard de tenant não é regravado.
 
+A revisão 093712ec separou a instalação sem remover pins: `install-foundation.sql.review` contém as **9 funções de entrada/estoque** e não menciona nem pressupõe confirmação/envio; `install-downstream.sql.review` contém somente as **2 funções downstream**, exige seus corpos originais e o POST exato da entrada. Se uma dependência está ausente, o PRE downstream falha com `FINISHED_PRE_DEPENDENCY_MISSING`; o pacote completo continua fail-closed no primeiro pin. Os artefatos `candidate-{foundation,downstream}` e `postflight-{foundation,downstream}` acompanham as camadas.
+
 `postflight.sql.review` contém hashes normalizados medidos das 11 funções alteradas, das 3 funções privadas novas e da dependência imutável, além do trigger e do gate fechado. `rollback.sql.review` é deny-only: desliga a operação e revoga writers sem apagar dados, colunas, corpos ou histórico. O POST de instalação não é reaplicado após o rollback porque a revogação intencional muda o ACL.
 
 ## Resultados atuais
@@ -56,17 +58,22 @@ Peso é conteúdo para frete/logística e nunca é convertido em volume. A parci
 | Reprodução original: peso→ml, lineage de fabricação e B2B fechado | 17/17, exit 0 | `evidence/before.json`, stdout e exitcode |
 | Compra, API/guards, kg/g/L/ml, whole-pack, atalho de reserva, tenant produto/micro, downstream, replays, concorrência, revogação e rollback | **49/49, exit 0** | `evidence/after.json`, stdout e exitcode |
 | Legado biológico com candidato instalado e gate desligado | 6/6, exit 0 | `evidence/legacy-candidate.json`, stdout e exitcode |
-| Revisão repetível dos artefatos, pins, grants e resultados | 23/23, exit 0 | `evidence/review.json`, stdout e exitcode |
+| Nulidade antes da correção, gate ligado/desligado e seis callers | **27/51, exit 1 — 24 falhas funcionais** | `review-093712ec/null-layer/before/` |
+| Nulidade depois: CHECK/helpers com nulidade explícita, `IS TRUE`/`IS NOT TRUE` | **51/51, exit 0** | `evidence/null-contract.json`, stdout e exitcode |
+| Camadas com confirm/send ausentes, entrada positiva, recomposição exata e downstream | **16/16, exit 0** | `evidence/layers.json`, stdout e exitcode |
+| Revisão repetível dos artefatos, pins, grants, nulidade, camadas e resultados | **35/35, exit 0** | `evidence/review.json`, stdout e exitcode |
 
-Candidato SHA256: `96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e`.
+Candidato SHA256: `962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd`.
+A falha inicial de harness por índice único e a falha de recomposição do ACL estão preservadas em `review-093712ec/null-layer/`; não foram apagadas nem contadas como achados funcionais.
 A bateria anterior 37/37 está preservada em `history/pre-live-entry-guards/` e não é somada à atual.
 
 ## Bloqueios e limites
 
-1. **Conferência LIVE independente pendente:** os MD5 dos dois guards foram relatados pelo auditor e reproduzidos localmente; owners/ACLs/trigger/relações, os demais corpos e o schema de catálogo ainda exigem conferência independente. A costura local não prova paridade integral com produção.
-2. **Sem exposição ao aplicativo:** a entrada privada não tem grant nem UI/caller liberado. Os positivos usam chamada interna privilegiada e claims sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser.
-3. **Dados reais não homologados:** produtos, embalagens, fornecedores, lotes, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
-4. **B2B/OnFarm permanece fechado** com `DELIVERY_SCOPE_DENIED`. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real.
-5. Nenhum efeito fiscal, financeiro, contábil, SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG, NF e recebíveis continuam fora deste pacote.
+1. **Dependências downstream ausentes em LIVE, conforme relato do auditor:** `delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)` e `delivery_send_apply_v1(uuid,timestamptz,text)` precisam ser instaladas por seus pacotes canônicos antes da camada downstream. Os demais seis corpos/owners/ACLs foram relatados como coincidentes; todos os pins permanecem. Nenhuma ausência foi tratada como permissão para criar atalho ou remover verificação.
+2. **Conferência LIVE independente pendente:** os MD5 dos dois guards foram relatados pelo auditor e reproduzidos localmente; owners/ACLs/trigger/relações, os demais corpos e o schema de catálogo ainda exigem conferência independente. A costura local não prova paridade integral com produção.
+3. **Sem exposição ao aplicativo:** a entrada privada não tem grant nem UI/caller liberado. Os positivos usam chamada interna privilegiada e claims sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser.
+4. **Dados reais não homologados:** produtos, embalagens, fornecedores, lotes, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
+5. **B2B/OnFarm permanece fechado** com `DELIVERY_SCOPE_DENIED`. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real.
+6. Nenhum efeito fiscal, financeiro, contábil, SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG, NF e recebíveis continuam fora deste pacote.
 
 Os históricos físicos 119/119, 21/21 e 123/123 permanecem em `../evidence/`; não foram somados às contagens deste recorte nem apresentados como E2E real.

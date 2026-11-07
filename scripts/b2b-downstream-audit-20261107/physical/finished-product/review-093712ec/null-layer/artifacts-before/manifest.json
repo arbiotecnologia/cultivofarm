@@ -1,0 +1,69 @@
+{
+  "status": "INACTIVE_NOT_APPROVED",
+  "hosted": false,
+  "operation_default": false,
+  "changed_functions": [
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+    "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "platform_private.envase_insert_final_v1()",
+    "platform_private.envase_insert_guard_v1()",
+    "platform_private.guard_manual_lot_write_v1()",
+    "platform_private.trg_lab_lot_biological_only()",
+    "public.fn_sync_os_classica_downstream()",
+    "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+    "public.validate_estoque_entrada()"
+  ],
+  "new_objects": [
+    "platform_private.finished_product_gate_v1",
+    "platform_private.finished_product_stock_valid_v1",
+    "platform_private.finished_product_delivery_valid_v1",
+    "platform_private.finished_product_purchase_entry_v1"
+  ],
+  "catalog_dependencies": [
+    "public.produtos.owner_organization_id",
+    "public.microrganismos.owner_organization_id",
+    "public.product_sale_units",
+    "public.product_packagings",
+    "public.catalogo_volumes"
+  ],
+  "dependency_functions": [
+    "platform_private.estoque_produto_catalog_tenant_guard()"
+  ],
+  "dependency_triggers": [
+    "a000_estoque_produto_catalog_tenant_guard"
+  ],
+  "new_columns": [
+    "origem_estoque",
+    "unidade_comercial",
+    "conteudo_por_unidade",
+    "unidade_conteudo",
+    "quantidade_conteudo",
+    "embalagem_id",
+    "embalagem_versao"
+  ],
+  "new_grants": [],
+  "files": {
+    "baseline.json": {
+      "sha256": "e212c238e54d3d5bc5c9922af20e29876a88c0e71fb71f9e1fc74296e8053afc",
+      "bytes": 10949
+    },
+    "candidate.sql.review": {
+      "sha256": "96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e",
+      "bytes": 70331
+    },
+    "install.sql.review": {
+      "sha256": "b33a01e11b8b9fbad96e8131956f00fceb8396a3605ca6816919771ebd774cb8",
+      "bytes": 101298
+    },
+    "postflight.sql.review": {
+      "sha256": "77cffb88a709972c662f5e8aaba63fc45c8f4198605c6a7565f6a1037308e4bb",
+      "bytes": 12846
+    },
+    "rollback.sql.review": {
+      "sha256": "9520cc30f3167045cdfb1a45c992ddd943b367409a2fa8666fa418db41a66644",
+      "bytes": 414
+    }
+  }
+}
