@@ -157,11 +157,14 @@ def document(doc_id, order, item, quantity, issue="2026-10-01", event=None):
 
 
 def allocate(uid, doc_id):
-    return call(uid, f"platform_private.b2b_allocate_document('{doc_id}')")
+    return server_call(uid, f"platform_private.b2b_allocate_document('{doc_id}')")
 
 
 def exposure():
-    return Decimal(str(sql_json(f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")["exposicao_atual"]))
+    data, error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")
+    if error or data is None:
+        raise RuntimeError(error or "exposição sem retorno")
+    return Decimal(str(data["exposicao_atual"]))
 
 
 def residual(order):
@@ -235,11 +238,12 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
                 diagnostic = runfile(H / "b4-candidate.sql.review")
                 expected = json.loads((H / "b4-pins.json").read_text())["candidate_md5"]
                 actual = {sig: B3.md5_of(sig) for sig in expected}
+                (H / "pin-debug-credit.txt").write_text(B3.psql("SELECT pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)").stdout)
                 check("diagnóstico dos pinos após falha de instalação", False, {"diagnostic_exit": diagnostic.returncode, "expected": expected, "actual": actual, "stderr": diagnostic.stderr[-500:]})
         rerun = runfile(H / "02-install.sql.review")
         check("rerun aborta pelo pin da baseline, sem reinstalar", rerun.returncode != 0 and "B4_INSTALL_PRE_DRIFT" in rerun.stderr, rerun.stderr[-500:])
         trigger_count = B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip()
-        check("38 gatilhos reais do pedido continuam habilitados", trigger_count == "38", trigger_count)
+        check("32 gatilhos reais carregados pelo harness B3 continuam habilitados", trigger_count == "32", trigger_count)
         check("B3 create/simulate antigos não foram restaurados nem alterados", B3.md5_of(B3.CREATE_SIG) == G["LIVE_PINS"][B3.CREATE_SIG] and B3.md5_of(B3.SIM_SIG) == G["LIVE_PINS"][B3.SIM_SIG]
               and B3.psql("SELECT to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text,jsonb)') IS NULL").stdout.strip() == "t")
         check("autorização fiscal continua service-only e sem integração de recebível", B3.psql("SELECT has_function_privilege('authenticated','public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)','EXECUTE')").stdout.strip() == "f"
@@ -264,7 +268,8 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("datas finais partem da emissão e calendário selado", rows1[0]["due_date"] == "2026-11-03", rows1)
         check("juros financiados não são somados duas vezes", all(Decimal(str(r["original_amount"])) == Decimal(str(r["net_amount"])) and Decimal(str(r["interest_amount"])) == 0 for r in rows1), rows1)
 
-        projection = sql_json(f"public.rpc_receivable_money_projection_v1('{title1}',0,1000)")
+        projection, projection_error = server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{title1}',0,1000)")
+        check("projeção financeira usa ator e tenant autorizados", projection is not None, projection_error)
         installment1 = projection[0]["id"]
         payment = {"amount_received": 100, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-PAY-1"}
         payment_result = call(B3.UFIN, f"public.rpc_register_receivable_payment('{installment1}','{js(payment)}'::jsonb")
@@ -280,12 +285,12 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("crédito após parciais preserva total menos baixa", exposure() == before - Decimal("100"), exposure())
 
         before_paid = B3.psql(f"SELECT jsonb_build_object('alloc',(SELECT count(*) FROM platform_private.b2b_document_allocations),'pay',(SELECT count(*) FROM receivable_payments),'residual',platform_private.b2b_order_residual('{quote_order}'))").stdout.strip()
-        deny("cancelamento de NF paga exige reconciliação", allocate(B3.UADM, DOCS[0]) if False else call(B3.UADM, f"platform_private.b2b_reverse_allocation('{DOCS[0]}')"), "FISCAL_PAID_RECONCILIATION_REQUIRED")
+        deny("cancelamento de NF paga exige reconciliação", allocate(B3.UADM, DOCS[0]) if False else server_call(B3.UADM, f"platform_private.b2b_reverse_allocation('{DOCS[0]}')"), "FISCAL_PAID_RECONCILIATION_REQUIRED")
         check("cancelamento pago negado preserva histórico e saldo", B3.psql(f"SELECT jsonb_build_object('alloc',(SELECT count(*) FROM platform_private.b2b_document_allocations),'pay',(SELECT count(*) FROM receivable_payments),'residual',platform_private.b2b_order_residual('{quote_order}'))").stdout.strip() == before_paid)
 
         canceled_money = B3.psql(f"SELECT item_money FROM platform_private.b2b_document_allocations WHERE document_id='{DOCS[1]}'").stdout.strip()
         B3.psql(f"INSERT INTO platform_private.b2b_cancellation_attestations VALUES('{DOCS[1]}','{B3.A}','cancel-middle','{'b'*64}')")
-        reversed_result, reversed_error = call(B3.UADM, f"platform_private.b2b_reverse_allocation('{DOCS[1]}')")
+        reversed_result, reversed_error = server_call(B3.UADM, f"platform_private.b2b_reverse_allocation('{DOCS[1]}')")
         check("substituição intermediária cancela somente título não pago", reversed_result and reversed_result["success"], reversed_error)
         restored = residual(quote_order)
         check("cancelamento restaura exatamente principal+juros do documento", restored == Decimal(str(second["principal"])) + Decimal(str(second["financed_interest"])), restored)
@@ -297,7 +302,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
 
         document(DOCS[4], quote_order, quote_item, 1)
         deny("quantidade acima do pedido negada", allocate(B3.UADM, DOCS[4]), "FISCAL_QUANTITY_OVERALLOCATED")
-        deny("tenant estrangeiro não faz replay nem lê recibo", call(B3.UADMF, f"platform_private.b2b_allocate_document('{DOCS[0]}')"), "B2B_TENANT_DENIED")
+        deny("tenant estrangeiro não faz replay nem lê recibo", server_call(B3.UADMF, f"platform_private.b2b_allocate_document('{DOCS[0]}')"), "B2B_TENANT_DENIED")
         document(DOCS[5], pending_order, pending_item, 1)
         deny("pendência contábil bloqueia antes de qualquer título", allocate(B3.UADM, DOCS[5]), "C2_ACCOUNTING_PENDING")
         deny("writer B2B anterior continua negado após instalação", call(B3.UADM, f"public.generate_b2b_receivable_secure('{quote_order}')"), "B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED")
@@ -311,7 +316,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         for doc, event in [(DOCS[8], "race-a"), (DOCS[9], "race-b")]:
             document(doc, direct_order, direct_item, 999, issue="2027-02-01", event=event)
         def race(doc):
-            return subprocess.run(B3.SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", B3.SP.SOCK[0], "-p", B3.SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1"], input=B3.session(B3.UADM, f"SELECT platform_private.b2b_allocate_document('{doc}')"), text=True, capture_output=True)
+            return subprocess.run(B3.SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", B3.SP.SOCK[0], "-p", B3.SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1"], input=f"SELECT set_config('request.jwt.claim.sub','{B3.UADM}',false) \\g /dev/null\nSELECT platform_private.b2b_allocate_document('{doc}');", text=True, capture_output=True)
         with concurrent.futures.ThreadPoolExecutor(2) as pool:
             races = list(pool.map(race, [DOCS[8], DOCS[9]]))
         check("duas sessões: somente uma consome o saldo final", sum(r.returncode == 0 for r in races) == 1 and any("FISCAL_QUANTITY_OVERALLOCATED" in r.stderr for r in races), [r.stderr[-500:] for r in races])
