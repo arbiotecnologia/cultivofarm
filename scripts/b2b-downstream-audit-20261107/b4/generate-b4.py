@@ -82,7 +82,7 @@ def fn(src, name, label=None):
 def md5_def(src):
     text = src.rstrip()
     if text.endswith(";"):
-        text = text[:-1]
+        text = text[:-1].rstrip()
     return hashlib.md5(text.encode()).hexdigest()
 
 
