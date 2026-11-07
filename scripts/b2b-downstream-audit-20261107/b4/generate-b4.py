@@ -211,18 +211,33 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
 
     # Crédito/pagamento/gerador/shared guard extraídos SEM os overloads create/simulate históricos.
     credit = fn(deltas, "public.fn_b2b_credit_exposure")
+    partial = delta(partial,
+        "DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int;",
+        "DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int; debtor uuid;",
+        "credit debtor scope declaration")
+    partial = delta(partial,
+        " FOR i IN SELECT s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE a.organization_id=org AND s.organization_id=org AND a.partner_id=p_partner AND a.status<>'CANCELED' AND s.status<>'CANCELED' LOOP\n  row:=platform_private.b2b_proven_money_row(i.id);",
+        """ FOR i IN SELECT a.id AS receivable_id,s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id
+  WHERE a.organization_id=org AND s.organization_id=org AND a.status<>'CANCELED' AND s.status<>'CANCELED'
+   AND (a.partner_id=p_partner OR EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=p_partner AND pa.client_id=a.customer_id
+        AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)) LOOP
+  debtor:=platform_private.b2b_receivable_partner_scope(i.receivable_id);
+  IF debtor IS DISTINCT FROM p_partner THEN RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE='23514'; END IF;
+  row:=platform_private.b2b_proven_money_row(i.id);""",
+        "credit historical customer-linked scope without double counting")
     payment = fn(deltas, "public.rpc_register_receivable_payment")
-    # Revisão 4097d4e2: a baixa MANUAL não B2B sem parceiro conserva exatamente
-    # a matemática legada. Somente origem B2B ou título que afeta parceiro exige
-    # prova monetária; nenhuma proveniência é inventada para o ramo legado.
+    # Revisões 4097d4e2/manual-null-1813: MANUAL não B2B sem parceiro conserva
+    # exatamente a matemática legada. partner_id NULL não esconde devedor quando
+    # customer_id resolve um parceiro; ambiguidade/conflito/owner falham antes da baixa.
     payment = delta(payment, " v_proven jsonb;\n",
-                    " v_proven jsonb; v_origin public.accounts_receivable%ROWTYPE; v_interest numeric; v_financed numeric;\n",
+                    " v_proven jsonb; v_origin public.accounts_receivable%ROWTYPE; v_interest numeric; v_financed numeric; v_debtor uuid;\n",
                     "payment origin declarations")
     payment = delta(payment,
         "  SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;\n  IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;",
         """  SELECT * INTO v_origin FROM public.accounts_receivable WHERE id=v_inst.receivable_id AND organization_id=v_org;
   IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
-  IF v_origin.origin_type='B2B_ORDER' OR v_origin.partner_id IS NOT NULL THEN
+  v_debtor:=platform_private.b2b_receivable_partner_scope(v_origin.id);
+  IF v_origin.origin_type='B2B_ORDER' OR v_debtor IS NOT NULL THEN
    SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;
    IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
    v_interest:=(v_proven->>'interest_amount')::numeric;
@@ -239,6 +254,25 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
     shared_guard = fn(deltas, "platform_private.b2b_shared_receivable_credit_guard")
     config = extract(shared, "CREATE FUNCTION platform_private.b2b_credit_config_block", "END $$;\n", "credit config")
     debtor = extract(shared, "CREATE FUNCTION platform_private.b2b_debtor_partner", "END $$;\n", "debtor partner")
+    receivable_scope = """CREATE FUNCTION platform_private.b2b_receivable_partner_scope(p_receivable uuid) RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE a public.accounts_receivable; links uuid[];
+BEGIN
+ SELECT * INTO a FROM public.accounts_receivable WHERE id=p_receivable;
+ IF NOT FOUND THEN RAISE EXCEPTION 'CREDIT_RECEIVABLE_NOT_FOUND' USING ERRCODE='23514'; END IF;
+ links:=platform_private.b2b_debtor_partner(a.organization_id,a.customer_id);
+ IF coalesce(cardinality(links),0)>1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+ IF a.partner_id IS NOT NULL THEN
+  IF NOT EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=a.partner_id
+    AND pa.commercial_owner_organization_id=a.organization_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL)
+  THEN RAISE EXCEPTION 'CREDIT_PARTNER_OWNER_MISMATCH' USING ERRCODE='23514'; END IF;
+  IF coalesce(cardinality(links),0)=1 AND links[1] IS DISTINCT FROM a.partner_id
+  THEN RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE='23514'; END IF;
+  RETURN a.partner_id;
+ END IF;
+ RETURN links[1];
+END $$;
+"""
     shared_trigger = "CREATE TRIGGER zz_b2b_shared_credit_guard BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_shared_receivable_credit_guard();\n"
 
     # Revisão 4097d4e2: crédito do comprador resolve dinheiro no tenant vendedor.
@@ -395,7 +429,7 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
     fence_legacy = extract(old_fences, "-- Approval/delivery/production", "REVOKE ALL ON FUNCTION platform_private.b2b_title_insert_fence(),public.generate_b2b_receivable_secure_impl(uuid),public.tg_auto_b2b_receivable() FROM PUBLIC,anon,authenticated,service_role;\n", "legacy writer deny")
     fence_reader = extract(old_fences, "-- Captured broad internal-own-finance reader", "REVOKE ALL ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) FROM PUBLIC,anon,authenticated,service_role;\n", "own reader closed")
 
-    parts = price_objects + [calendar_sql] + tables + [schedule, config, debtor, eligible, origin, partial, credit, payment, generator, shared_guard, shared_trigger, fence_title, fence_legacy, fence_reader]
+    parts = price_objects + [calendar_sql] + tables + [schedule, config, debtor, receivable_scope, eligible, origin, partial, credit, payment, generator, shared_guard, shared_trigger, fence_title, fence_legacy, fence_reader]
     body = "\n".join(parts)
     forbidden = ["create_partner_order_secure(", "simulate_b2b_payment_plan_secure(", "partner_payment_condition_capability_v1", "rpc_create_price_receivable_candidate"]
     if any(x in body for x in forbidden):

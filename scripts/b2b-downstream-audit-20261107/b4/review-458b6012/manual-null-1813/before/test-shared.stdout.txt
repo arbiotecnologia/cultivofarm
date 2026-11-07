@@ -1,0 +1,113 @@
+PASS boot B2/B3 com gatilhos reais
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+PASS publicação B3 usada pelo B4
+PASS publicação B3 usada pelo B4
+PASS piloto B3 restrito ao parceiro fictício
+PASS cotação B3 criada sem título
+PASS resposta de cotação B3 com centavos
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture contábil pendente separada
+PASS trigger compartilhado candidato ainda ausente antes dos históricos
+PASS cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL
+PASS históricos de ambiguidade/conflito são preservados sem correção retroativa
+PASS PRE confirma writers/índice e ausência de todos os overloads da projeção
+PASS instalação descartável cria projeção nova e passa PRE+POST íntegros
+PASS POST confirma exatamente um overload owner-only e metadata completa
+PASS instalação não habilita a dependência fiscal/contábil
+PASS rerun falha fechado ao encontrar overload/objetos já criados
+PASS instalação não substitui dependência operacional por stub
+PASS 32 gatilhos reais carregados pelo harness B3 continuam habilitados
+PASS B3 create/simulate antigos não foram restaurados nem alterados
+PASS autorização fiscal continua service-only e sem integração de recebível
+PASS gate fiscal/contábil não comprovado permanece fechado
+PASS cliente não invoca alocador privado
+PASS stub operacional existe só no harness depois da negação real
+PASS instalação não faz backfill dos cinco históricos
+FAIL MANUAL real partner NULL + cliente único não pode ser omitido da exposição :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}
+FAIL baixa MANUAL real partner NULL também exige reconciliação :: 8dc57ed1-152f-412e-a006-29d3a6915a7d
+FAIL tentativa de baixa não altera o título histórico nem cria pagamento :: 
+FAIL nova decisão do parceiro fica pendente de reconciliação na forma real :: {'items': [{'nome': 'Biológico líquido TESTE', 'codigo': 'LIQ-1', 'item_id': '00000000-0000-0000-0000-000000000031', 'rule_id': None, 'item_tipo': 'produto', 'volume_ml': 1000.0, 'base_price': 1.0, 'quantidade': 1.0, 'reason_code': 'OK', 'min_quantity': 0.0, 'price_source': 'catalog_volume_price', 'pricing_mode': 'discount_from_base', 'quote_required': False, 'unidade_medida': 'unidade', 'condition_price': None, 'final_unit_price': 1.0, 'line_final_amount': 1.0, 'line_table_amount': 1.0, 'plan_discount_percent': 0.0}], 'credit': {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.04, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'credit_checked': True, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998650.81, 'credit_limit_action': 'block', 'exposicao_projetada': 1349.19, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}, 'amounts': {'final_amount': 1.04, 'table_amount': 1.0, 'discount_amount': 0.0, 'financial_interest_amount': 0.04, 'net_amount_after_discount': 1.0}, 'schedule': [{'amo
+PASS falha na forma real não cria pedido
+FAIL OVERDUE partner NULL continua explícito após cancelar somente os quatro OPEN locais :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}
+PASS cleanup dos cinco históricos locais restaura somente a fixture
+PASS shared fence preserva título MANUAL não B2B sem devedor parceiro
+PASS projeção nova não inventa proveniência para MANUAL sem parceiro
+PASS baixa MANUAL não B2B sem parceiro preserva o writer legado
+PASS shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado
+PASS bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição
+PASS pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro
+PASS baixa de origem desconhecida que afeta parceiro também falha fechado
+PASS novo pedido do mesmo parceiro fica indisponível durante a inconsistência
+PASS impacto medido não altera pedidos atuais nem cria pedido novo
+PASS fixtures MANUAL canceladas após medição não contaminam a bateria seguinte
+FAIL múltiplos parceiros no mesmo cliente: primeiro parceiro não apropria a dívida :: {'partner_id': '00000000-0000-0000-0000-000000000370', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 0.0, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 1000000.0, 'credit_limit_action': 'block', 'exposicao_projetada': 0.0, 'percentual_utilizado': 0.0, 'comprometido_pendente': 0.0, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 0.0}
+FAIL múltiplos parceiros no mesmo cliente: segundo parceiro também não apropria a dívida :: {'partner_id': '00000000-0000-0000-0000-000000000371', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 0.0, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 1000000.0, 'credit_limit_action': 'block', 'exposicao_projetada': 0.0, 'percentual_utilizado': 0.0, 'comprometido_pendente': 0.0, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 0.0}
+FAIL ambiguidade de cliente/parceiro bloqueia baixa sem dupla contagem :: 962e2213-fc9a-4446-afe4-3d3aecf52dac
+FAIL conflito partner_id/customer_id é explícito para o parceiro do cliente :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}
+FAIL conflito partner_id/customer_id é explícito para o parceiro declarado :: ERROR:  MONEY_ORIGIN_UNPROVEN
+CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE
+PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment
+PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
+FAIL conflito partner_id/customer_id bloqueia baixa e reconciliação silenciosa :: ERROR:  MONEY_ORIGIN_UNPROVEN
+CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE
+PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 5 at RETURN
+PL/pgSQL function public.rpc_receivable_money_projection_v1(uuid,integer,integer) line 8 at assignment
+SQL statement "SELECT r               FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text"
+PL/pgSQL function rpc_register_receivable_payment(uuid,jsonb) line 47 at SQL statement
+FAIL partner_id de outro owner não esconde a dívida do cliente no tenant :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}
+FAIL conflito de owner também bloqueia baixa sem backfill :: ERROR:  MONEY_ORIGIN_UNPROVEN
+CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE
+PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 5 at RETURN
+PL/pgSQL function public.rpc_receivable_money_projection_v1(uuid,integer,integer) line 8 at assignment
+SQL statement "SELECT r               FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text"
+PL/pgSQL function rpc_register_receivable_payment(uuid,jsonb) line 47 at SQL statement
+FAIL ambiguidade e conflitos não geram pagamentos nem alteram partner_id histórico :: 
+PASS pedido interno não autorizado pelo downstream B4 é contido
+PASS contenção interna não cria título nem alocação
+PASS writer integral antigo também permanece fechado para pedido interno
+PASS primeira NF parcial autorizada fictícia gera título
+PASS conversão não duplica exposição
+PASS partner_id e customer_id no mesmo parceiro selecionam o título uma única vez
+PASS residual = pedido restante + títulos sem dupla contagem
+PASS replay da mesma autorização devolve mesmo título
+PASS replay não duplica alocação
+PASS datas finais partem da emissão e calendário selado
+PASS juros financiados não são somados duas vezes
+PASS projeção financeira usa ator e tenant autorizados
+PASS baixa parcial local no ledger capturado
+PASS baixa reduz somente título, não residual do pedido
+PASS três documentos independentes fecham quantidade e residual
+PASS três títulos, um por documento
+PASS crédito após parciais preserva total menos baixa
+PASS cancelamento de NF paga exige reconciliação
+PASS cancelamento pago negado preserva histórico e saldo
+PASS atestação fictícia de cancelamento passa pela guarda com ator
+PASS substituição intermediária cancela somente título não pago
+PASS cancelamento restaura exatamente principal+juros do documento
+PASS documento substituto consome residual sem duplicar
+PASS substituição intermediária preserva centavos por item
+PASS histórico do título cancelado permanece
+PASS quantidade acima do pedido negada
+PASS tenant estrangeiro não faz replay nem lê recibo
+PASS pendência contábil bloqueia antes de qualquer título
+PASS writer B2B anterior continua negado após instalação
+PASS snapshot B3 não cotado também aloca
+PASS fora da cobertura do calendário falha fechado
+PASS duas sessões: somente uma consome o saldo final
+PASS corrida não duplica título nem residual
+PASS rollback deny-only passa com PRE/POST e metadados íntegros
+PASS rollback preserva alocações, títulos e snapshots
+PASS rollback fecha writer legado sem apagar projeção nem histórico

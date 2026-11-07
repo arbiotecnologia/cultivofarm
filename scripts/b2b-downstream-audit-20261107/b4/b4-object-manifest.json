@@ -1,11 +1,11 @@
 {
-  "review": "458b6012+4097d4e2",
+  "review": "458b6012+4097d4e2+manual-null-1813",
   "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "hosted": "NOT_RUN",
   "historical_candidate_sha256": "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894",
-  "candidate_sha256": "3b7bd7f1756fb73036ca4a80e3a38aeb5041f0e72dfe208e419b9819a5e64b98",
-  "object_count": 55,
+  "candidate_sha256": "b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47",
+  "object_count": 56,
   "objects": [
     {
       "kind": "function",
@@ -61,8 +61,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_credit_balances(uuid,uuid)",
-        "body_md5": "7cba13a917d910cc1186424f6f70e83f",
-        "definition_sha256": "2b3a7a64c7529af72af4b5f530113cc20e33b70f5829375c94c007caa5eae940",
+        "body_md5": "9fbf08a16f6bcbec379945886c85c245",
+        "definition_sha256": "7d22b646f594829572467ceaef69e474e334716bfaa4afd4c13e3220558cfc39",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -183,6 +183,21 @@
         "signature": "platform_private.b2b_proven_money_row_internal(uuid,uuid)",
         "body_md5": "b4cfcf65495322ce3c3b911a3597abe2",
         "definition_sha256": "073f49766824bfee5aab4f042826b0b0117fa362d6a43a20823da11f3e6293ca",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_receivable_partner_scope(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_receivable_partner_scope(uuid)",
+        "body_md5": "cbebb71371eec7bd73fcdc2900088876",
+        "definition_sha256": "120a0f4742221478a18f8ebc911aef6ff90cd4f1c7ff3e4c7237047d7ec81d48",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }
@@ -411,8 +426,8 @@
       },
       "candidate": {
         "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
-        "body_md5": "ceabe6ed0d1862256e891552d2c81cbe",
-        "definition_sha256": "e3894dc5fe03c26a35bc4e230f640571c77a7c1cb524a70d31f7ea9d98404c88",
+        "body_md5": "db0ef1369e8a98630afb98368d391678",
+        "definition_sha256": "96d90d81a3ae6997ba9f3cf9fae5cd55860d7995063bc25b10a88da33ee906fa",
         "owner": "postgres",
         "acl": "BASELINE_PRESERVED"
       }
@@ -1749,6 +1764,40 @@
       "current_order_live_impact": "REQUIRES_INDEPENDENT_DATA_PREFLIGHT_BEFORE_RELEASE"
     }
   },
+  "reported_manual_null_live_readonly": {
+    "kind": "USER_REPORTED_LIVE_READONLY_FACTS_NOT_AGENT_QUERY",
+    "review": "manual-null-1813",
+    "reported_at_utc": "2026-11-07T18:13:00Z",
+    "canonical_ref": "swzpzcwiasxmjutrmvkm",
+    "hosted_write": false,
+    "seller": "AR Bio",
+    "manual_titles": {
+      "active_count": 5,
+      "status_counts": {
+        "OPEN": 4,
+        "OVERDUE": 1
+      },
+      "partner_id": null,
+      "customer_links": "Todos os cinco customer_id correspondem a partner_accounts ativos do mesmo commercial_owner_organization_id do vendedor; origem monetária não afirmada.",
+      "cancel_or_backfill_authorized": false
+    },
+    "previous_filter": {
+      "function": "platform_private.b2b_credit_balances(uuid,uuid)",
+      "predicate": "a.partner_id=p_partner",
+      "coverage_gap": "Não cobre títulos históricos com partner_id NULL e cliente ligado ao parceiro."
+    },
+    "required_local_cases": [
+      "partner_id NULL + cliente ligado a um único parceiro do owner",
+      "múltiplos parceiros ativos com o mesmo client_id",
+      "conflito entre partner_id e customer_id",
+      "conflito de commercial_owner_organization_id",
+      "saldo em aberto e saldo vencido sem omissão silenciosa",
+      "ausência de dupla contagem quando partner_id e customer_id identificam o mesmo parceiro",
+      "origem monetária desconhecida exige negação/reconciliação explícita"
+    ],
+    "approval": "BLOCKED_PENDING_COMPLETE_LOCAL_TESTS_AND_INDEPENDENT_REVIEW",
+    "seller_team_candidate": "SEPARATE_NOT_MERGED"
+  },
   "dependent_trigger_pins": [
     {
       "name": "trg_auto_b2b_receivable",
@@ -1769,9 +1818,10 @@
     "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL",
     "test_stub_allowed_in_install": false
   },
-  "shared_impact": "MANUAL não B2B sem parceiro preserva parcelas/baixa; origem desconhecida que afeta parceiro bloqueia exposição/baixa; impacto em dados LIVE ainda exige preflight",
+  "shared_impact": "MANUAL partner_id NULL com cliente ligado entra no escopo sem backfill; origem desconhecida, ambiguidade, conflito e owner divergente bloqueiam exposição/baixa; MANUAL não B2B sem parceiro preserva parcelas/baixa; impacto LIVE ainda exige preflight",
   "limitations": [
-    "fatos LIVE 4097d4e2 foram relatados pelo auditor, não lidos pelo agente",
+    "fatos LIVE 4097d4e2 e manual-null-1813 foram relatados pelo auditor, não lidos pelo agente",
+    "os cinco títulos LIVE não foram alterados, cancelados nem reconciliados",
     "POST não é prova JWT/RLS/PostgREST/Storage",
     "63/63 históricos preservados separadamente e não somados",
     "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release"

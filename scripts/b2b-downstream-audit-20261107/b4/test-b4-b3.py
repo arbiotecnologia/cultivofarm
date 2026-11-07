@@ -4,6 +4,7 @@ import concurrent.futures
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -15,6 +16,12 @@ ROOT = H.parents[2]
 B3DIR = ROOT / "scripts/b2b-payment-condition-v1-rebase-20261106"
 CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"
 MONEY = ROOT / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
+MANUAL_LIVE = H / "live-readonly-manual-null-1813.json"
+OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))
+if json.loads(MONEY.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
+    raise SystemExit("B4_MONEY_REF_DRIFT")
+if json.loads(MANUAL_LIVE.read_text()).get("canonical_ref") != "swzpzcwiasxmjutrmvkm":
+    raise SystemExit("B4_MANUAL_FACTS_REF_DRIFT")
 
 
 def load(name, path):
@@ -31,6 +38,13 @@ CHECKS = []
 CUSTOMER = B3.u(301)
 DOCS = [B3.u(310 + i) for i in range(10)]
 BOL = B3.ch("boleto", 1, 30)
+REAL_MANUAL = [B3.u(360 + i) for i in range(5)]
+AMBIGUOUS_TITLE = B3.u(365)
+CONFLICT_TITLE = B3.u(366)
+OWNER_CONFLICT_TITLE = B3.u(367)
+P_AMBIG_A, P_AMBIG_B = B3.u(370), B3.u(371)
+SHARED_CUSTOMER = B3.u(372)
+OTHER_CUSTOMER = B3.u(374)
 
 
 def check(name, ok, detail=""):
@@ -235,8 +249,17 @@ REVOKE ALL ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,tex
 ALTER TABLE public.partner_order_payment_schedule ADD COLUMN IF NOT EXISTS id uuid NOT NULL DEFAULT gen_random_uuid();""")
         B3.psql(f"""ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
 CREATE TABLE IF NOT EXISTS public.clientes(id uuid PRIMARY KEY,organization_id uuid);
-INSERT INTO public.clientes(id,organization_id) VALUES('{CUSTOMER}','{B3.A}') ON CONFLICT (id) DO NOTHING;
-UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
+INSERT INTO public.clientes(id,organization_id) VALUES
+('{CUSTOMER}','{B3.A}'),('{SHARED_CUSTOMER}','{B3.A}'),('{OTHER_CUSTOMER}','{B3.A}') ON CONFLICT (id) DO NOTHING;
+UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}';
+UPDATE public.partner_accounts SET client_id='{OTHER_CUSTOMER}' WHERE id='{B3.PO}';
+INSERT INTO public.partner_accounts(id,ativo,deleted_at,commercial_owner_organization_id,client_id) VALUES
+('{P_AMBIG_A}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}'),('{P_AMBIG_B}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}');
+INSERT INTO public.partner_financial_settings
+SELECT (jsonb_populate_record(NULL::public.partner_financial_settings,to_jsonb(s)||jsonb_build_object('id',gen_random_uuid(),'partner_id',x.partner_id))).*
+FROM public.partner_financial_settings s CROSS JOIN (VALUES
+('{B3.PO}'::uuid),('{P_AMBIG_A}'::uuid),('{P_AMBIG_B}'::uuid)) x(partner_id)
+WHERE s.partner_id='{B3.P}';""")
         for plan in [B3.P3, B3.PLQ]:
             data, error = B3.publish(B3.UFIN, plan, "boleto", B3.M_BOL, 30, 3, "1.8", 0)
             check("publicação B3 usada pelo B4", data is not None, error)
@@ -273,6 +296,30 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("fixture contábil pendente separada", B3.psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{pending_order}'").stdout.strip() == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1")
 
         finance_schema()
+        category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
+
+        def manual_title(title_id, customer_id, amount, status="OPEN", due="'2026-11-03'", partner_id=None):
+            partner_sql = f"'{partner_id}'" if partner_id else "NULL"
+            return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
+              (id,organization_id,origin_type,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
+              VALUES('{title_id}','{B3.A}','MANUAL','{customer_id}',{partner_sql},'TESTE SHARED MANUAL','{category_id}','{amount}','2026-10-01',{due},1,'{status}','{B3.M_BOL}','{B3.UFIN}');""")
+
+        # Os cinco títulos e os conflitos são históricos: existem ANTES do trigger
+        # candidato. Todos os nove gatilhos capturados da tabela seguem ativos;
+        # nenhum UPDATE de partner_id/backfill é usado para montar a forma real.
+        check("trigger compartilhado candidato ainda ausente antes dos históricos", B3.psql("SELECT count(*) FROM pg_trigger WHERE tgname='zz_b2b_shared_credit_guard' AND tgrelid='public.accounts_receivable'::regclass").stdout.strip() == "0")
+        real_results = [manual_title(title, CUSTOMER, str(index + 1), "OVERDUE" if index == 4 else "OPEN", "CURRENT_DATE-30" if index == 4 else "CURRENT_DATE+30")
+                        for index, title in enumerate(REAL_MANUAL)]
+        check("cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL", all(r.returncode == 0 for r in real_results)
+              and B3.psql(f"SELECT count(*) FILTER(WHERE status='OPEN')||'|'||count(*) FILTER(WHERE status='OVERDUE')||'|'||count(*) FILTER(WHERE partner_id IS NULL) FROM public.accounts_receivable WHERE id IN ({','.join(repr(x) for x in REAL_MANUAL)})").stdout.strip() == "4|1|5", [r.stderr[-500:] for r in real_results])
+        historical_results = [
+            manual_title(AMBIGUOUS_TITLE, SHARED_CUSTOMER, "10.00", "CANCELED"),
+            manual_title(CONFLICT_TITLE, CUSTOMER, "11.00", "CANCELED", partner_id=B3.PO),
+            manual_title(OWNER_CONFLICT_TITLE, CUSTOMER, "12.00", "CANCELED", partner_id=B3.PF),
+        ]
+        check("históricos de ambiguidade/conflito são preservados sem correção retroativa", all(r.returncode == 0 for r in historical_results)
+              and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE id IN ('{AMBIGUOUS_TITLE}','{CONFLICT_TITLE}','{OWNER_CONFLICT_TITLE}') AND status='CANCELED'").stdout.strip() == "3", [r.stderr[-500:] for r in historical_results])
+
         pre = runfile(H / "01-pre.sql.readonly")
         if pre.returncode != 0 and "B4_PRE_COLUMNS" in pre.stderr:
             actual_columns = B3.psql("SELECT jsonb_agg(jsonb_build_object('name',column_name,'type',data_type,'default',column_default,'notnull',is_nullable) ORDER BY ordinal_position) FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable'").stdout.strip()
@@ -323,18 +370,31 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
         check("stub operacional existe só no harness depois da negação real", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
 
+        # Forma LIVE relatada: cinco títulos MANUAL ativos, partner_id NULL e
+        # customer_id ligado ao parceiro. Nenhum é alterado/cancelado no hosted.
+        check("instalação não faz backfill dos cinco históricos", B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE id IN ({','.join(repr(x) for x in REAL_MANUAL)}) AND partner_id IS NULL").stdout.strip() == "5")
+        deny("MANUAL real partner NULL + cliente único não pode ser omitido da exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        real_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{REAL_MANUAL[0]}'").stdout.strip()
+        real_payment = {"amount_received": 1, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-NULL-REAL"}
+        deny("baixa MANUAL real partner NULL também exige reconciliação", B3.out(B3.as_user(B3.UFIN, f"SELECT to_jsonb(public.rpc_register_receivable_payment('{real_installment}','{js(real_payment)}'::jsonb));")), "MONEY_ORIGIN_UNPROVEN")
+        real_integrity = B3.psql(f"SELECT (SELECT count(*) FROM public.receivable_payments WHERE installment_id='{real_installment}')||'|'||(SELECT partner_id IS NULL FROM public.accounts_receivable WHERE id='{REAL_MANUAL[0]}')")
+        check("tentativa de baixa não altera o título histórico nem cria pagamento", real_integrity.returncode == 0 and real_integrity.stdout.strip() == "0|true", real_integrity.stderr + " stdout=" + real_integrity.stdout + " installment=" + real_installment)
+        order_count_real_before = B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip()
+        real_sim, real_sim_error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
+        check("nova decisão do parceiro fica pendente de reconciliação na forma real", real_sim is None and "MONEY_ORIGIN_UNPROVEN" in (real_sim_error or ""), real_sim_error or real_sim)
+        check("falha na forma real não cria pedido", B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip() == order_count_real_before)
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ({','.join(repr(x) for x in REAL_MANUAL[:4])})")
+        deny("OVERDUE partner NULL continua explícito após cancelar somente os quatro OPEN locais", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{REAL_MANUAL[4]}'")
+        check("cleanup dos cinco históricos locais restaura somente a fixture", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")[0] is not None)
+
         # Impacto dos fences compartilhados: MANUAL não B2B sem parceiro conserva
         # parcelas/baixa; origem desconhecida que afeta parceiro fica explicitamente
         # bloqueada, sem backfill, proveniência fictícia ou alteração de pedidos.
-        category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
         unlinked_customer = B3.u(302)
         B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}')")
         current_orders_before = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
         order_count_before = B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip()
-        def manual_title(title_id, customer_id, amount):
-            return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
-              (id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
-              VALUES('{title_id}','{B3.A}','MANUAL','{customer_id}','TESTE SHARED NAO B2B','{category_id}','{amount}','2026-10-01','2026-11-03',1,'OPEN','{B3.M_BOL}','{B3.UFIN}');""")
         plain_title = B3.u(340)
         plain_result = manual_title(plain_title, unlinked_customer, "7.00")
         check("shared fence preserva título MANUAL não B2B sem devedor parceiro", plain_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip() == "1", plain_result.stderr[-900:])
@@ -350,7 +410,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         deny("pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',1,'{quote_order}')"), "MONEY_ORIGIN_UNPROVEN")
         partner_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{partner_title}'").stdout.strip()
         partner_payment = {"amount_received": 8, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-PARTNER"}
-        deny("baixa de origem desconhecida que afeta parceiro também falha fechado", B3.out(B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{partner_installment}','{js(partner_payment)}'::jsonb);")), "MONEY_ORIGIN_UNPROVEN")
+        deny("baixa de origem desconhecida que afeta parceiro também falha fechado", B3.out(B3.as_user(B3.UFIN, f"SELECT to_jsonb(public.rpc_register_receivable_payment('{partner_installment}','{js(partner_payment)}'::jsonb));")), "MONEY_ORIGIN_UNPROVEN")
         impacted_sim, impacted_sim_error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
         check("novo pedido do mesmo parceiro fica indisponível durante a inconsistência", impacted_sim is None and "MONEY_ORIGIN_UNPROVEN" in (impacted_sim_error or ""), impacted_sim_error or impacted_sim)
         current_orders_after = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
@@ -359,6 +419,32 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         B3.psql(f"""UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id IN ('{plain_title}','{partner_title}');
                     UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ('{plain_title}','{partner_title}');""")
         check("fixtures MANUAL canceladas após medição não contaminam a bateria seguinte", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")[0] is not None)
+
+        # Históricos já existentes com vínculos ambíguos/conflitantes: reativar um
+        # por vez. As chamadas sempre ocorrem com todos os gatilhos habilitados.
+        ambiguous_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{AMBIGUOUS_TITLE}'").stdout.strip()
+        ambiguous_payment = {"amount_received": 10, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-AMBIGUOUS"}
+        B3.psql(f"UPDATE public.accounts_receivable SET status='OPEN' WHERE id='{AMBIGUOUS_TITLE}'")
+        deny("múltiplos parceiros no mesmo cliente: primeiro parceiro não apropria a dívida", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_AMBIG_A}',0,NULL)"), "CREDIT_PARTNER_LINK_AMBIGUOUS")
+        deny("múltiplos parceiros no mesmo cliente: segundo parceiro também não apropria a dívida", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_AMBIG_B}',0,NULL)"), "CREDIT_PARTNER_LINK_AMBIGUOUS")
+        deny("ambiguidade de cliente/parceiro bloqueia baixa sem dupla contagem", B3.out(B3.as_user(B3.UFIN, f"SELECT to_jsonb(public.rpc_register_receivable_payment('{ambiguous_installment}','{js(ambiguous_payment)}'::jsonb));")), "CREDIT_PARTNER_LINK_AMBIGUOUS")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{AMBIGUOUS_TITLE}'")
+
+        conflict_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{CONFLICT_TITLE}'").stdout.strip()
+        conflict_payment = {"amount_received": 11, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-CONFLICT"}
+        B3.psql(f"UPDATE public.accounts_receivable SET status='OPEN' WHERE id='{CONFLICT_TITLE}'")
+        deny("conflito partner_id/customer_id é explícito para o parceiro do cliente", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "CREDIT_PARTNER_CONFLICT")
+        deny("conflito partner_id/customer_id é explícito para o parceiro declarado", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.PO}',0,NULL)"), "CREDIT_PARTNER_CONFLICT")
+        deny("conflito partner_id/customer_id bloqueia baixa e reconciliação silenciosa", B3.out(B3.as_user(B3.UFIN, f"SELECT to_jsonb(public.rpc_register_receivable_payment('{conflict_installment}','{js(conflict_payment)}'::jsonb));")), "CREDIT_PARTNER_CONFLICT")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{CONFLICT_TITLE}'")
+
+        owner_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{OWNER_CONFLICT_TITLE}'").stdout.strip()
+        owner_payment = {"amount_received": 12, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-OWNER"}
+        B3.psql(f"UPDATE public.accounts_receivable SET status='OPEN' WHERE id='{OWNER_CONFLICT_TITLE}'")
+        deny("partner_id de outro owner não esconde a dívida do cliente no tenant", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "CREDIT_PARTNER_OWNER_MISMATCH")
+        deny("conflito de owner também bloqueia baixa sem backfill", B3.out(B3.as_user(B3.UFIN, f"SELECT to_jsonb(public.rpc_register_receivable_payment('{owner_installment}','{js(owner_payment)}'::jsonb));")), "CREDIT_PARTNER_OWNER_MISMATCH")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{OWNER_CONFLICT_TITLE}'")
+        check("ambiguidade e conflitos não geram pagamentos nem alteram partner_id histórico", B3.psql(f"SELECT (SELECT count(*) FROM public.receivable_payments p JOIN public.accounts_receivable_installments i ON i.id=p.installment_id WHERE i.receivable_id IN ('{AMBIGUOUS_TITLE}','{CONFLICT_TITLE}','{OWNER_CONFLICT_TITLE}'))||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE id='{AMBIGUOUS_TITLE}' AND partner_id IS NULL)").stdout.strip() == "0|1")
 
         # Pedido INTERNO sintético separado: os gatilhos são pausados apenas para montar
         # a fixture e religados antes de qualquer chamada; nenhuma contenção é removida.
@@ -394,6 +480,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("primeira NF parcial autorizada fictícia gera título", data and data["success"] and not data["replayed"], error or data)
         title1 = data and data["receivable_id"]
         check("conversão não duplica exposição", exposure() == before, f"{before} -> {exposure()}")
+        check("partner_id e customer_id no mesmo parceiro selecionam o título uma única vez", B3.psql(f"SELECT count(*) FROM public.accounts_receivable a WHERE a.id='{title1}' AND (a.partner_id='{B3.P}' OR EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id='{B3.P}' AND pa.client_id=a.customer_id AND pa.commercial_owner_organization_id=a.organization_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL))").stdout.strip() == "1")
         check("residual = pedido restante + títulos sem dupla contagem", residual(quote_order) > 0)
         data2, error2 = allocate(B3.UADM, DOCS[0])
         check("replay da mesma autorização devolve mesmo título", data2 and data2["replayed"] and data2["receivable_id"] == title1, error2 or data2)
@@ -474,21 +561,21 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
     finally:
         subprocess.run(B3.SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         evidence = {
-            "kind": "DISPOSABLE_B4_REVIEW_4097D4E2_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
-            "review": "458b6012+4097d4e2",
+            "kind": "DISPOSABLE_B4_REVIEW_MANUAL_NULL_1813_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
+            "review": "458b6012+4097d4e2+manual-null-1813",
             "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
             "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
             "object_manifest": "b4-object-manifest.json",
-            "live_facts": "USER_REPORTED_READONLY_4097D4E2; projection absent all overloads; writer/index pins matched local captures",
+            "live_facts": ["USER_REPORTED_READONLY_4097D4E2", "USER_REPORTED_READONLY_MANUAL_NULL_1813; cinco títulos não lidos nem alterados pelo agente"],
             "installation": "DISPOSABLE_PRE_INSTALL_POST_PASS; operation dependency remains real always-deny until harness-only stub",
-            "shared_impact_scope": ["MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
+            "shared_impact_scope": ["cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE", "múltiplos parceiros no mesmo cliente", "conflito partner_id/customer_id/owner", "MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
             "passed": sum(c["ok"] for c in CHECKS), "total": len(CHECKS), "checks": CHECKS,
             "hosted": "NOT_RUN", "jwt_rls_storage": "NOT_RUN",
-            "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
+            "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "títulos históricos criados antes do trigger candidato com os nove gatilhos capturados ativos; nenhum backfill", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
             "b3_overloads_restored": False,
             "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência",
         }
-        evidence_path = H / "review-458b6012/live-absence-4097d4e2/evidence-b4-shared-impact.json"
+        evidence_path = OUT / "evidence-b4-shared-impact.json"
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
         evidence_path.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
     return result_code

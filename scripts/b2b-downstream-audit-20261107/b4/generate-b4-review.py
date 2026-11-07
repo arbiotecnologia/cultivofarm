@@ -16,6 +16,7 @@ ROOT = H.parents[2]
 CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"
 MONEY = ROOT / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
 LIVE_FACTS_PATH = H / "live-readonly-4097d4e2.json"
+MANUAL_LIVE_FACTS_PATH = H / "live-readonly-manual-null-1813.json"
 HISTORICAL = H / "review-458b6012/historical-63/b4-candidate.sql.review"
 EXPECTED_HISTORICAL_SHA256 = "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894"
 
@@ -31,10 +32,15 @@ G = load("b4_base_generator", H / "generate-b4.py")
 CAP = json.loads(CAPTURE.read_text())
 FIN = json.loads(MONEY.read_text())
 LIVE_FACTS = json.loads(LIVE_FACTS_PATH.read_text())
+MANUAL_LIVE_FACTS = json.loads(MANUAL_LIVE_FACTS_PATH.read_text())
 if CAPTURE and FIN.get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_CAPTURE_REF_DRIFT")
 if LIVE_FACTS.get("canonical_ref") != "swzpzcwiasxmjutrmvkm" or LIVE_FACTS.get("hosted_write") is not False:
     raise SystemExit("B4_LIVE_FACTS_REF_OR_WRITE_DRIFT")
+if MANUAL_LIVE_FACTS.get("canonical_ref") != "swzpzcwiasxmjutrmvkm" or MANUAL_LIVE_FACTS.get("hosted_write") is not False:
+    raise SystemExit("B4_MANUAL_LIVE_FACTS_REF_OR_WRITE_DRIFT")
+if MANUAL_LIVE_FACTS["manual_titles"]["active_count"] != 5 or MANUAL_LIVE_FACTS["manual_titles"]["status_counts"] != {"OPEN": 4, "OVERDUE": 1}:
+    raise SystemExit("B4_MANUAL_LIVE_FACTS_SHAPE_DRIFT")
 if hashlib.sha256(HISTORICAL.read_bytes()).hexdigest() != EXPECTED_HISTORICAL_SHA256:
     raise SystemExit("B4_HISTORICAL_CANDIDATE_DRIFT")
 
@@ -48,6 +54,7 @@ SIGS = {
     "platform_private.b4_schedule_from_nf": "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)",
     "platform_private.b2b_credit_config_block": "platform_private.b2b_credit_config_block(uuid)",
     "platform_private.b2b_debtor_partner": "platform_private.b2b_debtor_partner(uuid,uuid)",
+    "platform_private.b2b_receivable_partner_scope": "platform_private.b2b_receivable_partner_scope(uuid)",
     "platform_private.b2b_shared_receivable_credit_guard": "platform_private.b2b_shared_receivable_credit_guard()",
     "platform_private.b4_assert_order_eligible": "platform_private.b4_assert_order_eligible(uuid)",
     "platform_private.b2b_legacy_money_row": "platform_private.b2b_legacy_money_row(uuid)",
@@ -425,7 +432,7 @@ def build():
     entries.append({"kind": "trigger+shared_table", "object": "public.accounts_receivable.*", "operation": "PRESERVE_BASELINE_AND_ADD_LISTED", "baseline": baseline_schema, "candidate": {"table_acl": "UNCHANGED", "old_constraints": "UNCHANGED_PLUS_B2B_DOCUMENT_FK"}})
 
     manifest = {
-        "review": "458b6012+4097d4e2", "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+        "review": "458b6012+4097d4e2+manual-null-1813", "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
         "canonical_ref": "swzpzcwiasxmjutrmvkm", "hosted": "NOT_RUN",
         "historical_candidate_sha256": EXPECTED_HISTORICAL_SHA256,
         "candidate_sha256": sha_text(body), "object_count": len(entries), "objects": entries,
@@ -433,16 +440,18 @@ def build():
         "missing_baseline": missing,
         "projection_absence": LIVE_FACTS["projection"],
         "reported_live_readonly": LIVE_FACTS,
+        "reported_manual_null_live_readonly": MANUAL_LIVE_FACTS,
         "dependent_trigger_pins": auto_triggers,
         "post_shared_schema_md5": {"columns": post_columns_md5, "constraints": post_constraints_md5, "indexes": post_indexes_md5, "triggers": post_triggers_md5},
         "operation_separation": {"installation_grants_operation": False, "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL", "test_stub_allowed_in_install": False},
-        "shared_impact": "MANUAL não B2B sem parceiro preserva parcelas/baixa; origem desconhecida que afeta parceiro bloqueia exposição/baixa; impacto em dados LIVE ainda exige preflight",
-        "limitations": ["fatos LIVE 4097d4e2 foram relatados pelo auditor, não lidos pelo agente", "POST não é prova JWT/RLS/PostgREST/Storage", "63/63 históricos preservados separadamente e não somados", "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release"],
+        "shared_impact": "MANUAL partner_id NULL com cliente ligado entra no escopo sem backfill; origem desconhecida, ambiguidade, conflito e owner divergente bloqueiam exposição/baixa; MANUAL não B2B sem parceiro preserva parcelas/baixa; impacto LIVE ainda exige preflight",
+        "limitations": ["fatos LIVE 4097d4e2 e manual-null-1813 foram relatados pelo auditor, não lidos pelo agente", "os cinco títulos LIVE não foram alterados, cancelados nem reconciliados", "POST não é prova JWT/RLS/PostgREST/Storage", "63/63 históricos preservados separadamente e não somados", "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release"],
     }
     files = dict(base_files)
     files.update({"b4-candidate.sql.review": body, "01-pre.sql.readonly": pre, "02-install.sql.review": install,
                   "03-post.sql.readonly": post, "04-rollback-deny.sql.review": rollback,
                   "live-readonly-4097d4e2.json": json.dumps(LIVE_FACTS, ensure_ascii=False, indent=2) + "\n",
+                  "live-readonly-manual-null-1813.json": json.dumps(MANUAL_LIVE_FACTS, ensure_ascii=False, indent=2) + "\n",
                   "b4-object-manifest.json": json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"})
     files["SHA256SUMS"] = "".join(f"{sha_text(text)}  {name}\n" for name, text in sorted(files.items()) if name != "SHA256SUMS")
     return files
