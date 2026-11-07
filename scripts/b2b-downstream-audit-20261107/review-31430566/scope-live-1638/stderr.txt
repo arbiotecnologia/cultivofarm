@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 491, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 186, in main
+    psql(REAL_AUTH_SCHEMA)
+    ~~~~^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  duplicate key value violates unique constraint "profiles_pkey"
+DETAIL:  Key (user_id)=(00000000-0000-0000-0000-000000000029) already exists.
+
