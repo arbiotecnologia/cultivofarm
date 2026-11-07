@@ -381,6 +381,7 @@ BEGIN
     RAISE EXCEPTION 'ADJUSTMENT_HELPER_MISSING';
   END IF;
   IF md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)) IS DISTINCT FROM '{expected_md5}' THEN
+    RAISE WARNING 'HELPER_ACTUAL_BODY=%', pg_get_functiondef('{HELPER_SIG}'::regprocedure);
     RAISE EXCEPTION 'ADJUSTMENT_HELPER_PIN_DRIFT: actual=% expected=%', md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)), '{expected_md5}';
   END IF;
   IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='{HELPER_SIG}'::regprocedure) IS DISTINCT FROM '{HELPER_OWNER}' THEN
