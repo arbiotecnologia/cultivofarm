@@ -19,7 +19,9 @@
     "platform_private.finished_product_gate_v1",
     "platform_private.finished_product_stock_valid_v1",
     "platform_private.finished_product_delivery_valid_v1",
-    "platform_private.finished_product_purchase_entry_v1"
+    "platform_private.finished_product_purchase_entry_v1",
+    "public.rpc_finished_product_purchase_capability_v1",
+    "public.rpc_finished_product_purchase_entry_v1"
   ],
   "catalog_dependencies": [
     "public.produtos.owner_organization_id",
