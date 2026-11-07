@@ -1,3 +1,9 @@
+## 07/11 16:05 — Reconciliação física local sobre a base atual
+- [ ] Diagnosticar `ENVASE_RELEASE_DRIFT` por dependência/fonte e estado, sem remover ou afrouxar pins/guards; corrigir somente a composição/candidato compatível.
+- [ ] Rerodar confirmação física, expedição/cancelamento e isolamento/concorrência/idempotência em PostgreSQL descartável, incluindo biológicos, químicos e fertilizantes kg/g/embalagem inteira, com peso somente frete.
+- [ ] Preservar a reconciliação B4 63/63 sobre o B3 atual, sem criadores antigos; fiscal permanece exclusivamente simulado local e sem efeitos reais.
+- [ ] Entregar artefatos, pins, diffs, hashes, evidências/exit codes e caminho mínimo separado do ajuste de condições; nenhuma operação hospedada, publicação, NF/cobrança real, envio ou delegação.
+
 ## 07/11 15:46 — Reconciliação local dos pinos LIVE e B4 útil
 - [x] Registrar como relato READONLY do auditor os pinos LIVE de ajuste/aprovação/rejeição, geradores de recebível, gatilho automático, autorização fiscal e capabilities de envase/confirmação; correspondências encontradas somente nas capturas locais, sem deduzir exposure pela UI fechada.
 - [x] Comparar fontes/capturas locais, ACL e cadeia de guards sem operar o banco hospedado. Autorização fiscal permanece service-only e sem integração de recebível; replay/guards da entrega ficaram como risco estático, não vulnerabilidade LIVE demonstrada. Candidato de ajuste anterior preservado, sem novo delta.
