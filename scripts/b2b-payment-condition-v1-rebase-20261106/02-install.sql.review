@@ -22,7 +22,7 @@ CREATE TABLE platform_private.b2b_condition_versions (
  deadline_days int NOT NULL DEFAULT 30 CHECK(deadline_days BETWEEN 0 AND 3650), installment_count int NOT NULL CHECK(installment_count BETWEEN 1 AND 120),
  monthly_rate numeric NOT NULL CHECK(monthly_rate>=0 AND monthly_rate::text NOT IN ('NaN','Infinity','-Infinity') AND monthly_rate<=100 AND monthly_rate=round(monthly_rate,6)),
  approved_by uuid NOT NULL, approved_at timestamptz NOT NULL, configuration_approved boolean NOT NULL CHECK(configuration_approved),
- calendar_version text CHECK(calendar_version IS NULL), -- calendário Paracatu-MG pendente (B4); datas B3 são estimadas category_id uuid NOT NULL REFERENCES public.financial_categories(id), payment_method_id uuid NOT NULL REFERENCES public.payment_methods(id),
+ calendar_version text CHECK(calendar_version IS NULL), category_id uuid NOT NULL REFERENCES public.financial_categories(id), payment_method_id uuid NOT NULL REFERENCES public.payment_methods(id),
  PRIMARY KEY(organization_id,plan_id,version,method),
  CHECK(method NOT IN ('dinheiro','pix','cartao_debito') OR (installment_count=1 AND monthly_rate=0)),
  CHECK(method<>'boleto' OR installment_count<=3),

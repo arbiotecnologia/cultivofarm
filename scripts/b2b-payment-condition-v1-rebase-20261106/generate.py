@@ -112,7 +112,7 @@ def prior_objects():
                 "monthly_rate numeric NOT NULL CHECK(monthly_rate>=0 AND monthly_rate::text NOT IN ('NaN','Infinity','-Infinity') AND monthly_rate<=100 AND monthly_rate=round(monthly_rate,6)),",
                 "V2 taxa finita, ≤100, 6 casas")
     ver = delta(ver, " calendar_version text NOT NULL REFERENCES platform_private.holiday_calendars(version),",
-                " calendar_version text CHECK(calendar_version IS NULL), -- calendário Paracatu-MG pendente (B4); datas B3 são estimadas",
+                " calendar_version text CHECK(calendar_version IS NULL),",  # calendário Paracatu-MG pendente (B4); datas B3 estimadas
                 "V3 calendário fora do B3")
     ver = delta(ver, " CHECK(method<>'boleto' OR (installment_count<=3 AND deadline_days=30))",
                 " CHECK(method<>'boleto' OR installment_count<=3),\n CHECK(installment_count>1 OR monthly_rate=0),\n created_at timestamptz NOT NULL DEFAULT now()",
