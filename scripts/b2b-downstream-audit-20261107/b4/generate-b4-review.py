@@ -423,21 +423,24 @@ def build():
     entries.append({"kind": "trigger+shared_table", "object": "public.accounts_receivable.*", "operation": "PRESERVE_BASELINE_AND_ADD_LISTED", "baseline": baseline_schema, "candidate": {"table_acl": "UNCHANGED", "old_constraints": "UNCHANGED_PLUS_B2B_DOCUMENT_FK"}})
 
     manifest = {
-        "review": "458b6012", "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+        "review": "458b6012+4097d4e2", "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
         "canonical_ref": "swzpzcwiasxmjutrmvkm", "hosted": "NOT_RUN",
         "historical_candidate_sha256": EXPECTED_HISTORICAL_SHA256,
         "candidate_sha256": sha_text(body), "object_count": len(entries), "objects": entries,
         "duplicate_definitions_in_historical_body": duplicate_names,
         "missing_baseline": missing,
+        "projection_absence": LIVE_FACTS["projection"],
+        "reported_live_readonly": LIVE_FACTS,
         "dependent_trigger_pins": auto_triggers,
         "post_shared_schema_md5": {"columns": post_columns_md5, "constraints": post_constraints_md5, "indexes": post_indexes_md5, "triggers": post_triggers_md5},
         "operation_separation": {"installation_grants_operation": False, "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL", "test_stub_allowed_in_install": False},
-        "shared_impact": "testado separadamente em PG descartável; resultado não autoriza regressão nem instalação",
-        "limitations": ["capturas não são nova leitura LIVE", "POST não é prova JWT/RLS/PostgREST/Storage", "63/63 históricos preservados separadamente e não somados"],
+        "shared_impact": "MANUAL não B2B sem parceiro preserva parcelas/baixa; origem desconhecida que afeta parceiro bloqueia exposição/baixa; impacto em dados LIVE ainda exige preflight",
+        "limitations": ["fatos LIVE 4097d4e2 foram relatados pelo auditor, não lidos pelo agente", "POST não é prova JWT/RLS/PostgREST/Storage", "63/63 históricos preservados separadamente e não somados", "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release"],
     }
     files = dict(base_files)
     files.update({"b4-candidate.sql.review": body, "01-pre.sql.readonly": pre, "02-install.sql.review": install,
                   "03-post.sql.readonly": post, "04-rollback-deny.sql.review": rollback,
+                  "live-readonly-4097d4e2.json": json.dumps(LIVE_FACTS, ensure_ascii=False, indent=2) + "\n",
                   "b4-object-manifest.json": json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"})
     files["SHA256SUMS"] = "".join(f"{sha_text(text)}  {name}\n" for name, text in sorted(files.items()) if name != "SHA256SUMS")
     return files
