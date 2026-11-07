@@ -1,0 +1,43 @@
+{
+  "base": "347baf8bc1627e4d9c018c412edd7de889bfb81d",
+  "command": "vitest run --maxWorkers=2 --reporter=default --reporter=json --outputFile=baseline.json",
+  "exit_code": 1,
+  "test_files": {
+    "passed": 760,
+    "skipped": 1,
+    "total": 761
+  },
+  "tests": {
+    "passed": 10769,
+    "skipped": 6,
+    "total": 10775
+  },
+  "unhandled_errors": {
+    "total": 27,
+    "categories": [
+      {
+        "count": 25,
+        "kind": "fixture_infrastructure",
+        "message": "Error: unexpected tenant_display_name_v1",
+        "origin": "src/test/config/financialOpenSession.integration.test.tsx",
+        "correction": "A fixture passou a responder ao leitor já existente; nenhum runtime foi alterado.",
+        "focused_result": "26/26; exit 0; zero unhandled errors"
+      },
+      {
+        "count": 2,
+        "kind": "vitest_worker_infrastructure",
+        "message": "Error: [vitest-worker]: Timeout calling \"onTaskUpdate\"",
+        "origin": "worker RPC, sem arquivo de negócio"
+      }
+    ]
+  },
+  "artifacts": {
+    "full_json": "baseline-347baf8.json",
+    "stdout": "baseline-347baf8.stdout",
+    "unhandled_stderr": "baseline-347baf8-unhandled.stderr",
+    "exit_code_file": "baseline-347baf8.exitcode",
+    "focused_json": "financial-fixture-focused.json",
+    "focused_exit_code_file": "financial-fixture-focused.exitcode"
+  },
+  "scope": "Reprodução histórica com a mesma concorrência; não é prova JWT/RLS/PostgREST nem autorização de implantação."
+}
