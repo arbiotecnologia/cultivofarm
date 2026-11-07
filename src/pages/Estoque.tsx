@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,8 +21,7 @@ import { HistoricoSheet } from "@/components/estoque/HistoricoSheet";
 import { EstoqueBI } from "@/components/estoque/EstoqueBI";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
-import { useFinishedProductPurchaseCapability } from "@/hooks/useFinishedProductPurchase";
-import { FinishedProductPurchaseEntryForm } from "@/components/estoque/FinishedProductPurchaseEntryForm";
+import { FinishedProductPurchaseEntrySection } from "@/components/estoque/FinishedProductPurchaseEntrySection";
 import { formatStockContent } from "@/lib/estoque/stockUnits";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -47,7 +46,6 @@ export default function Estoque() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [entryMode, setEntryMode] = useState<"envase" | "revenda">("envase");
   const [form, setForm] = useState({ lote_id: "", produto_id: "", quantidade: "", volume_total: "", validade: "" });
   const { gerarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();
 
@@ -57,12 +55,6 @@ export default function Estoque() {
   
   const [historicoId, setHistoricoId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("recentes");
-  const purchaseCapability = useFinishedProductPurchaseCapability(open);
-  const purchaseAvailable = purchaseCapability.data?.available === true;
-
-  useEffect(() => {
-    if (!purchaseAvailable && entryMode !== "envase") setEntryMode("envase");
-  }, [entryMode, purchaseAvailable]);
 
   const { data: estoques = [] } = useQuery({
     queryKey: ["estoque_produto"],
@@ -308,7 +300,7 @@ export default function Estoque() {
         title="Estoque"
         description="Controle de produtos acabados"
         action={
-          <Dialog open={open} onOpenChange={(value) => { setOpen(value); if (!value) setEntryMode("envase"); }}>
+          <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-bold sm:font-medium shadow-md">
                 <Plus className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />Entrada no Estoque
@@ -316,18 +308,11 @@ export default function Estoque() {
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
               <DialogHeader><DialogTitle>Nova Entrada</DialogTitle></DialogHeader>
-              {purchaseAvailable ? (
-                <Tabs value={entryMode} onValueChange={(value) => setEntryMode(value as "envase" | "revenda")}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="envase">Envase biológico</TabsTrigger>
-                    <TabsTrigger value="revenda">Compra para revenda</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="envase">{biologicalEntryForm}</TabsContent>
-                  <TabsContent value="revenda">
-                    <FinishedProductPurchaseEntryForm onSuccess={() => { setOpen(false); setEntryMode("envase"); }} />
-                  </TabsContent>
-                </Tabs>
-              ) : biologicalEntryForm}
+              <FinishedProductPurchaseEntrySection
+                open={open}
+                biologicalEntry={biologicalEntryForm}
+                onSuccess={() => setOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         }
