@@ -16,6 +16,14 @@ ROOT = H.parents[2]
 B3DIR = ROOT / "scripts/b2b-payment-condition-v1-rebase-20261106"
 CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"
 MONEY = ROOT / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
+MANUAL_LIVE = H / "live-readonly-manual-null-1813.json"
+OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))
+if json.loads(MONEY.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
+    raise SystemExit("B4_MONEY_REF_DRIFT")
+if json.loads(CAPTURE.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
+    raise SystemExit("B4_CAPTURE_REF_DRIFT")
+if json.loads(MANUAL_LIVE.read_text()).get("canonical_ref") != "swzpzcwiasxmjutrmvkm":
+    raise SystemExit("B4_MANUAL_FACTS_REF_DRIFT")
 
 
 def load(name, path):
