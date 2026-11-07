@@ -8,6 +8,7 @@ rollback.sql.review: OK
 manifest.json: OK
 assemble.py: OK
 capture_baseline.py: OK
+catalog_foundation.py: OK
 test_pg.py: OK
 test_after.py: OK
 test_legacy_candidate.py: OK

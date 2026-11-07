@@ -1,28 +1,28 @@
-README.md: OK
-composition-fixes.json: OK
-composition.patch: OK
-diagnosis.json: OK
-evidence/confirmation-checkpoint-failure/exitcode: OK
-evidence/confirmation-checkpoint-failure/stderr.txt: OK
-evidence/confirmation-checkpoint-failure/stdout.txt: OK
-evidence/confirmation/exitcode: OK
-evidence/confirmation/stderr.txt: OK
-evidence/confirmation/stdout.txt: OK
-evidence/envase-full/exitcode: OK
-evidence/envase-full/stderr.txt: OK
-evidence/envase-full/stdout.txt: OK
-evidence/envase-targeted/exitcode: OK
-evidence/envase-targeted/release-after.sha256: OK
-evidence/envase-targeted/release-before.sha256: OK
-evidence/envase-targeted/release-unchanged-exitcode: OK
-evidence/envase-targeted/stderr.txt: OK
-evidence/envase-targeted/stdout.txt: OK
-evidence/order/exitcode: OK
-evidence/order/stderr.txt: OK
-evidence/order/stdout.txt: OK
-finished-product/README.md: OK
-finished-product/SHA256SUMS: OK
-finished-product/manifest.json: OK
-finished-product/results.json: OK
-manifest.json: OK
-results.json: OK
+README.md: FAILED
+composition-fixes.json: FAILED open or read
+composition.patch: FAILED open or read
+diagnosis.json: FAILED open or read
+evidence/confirmation-checkpoint-failure/exitcode: FAILED open or read
+evidence/confirmation-checkpoint-failure/stderr.txt: FAILED open or read
+evidence/confirmation-checkpoint-failure/stdout.txt: FAILED open or read
+evidence/confirmation/exitcode: FAILED open or read
+evidence/confirmation/stderr.txt: FAILED open or read
+evidence/confirmation/stdout.txt: FAILED open or read
+evidence/envase-full/exitcode: FAILED open or read
+evidence/envase-full/stderr.txt: FAILED open or read
+evidence/envase-full/stdout.txt: FAILED open or read
+evidence/envase-targeted/exitcode: FAILED open or read
+evidence/envase-targeted/release-after.sha256: FAILED open or read
+evidence/envase-targeted/release-before.sha256: FAILED open or read
+evidence/envase-targeted/release-unchanged-exitcode: FAILED open or read
+evidence/envase-targeted/stderr.txt: FAILED open or read
+evidence/envase-targeted/stdout.txt: FAILED open or read
+evidence/order/exitcode: FAILED open or read
+evidence/order/stderr.txt: FAILED open or read
+evidence/order/stdout.txt: FAILED open or read
+finished-product/README.md: FAILED open or read
+finished-product/SHA256SUMS: FAILED open or read
+finished-product/manifest.json: FAILED open or read
+finished-product/results.json: FAILED open or read
+manifest.json: FAILED
+results.json: FAILED
