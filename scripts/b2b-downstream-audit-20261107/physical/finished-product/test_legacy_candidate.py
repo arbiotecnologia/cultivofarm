@@ -19,17 +19,17 @@ def main():
         assert B.last("SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton;") == "f"
         B.ok("candidato instalado e gate permanece desligado para o legado")
 
-        delivery, _ = B.C.create(B.T.O2, B.T.PP2, B.T.L2, "71")
+        delivery, _ = B.C.create(B.C.T.O2, B.C.T.PP2, B.C.T.L2, "71")
         observed = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
         sent = json.loads(B.last(B.send(delivery, "legacy-candidate", observed)))
         assert sent["success"] is True and sent["status"] == "em_rota"
         observed_confirm = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
         confirmed = json.loads(B.last(B.confirm(delivery, "legacy-candidate", observed_confirm)))
         assert confirmed["success"] is True and confirmed["status"] == "entregue"
-        assert B.last(f"SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id='{B.T.O2}';") == "1"
+        assert B.last(f"SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id='{B.C.T.O2}';") == "1"
         B.ok("legado biológico mantém programação, envio e confirmação canônicos com gate desligado")
 
-        delivery_cancel, _ = B.C.create(B.T.O5, B.T.PP5, B.T.L5, "72", True)
+        delivery_cancel, _ = B.C.create(B.C.T.O5, B.C.T.PP5, B.C.T.L5, "72", True)
         cancelled = json.loads(B.last(B.cancel(delivery_cancel, "legacy-candidate-cancel")))
         assert cancelled["success"] is True
         B.ok("legado biológico mantém cancelamento e recomposição de estoque")
