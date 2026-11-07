@@ -1,3 +1,10 @@
+## 07/11 — B3 revisão 194331e (somente local/PG descartável)
+- [ ] Limite numérico explícito fail-closed em simulação/criação, com cadastro e pedido em análise preservados e UI indisponível.
+- [ ] Resposta de cotação recalcula uma única economia e snapshot pela condição, com autorização, idempotência e rollback.
+- [ ] Demonstrar criação interna positiva com fixtures isoladas e guards reais, sem contornar origem.
+- [ ] Reproduzir os 27 erros na base 347baf8 ou anterior, separar infra/defeito, corrigir o pertinente e guardar JSON/exit codes.
+- [ ] Manter datas estimadas e B4/fiscal fechado; entregar evidências e limitações, sem hosted/publicação.
+
 ## 06/11 — Confirmação controlada de publicação de atribuição
 - [x] Reproduzir o confirm nativo antes do fence e substituir por diálogo controlado, sem SQL/publicação.
 - [x] Preservar contexto da abertura, fences antes/depois, duplo clique, erros persistentes e invalidação atual.
