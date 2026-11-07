@@ -450,7 +450,7 @@ def main():
         pc_limit("1036.22")
         j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC); h_transient = j and j["cart_hash"]
         real_credit = RX._cap("credit", "public.fn_b2b_credit_exposure")
-        psql("""CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid,p_new_order_amount numeric,p_exclude_order_id uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+        psql("""CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid,p_new_order_amount numeric DEFAULT 0,p_exclude_order_id uuid DEFAULT NULL) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
 BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;""")
         denied("erro transitório: simulação ABORTA (não devolve credit NULL)", sim(UBC, P3, [L(1000)], BOL, partner=PC), "credit_transient_TESTE")
         denied("erro transitório: create não grava nem libera operação", create(UBC, P3, [L(1000)], h_transient or "x", "TESTE-PC-TRANSIENT", BOL, partner=PC), "credit_transient_TESTE")
