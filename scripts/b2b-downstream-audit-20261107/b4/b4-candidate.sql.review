@@ -552,14 +552,14 @@ BEGIN
   IF commercial_unit='UN' THEN
    qty:=commercial_qty; normalized_commercial:=commercial_qty*content_per_unit;
   ELSE
-   normalized_commercial:=CASE commercial_unit||'>'||content_unit
+   normalized_commercial:=CASE commercial_unit||'>'||upper(content_unit)
     WHEN 'KG>KG' THEN commercial_qty WHEN 'KG>G' THEN commercial_qty*1000 WHEN 'G>KG' THEN commercial_qty/1000 WHEN 'G>G' THEN commercial_qty
     WHEN 'L>L' THEN commercial_qty WHEN 'L>ML' THEN commercial_qty*1000 WHEN 'ML>L' THEN commercial_qty/1000 WHEN 'ML>ML' THEN commercial_qty ELSE NULL END;
    IF normalized_commercial IS NULL THEN RAISE EXCEPTION 'FISCAL_UNIT_MISMATCH' USING ERRCODE='23514'; END IF;
    qty:=normalized_commercial/content_per_unit;
   END IF;
   IF taxable_unit='UN' THEN normalized_taxable:=taxable_qty*content_per_unit;
-  ELSE normalized_taxable:=CASE taxable_unit||'>'||content_unit
+  ELSE normalized_taxable:=CASE taxable_unit||'>'||upper(content_unit)
    WHEN 'KG>KG' THEN taxable_qty WHEN 'KG>G' THEN taxable_qty*1000 WHEN 'G>KG' THEN taxable_qty/1000 WHEN 'G>G' THEN taxable_qty
    WHEN 'L>L' THEN taxable_qty WHEN 'L>ML' THEN taxable_qty*1000 WHEN 'ML>L' THEN taxable_qty/1000 WHEN 'ML>ML' THEN taxable_qty ELSE NULL END;
   END IF;

@@ -77,25 +77,29 @@ PASS fixture 16: pedido fictício criado
 PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
-FAIL 1 UN = 25 kg em NF parcial :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
-FAIL 0,5 UN é fração de embalagem inteira :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
+PASS 1 UN = 25 kg em NF parcial
+PASS 1 UN = 25 kg em NF parcial: quantidade de pedido normalizada
+PASS 1 UN = 25 kg em NF parcial: conteúdo fiscal normalizado sem alterar preço
+PASS 1 UN = 25 kg em NF parcial: payload fiscal original preservado
+PASS 0,5 UN é fração de embalagem inteira
 PASS 0,5 UN é fração de embalagem inteira: nenhum título/alocação
-FAIL 12,5 kg também é fração de embalagem inteira :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+PASS 12,5 kg também é fração de embalagem inteira
 PASS 12,5 kg também é fração de embalagem inteira: nenhum título/alocação
-FAIL 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
-FAIL 50 kg = 2 embalagens, nunca 50 embalagens :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
-FAIL 50.000 g = 2 embalagens, nunca 50.000 embalagens :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
-FAIL 50 UN com apenas 50 kg tributáveis é divergente :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: quantidade de pedido normalizada
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: conteúdo fiscal normalizado sem alterar preço
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: payload fiscal original preservado
+PASS 50 kg = 2 embalagens, nunca 50 embalagens
+PASS 50 kg = 2 embalagens, nunca 50 embalagens: quantidade de pedido normalizada
+PASS 50 kg = 2 embalagens, nunca 50 embalagens: conteúdo fiscal normalizado sem alterar preço
+PASS 50 kg = 2 embalagens, nunca 50 embalagens: payload fiscal original preservado
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens: quantidade de pedido normalizada
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens: conteúdo fiscal normalizado sem alterar preço
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens: payload fiscal original preservado
+PASS 50 UN com apenas 50 kg tributáveis é divergente
 PASS 50 UN com apenas 50 kg tributáveis é divergente: nenhum título/alocação
-FAIL 1 UN com 50 kg tributáveis é divergente :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
+PASS 1 UN com 50 kg tributáveis é divergente
 PASS 1 UN com 50 kg tributáveis é divergente: nenhum título/alocação
 PASS peso não converte em litros
 PASS peso não converte em litros: nenhum título/alocação
@@ -103,11 +107,17 @@ PASS unidade tributável em litros diverge do conteúdo em kg
 PASS unidade tributável em litros diverge do conteúdo em kg: nenhum título/alocação
 PASS quantidade sem código de unidade falha fechado
 PASS quantidade sem código de unidade falha fechado: nenhum título/alocação
-FAIL 1 L = 1 unidade líquida; 1.000 ml tributáveis :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
-FAIL 1.000 ml = 1 unidade líquida; 1 L tributável :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
-FAIL 500 ml podem ser meia unidade líquida não wholepack :: ERROR:  FISCAL_UNIT_MISMATCH
-CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis: quantidade de pedido normalizada
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis: conteúdo fiscal normalizado sem alterar preço
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis: payload fiscal original preservado
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável: quantidade de pedido normalizada
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável: conteúdo fiscal normalizado sem alterar preço
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável: payload fiscal original preservado
+PASS 500 ml podem ser meia unidade líquida não wholepack
+PASS 500 ml podem ser meia unidade líquida não wholepack: quantidade de pedido normalizada
+PASS 500 ml podem ser meia unidade líquida não wholepack: conteúdo fiscal normalizado sem alterar preço
+PASS 500 ml podem ser meia unidade líquida não wholepack: payload fiscal original preservado
 PASS kg não converte em volume líquido
 PASS kg não converte em volume líquido: nenhum título/alocação

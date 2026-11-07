@@ -39,7 +39,7 @@
     "public.rpc_register_receivable_payment(uuid,jsonb)": "98f577574e8b1889416d59cbfb00c437",
     "public.generate_b2b_receivable_secure_impl(uuid)": "3a4ca7fcd75f9fd3a183b6917fe05cd2",
     "public.tg_auto_b2b_receivable()": "d179755ea3701a723338d08283d42fe5",
-    "platform_private.b2b_allocate_document(uuid)": "3791b2fd4b64838b23b462178154ab00",
+    "platform_private.b2b_allocate_document(uuid)": "a7545cf361685a5ebd92e9dc983ce934",
     "platform_private.b2b_order_residual(uuid)": "ffd5b7695bd51e1ef2913f2759d0821c",
     "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)": "af9e7e4f05742ab42f2d2b30e8faf560"
   },

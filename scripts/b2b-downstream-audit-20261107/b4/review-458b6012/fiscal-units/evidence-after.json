@@ -1,11 +1,11 @@
 {
   "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
   "phase": "after",
-  "candidate_sha256": "2ef85c224dcfe31a4e1e26bd21e321bb50a96ab70aa602bd22ceb3dce803e753",
-  "status": "REGRESSION_FAIL",
+  "candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd",
+  "status": "PASS",
   "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
-  "passed": 91,
-  "total": 102,
+  "passed": 123,
+  "total": 123,
   "checks": [
     {
       "name": "boot B3 com gatilhos reais",
@@ -325,13 +325,23 @@
     },
     {
       "name": "1 UN = 25 kg em NF parcial",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE"
+      "ok": true
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial: payload fiscal original preservado",
+      "ok": true
     },
     {
       "name": "0,5 UN é fração de embalagem inteira",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE"
+      "ok": true
     },
     {
       "name": "0,5 UN é fração de embalagem inteira: nenhum título/alocação",
@@ -339,8 +349,7 @@
     },
     {
       "name": "12,5 kg também é fração de embalagem inteira",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE"
+      "ok": true
     },
     {
       "name": "12,5 kg também é fração de embalagem inteira: nenhum título/alocação",
@@ -348,23 +357,55 @@
     },
     {
       "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE"
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: payload fiscal original preservado",
+      "ok": true
     },
     {
       "name": "50 kg = 2 embalagens, nunca 50 embalagens",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE"
+      "ok": true
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens: payload fiscal original preservado",
+      "ok": true
     },
     {
       "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE"
+      "ok": true
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens: payload fiscal original preservado",
+      "ok": true
     },
     {
       "name": "50 UN com apenas 50 kg tributáveis é divergente",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE"
+      "ok": true
     },
     {
       "name": "50 UN com apenas 50 kg tributáveis é divergente: nenhum título/alocação",
@@ -372,8 +413,7 @@
     },
     {
       "name": "1 UN com 50 kg tributáveis é divergente",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE"
+      "ok": true
     },
     {
       "name": "1 UN com 50 kg tributáveis é divergente: nenhum título/alocação",
@@ -405,18 +445,51 @@
     },
     {
       "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE"
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: payload fiscal original preservado",
+      "ok": true
     },
     {
       "name": "1.000 ml = 1 unidade líquida; 1 L tributável",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE"
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável: payload fiscal original preservado",
+      "ok": true
     },
     {
       "name": "500 ml podem ser meia unidade líquida não wholepack",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_UNIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE"
+      "ok": true
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack: payload fiscal original preservado",
+      "ok": true
     },
     {
       "name": "kg não converte em volume líquido",
