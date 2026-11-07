@@ -32,10 +32,15 @@ G = load("b4_base_generator", H / "generate-b4.py")
 CAP = json.loads(CAPTURE.read_text())
 FIN = json.loads(MONEY.read_text())
 LIVE_FACTS = json.loads(LIVE_FACTS_PATH.read_text())
+MANUAL_LIVE_FACTS = json.loads(MANUAL_LIVE_FACTS_PATH.read_text())
 if CAPTURE and FIN.get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_CAPTURE_REF_DRIFT")
 if LIVE_FACTS.get("canonical_ref") != "swzpzcwiasxmjutrmvkm" or LIVE_FACTS.get("hosted_write") is not False:
     raise SystemExit("B4_LIVE_FACTS_REF_OR_WRITE_DRIFT")
+if MANUAL_LIVE_FACTS.get("canonical_ref") != "swzpzcwiasxmjutrmvkm" or MANUAL_LIVE_FACTS.get("hosted_write") is not False:
+    raise SystemExit("B4_MANUAL_LIVE_FACTS_REF_OR_WRITE_DRIFT")
+if MANUAL_LIVE_FACTS["manual_titles"]["active_count"] != 5 or MANUAL_LIVE_FACTS["manual_titles"]["status_counts"] != {"OPEN": 4, "OVERDUE": 1}:
+    raise SystemExit("B4_MANUAL_LIVE_FACTS_SHAPE_DRIFT")
 if hashlib.sha256(HISTORICAL.read_bytes()).hexdigest() != EXPECTED_HISTORICAL_SHA256:
     raise SystemExit("B4_HISTORICAL_CANDIDATE_DRIFT")
 
