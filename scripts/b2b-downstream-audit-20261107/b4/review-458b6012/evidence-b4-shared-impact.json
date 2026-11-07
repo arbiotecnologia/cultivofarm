@@ -1,0 +1,182 @@
+{
+  "kind": "DISPOSABLE_B4_REVIEW_458B6012_COMPONENTS_INSTALL_BLOCKED_NOT_HOSTED_E2E",
+  "review": "458b6012",
+  "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+  "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
+  "object_manifest": "b4-object-manifest.json",
+  "installation": "BLOCKED_BY_PRE; candidate body executed separately only as disposable component",
+  "shared_impact_scope": [
+    "MANUAL não B2B sem parceiro",
+    "MANUAL não B2B com parceiro",
+    "origem monetária legada desconhecida",
+    "pedido interno sintético",
+    "writer integral antigo"
+  ],
+  "passed": 36,
+  "total": 37,
+  "checks": [
+    {
+      "name": "boot B2/B3 com gatilhos reais",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "B3 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B3 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "cotação B3 criada sem título",
+      "ok": true
+    },
+    {
+      "name": "resposta de cotação B3 com centavos",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture contábil pendente separada",
+      "ok": true
+    },
+    {
+      "name": "PRE revisado falha fechado sobre baseline incompleta",
+      "ok": true
+    },
+    {
+      "name": "instalação não sobrescreve desconhecido nem cria objetos",
+      "ok": true
+    },
+    {
+      "name": "corpo B4 executável apenas como componente descartável",
+      "ok": true
+    },
+    {
+      "name": "rerun continua bloqueado e não reinstala",
+      "ok": true
+    },
+    {
+      "name": "instalação não substitui dependência operacional por stub",
+      "ok": true
+    },
+    {
+      "name": "32 gatilhos reais carregados pelo harness B3 continuam habilitados",
+      "ok": true
+    },
+    {
+      "name": "B3 create/simulate antigos não foram restaurados nem alterados",
+      "ok": true
+    },
+    {
+      "name": "autorização fiscal continua service-only e sem integração de recebível",
+      "ok": true
+    },
+    {
+      "name": "gate fiscal/contábil não comprovado permanece fechado",
+      "ok": true
+    },
+    {
+      "name": "cliente não invoca alocador privado",
+      "ok": true
+    },
+    {
+      "name": "stub operacional existe só no harness depois da negação real",
+      "ok": true
+    },
+    {
+      "name": "shared fence preserva título MANUAL não B2B sem devedor parceiro",
+      "ok": true
+    },
+    {
+      "name": "projeção de origem legada desconhecida permanece fail-closed",
+      "ok": true
+    },
+    {
+      "name": "shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado",
+      "ok": true
+    },
+    {
+      "name": "execução sem exceção de harness",
+      "ok": false,
+      "detail": "RuntimeError('ERROR:  duplicate key value violates unique constraint \"partner_orders_numero_key\"\\nDETAIL:  Key (numero)=(PB-000002) already exists.\\n')"
+    }
+  ],
+  "hosted": "NOT_RUN",
+  "jwt_rls_storage": "NOT_RUN",
+  "synthetic_seams": [
+    "Auth por GUC/roles locais",
+    "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente",
+    "schema financeiro capturado com FK/RLS externos omitidos",
+    "company_fiscal_settings fictícia VALIDATED",
+    "autorização/cancelamento fiscal privado fictício sem rede",
+    "b2b_integration_dependencies substituída somente após prova de negação",
+    "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação",
+    "entregas mínima para o fence"
+  ],
+  "b3_overloads_restored": false,
+  "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência"
+}
