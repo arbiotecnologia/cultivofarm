@@ -94,6 +94,32 @@ def build():
     entry_guard = one_replace(entry_guard, "    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade", "    AND NEW.validade IS NOT DISTINCT FROM parent.validade\n    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))", "entry guard finished split")
     sync = one_replace(sync, "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN", "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL)\n     AND NOT EXISTS(SELECT 1 FROM public.entregas d JOIN public.estoque_produto s ON s.id=d.estoque_produto_id WHERE d.ordem_servico_id=NEW.id AND d.produto_id=NEW.produto_id AND d.status::text<>'cancelada' AND s.origem_estoque='compra_produto_acabado_revenda') THEN", "sync finished product")
 
+    lot_guard = one_replace(lot_guard, " -- No JWT/GUC/current_user/service-role escape: only the reviewed insert RPC", """ -- Compra de produto acabado para revenda: ticket privado, tenant e catálogo atual.
+ IF TG_OP='INSERT' AND NEW.programacao_id IS NULL AND NEW.microrganismo_id IS NULL
+  AND NEW.produto_id IS NOT NULL AND NEW.volume_produzido IS NULL AND NEW.status::text='aprovado'
+  AND org IS NOT NULL AND NEW.organization_id=org AND public.technical_actor_ready(auth.uid()) IS TRUE
+  AND public.fn_estoque_pode_operar(auth.uid(),'entrada') IS TRUE
+  AND EXISTS(SELECT 1 FROM public.produtos pr WHERE pr.id=NEW.produto_id AND pr.owner_organization_id=org AND pr.ativo IS TRUE AND pr.familia_catalogo IN ('quimico','fertilizante_adubo'))
+  AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=pg_catalog.txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
+ THEN RETURN NEW; END IF;
+
+ -- No JWT/GUC/current_user/service-role escape: only the reviewed insert RPC""", "purchase lot guard")
+    lab_guard = one_replace(lab_guard, "BEGIN\n  IF TG_OP='UPDATE'", """BEGIN
+  IF TG_OP='INSERT' AND NEW.programacao_id IS NULL AND NEW.microrganismo_id IS NULL AND NEW.volume_produzido IS NULL
+   AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=pg_catalog.txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
+  THEN RETURN NEW; END IF;
+  IF TG_OP='UPDATE'""", "purchase biological guard")
+    entry_validate = one_replace(entry_validate, "  -- Exigir envase para o lote\n  IF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id) THEN\n    RAISE EXCEPTION 'Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.'\n      USING ERRCODE = 'check_violation';\n  END IF;", """  -- Compra para revenda usa ticket privado e snapshot; demais entradas continuam exigindo envase.
+  IF NEW.origem_estoque='compra_produto_acabado_revenda' THEN
+    IF NOT platform_private.finished_product_stock_valid_v1(NEW)
+     OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=pg_catalog.txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id) THEN
+      RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_ENTRY_DENIED' USING ERRCODE='42501';
+    END IF;
+  ELSIF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id) THEN
+    RAISE EXCEPTION 'Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.'
+      USING ERRCODE = 'check_violation';
+  END IF;""", "purchase stock entry guard")
+
     reservar = one_replace(reservar, "  v_volume_reservado := CASE", """  IF v_item.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_item) THEN
     RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
   END IF;
