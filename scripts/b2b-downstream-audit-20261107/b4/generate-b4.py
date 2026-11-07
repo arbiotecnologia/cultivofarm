@@ -304,6 +304,18 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
                     "SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;", "residual effective B3 snapshot")
     partial = delta(partial, "SELECT * INTO s FROM platform_private.b2b_order_condition_snapshots WHERE order_id=d.order_id AND organization_id=org AND partner_id=d.partner_id;",
                     "SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=d.order_id AND organization_id=org AND partner_id=d.partner_id;", "allocation effective B3 snapshot")
+    partial = delta(partial,
+        "DECLARE po public.partner_orders; s platform_private.b4_order_condition_snapshots; allocated numeric; total numeric;",
+        "DECLARE po public.partner_orders; s platform_private.b4_order_condition_snapshots; allocated numeric; total numeric; org uuid;",
+        "residual seller organization declaration")
+    partial = delta(partial,
+        " SELECT * INTO po FROM public.partner_orders WHERE id=p_order;\n SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;",
+        " SELECT * INTO po FROM public.partner_orders WHERE id=p_order;\n org:=platform_private.b2b_integration_actor(po.partner_id);\n SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;",
+        "residual seller organization resolution")
+    partial = delta(partial,
+        "  PERFORM public.rpc_receivable_money_projection_v1(l.receivable_id,0,1000) FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order;",
+        "  PERFORM platform_private.b2b_proven_money_row_internal(i.id,org) FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id JOIN public.accounts_receivable_installments i ON i.receivable_id=a.id WHERE l.partner_order_id=p_order;",
+        "residual legacy internal money proof")
     partial = delta(partial, "PERFORM 1 FROM public.partner_orders WHERE id=d.order_id FOR UPDATE;\n PERFORM platform_private.b2b_integration_actor(d.partner_id,true);",
                     "PERFORM 1 FROM public.partner_orders WHERE id=d.order_id FOR UPDATE;\n PERFORM platform_private.b2b_integration_actor(d.partner_id,true);\n PERFORM platform_private.b4_assert_order_eligible(d.order_id);", "eligibility after order lock")
     partial = delta(partial, "SELECT * INTO d FROM platform_private.b2b_authorized_documents WHERE id=p_document FOR SHARE;\n PERFORM platform_private.b2b_integration_actor(d.partner_id,true);",
