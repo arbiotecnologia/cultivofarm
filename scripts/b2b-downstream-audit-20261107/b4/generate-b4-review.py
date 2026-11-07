@@ -339,15 +339,12 @@ def build():
     pre += absence_guard([SIGS[name] for name in new_names], "function", "B4_PRE_UNEXPECTED_EXISTING_FUNCTION")
     pre += absence_guard(NEW_TABLES + [NEW_VIEW, NEW_INDEX], "relation", "B4_PRE_UNEXPECTED_EXISTING_RELATION")
     pre += absence_guard([], "trigger", "B4_PRE_UNEXPECTED_EXISTING_TRIGGER")
-    pre += " IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='b2b_document_id') THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_COLUMN' USING ERRCODE='42501'; END IF;"
-    pre = pre.replace("DO $guard$ BEGIN\n IF EXISTS(SELECT 1 FROM information_schema.columns", "DO $guard$ BEGIN\n IF EXISTS(SELECT 1 FROM information_schema.columns", 1)
-    # O último IF precisa de um DO próprio.
-    marker = " IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='b2b_document_id')"
-    pos = pre.rfind(marker)
-    pre = pre[:pos] + "DO $guard$ BEGIN" + pre[pos:] + "\nDO $guard$ BEGIN\n"
-    # Remove o DO vazio acidental e fecha o guard da coluna antes do bloqueio de baseline.
-    pre = pre.replace("\nDO $guard$ BEGIN\nDO $guard$ BEGIN\n", "\nDO $guard$ BEGIN\n")
-    pre += " RAISE EXCEPTION 'B4_BASELINE_CAPTURE_REQUIRED:public.rpc_receivable_money_projection_v1(uuid,integer,integer)' USING ERRCODE='42501';\nEND $guard$;\nSELECT 'PRE_OK' AS status;\n"
+    pre += "DO $guard$ BEGIN\n IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='b2b_document_id') THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_COLUMN' USING ERRCODE='42501'; END IF;\nEND $guard$;"
+    for trigger in auto_triggers:
+        expected = md5_text(trigger["definition"] + "|" + trigger["enabled"])
+        query = f"SELECT md5(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text) FROM pg_trigger t WHERE t.tgname='{trigger['name']}' AND t.tgrelid='{trigger['schema']}.{trigger['table']}'::regclass AND NOT t.tgisinternal"
+        pre += digest_guard(query, expected, "B4_PRE_AUTO_TRIGGER:" + trigger["name"])
+    pre += "DO $guard$ BEGIN\n RAISE EXCEPTION 'B4_BASELINE_CAPTURE_REQUIRED:public.rpc_receivable_money_projection_v1(uuid,integer,integer)' USING ERRCODE='42501';\nEND $guard$;\nSELECT 'PRE_OK' AS status;\n"
 
     post = "-- READONLY. Só pode passar depois que a baseline ausente for capturada e o PRE revisto.\n"
     post += function_guard([(SIGS[name], {**baselines[name], "body_md5": candidate_funcs[name]["body_md5"]})
