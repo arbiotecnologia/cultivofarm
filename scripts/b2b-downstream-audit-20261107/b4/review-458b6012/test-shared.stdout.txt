@@ -34,4 +34,8 @@ PASS stub operacional existe só no harness depois da negação real
 PASS shared fence preserva título MANUAL não B2B sem devedor parceiro
 PASS projeção de origem legada desconhecida permanece fail-closed
 PASS shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  duplicate key value violates unique constraint "partner_orders_numero_key"\nDETAIL:  Key (numero)=(PB-000002) already exists.\n')
+PASS pedido interno não autorizado pelo downstream B4 é contido
+PASS contenção interna não cria título nem alocação
+FAIL writer integral antigo também permanece fechado para pedido interno :: ERROR:  B2B_INTERNAL_DOWNSTREAM_UNVERIFIED
+CONTEXT:  PL/pgSQL function generate_b2b_receivable_secure(uuid) line 15 at RAISE
+FAIL execução sem exceção de harness :: RuntimeError('ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment')

@@ -12,8 +12,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 36,
-  "total": 37,
+  "passed": 38,
+  "total": 40,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -160,9 +160,22 @@
       "ok": true
     },
     {
+      "name": "pedido interno não autorizado pelo downstream B4 é contido",
+      "ok": true
+    },
+    {
+      "name": "contenção interna não cria título nem alocação",
+      "ok": true
+    },
+    {
+      "name": "writer integral antigo também permanece fechado para pedido interno",
+      "ok": false,
+      "detail": "ERROR:  B2B_INTERNAL_DOWNSTREAM_UNVERIFIED\nCONTEXT:  PL/pgSQL function generate_b2b_receivable_secure(uuid) line 15 at RAISE"
+    },
+    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  duplicate key value violates unique constraint \"partner_orders_numero_key\"\\nDETAIL:  Key (numero)=(PB-000002) already exists.\\n')"
+      "detail": "RuntimeError('ERROR:  MONEY_ORIGIN_UNPROVEN\\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 18 at RAISE\\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment\\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment')"
     }
   ],
   "hosted": "NOT_RUN",
