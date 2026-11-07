@@ -1,0 +1,32 @@
+{
+  "status": "PASS_LOCAL_INACTIVE_BLOCKED_NOT_APPROVED",
+  "hosted": false,
+  "publication": false,
+  "real_nf_receivable_accounting_or_delivery": false,
+  "candidate_sha256": "551824126877d3ec589b998e472a15d1c428f17b5ae2f8fd3673497af6ed0081",
+  "changed_functions_pinned": 8,
+  "new_grants": 0,
+  "operation_default": false,
+  "batteries": {
+    "before": {"passed": 17, "total": 17, "exit_code": 0, "meaning": "reproducao_das_lacunas"},
+    "after": {"passed": 19, "total": 19, "exit_code": 0, "meaning": "candidato_local_com_gate_sintetico"},
+    "legacy_candidate": {"passed": 6, "total": 6, "exit_code": 0, "meaning": "biologico_com_candidato_instalado_e_desligado"}
+  },
+  "units": {
+    "kg": "2 embalagens x 25 kg = 50 kg; volume_entregue_ml NULL",
+    "g": "2 embalagens x 25000 g = 50000 g; volume_entregue_ml NULL",
+    "l": "2 embalagens x 1 L = 2 L; volume_entregue_ml 2000",
+    "ml": "2 embalagens x 500 ml = 1000 ml; volume_entregue_ml 1000"
+  },
+  "whole_pack_fraction_denied": true,
+  "partial_cancel_merge": "2 de 3 sacos 25 kg; split/cancelamento/merge = 75 kg; sem litros",
+  "b2b_delivery_scope": "DELIVERY_SCOPE_DENIED",
+  "postflight_function_pins": 8,
+  "blockers": [
+    "baseline LIVE independente dos corpos/owners/ACLs e relações",
+    "composição e revisão da referência canônica B3 de embalagens",
+    "entrada canônica de produto acabado fora do recorte e não certificada",
+    "JWT/RLS/Storage/PostgREST/browser e elegibilidade real não executados"
+  ],
+  "historical_not_added": "119/119, 21/21 e 123/123 permanecem evidências anteriores separadas"
+}
