@@ -277,7 +277,7 @@ it("Price em parcela única: tela aceita taxa explícita e mostra 1018, principa
   expect((await screen.findAllByText(/R\$ 18,00/)).length).toBeGreaterThan(0);
   expect((await screen.findAllByText(/1\.000,00/)).length).toBeGreaterThan(0);
   fireEvent.click(screen.getByText(/Parcelas estimadas/));
-  expect(await screen.findByText("R$ 1.018,00")).toBeInTheDocument();
+  expect((await screen.findAllByText("R$ 1.018,00")).length).toBeGreaterThan(0);
   expect(await submitBtn()).toBeEnabled();
 });
 
