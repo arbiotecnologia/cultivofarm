@@ -224,13 +224,11 @@ def main():
         delivery = grouped["itens"][0]["entrega_id"]
         assert last(f"SELECT quantidade_entregue=2 AND volume_entregue_ml=2000 FROM public.entregas WHERE id='{delivery}';") == "t"
         ok("apresentação L: pedido/OS → reserva → baixa com 2 UN e 2.000 ml", delivery)
-        sent = json.loads(last(send(delivery, "liquid")))
-        assert sent["success"] is True and sent["status"] == "em_rota"
-        ok("apresentação L: expedição → em rota sem segunda baixa")
+        reject("apresentação L acabada: envio exige programação de produção inexistente",
+               send(delivery, "liquid"), "42501", "DELIVERY_SEND_LINEAGE_DENIED")
         prove(delivery, "liquid")
-        confirmed = json.loads(last(confirm(delivery, "liquid")))
-        assert confirmed["success"] is True and confirmed["status"] == "entregue"
-        ok("apresentação L: comprovante fictício → confirmação física canônica")
+        reject("apresentação L acabada: confirmação também não aceita lineage sem produção",
+               confirm(delivery, "liquid"), "42501")
 
         liquid_cancel = fixture("fertilizante", "L", 2)
         reserved = json.loads(last(reserve(liquid_cancel["os"], liquid_cancel["stock"], 2, "finished-reserve-liquid-cancel")))["itens"][0]
