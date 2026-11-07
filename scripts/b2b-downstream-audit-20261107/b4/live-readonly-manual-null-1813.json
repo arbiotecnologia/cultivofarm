@@ -1,0 +1,34 @@
+{
+  "kind": "USER_REPORTED_LIVE_READONLY_FACTS_NOT_AGENT_QUERY",
+  "review": "manual-null-1813",
+  "reported_at_utc": "2026-11-07T18:13:00Z",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted_write": false,
+  "seller": "AR Bio",
+  "manual_titles": {
+    "active_count": 5,
+    "status_counts": {
+      "OPEN": 4,
+      "OVERDUE": 1
+    },
+    "partner_id": null,
+    "customer_links": "Todos os cinco customer_id correspondem a partner_accounts ativos do mesmo commercial_owner_organization_id do vendedor; origem monetária não afirmada.",
+    "cancel_or_backfill_authorized": false
+  },
+  "previous_filter": {
+    "function": "platform_private.b2b_credit_balances(uuid,uuid)",
+    "predicate": "a.partner_id=p_partner",
+    "coverage_gap": "Não cobre títulos históricos com partner_id NULL e cliente ligado ao parceiro."
+  },
+  "required_local_cases": [
+    "partner_id NULL + cliente ligado a um único parceiro do owner",
+    "múltiplos parceiros ativos com o mesmo client_id",
+    "conflito entre partner_id e customer_id",
+    "conflito de commercial_owner_organization_id",
+    "saldo em aberto e saldo vencido sem omissão silenciosa",
+    "ausência de dupla contagem quando partner_id e customer_id identificam o mesmo parceiro",
+    "origem monetária desconhecida exige negação/reconciliação explícita"
+  ],
+  "approval": "BLOCKED_PENDING_COMPLETE_LOCAL_TESTS_AND_INDEPENDENT_REVIEW",
+  "seller_team_candidate": "SEPARATE_NOT_MERGED"
+}
