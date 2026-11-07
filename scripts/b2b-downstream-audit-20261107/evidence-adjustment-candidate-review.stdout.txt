@@ -1,6 +1,6 @@
-59/60
+60/60
 PASS gerador determinístico: capturas/candidato/01–04/pins byte a byte 
-FAIL nenhum artefato executa GRANT ou substitui pin temporário 
+PASS nenhum artefato executa GRANT ou substitui pin temporário 
 PASS todos os pinos públicos/privados estão no PRE/POST/install/rollback 
 PASS corpo real capturado executado: platform_private.platform_actor_access_ready(uuid) {'actual': '048249c0c2106c3761e26eacb8d0de84', 'expected': '048249c0c2106c3761e26eacb8d0de84'}
 PASS corpo real capturado executado: platform_private.entitlements_for_user(uuid) {'actual': '7f4ec7facaebbdf35444dd490fdebe56', 'expected': '7f4ec7facaebbdf35444dd490fdebe56'}
@@ -17,10 +17,10 @@ PASS corpo real capturado executado: public._saas_user_has_feature(uuid,text) {'
 PASS corpo real capturado executado: public._saas_trg_require_feature() {'actual': '13ed48832f81cbb35434688ca35fda4b', 'expected': '13ed48832f81cbb35434688ca35fda4b'}
 PASS corpo real capturado executado: platform_private.c2_accounting_pending_guard() {'actual': '669b19490a7a9700f0158db4b31885ad', 'expected': '669b19490a7a9700f0158db4b31885ad'}
 PASS 01 PRE_OK com corpos/owners/ACLs reais, sem localização 
-PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-ie9uhqw2/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-c1727swf/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE
 
-PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-ie9uhqw2/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
+PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-c1727swf/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
 CONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE
 
 PASS owner divergente de núcleo privado é detectado psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:49: ERROR:  ADJUSTMENT_OWNER_DRIFT: platform_private.has_role(uuid,public.app_role)
@@ -44,12 +44,12 @@ PASS pedido inexistente não produz efeitos nem oráculo de dados
 PASS pedido NULL também é negado fail-closed ERROR:  b2b_phase1_scope_denied
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
 
-PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '73cb300f-5d54-4b06-a58d-15a971bac633', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '7e19b4b7-bad5-41ed-b901-a6c1296ba5f0', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '96b53387-bac2-4c6f-8cf1-53e70e2a939d', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': 'eee510d0-0753-4de9-ab2f-8783944f2718', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS C2_ACCOUNTING_PENDING nega pending→pending ERROR:  C2_ACCOUNTING_PENDING
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 37 at RAISE
 
 PASS negação contábil preserva pedido/termos/auditoria/notificações 
-PASS fixture validada criada pelo writer canônico com guards reais {'id': 'bd20376c-d49d-4815-b5fd-873526eb8cbd', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '8712af8d-e8d4-46b8-9926-359d1dad794b', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture validada criada pelo writer canônico com guards reais {'id': 'bbdc7493-2db6-4a83-aa32-b0258cfe775b', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '79d55bcd-cc1c-449c-b02d-62ce9703f269', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS admin estrangeiro negado pelo escopo real no pedido validado ERROR:  b2b_phase1_scope_denied
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
 
@@ -91,7 +91,7 @@ PASS mesmo tenant ainda solicita ajuste no legado
 PASS comprador sem papel financeiro continua negado ERROR:  unauthorized
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 14 at RAISE
 
-PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-ie9uhqw2/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-c1727swf/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE
 
 PASS 04 rollback deny-only conclui 

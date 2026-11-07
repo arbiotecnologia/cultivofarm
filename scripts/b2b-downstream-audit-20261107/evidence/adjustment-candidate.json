@@ -155,7 +155,7 @@
     "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
     "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted"
   ],
-  "passed": 59,
+  "passed": 60,
   "total": 60,
   "checks": [
     {
@@ -164,7 +164,7 @@
     },
     {
       "name": "nenhum artefato executa GRANT ou substitui pin temporário",
-      "ok": false
+      "ok": true
     },
     {
       "name": "todos os pinos públicos/privados estão no PRE/POST/install/rollback",
@@ -248,12 +248,12 @@
     {
       "name": "pin divergente do writer aborta sem trocar a função",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-ie9uhqw2/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-c1727swf/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
     },
     {
       "name": "pin privado divergente aborta antes da troca",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-ie9uhqw2/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-c1727swf/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE\n"
     },
     {
       "name": "owner divergente de núcleo privado é detectado",
@@ -311,7 +311,7 @@
     {
       "name": "fixture de pendência criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': '73cb300f-5d54-4b06-a58d-15a971bac633', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '7e19b4b7-bad5-41ed-b901-a6c1296ba5f0', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': '96b53387-bac2-4c6f-8cf1-53e70e2a939d', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': 'eee510d0-0753-4de9-ab2f-8783944f2718', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "C2_ACCOUNTING_PENDING nega pending→pending",
@@ -325,7 +325,7 @@
     {
       "name": "fixture validada criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': 'bd20376c-d49d-4815-b5fd-873526eb8cbd', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '8712af8d-e8d4-46b8-9926-359d1dad794b', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': 'bbdc7493-2db6-4a83-aa32-b0258cfe775b', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '79d55bcd-cc1c-449c-b02d-62ce9703f269', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "admin estrangeiro negado pelo escopo real no pedido validado",
@@ -416,7 +416,7 @@
     {
       "name": "rollback com pin divergente aborta sem revogar",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-ie9uhqw2/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-c1727swf/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
     },
     {
       "name": "04 rollback deny-only conclui",
