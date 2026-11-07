@@ -27,7 +27,7 @@
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "5d4fc8aed41aa900ff50ecfc9517ac6e",
+      "md5": "d47d5f1f71c8c2ba16dc775ede4b34ae",
       "owner": "postgres",
       "signature": "platform_private.envase_insert_guard_v1()"
     },

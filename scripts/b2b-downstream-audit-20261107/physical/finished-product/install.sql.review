@@ -997,7 +997,8 @@ BEGIN
   RETURN NEW;
  END IF;
  -- Compra para revenda: contexto transacional e ticket específicos do writer privado.
- IF TG_TABLE_NAME='estoque_produto' AND NEW.origem_estoque='compra_produto_acabado_revenda' THEN
+ IF TG_TABLE_NAME='estoque_produto' AND NEW.origem_estoque='compra_produto_acabado_revenda'
+  AND EXISTS(SELECT 1 FROM platform_private.stock_motor_context x WHERE x.txid=txid_current() AND x.actor=auth.uid() AND x.ctx->>'acao'='entrada') THEN
   SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();
   IF FOUND AND c.item=NEW.id AND c.ctx->>'acao'='entrada' AND c.ctx->>'origem'='finished_product_purchase_entry_v1'
    AND c.ctx->'metadata'->>'stock_request_item'=NEW.id::text

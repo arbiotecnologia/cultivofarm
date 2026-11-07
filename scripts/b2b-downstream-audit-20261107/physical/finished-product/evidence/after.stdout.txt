@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.3s
+CHECKPOINT sql_calls=1 elapsed=2.8s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -19,70 +19,27 @@ PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou e
 PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
-CHECKPOINT sql_calls=100 elapsed=15.6s
+CHECKPOINT sql_calls=100 elapsed=13.2s
 PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
 PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
 PASS mesma chave de compra com quantidade diversa conflita
 PASS fertilizante kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
-PASS FAIL ERROR:  FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED
-CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 24 at RAISE
-SQL statement "INSERT INTO public.estoque_produto (
-      produto_id, lote_id, microrganismo_id, envase_id,
-      quantidade, volume_total, validade, status,
-      reservado_para_os_id, reservado_para_os_tipo,
-      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,
-      quantidade_reservada, observacao_reserva,
-      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
-    ) VALUES (
-      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,
-      p_qty, v_volume_reservado, v_item.validade, 'reservado',
-      p_os_id, p_os_tipo,
-      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,
-      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,
-      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,
-      p_qty, p_observacao,
-      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao
-    ) RETURNING id"
-PL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement
-PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment
-PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment
+PASS parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS 0,5 embalagem é negada na reserva whole-pack
+PASS peso não pode ser gravado como volume_total
+PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS B2B permanece fechado mesmo com compra e produto acabado válidos
+PASS nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação
+PASS revogação durante espera da compra é revalidada antes de criar lote/estoque
+PASS FAIL {"ok": true, "replay": false, "lote_id": "8b68df25-a729-459c-b558-3a5e2f656b2f", "origem_estoque": "compra_produto_acabado_revenda", "movimentacao_id": "27c5ce47-ac9d-47d6-a38f-208920ba375f", "embalagem_versao": 1, "unidade_conteudo": "g", "estoque_produto_id": "f1ee3b56-50db-495c-b2a4-634a3c216d30", "quantidade_conteudo": 50000.0, "conteudo_por_unidade": 25000.0}
 
 Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 140, in main
-    reserved = json.loads(B.last(B.reserve(partial["os"], partial["stock"], 2, "after-reserve-partial")))["itens"][0]
-                          ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
-    return sql(statement).splitlines()[-1]
-           ~~~^^^^^^^^^^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
-    return pg.sql(statement)
-           ~~~~~~^^^^^^^^^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
-    assert r.returncode==0,r.stderr[-3000:]
-           ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED
-CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 24 at RAISE
-SQL statement "INSERT INTO public.estoque_produto (
-      produto_id, lote_id, microrganismo_id, envase_id,
-      quantidade, volume_total, validade, status,
-      reservado_para_os_id, reservado_para_os_tipo,
-      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,
-      quantidade_reservada, observacao_reserva,
-      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
-    ) VALUES (
-      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,
-      p_qty, v_volume_reservado, v_item.validade, 'reservado',
-      p_os_id, p_os_tipo,
-      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,
-      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,
-      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,
-      p_qty, p_observacao,
-      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao
-    ) RETURNING id"
-PL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement
-PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment
-PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 192, in main
+    assert not err and '"replay": true' in out, out + err
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {"ok": true, "replay": false, "lote_id": "8b68df25-a729-459c-b558-3a5e2f656b2f", "origem_estoque": "compra_produto_acabado_revenda", "movimentacao_id": "27c5ce47-ac9d-47d6-a38f-208920ba375f", "embalagem_versao": 1, "unidade_conteudo": "g", "estoque_produto_id": "f1ee3b56-50db-495c-b2a4-634a3c216d30", "quantidade_conteudo": 50000.0, "conteudo_por_unidade": 25000.0}
 
 
-RESULT 25 / 25 exit 1
+RESULT 33 / 33 exit 1
