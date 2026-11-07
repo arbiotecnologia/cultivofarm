@@ -1,3 +1,9 @@
+## 07/11 17:05 — Cobertura física de químicos/fertilizantes e apresentação L
+- [ ] Rastrear os caminhos canônicos atuais de produto acabado, reserva/baixa, envase/expedição/confirmação/cancelamento por grupo, sem forçar químico/fertilizante pelo bioreator nem criar cadastro paralelo.
+- [ ] Criar fixtures fictícias isoladas conforme os schemas/writers atuais para químicos/fertilizantes em kg/g por embalagem inteira e apresentação L, com pedido→reserva/baixa→envio/confirmação/cancelamento e unidades preservadas; peso somente frete.
+- [ ] Corrigir somente lacuna comprovada por gerador, manter gates/pins B4 e normalização fiscal enfileirados e fechados, e repetir regressões físicas focadas com JSON/TXT/exit codes/hashes.
+- [ ] Consolidar limites sem hosted/publicação/envios/NF/cobrança real/delegação; PASS sintético não libera produção nem prova JWT/RLS/Storage.
+
 ## 07/11 16:56 — Complemento B4: normalização fiscal e embalagem inteira
 - [x] Reproduzir isoladamente 2 embalagens de 25 kg, NF parcial de 1 embalagem=25 kg e tentativas de 0,5 embalagem, 50 kg tratados como 50 embalagens e quantidade/unidade divergentes, sem documento real. Antes 87/108, exit 1: fração e divergências criaram títulos fictícios; kg/g/ml foram comparados como unidades do pedido.
 - [x] Demonstrar a composição dos guards e corrigir somente `b2b_allocate_document`: contrato estrito, snapshot, kg↔g/L↔ml sem peso→volume, wholepack inteiro e parciais por `item_money.quantity`. Mesma matriz 123/123 e ampliada 132/132, exit 0; duas NFs de 25 kg consomem 2 UN, replay preserva título e terceira UN é negada.
