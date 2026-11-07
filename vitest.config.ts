@@ -7,8 +7,6 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    // Processos isolados evitam que os ensaios PostgreSQL síncronos bloqueiem o RPC do worker de threads.
-    pool: "forks",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },

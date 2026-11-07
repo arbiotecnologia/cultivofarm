@@ -1,0 +1,1599 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 6601ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  523ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  524ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  850ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  507ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  642ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  507ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  511ms
+   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  328ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  703ms
+ ✓ src/test/comunicacao/fase4.test.ts (57 tests) 115ms
+ ✓ src/test/security/h9d-inventario.static.test.ts (36 tests) 242ms
+ ✓ src/test/fiscal/fase3_16.static.test.ts (58 tests) 58ms
+ ✓ src/test/financeiro/financialReport.edge.test.ts (123 tests) 2175ms
+ ✓ src/test/entregas/deliverySendPersistMount.test.tsx (24 tests) 7158ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed  936ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > retained attempt survives refused reconciliation preflight and role change  564ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > late ACK after reload (unmount) is not adopted; lock owned until settle; then same key reconciles  1021ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > retained send record after reload blocks create and cancel writers; exact send reconciliation stays available  893ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > corrupt send record after reload blocks create and cancel writers; exact send reconciliation stays available  347ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > unreadable send record after reload blocks create and cancel writers; exact send reconciliation stays available  333ms
+   ✓ Enviar durable retention (mounted, real QueryClient) > durable send barrier for group/cancel after reload > record appearing before dispatch (late storage event) is revalidated at the cancel dispatch point  371ms
+ ✓ src/test/catalogo/unifiedProducts.realClient.test.tsx (35 tests) 30022ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  3075ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  3605ms
+   ✓ Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs  1264ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  3139ms
+   ✓ novo produto com resposta perdida da composição mantém ACK/componentes e replay único  3159ms
+   ✓ recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca  3003ms
+   ✓ resposta perdida: saída explícita mantém pendência/chaves, bloqueia novas intenções e retomada faz replay único  3165ms
+   ✓ troca de escopo descarta rascunho/exportação pendentes sem reutilizar em outro tenant  1711ms
+   ✓ capability de unidade absent mantém cadastro fechado com zero dispatch  347ms
+   ✓ capability de unidade denied mantém cadastro fechado com zero dispatch  361ms
+   ✓ capability positiva sem unidade escolhida não despacha cadastro  349ms
+   ✓ unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio  6228ms
+ ✓ src/test/fiscal/fase3_11.static.test.ts (36 tests) 49ms
+ ✓ src/test/comunicacao/fase-provider-settings-corr.test.ts (35 tests) 53ms
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/atendimentos preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > manager_loss pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > consultant_loss pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > duplicate pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > additional pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > superadmin pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > external pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > tenant pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > null pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > provisional pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/b2b/novoPedidoPaymentMethod.test.tsx (15 tests) 18403ms
+   ✓ sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio  1785ms
+   ✓ meio escolhido: simulação e criação levam meio/versão/prazo; cliente não envia parcelas nem vencimento; datas rotuladas como estimadas  1461ms
+   ✓ falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por clique  1310ms
+   ✓ leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio  1090ms
+   ✓ outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado  967ms
+   ✓ empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global  1082ms
+   ✓ resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)  948ms
+   ✓ promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)  935ms
+   ✓ Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas  1317ms
+   ✓ Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18  1364ms
+   ✓ crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado  1145ms
+   ✓ resposta com credit null não é aceita como apta: erro visível e envio bloqueado  1127ms
+   ✓ Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado  1258ms
+   ✓ ACK com total diferente da simulação não é sucesso (sem navegação)  1299ms
+   ✓ ACK com outro meio/versão não é tratado como sucesso (sem navegação)  1312ms
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > manager_denied pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > consultant_denied pauses without silently adopting cached authority
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental gestor denies, clears drafts/cache and restore stays clean
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental consultor_tecnico denies, clears drafts/cache and restore stays clean
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/catalogo/tenant-catalog-ownership.test.ts (41 tests) 36ms
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/registrar constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > selector offers legitimate choices, both transitions remain authorized, revoke hides selector
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > late preference completion cannot navigate after revocation
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > identity fences delayed page data
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > loss gestor committed after the single server snapshot is observed by the next confirmation (<= lease) and clears
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > loss consultor_tecnico committed after the single server snapshot is observed by the next confirmation (<= lease) and clears
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > duplicate pair at login is denied by raw server roles, despite legacy normalization
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/managerConsultantOpenSession.integration.test.tsx (72 tests) 5347ms
+   ✓ paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber preserves modal/draft across identical polls; inactive retry denies and restore is clean  471ms
+   ✓ paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses  519ms
+   ✓ paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/registrar constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses  1260ms
+   ✓ paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > selector offers legitimate choices, both transitions remain authorized, revoke hides selector  333ms
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED same scope reconfirms modal choices only; free text/cache/bytes never return
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED same scope reconfirms modal choices only; free text/cache/bytes never return
+cultivo-authz-renewal {"event":"auth_reconfirmed","state":"valid","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED discards late old-scope attachment while same-scope reauthorization awaits3s
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED discards late old-scope attachment while same-scope reauthorization awaits3s
+cultivo-authz-renewal {"event":"auth_reconfirmed","state":"valid","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED role change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED tenant change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED tenant change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_reconfirmed","state":"valid","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED revoked change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > old in-flight h15 positive cannot restore authority after TOKEN_REFRESHED and current role revocation
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/catalogo/tenant-catalog-owned-flow.test.tsx (15 tests) 5933ms
+   ✓ culturas próprias na aba existente > criar, ver, reabrir/editar, arquivar, ver arquivado e restaurar sem recarregar  1191ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > produto próprio aparece, reabre com detalhe e persiste edição  890ms
+   ✓ reabrir próprios nas abas Produtos e Microrganismos > microrganismo próprio aparece, reabre com detalhe e persiste edição  550ms
+   ✓ salvamento único de identificação/composição > declaração existente permanece intacta quando só identificação muda  646ms
+   ✓ salvamento único de identificação/composição > capability de unidade absent mantém edição fechada com zero dispatch  428ms
+   ✓ salvamento único de identificação/composição > capability de unidade denied mantém edição fechada com zero dispatch  442ms
+   ✓ salvamento único de identificação/composição > mudança de composição declarativa incompatível recusa tudo antes do produto, sem salvar parcialmente  673ms
+   ✓ salvamento único de identificação/composição > duplo clique não duplica e resposta antiga não aplica callbacks após AR→FSF→AR  313ms
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED same scope reconfirms modal choices only; free text/cache/bytes never return
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED same scope reconfirms modal choices only; free text/cache/bytes never return
+cultivo-authz-renewal {"event":"auth_reconfirmed","state":"valid","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED discards late old-scope attachment while same-scope reauthorization awaits3s
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED discards late old-scope attachment while same-scope reauthorization awaits3s
+cultivo-authz-renewal {"event":"auth_reconfirmed","state":"valid","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED role change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED tenant change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED tenant change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_reconfirmed","state":"valid","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED revoked change never revives previous draft or prepared bytes
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > old in-flight h15 positive cannot restore authority after TOKEN_REFRESHED and current role revocation
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > RTT3s TOKEN_REFRESHED restores non-sensitive item choice/modal, discards area/date and cannot submit
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > RTT3s TOKEN_REFRESHED restores non-sensitive item choice/modal, discards area/date and cannot submit
+cultivo-authz-renewal {"event":"auth_reconfirmed","state":"valid","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > USER_UPDATED destroys opt-in receipt and never reopens modal
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > identity destroys opt-in receipt and never reopens modal
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > timeout destroys opt-in receipt and never reopens modal
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/financialAdminEnvironment.integration.test.tsx (36 tests) 7049ms
+   ✓ financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED same scope reconfirms modal choices only; free text/cache/bytes never return  373ms
+   ✓ financeiro exclusive environment, fake transport not hosted > RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch  792ms
+   ✓ administrador exclusive environment, fake transport not hosted > RTT3s >=90s alternating visibility/focus preserves draft/modal/prepared bytes and epoch  701ms
+   ✓ Nova OS real owner with actual AuthProvider, fake transport only > RTT3s TOKEN_REFRESHED restores non-sensitive item choice/modal, discards area/date and cannot submit  1158ms
+   ✓ Nova OS real owner with actual AuthProvider, fake transport only > USER_UPDATED destroys opt-in receipt and never reopens modal  395ms
+   ✓ Nova OS real owner with actual AuthProvider, fake transport only > identity destroys opt-in receipt and never reopens modal  382ms
+   ✓ Nova OS real owner with actual AuthProvider, fake transport only > timeout destroys opt-in receipt and never reopens modal  314ms
+ ✓ src/test/saas/platformCatalogComposition.test.tsx (30 tests) 3206ms
+   ✓ painel de composição > salva declaração química com motivo e confirmação  310ms
+   ✓ painel de composição > Adicionar limitado a 50 componentes: 49 lidas → 50 → recusa 51  568ms
+   ✓ painel de composição > durante salvamento todos os controles editáveis ficam desabilitados (inclui fieldset)  369ms
+ ✓ src/test/comunicacao/fase2.test.ts (47 tests) 46ms
+ ✓ src/test/config/externalCommonUserEditForm.test.tsx (40 tests) 2532ms
+ ✓ src/test/config/authzEpochMonitor.test.ts (29 tests) 62ms
+stdout | src/test/config/operatorOpenSession.integration.test.tsx > operador_onfarm sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (44 tests) 468ms
+stdout | src/test/config/operatorOpenSession.integration.test.tsx > login operador: componentes reais e transporte fake, não login hosted > home tardia após tenant é descartada
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/operatorOpenSession.integration.test.tsx > login operador: componentes reais e transporte fake, não login hosted > resposta tardia da home após troca UID não redireciona
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/operatorOpenSession.integration.test.tsx (71 tests) 2080ms
+ ✓ src/test/security/h9dl6-scoped-visit-writes.static.test.ts (20 tests) 43ms
+ ✓ src/test/financeiro/fluxoCaixa.test.tsx (33 tests) 1864ms
+ ✓ src/test/entregas/comprovanteEntregaPdf.test.ts (46 tests) 47ms
+ ✓ src/test/b2b/novoPedidoSimulationFence.test.tsx (7 tests) 7070ms
+   ✓ A→B→A: resposta atrasada do primeiro A não é adotada; só a do A atual  1585ms
+   ✓ erro fica visível com código; nova tentativa é manual e só ela dispara nova leitura  977ms
+   ✓ revogação/troca de época na mesma identidade descarta resultado e resposta em voo  1042ms
+   ✓ referência à vista atrasada de contexto anterior não aparece como diferença  920ms
+   ✓ fechar e reabrir aposenta resposta em voo e exige simulação nova antes do envio  896ms
+   ✓ mudar itens com o mesmo plano invalida o resultado e a resposta antiga  850ms
+   ✓ clique de envio com resultado de época antiga não chama o criador de pedido  793ms
+ ✓ src/test/envase/envaseFlow.test.tsx (31 tests) 117ms
+ ✓ src/test/pedidos/novoPedidoAttemptClosure.test.tsx (16 tests) 39934ms
+   ✓ nunca encerra automaticamente após falha/timeout: só por clique  2922ms
+   ✓ closed validado: mesma chave/parceiro na RPC, libera nova chave e envia o carrinho editado mantido  2511ms
+   ✓ committed com schema válido: mostra número e navega pelo caminho canônico; não cria outro  2443ms
+   ✓ committed sem número não é conclusivo: bloqueio preservado  2446ms
+   ✓ committed com id inválido não é conclusivo: bloqueio preservado  2630ms
+   ✓ in_progress não é conclusivo: bloqueio preservado  2612ms
+   ✓ contrato desconhecido não é conclusivo: bloqueio preservado  2701ms
+   ✓ vazio não é conclusivo: bloqueio preservado  2646ms
+   ✓ erro PostgREST mantém bloqueio  2768ms
+   ✓ exceção de rede mantém bloqueio  2529ms
+   ✓ duplo clique em verificar: uma única RPC  2505ms
+   ✓ revogação durante a verificação: closed tardio NÃO libera e carrinho editado permanece  2994ms
+   ✓ desmontagem durante a verificação: resposta antiga não libera; remontado continua bloqueado  2869ms
+   ✓ troca de empresa durante a verificação: nada liberado para nenhum dos dois contextos  1967ms
+   ✓ logout e espera não descartam a tentativa; outro ator não a vê  3371ms
+ ✓ src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx (16 tests) 21759ms
+   ✓ resposta perdida + remontagem: reenvio idêntico reutiliza a MESMA chave  3129ms
+   ✓ payload alterado após resultado incerto NÃO gera outra chave: envio bloqueado  2451ms
+   ✓ pedido aceito com resposta tardia durante desmontagem: aviso, carrinho novo preservado e nova chave só após confirmação  2120ms
+   ✓ rejeição conclusiva do servidor no primeiro envio descarta a tentativa  1096ms
+   ✓ outro ator não herda a tentativa; logout NÃO libera a do ator original  2891ms
+   ✓ sucesso tardio não apaga data editada enquanto a RPC estava pendente  1175ms
+   ✓ sucesso tardio não apaga observação editada enquanto a RPC estava pendente  1146ms
+   ✓ erro não conclusivo {"code":"PGRST301","message":"JWT expired"} mantém a tentativa incerta  1056ms
+   ✓ erro não conclusivo {"code":"","message":"Failed to fetch"} mantém a tentativa incerta  981ms
+   ✓ erro não conclusivo {"code":"08006","message":"conn"} mantém a tentativa incerta  868ms
+   ✓ erro não conclusivo {"code":"57P01","message":"shutdown"} mantém a tentativa incerta  915ms
+   ✓ erro não conclusivo {"code":"XX000","message":"internal"} mantém a tentativa incerta  1073ms
+   ✓ erro não conclusivo {"code":"P0001","message":"idempotency_conflict"} mantém a tentativa incerta  978ms
+   ✓ erro não conclusivo {"message":"502 Bad Gateway"} mantém a tentativa incerta  944ms
+   ✓ dois cliques no mesmo tick: a reserva síncrona bloqueia o segundo envio (1 RPC)  925ms
+ ✓ src/test/security/create-user-edge-handler.test.ts (56 tests) 143ms
+ ✓ src/test/config/b2bOpenSession.integration.test.tsx (30 tests) 743ms
+ ✓ src/test/navigation/sidebar-padronizacao.test.tsx (37 tests) 601ms
+stdout | src/test/config/consultantOpenSession.integration.test.tsx > consultor_tecnico sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/consultantOpenSession.integration.test.tsx (56 tests) 3416ms
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same-identity token refresh hides old authority then restores cart choices and modal from fresh reads
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > effective revocation retires modal/cart; observed restoration never revives draft
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > real tenant change retires modal and cart
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx (14 tests) 7922ms
+   ✓ same confirmed probes retain the real modal DOM and cart without profile reload/cache reset  1036ms
+   ✓ same-vector context/partner/entitlement refetches preserve the actual modal and cart without cache clearing  583ms
+   ✓ a confirmed missing feature switches to Cliente comercial without a transport error  580ms
+   ✓ a confirmed missing capability switches to Cliente comercial without a transport error  506ms
+   ✓ focus/visibility revalidation still hides uncertain authority, even when the eventual vector is unchanged  525ms
+   ✓ deadline retires authority and a late healthy response cannot resurrect the modal  531ms
+   ✓ offline retires authority and a late healthy response cannot resurrect the modal  576ms
+   ✓ same-identity token refresh hides old authority then restores cart choices and modal from fresh reads  742ms
+   ✓ effective revocation retires modal/cart; observed restoration never revives draft  603ms
+   ✓ real partner change retires modal and cart  554ms
+   ✓ real tenant change retires modal and cart  622ms
+   ✓ observed A-B-A partner transitions never resurrect the A cart or modal  643ms
+ ✓ src/test/fiscal/fase3_8.static.test.ts (81 tests) 114ms
+ ✓ src/test/config/retryLoadingRace.integration.test.tsx (17 tests) 1384ms
+ ✓ src/test/fiscal/fase3_17.static.test.ts (38 tests) 45ms
+ ✓ src/test/config/portalContextRecovery.integration.test.tsx (19 tests) 1550ms
+ ✓ src/test/saas/platformCatalogLifecycle.test.tsx (25 tests) 3226ms
+   ✓ tela de criação > exige confirmação explícita e só chama uma vez com clique duplo  377ms
+   ✓ composição na tela de criação > só chama leitor de ativos, adiciona sem duplicar e envia composição real  319ms
+ ✓ src/test/financeiro/pagamentosEstorno.interaction.test.tsx (47 tests) 2722ms
+ ✓ src/test/fluxo-tecnico/decisoes.interaction.test.tsx (35 tests) 3730ms
+   ✓ Sheet existente executa Aprovar recomendação sem writes diretos  656ms
+   ✓ Sheet existente executa Solicitar ajuste sem writes diretos  391ms
+   ✓ Sheet existente executa Reprovar recomendação sem writes diretos  440ms
+ ✓ src/test/entregas/termoPdfEdge.test.ts (36 tests) 1491ms
+ ✓ src/test/fiscal/sinief49/staging/artifacts.static.test.ts (43 tests) 33ms
+ ✓ src/test/saas/platformCatalogFamily.test.tsx (19 tests) 2037ms
+   ✓ contrato de família > diálogo exige família, motivo e confirmação; salva e relê lista  463ms
+ ✓ src/test/entregas/deliveryOperationsFlow.test.ts (72 tests) 50ms
+ ✓ src/test/config/edicaoUsuarioRpc.test.ts (51 tests) 35ms
+ ✓ src/test/financeiro/novaContaReceber.test.tsx (21 tests) 3699ms
+   ✓ NovaContaDialog — Conta a Receber > recusa remota preserva edição e exibe erro após o toast  998ms
+   ✓ NovaContaDialog — Conta a Receber > cadastro válido chama a RPC uma vez com payload em centavos corretos  418ms
+   ✓ NovaContaDialog — Conta a Receber > 37 parcelas é rejeitado localmente sem RPC  404ms
+   ✓ NovaContaDialog — Conta a Receber > resposta incerta (success inválido) não fecha o diálogo e exige conferência  457ms
+   ✓ NovaContaDialog — Conta a Receber > duplo clique não cria dois títulos  440ms
+   ✓ NovaContaDialog — Conta a Pagar preservada > mantém mensagens e fluxo antigos e permite 120 parcelas  475ms
+ ✓ src/test/entregas/assinaturaComprovante.test.tsx (14 tests) 2735ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > envia PNG com UUID e upsert false e registra a assinatura  341ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > retry após falha da RPC reaproveita o PNG sem reenviar  347ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > retry usa o hash e o payload ORIGINAIS e faz um único upload  313ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload  337ms
+ ✓ src/test/fiscal/fase3_5.static.test.ts (66 tests) 24ms
+ ✓ src/test/pedidos/novoPedidoAckDialog.test.tsx (5 tests) 4170ms
+   ✓ nunca usa window.confirm; diálogo cita o número e Voltar não chama RPC nem limpa carrinho  1482ms
+   ✓ duplo clique em confirmar avança uma única vez com key/geração/pedido capturados  1164ms
+   ✓ estado do servidor muda com o diálogo aberto (outra aba): não confirma geração errada  466ms
+   ✓ revogação/troca de contexto com o diálogo aberto nega o avanço  747ms
+   ✓ troca de papel com o diálogo aberto fecha sem avançar  308ms
+ ✓ src/test/pedidos/commercialOwnerOrders.test.tsx (18 tests) 1804ms
+   ✓ sete pedidos sobrepostos não são estado vazio nem duplicam linhas; refresh revela novo pedido  515ms
+ ✓ src/test/visita/wizardCampo.persistence.test.tsx (12 tests) 1127ms
+ ✓ src/test/comunicacao/tenant-smtp-f2f3.test.ts (65 tests) 103ms
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > SIGNED_OUT automático limpa cache privado e contexto de A
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > TOKEN_REFRESHED revalida perfil inativado do mesmo UID
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > USER_UPDATED revalida perfil inativado do mesmo UID
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > USER_UPDATED descarta papel revogado antes de recarregar o mesmo UID
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > resultado lento de A não aplica estado depois de B
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > logout durante o carregamento limpa papéis e não é sobrescrito
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > troca A→B limpa perfil e papéis imediatamente
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authProviderCallback.test.tsx > AuthProvider — callback de autenticação > getSession de efeito descartado (StrictMode) > getSession antigo com A não ressuscita a sessão depois do logout
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/authProviderCallback.test.tsx (21 tests) 869ms
+ ✓ src/test/catalogo/packagingNovoPedidoModes.test.tsx (16 tests) 3591ms
+   ✓ leitor de embalagens pending: estado explícito, nunca o diálogo líquido nem 'sem volume'  541ms
+   ✓ leitor de embalagens error: estado explícito, nunca o diálogo líquido nem 'sem volume'  353ms
+   ✓ leitor de embalagens invalid: estado explícito, nunca o diálogo líquido nem 'sem volume'  323ms
+ ✓ src/test/fiscal/fase3_20.unified_list.ui.test.tsx (14 tests) 1521ms
+   ✓ FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21) > tenant admin saves own product draft only via writer: reason + idempotency key, no guessed tax codes  495ms
+   ✓ FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21) > uncertain response keeps the same idempotency key on manual resubmit; success discards it  302ms
+ ✓ src/test/visita/wizardRevisao.confirmation.test.tsx (36 tests) 4178ms
+   ✓ abrir/cancelar rascunho não chama RPC  349ms
+ ✓ src/test/financeiro/reportShell.session.test.tsx (37 tests) 6791ms
+   ✓ ReportShell — sessão real do hook / RPC e Edge mockados > erro atual remove prévia/metadados anteriores e permite repetir  301ms
+   ✓ ReportShell — sessão real do hook / RPC e Edge mockados > bloqueia gerar/exportar/imprimir com sessão inapta loading  340ms
+   ✓ ReportShell — sessão real do hook / RPC e Edge mockados > bloqueia gerar/exportar/imprimir com sessão inapta inactive  356ms
+   ✓ ReportShell — sessão real do hook / RPC e Edge mockados > bloqueia gerar/exportar/imprimir com sessão inapta mismatch  324ms
+   ✓ ReportShell — sessão real do hook / RPC e Edge mockados > bloqueia gerar/exportar/imprimir com sessão inapta roles  332ms
+   ✓ ReportShell — sessão real do hook / RPC e Edge mockados > bloqueia gerar/exportar/imprimir com sessão inapta tenant  352ms
+   ✓ ReportShell — sessão real do hook / RPC e Edge mockados > bloqueia gerar/exportar/imprimir com sessão inapta authError  337ms
+ ✓ src/test/equipe-tecnica/pdfAplicacao.scope.test.tsx (44 tests) 1973ms
+ ✓ src/test/monitoramento/visitMonitoringPlanEditor.test.tsx (13 tests) 6834ms
+   ✓ componente real usa versão capturada; leitura nova não rebaseia; erro persiste sem limpar  658ms
+   ✓ sucesso contrato canônico fecha e notifica apenas uma vez; cancelamento não envia  531ms
+   ✓ troca de ator durante envio fecha edição sem falso sucesso/callback  386ms
+   ✓ dois saves consecutivos usam N,N+1 e retornam N+1,N+2 após refresh observado  532ms
+   ✓ PT409 definitivo: consulta explícita, cancelar preserva, confirmar nova revisão não salva sozinho  754ms
+   ✓ timeout incerto mantém chave; PT409 posterior não permite nova tentativa/rebase  528ms
+   ✓ confirmação da revisão não adota mudança de version durante diálogo  557ms
+   ✓ confirmação da revisão não adota mudança de actor durante diálogo  419ms
+   ✓ PT409 -> revisão pendente -> troca de ator -> resposta antiga: novo ator edita e salva sem trava presa  672ms
+   ✓ finally antigo não libera ticket da revisão nova nem permite consulta duplicada  958ms
+   ✓ desmontagem retira geração da revisão pendente sem resposta tardia ou callback  569ms
+stdout | src/test/config/companyAdminOpenSession.integration.test.tsx > administrador sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/companyAdminOpenSession.integration.test.tsx > administrador sessão aberta candidata > preserva draft por dois polls; expiração descarta e restore não recupera
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/companyAdminOpenSession.integration.test.tsx (47 tests) 1406ms
+ ✓ src/test/config/authzFoundation.integration.test.tsx (15 tests) 393ms
+ ✓ src/test/comunicacao/tenant-smtp-f4.test.tsx (41 tests) 499ms
+ ✓ src/test/saas/platformCatalogVolumes.test.tsx (18 tests) 1205ms
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > existing suppresses stale completion on uid
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > existing suppresses stale completion on tenant
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > existing suppresses stale completion on roles
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":2}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > existing suppresses stale completion on epoch
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > existing suppresses stale completion on filters
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > existing suppresses stale completion on unmount
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":2}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > existing suppresses stale completion on lease
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":2}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > generated suppresses stale completion on uid
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > generated suppresses stale completion on tenant
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > generated suppresses stale completion on roles
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":2}
+
+ ✓ src/test/fiscal/sinief49/phase32.test.tsx (17 tests) 1400ms
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > generated suppresses stale completion on epoch
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > generated suppresses stale completion on filters
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":5}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > generated suppresses stale completion on unmount
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":2}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > existing receipt list and cancellation with real scope > generated suppresses stale completion on lease
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"fence","elapsedMs":1}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > receipt PDFs use real authenticated opener, never remote URL > list refresh aborts an in-flight download when the receipt snapshot changes
+cultivo-receipt-prepare {"source":"list","stage":"bytes","outcome":"fence","elapsedMs":87}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > receipt PDFs use real authenticated opener, never remote URL > rejects generated malformed locator {"url":"https://evil.invalid"}
+cultivo-receipt-prepare {"source":"list","stage":"edge","outcome":"error","elapsedMs":1}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > receipt PDFs use real authenticated opener, never remote URL > rejects generated malformed locator {"path":"https://evil.invalid","receipt_number":"REC-2026-000001"}
+cultivo-receipt-prepare {"source":"list","stage":"edge","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > receipt PDFs use real authenticated opener, never remote URL > rejects generated malformed locator {"path":"007bb519-cba0-4704-be2c-cb93ad010048/2026/REC-2026-000001.pdf","receipt_number":"wrong"}
+cultivo-receipt-prepare {"source":"list","stage":"edge","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > receipt PDFs use real authenticated opener, never remote URL > server download denial creates no Blob
+cultivo-receipt-prepare {"source":"list","stage":"bytes","outcome":"error","elapsedMs":3}
+
+stdout | src/test/financeiro/RecibosList.scope.test.tsx > receipt PDFs use real authenticated opener, never remote URL > timeout aborts Edge and ignores its late locator
+cultivo-receipt-prepare {"source":"list","stage":"edge","outcome":"timeout","elapsedMs":15000}
+
+ ✓ src/test/financeiro/RecibosList.scope.test.tsx (51 tests) 3064ms
+   ✓ existing receipt list and cancellation with real scope > reads only current tenant and preserves canonical RPC and reload after success  379ms
+ ✓ src/test/fiscal/fase3_7.static.test.ts (64 tests) 34ms
+ ✓ src/test/financeiro/contasPagarBloco2.test.tsx (25 tests) 2699ms
+   ✓ BaixaDialog payable — exibição e travas > mostra acumulados e saldo 75 no resumo da baixa  329ms
+   ✓ BaixaDialog payable — exibição e travas > chama a RPC de pagamento com amount_paid e idempotency_key  593ms
+   ✓ BaixaDialog payable — exibição e travas > resposta sem UUID válido trava novo envio até conferência e não fecha  492ms
+   ✓ BaixaDialog payable — exibição e travas > erro de rede desconhecido trava novo envio sem vazar texto cru  524ms
+   ✓ BaixaDialog payable — exibição e travas > erro conhecido do servidor preserva a edição (sem trava)  462ms
+ ✓ src/test/config/producerOpenSession.integration.test.tsx (28 tests) 2227ms
+   ✓ produtor sessão aberta candidata > /app/solicitar preserva draft por dois polls; mudança real e revogação descartam sem restore  336ms
+   ✓ produtor sessão aberta candidata > /app seleção B sobrevive dois polls idênticos; revogar B escolhe A  459ms
+   ✓ produtor sessão aberta candidata > /app preserva dois clientes e troca A/B; revogação parcial retira A  362ms
+ ✓ src/test/financeiro/contasPagarBloco3.test.tsx (17 tests) 4682ms
+   ✓ BaixaDialog payable — resultado incerto sobrevive a fechar/reabrir > reabrir após incerteza mantém o bloqueio, a mesma chave e o mesmo payload  1050ms
+   ✓ BaixaDialog payable — resultado incerto sobrevive a fechar/reabrir > nenhum envio automático nem chave nova ao reabrir  389ms
+   ✓ BaixaDialog payable — resultado incerto sobrevive a fechar/reabrir > após conferência explícita libera novo pagamento com chave nova  620ms
+   ✓ BaixaDialog payable — reenvio de comprovante pendente > falha do anexo não torna o pagamento incerto e não gera nova RPC  319ms
+   ✓ BaixaDialog payable — reenvio de comprovante pendente > reenvio mantém a mesma chave de idempotência do anexo  336ms
+   ✓ BaixaDialog payable — reenvio de comprovante pendente > reenvio tardio revoke não publica sucesso/callback nem nova baixa  329ms
+   ✓ BaixaDialog payable — reenvio de comprovante pendente > reenvio tardio tenant não publica sucesso/callback nem nova baixa  302ms
+   ✓ BaixaDialog payable — reenvio de comprovante pendente > reenvio tardio uid não publica sucesso/callback nem nova baixa  321ms
+ ✓ src/test/comunicacao/tenant-smtp-f4b.test.tsx (31 tests) 519ms
+ ✓ src/test/config/authzEarlyRenewal.test.ts (22 tests) 371ms
+ ✓ src/test/comunicacao/gate3-email.test.ts (34 tests) 34ms
+ ✓ src/test/saas/platformCatalogB2B.test.tsx (23 tests) 935ms
+   ✓ diálogo B2B global > lê o estado no servidor, exige motivo e confirmação explícita, e salva  301ms
+ ✓ src/test/pedidos/orderJournal.integration.test.tsx (34 tests) 323ms
+ ✓ src/test/fluxo-tecnico/osEnableProposal.interaction.test.tsx (35 tests) 1595ms
+   ✓ opening and canceling never write; confirmation writes once and reads updated workspace  452ms
+stdout | src/test/auth/voluntaryLogout.integration.test.tsx > logout voluntário não exibe "sessão pausada" > logout lento: oculta conteúdo e mostra "Saindo", nunca pausa
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/auth/voluntaryLogout.integration.test.tsx > logout voluntário não exibe "sessão pausada" > evento SIGNED_OUT encerra a marca de saída
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/auth/voluntaryLogout.integration.test.tsx > logout voluntário não exibe "sessão pausada" > troca de usuário durante logout: marca não vale para a nova identidade
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/auth/voluntaryLogout.integration.test.tsx > logout voluntário não exibe "sessão pausada" > clique duplicado: single-flight, uma única chamada signOut
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/auth/voluntaryLogout.integration.test.tsx > logout voluntário não exibe "sessão pausada" > A pendente → B entra → B logout → rejeição tardia de A não apaga marca de B
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/auth/voluntaryLogout.integration.test.tsx > logout voluntário não exibe "sessão pausada" > pausa real (perda de papel) continua visível como pausa
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/auth/voluntaryLogout.integration.test.tsx (8 tests) 280ms
+ ✓ src/test/entregas/conferenciaQrTermo.test.tsx (16 tests) 779ms
+ ✓ src/test/security/h9dl5-scoped-visit-reads.static.test.ts (16 tests) 45ms
+ ✓ src/test/fiscal/fase3_9.static.test.ts (38 tests) 246ms
+ ✓ src/test/fiscal/fase3_4.static.test.ts (45 tests) 34ms
+ ✓ src/test/multiportal.guards.test.tsx (24 tests) 159ms
+ ✓ src/test/saas/d51-onboarding-checkpoint.ui.test.tsx (13 tests) 4207ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > cria a empresa sem chamar o convite e libera E02 somente após o sucesso  668ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > mantém a criação desabilitada quando o CNPJ confirmado é diferente  307ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > envia exatamente o e-mail corporativo exibido na revisão  308ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > invalida snapshot e confirmação ao consultar outro CNPJ  380ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > só envia convite após a segunda ação explícita  389ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > retry pós-falha repete somente o convite  387ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > oferece fallback manual após falha SMTP sem recriar a empresa  378ms
+   ✓ D51.2 — checkpoint explícito E01 → E02 > exige confirmação explícita antes do retry ambíguo  525ms
+ ✓ src/test/comunicacao/tenant-smtp-ui.test.tsx (14 tests) 4029ms
+   ✓ SMTP-T1 UI real, transport simulated > draft writes expected version and clears secret before IO  483ms
+   ✓ SMTP-T1 UI real, transport simulated > identity change fences delayed save and clears credential  318ms
+   ✓ SMTP-T1 UI real, transport simulated > CAS conflict requires reload and uses read-back version  369ms
+   ✓ SMTP F2/F3 UI scope and explicit send > send cooldown preserves proven version, waits 60s and never retries automatically  425ms
+   ✓ SMTP F2/F3 UI scope and explicit send > proof is credential-free, double-click locked and does not authorize AUTH/send  342ms
+   ✓ SMTP F2/F3 UI scope and explicit send > send requires same-version connection and confirmation, with no arbitrary recipient  341ms
+ ✓ src/test/comunicacao/fase2-3-coerencia.test.ts (30 tests) 22ms
+ ✓ src/test/financeiro/deliveryFinanceReconciliation.test.tsx (17 tests) 2088ms
+   ✓ Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > consulta não carrega catálogos nem expõe criação; interações não escrevem  350ms
+ ✓ src/test/saas/plataforma-admins-gestao.ui.test.tsx (14 tests) 3618ms
+   ✓ Gestão de administradores provisionados > tem apenas um botão por linha e um diálogo com exatamente três seções  658ms
+   ✓ Gestão de administradores provisionados > edita somente nome/telefone/CPF e bloqueia CPF de ativo já preenchido  381ms
+   ✓ Gestão de administradores provisionados > troca de e-mail exige novo endereço repetido e confirmação explícita, com motivo opcional  328ms
+   ✓ Gestão de administradores provisionados > reenvio ambíguo exige confirmação humana e mantém chave idempotente  322ms
+ ✓ src/test/comunicacao/gate4-whatsapp.test.ts (28 tests) 36ms
+ ✓ src/test/financeiro/partnerSettings.integration.test.tsx (11 tests) 2497ms
+   ✓ P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > salvar fecha; reabrir mostra retorno canônico e nunca pix do cache anterior  553ms
+ ✓ src/test/lotes/gerar-lote-fences.test.tsx (47 tests) 2024ms
+   ✓ GerarLoteDialog — cercas de sessão e resposta > conflito 40001 não repete RPC nem confirma lote e mantém formulário  308ms
+ ✓ src/test/pedidos/partnerOrdersAdminScope.test.tsx (13 tests) 1192ms
+ ✓ src/test/equipe-tecnica/authenticatedBlobUrls.test.tsx (23 tests) 1231ms
+ ✓ src/test/visita/wizardAnexos.contract.test.tsx (26 tests) 1403ms
+ ✓ src/test/entregas/termoPdfDownload.test.tsx (18 tests) 1299ms
+ ✓ src/test/entregas/deliveryProofFlow.test.ts (34 tests) 47ms
+ ✓ src/test/financeiro/FinancialAuthenticatedDownloads.test.tsx (35 tests) 3243ms
+   ✓ docs: authenticated two-step download > prepare fetches bytes via actor session; download happens only on a second explicit click; never signed/public URLs  405ms
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > RecibosList preparation intermittency > Storage failure: baseline still runs post-read as if prepared; candidate stops at bytes with error telemetry
+cultivo-receipt-prepare {"source":"list","stage":"bytes","outcome":"error","elapsedMs":6}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > RecibosList preparation intermittency > parent timeout during bytes: baseline leaves Storage I/O alive and retry disabled; candidate aborts it and retries
+cultivo-receipt-prepare {"source":"list","stage":"bytes","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > RecibosList preparation intermittency > retry before the late reply: aborted first transport cannot store bytes or mark prepared
+cultivo-receipt-prepare {"source":"list","stage":"bytes","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > RecibosList preparation intermittency > session renewal during preparation aborts I/O, shows neutral notice and requires a new click
+cultivo-receipt-prepare {"source":"list","stage":"bytes","outcome":"fence","elapsedMs":7}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > EmitirReciboButton preparation intermittency > Storage failure never yields Baixar PDF and skips post-read
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"error","elapsedMs":4}
+
+ ✓ src/test/fiscal/verify-fiscal-types.test.ts (16 tests) 44ms
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > EmitirReciboButton preparation intermittency > parent timeout during bytes aborts Storage I/O and the retry is not blocked
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > telemetry with a transport that ignores abort > list: timeout recorded once at the event, retry not blocked, no duplicate on late settle
+cultivo-receipt-prepare {"source":"list","stage":"bytes","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > telemetry with a transport that ignores abort > button: timeout recorded once at the event, retry not blocked, no duplicate on late settle
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > post-read that ignores abort after bytes were stored > list: timeout revokes unconfirmed blob immediately and retry reaches Baixar PDF
+cultivo-receipt-prepare {"source":"list","stage":"post_read","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > post-read that ignores abort after bytes were stored > button: timeout revokes unconfirmed blob immediately and retry reaches Baixar PDF
+cultivo-receipt-prepare {"source":"button","stage":"post_read","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > post-read that ignores abort after bytes were stored > list: retry before the late post-read; old completion never revokes the new blob
+cultivo-receipt-prepare {"source":"list","stage":"post_read","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/receiptPrepareIntermittency.test.tsx > post-read that ignores abort after bytes were stored > button: retry before the late post-read; old completion never revokes the new blob
+cultivo-receipt-prepare {"source":"button","stage":"post_read","outcome":"timeout","elapsedMs":15000}
+
+ ✓ src/test/financeiro/receiptPrepareIntermittency.test.tsx (12 tests) 1183ms
+   ✓ RecibosList preparation intermittency > Storage failure: baseline still runs post-read as if prepared; candidate stops at bytes with error telemetry  385ms
+ ✓ src/test/security/technicalAttachmentChannel.review.test.ts (37 tests) 136ms
+ ✓ src/test/config/internalProbeLatency.test.ts (40 tests) 103ms
+ ✓ src/components/cockpit/composicaoCalc.test.ts (25 tests) 54ms
+ ✓ src/test/catalogo/ownerCatalogFilters.session.test.tsx (17 tests) 3073ms
+   ✓ ready=true with pending query retains only filters, guarded=false  417ms
+ ✓ src/test/visita/monitoringAutosave.interaction.test.tsx (7 tests) 12618ms
+   ✓ abrir página real com plano e conduta não grava após hidratação nem após novo workspace  885ms
+   ✓ edição real de conduta autosalva com CAS observado e mantém plano exato, descrição e conduta  716ms
+   ✓ salvar plano -> onUpdate/refetch não dispara autosave de hidratação  5767ms
+   ✓ autosave armado antes do plano não adota versão refetchada nem perde bloco após RPC  2354ms
+   ✓ diagnósticos atrasados e novo envelope mesma revisão não armam autosave de hidratação  323ms
+   ✓ falha de diagnósticos mantém erro visível e impede autosave parcial  377ms
+   ✓ autosave já em voo perde CAS após RPC, sem adotar revisão nova nem apagar plano  2194ms
+ ✓ src/test/catalogo/partnerOutletNovoPedido.test.tsx (9 tests) 2787ms
+   ✓ real layout/guard/outlet/NovoPedido reaches its real catalogue hook with the parent's partner  628ms
+   ✓ revoked creation capability removes the real cart subtree without enabling another writer  511ms
+   ✓ real route replaces partner then tenant through current canonical projection without old product rows  447ms
+   ✓ antes: sem leitor escopado o volume oculto bloqueia e o aviso usa rótulo neutro, nunca Cultivo Farm  336ms
+   ✓ depois: leitor escopado entrega o volume 1 L sem ler a tabela direta e sem escrita  579ms
+ ✓ src/test/fiscal/fase3_15.static.test.ts (24 tests) 30ms
+ ✓ src/test/fiscal/fase3_3.static.test.ts (43 tests) 36ms
+ ✓ src/test/fiscal/h7d.cofreSemSenha.test.ts (22 tests) 23ms
+ ✓ src/test/financeiro/DocumentosPanel.storage.test.tsx (49 tests) 2151ms
+ ✓ src/test/saas/commercial-money-editor.test.tsx (9 tests) 5885ms
+   ✓ editor de versão comercial > exibe seletor fixo de moeda e mantém o valor ao trocar a moeda  531ms
+   ✓ editor de versão comercial > salva, recarrega o baseline canônico, preserva motivo e limpa a confirmação  1355ms
+   ✓ editor de versão comercial > motivo não suja o draft e a chave muda somente após alteração comercial  667ms
+   ✓ editor de versão comercial > aceita motivo com dois caracteres e não aceita um caractere  502ms
+   ✓ editor de versão comercial > mostra o catálogo global e módulos vazios para cada plano sem compartilhar seleção  901ms
+   ✓ editor de versão comercial > desabilita publicação após alteração comercial até novo save  1511ms
+   ✓ editor de versão comercial > normaliza o preço para a RPC e apresenta os textos amigáveis de limites  363ms
+ ✓ src/test/comunicacao/smtp-core-hardening.test.ts (65 tests) 97ms
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects receipt ownership/locator {"organization_id":"foreign"} before Edge
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects receipt ownership/locator {"payment_id":"00000000-0000-4000-8000-000000000002"} before Edge
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects receipt ownership/locator {"id":"00000000-0000-4000-8000-000000000001"} before Edge
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects receipt ownership/locator {"storage_path":"../secret.pdf"} before Edge
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects receipt ownership/locator {"storage_bucket":"other"} before Edge
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"error","elapsedMs":4}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects malformed Edge response {"url":"https://bearer.invalid"}
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects malformed Edge response {"path":"../secret.pdf","receipt_number":"REC-2026-000001"}
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"error","elapsedMs":1}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rejects malformed Edge response {"path":"007bb519-cba0-4704-be2c-cb93ad010048/2026/REC-2026-000001.pdf","receipt_number":"wrong"}
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"error","elapsedMs":1}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on tenant
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":5}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on role
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":4}
+
+stdout | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on epoch
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":4}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on pending
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":5}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on uid
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on resource
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":18}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on unmount
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":2}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc fences stale success on deadline
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"fence","elapsedMs":3}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > rpc denies errors without raw transport disclosure
+cultivo-receipt-prepare {"source":"button","stage":"issue","outcome":"error","elapsedMs":1}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on tenant
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":56}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on role
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":54}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on epoch
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on pending
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":56}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on uid
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; expiração descarta e restore não recupera
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on resource
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on unmount
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":54}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read fences stale success on deadline
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"fence","elapsedMs":54}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > read denies errors without raw transport disclosure
+cultivo-receipt-prepare {"source":"button","stage":"row_read","outcome":"error","elapsedMs":1}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on tenant
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":57}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on role
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on epoch
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on pending
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on uid
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":54}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on resource
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":54}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on unmount
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge fences stale success on deadline
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > edge denies errors without raw transport disclosure
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"error","elapsedMs":2}
+
+ ✓ src/test/config/financialOpenSession.integration.test.tsx (26 tests) 1570ms
+   ✓ financeiro sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior  368ms
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on tenant
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on role
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":55}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on epoch
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":53}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on pending
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":54}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on uid
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":53}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on resource
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":56}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on unmount
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":53}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes fences stale success on deadline
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"fence","elapsedMs":52}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > bytes denies errors without raw transport disclosure
+cultivo-receipt-prepare {"source":"button","stage":"bytes","outcome":"error","elapsedMs":2}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > hung generation aborts at 15s; old completion cannot unlock a new request
+cultivo-receipt-prepare {"source":"button","stage":"edge","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > hung post-bytes status read is bounded, revokes bytes, ignores late reply and recovers without pending request
+cultivo-receipt-prepare {"source":"button","stage":"post_read","outcome":"timeout","elapsedMs":15000}
+
+stdout | src/test/financeiro/EmitirReciboButton.authenticated.test.tsx > cancel concurrent with preparation: post-bytes read CANCELED discards bytes and never offers download
+cultivo-receipt-prepare {"source":"button","stage":"post_read","outcome":"stale_state","elapsedMs":4}
+
+ ✓ src/test/financeiro/EmitirReciboButton.authenticated.test.tsx (50 tests) 2355ms
+ ✓ src/test/saas/fase-s1-core-saas.test.ts (26 tests) 156ms
+ ✓ src/test/envase/consulta.test.ts (32 tests) 32ms
+ ✓ src/test/multiportal.featureGuards.test.tsx (31 tests) 258ms
+ ✓ src/test/monitoramento/origemAlertaAgronomico.test.tsx (34 tests) 600ms
+   ✓ UI: cancelar não envia; confirmar envia uma vez e notifica a visita  337ms
+ ✓ src/test/comunicacao/etapa1-1c-solic-templates.test.ts (131 tests) 42ms
+ ✓ src/test/entregas/anexoComprovante.test.tsx (11 tests) 2186ms
+   ✓ EntregaComprovantePanel — anexo > selecionar arquivo não envia nada automaticamente  532ms
+   ✓ EntregaComprovantePanel — anexo > falha na vinculação mantém o arquivo e a nova tentativa não reenvia o arquivo  334ms
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > timeout -> mesmo principal recupera: conteúdo ausente na pausa, releitura, reabre Documentos sem rascunho
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > aba diferente de Documentos não é retomada
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > cliente negado/removido na releitura: não reapresenta
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > revogação de papel durante a pausa: não retoma
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > revogação de papel durante a pausa: não retoma
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > logout durante a pausa descarta
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > A -> B -> A durante a pausa descarta
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > A -> B -> A durante a pausa descarta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > retomada /clientes: somente timeout confirmado do monitor > A -> B -> A durante a pausa descarta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > mesmo usuário/empresa/papéis: conteúdo some durante a revalidação e Documentos reabre com dados relidos, sem rascunho
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > renovação com papel removido não retoma e descarta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/financeiro/dre.test.tsx (16 tests) 1714ms
+   ✓ DRE Gerencial — estados > erro do resumo mostra mensagem, retry e não exibe zeros  336ms
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > renovação com empresa diferente não retoma e descarta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > renovação seguida de troca de identidade descarta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > renovação seguida de troca de identidade descarta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > renovação com perfil inativo não retoma e descarta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > renovação com cliente removido não reapresenta
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > renovação fora da aba Documentos não retoma
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > TTL: renovação sem revalidação em 120 s não retoma
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > TTL: renovação sem revalidação em 120 s não retoma
+cultivo-authz-load {"event":"load_timeout","state":"pending","reason":"timeout","visible":true,"online":true,"rttMs":20000,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx > renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > carga: renovação não acrescenta probes além do baseline
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/clientes/ProdutoresTab.authzResume.integration.test.tsx (16 tests) 4773ms
+   ✓ retomada /clientes: somente timeout confirmado do monitor > timeout -> mesmo principal recupera: conteúdo ausente na pausa, releitura, reabre Documentos sem rascunho  825ms
+   ✓ retomada /clientes: somente timeout confirmado do monitor > aba diferente de Documentos não é retomada  435ms
+   ✓ retomada /clientes: somente timeout confirmado do monitor > ineligible com papéis em cache iguais e depois restaurado: não retoma  342ms
+   ✓ renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > mesmo usuário/empresa/papéis: conteúdo some durante a revalidação e Documentos reabre com dados relidos, sem rascunho  338ms
+ ✓ src/test/pedidos/novoPedidoDeliveryDate.test.tsx (2 tests) 2347ms
+   ✓ data preenchida aparece no resumo e chega à RPC create_partner_order_secure; pós-sucesso mostra acompanhamento  1978ms
+   ✓ rascunho seguro restaura a data desejada após remontagem; data vencida é descartada  367ms
+ ✓ src/test/financeiro/reportShell.authenticatedExport.test.tsx (29 tests) 2206ms
+   ✓ ReportShell export with live v89 response > prepares via authenticated download, never opens the URL, downloads only on a second explicit click  354ms
+ ✓ src/test/fiscal/companyMissingFields.test.ts (17 tests) 26ms
+ ✓ src/test/saas/assinatura-regularizacao.test.tsx (16 tests) 737ms
+ ✓ src/test/fiscal/fase_sinief1.migration.static.test.ts (14 tests) 35ms
+ ✓ src/test/catalogo/tenantProducts.realClient.test.tsx (12 tests) 671ms
+ ✓ src/test/fiscal/nfeXmlEngine.test.ts (26 tests) 41ms
+ ✓ src/test/saas/plataforma-empresa-workspace.test.tsx (11 tests) 2734ms
+   ✓ Gestão da plataforma — aba Empresa > lista primeiro; Nova Empresa abre o onboarding e Voltar preserva a lista  347ms
+   ✓ Gestão da plataforma — aba Empresa > edição: só campos seguros, CNPJ somente leitura, motivo ≥ 2 e envio único em duplo clique  808ms
+   ✓ Gestão da plataforma — aba Empresa > empresa antiga incompleta abre com indicador e pode ser completada via Editar da lista (patch parcial)  625ms
+ ✓ src/pwa/registerSW.test.ts (17 tests) 149ms
+ ✓ src/test/security/financialDocumentChannel.review.test.ts (30 tests) 191ms
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > pair → gestor: Retry re-reads roles, residual gestor probe validates, only gestor routes
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > pair → consultor: only consultor routes after validated re-resolution
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > residual gestor later losing gestor pauses again (probe keeps watching)
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > residual gestor later losing gestor pauses again (probe keeps watching)
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > residual is denied while the remaining role is inactive
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > roles ["gestor","consultor_tecnico","financeiro"] remain paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > roles [] remain paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > roles ["papel_desconhecido"] remain paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > roles ["financeiro"] remain paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/catalogo/tenant-catalog-visibility.test.ts (21 tests) 27ms
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > Retry closes readiness synchronously before any await
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > restore of the exact set recovers via Retry with a new epoch
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > restore of the exact set recovers via Retry with a new epoch
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > offline during Retry stays paused; later Retry recovers
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > 3s latency: content hidden until reconfirmed; double click is single-flight
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > race: role removed again while Retry is in flight stays paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/monitorRetryReresolve.integration.test.tsx > Retry re-resolves identity (gestor+consultor) > cross-tenant: old cache never survives; new tenant only after its own probe, gestor-only there stays paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/monitorRetryReresolve.integration.test.tsx (14 tests) 3756ms
+   ✓ Retry re-resolves identity (gestor+consultor) > pair → gestor: Retry re-reads roles, residual gestor probe validates, only gestor routes  421ms
+   ✓ Retry re-resolves identity (gestor+consultor) > residual gestor later losing gestor pauses again (probe keeps watching)  381ms
+   ✓ Retry re-resolves identity (gestor+consultor) > restore of the exact set recovers via Retry with a new epoch  447ms
+   ✓ Retry re-resolves identity (gestor+consultor) > cross-tenant: old cache never survives; new tenant only after its own probe, gestor-only there stays paused  305ms
+ ✓ src/test/fiscal/fase3_6.static.test.ts (49 tests) 23ms
+ ✓ src/test/security/external-user-ab-proposal.test.ts (38 tests) 1621ms
+ ✓ src/test/security/h9dl7-start-technical-visit.static.test.ts (13 tests) 21ms
+ ✓ src/test/financeiro/contasPagarBloco5.test.tsx (12 tests) 4100ms
+   ✓ BaixaDialog payable — journal antes de qualquer RPC > grava o journal ANTES da RPC e o remount com RPC pendente restaura chave e payload  1273ms
+   ✓ BaixaDialog payable — journal antes de qualquer RPC > falha de escrita no journal (quota) => mensagem segura e ZERO RPC  416ms
+   ✓ BaixaDialog payable — journal antes de qualquer RPC > sem journal o formulário fica liberado após remount  378ms
+   ✓ BaixaDialog payable — journal antes de qualquer RPC > sucesso confirmado remove o journal; falha de limpeza não vira falha nem duplica  1066ms
+   ✓ BaixaDialog payable — journal antes de qualquer RPC > recusa comprovada do servidor limpa o journal  394ms
+   ✓ receivable inalterado > baixa de recebimento não grava journal payable  384ms
+ ✓ src/test/comunicacao/fase3-deploy-kit.test.ts (11 tests) 18ms
+ ✓ src/test/fluxo-tecnico/fluxo.test.ts (31 tests) 35ms
+ ✓ src/test/financeiro/partnerSettingsMutation.test.tsx (21 tests) 517ms
+ ✓ src/test/saas/platformCatalogRead.test.tsx (23 tests) 1476ms
+ ✓ src/test/security/protected-views-migration-order.static.test.ts (10 tests) 12ms
+ ✓ src/test/entregas/entregaCanceladaSomenteConsulta.test.tsx (9 tests) 1236ms
+   ✓ Comprovante — entrega cancelada é somente consulta > estado permitido: dispensa de assinatura aparece só como indisponível e nunca chama o servidor  349ms
+ ✓ src/test/visita/parentFence.interaction.test.tsx (20 tests) 8759ms
+   ✓ identificação consultor_tecnico/reprovado fica realmente bloqueada, sem save por teclado  1251ms
+   ✓ identificação administrador/reprovado fica realmente bloqueada, sem save por teclado  614ms
+   ✓ identificação consultor_tecnico/finalizado fica realmente bloqueada, sem save por teclado  511ms
+   ✓ identificação administrador/finalizado fica realmente bloqueada, sem save por teclado  454ms
+   ✓ plano draft falha error não informa sucesso nem fecha formulário  322ms
+   ✓ página real mobile=false status=rascunho canEdit=true monta editor com permissão vigente  994ms
+   ✓ página real mobile=true status=rascunho canEdit=true monta editor com permissão vigente  914ms
+   ✓ página real mobile=false status=em_andamento canEdit=true monta editor com permissão vigente  809ms
+   ✓ página real mobile=true status=em_andamento canEdit=true monta editor com permissão vigente  821ms
+   ✓ página real mobile=true status=rascunho canEdit=false monta editor com permissão vigente  640ms
+   ✓ página real mobile=false status=em_andamento canEdit=false monta editor com permissão vigente  666ms
+ ✓ src/test/fiscal/h7g.vinculoEvento.test.ts (23 tests) 31ms
+ ✓ src/test/fiscal/xmlEngineXercesRuntime.test.ts (14 tests) 629ms
+   ✓ validação normativa real contra o XSD oficial da NF-e > rejeita XML deliberadamente inválido (raiz inexistente)  338ms
+ ✓ src/test/catalogo/platformCatalogLabels.test.tsx (11 tests) 561ms
+ ✓ src/test/saas/platformCatalogEntities.test.tsx (23 tests) 1994ms
+ ✓ src/test/entregas/validarEntrega.test.tsx (16 tests) 666ms
+ ✓ src/test/visita/recomendacaoSyncWorkspace.integration.test.tsx (7 tests) 5814ms
+   ✓ Sincronizar atualiza o wizard aberto, workspace e flag após RPC/CAS, liberando etapa6 sem reload  1452ms
+   ✓ CAS perdido preserva edição mais nova e não invalida consultas nem libera etapa6  847ms
+   ✓ conflito mantém pendência e consultas sem invalidação  777ms
+   ✓ actor durante RPC impede invalidação do cache anterior  754ms
+   ✓ tenant durante RPC impede invalidação do cache anterior  811ms
+   ✓ logout durante RPC impede invalidação do cache anterior  508ms
+   ✓ troca de ator durante refetch rejeita bytes tardios e não publica cache de A em B  661ms
+ ✓ src/test/security/h9e2-visit-rpcs-concurrency.static.test.ts (24 tests) 23ms
+ ✓ src/test/saas/superadmin-role.test.ts (20 tests) 25ms
+ ✓ src/test/fiscal/h7f.transporteSefaz.test.ts (26 tests) 28ms
+ ✓ src/test/equipe-tecnica/authenticatedBlobPaging.test.tsx (12 tests) 2383ms
+   ✓ histórico >24: janela autenticada > lazy: cache LRU limita 24 Blobs residentes e revoga o mais antigo  1424ms
+ ✓ src/test/security/h9f-pacote-e-gate.static.test.ts (19 tests) 88ms
+ ✓ src/test/visita/etapasVisita.test.ts (27 tests) 24ms
+ ✓ src/test/saas/password-recovery.ui.test.tsx (18 tests) 4523ms
+   ✓ pausa local de recuperação > bloqueia por 60s sem retry automático: {"code":"over_email_send_rate_limit"}  312ms
+   ✓ recuperação principal > envia apenas recovery ao destino canônico e mostra confirmação genérica  447ms
+   ✓ recuperação principal > erro fica sanitizado e finally permite nova tentativa  556ms
+   ✓ recuperação principal > rejeição fica sanitizado e finally permite nova tentativa  458ms
+   ✓ recuperação principal > lock síncrono bloqueia submit duplicado, loading e volta durante envio  388ms
+   ✓ recuperação mobile > envia apenas recovery ao destino canônico e mostra confirmação genérica  312ms
+   ✓ recuperação mobile > erro fica sanitizado e finally permite nova tentativa  408ms
+   ✓ recuperação mobile > rejeição fica sanitizado e finally permite nova tentativa  407ms
+ ✓ src/test/fiscal/fase_h5_a.connectionsReadiness.test.ts (17 tests) 14ms
+ ✓ src/test/financeiro/financialReport.candidate.edge.test.ts (16 tests) 180ms
+ ✓ src/test/fiscal/productFiscalProfiles.session.test.tsx (14 tests) 399ms
+ ✓ src/test/fiscal/sinief49/formAdapter.test.ts (13 tests) 19ms
+ ✓ src/test/security/user-links-v0-readers.test.ts (14 tests) 71ms
+ ✓ src/test/comunicacao/notification-session-real.test.tsx (26 tests) 1045ms
+ ✓ src/test/catalogo/tenant-visibility-cache.integration.test.tsx (6 tests) 435ms
+ ✓ src/test/saas/platformCatalogMetadata.test.tsx (28 tests) 1807ms
+   ✓ edição global de metadados > envia somente campo alterado/versão/motivo e confirma recibo antes de sucesso  423ms
+ ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 3096ms
+   ✓ EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  504ms
+ ✓ src/test/comunicacao/d51-2-e-smtp-ux-security.test.ts (13 tests) 41ms
+ ✓ src/test/config/producerLoginHome.integration.test.tsx (15 tests) 637ms
+ ✓ src/test/catalogo/c1bCatalog.test.tsx (16 tests) 1656ms
+   ✓ C1B inactive candidate canonical readers > actual grid consumes RPC projection, filters families and never mounts internal reader  594ms
+   ✓ C1B inactive candidate canonical readers > open grid sheet is discarded when actor scope changes  312ms
+ ✓ src/test/security/h9e1r-finish-visit.static.test.ts (15 tests) 18ms
+ ✓ src/test/comunicacao/tenant-smtp-foundation.test.ts (60 tests) 100ms
+ ✓ src/test/fiscal/fase3_1.ui.test.tsx (18 tests) 921ms
+   ✓ FiscalEmpresa — flag ON > administrador vê formulário editável e botão Salvar  422ms
+ ✓ src/test/comercial/assignmentPublishDialog.test.tsx (9 tests) 2700ms
+   ✓ confirmação controlada de publicação da atribuição > abre no layout 0 sem confirm nativo e mostra condição e destino exatos  319ms
+   ✓ confirmação controlada de publicação da atribuição > bloqueia duplo clique, mostra pendência e invalida as leituras após confirmação  414ms
+   ✓ confirmação controlada de publicação da atribuição > espera 190 s, renova normalmente e ainda exige reabertura e novo clique explícito  552ms
+   ✓ confirmação controlada de publicação da atribuição > mudança de contexto após a chamada não confirma nem invalida como sucesso  371ms
+ ✓ src/test/fiscal/fase3_19_2.audit.test.ts (27 tests) 36ms
+ ✓ src/test/equipe-tecnica/useSignedUrls.test.tsx (19 tests) 1253ms
+ ✓ src/test/protocolos/produtos-tab-cat06-cat07.test.ts (11 tests) 24ms
+ ✓ src/test/comercial/partnerVolumesReader.test.tsx (16 tests) 581ms
+   ✓ diálogo Adicionar ao carrinho > com volume escopado não mostra o aviso de ausência  344ms
+ ✓ src/test/fiscal/fase3_0_2a.static.test.ts (23 tests) 28ms
+ ✓ src/test/aplicacoes/evidencias.test.ts (36 tests) 27ms
+ ✓ src/test/lotes/geracao-codigo.test.ts (25 tests) 19ms
+ ✓ src/test/comercial/meiosPagamentoTab.test.tsx (8 tests) 1488ms
+   ✓ nova versão envia CAS da versão vigente; conflito mantém o rascunho, mostra motivo e não tenta de novo  573ms
+ ✓ src/test/offlineSync.dedupe.test.ts (8 tests) 33ms
+ ✓ src/test/comercial/activeTenantName.test.tsx (12 tests) 240ms
+ ✓ src/test/monitoramento/atualizarStatusAlertaClient.test.tsx (23 tests) 130ms
+ ✓ src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx (14 tests) 389ms
+ ✓ src/test/config/authzDiagnostics.test.ts (9 tests) 80ms
+ ✓ src/test/fiscal/fase3_19_4.audit.test.tsx (19 tests) 413ms
+ ✓ src/test/entregas/painelChecklistOcorrencias.test.tsx (12 tests) 1190ms
+ ✓ src/test/visita/technicalCache.session.test.tsx (14 tests) 1512ms
+   ✓ remount stale do wizard aprovado6→rascunho8 libera edição sem reload e sem writes  417ms
+ ✓ src/test/entregas/painelEvidencias.test.tsx (8 tests) 615ms
+ ✓ src/test/entregas/anexoComprovanteConcorrencia.test.tsx (5 tests) 2100ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante o upload: não inicia a RPC nem afeta a nova entrega  557ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > A→B→A: resultado da operação antiga não é aplicado ao voltar para A  306ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > falha da operação antiga não destrava o envio em andamento da nova entrega  660ms
+ ✓ src/test/fiscal/fase3_10.orchestrator.test.ts (32 tests) 17ms
+ ✓ src/test/config/usuariosValidation.test.ts (26 tests) 28ms
+ ✓ src/test/financeiro/contasReceberRevisao.test.tsx (10 tests) 535ms
+   ✓ 2) Payable mantém o fallback paid_amount > 100 pago 40 => saldo 60 e exibe 40 como já pago  307ms
+ ✓ src/test/comercial/commercial-package.test.tsx (38 tests) 493ms
+ ✓ src/test/integration/produtoComposicao.flow.test.ts (4 tests) 17ms
+ ✓ src/test/fiscal/rtcOperationConcurrency.test.tsx (32 tests) 2095ms
+ ✓ src/test/security/h8d-healthcheck.static.test.ts (25 tests) 50ms
+ ✓ src/test/multiportal.hardening.test.ts (13 tests) 31ms
+ ✓ src/test/comercial/internalOrderEntry.test.tsx (8 tests) 402ms
+ ✓ src/test/financeiro/dashboardVisaoGeral.test.tsx (8 tests) 941ms
+ ✓ src/test/comercial/packagingOrder.test.tsx (32 tests) 282ms
+ ✓ src/test/entregas/consumidorEntrega.test.tsx (13 tests) 1867ms
+   ✓ Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna  462ms
+   ✓ Contenção real antes do primeiro dispatch da página > cancelamento em_rota não altera status nem estorna  329ms
+ ✓ src/test/financeiro/contasPagarBloco1.test.tsx (10 tests) 5443ms
+   ✓ tela Contas a Pagar > paginação: página cheia habilita Carregar mais e busca a próxima com range correto  4729ms
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > spike > lease then healthy: hidden while paused, reopens only after a NEW observation, no click
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > repeated timeouts stop: ends paused with operative Retry, no indefinite load
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > repeated timeouts stop: ends paused with operative Retry, no indefinite load
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > budget is not renewed by a short-lived recovery (timeout → ok → timeout within 60 s stays paused)
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > budget is not renewed by a short-lived recovery (timeout → ok → timeout within 60 s stays paused)
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > revocation during backoff stays denied and is not retried again
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > revocation during backoff stays denied and is not retried again
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > inactive profile during backoff stays denied
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > inactive profile during backoff stays denied
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > ineligible (partial revocation) is never auto-recovered
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > never-resolving transport during auto attempt is bounded and ends paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > never-resolving transport during auto attempt is bounded and ends paused
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > TOKEN_REFRESHED during backoff: no stale reopen; revoked stays denied
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > TOKEN_REFRESHED during backoff: no stale reopen; revoked stays denied
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/autoTimeoutRecovery.integration.test.tsx > bounded auto-recovery of a transient timeout (pair scope) > unmount during backoff cancels the timer
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/autoTimeoutRecovery.integration.test.tsx (10 tests) 637ms
+ ✓ src/test/financeiro/partnerSettings.test.tsx (11 tests) 836ms
+   ✓ configuração financeira canônica — UI sintética, sem escrita hosted > permite abrir o mesmo diálogo antes do primeiro pedido  360ms
+ ✓ src/test/comunicacao/d51-2-d-acl-readiness.test.ts (7 tests) 18ms
+ ✓ src/test/fiscal/fase3_2.static.test.ts (34 tests) 22ms
+ ✓ src/test/planejamento-producao/planejamento.test.ts (18 tests) 51ms
+ ✓ src/test/config/fiscalH15Isolation.test.ts (11 tests) 29ms
+ ✓ src/test/pedidos/preDispatchSettlement.test.tsx (6 tests) 130ms
+ ✓ src/test/monitoramento/reprogramarCasClient.test.tsx (26 tests) 142ms
+ ✓ src/test/cockpit-laboratorio/consultaOnly.test.tsx (18 tests) 2198ms
+   ✓ consulta Cockpit efetiva — Auth/transporte simulados > executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts  832ms
+   ✓ consulta Cockpit efetiva — Auth/transporte simulados > late A is aborted and never displayed in B; scope remount resets search/page  360ms
+ ✓ src/test/fiscal/cnpjLookup.test.ts (17 tests) 40ms
+ ✓ src/test/lib/fiscal-ie.test.ts (268 tests) 49ms
+ ✓ src/test/comunicacao/hom1-test-mode.test.ts (15 tests) 14ms
+ ✓ src/test/planejamento-producao/publicacao-contrato-current.test.tsx (21 tests) 124ms
+ ✓ src/test/financeiro/contasPagarBloco4.test.tsx (4 tests) 2937ms
+   ✓ (1) arquivo travado durante gravação, livre só em pendência ociosa > pendência ociosa permite trocar o arquivo; durante o reenvio o campo trava  1026ms
+   ✓ (2) falha remota no reenvio é sempre falha de anexo > erro remoto cru no reenvio não vira incerto, não persiste tentativa e não chama RPC  746ms
+   ✓ (3) repetição recuperada sem arquivo não declara sucesso completo > payload original com comprovante + sem arquivo => pagamento confirmado e comprovante pendente  780ms
+   ✓ (4) guarda síncrona adquirida antes da mutação > três cliques intercalados antes da RPC resolver geram uma única chamada  383ms
+ ✓ src/test/saas/assinatura-card-status.test.tsx (13 tests) 1280ms
+   ✓ Gestão de assinatura: plano não reativa > resumo Base v1 e Suspensa; mesma versão bloqueia sem RPC  338ms
+   ✓ Gestão de assinatura: plano não reativa > alterar plano suspenso orienta reativação, não encadeia RPC e aguarda duas leituras  326ms
+   ✓ Gestão de assinatura: plano não reativa > falha na releitura libera pendência e oferece consulta sem escrita  374ms
+stdout | src/test/financeiro/receiptCancelCurrency.list.test.tsx > canceled receipt never served as the earlier ISSUED PDF > Edge v91 response (ISSUED path, no status) for a CANCELED receipt fails closed
+cultivo-receipt-prepare {"source":"list","stage":"edge","outcome":"error","elapsedMs":3}
+
+stdout | src/test/financeiro/receiptCancelCurrency.list.test.tsx > canceled receipt never served as the earlier ISSUED PDF > cancel in another session after preparation: download click re-checks and revokes prepared ISSUED bytes
+cultivo-receipt-prepare {"source":"list","stage":"fresh_read","outcome":"stale_state","elapsedMs":2}
+
+stdout | src/test/financeiro/receiptCancelCurrency.list.test.tsx > canceled receipt never served as the earlier ISSUED PDF > cancel concurrent with preparation (late bytes) discards them instead of offering download
+cultivo-receipt-prepare {"source":"list","stage":"post_read","outcome":"stale_state","elapsedMs":5}
+
+stdout | src/test/financeiro/receiptCancelCurrency.list.test.tsx > canceled receipt never served as the earlier ISSUED PDF > hung post-bytes status read is bounded by the watchdog, revokes bytes, ignores late reply and recovers
+cultivo-receipt-prepare {"source":"list","stage":"post_read","outcome":"timeout","elapsedMs":15000}
+
+ ✓ src/test/financeiro/receiptCancelCurrency.list.test.tsx (7 tests) 859ms
+   ✓ canceled receipt never served as the earlier ISSUED PDF > baseline reproduces the real failure: CANCELED with storage_path opens ISSUED bytes without Edge  312ms
+ ✓ src/test/security/clientDocumentFreshTransport.review.test.ts (27 tests) 96ms
+ ✓ src/test/aplicacoes/salvar.test.ts (15 tests) 90ms
+ ✓ src/test/saas/first-access.test.ts (19 tests) 19ms
+ ✓ src/test/fiscal/regulatorioContencao.test.tsx (18 tests) 638ms
+ ✓ src/test/pedidos/createPartnerOrderOwnChannel.integration.test.tsx (3 tests) 322ms
+ ✓ src/test/fiscal/rtcCompanyCasHttp409.test.tsx (13 tests) 783ms
+ ✓ src/test/fiscal/nfeProcClosure.test.ts (18 tests) 21ms
+ ✓ src/test/security/d51-4-tenant-users.test.ts (8 tests) 14ms
+ ✓ src/test/entregas/copiarLinkIsolamento.test.tsx (2 tests) 807ms
+   ✓ copiar link de validação — isolado das gravações > copiar durante uma assinatura pendente não invalida a gravação  689ms
+ ✓ src/test/fiscal/CertificadoValidadeBanner.test.tsx (13 tests) 152ms
+ ✓ src/test/catalogo/tenant-visibility-toggle.test.tsx (9 tests) 1183ms
+   ✓ TenantVisibilityToggle > retry do mesmo payload reusa a chave; motivo alterado gera chave nova  454ms
+ ✓ src/test/fiscal/faseF2.regulatorio.test.ts (18 tests) 16ms
+ ✓ src/test/financeiro/comprovanteBaixaIdempotencia.test.ts (22 tests) 38ms
+ ✓ src/test/protocolos/fichas-cat09-cat10.test.ts (17 tests) 23ms
+ ✓ src/test/ordens-servico/programming.test.tsx (27 tests) 2319ms
+ ✓ src/components/cockpit/reservaCalc.test.ts (42 tests) 27ms
+ ✓ src/test/saas/drift-email-handler.test.ts (10 tests) 54ms
+ ✓ src/test/multiportal.gestao.test.tsx (9 tests) 564ms
+   ✓ gestor+técnico escolhe Gestão sem card B2B inventado  301ms
+ ✓ src/test/fiscal/sinief49/ui.test.tsx (11 tests) 517ms
+ ✓ src/test/config/commercialRegistration.form.test.tsx (11 tests) 3192ms
+   ✓ preserva string obrigatória vazia na validação, mantendo opcionais nulos  519ms
+   ✓ nega razão social insuficiente sem envio: ""  315ms
+   ✓ nega CNPJ repetido sem envio  352ms
+   ✓ duplo clique faz um envio; libera lock após falha e mantém UUID  445ms
+ ✓ src/test/fiscal/fiscal_labels_pt_br.test.ts (45 tests) 79ms
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/fiscal/xmlEngineXsdSelftest.test.ts (14 tests) 14ms
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → gestor residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > slow from the start of the residual scope stays valid
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/residualScopeStability.integration.test.tsx > pair → consultor_tecnico residual stability (3 s/probe) > negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/residualScopeStability.integration.test.tsx (8 tests) 762ms
+   ✓ pair → gestor residual stability (3 s/probe) > fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched  332ms
+ ✓ src/test/fiscal/sinief49/sinief20.test.ts (13 tests) 23ms
+ ✓ src/test/financeiro/contasPagarBloco6.test.tsx (7 tests) 721ms
+   ✓ regressão — validação do journal > registro inconsistente bloqueia o envio sem nenhuma RPC  374ms
+ ✓ src/test/security/admin-password-handler.test.ts (29 tests) 66ms
+ ✓ src/test/pedidos/ownerOrderTracking.test.tsx (2 tests) 237ms
+ ✓ src/test/catalogo/productUnitPackaging.contract.test.tsx (11 tests) 66ms
+ ✓ src/test/config/pwa-binding-hardening.test.ts (15 tests) 16ms
+ ✓ src/test/security/d51-5-p1-systemic.test.ts (7 tests) 11ms
+ ✓ src/test/fiscal/fase3_1.static.test.ts (35 tests) 28ms
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (19 tests) 2218ms
+   ✓ Mounted canonical physical confirmation > invalid ACK os_id stays uncertain with same key and no success  393ms
+ ✓ src/test/equipe-tecnica/PortalAttachmentConsumers.blob.test.tsx (17 tests) 2730ms
+   ✓ cliente: prepara uma vez, download explícito sem popup e revoga ao desmontar  571ms
+ ✓ src/test/fiscal/fase3_4.icms20.test.ts (10 tests) 19ms
+ ✓ src/test/saas/admin-acesso-dialog.ui.test.tsx (9 tests) 3382ms
+   ✓ Gestão única de acesso — recovery não é convite > envia password_link com rótulo de senha no estado invited  583ms
+   ✓ Gestão única de acesso — recovery não é convite > centraliza confirmação pendente em E-mail, sem envio duplicado em Acesso  325ms
+   ✓ Gestão única de acesso — recovery não é convite > exibe provisória uma vez e apaga ao ocultar, trocar seção ou fechar  669ms
+   ✓ Gestão única de acesso — recovery não é convite > replay não reexibe senha provisória  325ms
+   ✓ Gestão única de acesso — recovery não é convite > bloqueia mutações sem estado seguro: cooldown  318ms
+   ✓ Gestão única de acesso — recovery não é convite > bloqueia mutações sem estado seguro: failed  301ms
+ ✓ src/test/pedidos/createPartnerOrderOwnChannelInvalidation.test.tsx (6 tests) 71ms
+ ✓ src/test/monitoramento/criarAlertaClimaticoClient.test.tsx (18 tests) 99ms
+ ✓ src/test/comercial/paymentTermsRead.test.tsx (12 tests) 391ms
+ ✓ src/test/fiscal/fiscalProdutos.platformUx.test.tsx (7 tests) 709ms
+ ✓ src/test/fiscal/h7e.certHolderCnpj.test.ts (13 tests) 13ms
+ ✓ src/test/equipe-tecnica/EvidenciasGallery.retry.test.tsx (4 tests) 413ms
+ ✓ src/test/fiscal/bloco5_service_profile_ibs_cbs.test.ts (13 tests) 14ms
+ ✓ src/test/envase/registrarEnvaseDialog.test.tsx (14 tests) 2372ms
+   ✓ RegistrarEnvaseDialog current reads and ACK > discards old four responses after target change  362ms
+ ✓ src/test/financeiro/arbioFsfReference.test.ts (38 tests) 16ms
+ ✓ src/test/config/commercialRegistration.session.test.tsx (16 tests) 972ms
+ ✓ src/test/comunicacao/notification-p1-scope.test.tsx (11 tests) 93ms
+stdout | src/test/config/authzTransientPause.integration.test.tsx > pausa transitória não muda a época (regressão /configuracoes) > timeout de ~10s com recuperação pelo MESMO fingerprint: época estável, conteúdo volta
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authzTransientPause.integration.test.tsx > pausa transitória não muda a época (regressão /configuracoes) > mudança real de fingerprint (revogação parcial do par) NÃO recupera e muda o estado
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authzTransientPause.integration.test.tsx > pausa transitória não muda a época (regressão /configuracoes) > mudança real de fingerprint (revogação parcial do par) NÃO recupera e muda o estado
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"ineligible","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authzTransientPause.integration.test.tsx > pausa transitória não muda a época (regressão /configuracoes) > duas pausas transitórias seguidas mantêm a época estável após cada recuperação
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/authzTransientPause.integration.test.tsx > pausa transitória não muda a época (regressão /configuracoes) > duas pausas transitórias seguidas mantêm a época estável após cada recuperação
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/authzTransientPause.integration.test.tsx (4 tests) 321ms
+ ✓ src/test/saas/d51-admin-invite-resend.ui.test.tsx (7 tests) 3357ms
+   ✓ D51.2 — reenvio no gerenciamento único > reenvia o mesmo registro após confirmação dentro de Acesso  1059ms
+   ✓ D51.2 — reenvio no gerenciamento único > não oferece reenvio para ativo/link  387ms
+   ✓ D51.2 — reenvio no gerenciamento único > não oferece reenvio para pendente/senha_temporaria  326ms
+   ✓ D51.2 — reenvio no gerenciamento único > permite tentativa de convite falho pelo mesmo caminho  340ms
+   ✓ D51.2 — reenvio no gerenciamento único > envio ambíguo exige confirmação humana e envia flag verdadeira  401ms
+   ✓ D51.2 — reenvio no gerenciamento único > impede duplo clique e bloqueia troca de seção/fechamento durante envio  460ms
+   ✓ D51.2 — reenvio no gerenciamento único > sem link manual ao operador e sem caminho de acesso separado  381ms
+ ✓ src/test/catalogo/ficha-ia-contract.test.ts (289 tests) 74ms
+ ✓ src/test/financeiro/receiptEmission.edgeReview.test.ts (10 tests) 448ms
+ ✓ src/test/monitoramento/alertas.test.ts (21 tests) 39ms
+ ✓ src/test/fiscal/fase_h4_a3.test.tsx (7 tests) 136ms
+ ✓ src/test/fiscal/fase_h5_a1.connectionsLinks.test.ts (9 tests) 17ms
+ ✓ src/test/fiscal/fiscalCatalogCombobox.test.tsx (7 tests) 712ms
+ ✓ src/test/catalogo/catalogLabelsPanelFlow.test.tsx (3 tests) 1121ms
+   ✓ painel de rótulos → leitor de exibição (fluxo real) > renomeação confirmada invalida o leitor sem invalidação manual  358ms
+   ✓ painel de rótulos → leitor de exibição (fluxo real) > PT409: sem nova escrita automática e revisão esperada só muda após ação do usuário  548ms
+ ✓ src/test/saas/plan-admin-user-matrix.test.tsx (44 tests) 386ms
+ ✓ src/test/comunicacao/tenant-smtp-lane-invoker-auth.test.ts (30 tests) 68ms
+ ✓ src/test/previsao/clima.test.ts (23 tests) 40ms
+ ✓ src/test/config/authzEnvironment.test.ts (9 tests) 27ms
+ ✓ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests) 28ms
+ ✓ src/test/fiscal/h7m.smokesHomologacao.test.ts (12 tests) 14ms
+ ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 18ms
+ ✓ src/test/financeiro/receiptPdfLayout.edge.test.ts (6 tests) 356ms
+ ✓ src/test/comunicacao/fase2-schema-onfarm.test.ts (11 tests) 25ms
+ ✓ src/test/comercial/campanhasComerciais.ui.test.tsx (8 tests) 1264ms
+   ✓ CampanhasComerciais — camada de interface > mantém Salvar desabilitado com campos obrigatórios vazios  309ms
+ ✓ src/test/cockpit-laboratorio/cacheScope.test.tsx (18 tests) 492ms
+   ✓ Cockpit scopes: real QueryClient, simulated Auth > real Cockpit executes only list RPC and purges legacy caches; never mounts operational children  343ms
+ ✓ src/test/fiscal/xmlEngineXsdBundle.test.ts (19 tests) 28ms
+ ✓ src/test/portalAcompanhamentoProdutor.test.tsx (10 tests) 839ms
+   ✓ Fase 10.1 — /portal/acompanhamento > (1-5) renderiza a tela com as 4 abas  825ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_3_4.test.ts (17 tests) 12ms
+ ✓ src/test/comunicacao/notification-push-contained.test.tsx (13 tests) 122ms
+ ✓ src/test/migration_integration.test.tsx (3 tests) 158ms
+ ✓ src/test/comercial/commercialKpisScope.test.tsx (7 tests) 352ms
+ ✓ src/test/fiscal/draftSaveCasClient.test.tsx (14 tests) 115ms
+ ✓ src/test/config/usuariosListQuery.test.ts (18 tests) 22ms
+ ✓ src/test/saas/navigation-inventory.test.tsx (115 tests) 124ms
+ ✓ src/test/catalogo/catalogo-fase27e-certificacao-final.test.ts (17 tests) 21ms
+ ✓ src/test/security/h9dl3r2-customer-statement-live-columns.static.test.ts (10 tests) 12ms
+ ✓ src/test/catalogo/solidPackPriceSave.test.tsx (23 tests) 1122ms
+ ✓ src/test/catalogo/catalogLabelDisplay.test.tsx (6 tests) 382ms
+ ✓ src/test/config/partnerUsers.session.test.tsx (14 tests) 879ms
+ ✓ src/test/estoque/stock-caller-compatibility.test.ts (12 tests) 25ms
+ ✓ src/test/visita/recomendacaoSyncContract.test.ts (40 tests) 197ms
+ ✓ src/test/comercial/commercial-alerts-prices-feedback.test.tsx (8 tests) 1181ms
+ ✓ src/test/visita/campoSyncRuntimeGate.test.tsx (14 tests) 340ms
+ ✓ src/test/saas/b2b-catalog-scope-fix.test.ts (8 tests) 58ms
+ ✓ src/test/catalogo/catalogo-item-drawer.test.tsx (16 tests) 13ms
+ ✓ src/test/equipe-tecnica/evidencias.test.ts (18 tests) 15ms
+ ✓ src/test/estoque/motor-estoque-fase28c.test.ts (39 tests) 24ms
+ ✓ src/test/mobilePerfil.hardening.test.tsx (8 tests) 298ms
+ ✓ src/test/security/zip.review.test.ts (11 tests) 100ms
+ ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 410ms
+ ✓ src/test/fiscal/h14PostAudit.test.ts (11 tests) 206ms
+ ✓ src/test/ordens-servico/cq-phase-trace.test.tsx (17 tests) 766ms
+ ✓ src/test/fiscal/fase3_12.static.test.ts (34 tests) 19ms
+ ✓ src/test/catalogo/globalCatalogReadOnly.render.test.tsx (6 tests) 862ms
+   ✓ catálogo global somente consulta (render real, Administrador de empresa) > Produtos: não usa lista global nem oferece exclusão/DML global  381ms
+ ✓ src/test/saas/superadmin-home-plataforma.test.ts (14 tests) 16ms
+ ✓ src/test/security/clientDocumentLoader.review.test.ts (12 tests) 105ms
+ ✓ src/test/fiscal/useFiscalFieldFocus.test.tsx (9 tests) 92ms
+ ✓ src/test/visita/wizardRecomendacaoSelection.test.tsx (4 tests) 1509ms
+   ✓ seleção de recomendação por identidade > oferece químicos/adubos e preserva oculto histórico sem oferecer nova seleção  782ms
+   ✓ seleção de recomendação por identidade > flag químico legado pode ser desmarcado sem reparo automático  399ms
+ ✓ src/test/multiportal.contexts.session.test.tsx (15 tests) 3703ms
+   ✓ contextos com QueryClient real > payload inválido null não se torna negativa explícita  1018ms
+   ✓ contextos com QueryClient real > payload inválido {} não se torna negativa explícita  1020ms
+   ✓ contextos com QueryClient real > payload inválido {"available_contexts":[],"has_technical_access":"false"} não se torna negativa explícita  1020ms
+ ✓ src/test/security/h9e1-visit-status-convergence.static.test.ts (7 tests) 14ms
+ ✓ src/test/config/authzTimeout10s.test.ts (4 tests) 28ms
+ ✓ src/test/financeiro/contasReceberLacunas.test.ts (14 tests) 15ms
+ ✓ src/test/config/authzV6.edges.test.ts (5 tests) 326ms
+ ✓ src/test/security/h9dl3r-report-columns-active-scope.static.test.ts (9 tests) 11ms
+ ✓ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests) 27ms
+ ✓ src/test/navigation/sidebar-adequacoes.test.tsx (11 tests) 18ms
+ ✓ src/test/fiscal/sinief49/crossCutting.test.ts (13 tests) 17ms
+ ✓ src/test/config/authzV6.candidates.test.ts (15 tests) 68ms
+ ✓ src/test/catalogo/h3b-preco-canonico-fichas.test.ts (13 tests) 15ms
+ ✓ src/test/fiscal/fase8.xsd.icms20.test.ts (3 tests) 176ms
+ ✓ src/test/cq/consulta.test.ts (21 tests) 47ms
+ ✓ src/test/visita/recomendacaoWizardSave.test.tsx (4 tests) 1236ms
+   ✓ salvar criação sem produto/encaminhamento usa versão1 e limpa só após recibo  503ms
+ ✓ src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx (24 tests) 131ms
+ ✓ src/test/config/userLinks.test.ts (25 tests) 21ms
+ ✓ src/test/equipe-tecnica/attachmentLeaseDeadline.test.tsx (5 tests) 65ms
+ ✓ src/test/financeiro/b2bFinancial.session.test.tsx (14 tests) 767ms
+ ✓ src/test/comunicacao/fase1.test.ts (19 tests) 22ms
+ ✓ src/test/fiscal/invoice_items_state_guard.test.ts (17 tests) 14ms
+ ✓ src/test/security/h9gr-visit-log-canonico.static.test.ts (9 tests) 13ms
+ ✓ src/test/financeiro/contasReceber.test.ts (16 tests) 38ms
+ ✓ src/test/security/h7p-repo-only-migrations.static.test.ts (9 tests) 15ms
+ ✓ src/test/config/authzRenewalMargin.test.ts (7 tests) 293ms
+ ✓ src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx (7 tests) 1807ms
+   ✓ ClienteDocumentosTab — abridor autenticado incondicional > gate Blob ativo e happy path prepara/baixa sem URL assinada, popup ou submit  463ms
+ ✓ src/test/config/portalCliente.session.test.tsx (13 tests) 620ms
+ ✓ src/test/fiscal/sinief49/valueReduction.test.ts (6 tests) 16ms
+ ✓ src/test/ordens-servico/formProgression.test.tsx (2 tests) 2622ms
+   ✓ Nova OS — progressão do formulário real com transporte fake, sem escrita hosted > filtra familyNULL/dose100 e biológico sem dose, deixando somente sintético fabricável  1376ms
+   ✓ Nova OS — progressão do formulário real com transporte fake, sem escrita hosted > permite escolher fazenda e talhão antes de completar o submit  1241ms
+ ✓ src/test/config/commercialOwnOrders.session.test.tsx (16 tests) 596ms
+ ✓ src/test/catalogo/globalCatalogContainment.test.ts (16 tests) 33ms
+ ✓ src/test/estoque/stock-p1-containment.test.ts (9 tests) 15ms
+ ✓ src/test/config/connection-binding.static.test.ts (9 tests) 12ms
+ ✓ src/test/catalogo/catalogo-fase27b-useCatalogoUnificado.test.ts (13 tests) 14ms
+ ✓ src/test/security/h9dl3r3-deliveries-report-net-cash.static.test.ts (10 tests) 12ms
+ ✓ src/test/fiscal/transportPersistenceSafety.test.ts (9 tests) 17ms
+ ✓ src/test/fiscal/h7c.asn1Screen.test.ts (14 tests) 59ms
+ ✓ src/test/ordens-servico/validacao.test.ts (36 tests) 117ms
+ ✓ src/test/config/myPartner.session.test.tsx (7 tests) 408ms
+ ✓ src/test/visita/recomendacaoOfflineIntegration.test.tsx (6 tests) 290ms
+ ✓ src/lib/b2bSla.test.ts (12 tests) 24ms
+ ✓ src/test/comunicacao/fase2-4-hardening.test.ts (20 tests) 23ms
+ ✓ src/test/saas/subscription-transition-timeout.test.ts (8 tests) 33ms
+ ✓ src/test/comunicacao/notif3-global-containment.test.ts (7 tests) 488ms
+ ✓ src/test/catalogo/catalogFamilyRead.test.tsx (11 tests) 315ms
+ ✓ src/test/equipe-tecnica/AttachmentOpener.ownership.test.tsx (7 tests) 258ms
+ ✓ src/test/cq/hardening.test.tsx (10 tests) 433ms
+   ✓ CQ hardening local — sem banco > erro imediato associado aos campos, sem vazio enganoso nem nova consulta  418ms
+ ✓ src/test/config/edicaoUsuario.test.ts (14 tests) 16ms
+ ✓ src/test/fiscal/rpc_financial_document_soft_delete.test.ts (10 tests) 17ms
+ ✓ src/test/comunicacao/fase2-attempts.test.ts (8 tests) 9ms
+ ✓ src/test/saas/d51-gate.test.ts (10 tests) 22ms
+ ✓ src/test/visita/visitaRouteGuard.test.tsx (9 tests) 153ms
+ ✓ src/test/visita/visitaPdfExportFence.test.tsx (8 tests) 62ms
+ ✓ src/test/catalogo/catalogo-fase27d-renderizacao.test.ts (14 tests) 13ms
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 876ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  869ms
+ ✓ src/test/fiscal/fase3_19_1.audit.test.ts (10 tests) 18ms
+ ✓ src/test/comunicacao/fase02-static.test.ts (6 tests) 409ms
+ ✓ src/test/dashboard-producao/producao.test.ts (13 tests) 60ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_2_6.test.ts (15 tests) 11ms
+ ✓ src/test/fiscal/cnpjAlpha.test.ts (13 tests) 20ms
+ ✓ src/test/saas/org-onboarding.test.ts (13 tests) 46ms
+ ✓ src/test/catalogo/catalogo-fase26f.certificacao.test.ts (12 tests) 10ms
+ ✓ src/test/equipe-tecnica/pagina.static.test.ts (14 tests) 16ms
+ ✓ src/test/executivo-p1.test.tsx (22 tests) 1190ms
+ ✓ src/test/portalGuard.authorization.test.tsx (9 tests) 111ms
+ ✓ src/test/portalB2BUsuariosClientes.contract.test.ts (7 tests) 82ms
+ ✓ src/test/catalogo/ficha-ia-client.test.ts (16 tests) 43ms
+ ✓ src/test/monitoramento/pageRuntimeGate.test.tsx (5 tests) 973ms
+   ✓ página envia origem+versão 3 e timestamp observado pelo contrato v2, PT409 não repete  568ms
+ ✓ src/test/cockpit-laboratorio/refinamentos.test.tsx (7 tests) 859ms
+   ✓ FinalizarOSButton > impede envio duplicado enquanto a primeira finalização está em andamento  370ms
+ ✓ src/test/visita/diagnosticPdfProposal.test.ts (9 tests) 204ms
+ ✓ src/test/integration/financeiro.estorno.test.ts (6 tests) 10ms
+ ✓ src/test/catalogo/authContextReceiver.realClient.test.ts (5 tests) 43ms
+ ✓ src/test/fiscal/fase3_19_5.canonical.test.ts (12 tests) 10ms
+ ✓ src/test/fiscal/fase3_20.migration.static.test.ts (9 tests) 17ms
+ ✓ src/test/fiscal/sinief49/deliveryRefusal.test.ts (6 tests) 11ms
+ ✓ src/test/financeiro/contaDrawerSaldoDocs.test.ts (8 tests) 13ms
+ ✓ src/test/equipe-tecnica/EvidenciasGallery.session.test.tsx (8 tests) 638ms
+ ✓ src/test/estoque/reserva-calc-fase28c.test.ts (17 tests) 12ms
+ ✓ src/test/envase/envasePageScope.test.tsx (5 tests) 2174ms
+   ✓ Envase mounted current-query fences > FSF clears immediately and refuses old history/products  360ms
+   ✓ Envase mounted current-query fences > unmount retires pending promises and realtime timers  1304ms
+ ✓ src/test/comunicacao/realtime-inapp-audit.test.ts (8 tests) 64ms
+ ✓ src/test/config/edicaoUsuarioDeadline.test.ts (8 tests) 35ms
+ ✓ src/test/fiscal/h17Readiness.test.ts (15 tests) 64ms
+ ✓ src/lib/geo.capture.test.ts (9 tests) 55ms
+ ✓ src/test/fiscal/fase3_21.migration.static.test.ts (8 tests) 22ms
+ ✓ src/test/fiscal/rls/mask.sql.test.ts (2 tests | 1 skipped) 3ms
+ ✓ src/test/saas/platformCatalogCompositionSql.test.ts (9 tests) 20ms
+ ✓ src/test/fiscal/xmlEngineCertificateStorage.test.ts (20 tests) 13ms
+ ✓ src/test/dashboard.visao-geral.resiliencia.test.tsx (5 tests) 536ms
+ ✓ src/test/comunicacao/gate5-inapp.test.ts (10 tests) 10ms
+ ✓ src/test/catalogo/c1bFichas.test.tsx (5 tests) 773ms
+ ✓ src/test/financeiro/receiptCancelCurrency.edge.test.ts (5 tests) 330ms
+ ✓ src/test/fiscal/fase3_16_2c.ui.test.tsx (4 tests) 511ms
+ ✓ src/test/protocolos/productTechnicalProfileReadOnly.test.tsx (3 tests) 982ms
+   ✓ contenção da edição B2B da ficha global > gestor comercial consulta o texto B2B sem escrita ou oferta de salvar  574ms
+ ✓ src/test/financeiro/novaContaDeadline.test.ts (11 tests) 37ms
+ ✓ src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx (4 tests) 75ms
+ ✓ src/test/fiscal/fase3_20_2.migration.static.test.ts (7 tests) 13ms
+ ✓ src/test/catalogo/tenantExclusiveCatalog.test.ts (8 tests) 13ms
+ ✓ src/test/comunicacao/fase2-5-correcao.test.ts (9 tests) 31ms
+ ✓ src/test/catalogo/h3c-fonte-canonica-preco.test.ts (10 tests) 23ms
+ ✓ src/pwa/PwaManualCheckButton.test.tsx (7 tests) 417ms
+ ✓ src/test/config/commercialRegistration.producer.test.tsx (4 tests) 1486ms
+   ✓ produtor próprio cria com UUID, sem atribuir empresa pelo formulário  609ms
+   ✓ produtor não mostra resultado antigo após troca: sucesso  363ms
+ ✓ src/test/navigation.fase4.test.ts (6 tests) 25ms
+ ✓ src/test/entregas/deliverySendPersistence.test.ts (11 tests) 17ms
+ ✓ src/test/fiscal/h7a.certificateRef.static.test.ts (6 tests) 10ms
+ ✓ src/test/comunicacao/d51-2-f-saas-isolation.test.ts (7 tests) 13ms
+ ✓ src/test/visita/acoesPersistencia.test.ts (10 tests) 13ms
+ ✓ src/test/saas/d51-unified-onboarding.test.ts (5 tests) 9ms
+ ✓ src/test/catalogo/catalogo-fase28a-pos-certificacao.test.ts (11 tests) 18ms
+ ✓ src/test/saas/limits-backoffice-scope.test.tsx (3 tests) 849ms
+   ✓ Limites de uso do plano — editor > agrupa por módulo/funcionalidade, mostra unidade e estados, sem JSON  827ms
+ ✓ src/test/security/d51-5-p1-fiscal.test.ts (4 tests) 8ms
+ ✓ src/test/config/runtimeHarnessCanonicalLock.test.ts (15 tests) 14ms
+ ✓ src/test/planejamento-producao/publicacao-idempotente.test.ts (11 tests) 16ms
+ ✓ src/test/visita/wizardNavigation.optionalAttachments.test.tsx (6 tests) 3017ms
+   ✓ navega às etapas 7 e 8 com recomendação persistida e zero anexos sem mutação  780ms
+   ✓ preserva leitura sem mutações com workspace finalizado e registro local antigo  362ms
+   ✓ preserva leitura sem mutações com workspace enviado_aprovacao e registro local antigo  416ms
+   ✓ wizard-campo-flag ausente mantém 4 Diagnóstico bloqueado  582ms
+   ✓ wizard-diag-flag ausente mantém 5 Recomendação bloqueado  443ms
+   ✓ wizard-rec-flag ausente mantém 7 Revisão bloqueado  430ms
+ ✓ src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts (7 tests) 32ms
+ ✓ src/test/saas/d52-entitlements-ui.test.ts (7 tests) 13ms
+ ✓ src/test/pedidos/concurrentAttemptHook.test.tsx (4 tests) 310ms
+ ✓ src/test/equipe-tecnica/attachmentBlobGate.integration.test.tsx (2 tests) 284ms
+ ✓ src/test/catalogo/catalogo-fase27c-listagem-kpis.test.ts (11 tests) 15ms
+ ✓ src/test/fiscal/certificateExpiryStatus.test.ts (10 tests) 11ms
+ ✓ src/test/catalogo/h3-base-tecnica-catalogo.test.ts (9 tests) 13ms
+ ✓ src/test/saas/useEntitlements.test.tsx (10 tests) 1609ms
+   ✓ D52 P0 — decisão server-side de entitlements > mantém erro fail-closed sem consultar features  1029ms
+ ✓ src/test/b2bTecnicoCampo.permissions.test.ts (12 tests) 11ms
+ ✓ src/test/fiscal/revoke_structural_privileges.test.ts (7 tests) 17ms
+ ✓ src/test/comercial/partnerOrderFlowArbio.audit.test.ts (6 tests) 15ms
+ ✓ src/test/security/h9c-applied-forwards.static.test.ts (6 tests) 26ms
+ ✓ src/test/fiscal/rls/harness.test.ts (4 tests | 2 skipped) 7ms
+ ✓ src/test/fiscal/h7b.idempotencia.test.ts (9 tests) 25ms
+ ✓ src/test/fiscal/sinief49/staging/guard.test.ts (10 tests) 7ms
+ ✓ src/test/ordens-servico/approval.test.tsx (10 tests) 1181ms
+   ✓ aprovação existente — transporte fake, não homologação > usa assinatura existente e bloqueia duplo clique sem iniciar programação  397ms
+ ✓ src/test/catalogo/partnerOutletContext.test.tsx (5 tests) 262ms
+ ✓ src/test/catalogo/catalogo-fase27a-fontes-canonicas.test.ts (14 tests) 50ms
+ ✓ src/test/catalogo/tenant-visibility-sql-candidate.test.ts (9 tests) 16ms
+ ✓ src/test/security/d51-5-p0c-portal-users.test.ts (6 tests) 11ms
+ ✓ src/test/navigation/useTabParam.test.tsx (9 tests) 79ms
+ ✓ src/test/fiscal/fase3_19_6.canonical.test.ts (16 tests) 16ms
+ ✓ src/test/security/h9c-secdef-least-privilege.static.test.ts (6 tests) 40ms
+ ✓ src/test/security/transport.review.test.ts (10 tests) 236ms
+ ✓ src/test/config/cultivofarm-runtime.static.test.ts (2 tests) 9305ms
+   ✓ CultivoFarm independente da geração Cloud > permite somente o cliente canônico e nenhum contrato gerenciado em produção  9289ms
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 106637ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  106633ms
+ ✓ src/test/financeiro/deliveryPendingReadOnly.test.tsx (6 tests) 918ms
+   ✓ marcação sem cobrança também permanece somente leitura  621ms
+ ✓ src/test/security/d51-2-publication-blocking-rls.test.ts (6 tests) 13ms
+ ✓ src/test/fiscal/fase3_21.resolver_micro.test.ts (6 tests) 9ms
+ ✓ src/test/fiscal/sinief49/staging/verifier.test.ts (4 tests) 22ms
+ ✓ src/test/fiscal/h7h.matrizStatusGuard.test.ts (14 tests) 23ms
+ ✓ src/test/comercial/matriz-simulacao.test.ts (7 tests) 26ms
+ ✓ src/test/agenda/agenda-grid.test.ts (11 tests) 15ms
+ ✓ src/test/visita/aprovacaoCard.read.test.tsx (3 tests) 329ms
+ ✓ src/test/offlineDb.claim.test.ts (5 tests) 32ms
+ ✓ src/test/saas/d52-subscription-lifecycle.test.ts (7 tests) 8ms
+ ✓ src/test/fiscal/homologacao_customer_picker.test.ts (11 tests) 12ms
+ ✓ src/test/aplicacoes/camera-dialog.test.tsx (5 tests) 402ms
+   ✓ CameraCaptureDialog: encerramento do stream em falhas > encerra todas as tracks quando video.play() rejeita e oferece o fallback  394ms
+ ✓ src/test/comunicacao/gate6-observabilidade.test.ts (8 tests) 8ms
+ ✓ src/test/fiscal/fase3_10.static.test.ts (15 tests) 41ms
+ ✓ src/test/financeiro/contasReceberTela.test.tsx (3 tests) 409ms
+ ✓ src/test/catalogo/partnerOrderDraftStore.test.ts (14 tests) 17ms
+ ✓ src/test/estoque/catalogo-volumes-fase28c.test.ts (12 tests) 49ms
+ ✓ src/test/navigation.fase6.test.ts (5 tests) 21ms
+ ✓ src/test/motorB2BRpcIntegration.test.ts (4 tests) 3690ms
+   ✓ Fase 12b — Motor B2B RPC integration > todas as RPCs existem e respondem (não retornam 404)  3252ms
+ ✓ src/test/protocolos/microrganismos-tab-cat08.test.ts (6 tests) 34ms
+ ✓ src/test/security/technicalAttachmentOpener.review.test.tsx (4 tests) 91ms
+ ✓ src/test/saas/d51-invite-email.test.ts (6 tests) 18ms
+ ✓ src/test/config/criacaoUsuarioReentrada.test.ts (5 tests) 38ms
+ ✓ src/test/lotes/gerar-lote-live-scope.test.tsx (6 tests) 863ms
+   ✓ formulário com useStorageAccessScope real, Auth/transporte sintéticos > role durante await descarta dados e resposta  398ms
+ ✓ src/test/saas/b2b-formal-header-projection.test.tsx (5 tests) 368ms
+ ✓ src/test/saas/meuPlano.test.ts (8 tests) 37ms
+ ✓ src/test/config/producerWorkspace.session.test.tsx (4 tests) 235ms
+ ✓ src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx (3 tests) 1360ms
+   ✓ ClienteDocumentosTab dentro de form pai > Preparar não submete o form pai nem assina URL  720ms
+   ✓ ClienteDocumentosTab dentro de form pai > Excluir abre confirmação sem executar exclusão nem submeter  308ms
+   ✓ ClienteDocumentosTab dentro de form pai > Enviar com arquivo sem tipo nega por validação sem submeter  329ms
+ ✓ src/test/protocolos/base-tecnica.rename.test.ts (8 tests) 25ms
+ ✓ src/test/visita/pdfVisitaAuthenticated.test.ts (3 tests) 83ms
+ ✓ src/test/fiscal/bloco3_labels_pt_br.test.ts (4 tests) 9ms
+ ✓ src/test/fiscal/policyParityDiff.test.ts (6 tests) 15ms
+ ✓ src/test/comercial/assignmentPublication.test.tsx (3 tests) 296ms
+ ✓ src/test/financeiro/categorias.readOnly.test.tsx (4 tests) 314ms
+ ✓ src/test/financeiro/bateriaB2bOffline.test.ts (15 tests) 13ms
+ ✓ src/test/fiscal/h7j.deleteGuard.static.test.ts (7 tests) 14ms
+ ✓ src/test/comunicacao/gate4-consent-ui.test.ts (10 tests) 15ms
+ ✓ src/test/fiscal/ownedProductFiscal.test.ts (16 tests) 22ms
+ ✓ src/test/ui/masked-input-telefone.test.tsx (7 tests) 126ms
+ ✓ src/test/fiscal/sinief49/effectiveSale.test.ts (6 tests) 11ms
+ ✓ src/lib/portalDisplayLabel.test.ts (9 tests) 10ms
+ ✓ src/test/fiscal/mask.test.ts (9 tests) 10ms
+ ✓ src/test/ordens-servico/trace.test.tsx (6 tests) 180ms
+ ✓ src/test/saas/empresa-cadastro-completo.test.ts (7 tests) 26ms
+ ✓ src/test/catalogo/catalogo-errors.test.tsx (11 tests) 330ms
+   ✓ consultas atômicas > oculta KPIs na falha parcial e refaz todas as consultas no retry  314ms
+ ✓ src/test/visita/safeHome.test.ts (12 tests) 13ms
+ ✓ src/test/entregas/reservaDeferredRuntimeGate.test.tsx (6 tests) 68ms
+ ✓ src/test/visita/visitaRouteGuardContexto.test.tsx (5 tests) 107ms
+ ✓ src/test/portalParceiroSolicitacoes.test.tsx (9 tests) 10ms
+ ✓ src/test/fiscal/sinief49/advancePayment.test.ts (6 tests) 12ms
+ ✓ src/test/lib/inscricao-estadual-cadastro.test.tsx (20 tests) 272ms
+ ✓ src/test/config/externalUserEditCandidate.test.ts (14 tests) 45ms
+ ✓ src/test/saas/meuPlanoTab.render.test.tsx (5 tests) 352ms
+ ✓ src/test/saas/plan-version-succession-editor.test.tsx (1 test) 1251ms
+   ✓ editor — versão publicada como origem de nova versão > carrega v1 como origem, avisa imutabilidade, cria v2 com draftId nulo e bloqueia publicar  1242ms
+ ✓ src/test/saas/b2b-p2a-commercial-preview.test.ts (14 tests) 11ms
+ ✓ src/test/config/ultimoAdminMensagens.test.ts (7 tests) 10ms
+ ✓ src/lib/visita/wizardWorkspaceState.test.ts (12 tests) 10ms
+ ✓ src/test/saas/useAlterarAssinatura.test.tsx (3 tests) 223ms
+ ✓ src/test/saas/onboarding-cnpj.test.ts (6 tests) 10ms
+ ✓ src/test/config/scopedPortalQuery.session.test.tsx (11 tests) 131ms
+ ✓ src/test/config/adminCatalogEdgeSecurity.test.ts (7 tests) 15ms
+ ✓ src/test/visita/portalRoleContext.test.ts (8 tests) 11ms
+ ✓ src/test/config/producerPages.session.test.tsx (5 tests) 323ms
+ ✓ src/test/cockpit-laboratorio/auditoria.test.ts (9 tests) 80ms
+ ✓ src/test/equipe-tecnica/consultores.test.ts (11 tests) 16ms
+ ✓ src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx (5 tests) 1111ms
+   ✓ serviço global — página real com leitores simulados > administrador apenas consulta e não recebe editor IBS/CBS  519ms
+ ✓ src/test/saas/recovery-flow.test.ts (5 tests) 11ms
+ ✓ src/test/config/adminPasswordPage.test.ts (2 tests) 13ms
+ ✓ src/test/fiscal/fase3_19_7.parity.test.ts (11 tests) 17ms
+ ✓ src/test/executivo-family-p1.test.tsx (2 tests) 117ms
+ ✓ src/test/catalogo/formatUnidades.guard.test.ts (90 tests) 73ms
+ ✓ src/test/offlineCheckinQueue.business.test.ts (4 tests) 15ms
+ ✓ src/test/multiportal.foundation.test.ts (11 tests) 11ms
+ ✓ src/test/fiscal/sinief49/stockLoss.test.ts (6 tests) 12ms
+ ✓ src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx (2 tests) 47ms
+ ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 595ms
+   ✓ reserva de embalagem com destino selecionado não envia nem anuncia sucesso  339ms
+ ✓ src/test/config/adminPassword.test.ts (17 tests) 19ms
+ ✓ src/test/portalProdutorPedidosSimulacoes.test.tsx (6 tests) 19ms
+ ✓ src/test/saas/portal-entitlement-gates.test.ts (4 tests) 10ms
+ ✓ src/test/fiscal/h7b.binding.static.test.ts (7 tests) 6ms
+ ✓ src/test/fiscal/fase3_20_2.rpc_associate_microorganism.test.ts (3 tests) 148ms
+ ✓ src/test/fiscal/fiscal_certificates_revoke_privileges.test.ts (5 tests) 15ms
+ ✓ src/test/fiscal/h7.sefazEndpoints.test.ts (9 tests) 23ms
+ ✓ src/test/multiportal.superadmin.test.tsx (3 tests) 96ms
+ ✓ src/pwa/PwaUpdateNotifier.test.tsx (4 tests) 354ms
+ ✓ src/test/visita/cabecalhoContexto.static.test.ts (7 tests) 12ms
+ ✓ src/test/saas/pos-d52-commercial-payment-foundation.test.ts (6 tests) 11ms
+ ✓ src/test/saas/c2-final-integrated-manual-postgres.test.ts (1 test) 100324ms
+   ✓ integrates reconciled origin, receipt lock order and the LIVE manual installments correction  100321ms
+ ✓ src/test/fiscal/h7k.preflight.static.test.ts (8 tests) 6ms
+ ✓ src/test/pedidos/pedidosB2BStatusFilter.test.tsx (6 tests) 48ms
+ ✓ src/test/fiscal/h7i.ingestaoCertificado.static.test.ts (4 tests) 142ms
+ ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 658ms
+   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  656ms
+ ✓ src/test/config/b2bProvisioning.proposal.test.ts (15 tests) 9ms
+ ✓ src/test/catalogo/formatUnidades.test.ts (10 tests) 38ms
+ ✓ src/test/fiscal/h7e.corsAllowlist.static.test.ts (6 tests) 11ms
+ ✓ src/test/integration/biAgronomico.problemaSelector.test.tsx (2 tests) 241ms
+ ✓ src/test/financeiro/receivableSemantics.test.ts (7 tests) 7ms
+ ✓ src/test/fiscal/sinief49/integration.static.test.ts (5 tests) 14ms
+ ✓ src/test/fluxo-tecnico/osOnfarmQueryProposal.test.tsx (2 tests) 374ms
+ ✓ src/test/navigation.fase7-2.test.ts (10 tests) 19ms
+ ✓ src/test/integration/previsaoClimatica.problemaSelector.test.tsx (2 tests) 243ms
+ ✓ src/test/navigation.fase6-1.test.ts (10 tests) 13ms
+ ✓ src/test/auth/loginLogo.test.tsx (4 tests) 379ms
+ ✓ src/test/saas/c2-order-concurrency-postgres.test.ts (1 test) 133326ms
+   ✓ serializes canonical orders and billing with two real local PostgreSQL connections  133323ms
+ ✓ src/test/config/userLinksQuery.test.ts (5 tests) 17ms
+ ✓ src/test/lib/phone-normalization.test.ts (10 tests) 13ms
+ ✓ src/test/catalogo/partnerFingerprint.test.ts (8 tests) 26ms
+ ✓ src/test/envase/envasePageReadOnly.test.tsx (2 tests) 751ms
+   ✓ EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history  416ms
+   ✓ EnvasePage contained independent contracts > keeps existing label view and print available without calling a writer  333ms
+ ✓ src/test/saas/assinatura-legada-regularizacao.test.ts (6 tests) 6ms

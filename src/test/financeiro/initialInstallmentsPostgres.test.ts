@@ -1,8 +1,9 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { expect, it } from "vitest";
 
-it("creates exact immutable installments once, with tenant isolation and full transaction rollback", () => {
-  const output = execFileSync("python3", ["scripts/financial-installments-initial-20261024/test-local.py"], { encoding: "utf8", timeout: 180_000 });
+it("creates exact immutable installments once, with tenant isolation and full transaction rollback", async () => {
+  const { stdout: output } = await promisify(execFile)("python3", ["scripts/financial-installments-initial-20261024/test-local.py"], { encoding: "utf8", timeout: 180_000 });
   for (const kind of ["receivable", "payable"]) {
     expect(output).toContain(`baseline ${kind} 1/3 snapshot failure`);
     expect(output).toContain(`${kind} b 1/3 exact initial cents`);

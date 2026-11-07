@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /tmp/probe
+
+ ✓ await65.probe.ts (2 tests) 65074ms
+   ✓ async wait 65s  65066ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:27:48
+   Duration  74.36s (transform 139ms, setup 0ms, collect 99ms, tests 65.07s, environment 1ms, prepare 3.81s)
+
+JSON report written to /tmp/probe/await65.json
