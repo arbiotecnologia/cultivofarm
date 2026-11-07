@@ -265,7 +265,7 @@ BEGIN
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
     END IF;
     IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
-      IF d.sig = '{SIG}' THEN
+      IF d.sig IN ('{SIG}', '{DECISION_SOURCES["approve"]["signature"]}', '{DECISION_SOURCES["reject"]["signature"]}') THEN
         RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
       END IF;
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;
