@@ -242,9 +242,11 @@ def acl_md5(acl):
     return hashlib.md5("|".join(lines).encode()).hexdigest()
 
 
-def assertions(expected_request):
-    request = captured(REQUEST_SOURCE, BASE_MD5)
-    rows = [(SIG, expected_request, request["owner"], acl_md5(request["acl"]))]
+def assertions(expected_writers):
+    rows = []
+    for kind, meta in DECISION_SOURCES.items():
+        row = captured(meta["source"], meta["md5"])
+        rows.append((meta["signature"], expected_writers[kind], row["owner"], acl_md5(row["acl"])))
     for reg, (source_signature, md5, _) in DEPENDENCIES.items():
         row = captured(source_signature, md5)
         rows.append((reg, md5, row["owner"], acl_md5(row["acl"])))
