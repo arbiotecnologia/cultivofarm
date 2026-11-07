@@ -4,7 +4,7 @@
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "hosted": "NOT_RUN",
   "historical_candidate_sha256": "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894",
-  "candidate_sha256": "b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47",
+  "candidate_sha256": "818da9e4f001494bdc50c2265e3adfa9d04ec3cd421454c3e1a2ce7ca17b6a8b",
   "object_count": 56,
   "objects": [
     {
@@ -16,8 +16,8 @@
       },
       "candidate": {
         "signature": "platform_private.b2b_allocate_document(uuid)",
-        "body_md5": "a7545cf361685a5ebd92e9dc983ce934",
-        "definition_sha256": "16dafcdf5d0fd8f9b842f763ceda08f5e0656b7754a855a0f5eea7a7c689f141",
+        "body_md5": "cc539ca8c501af53a528d66b810aecd8",
+        "definition_sha256": "96ef3ddcbe48d2ecf447853257027453c08ca98e7c87d4d7c23be4fa831b94e5",
         "owner": "postgres",
         "acl": "OWNER_ONLY"
       }

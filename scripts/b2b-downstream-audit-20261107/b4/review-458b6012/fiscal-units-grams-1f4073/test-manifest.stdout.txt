@@ -1,13 +1,13 @@
-FAIL gerado determinístico: b4-candidate.sql.review :: 
-FAIL gerado determinístico: 01-pre.sql.readonly :: 
-FAIL gerado determinístico: 02-install.sql.review :: 
-FAIL gerado determinístico: 03-post.sql.readonly :: 
-FAIL gerado determinístico: 04-rollback-deny.sql.review :: 
+PASS gerado determinístico: b4-candidate.sql.review
+PASS gerado determinístico: 01-pre.sql.readonly
+PASS gerado determinístico: 02-install.sql.review
+PASS gerado determinístico: 03-post.sql.readonly
+PASS gerado determinístico: 04-rollback-deny.sql.review
 PASS gerado determinístico: b4-pins.json
-FAIL gerado determinístico: SHA256SUMS :: 
+PASS gerado determinístico: SHA256SUMS
 PASS gerado determinístico: live-readonly-4097d4e2.json
 PASS gerado determinístico: live-readonly-manual-null-1813.json
-FAIL gerado determinístico: b4-object-manifest.json :: 
+PASS gerado determinístico: b4-object-manifest.json
 PASS status permanece inativo/bloqueado/não aprovado
 PASS manifesto cobre 56 alterações sem contagem de testes sobreposta
 PASS histórico 63 preservado byte a byte
@@ -57,4 +57,4 @@ PASS funções novas não herdam EXECUTE de PUBLIC
 PASS rollback é deny-only e exige POST completo
 PASS impacto em dados LIVE continua bloqueio explícito
 PASS hashes gerados cobrem os artefatos
-52/59
+59/59
