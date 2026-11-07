@@ -108,12 +108,12 @@
     {
       "name": "PRE confirma writers/índice e ausência de todos os overloads da projeção",
       "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:33: ERROR:  B4_PRE_SHARED_ACL:public.tg_auto_b2b_receivable()\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\n"
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:40: ERROR:  B4_PRE_TABLE_ACL\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE\n"
     },
     {
       "name": "instalação descartável cria projeção nova e passa PRE+POST íntegros",
       "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:36: ERROR:  B4_PRE_SHARED_ACL:public.tg_auto_b2b_receivable()\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\n"
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:43: ERROR:  B4_PRE_TABLE_ACL\nCONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE\n"
     },
     {
       "name": "POST confirma exatamente um overload owner-only e metadata completa",
@@ -123,7 +123,7 @@
     {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  invalid input syntax for type oid: \"platform_private.b2b_integration_dependencies()\"\\nLINE 1: SELECT pg_get_functiondef(\\'platform_private.b2b_integration_...\\n                                  ^\\n')"
+      "detail": "RuntimeError('ERROR:  function \"platform_private.b2b_integration_dependencies()\" does not exist\\nLINE 1: SELECT pg_get_functiondef(\\'platform_private.b2b_integration_...\\n                                  ^\\n')"
     }
   ],
   "hosted": "NOT_RUN",

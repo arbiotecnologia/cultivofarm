@@ -20,13 +20,13 @@ PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
 PASS fixture contábil pendente separada
-FAIL PRE confirma writers/índice e ausência de todos os overloads da projeção :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:33: ERROR:  B4_PRE_SHARED_ACL:public.tg_auto_b2b_receivable()
-CONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE
+FAIL PRE confirma writers/índice e ausência de todos os overloads da projeção :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:40: ERROR:  B4_PRE_TABLE_ACL
+CONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE
 
-FAIL instalação descartável cria projeção nova e passa PRE+POST íntegros :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:36: ERROR:  B4_PRE_SHARED_ACL:public.tg_auto_b2b_receivable()
-CONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE
+FAIL instalação descartável cria projeção nova e passa PRE+POST íntegros :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:43: ERROR:  B4_PRE_TABLE_ACL
+CONTEXT:  PL/pgSQL function inline_code_block line 6 at RAISE
 
 FAIL POST confirma exatamente um overload owner-only e metadata completa :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/03-post.sql.readonly:12: ERROR:  B4_POST_SHARED_BODY:public.fn_b2b_credit_exposure(uuid,numeric,uuid)
 CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
 
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  invalid input syntax for type oid: "platform_private.b2b_integration_dependencies()"\nLINE 1: SELECT pg_get_functiondef(\'platform_private.b2b_integration_...\n                                  ^\n')
+FAIL execução sem exceção de harness :: RuntimeError('ERROR:  function "platform_private.b2b_integration_dependencies()" does not exist\nLINE 1: SELECT pg_get_functiondef(\'platform_private.b2b_integration_...\n                                  ^\n')
