@@ -68,6 +68,16 @@ def function_pin(entry, expected=None):
 END$$;"""
 
 
+def dependency_pin(entry):
+    sig = entry["signature"]
+    return f"""DO $$DECLARE p oid:=to_regprocedure({lit(sig)});BEGIN
+ IF p IS NULL THEN RAISE EXCEPTION 'FINISHED_PRE_DEPENDENCY_MISSING {sig}';END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM {lit(entry['md5'])} THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT {sig}';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM {lit(entry['owner'])} THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT {sig}';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM {lit(entry['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT {sig}';END IF;
+END$$;"""
+
+
 def trigger_pin(entry):
     label = f"{entry['schema']}.{entry['table']}.{entry['name']}"
     return f"""DO $$DECLARE d text;e text;ty smallint;BEGIN
