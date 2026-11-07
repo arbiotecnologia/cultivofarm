@@ -20,7 +20,7 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 108,
+  "passed": 112,
   "total": 112,
   "checks": [
     {
@@ -177,23 +177,19 @@
     },
     {
       "name": "crédito: limite zero sem exposição positiva não é NO_LIMIT_DEFINED",
-      "ok": false,
-      "detail": "ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment"
+      "ok": true
     },
     {
       "name": "crédito: limite zero bloqueia exposição positiva como limite excedido",
-      "ok": false,
-      "detail": "ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment"
+      "ok": true
     },
     {
       "name": "crédito: limite zero com aprovação mantém LIMIT_EXCEEDED_APPROVAL",
-      "ok": false,
-      "detail": "ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment"
+      "ok": true
     },
     {
       "name": "crédito: título local positivo com limite zero é negado sem nascer",
-      "ok": false,
-      "detail": "ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment\nPL/pgSQL function platform_private.b2b_shared_receivable_credit_guard() line 55 at assignment\n"
+      "ok": true
     },
     {
       "name": "crédito: NULL permanece configuração ausente/inválida e fechada",

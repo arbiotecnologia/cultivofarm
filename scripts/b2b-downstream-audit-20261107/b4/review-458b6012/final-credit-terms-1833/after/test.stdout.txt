@@ -36,24 +36,10 @@ PASS gate fiscal/contábil não comprovado permanece fechado
 PASS cliente não invoca alocador privado
 PASS stub operacional existe só no harness depois da negação real
 PASS crédito: zero é configuração válida, não limite_nao_definido
-FAIL crédito: limite zero sem exposição positiva não é NO_LIMIT_DEFINED :: ERROR:  MONEY_ORIGIN_UNPROVEN
-CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE
-PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment
-PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
-FAIL crédito: limite zero bloqueia exposição positiva como limite excedido :: ERROR:  MONEY_ORIGIN_UNPROVEN
-CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE
-PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment
-PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
-FAIL crédito: limite zero com aprovação mantém LIMIT_EXCEEDED_APPROVAL :: ERROR:  MONEY_ORIGIN_UNPROVEN
-CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE
-PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment
-PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
-FAIL crédito: título local positivo com limite zero é negado sem nascer :: ERROR:  MONEY_ORIGIN_UNPROVEN
-CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE
-PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 13 at assignment
-PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
-PL/pgSQL function platform_private.b2b_shared_receivable_credit_guard() line 55 at assignment
-
+PASS crédito: limite zero sem exposição positiva não é NO_LIMIT_DEFINED
+PASS crédito: limite zero bloqueia exposição positiva como limite excedido
+PASS crédito: limite zero com aprovação mantém LIMIT_EXCEEDED_APPROVAL
+PASS crédito: título local positivo com limite zero é negado sem nascer
 PASS crédito: NULL permanece configuração ausente/inválida e fechada
 PASS crédito: exposição com limite NULL falha fechado
 PASS crédito: negativo permanece configuração ausente/inválida e fechada

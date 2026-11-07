@@ -1,0 +1,3 @@
+usage: test-b4-fiscal-units.py [-h] --phase {before,after}
+                               [--candidate CANDIDATE]
+test-b4-fiscal-units.py: error: the following arguments are required: --phase
