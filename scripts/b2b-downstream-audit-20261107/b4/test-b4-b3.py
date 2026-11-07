@@ -315,7 +315,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         document(internal_doc, internal_order, internal_item, 1)
         deny("pedido interno não autorizado pelo downstream B4 é contido", allocate(B3.UADM, internal_doc), "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED")
         check("contenção interna não cria título nem alocação", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{internal_order}')+(SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{internal_order}')").stdout.strip() == "0")
-        deny("writer integral antigo também permanece fechado para pedido interno", call(B3.UADM, f"public.generate_b2b_receivable_secure('{internal_order}')"), "B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED")
+        deny("writer integral antigo também permanece fechado para pedido interno", call(B3.UADM, f"public.generate_b2b_receivable_secure('{internal_order}')"), "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED")
 
         before = exposure()
         data, error = allocate(B3.UADM, DOCS[0])
