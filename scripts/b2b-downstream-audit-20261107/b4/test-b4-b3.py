@@ -56,7 +56,9 @@ def call(uid, expression):
 
 def server_call(uid, expression):
     """Adaptador local privilegiado: GUC sintético, sem SET ROLE; não prova JWT/RLS."""
-    return B3.out(B3.psql(f"SELECT set_config('request.jwt.claim.sub','{uid}',false) \\g /dev/null\nSELECT ({expression})::text;"))
+    command = B3.SP.su() + ["psql", "-X", "-q", "-t", "-A", "-h", B3.SP.SOCK[0], "-p", B3.SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1"]
+    result = subprocess.run(command, input=f"SELECT set_config('request.jwt.claim.sub','{uid}',false) \\g /dev/null\nSELECT ({expression})::text;", text=True, capture_output=True)
+    return B3.out(result)
 
 
 def deny(name, result, token):
