@@ -44,7 +44,7 @@ def main():
     index = "public.ux_ar_one_active_per_b2b_order"
 
     check("status permanece inativo/bloqueado/não aprovado", manifest["status"] == "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED")
-    check("manifesto cobre 54 alterações sem contagem de testes sobreposta", manifest["object_count"] == len(objects) == 54)
+    check("manifesto cobre 55 alterações sem contagem de testes sobreposta", manifest["object_count"] == len(objects) == 55)
     check("histórico 63 preservado byte a byte", hashlib.sha256((HISTORICAL / "b4-candidate.sql.review").read_bytes()).hexdigest() == R.EXPECTED_HISTORICAL_SHA256)
     check("histórico não é promovido nem somado", "63/63 históricos preservados separadamente e não somados" in manifest["limitations"])
     check("ref canônico explícito", manifest["canonical_ref"] == "swzpzcwiasxmjutrmvkm" and manifest["hosted"] == "NOT_RUN")
