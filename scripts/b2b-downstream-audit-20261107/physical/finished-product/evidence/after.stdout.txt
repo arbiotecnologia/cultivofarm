@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=1.9s
+CHECKPOINT sql_calls=1 elapsed=2.5s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -12,7 +12,7 @@ PASS fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa
 PASS quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: envio/confirmação/replays idempotentes sem segunda baixa
 PASS fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
-CHECKPOINT sql_calls=100 elapsed=13.3s
+CHECKPOINT sql_calls=100 elapsed=16.8s
 PASS fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa
 PASS parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros
 PASS 0,5 embalagem é negada na reserva whole-pack
