@@ -102,7 +102,7 @@ def main():
     check("impacto em dados LIVE continua bloqueio explícito", "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release" in manifest["limitations"])
     check("hashes gerados cobrem os artefatos", all(hashlib.sha256(text.encode()).hexdigest() in files["SHA256SUMS"] for name, text in files.items() if name != "SHA256SUMS"))
 
-    report = {"kind": "STATIC_B4_REVIEW_4097D4E2_NO_HOSTED", "status": manifest["status"],
+    report = {"kind": "STATIC_B4_REVIEW_MANUAL_NULL_1813_NO_HOSTED", "status": manifest["status"],
               "historical_63_added": False, "passed": sum(x["ok"] for x in CHECKS), "total": len(CHECKS), "checks": CHECKS}
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "evidence-manifest-tests.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
