@@ -1,3 +1,7 @@
+## 07/11 — Cotação incompleta e coerência do vencimento (somente local)
+- [ ] Restaurar count pelo gerador; provar parcial/duplicado/estrangeiro/vazio e positivo completo em INSTALL e rollback deny-only.
+- [ ] Provar rejeição de prazo acima do plano e igualdade terms/schedule; regenerar pins e executar B3, sem produção/publicação.
+
 ## 07/11 — Timeout onTaskUpdate da suíte (infraestrutura de teste)
 - [x] Causa comprovada: execFileSync > 60 s em dois testes PG bloqueava o RPC do worker; sonda 65/55 s e foco pré-correção exit 1 preservados.
 - [x] Correção: execFile assíncrono (asserções inalteradas), pool forks removido, guarda estática; foco exit 0 e suíte completa exit 0 sem unhandled.

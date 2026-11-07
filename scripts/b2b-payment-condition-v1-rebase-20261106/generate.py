@@ -725,7 +725,8 @@ def build_quote(rollback=False):
               "    v_cond := platform_private.b2b_resolve_condition(v_order.partner_id,v_plan.id,v_choice,true);\n"
               "  END IF;\n"
               "  -- (2) credito do parceiro, somente depois da versão (não inverter create/config_publish/quote).\n"
-              "  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_order.partner_id::text, 0));", "Q4 versão antes do crédito")
+              "  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_order.partner_id::text, 0));\n\n"
+              "  SELECT count(*) INTO v_count_items FROM public.partner_order_items WHERE order_id = p_order_id;", "Q4 versão antes do crédito; preservar contagem para negar cotação parcial/vazia")
     s = delta(s, "  SELECT COALESCE(SUM(subtotal),0)::numeric(14,2) INTO v_table\n",
               "  IF v_has_condition THEN\n"
               "    SELECT jsonb_build_object('quote_required','false','lines',jsonb_agg(jsonb_build_object(\n"
