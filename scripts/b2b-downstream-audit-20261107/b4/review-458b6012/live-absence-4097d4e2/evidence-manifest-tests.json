@@ -2,7 +2,7 @@
   "kind": "STATIC_B4_REVIEW_4097D4E2_NO_HOSTED",
   "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "historical_63_added": false,
-  "passed": 48,
+  "passed": 49,
   "total": 49,
   "checks": [
     {
@@ -87,8 +87,7 @@
     },
     {
       "name": "índice compartilhado é DROP_AND_RECREATE com definição LIVE relatada",
-      "ok": false,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "todos os objetos têm baseline e candidato",

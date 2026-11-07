@@ -18,7 +18,7 @@ PASS projeção é CREATE com ausência LIVE relatada
 PASS não há baseline de projeção inventada
 PASS PRE exige zero overloads pelo catálogo pg_proc
 PASS POST exige exatamente um overload da projeção
-FAIL índice compartilhado é DROP_AND_RECREATE com definição LIVE relatada :: 
+PASS índice compartilhado é DROP_AND_RECREATE com definição LIVE relatada
 PASS todos os objetos têm baseline e candidato
 PASS objetos novos exigem ausência no PRE
 PASS inventário de funções cobre exatamente o corpo candidato
@@ -47,4 +47,4 @@ PASS funções novas não herdam EXECUTE de PUBLIC
 PASS rollback é deny-only e exige POST completo
 PASS impacto em dados LIVE continua bloqueio explícito
 PASS hashes gerados cobrem os artefatos
-48/49
+49/49

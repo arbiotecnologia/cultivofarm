@@ -1021,13 +1021,7 @@
       "baseline": {
         "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
         "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json",
-        "definition": {
-          "name": "ux_ar_one_active_per_b2b_order",
-          "table": "accounts_receivable",
-          "valid": true,
-          "unique": true,
-          "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
-        }
+        "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
       },
       "candidate": {
         "unique": true,
