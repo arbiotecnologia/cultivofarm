@@ -2,28 +2,33 @@
   "kind": "STATIC_B4_REVIEW_MANUAL_NULL_1813_NO_HOSTED",
   "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "historical_63_added": false,
-  "passed": 59,
+  "passed": 52,
   "total": 59,
   "checks": [
     {
       "name": "gerado determinístico: b4-candidate.sql.review",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: 01-pre.sql.readonly",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: 02-install.sql.review",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: 03-post.sql.readonly",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: 04-rollback-deny.sql.review",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: b4-pins.json",
@@ -31,7 +36,8 @@
     },
     {
       "name": "gerado determinístico: SHA256SUMS",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: live-readonly-4097d4e2.json",
@@ -43,7 +49,8 @@
     },
     {
       "name": "gerado determinístico: b4-object-manifest.json",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "status permanece inativo/bloqueado/não aprovado",
