@@ -41,6 +41,16 @@ DEPENDENCIES = {
         "048249c0c2106c3761e26eacb8d0de84",
         "platform_private.platform_actor_access_ready.048249c0.sql",
     ),
+    "platform_private.h15_actor_organization()": (
+        "platform_private.h15_actor_organization()",
+        "64e10608403238a41a9baf92857ca881",
+        "platform_private.h15_actor_organization.64e10608.sql",
+    ),
+    "public.h15_actor_organization()": (
+        "public.h15_actor_organization()",
+        "55edafec08bcc84a00f1526c14334a2c",
+        "public.h15_actor_organization.55edafec.sql",
+    ),
     "platform_private.entitlements_for_user(uuid)": (
         "platform_private.entitlements_for_user(_uid uuid)",
         "7f4ec7facaebbdf35444dd490fdebe56",
