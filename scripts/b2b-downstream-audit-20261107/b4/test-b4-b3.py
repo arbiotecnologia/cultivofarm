@@ -251,8 +251,17 @@ REVOKE ALL ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,tex
 ALTER TABLE public.partner_order_payment_schedule ADD COLUMN IF NOT EXISTS id uuid NOT NULL DEFAULT gen_random_uuid();""")
         B3.psql(f"""ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
 CREATE TABLE IF NOT EXISTS public.clientes(id uuid PRIMARY KEY,organization_id uuid);
-INSERT INTO public.clientes(id,organization_id) VALUES('{CUSTOMER}','{B3.A}') ON CONFLICT (id) DO NOTHING;
-UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
+INSERT INTO public.clientes(id,organization_id) VALUES
+('{CUSTOMER}','{B3.A}'),('{SHARED_CUSTOMER}','{B3.A}'),('{OTHER_CUSTOMER}','{B3.A}') ON CONFLICT (id) DO NOTHING;
+UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}';
+UPDATE public.partner_accounts SET client_id='{OTHER_CUSTOMER}' WHERE id='{B3.PO}';
+INSERT INTO public.partner_accounts(id,ativo,deleted_at,commercial_owner_organization_id,client_id) VALUES
+('{P_AMBIG_A}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}'),('{P_AMBIG_B}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}');
+INSERT INTO public.partner_financial_settings
+SELECT (jsonb_populate_record(NULL::public.partner_financial_settings,to_jsonb(s)||jsonb_build_object('id',gen_random_uuid(),'partner_id',x.partner_id))).*
+FROM public.partner_financial_settings s CROSS JOIN (VALUES
+('{B3.PO}'::uuid),('{P_AMBIG_A}'::uuid),('{P_AMBIG_B}'::uuid)) x(partner_id)
+WHERE s.partner_id='{B3.P}';""")
         for plan in [B3.P3, B3.PLQ]:
             data, error = B3.publish(B3.UFIN, plan, "boleto", B3.M_BOL, 30, 3, "1.8", 0)
             check("publicação B3 usada pelo B4", data is not None, error)
