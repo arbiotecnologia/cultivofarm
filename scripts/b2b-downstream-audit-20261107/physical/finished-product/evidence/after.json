@@ -1,5 +1,5 @@
 {
-  "status": "PASS",
+  "status": "FAIL",
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -19,98 +19,41 @@
       "status": "PASS"
     },
     {
-      "name": "gate fechado nega reserva de produto acabado",
+      "name": "aplicativo não tem EXECUTE na entrada privada de compra",
       "status": "PASS",
-      "detail": "FINISHED_PRODUCT_STOCK_CONTRACT_DENIED"
+      "detail": "permission denied for function finished_product_purchase_entry_v1"
     },
     {
-      "name": "quimico kg: pedido/OS → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL",
+      "name": "gate fechado nega compra/entrada interna",
       "status": "PASS",
-      "detail": {
-        "ml": null,
-        "qty": 2,
-        "unit": "kg",
-        "origin": "produto_acabado",
-        "content": 50
-      }
+      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
     },
     {
-      "name": "quimico kg: envio/confirmação/replays idempotentes sem segunda baixa",
-      "status": "PASS"
-    },
-    {
-      "name": "fertilizante g: pedido/OS → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL",
+      "name": "aplicativo não pode forjar ticket de compra",
       "status": "PASS",
-      "detail": {
-        "ml": null,
-        "qty": 2,
-        "unit": "g",
-        "origin": "produto_acabado",
-        "content": 50000
-      }
+      "detail": "permission denied for table authz_tickets"
     },
     {
-      "name": "fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa",
-      "status": "PASS"
-    },
-    {
-      "name": "quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000",
+      "name": "produto de outro tenant é negado antes de criar lote/estoque",
       "status": "PASS",
-      "detail": {
-        "ml": 2000.0,
-        "qty": 2,
-        "unit": "l",
-        "origin": "produto_acabado",
-        "content": 2
-      }
+      "detail": "FINISHED_PRODUCT_CATALOG_DENIED"
     },
     {
-      "name": "quimico l: envio/confirmação/replays idempotentes sem segunda baixa",
-      "status": "PASS"
-    },
-    {
-      "name": "fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000",
-      "status": "PASS",
-      "detail": {
-        "ml": 1000.0,
-        "qty": 2,
-        "unit": "ml",
-        "origin": "produto_acabado",
-        "content": 1000
-      }
-    },
-    {
-      "name": "fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa",
-      "status": "PASS"
-    },
-    {
-      "name": "parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros",
-      "status": "PASS"
-    },
-    {
-      "name": "0,5 embalagem é negada na reserva whole-pack",
+      "name": "compra de 0,5 embalagem é negada",
       "status": "PASS",
       "detail": "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED"
     },
     {
-      "name": "peso não pode ser gravado como volume_total",
-      "status": "PASS",
-      "detail": "finished_product_unit_contract"
-    },
-    {
-      "name": "B2B permanece fechado mesmo com produto acabado válido",
-      "status": "PASS",
-      "detail": "DELIVERY_SCOPE_DENIED"
-    },
-    {
-      "name": "nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação",
-      "status": "PASS"
-    },
-    {
-      "name": "POST confirma gate fechado após a bateria",
+      "name": "FAIL ERROR:  MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC\nCONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 62 at RAISE\nSQL statement \"INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)\n VALUES(v_lote,btrim(p_codigo_lote),p_produto_id,NULL,NULL,'aprovado',v_org,\n  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text)\"\nPL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 75 at SQL statement\n\nTraceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 101, in main\n    item = finished(group, unit, per_unit)\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 59, in finished\n    received = json.loads(B.last(purchase(item, quantity, key)))\n                          ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 61, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 57, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC\nCONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 62 at RAISE\nSQL statement \"INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)\n VALUES(v_lote,btrim(p_codigo_lote),p_produto_id,NULL,NULL,'aprovado',v_org,\n  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text)\"\nPL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 75 at SQL statement\n\n",
       "status": "PASS"
     }
   ],
   "hosted": false,
-  "real_nf_or_receivable": false
+  "real_nf_or_receivable": false,
+  "purchase_origin": "compra_produto_acabado_revenda",
+  "synthetic_seams": [
+    "Auth/claims e chamada interna privilegiada somente no PG descartável",
+    "schema de catálogo atual reconciliado na captura antiga; sem writers Owned ou preços",
+    "produtos/demanda/comprovantes fictícios; entrada e downstream com triggers reais"
+  ]
 }
