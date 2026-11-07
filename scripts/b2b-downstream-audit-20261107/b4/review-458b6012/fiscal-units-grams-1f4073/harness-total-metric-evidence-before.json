@@ -1,0 +1,698 @@
+{
+  "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
+  "phase": "before",
+  "candidate_sha256": "b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47",
+  "status": "REGRESSION_FAIL",
+  "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
+  "passed": 162,
+  "total": 168,
+  "checks": [
+    {
+      "name": "boot B3 com gatilhos reais",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "B3 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B3 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "condição B3 fictícia publicada",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "componente B4 executado somente no PG descartável",
+      "ok": true
+    },
+    {
+      "name": "stub operacional restrito ao harness",
+      "ok": true
+    },
+    {
+      "name": "writer REAL cria apresentação de 500 g recebendo 0,500 kg",
+      "ok": true
+    },
+    {
+      "name": "writer REAL grava 0,500 kg e rótulo dimensional de 500 g",
+      "ok": true
+    },
+    {
+      "name": "writer REAL define preço da embalagem sem preço por peso",
+      "ok": true
+    },
+    {
+      "name": "writer REAL nega whole-pack para produto líquido",
+      "ok": true
+    },
+    {
+      "name": "fixture 1: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN",
+      "ok": true
+    },
+    {
+      "name": "fixture 2: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "pedido REAL de 2 UN congela 0,500 kg por embalagem e preço total R$180",
+      "ok": false,
+      "detail": "{'unit': 'unidade', 'volume': None, 'quantity': 2.0, 'content_kg': 0.5, 'unit_price': 90.0, 'order_total': 186.52, 'display_unit': 'g'}"
+    },
+    {
+      "name": "frete dimensional do pedido de 500 g permanece 1 kg",
+      "ok": true
+    },
+    {
+      "name": "fixture 3: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "líquido sem pack conserva volume_ml=1000 e conversão dimensional própria",
+      "ok": true
+    },
+    {
+      "name": "fixture 4: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 5: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 6: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 7: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 8: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 9: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 10: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 11: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 12: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 13: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 14: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 15: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 16: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 17: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 18: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 19: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 20: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 21: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 22: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 23: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "500 g: NF parcial 1 UN = 500 g",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_UNIT_DIVERGENCE\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 79 at RAISE"
+    },
+    {
+      "name": "500 g: NF parcial 1 UN = 0,5 kg",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_UNIT_DIVERGENCE\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 79 at RAISE"
+    },
+    {
+      "name": "500 g: 500 g comerciais = 1 embalagem",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 86 at RAISE"
+    },
+    {
+      "name": "500 g: 1 UN com 0,5 g tributáveis deve negar",
+      "ok": false,
+      "detail": "{'success': True, 'replayed': False, 'residual': 93.26, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000604', 'receivable_id': '0fd38d8c-aa35-4125-88e7-7ed17c03bed9', 'financed_interest': 3.26}"
+    },
+    {
+      "name": "500 g: 1 UN com 0,5 g tributáveis deve negar: nenhum título/alocação",
+      "ok": false,
+      "detail": "before=0, after=2"
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial",
+      "ok": true
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "0,5 UN é fração de embalagem inteira",
+      "ok": true
+    },
+    {
+      "name": "0,5 UN é fração de embalagem inteira: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "12,5 kg também é fração de embalagem inteira",
+      "ok": true
+    },
+    {
+      "name": "12,5 kg também é fração de embalagem inteira: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes",
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens",
+      "ok": true
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens",
+      "ok": true
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "50 UN com apenas 50 kg tributáveis é divergente",
+      "ok": true
+    },
+    {
+      "name": "50 UN com apenas 50 kg tributáveis é divergente: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "1 UN com 50 kg tributáveis é divergente",
+      "ok": true
+    },
+    {
+      "name": "1 UN com 50 kg tributáveis é divergente: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "peso não converte em litros",
+      "ok": true
+    },
+    {
+      "name": "peso não converte em litros: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "unidade tributável em litros diverge do conteúdo em kg",
+      "ok": true
+    },
+    {
+      "name": "unidade tributável em litros diverge do conteúdo em kg: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "quantidade sem código de unidade falha fechado",
+      "ok": true
+    },
+    {
+      "name": "quantidade sem código de unidade falha fechado: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis",
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável",
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack",
+      "ok": true
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack: quantidade de pedido normalizada",
+      "ok": true
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack: conteúdo fiscal normalizado sem alterar preço",
+      "ok": true
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "kg não converte em volume líquido",
+      "ok": true
+    },
+    {
+      "name": "kg não converte em volume líquido: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "duas NFs de 25 kg consomem exatamente duas embalagens",
+      "ok": true
+    },
+    {
+      "name": "saldo anterior usa quantidade normalizada, não 25 kg brutos",
+      "ok": true
+    },
+    {
+      "name": "replay da NF de 25 kg preserva o mesmo título",
+      "ok": true
+    },
+    {
+      "name": "terceira embalagem além das duas vendidas é negada",
+      "ok": true
+    },
+    {
+      "name": "replay e excesso não duplicam título nem alocação",
+      "ok": true
+    }
+  ],
+  "hosted": "NOT_RUN",
+  "real_documents_or_charges": false,
+  "synthetic_seams": [
+    "Auth/GUC e roles locais",
+    "documento AUTHORIZED privado fictício sem emissão/rede",
+    "adaptador de dependências stub somente no harness",
+    "schema financeiro reduzido",
+    "nenhuma prova JWT/RLS/PostgREST/Storage/produção"
+  ]
+}

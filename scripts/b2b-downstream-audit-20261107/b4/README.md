@@ -45,7 +45,7 @@ A fixture reproduz ACL/RLS, 35 colunas, 16 constraints, 13 índices e 9 gatilhos
 
 ## Unidades fiscais e downstream
 
-`platform_private.b2b_allocate_document(uuid)` exige quantidade/unidade comercial e tributável, reconcilia kg↔g ou L↔ml pelo snapshot, rejeita fração de embalagem inteira e nunca converte peso em volume. O reteste cobre 2×25 kg, parcial 1 UN=25 kg, 0,5 UN, 50 kg≠50 UN, divergências, L/ml, parciais, replay e excesso, sem documento ou cobrança real.
+`platform_private.b2b_allocate_document(uuid)` exige quantidade/unidade comercial e tributável, reconcilia kg↔g ou L↔ml pelo snapshot, rejeita fração de embalagem inteira e nunca converte peso em volume. `packaging_peso_liquido_kg_snapshot` é sempre kg; `packaging_unidade_conteudo_snapshot='g'` é apenas a unidade de exibição. O reteste cobre 2×25 kg, apresentação real de 500 g gravada como 0,500 kg, 1 UN=500 g=0,5 kg, negação de 1 UN/0,5 g, líquido sem pack por `volume_ml`, parciais, replay e excesso, sem documento ou cobrança real. Evidências específicas: `review-458b6012/fiscal-units-grams-1f4073/`.
 
 Price B3, crédito total, snapshots, primeiro vencimento pela NF e calendário selado foram preservados. Calendário fora da cobertura falha fechado. Nenhum feriado ou regra comercial foi inventado.
 
@@ -58,6 +58,6 @@ Price B3, crédito total, snapshots, primeiro vencimento pela NF e calendário s
 5. Manter instalação e operação separadas; fiscal, contabilidade, recebíveis reais e comunicação continuam fechados.
 6. JWT/RLS/Storage/PostgREST/browser e homologação real permanecem NOT_RUN.
 
-Candidato SHA256: `b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47`.
-Instalação revisável SHA256: `c5b6bbb709d4b2606bb5e79ef04ffd00823b977923c5070dbe703214b93988a3`.
+Candidato SHA256: `818da9e4f001494bdc50c2265e3adfa9d04ec3cd421454c3e1a2ce7ca17b6a8b`.
+Instalação revisável SHA256: `721f97705d6b6d80ac36ebfa8f0a781aa59e5cc33554ffd146099823409f3685`.
 Nenhum PASS local autoriza implantação, publicação, emissão, cobrança ou envio.

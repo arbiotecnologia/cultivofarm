@@ -12,11 +12,13 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 from decimal import Decimal
 
 H = pathlib.Path(__file__).resolve().parent
 ROOT = H.parents[2]
-OUT = H / "review-458b6012" / "fiscal-units"
+OUT = H / "review-458b6012" / "fiscal-units-grams-1f4073"
+PACK = ROOT / "scripts/b2b-solid-packaging-order-20261106"
 
 
 def load(name, path):
@@ -30,6 +32,7 @@ T = load("b4_shared_for_fiscal_units", H / "test-b4-b3.py")
 B3 = T.B3
 B3.SP.PORT = "55490"
 G = B3.g
+G_PRODUCT = B3.u(400)
 CHECKS = []
 
 
@@ -67,17 +70,50 @@ def item(item_id, quantity, commercial_unit=None, taxable_quantity=None, taxable
     return value
 
 
+def install_real_pack_writers():
+    """Mesmos corpos LIVE byte a byte usados pelo harness canônico de embalagens."""
+    B3.psql("ALTER TABLE public.catalogo_volumes ADD COLUMN IF NOT EXISTS ordem integer NOT NULL DEFAULT 0;")
+    B3.psql("""CREATE TABLE IF NOT EXISTS platform_private.solid_pack_admin_receipts(
+        idempotency_key text NOT NULL PRIMARY KEY, actor_id uuid NOT NULL, organization_id uuid NOT NULL,
+        action text NOT NULL, request_fp text NOT NULL, result jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
+    DROP FUNCTION IF EXISTS public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text);""")
+    for name in ("platform_private.has_role", "platform_private.solid_mass_price_ok", "platform_private.recorte_a_actor_fresh",
+                 "platform_private.solid_pack_admin_org", "platform_private.solid_pack_receipt", "platform_private.solid_pack_decimal_text",
+                 "platform_private.solid_pack_weight_label", "platform_private.solid_pack_presentation_set_active",
+                 "platform_private.solid_pack_presentation_insert", "platform_private.solid_pack_presentation_new_version",
+                 "platform_private.catalogo_volumes_owner_consistent", "platform_private.solid_pack_presentation_guard",
+                 "public.solid_pack_price_set_v1", "public.solid_pack_offer_save_v1"):
+        B3.psql(B3.RX._cap("solid-pack", name))
+    B3.psql("""REVOKE ALL ON FUNCTION public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text),
+        public.solid_pack_offer_save_v1(uuid,uuid,text,text,numeric,integer,text) FROM PUBLIC;
+    GRANT EXECUTE ON FUNCTION public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text),
+        public.solid_pack_offer_save_v1(uuid,uuid,text,text,numeric,integer,text) TO authenticated;
+    CREATE TRIGGER a00_catalogo_volumes_owner_consistent BEFORE INSERT OR UPDATE ON public.catalogo_volumes
+        FOR EACH ROW EXECUTE FUNCTION platform_private.catalogo_volumes_owner_consistent();
+    CREATE TRIGGER a01_catalogo_volumes_presentation_guard BEFORE INSERT OR DELETE OR UPDATE ON public.catalogo_volumes
+        FOR EACH ROW EXECUTE FUNCTION platform_private.solid_pack_presentation_guard();""")
+
+
+def admin_writer(sql):
+    claims = json.dumps({"role": "authenticated", "sub": B3.UADM, "exp": int(time.time()) + 3600})
+    prefix = (f"SET ROLE authenticated;\nSELECT set_config('request.jwt.claim.sub','{B3.UADM}',false) \\g /dev/null\n"
+              f"SELECT set_config('request.jwt.claims','{claims}',false) \\g /dev/null\n")
+    return B3.out(B3.psql(prefix + sql, check=False))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", choices=["before", "after"], required=True)
+    parser.add_argument("--candidate", help="candidato explícito para repetir a mesma matriz antes/depois")
     args = parser.parse_args()
-    candidate = H / "b4-candidate.sql.review"
+    candidate = pathlib.Path(args.candidate) if args.candidate else H / "b4-candidate.sql.review"
     candidate_sha = hashlib.sha256(candidate.read_bytes()).hexdigest()
     tmp = B3.boot()
     work = pathlib.Path(tempfile.mkdtemp(prefix="b4-fiscal-units-", dir="/tmp"))
     work.chmod(0o777)
     result_code = 1
     sequence = 0
+    canonical_fixture = {"status": "NOT_RUN"}
 
     try:
         check("boot B3 com gatilhos reais", all(c["ok"] for c in B3.CHECKS), B3.CHECKS)
@@ -117,6 +153,30 @@ def main():
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
         check("stub operacional restrito ao harness", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
 
+        install_real_pack_writers()
+        B3.psql(f"""INSERT INTO public.produtos VALUES
+        ('{G_PRODUCT}','Fertilizante 500 g TESTE','G500-TESTE',true,true,'{B3.A}',NULL,NULL,NULL,NULL,false);
+        INSERT INTO public.product_sale_units(product_id,owner_organization_id,unidade_conteudo,forma_fisica,version)
+        VALUES ('{G_PRODUCT}','{B3.A}','g','solido',1),('{B3.SP.LIQ}','{B3.A}','ml','liquido',1);""")
+        offer, offer_error = admin_writer(
+            f"SELECT public.solid_pack_offer_save_v1('{G_PRODUCT}',NULL,'SC500G','Fertilizante 500 g TESTE',0.500,NULL,'TESTE-B4-G-OFFER-0001')::text;")
+        check("writer REAL cria apresentação de 500 g recebendo 0,500 kg", offer is not None and offer.get("packaging_id"), offer_error or offer)
+        packaging_id = offer and offer.get("packaging_id")
+        if not packaging_id:
+            raise RuntimeError("fixture de 500 g não criada pelo writer real")
+        presentation = T.sql_json(f"""SELECT jsonb_build_object('kg',k.peso_liquido_kg,'unit',s.unidade_conteudo,'label',v.rotulo)
+        FROM public.product_packagings k JOIN public.product_sale_units s ON s.product_id=k.product_id
+        JOIN public.catalogo_volumes v ON v.id=k.id WHERE k.id='{packaging_id}'""")
+        check("writer REAL grava 0,500 kg e rótulo dimensional de 500 g",
+              presentation and Decimal(str(presentation["kg"])) == Decimal("0.500") and presentation["unit"] == "g" and presentation["label"].endswith("500 g"), presentation)
+        price, price_error = admin_writer(
+            f"SELECT public.solid_pack_price_set_v1('{packaging_id}',9000,current_date,NULL,'TESTE-B4-G-PRICE-00001')::text;")
+        check("writer REAL define preço da embalagem sem preço por peso", price is not None and price.get("preco_centavos") == 9000, price_error or price)
+        liquid_pack, liquid_pack_error = admin_writer(
+            f"SELECT public.solid_pack_offer_save_v1('{B3.SP.LIQ}',NULL,'LIQPACK','Pack líquido proibido TESTE',1,NULL,'TESTE-B4-LIQ-PACK-0001')::text;")
+        check("writer REAL nega whole-pack para produto líquido", liquid_pack is None and "PACK_PRODUCT_NOT_SOLID" in (liquid_pack_error or ""), liquid_pack_error or liquid_pack)
+        gram_line = {"item_id": G_PRODUCT, "item_tipo": "produto", "packaging_id": packaging_id, "quantidade": 2}
+
         def make_order(lines):
             nonlocal sequence
             sequence += 1
@@ -138,6 +198,40 @@ def main():
         snapshot_order, snapshot_item = make_order([B3.S(2)])
         snapshot = T.sql_json(f"SELECT jsonb_build_object('quantity',quantidade,'unit',unidade_medida,'content',packaging_peso_liquido_kg_snapshot,'content_unit',packaging_unidade_conteudo_snapshot,'volume',volume_ml) FROM public.partner_order_items WHERE id='{snapshot_item}'")
         check("fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN", snapshot == {"quantity": 2, "unit": "unidade", "content": 25, "content_unit": "kg", "volume": None}, snapshot)
+        gram_order, gram_item = make_order([gram_line])
+        gram_snapshot = T.sql_json(f"""SELECT jsonb_build_object('quantity',i.quantidade,'unit',i.unidade_medida,
+        'content_kg',i.packaging_peso_liquido_kg_snapshot,'display_unit',i.packaging_unidade_conteudo_snapshot,
+        'volume',i.volume_ml,'unit_price',i.preco_unitario_final_snapshot,'order_net',o.net_amount_after_discount,
+        'order_interest',o.financial_interest_amount,'order_final',o.final_amount_with_interest)
+        FROM public.partner_order_items i JOIN public.partner_orders o ON o.id=i.order_id WHERE i.id='{gram_item}'""")
+        gram_ok = (gram_snapshot and Decimal(str(gram_snapshot["quantity"])) == 2
+                   and Decimal(str(gram_snapshot["content_kg"])) == Decimal("0.500")
+                   and gram_snapshot["display_unit"] == "g" and gram_snapshot["volume"] is None
+                   and Decimal(str(gram_snapshot["unit_price"])) == Decimal("90")
+                   and Decimal(str(gram_snapshot["order_net"])) == Decimal("180")
+                   and Decimal(str(gram_snapshot["order_final"])) == Decimal(str(gram_snapshot["order_net"])) + Decimal(str(gram_snapshot["order_interest"])))
+        check("pedido REAL de 2 UN congela 0,500 kg, preço comercial R$180 e juros B3 separados", gram_ok, gram_snapshot)
+        freight_kg = Decimal(str(gram_snapshot["quantity"])) * Decimal(str(gram_snapshot["content_kg"]))
+        check("frete dimensional do pedido de 500 g permanece 1 kg", freight_kg == Decimal("1.000"), freight_kg)
+        liquid_order, liquid_item = make_order([B3.L(2)])
+        liquid_snapshot = T.sql_json(f"SELECT jsonb_build_object('packaging',packaging_id_snapshot,'volume',volume_ml,'volume_snapshot',volume_ml_snapshot) FROM public.partner_order_items WHERE id='{liquid_item}'")
+        check("líquido sem pack conserva volume_ml=1000 e conversão dimensional própria",
+              liquid_snapshot == {"packaging": None, "volume": 1000, "volume_snapshot": 1000}, liquid_snapshot)
+        canonical_fixture = {
+            "status": "OBSERVED_IN_DISPOSABLE_PG",
+            "real_writers": ["public.solid_pack_offer_save_v1", "public.solid_pack_price_set_v1",
+                             "public.create_partner_order_condition_secure"],
+            "packaging_id": packaging_id,
+            "presentation": presentation,
+            "order_snapshot": gram_snapshot,
+            "freight_kg": str(freight_kg),
+            "liquid_without_pack": liquid_snapshot,
+            "liquid_pack_denial": liquid_pack_error,
+        }
+        scenario("500 g: NF parcial 1 UN = 500 g", [gram_line], (1, "UN", 500, "G"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
+        scenario("500 g: NF parcial 1 UN = 0,5 kg", [gram_line], (1, "UN", 0.5, "KG"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
+        scenario("500 g: 500 g comerciais = 1 embalagem", [gram_line], (500, "G", 0.5, "KG"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
+        scenario("500 g: 1 UN com 0,5 g tributáveis deve negar", [gram_line], (1, "UN", 0.5, "G"), expected_error="FISCAL_QUANTITY_UNIT_DIVERGENCE")
         scenario("1 UN = 25 kg em NF parcial", [B3.S(2)], (1, "UN", 25, "KG"), expected_qty=1, expected_normalized=25, expected_unit="kg")
         scenario("0,5 UN é fração de embalagem inteira", [B3.S(2)], (0.5, "UN", 12.5, "KG"), expected_error="FISCAL_WHOLE_PACKAGE_FRACTION")
         scenario("12,5 kg também é fração de embalagem inteira", [B3.S(2)], (12.5, "KG", 12500, "G"), expected_error="FISCAL_WHOLE_PACKAGE_FRACTION")
@@ -208,6 +302,7 @@ def main():
             "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
             "phase": args.phase,
             "candidate_sha256": candidate_sha,
+            "canonical_fixture": canonical_fixture,
             "status": "PASS" if result_code == 0 else "REGRESSION_FAIL",
             "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
             "passed": sum(c["ok"] for c in CHECKS),
