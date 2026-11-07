@@ -280,7 +280,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("projeção financeira usa ator e tenant autorizados", projection is not None, projection_error)
         installment1 = projection[0]["id"]
         payment = {"amount_received": 100, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-PAY-1"}
-        payment_result = call(B3.UFIN, f"public.rpc_register_receivable_payment('{installment1}','{js(payment)}'::jsonb")
+        payment_result = call(B3.UFIN, f"public.rpc_register_receivable_payment('{installment1}','{js(payment)}'::jsonb)")
         check("baixa parcial local no ledger capturado", payment_result[0] is not None, payment_result[1])
         check("baixa reduz somente título, não residual do pedido", exposure() == before - Decimal("100") and residual(quote_order) > 0)
 
