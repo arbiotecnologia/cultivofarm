@@ -61,7 +61,7 @@
     {
       "name": "apresentação L: pedido/OS → reserva → baixa com 2 UN e 2.000 ml",
       "status": "PASS",
-      "detail": "fc546ed2-d9f6-45d1-937b-fe7205e16dca"
+      "detail": "1ffcdc51-12af-468f-9f5a-73fe401c3849"
     },
     {
       "name": "apresentação L acabada: envio exige programação de produção inexistente",
@@ -130,7 +130,7 @@
       "stderr": "ERROR:  42501: DELIVERY_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 33 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
-  "elapsed_seconds": 13.126,
+  "elapsed_seconds": 10.364,
   "synthetic_seams": [
     "Auth por claims/GUC locais, sem JWT/RLS/PostgREST/Storage real",
     "fixtures upstream com session_replication_role=replica; writers testados com triggers habilitados",
