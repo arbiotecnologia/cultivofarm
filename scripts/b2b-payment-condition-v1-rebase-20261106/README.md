@@ -69,6 +69,12 @@ Costuras declaradas: as do harness B2, `payment_methods`/`financial_categories` 
 pins de colunas trocados só na cópia temporária. A injeção transitória ocorre só no PG descartável e o corpo REAL de crédito
 é restaurado byte a byte e conferido por md5.
 
+Suíte concorrente: a base limpa `347baf8`, com os mesmos dois workers, reproduziu exatamente **27 unhandled errors**
+(760 arquivos/10.769 testes aprovados; exit 1). 25 eram a fixture `financialOpenSession` sem resposta para
+`tenant_display_name_v1`; 2 eram timeouts internos `onTaskUpdate` do worker. Somente a fixture foi corrigida, sem mudança
+de runtime, e seu foco passou **26/26**, exit 0 e sem unhandled errors. JSON completo, recorte de erros e exit codes estão
+em `evidence/review-194331e/`; a suíte final é registrada separadamente.
+
 ## Limitações abertas
 - Datas estimadas (referência = data do pedido/resposta), sem dia útil Paracatu-MG; vencimento definitivo e calendário ficam no B4.
 - Revogar um parceiro numa versão é definitivo para ela; liberar de novo exige nova versão.
