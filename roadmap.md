@@ -1,3 +1,9 @@
+## 07/11 18:13 — Forma real de títulos MANUAL com `partner_id=NULL`
+- [ ] Registrar os cinco títulos ARBio relatados READONLY (4 OPEN/1 OVERDUE, `partner_id=NULL`, clientes ligados a parceiros ativos do mesmo owner) sem alterar/cancelar dados LIVE nem presumir origem monetária.
+- [ ] Reproduzir isoladamente cliente→parceiro sem `partner_id`, múltiplos parceiros no mesmo cliente, conflitos `partner_id`/`customer_id`/owner, dívida/saldo em aberto e atraso; impedir omissão silenciosa e dupla contagem, com reconciliação explícita quando a origem não for provada.
+- [ ] Corrigir somente o candidato B4 se a reprodução confirmar lacuna; manter manifesto/PRE/POST/rollback, ACLs e instalação INATIVA/BLOQUEADA/NÃO APROVADA. Separar a revisão mínima da equipe vendedora e não somar suítes sobrepostas.
+- [ ] Consolidar JSON/TXT/exit codes/hashes e pendências; nenhuma escrita hospedada, publicação, envio, fiscal ou cobrança real. Homologação LIVE/JWT/RLS/Storage/PostgREST/browser permanece com o auditor.
+
 ## 07/11 17:56 — Fatos LIVE 4097d4e2: projeção ausente e origem manual
 - [x] Tratar `rpc_receivable_money_projection_v1` como criação nova: PRE exige zero overloads por `pg_proc` e POST exige um owner-only, sem baseline inventada; MD5/owners/ACLs relatados dos writers e definição exata do índice conferidos com capturas locais. Manifesto ampliado para 55 objetos com resolvedor monetário interno owner-only no tenant vendedor; projeção pública mantém ator/papel/tenant.
 - [x] Preservar parcela e baixa MANUAL não B2B sem parceiro; MANUAL de parceiro sem origem bloqueia exposição/baixa com `MONEY_ORIGIN_UNPROVEN` e nova simulação não cria pedido. Pedidos atuais da fixture mantêm estado/hash; nenhum histórico apagado ou proveniência fabricada. Impacto em dados LIVE existentes continua NÃO MEDIDO e bloqueia release.
