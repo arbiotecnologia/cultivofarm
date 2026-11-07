@@ -77,6 +77,10 @@ PASS fixture 16: pedido fictício criado
 PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
+PASS fixture 17: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
 PASS 1 UN = 25 kg em NF parcial
 PASS 1 UN = 25 kg em NF parcial: quantidade de pedido normalizada
 PASS 1 UN = 25 kg em NF parcial: conteúdo fiscal normalizado sem alterar preço
@@ -121,3 +125,8 @@ PASS 500 ml podem ser meia unidade líquida não wholepack: conteúdo fiscal nor
 PASS 500 ml podem ser meia unidade líquida não wholepack: payload fiscal original preservado
 PASS kg não converte em volume líquido
 PASS kg não converte em volume líquido: nenhum título/alocação
+PASS duas NFs de 25 kg consomem exatamente duas embalagens
+PASS saldo anterior usa quantidade normalizada, não 25 kg brutos
+PASS replay da NF de 25 kg preserva o mesmo título
+PASS terceira embalagem além das duas vendidas é negada
+FAIL execução sem exceção de harness :: RuntimeError("ERROR:  operator does not exist: bigint || bigint\nLINE 1: ... origin_id='51fa0ee0-2106-4bbc-a1f3-475ddb37895c')||(SELECT ...\n                                                             ^\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\n")

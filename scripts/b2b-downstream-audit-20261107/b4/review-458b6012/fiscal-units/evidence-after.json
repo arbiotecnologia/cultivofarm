@@ -2,10 +2,10 @@
   "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
   "phase": "after",
   "candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd",
-  "status": "PASS",
+  "status": "REGRESSION_FAIL",
   "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
-  "passed": 123,
-  "total": 123,
+  "passed": 131,
+  "total": 132,
   "checks": [
     {
       "name": "boot B3 com gatilhos reais",
@@ -324,6 +324,22 @@
       "ok": true
     },
     {
+      "name": "fixture 17: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
       "name": "1 UN = 25 kg em NF parcial",
       "ok": true
     },
@@ -498,6 +514,27 @@
     {
       "name": "kg não converte em volume líquido: nenhum título/alocação",
       "ok": true
+    },
+    {
+      "name": "duas NFs de 25 kg consomem exatamente duas embalagens",
+      "ok": true
+    },
+    {
+      "name": "saldo anterior usa quantidade normalizada, não 25 kg brutos",
+      "ok": true
+    },
+    {
+      "name": "replay da NF de 25 kg preserva o mesmo título",
+      "ok": true
+    },
+    {
+      "name": "terceira embalagem além das duas vendidas é negada",
+      "ok": true
+    },
+    {
+      "name": "execução sem exceção de harness",
+      "ok": false,
+      "detail": "RuntimeError(\"ERROR:  operator does not exist: bigint || bigint\\nLINE 1: ... origin_id='51fa0ee0-2106-4bbc-a1f3-475ddb37895c')||(SELECT ...\\n                                                             ^\\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\\n\")"
     }
   ],
   "hosted": "NOT_RUN",
