@@ -91,6 +91,22 @@ def build():
             raise AssertionError("additive image anchor drift " + label)
         if label == "entry": entry_guard = changed
         else: entry_final = changed
+    entry_guard = one_replace(entry_guard, " -- Preserve ONLY the installed canonical partial reservation semantics under", """ -- Compra para revenda: contexto transacional e ticket específicos do writer privado.
+ IF TG_TABLE_NAME='estoque_produto' AND NEW.origem_estoque='compra_produto_acabado_revenda' THEN
+  SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();
+  IF FOUND AND c.item=NEW.id AND c.ctx->>'acao'='entrada' AND c.ctx->>'origem'='finished_product_purchase_entry_v1'
+   AND c.ctx->'metadata'->>'stock_request_item'=NEW.id::text
+   AND c.ctx->'metadata'->>'produto_id'=NEW.produto_id::text
+   AND c.ctx->'metadata'->>'embalagem_id'=NEW.embalagem_id::text
+   AND c.ctx->'metadata'->>'unidade_conteudo'=NEW.unidade_conteudo
+   AND (c.ctx->'metadata'->>'conteudo_por_unidade')::numeric=NEW.conteudo_por_unidade
+   AND (c.ctx->'metadata'->>'quantidade_conteudo')::numeric=NEW.quantidade_conteudo
+   AND platform_private.finished_product_stock_valid_v1(NEW)
+   AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
+  THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED' USING ERRCODE='42501';
+ END IF;
+ -- Preserve ONLY the installed canonical partial reservation semantics under""", "entry purchase guard")
     entry_guard = one_replace(entry_guard, "    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade", "    AND NEW.validade IS NOT DISTINCT FROM parent.validade\n    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))", "entry guard finished split")
     sync = one_replace(sync, "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN", "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL)\n     AND NOT EXISTS(SELECT 1 FROM public.entregas d JOIN public.estoque_produto s ON s.id=d.estoque_produto_id WHERE d.ordem_servico_id=NEW.id AND d.produto_id=NEW.produto_id AND d.status::text<>'cancelada' AND s.origem_estoque='compra_produto_acabado_revenda') THEN", "sync finished product")
 
