@@ -7,7 +7,7 @@ cenario,contrato_ou_fonte,resultado,evidencia,risco_pendente
 "Rollback do ajuste","04-rollback-deny.sql.review","DENY-ONLY LOCAL; HISTÓRICO PRESERVADO","evidence/adjustment-candidate.json","não executado hosted"
 "Price/crédito total/título/pagamento/estorno","financial-price-generator-20261029","338/338 COMPONENTE LOCAL","evidence/price/results.json","Auth/settings/NF/contabilidade sintéticos"
 "Calendário Paracatu-MG+nacionais","paracatu-mg-2026-2027-v2","VERSIONADO/INTEGRIDADE/FAIL-CLOSED LOCAL","evidence/price/results.json","carga/fonte LIVE e cobertura posterior não comprovadas"
-"NF autorizada parcial→recebedor idempotente","integration histórico","NOT_RUN/BLOCKED","README.md","harness contém overloads create/simulate superados pelo B3"
+"NF autorizada parcial→recebível idempotente na composição B3 atual","b4 candidato inativo; adaptador fiscal local sem rede","63/63 COMPONENTE LOCAL; NÃO LIBERADO","b4/evidence-b4-b3.json","sem JWT/RLS/NF/cobrança real; revisão LIVE obrigatória"
 "Cobrança por entrega","delivery-billing-scope-20261027","47/47 COMPONENTE LOCAL","evidence/delivery-billing/stdout.txt","candidato inativo; stubs/schema reduzido"
 "Biológico ml: CQ→estoque→pronto_entrega","stock-envase-recovery composição capturada","21 PASS RECORTE LOCAL","evidence/envase-stock/stdout.txt","não é matriz completa nem JWT/RLS"
 "Expedição/em rota/confirmação/cancelamento","delivery-atomic-hardening confirmation","BLOQUEADO ANTES DA MATRIZ: ENVASE_RELEASE_DRIFT","evidence/delivery-confirmation/stderr.txt","reconciliar composição; nenhum PASS físico alegado"
