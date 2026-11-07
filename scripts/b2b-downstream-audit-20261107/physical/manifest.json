@@ -89,5 +89,15 @@
       "name": "release-unchanged-comparison",
       "exit_code": 0
     }
-  ]
+  ],
+  "finished_product": {
+    "path": "finished-product/",
+    "status": "INACTIVE_BLOCKED_NOT_APPROVED",
+    "candidate_sha256": "551824126877d3ec589b998e472a15d1c428f17b5ae2f8fd3673497af6ed0081",
+    "tests": {
+      "before": "17/17",
+      "after": "19/19",
+      "legacy_candidate": "6/6"
+    }
+  }
 }

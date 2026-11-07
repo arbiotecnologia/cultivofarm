@@ -25,8 +25,8 @@
   },
   "coverage": {
     "executed": ["biologico_ml", "CQ_estoque_pronto_entrega", "expedicao_em_rota_confirmacao_cancelamento", "tenant_isolation", "observed_lock_revocation", "concurrency", "CAS", "idempotent_replay", "deny_only_rollback"],
-    "not_run": ["quimicos_fisicos", "fertilizantes_fisicos", "kg_g_fisicos", "embalagem_inteira_fisica", "apresentacao_L_fisica", "JWT_RLS_Storage_PostgREST_browser_real", "NF_cobranca_real"],
-    "weight_freight_only_validated": false
+    "finished_product_followup": {"path": "finished-product/", "before": "17/17", "candidate": "19/19", "legacy_candidate": "6/6", "units": ["kg", "g", "L", "ml"], "weight_not_reinterpreted_as_volume": true, "active": false},
+    "not_run": ["entrada_canonica_produto_acabado", "composicao_real_catalogo_B3", "frete_real", "JWT_RLS_Storage_PostgREST_browser_real", "NF_cobranca_real"]
   },
   "adjustment_candidate": {
     "separate_package": "scripts/b2b-downstream-audit-20261107",
