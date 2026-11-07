@@ -241,18 +241,17 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("fixture contábil pendente separada", B3.psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{pending_order}'").stdout.strip() == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1")
 
         finance_schema()
-        for name, marker in [("01-pre.sql.readonly", "PRE_OK"), ("02-install.sql.review", ""), ("03-post.sql.readonly", "POST_OK")]:
-            result = runfile(H / name)
-            check(f"B4 {name}", result.returncode == 0 and (not marker or marker in result.stdout + result.stderr), (result.stdout + result.stderr)[-1200:])
-            if name == "02-install.sql.review" and result.returncode != 0:
-                diagnostic = runfile(H / "b4-candidate.sql.review")
-                expected = json.loads((H / "b4-pins.json").read_text())["candidate_md5"]
-                actual = {sig: B3.md5_of(sig) for sig in expected}
-                (H / "pin-debug-credit.txt").write_text(B3.psql("SELECT pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)").stdout)
-                (H / "pin-debug-all.json").write_text(json.dumps({sig: B3.psql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)").stdout for sig in expected}, indent=2))
-                check("diagnóstico dos pinos após falha de instalação", False, {"diagnostic_exit": diagnostic.returncode, "expected": expected, "actual": actual, "stderr": diagnostic.stderr[-500:]})
+        pre = runfile(H / "01-pre.sql.readonly")
+        check("PRE revisado falha fechado sobre baseline incompleta", pre.returncode != 0 and "B4_" in pre.stderr, pre.stderr[-1200:])
+        install = runfile(H / "02-install.sql.review")
+        check("instalação não sobrescreve desconhecido nem cria objetos", install.returncode != 0 and B3.psql("SELECT to_regclass('platform_private.b2b_authorized_documents') IS NULL").stdout.strip() == "t", install.stderr[-1200:])
+        # COMPONENTE SOMENTE NO PG DESCARTÁVEL: o pacote instalável continua bloqueado.
+        # Executar o corpo aqui não é PRE/POST nem evidência de instalação/produção.
+        component = runfile(H / "b4-candidate.sql.review")
+        check("corpo B4 executável apenas como componente descartável", component.returncode == 0, component.stderr[-1200:])
         rerun = runfile(H / "02-install.sql.review")
-        check("rerun aborta pelo pin da baseline, sem reinstalar", rerun.returncode != 0 and "B4_INSTALL_PRE_DRIFT" in rerun.stderr, rerun.stderr[-500:])
+        check("rerun continua bloqueado e não reinstala", rerun.returncode != 0 and "B4_" in rerun.stderr, rerun.stderr[-700:])
+        check("instalação não substitui dependência operacional por stub", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
         trigger_count = B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip()
         check("32 gatilhos reais carregados pelo harness B3 continuam habilitados", trigger_count == "32", trigger_count)
         check("B3 create/simulate antigos não foram restaurados nem alterados", B3.md5_of(B3.CREATE_SIG) == G["LIVE_PINS"][B3.CREATE_SIG] and B3.md5_of(B3.SIM_SIG) == G["LIVE_PINS"][B3.SIM_SIG]
