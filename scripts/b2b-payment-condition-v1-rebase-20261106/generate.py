@@ -531,15 +531,19 @@ END $function$;
 
 CREATE FUNCTION public.get_partner_order_payment_condition_secure(p_order_id uuid)
  RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
-DECLARE s platform_private.b2b_order_condition_snapshots;
+DECLARE s platform_private.b2b_order_condition_snapshots; q platform_private.b2b_order_condition_quote_snapshots; v_present boolean;
 BEGIN
   PERFORM public.get_partner_order_payment_terms_secure(p_order_id);  -- mesmas portas do leitor de condição instalado
   SELECT * INTO s FROM platform_private.b2b_order_condition_snapshots x WHERE x.order_id = p_order_id;
-  RETURN jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','order_id', p_order_id,'present', FOUND,
-    'payment_condition', CASE WHEN FOUND THEN jsonb_build_object('choice', s.choice, 'payment_method_name', s.payment_method_name,
+  v_present := FOUND;
+  SELECT * INTO q FROM platform_private.b2b_order_condition_quote_snapshots x WHERE x.order_id = p_order_id;
+  RETURN jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','order_id', p_order_id,'present', v_present,
+    'payment_condition', CASE WHEN v_present THEN jsonb_build_object('choice', s.choice, 'payment_method_name', s.payment_method_name,
       'installment_count', s.condition->'installment_count', 'monthly_rate', s.condition->'monthly_rate', 'deadline_days', s.condition->'deadline_days',
-      'due_basis', s.due_basis, 'estimated', s.estimated, 'estimated_reference_date', s.estimated_reference_date, 'quote', s.quote,
-      'schedule', s.rows, 'principal', s.principal, 'financed_interest', s.financed_interest, 'financed_total', s.financed_total) END);
+      'due_basis', s.due_basis, 'estimated', s.estimated, 'estimated_reference_date', COALESCE(q.estimated_reference_date,s.estimated_reference_date),
+      'quote', s.quote AND q.order_id IS NULL, 'cart_hash', COALESCE(q.cart_hash,s.cart_hash),
+      'schedule', COALESCE(q.rows,s.rows), 'principal', COALESCE(q.principal,s.principal),
+      'financed_interest', COALESCE(q.financed_interest,s.financed_interest), 'financed_total', COALESCE(q.financed_total,s.financed_total)) END);
 END $function$;
 """
 
