@@ -409,25 +409,37 @@ def build():
     }
     candidate_md5s = {kind: hashlib.md5(body.encode()).hexdigest() for kind, body in candidates.items()}
     baseline_md5s = {kind: meta["md5"] for kind, meta in DECISION_SOURCES.items()}
+    helper = seller_helper_body()
+    helper_md5 = hashlib.md5(helper.encode()).hexdigest()
     pre = (
         "-- READ ONLY. Capturas LOCAIS; o auditor deve confrontar corpos, owners e ACLs LIVE antes de qualquer uso.\n"
-        f"{assertions(baseline_md5s)}\nSELECT 'PRE_OK' AS status;\n"
+        f"{assertions(baseline_md5s)}\n{helper_absence_assertion()}\nSELECT 'PRE_OK' AS status;\n"
     )
     candidate_sql = "\n\n".join(candidates[kind] + ";" for kind in ("request", "approve", "reject"))
+    helper_sql = (
+        helper + ";\n"
+        f"ALTER FUNCTION {HELPER_SIG} OWNER TO {HELPER_OWNER};\n"
+        f"REVOKE ALL ON FUNCTION {HELPER_SIG} FROM PUBLIC, anon, authenticated, service_role;"
+    )
     install = f"""-- CANDIDATO INATIVO. Não aplicar sem revisão e preflight LIVE independente.
--- CREATE OR REPLACE preserva owner/ACL; nenhuma concessão de privilégio é executada.
+-- Os writers preservam owner/ACL; o helper novo é privado e não recebe grants.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 SET LOCAL statement_timeout = '30s';
 {assertions(baseline_md5s)}
+{helper_absence_assertion()}
+
+{helper_sql}
 
 {candidate_sql}
 
 {assertions(candidate_md5s)}
+{helper_assertion(helper_md5)}
 COMMIT;
 """
-    post = f"""-- READ ONLY. Confere corpo, owner e ACL dos writers e de wrappers/núcleos privados.
+    post = f"""-- READ ONLY. Confere corpos, owners e ACLs dos writers, helper e dependências.
 {assertions(candidate_md5s)}
+{helper_assertion(helper_md5)}
 SELECT 'POST_OK' AS status;
 """
     revokes = "\n".join(
@@ -439,11 +451,19 @@ SELECT 'POST_OK' AS status;
         f"  IF md5(pg_get_functiondef('{meta['signature']}'::regprocedure)) <> '{candidate_md5s[kind]}' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;"
         for kind, meta in DECISION_SOURCES.items()
     )
-    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura corpos sem lock/reautorização/contabilidade.
+    deny_conditions += (
+        f"\n  IF has_function_privilege('authenticated', '{HELPER_SIG}', 'EXECUTE') OR has_function_privilege('anon', '{HELPER_SIG}', 'EXECUTE') "
+        f"OR has_function_privilege('service_role', '{HELPER_SIG}', 'EXECUTE') OR has_function_privilege('PUBLIC', '{HELPER_SIG}', 'EXECUTE') "
+        "THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_NOT_CLOSED'; END IF;"
+        f"\n  IF md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)) <> '{helper_md5}' THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_BODY_CHANGED'; END IF;"
+    )
+    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura corpos nem vínculos antigos.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 {assertions(candidate_md5s)}
+{helper_assertion(helper_md5)}
 {revokes}
+REVOKE ALL ON FUNCTION {HELPER_SIG} FROM PUBLIC, anon, authenticated, service_role;
 DO $deny$
 BEGIN
   {deny_conditions}
@@ -453,6 +473,7 @@ COMMIT;
 """
     files = {
         "captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql": source_body() + "\n",
+        "candidate/platform_private.b2b_seller_financial_scope_error.sql.review": helper_sql + "\n",
         "candidate/public.request_b2b_payment_terms_adjustment_secure.sql.review": candidates["request"] + "\n",
         "01-pre.sql.readonly": pre,
         "02-install.sql.review": install,
@@ -478,7 +499,7 @@ COMMIT;
             "capture": capture_name,
         }
     files["adjustment-pins.json"] = json.dumps({
-        "review": "31430566",
+        "review": "02c23d82",
         "status": "INACTIVE_NOT_APPROVED",
         "source": str(SOURCE.relative_to(ROOT)),
         "source_md5": BASE_MD5,
@@ -486,10 +507,22 @@ COMMIT;
         "request_acl": captured(REQUEST_SOURCE, BASE_MD5)["acl"],
         "scope_md5": VISIBLE_MD5,
         "private_scope_md5": PRIVATE_VISIBLE_MD5,
+        "legacy_buyer_pins_retained_for_baseline_only": True,
+        "buyer_reader_modified": False,
         "role_md5": ROLE_MD5,
         "private_role_md5": PRIVATE_ROLE_MD5,
         "accounting_guard_md5": ACCOUNTING_GUARD_MD5,
         "candidate_md5": candidate_md5s["request"],
+        "seller_scope_contract": SELLER_CONTRACT,
+        "seller_scope_helper": {
+            "signature": HELPER_SIG,
+            "candidate_md5": helper_md5,
+            "owner": HELPER_OWNER,
+            "acl": HELPER_ACL,
+            "acl_md5": acl_md5(HELPER_ACL),
+            "capture": "candidate/platform_private.b2b_seller_financial_scope_error.sql.review",
+            "client_execute": False,
+        },
         "decision_candidates": {
             kind: {"signature": DECISION_SOURCES[kind]["signature"], "baseline_md5": baseline_md5s[kind], "candidate_md5": candidate_md5s[kind],
                    "owner": captured(DECISION_SOURCES[kind]["source"], baseline_md5s[kind])["owner"],
