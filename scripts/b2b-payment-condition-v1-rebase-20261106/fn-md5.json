@@ -9,7 +9,7 @@
     "sim": "06ea0933992a05a0d2a7fb78c6881bcf",
     "create": "e86385fefb25c68d9dd4d0fef6619f27",
     "read": "7ffe3bbbefd040bab1b3ce1bce8069a7",
-    "quote": "687471f683a3c25e1cc9c8d01a7ec14e"
+    "quote": "6cb6c0f26e55bcc07e94af9d922a6d0a"
   },
   "deny": {
     "publish": "e40a25e08476b1c70a82ce514731f829",
@@ -21,6 +21,6 @@
     "sim": "fa660fe6201ebdbf54c34a844ef740f3",
     "create": "68880cbbc3fa3e2461a6feb7ce9d5b2b",
     "read": "83493dc68466d949f44ea64114f377ef",
-    "quote": "2748ed838ea91f45fe937eb62b86723a"
+    "quote": "aff017340ee77e8aa702224963ac0225"
   }
 }
