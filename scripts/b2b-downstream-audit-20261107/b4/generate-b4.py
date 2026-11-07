@@ -35,6 +35,18 @@ LIVE_MD5 = {
     "public.fn_b2b_order_billing_eligibility(uuid)": "db977875e15ea49ce10fb3e5388d7dfb",
     "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "213ac31f3a30816ead75365b0d1fed18",
 }
+B3_PUBLIC = {
+    "publish": "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)",
+    "retire": "public.b2b_payment_condition_retire(uuid,text,integer)",
+    "assign": "public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)",
+    "activation": "public.b2b_payment_condition_activation_set(text,uuid[],integer)",
+    "list": "public.b2b_payment_condition_config_list()",
+    "options": "public.b2b_list_payment_condition_options_secure(uuid,uuid)",
+    "sim": "public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)",
+    "create": "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)",
+    "read": "public.get_partner_order_payment_condition_secure(uuid)",
+    "quote": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+}
 
 
 def sha(path):
