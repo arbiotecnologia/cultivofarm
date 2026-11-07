@@ -1,0 +1,15 @@
+-- DENY-ONLY: preserva histórico, snapshots e fences; não restaura writers antigos.
+BEGIN;
+DO $guard$ BEGIN
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))<>'cafd0ca7233b7b1db79d9f4990fbff1a' THEN RAISE EXCEPTION 'B4_ROLLBACK_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_register_receivable_payment(uuid,jsonb)'::regprocedure))<>'98f577574e8b1889416d59cbfb00c437' THEN RAISE EXCEPTION 'B4_ROLLBACK_DRIFT:public.rpc_register_receivable_payment(uuid,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure))<>'3a4ca7fcd75f9fd3a183b6917fe05cd2' THEN RAISE EXCEPTION 'B4_ROLLBACK_DRIFT:public.generate_b2b_receivable_secure_impl(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure))<>'d179755ea3701a723338d08283d42fe5' THEN RAISE EXCEPTION 'B4_ROLLBACK_DRIFT:public.tg_auto_b2b_receivable()'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_allocate_document(uuid)'::regprocedure))<>'95a81488cc743ba6ed9ce6c2741e4b91' THEN RAISE EXCEPTION 'B4_ROLLBACK_DRIFT:platform_private.b2b_allocate_document(uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_order_residual(uuid)'::regprocedure))<>'ffd5b7695bd51e1ef2913f2759d0821c' THEN RAISE EXCEPTION 'B4_ROLLBACK_DRIFT:platform_private.b2b_order_residual(uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'::regprocedure))<>'af9e7e4f05742ab42f2d2b30e8faf560' THEN RAISE EXCEPTION 'B4_ROLLBACK_DRIFT:platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'; END IF;
+END $guard$;
+
+REVOKE EXECUTE ON FUNCTION public.generate_b2b_receivable_secure(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_receivable_money_projection_v1(uuid,integer,integer) FROM PUBLIC,anon,authenticated;
+COMMIT;
