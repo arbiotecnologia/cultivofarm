@@ -302,6 +302,7 @@ def main():
             "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
             "phase": args.phase,
             "candidate_sha256": candidate_sha,
+            "canonical_fixture": canonical_fixture,
             "status": "PASS" if result_code == 0 else "REGRESSION_FAIL",
             "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
             "passed": sum(c["ok"] for c in CHECKS),
