@@ -11,33 +11,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { METHOD_KINDS, METHOD_KIND_LABEL, type MethodKind } from "@/hooks/useB2BPaymentMethodOptions";
 import {
-  MAX_INSTALLMENTS, methodAdminError, useB2BPaymentMethodAdmin, useSaveB2BPaymentMethodConfig, useSetB2BPaymentMethodActivation,
-  validateConfig, type Activation, type MethodConfig, type SaveConfigInput,
+  MAX_INSTALLMENTS, methodAdminError, useAssignB2BPaymentCondition, useB2BPaymentMethodAdmin, usePublishB2BPaymentCondition,
+  useRetireB2BPaymentCondition, useSetB2BPaymentMethodActivation, validateConfig, type Activation, type ConditionVersion, type PublishInput,
 } from "@/hooks/useB2BPaymentMethodAdmin";
 
-type Draft = { planId: string; kind: MethodKind; pmId: string; due: string; max: string; rate: string; status: "active" | "revoked" };
-const EMPTY: Draft = { planId: "", kind: "pix", pmId: "", due: "", max: "1", rate: "", status: "active" };
+type Draft = { planId: string; kind: MethodKind; pmId: string; catId: string; due: string; n: string; rate: string };
 const MODE_LABEL: Record<Activation["mode"], string> = { off: "Desligada", pilot: "Piloto", enforced: "Obrigatória" };
 
 /**
- * Meios de pagamento por condição (B2B_PAYMENT_METHOD_V1). Empresa sempre derivada no servidor; nada é gravado sem
- * clique explícito, conflitos de versão mantêm o rascunho e nunca tentam de novo sozinhos. Nenhuma taxa é sugerida.
+ * Condições e meios de pagamento (B2B_PAYMENT_CONDITION_V1). Empresa sempre derivada no servidor; cada salvamento publica
+ * uma NOVA versão (as antigas ficam no histórico e nos pedidos). Nada é gravado sem clique explícito; conflitos mantêm o
+ * rascunho e nunca tentam de novo sozinhos. Nenhuma taxa é sugerida; o prazo inicial vem do servidor (padrão aprovado).
  */
 export function MeiosPagamentoTab() {
   const q = useB2BPaymentMethodAdmin();
-  const save = useSaveB2BPaymentMethodConfig();
+  const publish = usePublishB2BPaymentCondition();
+  const retire = useRetireB2BPaymentCondition();
+  const assign = useAssignB2BPaymentCondition();
   const act = useSetB2BPaymentMethodActivation();
-  const [editing, setEditing] = useState<MethodConfig | null>(null);
-  const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [editing, setEditing] = useState<ConditionVersion | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [pilot, setPilot] = useState<string[] | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const d = q.data?.status === "ok" ? q.data.data : null;
   const planById = useMemo(() => new Map((d?.plans ?? []).map((p) => [p.id, p])), [d]);
   const pmName = useMemo(() => new Map((d?.catalog ?? []).map((m) => [m.id, m.name])), [d]);
 
-  if (q.isLoading) return <p className="text-sm text-muted-foreground">Carregando meios de pagamento…</p>;
+  if (q.isLoading) return <p className="text-sm text-muted-foreground">Carregando condições e meios de pagamento…</p>;
   if (q.data?.status === "not_installed")
-    return <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Meios de pagamento por condição ainda não estão disponíveis neste ambiente. O pedido segue o contrato atual.</AlertDescription></Alert>;
+    return <Alert><AlertCircle className="h-4 w-4" /><AlertDescription>Condições com meio de pagamento ainda não estão disponíveis neste ambiente. O pedido segue o contrato atual.</AlertDescription></Alert>;
   if (q.isError || !d)
     return (
       <Alert variant="destructive" role="alert" data-testid="pm-admin-error">
@@ -48,24 +50,26 @@ export function MeiosPagamentoTab() {
       </Alert>
     );
 
-  const startEdit = (c: MethodConfig | null) => {
+  const empty: Draft = { planId: "", kind: "pix", pmId: "", catId: "", due: String(d.default_deadline_days), n: "1", rate: "0" };
+  const form = draft ?? empty;
+  const startEdit = (c: ConditionVersion | null) => {
     setFormError(null); setEditing(c);
-    setDraft(c ? { planId: c.payment_plan_id, kind: c.method_kind, pmId: c.payment_method_id, due: String(c.due_days), max: String(c.max_installments),
-      rate: c.price_monthly_rate_percent == null ? "" : String(c.price_monthly_rate_percent), status: c.status } : EMPTY);
+    setDraft(c ? { planId: c.plan_id, kind: c.method, pmId: c.payment_method_id, catId: c.category_id, due: String(c.deadline_days),
+      n: String(c.installment_count), rate: String(c.monthly_rate) } : null);
   };
   const submit = () => {
-    const input: SaveConfigInput = {
-      config_id: editing?.id ?? null, payment_plan_id: draft.planId, method_kind: draft.kind, payment_method_id: draft.pmId,
-      due_days: Number(draft.due), max_installments: Number(draft.max), price_monthly_rate_percent: draft.rate.trim() === "" ? null : Number(draft.rate.replace(",", ".")),
-      status: draft.status, expected_version: editing?.version ?? 0,
+    if (form.due.trim() === "") return setFormError("Informe o prazo em dias.");
+    if (form.rate.trim() === "") return setFormError("Informe a taxa Price mensal explicitamente (pode ser 0).");
+    const input: PublishInput = {
+      plan_id: form.planId, method: form.kind, payment_method_id: form.pmId, category_id: form.catId, deadline_days: Number(form.due),
+      installment_count: Number(form.n), monthly_rate: Number(form.rate.replace(",", ".")),
+      expected_version: editing?.version ?? d.conditions.find((c) => c.plan_id === form.planId && c.method === form.kind)?.version ?? 0,
     };
-    if (draft.due.trim() === "") return setFormError("Informe o prazo em dias.");
-    if (!draft.pmId) return setFormError("Selecione o meio no cadastro.");
-    const v = validateConfig(input, planById.get(draft.planId));
+    const v = validateConfig(input, planById.get(form.planId));
     if (v) return setFormError(v);
     setFormError(null);
-    save.mutate(input, {
-      onSuccess: () => { toast.success("Meio de pagamento salvo."); setEditing(null); setDraft(EMPTY); },
+    publish.mutate(input, {
+      onSuccess: () => { toast.success("Nova versão publicada."); setEditing(null); setDraft(null); },
       onError: (e) => setFormError(methodAdminError(e)),
     });
   };
@@ -75,21 +79,22 @@ export function MeiosPagamentoTab() {
       onSuccess: () => { toast.success(`Exigência: ${MODE_LABEL[mode]}.`); setPilot(null); },
       onError: (e) => toast.error(methodAdminError(e)),
     });
-  const busy = save.isPending || act.isPending;
+  const busy = publish.isPending || retire.isPending || assign.isPending || act.isPending;
+  const maxN = MAX_INSTALLMENTS[form.kind];
 
   return (
     <div className="space-y-4">
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription className="text-xs">
-          O comprador escolhe entre os meios ativos de cada condição. As datas mostradas no pedido são estimadas; o vencimento
-          definitivo conta da emissão da nota fiscal. Meio sem configuração ativa fica indisponível.
+          O comprador escolhe entre as versões vigentes liberadas para ele. As datas mostradas no pedido são estimadas; o vencimento
+          definitivo conta da emissão da nota fiscal. Meio sem versão vigente liberada fica indisponível.
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Exigência do meio no pedido</CardTitle>
+          <CardTitle className="text-base">Exigência no pedido</CardTitle>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">Situação atual: <Badge data-testid="pm-mode">{MODE_LABEL[d.activation.mode]}</Badge></div>
           <CardDescription>Piloto vale só para os parceiros marcados; os demais seguem o contrato atual.</CardDescription>
         </CardHeader>
@@ -116,25 +121,49 @@ export function MeiosPagamentoTab() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Meios por condição</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Meios por condição (versão vigente)</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader><TableRow>
               <TableHead>Condição</TableHead><TableHead>Meio</TableHead><TableHead>Prazo</TableHead><TableHead>Parcelas</TableHead>
-              <TableHead>Taxa Price</TableHead><TableHead>Situação</TableHead><TableHead>Versão</TableHead><TableHead />
+              <TableHead>Taxa Price</TableHead><TableHead>Situação</TableHead><TableHead>Parceiros</TableHead><TableHead>Versão</TableHead><TableHead />
             </TableRow></TableHeader>
             <TableBody>
-              {d.configs.length === 0 && <TableRow><TableCell colSpan={8} className="text-sm text-muted-foreground">Nenhum meio configurado.</TableCell></TableRow>}
-              {d.configs.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell>{planById.get(c.payment_plan_id)?.name ?? "Condição indisponível"}</TableCell>
-                  <TableCell>{METHOD_KIND_LABEL[c.method_kind]} · {pmName.get(c.payment_method_id) ?? "inativo no cadastro"}</TableCell>
-                  <TableCell>{c.due_days} dias</TableCell>
-                  <TableCell>até {c.max_installments}x</TableCell>
-                  <TableCell>{c.price_monthly_rate_percent == null ? "—" : `${c.price_monthly_rate_percent}% a.m.`}</TableCell>
-                  <TableCell><Badge variant={c.status === "active" ? "default" : "secondary"}>{c.status === "active" ? "Ativo" : "Revogado"}</Badge></TableCell>
+              {d.conditions.length === 0 && <TableRow><TableCell colSpan={9} className="text-sm text-muted-foreground">Nenhum meio configurado.</TableCell></TableRow>}
+              {d.conditions.map((c) => (
+                <TableRow key={`${c.plan_id}:${c.method}`}>
+                  <TableCell>{planById.get(c.plan_id)?.name ?? "Condição indisponível"}</TableCell>
+                  <TableCell>{METHOD_KIND_LABEL[c.method]} · {pmName.get(c.payment_method_id) ?? "inativo no cadastro"}</TableCell>
+                  <TableCell>{c.deadline_days} dias após a NF</TableCell>
+                  <TableCell>{c.installment_count}x</TableCell>
+                  <TableCell>{c.installment_count > 1 ? `${c.monthly_rate}% a.m.` : "—"}</TableCell>
+                  <TableCell><Badge variant={c.retired ? "secondary" : "default"}>{c.retired ? "Aposentada" : "Vigente"}</Badge></TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {d.partners.map((pid) => {
+                        const on = c.partner_ids.includes(pid);
+                        return (
+                          <Button key={pid} size="sm" variant={on ? "default" : "outline"} aria-pressed={on} disabled={!d.can_edit || busy || c.retired}
+                            onClick={() => assign.mutate({ partner_id: pid, plan_id: c.plan_id, method: c.method, version: c.version, enabled: !on }, {
+                              onSuccess: () => toast.success(on ? "Parceiro revogado nesta versão." : "Parceiro liberado."),
+                              onError: (e) => toast.error(methodAdminError(e)),
+                            })}>
+                            {pid.slice(0, 8)}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </TableCell>
                   <TableCell>v{c.version}</TableCell>
-                  <TableCell>{d.can_edit && <Button size="sm" variant="outline" disabled={busy} onClick={() => startEdit(c)}>Editar</Button>}</TableCell>
+                  <TableCell className="space-x-1 whitespace-nowrap">
+                    {d.can_edit && <Button size="sm" variant="outline" disabled={busy} onClick={() => startEdit(c)}>Nova versão</Button>}
+                    {d.can_edit && !c.retired && (
+                      <Button size="sm" variant="outline" disabled={busy}
+                        onClick={() => retire.mutate({ plan_id: c.plan_id, method: c.method, expected_version: c.version }, {
+                          onSuccess: () => toast.success("Versão aposentada."), onError: (e) => toast.error(methodAdminError(e)),
+                        })}>Aposentar</Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -144,58 +173,56 @@ export function MeiosPagamentoTab() {
 
       {d.can_edit ? (
         <Card data-testid="pm-form">
-          <CardHeader><CardTitle className="text-base">{editing ? `Editar meio (v${editing.version})` : "Novo meio na condição"}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{editing ? `Nova versão (atual v${editing.version})` : "Novo meio na condição"}</CardTitle></CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="pm-plan">Condição</Label>
-              <Select value={draft.planId} onValueChange={(v) => setDraft({ ...draft, planId: v })} disabled={!!editing}>
+              <Select value={form.planId} onValueChange={(v) => setDraft({ ...form, planId: v })} disabled={!!editing}>
                 <SelectTrigger id="pm-plan" aria-label="Condição"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{d.plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} · {p.installment_count}x · até {p.max_days} dias</SelectItem>)}</SelectContent>
+                <SelectContent>{d.plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} · até {p.max_days} dias</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pm-kind">Tipo de meio</Label>
-              <Select value={draft.kind} onValueChange={(v) => setDraft({ ...draft, kind: v as MethodKind, max: "1", rate: "" })} disabled={!!editing}>
+              <Select value={form.kind} onValueChange={(v) => setDraft({ ...form, kind: v as MethodKind, n: "1", rate: "0" })} disabled={!!editing}>
                 <SelectTrigger id="pm-kind" aria-label="Tipo de meio"><SelectValue /></SelectTrigger>
                 <SelectContent>{METHOD_KINDS.map((k) => <SelectItem key={k} value={k}>{METHOD_KIND_LABEL[k]}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="pm-cat">Meio no cadastro</Label>
-              <Select value={draft.pmId} onValueChange={(v) => setDraft({ ...draft, pmId: v })}>
+              <Select value={form.pmId} onValueChange={(v) => setDraft({ ...form, pmId: v })}>
                 <SelectTrigger id="pm-cat" aria-label="Meio no cadastro"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>{d.catalog.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="pm-due">Prazo da 1ª parcela (dias após a NF)</Label>
-              <Input id="pm-due" inputMode="numeric" value={draft.due} onChange={(e) => setDraft({ ...draft, due: e.target.value })} />
+              <Label htmlFor="pm-rev">Categoria de receita</Label>
+              <Select value={form.catId} onValueChange={(v) => setDraft({ ...form, catId: v })}>
+                <SelectTrigger id="pm-rev" aria-label="Categoria de receita"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{d.categories.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="pm-max">Parcelas máximas (até {MAX_INSTALLMENTS[draft.kind]})</Label>
-              <Input id="pm-max" inputMode="numeric" value={draft.max} disabled={MAX_INSTALLMENTS[draft.kind] === 1}
-                onChange={(e) => setDraft({ ...draft, max: e.target.value })} />
+              <Label htmlFor="pm-due">Prazo da 1ª parcela (dias após a NF)</Label>
+              <Input id="pm-due" inputMode="numeric" value={form.due} onChange={(e) => setDraft({ ...form, due: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="pm-max">Parcelas (até {maxN})</Label>
+              <Input id="pm-max" inputMode="numeric" value={form.n} disabled={maxN === 1} onChange={(e) => setDraft({ ...form, n: e.target.value })} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="pm-rate">Taxa Price mensal (%)</Label>
-              <Input id="pm-rate" inputMode="decimal" placeholder="obrigatória se parcelado" value={draft.rate} disabled={MAX_INSTALLMENTS[draft.kind] === 1}
-                onChange={(e) => setDraft({ ...draft, rate: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="pm-status">Situação</Label>
-              <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v as Draft["status"] })}>
-                <SelectTrigger id="pm-status" aria-label="Situação"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="active">Ativo</SelectItem><SelectItem value="revoked">Revogado</SelectItem></SelectContent>
-              </Select>
+              <Input id="pm-rate" inputMode="decimal" value={form.rate} disabled={maxN === 1} onChange={(e) => setDraft({ ...form, rate: e.target.value })} />
             </div>
             {formError && <Alert variant="destructive" role="alert" className="sm:col-span-2"><AlertDescription>{formError}</AlertDescription></Alert>}
             <div className="sm:col-span-2 flex gap-2">
-              <Button onClick={submit} disabled={busy}>{save.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}Salvar meio</Button>
-              {editing && <Button variant="outline" disabled={busy} onClick={() => startEdit(null)}>Cancelar edição</Button>}
+              <Button onClick={submit} disabled={busy}>{publish.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}Publicar versão</Button>
+              {(editing || draft) && <Button variant="outline" disabled={busy} onClick={() => startEdit(null)}>Cancelar</Button>}
             </div>
           </CardContent>
         </Card>
-      ) : <p className="text-sm text-muted-foreground">Consulta apenas. Administrador ou financeiro configura os meios.</p>}
+      ) : <p className="text-sm text-muted-foreground">Consulta apenas. Administrador ou financeiro configura as condições.</p>}
     </div>
   );
 }
