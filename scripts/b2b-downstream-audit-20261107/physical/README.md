@@ -34,7 +34,7 @@ A confirmação cobriu Enviar→Confirmar sem segunda baixa de estoque, CAS ause
 ## Cobertura e lacunas
 
 - Os 119 e 123 PASS usam **produto biológico fictício em ml** e as tabelas/RPCs canônicas capturadas.
-- **Químicos, fertilizantes, kg/g, embalagem inteira e apresentação L no downstream físico continuam NOT_RUN.** A fixture canônica compatível não foi validada nesta rodada; nenhum cadastro paralelo ou reinterpretação de volume/peso foi inventado. Peso somente para frete permanece requisito aberto.
+- A cobertura posterior de produto acabado está em `finished-product/`: reprodução 17/17, candidato 19/19 e legado focal 6/6, todos locais. Químicos/fertilizantes em kg/g e apresentações L/ml preservam unidade e embalagem inteira; peso não vira ml. O candidato continua INATIVO/BLOQUEADO, com baseline LIVE, composição B3 e entrada canônica pendentes de revisão.
 - Auth/JWT, papéis e Storage são costuras sintéticas locais. Algumas fixtures upstream usam `session_replication_role=replica` somente na montagem ou para simular mudanças; os writers testados executam com os gatilhos habilitados. Isso não prova JWT/RLS/Storage/PostgREST/browser real.
 - Releases continuam NO-GO para revisão independente. O grant de writer existente no harness é exclusivamente local e não representa ativação hospedada.
 - NF autorizada permanece fixture local sem rede no B4; nenhuma integração fiscal/recebível real foi certificada. Cancelamento de NF após pagamento continua sem decisão e não foi implementado.
