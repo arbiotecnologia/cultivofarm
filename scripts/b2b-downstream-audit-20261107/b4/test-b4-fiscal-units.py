@@ -70,6 +70,37 @@ def item(item_id, quantity, commercial_unit=None, taxable_quantity=None, taxable
     return value
 
 
+def install_real_pack_writers():
+    """Mesmos corpos LIVE byte a byte usados pelo harness canônico de embalagens."""
+    B3.psql("ALTER TABLE public.catalogo_volumes ADD COLUMN IF NOT EXISTS ordem integer NOT NULL DEFAULT 0;")
+    B3.psql("""CREATE TABLE IF NOT EXISTS platform_private.solid_pack_admin_receipts(
+        idempotency_key text NOT NULL PRIMARY KEY, actor_id uuid NOT NULL, organization_id uuid NOT NULL,
+        action text NOT NULL, request_fp text NOT NULL, result jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
+    DROP FUNCTION IF EXISTS public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text);""")
+    for name in ("platform_private.has_role", "platform_private.solid_mass_price_ok", "platform_private.recorte_a_actor_fresh",
+                 "platform_private.solid_pack_admin_org", "platform_private.solid_pack_receipt", "platform_private.solid_pack_decimal_text",
+                 "platform_private.solid_pack_weight_label", "platform_private.solid_pack_presentation_set_active",
+                 "platform_private.solid_pack_presentation_insert", "platform_private.solid_pack_presentation_new_version",
+                 "platform_private.catalogo_volumes_owner_consistent", "platform_private.solid_pack_presentation_guard",
+                 "public.solid_pack_price_set_v1", "public.solid_pack_offer_save_v1"):
+        B3.psql(B3.RX._cap("solid-pack", name))
+    B3.psql("""REVOKE ALL ON FUNCTION public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text),
+        public.solid_pack_offer_save_v1(uuid,uuid,text,text,numeric,integer,text) FROM PUBLIC;
+    GRANT EXECUTE ON FUNCTION public.solid_pack_price_set_v1(uuid,bigint,date,uuid,text),
+        public.solid_pack_offer_save_v1(uuid,uuid,text,text,numeric,integer,text) TO authenticated;
+    CREATE TRIGGER a00_catalogo_volumes_owner_consistent BEFORE INSERT OR UPDATE ON public.catalogo_volumes
+        FOR EACH ROW EXECUTE FUNCTION platform_private.catalogo_volumes_owner_consistent();
+    CREATE TRIGGER a01_catalogo_volumes_presentation_guard BEFORE INSERT OR DELETE OR UPDATE ON public.catalogo_volumes
+        FOR EACH ROW EXECUTE FUNCTION platform_private.solid_pack_presentation_guard();""")
+
+
+def admin_writer(sql):
+    claims = json.dumps({"role": "authenticated", "sub": B3.UADM, "exp": int(time.time()) + 3600})
+    prefix = (f"SET ROLE authenticated;\nSELECT set_config('request.jwt.claim.sub','{B3.UADM}',false) \\g /dev/null\n"
+              f"SELECT set_config('request.jwt.claims','{claims}',false) \\g /dev/null\n")
+    return B3.out(B3.psql(prefix + sql, check=False))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", choices=["before", "after"], required=True)
@@ -119,6 +150,30 @@ def main():
         check("componente B4 executado somente no PG descartável", component.returncode == 0, component.stderr[-1200:])
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
         check("stub operacional restrito ao harness", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
+
+        install_real_pack_writers()
+        B3.psql(f"""INSERT INTO public.produtos VALUES
+        ('{G_PRODUCT}','Fertilizante 500 g TESTE','G500-TESTE',true,true,'{B3.A}',NULL,NULL,NULL,NULL,false);
+        INSERT INTO public.product_sale_units(product_id,owner_organization_id,unidade_conteudo,forma_fisica,version)
+        VALUES ('{G_PRODUCT}','{B3.A}','g','solido',1),('{B3.LIQ}','{B3.A}','ml','liquido',1);""")
+        offer, offer_error = admin_writer(
+            f"SELECT public.solid_pack_offer_save_v1('{G_PRODUCT}',NULL,'SC500G','Fertilizante 500 g TESTE',0.500,NULL,'TESTE-B4-G-OFFER-0001')::text;")
+        check("writer REAL cria apresentação de 500 g recebendo 0,500 kg", offer is not None and offer.get("packaging_id"), offer_error or offer)
+        packaging_id = offer and offer.get("packaging_id")
+        if not packaging_id:
+            raise RuntimeError("fixture de 500 g não criada pelo writer real")
+        presentation = T.sql_json(f"""SELECT jsonb_build_object('kg',k.peso_liquido_kg,'unit',s.unidade_conteudo,'label',v.rotulo)
+        FROM public.product_packagings k JOIN public.product_sale_units s ON s.product_id=k.product_id
+        JOIN public.catalogo_volumes v ON v.id=k.id WHERE k.id='{packaging_id}'""")
+        check("writer REAL grava 0,500 kg e rótulo dimensional de 500 g",
+              presentation and Decimal(str(presentation["kg"])) == Decimal("0.500") and presentation["unit"] == "g" and presentation["label"].endswith("500 g"), presentation)
+        price, price_error = admin_writer(
+            f"SELECT public.solid_pack_price_set_v1('{packaging_id}',9000,current_date,NULL,'TESTE-B4-G-PRICE-00001')::text;")
+        check("writer REAL define preço da embalagem sem preço por peso", price is not None and price.get("preco_centavos") == 9000, price_error or price)
+        liquid_pack, liquid_pack_error = admin_writer(
+            f"SELECT public.solid_pack_offer_save_v1('{B3.LIQ}',NULL,'LIQPACK','Pack líquido proibido TESTE',1,NULL,'TESTE-B4-LIQ-PACK-0001')::text;")
+        check("writer REAL nega whole-pack para produto líquido", liquid_pack is None and "PACK_PRODUCT_NOT_SOLID" in (liquid_pack_error or ""), liquid_pack_error or liquid_pack)
+        gram_line = {"item_id": G_PRODUCT, "item_tipo": "produto", "packaging_id": packaging_id, "quantidade": 2}
 
         def make_order(lines):
             nonlocal sequence
