@@ -498,6 +498,10 @@ def main():
         after_rb = state(legacy_id)
         r = request(SP.UADM, legacy_id, "TESTE apos rollback")
         check("rollback nega EXECUTE ao cliente sem restaurar corpo vulnerável", r.returncode != 0 and "permission denied" in r.stderr and psql(f"SELECT md5(pg_get_functiondef('{G.SIG}'::regprocedure))").stdout.strip() == expected_candidate_md5, r.stderr)
+        for kind in ("approve", "reject"):
+            meta = pins["decision_candidates"][kind]
+            r = decision(SP.UADM, kind, legacy_id, "TESTE apos rollback")
+            check(f"rollback fecha {kind} sem restaurar corpo anterior", r.returncode != 0 and "permission denied" in r.stderr and psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip() == meta["candidate_md5"], r.stderr)
         check("rollback não apaga nem reescreve histórico", state(legacy_id) == after_rb)
         check("TODOS os 38 gatilhos continuam habilitados no fim", triggers_ok())
         check("B3 não foi instalado nem modificado nesta bateria", psql("SELECT to_regclass('platform_private.b2b_condition_versions') IS NULL").stdout.strip() == "t")
