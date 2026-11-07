@@ -10,6 +10,7 @@ ROOT = HERE.parents[3]
 DELIVERY = ROOT / "scripts/delivery-atomic-hardening-20261030"
 CONF = DELIVERY / "confirmation"
 BASE = json.loads((HERE / "baseline.json").read_text())
+LIVE_FACTS = json.loads((HERE / "live-entry-guards-20261107T1737Z.json").read_text())
 CURRENT = json.loads((DELIVERY / "capture/current.json").read_text())
 
 
@@ -69,8 +70,13 @@ END$$;"""
 
 def build():
     functions = {x["signature"]: x for x in BASE["functions"]}
-    if len(functions) != 11 or BASE["existing_candidate_columns"]:
+    dependencies = {x["signature"]: x for x in BASE.get("dependency_functions", [])}
+    if len(functions) != 11 or len(dependencies) != 1 or len(BASE.get("dependency_triggers", [])) != 1 or BASE["existing_candidate_columns"]:
         raise AssertionError("baseline incompleta ou colunas já presentes")
+    for signature, entry in list(functions.items()) + list(dependencies.items()):
+        reported = LIVE_FACTS["functions"].get(signature)
+        if reported and entry["md5"] != reported["reported_md5"]:
+            raise AssertionError("reported LIVE pin drift " + signature)
     reservar = captured("public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)")
     criar = captured("public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)")
     merge = extract((DELIVERY / "candidate.sql.review").read_text(), "platform_private.delivery_merge_split_20261030")
@@ -93,6 +99,7 @@ def build():
         else: entry_final = changed
     entry_guard = one_replace(entry_guard, " -- Preserve ONLY the installed canonical partial reservation semantics under", """ -- Compra para revenda: contexto transacional e ticket específicos do writer privado.
  IF TG_TABLE_NAME='estoque_produto' AND NEW.origem_estoque='compra_produto_acabado_revenda'
+  AND NEW.quantidade_reservada IS NULL
   AND EXISTS(SELECT 1 FROM platform_private.stock_motor_context x WHERE x.txid=txid_current() AND x.actor=auth.uid() AND x.ctx->>'acao'='entrada') THEN
   SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();
   IF FOUND AND c.item=NEW.id AND c.ctx->>'acao'='entrada' AND c.ctx->>'origem'='finished_product_purchase_entry_v1'
@@ -127,6 +134,21 @@ def build():
    AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=pg_catalog.txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
   THEN RETURN NEW; END IF;
   IF TG_OP='UPDATE'""", "purchase biological guard")
+    entry_validate = one_replace(entry_validate, "  IF NEW.quantidade_reservada IS NOT NULL THEN\n    RETURN NEW;\n  END IF;", """  IF NEW.quantidade_reservada IS NOT NULL THEN
+    -- Só uma divisão parcial no contexto canônico pode usar o retorno de reserva.
+    IF NEW.origem_estoque='compra_produto_acabado_revenda' AND NOT EXISTS(
+      SELECT 1 FROM platform_private.stock_motor_context x
+      JOIN public.estoque_produto parent ON parent.id=x.item
+      WHERE x.txid=pg_catalog.txid_current() AND x.actor=auth.uid() AND x.ctx->>'acao'='reserva'
+        AND parent.id IS DISTINCT FROM NEW.id AND parent.origem_estoque='compra_produto_acabado_revenda'
+        AND parent.lote_id=NEW.lote_id AND parent.status::text='disponivel'
+        AND NEW.status::text='reservado' AND NEW.quantidade>0 AND NEW.quantidade<parent.quantidade
+        AND NEW.quantidade_reservada=NEW.quantidade
+    ) THEN
+      RAISE EXCEPTION 'FINISHED_PRODUCT_RESERVATION_CONTEXT_DENIED' USING ERRCODE='42501';
+    END IF;
+    RETURN NEW;
+  END IF;""", "purchase reservation shortcut")
     entry_validate = one_replace(entry_validate, "  -- Exigir envase para o lote\n  IF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id) THEN\n    RAISE EXCEPTION 'Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.'\n      USING ERRCODE = 'check_violation';\n  END IF;", """  -- Compra para revenda usa ticket privado e snapshot; demais entradas continuam exigindo envase.
   IF NEW.origem_estoque='compra_produto_acabado_revenda' THEN
     IF NOT platform_private.finished_product_stock_valid_v1(NEW)
@@ -219,7 +241,7 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(publi
 """
     purchase = r"""
 CREATE FUNCTION platform_private.finished_product_purchase_entry_v1(
- p_produto_id uuid,p_embalagem_id uuid,p_codigo_lote text,p_quantidade numeric,
+ p_produto_id uuid,p_embalagem_id uuid,p_lote_fornecedor text,p_quantidade numeric,
  p_compra_referencia text,p_fornecedor_nome text,p_idempotency_key text,p_validade date DEFAULT NULL
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $purchase$
 DECLARE
@@ -234,7 +256,7 @@ BEGIN
   RAISE EXCEPTION 'FINISHED_PRODUCT_GATE_CLOSED' USING ERRCODE='42501';
  END IF;
  v_org:=platform_private.stock_motor_actor('entrada');
- IF p_produto_id IS NULL OR p_embalagem_id IS NULL OR nullif(btrim(coalesce(p_codigo_lote,'')),'') IS NULL
+ IF p_produto_id IS NULL OR p_embalagem_id IS NULL OR nullif(btrim(coalesce(p_lote_fornecedor,'')),'') IS NULL
   OR nullif(btrim(coalesce(p_compra_referencia,'')),'') IS NULL OR nullif(btrim(coalesce(p_fornecedor_nome,'')),'') IS NULL THEN
   RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_PARAMS_INVALID' USING ERRCODE='22023';
  END IF;
@@ -247,7 +269,7 @@ BEGIN
  IF p_idempotency_key IS NULL OR length(btrim(p_idempotency_key))<8 THEN
   RAISE EXCEPTION 'FINISHED_PRODUCT_IDEMPOTENCY_REQUIRED' USING ERRCODE='23514';
  END IF;
- v_fp:=encode(extensions.digest(jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','product',p_produto_id,'packaging',p_embalagem_id,'lot',btrim(p_codigo_lote),'quantity',p_quantidade,'purchase',btrim(p_compra_referencia),'supplier',btrim(p_fornecedor_nome),'validity',p_validade)::text,'sha256'),'hex');
+ v_fp:=encode(extensions.digest(jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','product',p_produto_id,'packaging',p_embalagem_id,'supplier_lot',btrim(p_lote_fornecedor),'quantity',p_quantidade,'purchase',btrim(p_compra_referencia),'supplier',btrim(p_fornecedor_nome),'validity',p_validade)::text,'sha256'),'hex');
  PERFORM pg_advisory_xact_lock(hashtext('finished_product_purchase:'||p_idempotency_key));
  v_org:=platform_private.stock_motor_actor('entrada');
  IF NOT EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled) THEN
@@ -296,13 +318,13 @@ BEGIN
  v_volume_total:=CASE WHEN v_unit IN ('kg','g') THEN NULL WHEN v_unit='l' THEN v_total ELSE v_total/1000 END;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_lote);
  INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)
- VALUES(v_lote,btrim(p_codigo_lote),p_produto_id,NULL,NULL,'aprovado',v_org,
-  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text);
+ VALUES(v_lote,btrim(p_lote_fornecedor),p_produto_id,NULL,NULL,'aprovado',v_org,
+  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'lote_fornecedor',btrim(p_lote_fornecedor),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text);
  DELETE FROM platform_private.authz_tickets WHERE txid=pg_catalog.txid_current() AND scope='finished_product_purchase_entry_v1' AND target=v_lote;
  v_ctx:=jsonb_build_object('acao','entrada','origem','finished_product_purchase_entry_v1','usuario_id',v_uid,'unidade','un',
   'idempotency_key',p_idempotency_key,'request_fingerprint',v_fp,'referencia_tipo','lote',
   'metadata',jsonb_build_object('stock_request_item',v_stock,'stock_request_actor',v_uid,'origem_estoque','compra_produto_acabado_revenda',
-   'compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'produto_id',p_produto_id,
+   'compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'lote_fornecedor',btrim(p_lote_fornecedor),'produto_id',p_produto_id,
    'embalagem_id',p_embalagem_id,'embalagem_versao',v_version,'unidade_conteudo',v_unit,'conteudo_por_unidade',v_content,'quantidade_conteudo',v_total));
  PERFORM platform_private.stock_motor_context_set(v_ctx);
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_stock);
