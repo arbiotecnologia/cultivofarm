@@ -23,9 +23,16 @@
   ],
   "catalog_dependencies": [
     "public.produtos.owner_organization_id",
+    "public.microrganismos.owner_organization_id",
     "public.product_sale_units",
     "public.product_packagings",
     "public.catalogo_volumes"
+  ],
+  "dependency_functions": [
+    "platform_private.estoque_produto_catalog_tenant_guard()"
+  ],
+  "dependency_triggers": [
+    "a000_estoque_produto_catalog_tenant_guard"
   ],
   "new_columns": [
     "origem_estoque",
@@ -39,20 +46,20 @@
   "new_grants": [],
   "files": {
     "baseline.json": {
-      "sha256": "641d1f295c1256bfdab2781d0d7e380c9f3907ad78d974e85662d0f3e67d3df2",
-      "bytes": 9379
+      "sha256": "e212c238e54d3d5bc5c9922af20e29876a88c0e71fb71f9e1fc74296e8053afc",
+      "bytes": 10949
     },
     "candidate.sql.review": {
-      "sha256": "af71a57593d263a0fd4a1ea4341d62cb3e44e2edbaa6a9cf64d495df3f90e89f",
-      "bytes": 69331
+      "sha256": "96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e",
+      "bytes": 70331
     },
     "install.sql.review": {
-      "sha256": "6cb740b66db5bab7d2a16d15433233620975c9a9843e9fb49c2a1681efe49b6a",
-      "bytes": 96440
+      "sha256": "b33a01e11b8b9fbad96e8131956f00fceb8396a3605ca6816919771ebd774cb8",
+      "bytes": 101298
     },
     "postflight.sql.review": {
-      "sha256": "7c92b0f2c2d001cb1460aa27729e4f48b90c632acf191ff401a38b772fa2097d",
-      "bytes": 11317
+      "sha256": "9a4459ef526d2e8d39c7318e79d55e930b481bd9c25976d9a7ba2f7302322b5a",
+      "bytes": 12170
     },
     "rollback.sql.review": {
       "sha256": "9520cc30f3167045cdfb1a45c992ddd943b367409a2fa8666fa418db41a66644",

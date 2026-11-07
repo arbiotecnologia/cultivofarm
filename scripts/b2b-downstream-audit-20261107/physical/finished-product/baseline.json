@@ -72,7 +72,7 @@
   "dependency_functions": [
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "320c65430734d75b9a215d5d99840b63",
+      "md5": "874c9ca8b5b4e307cf995a0197f98efc",
       "owner": "postgres",
       "signature": "platform_private.estoque_produto_catalog_tenant_guard()"
     }
