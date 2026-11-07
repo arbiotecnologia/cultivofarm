@@ -131,6 +131,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS partner_order_financial_links_partner_order_id
 CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETURNS jsonb LANGUAGE sql AS $$SELECT '[]'::jsonb$$;
 """)
     live = json.loads(MONEY.read_text())
+    # Referências exigidas pelas FKs capturadas de accounts_receivable.
+    for table in ["financial_cost_centers", "fiscal_requirement_exemptions", "recurring_financial_templates"]:
+        B3.psql(f"CREATE TABLE IF NOT EXISTS public.{table}(id uuid PRIMARY KEY)")
     names = ["accounts_receivable", "accounts_receivable_installments", "receivable_payments", "financial_receipts", "financial_audit_log"]
     for name in names:
         table = next(t for t in live["tables"] if t["name"] == name)
