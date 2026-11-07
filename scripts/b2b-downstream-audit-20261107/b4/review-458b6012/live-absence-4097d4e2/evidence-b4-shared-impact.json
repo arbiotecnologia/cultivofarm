@@ -108,12 +108,12 @@
     {
       "name": "PRE confirma writers/índice e ausência de todos os overloads da projeção",
       "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:40: ERROR:  B4_PRE_INDEXES\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\n"
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:40: ERROR:  B4_PRE_TRIGGERS\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\n"
     },
     {
       "name": "instalação descartável cria projeção nova e passa PRE+POST íntegros",
       "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:43: ERROR:  B4_PRE_INDEXES\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\n"
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:43: ERROR:  B4_PRE_TRIGGERS\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\n"
     },
     {
       "name": "POST confirma exatamente um overload owner-only e metadata completa",
