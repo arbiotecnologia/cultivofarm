@@ -1,0 +1,27 @@
+{
+  "scope": "local_disposable_only",
+  "fixes": [
+    {
+      "id": "PHYS-COMP-01",
+      "source": "scripts/stock-envase-recovery-20261027/isolated/assemble.py",
+      "harness": "scripts/stock-envase-recovery-20261027/isolated/test_pg.py",
+      "cause": "targeted run replaced reviewed release.sql.review with the pre-matrix denial stub",
+      "change": "separate release-stub.sql.review from release.sql.review",
+      "candidate_sql_changed": false,
+      "catalog_pins_changed": false,
+      "grants_or_guards_changed": false,
+      "proof": "full matrix exit 0; targeted rerun exit 0; release before/after SHA256 comparison exit 0"
+    },
+    {
+      "id": "PHYS-COMP-02",
+      "source": "scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py",
+      "cause": "fresh sandbox lacked /tmp/delivery-confirmation before cached.write_text",
+      "observed_error": "FileNotFoundError: /tmp/delivery-confirmation/applied-fixture.sql",
+      "change": "create only the disposable cache parent before writing",
+      "candidate_sql_changed": false,
+      "catalog_pins_changed": false,
+      "grants_or_guards_changed": false,
+      "proof": "pending confirmation rerun"
+    }
+  ]
+}
