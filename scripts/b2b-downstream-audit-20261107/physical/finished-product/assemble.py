@@ -118,7 +118,7 @@ def build():
     merge = one_replace(merge, " IF v_total IS NULL OR v_volume IS NULL OR v_total<=0 OR v_volume<=0 OR v_total::text IN ('NaN','Infinity','-Infinity') OR v_volume::text IN ('NaN','Infinity','-Infinity') THEN", " IF v_total IS NULL OR v_total<=0 OR v_total::text IN ('NaN','Infinity','-Infinity') OR (v_main.origem_estoque IS NULL AND (v_volume IS NULL OR v_volume<=0 OR v_volume::text IN ('NaN','Infinity','-Infinity'))) THEN", "merge total validation")
     merge = one_replace(merge, "SET status='estornado',quantidade=0,volume_total=0,quantidade_reservada=0", "SET status='estornado',quantidade=0,volume_total=CASE WHEN origem_estoque='produto_acabado' AND unidade_conteudo IN ('kg','g') THEN NULL ELSE 0 END,quantidade_conteudo=CASE WHEN origem_estoque IS NOT NULL THEN 0 ELSE quantidade_conteudo END,quantidade_reservada=0", "merge retire")
     merge = one_replace(merge, "SET quantidade=v_total,volume_total=v_volume WHERE id=v_main.id;", "SET quantidade=v_total,volume_total=v_volume,quantidade_conteudo=CASE WHEN v_main.conteudo_por_unidade IS NOT NULL THEN v_total*v_main.conteudo_por_unidade ELSE NULL END WHERE id=v_main.id;", "merge main update")
-    merge = one_replace(merge, "volume_posterior=v_volume", "volume_posterior IS NOT DISTINCT FROM v_volume", "merge null ledger")
+    merge = one_replace(merge, "volume_posterior=v_volume", "volume_posterior=coalesce(v_volume,0)", "merge null ledger")
 
     for label, body, error in (("confirm", confirm, "DELIVERY_CONFIRM_LINEAGE_DENIED"), ("send", send, "DELIVERY_SEND_LINEAGE_DENIED")):
         old = f""" IF s.id IS NULL OR l.id IS NULL OR pp.id IS NULL OR e.lote_id IS DISTINCT FROM l.id OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL
