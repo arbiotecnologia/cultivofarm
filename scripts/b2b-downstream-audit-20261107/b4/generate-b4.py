@@ -211,7 +211,7 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
 
     # Crédito/pagamento/gerador/shared guard extraídos SEM os overloads create/simulate históricos.
     credit = fn(deltas, "public.fn_b2b_credit_exposure")
-    credit = delta(credit, "row:=platform_private.b2b_proven_money_row(i.id);",
+    origin = delta(origin, "row:=platform_private.b2b_proven_money_row(i.id);",
                    "row:=platform_private.b2b_proven_money_row_internal(i.id,org);",
                    "seller-scoped internal money proof")
     payment = fn(deltas, "public.rpc_register_receivable_payment")
