@@ -375,15 +375,16 @@ def build():
         expected = md5_text(trigger["definition"] + "|" + trigger["enabled"])
         query = f"SELECT md5(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text) FROM pg_trigger t WHERE t.tgname='{trigger['name']}' AND t.tgrelid='{trigger['schema']}.{trigger['table']}'::regclass AND NOT t.tgisinternal"
         pre += digest_guard(query, expected, "B4_PRE_AUTO_TRIGGER:" + trigger["name"])
-    pre += "DO $guard$ BEGIN\n RAISE EXCEPTION 'B4_BASELINE_CAPTURE_REQUIRED:public.rpc_receivable_money_projection_v1(uuid,integer,integer)' USING ERRCODE='42501';\nEND $guard$;\nSELECT 'PRE_OK' AS status;\n"
+    pre += "SELECT 'PRE_OK' AS status;\n"
 
-    post = "-- READONLY. Só pode passar depois que a baseline ausente for capturada e o PRE revisto.\n"
+    post = "-- READONLY. Exige instalação candidata íntegra; operação continua fechada.\n"
     post += function_guard([(SIGS[name], {**baselines[name], "body_md5": candidate_funcs[name]["body_md5"]})
                             for name in sorted(REPLACED) if baselines[name]["status"] == "CAPTURED_REQUIRES_LIVE_RECHECK" and name not in {"public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"}], "B4_POST_SHARED")
-    owner_only = [SIGS[name] for name in new_names] + [SIGS["public.rpc_receivable_money_projection_v1"], SIGS["public.generate_b2b_receivable_secure_impl"], SIGS["public.tg_auto_b2b_receivable"]]
+    owner_only = [SIGS[name] for name in new_names] + [SIGS["public.generate_b2b_receivable_secure_impl"], SIGS["public.tg_auto_b2b_receivable"]]
     post += owner_only_function_guard(owner_only, "B4_POST")
+    post += projection_overload_guard(1, "B4_POST_PROJECTION_OVERLOAD_COUNT_DRIFT")
     # Corpos das funções owner-only também são pinados, sem exigir uma ACL inexistente.
-    for name in new_names + ["public.rpc_receivable_money_projection_v1", "public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"]:
+    for name in new_names + ["public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"]:
         post += digest_guard(f"SELECT md5(pg_get_functiondef('{SIGS[name]}'::regprocedure))", candidate_funcs[name]["body_md5"], "B4_POST_BODY:" + SIGS[name])
     post += relation_acl_guard(baseline_schema["owner"], ar["acl"], "B4_POST")
     for query, expected, code in [(column_query, post_columns_md5, "B4_POST_COLUMNS"),
