@@ -296,11 +296,35 @@ def build():
     # rows_digest usa True/False; a consulta SQL produz YES/NO para is_nullable.
     baseline_schema["columns_md5"] = md5_text("^".join("|".join([c["name"], c["type"], c.get("default") or "", "NO" if c["notnull"] else "YES"]) for c in ar["columns"]))
     baseline_schema["constraints_md5"] = md5_text("^".join(f"{c['name']}|{c['definition']}" for c in ar["constraints"]))
+    ar_indexes = sorted(ar_indexes, key=lambda x: x["name"])
+    ar_triggers = sorted(ar_triggers, key=lambda x: x["name"])
+    baseline_schema["indexes"] = ar_indexes
+    baseline_schema["triggers"] = ar_triggers
     baseline_schema["indexes_md5"] = md5_text("^".join(f"{x['name']}|{x['definition']}|{'t' if x['valid'] else 'f'}" for x in ar_indexes))
     baseline_schema["triggers_md5"] = md5_text("^".join(f"{x['name']}|{x['definition']}|{x['enabled']}" for x in ar_triggers))
     constraint_query = "SELECT md5(string_agg(c.conname||'|'||pg_get_constraintdef(c.oid),'^' ORDER BY c.conname)) FROM pg_constraint c WHERE c.conrelid='public.accounts_receivable'::regclass"
     index_query = "SELECT md5(string_agg(c.relname||'|'||pg_get_indexdef(c.oid)||'|'||i.indisvalid::text,'^' ORDER BY c.relname)) FROM pg_class c JOIN pg_index i ON i.indexrelid=c.oid WHERE i.indrelid='public.accounts_receivable'::regclass"
     trigger_query = "SELECT md5(string_agg(t.tgname||'|'||pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text,'^' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.accounts_receivable'::regclass AND NOT t.tgisinternal"
+    post_columns = ar["columns"] + [{"name": "b2b_document_id", "type": "uuid", "default": None, "notnull": False}]
+    post_columns_md5 = md5_text("^".join("|".join([c["name"], c["type"], c.get("default") or "", "NO" if c["notnull"] else "YES"]) for c in post_columns))
+    post_constraints = sorted(ar["constraints"] + [{"name": "accounts_receivable_b2b_document_id_fkey", "definition": "FOREIGN KEY (b2b_document_id) REFERENCES platform_private.b2b_authorized_documents(id)"}], key=lambda x: x["name"])
+    post_constraints_md5 = md5_text("^".join(f"{c['name']}|{c['definition']}" for c in post_constraints))
+    updated_ux = "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text) AND (b2b_document_id IS NULL))"
+    post_indexes = sorted([x for x in ar_indexes if x["name"] != "ux_ar_one_active_per_b2b_order"] + [
+        {"name": "ux_ar_one_active_per_b2b_order", "definition": updated_ux, "valid": True},
+        {"name": "b2b_one_title_per_document", "definition": "CREATE UNIQUE INDEX b2b_one_title_per_document ON public.accounts_receivable USING btree (b2b_document_id) WHERE (b2b_document_id IS NOT NULL)", "valid": True},
+    ], key=lambda x: x["name"])
+    post_indexes_md5 = md5_text("^".join(f"{x['name']}|{x['definition']}|{'t' if x['valid'] else 'f'}" for x in post_indexes))
+    post_ar_triggers = sorted(ar_triggers + [
+        {"name": name, "definition": definition, "enabled": "O"}
+        for name, definition in [
+            ("a01_b2b_fiscal_title_fence", "CREATE TRIGGER a01_b2b_fiscal_title_fence BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence()"),
+            ("a01_b2b_fiscal_title_identity", "CREATE TRIGGER a01_b2b_fiscal_title_identity BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_title_insert_fence()"),
+            ("zz_b2b_shared_credit_guard", "CREATE TRIGGER zz_b2b_shared_credit_guard BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_shared_receivable_credit_guard()"),
+        ]
+    ], key=lambda x: x["name"])
+    post_triggers_md5 = md5_text("^".join(f"{x['name']}|{x['definition']}|{x['enabled']}" for x in post_ar_triggers))
+    auto_triggers = sorted([x for x in CAP["triggers"] if "tg_auto_b2b_receivable" in x.get("definition", "")], key=lambda x: (x["schema"], x["table"], x["name"]))
 
     pre = "-- READONLY. Revisão 458b6012; capturas locais canônicas exigem conferência LIVE.\n"
     pre += base_files["01-pre.sql.readonly"].replace("SELECT 'PRE_OK' AS status;", "")
