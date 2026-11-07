@@ -856,10 +856,10 @@ def build(pins=LIVE_PINS, cols=LIVE_COLS, fn_md5=None, deny_md5=None):
             "BEGIN;\nSET LOCAL lock_timeout = '3s';\nDO $$ BEGIN\n" + pins_block("INSTALL", pins, cols) + ABSENT + "END $$;\n"
             + "-- [candidata comprovada schema.sql.review sha256 b1416978…; deltas V/N/R/P declarados em generate.py]\n"
             + ver + asg + snap + ret + EXTRA + choice + "\n" + sch + "\n" + res + WRITERS + build_sim() + build_create() + build_quote() + grants
-            + "DO $$ BEGIN\n" + pins_block("INSTALL_POST", pins, cols) + all_fn_pins("INSTALL_POST", md) + acl_block("INSTALL_POST")
+            + "DO $$ BEGIN\n" + pins_block("INSTALL_POST", post_pins, cols) + all_fn_pins("INSTALL_POST", md) + acl_block("INSTALL_POST")
             + "  IF EXISTS (SELECT 1 FROM platform_private.b2b_condition_activation) OR EXISTS (SELECT 1 FROM platform_private.b2b_condition_versions) THEN RAISE EXCEPTION 'INSTALL_POST: dados inesperados'; END IF;\n"
             + "END $$;\nCOMMIT;\n")
-    post = ("-- 03 POST (somente leitura).\nDO $$ BEGIN\n" + pins_block("POST", pins, cols) + all_fn_pins("POST", md) + acl_block("POST")
+    post = ("-- 03 POST (somente leitura).\nDO $$ BEGIN\n" + pins_block("POST", post_pins, cols) + all_fn_pins("POST", md) + acl_block("POST")
             + "  RAISE NOTICE 'POST_OK';\nEND $$;\n")
     deny = "".join(DENY_TMPL.format(sig=s) for s in DENY_SIGS.values())
     revoke = "".join(f"REVOKE ALL ON FUNCTION {s} FROM PUBLIC, anon, authenticated, service_role;\n" for s in PUB.values())
