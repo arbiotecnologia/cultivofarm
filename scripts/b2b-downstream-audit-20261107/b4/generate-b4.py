@@ -242,7 +242,7 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
         source = fn(body, name)
         candidate_pins[sig] = md5_def(source)
     for name in ["platform_private.b2b_allocate_document", "platform_private.b2b_order_residual", "platform_private.b4_schedule_from_nf"]:
-        match = re.findall(rf"CREATE FUNCTION {re.escape(name)}\(.*?\nEND \$\$;", body, re.S)
+        match = re.findall(rf"CREATE (?:OR REPLACE )?FUNCTION {re.escape(name)}\(.*?\nEND \$\$;", body, re.S)
         if len(match) != 1:
             raise SystemExit(f"CANDIDATE_PIN_FUNCTION {name}: {len(match)}")
         normalized = normalize_function(match[0])
