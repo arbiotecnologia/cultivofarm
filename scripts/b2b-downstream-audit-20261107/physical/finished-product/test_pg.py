@@ -24,11 +24,13 @@ ATOMIC = S / "delivery-atomic-hardening-20261030"
 CONF = ATOMIC / "confirmation"
 OUT = H / "evidence"
 sys.path.insert(0, str(ATOMIC))
-sys.path.insert(0, str(H))
 import restore
 from restore import pg
 import test_pg as T
-from catalog_foundation import apply as apply_current_catalog
+catalog_spec = importlib.util.spec_from_file_location("finished_current_catalog", H / "catalog_foundation.py")
+catalog_module = importlib.util.module_from_spec(catalog_spec)
+catalog_spec.loader.exec_module(catalog_module)
+apply_current_catalog = catalog_module.apply
 spec = importlib.util.spec_from_file_location("finished_confirmation", CONF / "test_pg.py")
 C = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(C)
