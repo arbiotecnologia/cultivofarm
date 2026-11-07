@@ -91,10 +91,10 @@ def captured_function(name):
 
 
 def approve_order(order_id):
-    result = B3.as_user(B3.UADM, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL)::text;")
-    check("aprovação canônica dos termos", result.returncode == 0, result.stderr[-700:])
     result = B3.as_user(B3.UADM, f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
     check("aprovação comercial canônica do pedido", result.returncode == 0, result.stderr[-900:])
+    result = B3.as_user(B3.UADM, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL)::text;")
+    check("aprovação canônica dos termos", result.returncode == 0, result.stderr[-700:])
     state = B3.psql(f"SELECT status||'|'||financial_approval_status||'|'||(internal_economic_snapshot IS NOT NULL) FROM public.partner_orders WHERE id='{order_id}'").stdout.strip()
     check("pedido aprovado e economicamente selado", state == "aprovado|approved|true", state)
 
@@ -102,7 +102,8 @@ def approve_order(order_id):
 def finance_schema():
     # O B3 traz somente tabelas mínimas de crédito. Antes de qualquer título, substitui essas
     # tabelas vazias pelas colunas/restrições capturadas; pedidos/gatilhos B3 não são tocados.
-    B3.psql("""DROP TABLE IF EXISTS public.financial_receipts;DROP TABLE IF EXISTS public.receivable_payments;
+    B3.psql("""CREATE SCHEMA IF NOT EXISTS extensions;CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+DROP TABLE IF EXISTS public.financial_receipts;DROP TABLE IF EXISTS public.receivable_payments;
 DROP TABLE IF EXISTS public.financial_audit_log;DROP TABLE IF EXISTS public.accounts_receivable_installments;DROP TABLE IF EXISTS public.accounts_receivable;
 CREATE TABLE IF NOT EXISTS public.bank_accounts(id uuid PRIMARY KEY,active boolean);
 CREATE TABLE IF NOT EXISTS public.financial_settings(require_receipt_on_receivable_payment boolean);
