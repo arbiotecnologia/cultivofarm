@@ -22,6 +22,12 @@
     },
     {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "06e64b76968f91e19f03b24363ac610a",
+      "owner": "postgres",
+      "signature": "public.fn_sync_os_classica_downstream()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
       "md5": "9d62ba2fa4fad1b6e5d5ac67045d2e98",
       "owner": "postgres",
       "signature": "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)"

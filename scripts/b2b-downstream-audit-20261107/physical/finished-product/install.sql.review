@@ -18,6 +18,12 @@ DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_send_apply_v1(uui
  IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
 END$$;
 
+DO $$DECLARE p oid:=to_regprocedure('public.fn_sync_os_classica_downstream()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '06e64b76968f91e19f03b24363ac610a' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+END$$;
+
 DO $$DECLARE p oid:=to_regprocedure('public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)');BEGIN
  IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '9d62ba2fa4fad1b6e5d5ac67045d2e98' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
  IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
@@ -543,3 +549,77 @@ BEGIN
  INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_key,v_actor,org,'send',fp,result);
  DELETE FROM platform_private.delivery_send_permits_v1 WHERE txid=txid_current();DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();RETURN result;
  END $$;
+
+CREATE OR REPLACE FUNCTION public.fn_sync_os_classica_downstream()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_prog_id uuid;
+  v_lote_id uuid;
+BEGIN
+  IF (OLD.status IS NOT DISTINCT FROM NEW.status) THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT id INTO v_prog_id FROM public.programacao_producao
+   WHERE ordem_servico_id = NEW.id ORDER BY created_at DESC LIMIT 1;
+
+  IF v_prog_id IS NULL
+     AND NEW.status::text IN ('aprovada','programada','em_producao','em_cq','envase','pronto_entrega','entregue','finalizada')
+     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL)
+     AND NOT EXISTS(SELECT 1 FROM public.entregas d JOIN public.estoque_produto s ON s.id=d.estoque_produto_id WHERE d.ordem_servico_id=NEW.id AND d.produto_id=NEW.produto_id AND d.status::text<>'cancelada' AND s.origem_estoque='produto_acabado') THEN
+    INSERT INTO public.programacao_producao
+      (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)
+    VALUES
+      (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,
+       COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id)
+    RETURNING id INTO v_prog_id;
+  END IF;
+
+  IF v_prog_id IS NOT NULL THEN
+    SELECT id INTO v_lote_id FROM public.lotes
+      WHERE programacao_id = v_prog_id ORDER BY created_at DESC LIMIT 1;
+  END IF;
+
+  CASE NEW.status::text
+    WHEN 'aprovada' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'aguardando' WHERE id = v_prog_id;
+      END IF;
+    WHEN 'programada' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao
+           SET status = 'aguardando',
+               data_programada = COALESCE(NEW.data_programada, data_programada, CURRENT_DATE)
+         WHERE id = v_prog_id;
+      END IF;
+    WHEN 'em_producao' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'em_producao' WHERE id = v_prog_id;
+      END IF;
+      IF v_lote_id IS NULL AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN
+        INSERT INTO public.lotes (codigo_lote, produto_id, microrganismo_id, programacao_id, status, volume_produzido, data_producao)
+        VALUES (public.gerar_codigo_lote(), NEW.produto_id, NEW.microrganismo_id, v_prog_id,
+                'em_producao', NEW.volume_total_ml, CURRENT_DATE);
+      END IF;
+    WHEN 'em_cq' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'aguardando_cq' WHERE id = v_prog_id;
+      END IF;
+      IF v_lote_id IS NOT NULL THEN
+        UPDATE public.lotes SET status = 'aguardando_cq' WHERE id = v_lote_id;
+      END IF;
+    WHEN 'envase' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'aprovado' WHERE id = v_prog_id;
+      END IF;
+    ELSE
+      NULL;
+  END CASE;
+
+  RETURN NEW;
+END;
+$function$;
