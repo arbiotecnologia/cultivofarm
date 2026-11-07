@@ -178,11 +178,18 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(publi
         pre.append(f"DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['owner'])} OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {rel['name']}';END IF;END$$;")
     candidate = "\n\n".join(bodies) + "\n"
     post = []
+    post_capture_path = HERE / "evidence/post-install-functions.json"
+    post_capture = json.loads(post_capture_path.read_text())["functions"] if post_capture_path.exists() else []
+    post_by_signature = {x["signature"]: x for x in post_capture}
     for entry in BASE["functions"]:
         body = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync, "platform_private.envase_insert_guard_v1": entry_guard, "platform_private.envase_insert_final_v1": entry_final}[entry["signature"].split("(", 1)[0]]
-        expected = hashlib.md5(body.encode()).hexdigest()
-        # pg_get_functiondef normaliza; POST é medido no PG descartável, não estimado aqui.
-        post.append(f"-- POST_RUNTIME_REQUIRED {entry['signature']} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}")
+        if entry["signature"] in post_by_signature:
+            measured = post_by_signature[entry["signature"]]
+            if measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
+                raise AssertionError("POST owner/ACL drift " + entry["signature"])
+            post.append(function_pin(entry, measured["md5"]))
+        else:
+            post.append(f"-- POST_RUNTIME_REQUIRED {entry['signature']} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}")
     (HERE / "candidate.sql.review").write_text(candidate)
     (HERE / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
     (HERE / "postflight.sql.review").write_text("\n".join(post) + "\nDO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;\n")
