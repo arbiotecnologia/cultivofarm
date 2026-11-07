@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.9s
+CHECKPOINT sql_calls=1 elapsed=3.3s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS função real de entrada exige envase quando não há writer de produto acabado
@@ -15,15 +15,11 @@ PASS apresentação L acabada: envio exige programação de produção inexisten
 PASS apresentação L acabada: confirmação também não aceita lineage sem produção
 PASS apresentação L: cancelamento canônico recompõe estoque sem efeitos fiscais/financeiros
 FAIL execução terminou no ponto concreto Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 253, in main
-    reserved = json.loads(last(reserve(b2b["os"], b2b["stock"], 2, "finished-reserve-b2b")))["itens"][0]
-                          ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 255, in main
+    reserved = json.loads(last(T.actor() + f"SELECT public.rpc_estoque_reservar_v1('{b2b['os']}','b2b','{b2b_items}'::jsonb,'finished-reserve-b2b','{b2b_data}'::jsonb);"))["itens"][0]
+                          ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in last
     return sql(statement).splitlines()[-1]
            ~~~^^^^^^^^^^^
   File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 53, in sql
-    return pg.sql(statement)
-           ~~~~~~^^^^^^^^^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
-    
 RESULT 14 / 15 exit 1
