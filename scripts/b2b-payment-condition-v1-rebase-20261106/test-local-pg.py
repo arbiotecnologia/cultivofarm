@@ -514,6 +514,8 @@ def main():
             before_due = quote_state(multi_id)
             psql(f"UPDATE public.commercial_payment_plans SET max_days=29 WHERE id='{PLQ}'")
             denied("prazo 30 > max_days 29: resolução recusa explicitamente, sem clamp", sim(UB, PLQ, [L(1), S(1)], BOL), "payment_condition_deadline_exceeds_plan")
+            denied("prazo incoerente: create recusa sem novo pedido", create(UB, PLQ, [L(1), S(1)], "x", "TESTE-DUE-INVALID", BOL), "payment_condition_deadline_exceeds_plan")
+            check("prazo incoerente: nenhuma idempotência de create persistida", idem("TESTE-DUE-INVALID") == "0")
             lines_due = json.loads(psql(f"SELECT jsonb_agg(jsonb_build_object('item_id',id,'unit_price',100)) FROM public.partner_order_items WHERE order_id='{multi_id}'").stdout.strip())
             denied("prazo incoerente: quote recusa antes de persistir terms/schedule", respond(UADM, multi_id, lines_due), "payment_condition_deadline_exceeds_plan")
             check("prazo incoerente: todos os registros da cotação preservados", quote_state(multi_id) == before_due)
