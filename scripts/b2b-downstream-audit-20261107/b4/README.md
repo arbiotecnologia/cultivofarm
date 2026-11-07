@@ -1,63 +1,45 @@
-# Reconciliação B4 útil sobre o B3 atual — revisão 458b6012
+# Reconciliação B4 útil sobre o B3 atual — revisões 458b6012 e 4097d4e2
 
-**INATIVO, BLOQUEADO E NÃO APROVADO.** Nenhuma operação hospedada, NF/cobrança/aprovação contábil real, envio, publicação ou subagente. B3 e os 63 testes anteriores não foram reabertos nem promovidos a E2E.
+**INATIVO, BLOQUEADO E NÃO APROVADO.** Nenhuma operação hospedada, NF/cobrança/aprovação contábil real, envio, publicação ou subagente. B3 e os 63 testes históricos não foram reabertos nem promovidos a E2E.
 
-## Baseline e manifesto fail-closed
+## Revisão atual
 
-`generate-b4-review.py` recompõe o candidato histórico e gera `b4-object-manifest.json`, PRE/install/POST/rollback, pinos e hashes. O manifesto cobre **54 alterações**: funções novas/substituídas, tabelas/view/coluna, FK, constraints, índices, gatilhos, owners e ACLs. Novos objetos exigem ausência; substituições exigem corpo/owner/ACL capturados.
+A evidência vigente está em `review-458b6012/live-absence-4097d4e2/`. O manifesto cobre **55 alterações**, incluindo funções, relações, coluna/FK, constraints, índices, gatilhos, owners e ACLs. Novos objetos exigem ausência; substituições exigem corpo/owner/ACL capturados e conferência LIVE independente.
 
-As substituições compartilhadas agora pinadas incluem:
+O auditor relatou que `public.rpc_receivable_money_projection_v1` não possui overloads LIVE. Por isso ela é tratada como **CREATE**, sem baseline inventada: o PRE exige zero overloads por `pg_proc`, e o POST exige um overload owner-only. Os MD5/owners/ACLs relatados dos writers e a definição de `ux_ar_one_active_per_b2b_order` foram confrontados com capturas locais.
 
-- `public.rpc_register_receivable_payment(uuid,jsonb)`;
-- `public.fn_generate_receivable_installments()`;
-- `public.rpc_receivable_money_projection_v1(uuid,integer,integer)`;
-- `public.fn_b2b_credit_exposure(uuid,numeric,uuid)`;
-- `public.generate_b2b_receivable_secure_impl(uuid)`;
-- `public.tg_auto_b2b_receivable()`;
-- `ux_ar_one_active_per_b2b_order` e toda a metadata compartilhada de `accounts_receivable`: 35 colunas, 16 constraints, 13 índices, 9 gatilhos, RLS/owner/ACL;
-- o gatilho dependente `zz_auto_generate_b2b_receivable`.
+`02-install.sql.review` contém PRE + corpo + POST em transação, sem `GRANT` e sem stub operacional. `platform_private.b2b_integration_dependencies` permanece always-deny; instalação não significa operação. O rollback é deny-only e preserva histórico.
 
-**Bloqueio atual:** não existe captura LIVE identificada de `rpc_receivable_money_projection_v1(uuid,integer,integer)`. Os corpos homônimos em `financial-price-generator-20261029` são candidatos antigos e não foram tratados como baseline. O PRE contém `B4_BASELINE_CAPTURE_REQUIRED`; portanto a instalação não pode sobrescrever essa função desconhecida. O auditor precisa capturar corpo, owner, ACL e assinatura LIVE antes de nova revisão.
+## Resultados independentes — não somar
 
-O histórico tinha três definições de `platform_private.b2b_shared_receivable_credit_guard()`. O gerador usa a definição final efetiva e registra a duplicidade no manifesto; isso não foi ocultado.
+1. **53/53, exit 0:** manifesto estático e determinismo.
+2. **79/79, exit 0:** PostgreSQL descartável com PRE/install/POST/rerun, comportamento B4, impactos compartilhados e rollback.
+3. **132/132, exit 0:** reteste atual de embalagem inteira e unidades fiscais; evidência em `review-458b6012/fiscal-units/evidence-after.json`.
+4. **63/63 históricos:** preservados separadamente, sem soma ou reclassificação.
 
-## Instalação separada de operação
+A fixture reproduz ACL/RLS, 35 colunas, 16 constraints, 13 índices e 9 gatilhos capturados de `accounts_receivable`; os 32 gatilhos B3 do harness permanecem habilitados. Isso continua sendo componente sintético, não prova JWT/RLS/Storage/PostgREST.
 
-`02-install.sql.review` contém PRE + corpo + POST em uma transação, sem `GRANT`. Ele **não** substitui `platform_private.b2b_integration_dependencies` por stub. O corpo candidato real dessa dependência permanece sempre deny com `B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN`.
+## MANUAL, parceiro e pedidos atuais
 
-Na bateria descartável, PRE e instalação falharam fechados e nenhum objeto B4 foi criado. Somente depois disso `b4-candidate.sql.review` foi executado isoladamente como **componente de laboratório**. O stub operacional foi aplicado exclusivamente no harness, após provar a negação real. Isso não é instalação, PRE/POST aprovado ou evidência de produção.
+- MANUAL não B2B sem parceiro preserva criação de parcela e baixa legadas, sem `monetary_origin` inventada.
+- MANUAL de parceiro sem origem comprovada bloqueia exposição e baixa com `MONEY_ORIGIN_UNPROVEN`, inclusive ao excluir o pedido atual do cálculo.
+- Nova simulação do mesmo parceiro fica indisponível e não cria pedido; os pedidos atuais da fixture mantêm estado/hash. O impacto nos dados LIVE existentes **não foi medido** e bloqueia release.
+- Crédito e residual legado usam resolvedor monetário interno na organização vendedora. A projeção pública conserva ator, papel financeiro e tenant; o resolvedor interno é owner-only e não recebe grant de cliente.
+- Pedido interno sintético e writer integral antigo permanecem contidos, sem título/alocação.
 
-POST e rollback exigem a metadata íntegra. No schema reduzido do harness, o rollback falhou fechado sem revogação parcial e preservou títulos, alocações e snapshots.
+## Unidades fiscais e downstream
 
-## Evidências independentes — não somar
+`platform_private.b2b_allocate_document(uuid)` exige quantidade/unidade comercial e tributável, reconcilia kg↔g ou L↔ml pelo snapshot, rejeita fração de embalagem inteira e nunca converte peso em volume. O reteste atual cobre 2×25 kg, parcial 1 UN=25 kg, 0,5 UN, 50 kg≠50 UN, divergências, L/ml, parciais, replay e excesso, sem documento ou cobrança real.
 
-1. **42/42, exit 0 — manifesto estático:** `review-458b6012/evidence-manifest-tests.json` e `test-manifest.*`. Cobre inventário, pinos, owners/ACLs, schema, gatilhos, blocos DO, ausência de GRANT/stub, deny-only e determinismo.
-2. **73/73, exit 0 — componente PostgreSQL descartável:** `review-458b6012/evidence-b4-shared-impact.json` e `test-shared.*`. Inclui o comportamento B4 e os novos impactos compartilhados; não é E2E.
-3. **63/63 históricos:** preservados byte a byte em `review-458b6012/historical-63/`; não somados nem reclassificados.
-
-## Impactos compartilhados medidos
-
-- Título `MANUAL` não B2B sem devedor parceiro foi criado e gerou uma parcela pelo caminho existente.
-- Título `MANUAL` não B2B com cliente vinculado a parceiro e crédito configurado também foi criado e recebeu `partner_id` pelo gatilho capturado.
-- **Efeito fail-closed relevante:** esse título manual de parceiro, sem origem monetária B4 comprovada, fez `fn_b2b_credit_exposure` falhar com `MONEY_ORIGIN_UNPROVEN`. As duas fixtures manuais foram canceladas somente no banco descartável depois da medição. Não se deve liberar o pacote sem reconciliar projeção/origem de títulos manuais e o impacto operacional dessa negação.
-- A projeção de um título legado sem origem conhecida permaneceu `MONEY_ORIGIN_UNPROVEN`, sem backfill.
-- Pedido interno sintético foi negado pelo alocador com `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` e pelo writer integral anterior, sem título/alocação. Gatilhos foram pausados apenas para montar a fixture e religados antes das chamadas.
-- Cotação/pedido B3, parciais, replay, residual, baixa, substituição de centavos, concorrência, calendário e histórico passaram no componente. Isso não prova fluxo real.
-
-## Complemento: embalagem inteira e unidades fiscais
-
-A reprodução isolada encontrou lacuna na composição B3→alocador B4: `items[].quantity` era comparado diretamente com a quantidade de embalagens. O candidato anterior aceitou `0,5 UN`, divergência comercial/tributária e item sem unidade; `25/50 kg` e `500/1.000 ml` foram tratados como quantidade do pedido. Evidência anterior: **87/108, exit 1**, SHA256 `d9a2089559c8e388316b9bb17cb4939b8215b500e58f94bbdbd8cd10ae67ccb7`.
-
-A correção gerada altera somente `platform_private.b2b_allocate_document(uuid)`: exige quantidade/unidade comercial e tributável, reconcilia kg↔g ou L↔ml sem converter peso em volume, deriva unidades do pedido pelo snapshot, rejeita fração wholepack e calcula parciais/centavos sobre `item_money.quantity` normalizado. Preço, Price, calendário, grants e demais objetos não mudaram. Candidato atual SHA256 `14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd`.
-
-Resultados separados em `review-458b6012/fiscal-units/`: **123/123** na mesma matriz antes/depois e **132/132** com duas parciais de 25 kg, replay e excesso; **73/73** nas regressões B4 e **42/42** no manifesto, todos exit 0. O payload fiscal original é preservado; documentos antigos sem unidade falham fechados, sem backfill. Isso não é E2E nem aprovação de instalação.
+Price B3, crédito total, snapshots, primeiro vencimento pela NF e calendário selado foram preservados. Calendário fora da cobertura falha fechado. Nenhum feriado ou regra comercial foi inventado.
 
 ## Pendências para o auditor
 
-1. Capturar a baseline LIVE da projeção e reconferir todos os demais corpos/owners/ACLs, tabela/índices/gatilhos antes de instalação.
-2. Revisar o efeito `MONEY_ORIGIN_UNPROVEN` sobre recebíveis manuais de parceiros e decidir uma reconciliação sem inventar origem/backfill ou abrir writers.
-3. Revisar a duplicidade histórica do guard compartilhado e a mudança do índice único em dados reais, com preflight de duplicidades.
-4. Manter instalação e ativação separadas; operação fiscal/contábil/recebível continua fechada.
-5. JWT/RLS/Storage/PostgREST/browser, NF/cobrança reais e homologação continuam NOT_RUN.
+1. Medir READONLY o impacto em dados LIVE e duplicidades do índice antes de propor release.
+2. Revisar MANUAL de parceiro sem apagar histórico, inventar origem/backfill ou abrir writers.
+3. Conferir independentemente todos os corpos, overloads, owners, ACLs e relações LIVE.
+4. Manter instalação e operação separadas; fiscal, contabilidade, recebíveis reais e comunicação continuam fechados.
+5. JWT/RLS/Storage/PostgREST/browser e homologação real permanecem NOT_RUN.
 
-Auth/GUC, schema reduzido, NF/contabilidade e adaptadores são sintéticos. Nenhum PASS local autoriza implantação.
+Candidato SHA256: `3b7bd7f1756fb73036ca4a80e3a38aeb5041f0e72dfe208e419b9819a5e64b98`.
+Nenhum PASS local autoriza implantação, publicação, emissão, cobrança ou envio.
