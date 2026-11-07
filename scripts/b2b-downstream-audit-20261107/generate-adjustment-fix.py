@@ -362,6 +362,45 @@ END
 $guard$;"""
 
 
+def helper_absence_assertion():
+    return f"""DO $helper_absent$
+BEGIN
+  IF to_regprocedure('{HELPER_SIG}') IS NOT NULL THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_ALREADY_EXISTS';
+  END IF;
+END
+$helper_absent$;"""
+
+
+def helper_assertion(expected_md5):
+    acl_digest = acl_md5(HELPER_ACL)
+    return f"""DO $helper_pin$
+DECLARE actual_acl text;
+BEGIN
+  IF to_regprocedure('{HELPER_SIG}') IS NULL THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_MISSING';
+  END IF;
+  IF md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)) IS DISTINCT FROM '{expected_md5}' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_PIN_DRIFT';
+  END IF;
+  IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='{HELPER_SIG}'::regprocedure) IS DISTINCT FROM '{HELPER_OWNER}' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: {HELPER_SIG}';
+  END IF;
+  SELECT md5(string_agg(v.entry, '|' ORDER BY v.entry)) INTO actual_acl
+  FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END
+      || '=' || a.privilege_type || CASE WHEN a.is_grantable THEN '*' ELSE '' END
+      || '/' || a.grantor::regrole::text AS entry
+    FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f',p.proowner))) a
+    WHERE p.oid='{HELPER_SIG}'::regprocedure
+  ) v;
+  IF actual_acl IS DISTINCT FROM '{acl_digest}' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT: {HELPER_SIG}';
+  END IF;
+END
+$helper_pin$;"""
+
+
 def build():
     candidates = {
         "request": candidate_body(),
