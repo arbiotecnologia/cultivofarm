@@ -415,7 +415,7 @@ def build():
         {"kind": "view", "object": NEW_VIEW, "operation": "CREATE_OWNER_ONLY", "baseline": {"status": "ABSENCE_REQUIRED"}, "candidate": {"owner": "postgres", "acl": "OWNER_ONLY"}},
         {"kind": "column+foreign_key", "object": "public.accounts_receivable.b2b_document_id", "operation": "ADD", "baseline": {"status": "ABSENCE_REQUIRED", "table_schema": baseline_schema}, "candidate": {"type": "uuid", "nullable": True, "references": "platform_private.b2b_authorized_documents(id)"}},
         {"kind": "index", "object": NEW_INDEX, "operation": "CREATE", "baseline": {"status": "ABSENCE_REQUIRED"}, "candidate": {"unique": True, "valid": True}},
-        {"kind": "index", "object": REPLACED_INDEX, "operation": "DROP_AND_RECREATE", "baseline": {"status": "CAPTURED_REQUIRES_LIVE_RECHECK", "source": str(MONEY.relative_to(ROOT)), "definition": next(x for x in ar_indexes if x["name"] == "ux_ar_one_active_per_b2b_order")}, "candidate": {"unique": True, "valid": True, "predicate_adds": "b2b_document_id IS NULL"}},
+        {"kind": "index", "object": REPLACED_INDEX, "operation": "DROP_AND_RECREATE", "baseline": {"status": "CAPTURED_REQUIRES_LIVE_RECHECK", "source": str(MONEY.relative_to(ROOT)), "definition": next(x for x in ar_indexes if x["name"] == "ux_ar_one_active_per_b2b_order")["definition"]}, "candidate": {"unique": True, "valid": True, "predicate_adds": "b2b_document_id IS NULL"}},
     ])
     for name, tables in NEW_TRIGGERS.items():
         for table in tables.split("|"):
