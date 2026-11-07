@@ -199,7 +199,113 @@ CREATE FUNCTION platform_private.finished_product_delivery_valid_v1(s public.est
 $$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;
 """
-    bodies = [ddl, reservar, criar, merge, confirm, send, sync, entry_guard, entry_final]
+    purchase = r"""
+CREATE FUNCTION platform_private.finished_product_purchase_entry_v1(
+ p_produto_id uuid,p_embalagem_id uuid,p_codigo_lote text,p_quantidade numeric,
+ p_compra_referencia text,p_fornecedor_nome text,p_idempotency_key text,p_validade date DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $purchase$
+DECLARE
+ v_uid uuid:=auth.uid(); v_org uuid; v_fp text;
+ v_prev public.estoque_movimentacoes%ROWTYPE; v_mov public.estoque_movimentacoes%ROWTYPE;
+ v_product public.produtos%ROWTYPE; v_sale public.product_sale_units%ROWTYPE;
+ v_pack public.product_packagings%ROWTYPE; v_volume public.catalogo_volumes%ROWTYPE;
+ v_lote uuid:=gen_random_uuid(); v_stock uuid:=gen_random_uuid();
+ v_unit text; v_content numeric; v_version integer; v_total numeric; v_volume_total numeric; v_ctx jsonb;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled) THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_GATE_CLOSED' USING ERRCODE='42501';
+ END IF;
+ v_org:=platform_private.stock_motor_actor('entrada');
+ IF p_produto_id IS NULL OR p_embalagem_id IS NULL OR nullif(btrim(coalesce(p_codigo_lote,'')),'') IS NULL
+  OR nullif(btrim(coalesce(p_compra_referencia,'')),'') IS NULL OR nullif(btrim(coalesce(p_fornecedor_nome,'')),'') IS NULL THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_PARAMS_INVALID' USING ERRCODE='22023';
+ END IF;
+ IF p_quantidade IS NULL OR p_quantidade<=0 OR p_quantidade::text IN ('NaN','Infinity','-Infinity') THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_QUANTITY_INVALID' USING ERRCODE='23514';
+ END IF;
+ IF p_quantidade<>trunc(p_quantidade) THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_WHOLE_PACK_REQUIRED' USING ERRCODE='23514';
+ END IF;
+ IF p_idempotency_key IS NULL OR length(btrim(p_idempotency_key))<8 THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_IDEMPOTENCY_REQUIRED' USING ERRCODE='23514';
+ END IF;
+ v_fp:=encode(extensions.digest(jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','product',p_produto_id,'packaging',p_embalagem_id,'lot',btrim(p_codigo_lote),'quantity',p_quantidade,'purchase',btrim(p_compra_referencia),'supplier',btrim(p_fornecedor_nome),'validity',p_validade)::text,'sha256'),'hex');
+ PERFORM pg_advisory_xact_lock(hashtext('finished_product_purchase:'||p_idempotency_key));
+ v_org:=platform_private.stock_motor_actor('entrada');
+ IF NOT EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled) THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_GATE_CLOSED' USING ERRCODE='42501';
+ END IF;
+ SELECT * INTO v_prev FROM public.estoque_movimentacoes WHERE idempotency_key=p_idempotency_key LIMIT 1;
+ IF FOUND THEN
+  IF v_prev.usuario_id IS DISTINCT FROM v_uid OR v_prev.request_fingerprint IS DISTINCT FROM v_fp
+   OR v_prev.acao IS DISTINCT FROM 'entrada' OR v_prev.origem IS DISTINCT FROM 'finished_product_purchase_entry_v1'
+   OR NOT EXISTS(SELECT 1 FROM public.estoque_produto s JOIN public.lotes l ON l.id=s.lote_id WHERE s.id=v_prev.estoque_produto_id AND l.id=v_prev.lote_id AND l.organization_id=v_org AND s.origem_estoque='compra_produto_acabado_revenda') THEN
+   RAISE EXCEPTION 'FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT' USING ERRCODE='23505';
+  END IF;
+  RETURN jsonb_build_object('ok',true,'replay',true,'lote_id',v_prev.lote_id,'estoque_produto_id',v_prev.estoque_produto_id,'movimentacao_id',v_prev.id);
+ END IF;
+ SELECT * INTO v_product FROM public.produtos WHERE id=p_produto_id FOR SHARE;
+ IF NOT FOUND OR v_product.owner_organization_id IS DISTINCT FROM v_org OR v_product.ativo IS NOT TRUE
+  OR v_product.familia_catalogo NOT IN ('quimico','fertilizante_adubo') THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_CATALOG_DENIED' USING ERRCODE='42501';
+ END IF;
+ SELECT * INTO v_sale FROM public.product_sale_units WHERE product_id=p_produto_id AND owner_organization_id=v_org FOR SHARE;
+ IF NOT FOUND OR v_sale.unidade_conteudo NOT IN ('kg','g','l','ml') THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_SALE_UNIT_REQUIRED' USING ERRCODE='23514';
+ END IF;
+ v_unit:=v_sale.unidade_conteudo;
+ SELECT * INTO v_volume FROM public.catalogo_volumes WHERE id=p_embalagem_id AND produto_id=p_produto_id AND owner_organization_id=v_org AND ativo IS TRUE FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FINISHED_PRODUCT_PACKAGING_DENIED' USING ERRCODE='42501'; END IF;
+ IF v_unit IN ('kg','g') THEN
+  SELECT * INTO v_pack FROM public.product_packagings
+   WHERE id=p_embalagem_id AND product_id=p_produto_id AND owner_organization_id=v_org AND ativo IS TRUE
+    AND valid_from<=now() AND (valid_to IS NULL OR valid_to>=now()) FOR SHARE;
+  IF NOT FOUND OR v_volume.medida IS DISTINCT FROM 'embalagem' OR v_pack.peso_liquido_kg<=0 OR v_pack.peso_liquido_kg::text IN ('NaN','Infinity','-Infinity') THEN
+   RAISE EXCEPTION 'FINISHED_PRODUCT_PACKAGING_CONTRACT_DENIED' USING ERRCODE='23514';
+  END IF;
+  v_content:=v_pack.peso_liquido_kg*CASE WHEN v_unit='g' THEN 1000 ELSE 1 END;
+  v_version:=v_pack.version;
+ ELSE
+  IF v_volume.medida IS DISTINCT FROM 'volume' OR v_volume.volume_ml IS NULL OR v_volume.volume_ml<=0
+   OR v_volume.volume_ml::text IN ('NaN','Infinity','-Infinity') OR EXISTS(SELECT 1 FROM public.product_packagings x WHERE x.id=p_embalagem_id) THEN
+   RAISE EXCEPTION 'FINISHED_PRODUCT_PRESENTATION_CONTRACT_DENIED' USING ERRCODE='23514';
+  END IF;
+  v_content:=v_volume.volume_ml/CASE WHEN v_unit='l' THEN 1000 ELSE 1 END;
+  v_version:=v_sale.version;
+ END IF;
+ v_org:=platform_private.stock_motor_actor('entrada');
+ v_total:=p_quantidade*v_content;
+ v_volume_total:=CASE WHEN v_unit IN ('kg','g') THEN NULL WHEN v_unit='l' THEN v_total ELSE v_total/1000 END;
+ INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_lote);
+ INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)
+ VALUES(v_lote,btrim(p_codigo_lote),p_produto_id,NULL,NULL,'aprovado',v_org,
+  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text);
+ DELETE FROM platform_private.authz_tickets WHERE txid=pg_catalog.txid_current() AND scope='finished_product_purchase_entry_v1' AND target=v_lote;
+ v_ctx:=jsonb_build_object('acao','entrada','origem','finished_product_purchase_entry_v1','usuario_id',v_uid,'unidade','un',
+  'idempotency_key',p_idempotency_key,'request_fingerprint',v_fp,'referencia_tipo','lote',
+  'metadata',jsonb_build_object('stock_request_item',v_stock,'stock_request_actor',v_uid,'origem_estoque','compra_produto_acabado_revenda',
+   'compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'produto_id',p_produto_id,
+   'embalagem_id',p_embalagem_id,'embalagem_versao',v_version,'unidade_conteudo',v_unit,'conteudo_por_unidade',v_content,'quantidade_conteudo',v_total));
+ PERFORM platform_private.stock_motor_context_set(v_ctx);
+ INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_stock);
+ INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)
+ VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version);
+ DELETE FROM platform_private.authz_tickets WHERE txid=pg_catalog.txid_current() AND scope='finished_product_purchase_entry_v1' AND target=v_stock;
+ PERFORM platform_private.stock_motor_context_set(NULL); PERFORM public.fn_estoque_ctx_close();
+ SELECT * INTO v_mov FROM public.estoque_movimentacoes WHERE idempotency_key=p_idempotency_key AND estoque_produto_id=v_stock;
+ IF NOT FOUND OR v_mov.acao IS DISTINCT FROM 'entrada' OR v_mov.usuario_id IS DISTINCT FROM v_uid
+  OR v_mov.request_fingerprint IS DISTINCT FROM v_fp OR v_mov.quantidade IS DISTINCT FROM p_quantidade
+  OR v_mov.metadata->>'compra_referencia' IS DISTINCT FROM btrim(p_compra_referencia) THEN
+  RAISE EXCEPTION 'FINISHED_PRODUCT_ENTRY_LEDGER_DENIED' USING ERRCODE='42501';
+ END IF;
+ RETURN jsonb_build_object('ok',true,'replay',false,'lote_id',v_lote,'estoque_produto_id',v_stock,'movimentacao_id',v_mov.id,
+  'origem_estoque','compra_produto_acabado_revenda','unidade_conteudo',v_unit,'conteudo_por_unidade',v_content,'quantidade_conteudo',v_total,'embalagem_versao',v_version);
+EXCEPTION WHEN OTHERS THEN
+ PERFORM platform_private.stock_motor_context_set(NULL); PERFORM public.fn_estoque_ctx_close(); RAISE;
+END;$purchase$;
+REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
+"""
+    bodies = [ddl, purchase, reservar, criar, merge, confirm, send, sync, lot_guard, lab_guard, entry_validate, entry_guard, entry_final]
     pre = ["-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."]
     for entry in BASE["functions"]:
         pre.append(function_pin(entry))
