@@ -338,7 +338,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         plain_title = B3.u(340)
         plain_result = manual_title(plain_title, unlinked_customer, "7.00")
         check("shared fence preserva título MANUAL não B2B sem devedor parceiro", plain_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip() == "1", plain_result.stderr[-900:])
-        deny("projeção nova não inventa proveniência para MANUAL sem parceiro", server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
+        deny("projeção nova não inventa proveniência para MANUAL sem parceiro", server_call(B3.UADM, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
         plain_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip()
         plain_payment = {"amount_received": 7, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-PLAIN"}
         plain_pay_result = B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{plain_installment}','{js(plain_payment)}'::jsonb)::text;")
@@ -402,7 +402,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("datas finais partem da emissão e calendário selado", rows1[0]["due_date"] == "2026-11-03", rows1)
         check("juros financiados não são somados duas vezes", all(Decimal(str(r["original_amount"])) == Decimal(str(r["net_amount"])) and Decimal(str(r["interest_amount"])) == 0 for r in rows1), rows1)
 
-        projection, projection_error = server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{title1}',0,1000)")
+        projection, projection_error = server_call(B3.UADM, f"public.rpc_receivable_money_projection_v1('{title1}',0,1000)")
         check("projeção financeira usa ator e tenant autorizados", projection is not None, projection_error)
         installment1 = projection[0]["id"]
         payment = {"amount_received": 10, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-PAY-1"}
