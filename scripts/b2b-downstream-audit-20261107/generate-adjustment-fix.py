@@ -173,6 +173,47 @@ def candidate_body():
     return body
 
 
+def decision_candidate_body(kind):
+    """Approve/reject reutilizam o mesmo escopo canônico, lock e reautorização."""
+    if kind not in ("approve", "reject"):
+        raise SystemExit(f"decisão desconhecida: {kind}")
+    meta = DECISION_SOURCES[kind]
+    body = captured(meta["source"], meta["md5"])["body"]
+    body = delta(
+        body,
+        "BEGIN\n  IF NOT public.b2b_phase1_order_visible(p_partner_order_id)",
+        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n"
+        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id)",
+        kind + " auth antes do escopo",
+    )
+    body = delta(body, "  v_status text;\nBEGIN", "  v_status text;\n  v_origin jsonb;\nBEGIN", kind + " snapshot de origem")
+    body = delta(
+        body,
+        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
+        "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n"
+        "    INTO v_terms_id, v_created_by, v_numero, v_origin\n"
+        "  FROM public.partner_orders po\n"
+        "  WHERE po.id = p_partner_order_id\n"
+        "  FOR UPDATE;\n\n"
+        "  -- Ausência/estrangeiro/ausência após espera compartilham a mesma negação.\n"
+        "  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
+        "  -- Papel, perfil, vínculo, escopo e feature são revalidados depois do lock.\n"
+        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
+        "  IF NOT (public.has_role(v_uid,'administrador')\n"
+        "       OR public.has_role(v_uid,'financeiro')\n"
+        "       OR public.has_role(v_uid,'gestor_comercial')) THEN\n"
+        "    RAISE EXCEPTION 'unauthorized';\n"
+        "  END IF;\n"
+        "  -- Nenhuma decisão avança enquanto a conciliação contábil estiver pendente.\n"
+        "  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN\n"
+        "    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';\n"
+        "  END IF;\n"
+        "  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
+        kind + " lock/reautorização/contabilidade",
+    )
+    return body
+
+
 def acl_entries(acl):
     """Converte a ACL capturada em entradas canônicas de aclexplode."""
     if not (acl.startswith("{") and acl.endswith("}")):
