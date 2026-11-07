@@ -1,3 +1,8 @@
+## 07/11 17:25 — Compra de produto acabado para revenda (decisão humana)
+- [ ] Integrar a origem COMPRA DE PRODUTO ACABADO PARA REVENDA à cobertura física local: compra/entrada canônica de estoque→reserva→expedição→entrega/cancelamento, sem bioreator ou fabricação própria.
+- [ ] Preservar embalagem/apresentação única e venda inteira; kg/g somente conteúdo/peso para frete, sem peso→litros; L/ml conforme produto. Manter B2B, fiscal, cobranças, comunicação e demais gates fechados.
+- [ ] Testar em PostgreSQL descartável com fixtures fictícias, pins/PRE/POST/rollback e evidências separadas; preservar Auth, instalador B4 e normalização fiscal em andamento, sem hosted/publicação/envios reais/delegação.
+
 ## 07/11 17:05 — Cobertura física de químicos/fertilizantes e apresentação L
 - [x] Rastrear os caminhos canônicos e reproduzir 17/17: reserva por quantidade funciona, mas 50 kg viravam 50.000 ml; envio/confirmação exigiam programação de produção e a confirmação tentava acionar fabricação laboratorial. B2B aprovado permaneceu negado por `DELIVERY_SCOPE_DENIED`.
 - [x] Criar fixtures fictícias isoladas e candidato aditivo com snapshots de unidade/embalagem, whole-pack e gate privado desligado: kg/g/L/ml, pedido/OS manual→reserva/baixa→envio/confirmação/cancelamento, parcial 2 de 3 sacos 25 kg, replays e 0,5 embalagem negada. Matriz final 19/19 e legado biológico com candidato desligado 6/6, exits 0.
