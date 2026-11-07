@@ -72,7 +72,7 @@ def normalize_function(src):
 
 
 def fn(src, name, label=None):
-    pattern = rf"CREATE OR REPLACE FUNCTION {re.escape(name)}\(.*?\nEND \$function\$\n;"
+    pattern = rf"CREATE OR REPLACE FUNCTION {re.escape(name)}\(.*?\nEND;?\s*\$function\$\n;"
     found = re.findall(pattern, src, re.S)
     if len(found) != 1:
         raise SystemExit(f"FUNCTION {label or name}: ocorrências={len(found)}")
