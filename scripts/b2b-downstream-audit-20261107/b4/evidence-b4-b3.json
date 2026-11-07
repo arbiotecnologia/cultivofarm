@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 10,
-  "total": 11,
+  "passed": 18,
+  "total": 23,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -44,9 +44,61 @@
       "ok": true
     },
     {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "cotação B3 criada sem título",
+      "ok": true
+    },
+    {
+      "name": "resposta de cotação B3 com centavos",
+      "ok": true
+    },
+    {
+      "name": "aprovação canônica dos termos",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": false,
+      "detail": "ERROR:  B2B_INTERNAL_APPROVAL_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 36 at RAISE\nSQL statement \"UPDATE public.partner_orders\n     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),\n         approval_notes = NULLIF(p_approval_notes,''),\n         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),\n         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()\n   WHERE id = p_order_id AND status = v_prev\"\nPL/pgSQL function approve_partner_order(uuid,text,date) line 68 at SQL statement\n"
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": false,
+      "detail": "em_analise_comercial|approved|false"
+    },
+    {
+      "name": "aprovação canônica dos termos",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": false,
+      "detail": "ERROR:  B2B_INTERNAL_APPROVAL_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 36 at RAISE\nSQL statement \"UPDATE public.partner_orders\n     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),\n         approval_notes = NULLIF(p_approval_notes,''),\n         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),\n         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()\n   WHERE id = p_order_id AND status = v_prev\"\nPL/pgSQL function approve_partner_order(uuid,text,date) line 68 at SQL statement\n"
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": false,
+      "detail": "em_analise_comercial|approved|false"
+    },
+    {
+      "name": "fixture contábil pendente separada",
+      "ok": true
+    },
+    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('NOTICE:  column \"client_id\" of relation \"partner_accounts\" already exists, skipping\\nNOTICE:  relation \"clientes\" already exists, skipping\\nERROR:  column \"nome\" of relation \"clientes\" does not exist\\nLINE 1: INSERT INTO public.clientes(id,nome,codigo_cliente,organizat...\\n                                       ^\\n')"
+      "detail": "RuntimeError('ERROR:  schema \"extensions\" does not exist\\nLINE 7:   SELECT encode(extensions.digest(\\n                        ^\\n')"
     }
   ],
   "hosted": "NOT_RUN",
