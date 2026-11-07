@@ -67,4 +67,6 @@ DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_purchase_
  IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
  IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
 END$$;
+-- POST_RUNTIME_REQUIRED_NEW_OBJECT public.rpc_finished_product_purchase_capability_v1()
+-- POST_RUNTIME_REQUIRED_NEW_OBJECT public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)
 DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;

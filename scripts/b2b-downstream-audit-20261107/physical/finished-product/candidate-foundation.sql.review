@@ -87,13 +87,21 @@ BEGIN
   RAISE EXCEPTION 'FINISHED_PRODUCT_GATE_CLOSED' USING ERRCODE='42501';
  END IF;
  SELECT * INTO v_prev FROM public.estoque_movimentacoes WHERE idempotency_key=p_idempotency_key LIMIT 1;
- IF FOUND THEN
+  IF FOUND THEN
   IF v_prev.usuario_id IS DISTINCT FROM v_uid OR v_prev.request_fingerprint IS DISTINCT FROM v_fp
    OR v_prev.acao IS DISTINCT FROM 'entrada' OR v_prev.origem IS DISTINCT FROM 'finished_product_purchase_entry_v1'
+   OR v_prev.metadata->>'produto_id' IS DISTINCT FROM p_produto_id::text
+   OR v_prev.metadata->>'embalagem_id' IS DISTINCT FROM p_embalagem_id::text
+   OR v_prev.metadata->>'unidade_conteudo' IS NULL OR v_prev.metadata->>'conteudo_por_unidade' IS NULL
+   OR v_prev.metadata->>'quantidade_conteudo' IS NULL OR v_prev.metadata->>'embalagem_versao' IS NULL
    OR NOT EXISTS(SELECT 1 FROM public.estoque_produto s JOIN public.lotes l ON l.id=s.lote_id WHERE s.id=v_prev.estoque_produto_id AND l.id=v_prev.lote_id AND l.organization_id=v_org AND s.origem_estoque='compra_produto_acabado_revenda') THEN
    RAISE EXCEPTION 'FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT' USING ERRCODE='23505';
   END IF;
-  RETURN jsonb_build_object('ok',true,'replay',true,'lote_id',v_prev.lote_id,'estoque_produto_id',v_prev.estoque_produto_id,'movimentacao_id',v_prev.id);
+  RETURN jsonb_build_object('ok',true,'replay',true,'lote_id',v_prev.lote_id,'estoque_produto_id',v_prev.estoque_produto_id,'movimentacao_id',v_prev.id,
+   'origem_estoque','compra_produto_acabado_revenda','unidade_conteudo',v_prev.metadata->>'unidade_conteudo',
+   'conteudo_por_unidade',(v_prev.metadata->>'conteudo_por_unidade')::numeric,
+   'quantidade_conteudo',(v_prev.metadata->>'quantidade_conteudo')::numeric,
+   'embalagem_versao',(v_prev.metadata->>'embalagem_versao')::integer);
  END IF;
  SELECT * INTO v_product FROM public.produtos WHERE id=p_produto_id FOR SHARE;
  IF NOT FOUND OR v_product.owner_organization_id IS DISTINCT FROM v_org OR v_product.ativo IS NOT TRUE
@@ -155,6 +163,32 @@ EXCEPTION WHEN OTHERS THEN
  PERFORM platform_private.stock_motor_context_set(NULL); PERFORM public.fn_estoque_ctx_close(); RAISE;
 END;$purchase$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION public.rpc_finished_product_purchase_capability_v1()
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid; v_available boolean:=false;
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'FINISHED_PRODUCT_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ BEGIN
+  v_org:=platform_private.stock_motor_actor('entrada');
+ EXCEPTION WHEN insufficient_privilege THEN
+  RETURN jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','available',false,'reason','ACTOR_DENIED');
+ END;
+ v_available:=EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE);
+ RETURN jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','available',v_available);
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_finished_product_purchase_capability_v1() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_capability_v1() TO authenticated;
+
+CREATE FUNCTION public.rpc_finished_product_purchase_entry_v1(
+ p_produto_id uuid,p_embalagem_id uuid,p_lote_fornecedor text,p_quantidade numeric,
+ p_compra_referencia text,p_fornecedor_nome text,p_idempotency_key text,p_validade date DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$
+BEGIN
+ RETURN platform_private.finished_product_purchase_entry_v1(p_produto_id,p_embalagem_id,p_lote_fornecedor,p_quantidade,p_compra_referencia,p_fornecedor_nome,p_idempotency_key,p_validade);
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) TO authenticated;
 
 
 CREATE OR REPLACE FUNCTION public.reservar_estoque_item(p_item_id uuid, p_qty numeric, p_os_id uuid, p_os_tipo text, p_cliente_id uuid DEFAULT NULL::uuid, p_partner_id uuid DEFAULT NULL::uuid, p_partner_order_id uuid DEFAULT NULL::uuid, p_observacao text DEFAULT NULL::text)

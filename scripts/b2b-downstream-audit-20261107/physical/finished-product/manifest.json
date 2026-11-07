@@ -43,7 +43,10 @@
     "embalagem_id",
     "embalagem_versao"
   ],
-  "new_grants": [],
+  "new_grants": [
+    "public.rpc_finished_product_purchase_capability_v1():authenticated",
+    "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date):authenticated"
+  ],
   "layers": {
     "foundation": {
       "changed_functions": [
@@ -79,44 +82,44 @@
       "bytes": 10949
     },
     "candidate.sql.review": {
-      "sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd",
-      "bytes": 71320
+      "sha256": "597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef",
+      "bytes": 73829
     },
     "candidate-foundation.sql.review": {
-      "sha256": "06b493cdebf1e1de2ba90fc471a754edd229a7ac9684bddad8cbef93a50344c3",
-      "bytes": 50560
+      "sha256": "3f4bdea3e7c716038b2d38414f7852d5916cb2d0f531f5c3f591d71fb16bcb86",
+      "bytes": 53069
     },
     "candidate-downstream.sql.review": {
       "sha256": "a0773d2d4061e21394ef763050a696021fa9becc0030113f99613c671ddb19a7",
       "bytes": 20759
     },
     "install.sql.review": {
-      "sha256": "0ec8e31adeeb165ff56a8d22c14348f7c6d6819d45719585623833be2947144b",
-      "bytes": 102550
+      "sha256": "7fbd198c5356bf32dc9806143c78d4ae28baed5906f29c56ec8f6c893c836a18",
+      "bytes": 105270
     },
     "install-foundation.sql.review": {
-      "sha256": "be2f4ad4ac7bc981613b49fdd73f0e2cfee785c6812adc92c3e17c284f86709b",
-      "bytes": 79964
+      "sha256": "2dbd8fccb7d0745baa928874d27969d49b06a21770b8ec4d2962cd0d42573d8b",
+      "bytes": 82684
     },
     "install-downstream.sql.review": {
-      "sha256": "4bdd82c66e03a80d141d45a3963a5033c7417b19624ccab8ed94230bfae06843",
-      "bytes": 33997
+      "sha256": "1389309d3c1191fed4e2ba5c8256eb9d1f8ab71b946635be0d3f49b7483c57f8",
+      "bytes": 34214
     },
     "postflight.sql.review": {
-      "sha256": "c7a7bc56149906cbdb72279c25b77805e55e8617da5d756be79d4a00303d85b7",
-      "bytes": 12854
+      "sha256": "499a6f463868c3b3fa2f2c06c3b40023826697f893e9687721ad1851530782cb",
+      "bytes": 13069
     },
     "postflight-foundation.sql.review": {
-      "sha256": "c61f9001a8b227c6e6dfe343f54bb5842c124be9983c4e8770d737ace366237f",
-      "bytes": 11226
+      "sha256": "5da63dc9f0a4137397103637f302b3ab0c10a0cf43e4f1d5e9c553abf77c7c37",
+      "bytes": 11441
     },
     "postflight-downstream.sql.review": {
       "sha256": "6bea34e5b2cbfd15717cc9a5632aaa1d28f1c71bb5a74278c185c8b43bd93cb1",
       "bytes": 1789
     },
     "rollback.sql.review": {
-      "sha256": "9520cc30f3167045cdfb1a45c992ddd943b367409a2fa8666fa418db41a66644",
-      "bytes": 414
+      "sha256": "d81b5b423e69a55672c5e7d7d4c7cb14ef6f556ce11360a51db04232780edc0d",
+      "bytes": 557
     }
   }
 }
