@@ -58,6 +58,7 @@
 - CQ review artifacts follow their directory AGENTS.md; reference lookup and parent fences remain candidate-only until approved — prevents runtime release.
 - Review directories have AGENTS.md; HTTP candidates use atomic INVOKER actor proofs before/after server-only bytes and ZIP final fences; old URLs need independent CDN containment — avoids fanout and bucket-only authority.
 - Envase consultation remounts by canonical session scope; history uses filter/page fences and independent latest-request generations, products use session fences, and realtime callbacks retire on cleanup — prevents stale row adoption without replacing RLS or reopening writers.
+- Required B2B payment cards use scoped choice/validated condition ACK and exact schedule amounts, not legacy plan installments/rates or averages; legacy mode stays unchanged — prevents contradictory summaries.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

@@ -1,5 +1,5 @@
 ## 07/11 — Resumo da condição B3 na prévia (sem produção/publicação)
-- [ ] Corrigir cartão pela condição escolhida/ACK V1, preservando legado e invalidando mudanças de meio/versão; testes montados 1x com taxa e 3x, validações focadas.
+- [x] Cartão usa escolha/ACK V1 e parcelas exatas (6,22/6,22/6,21), não média; 1x com taxa e troca meio/versão testados. Legado preservado; 31/31 focados e reteste final 16/16, build automático OK. Typecheck separado não observado (execução manual vedada pelo ambiente); sessão externa não disponível ao agente, sem solicitar login nem alegar E2E real.
 - [x] Nomes dos parceiros adiados: leitor administrativo atual fornece somente UUIDs; não ampliar leituras nem SQL.
 - Auditor informou d9041a70 instalado com PRE/POST_OK e envios/cron false; piloto somente ARBio/parceiro fictício 7e52de9a, boleto 3x/1,8%/1 dia no plano fixture TESTE-B2B-PACK-20261106; não reproduzir instalação nem alterar dados.
 
