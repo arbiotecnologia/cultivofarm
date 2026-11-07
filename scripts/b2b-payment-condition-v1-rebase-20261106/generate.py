@@ -569,6 +569,10 @@ def build_create():
               "  IF v_plan.discount_percent > 40 AND NOT v_is_admin THEN RAISE EXCEPTION 'discount_exceeds_limit'; END IF;\n"
               "  -- b2bcond: relido APÓS lock de idempotência e reautorização LIVE; trava versão/atribuição/plano/meio/categoria (FOR SHARE).\n"
               "  v_cond := platform_private.b2b_resolve_condition(p_partner_id, v_plan.id, v_choice, true);\n", "C5 resolve com trava")
+    s = delta(s, "  v_credit := public.fn_b2b_credit_exposure(p_partner_id, 0, NULL);\n",
+              "  v_credit := platform_private.b2b_credit_checked(p_partner_id, 0, NULL); -- b2bcond: limite explícito, erro propaga\n", "C5a crédito inicial íntegro")
+    s = delta(s, "    v_credit := public.fn_b2b_credit_exposure(p_partner_id, v_final, NULL);\n",
+              "    v_credit := platform_private.b2b_credit_checked(p_partner_id, v_final, NULL); -- b2bcond: nunca COALESCE limite para liberar\n", "C5b crédito Price íntegro")
     s = delta(s, "    v_installments := GREATEST(COALESCE(p_installment_count, v_plan.installment_count, 1), 1);\n  END IF;\n",
               "    v_installments := GREATEST(COALESCE(p_installment_count, v_plan.installment_count, 1), 1);\n  END IF;\n"
               "  v_installments := (v_cond->>'installment_count')::integer; -- b2bcond: parcelas da versão aprovada\n", "C6 parcelas")
