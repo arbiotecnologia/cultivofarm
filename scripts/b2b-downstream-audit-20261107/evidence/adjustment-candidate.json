@@ -1,0 +1,154 @@
+{
+  "kind": "DISPOSABLE_PG_CANDIDATE_ALL_REAL_TRIGGERS_NOT_HOSTED_PROOF",
+  "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+  "live_source_still_requires_auditor_confirmation": true,
+  "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
+  "candidate_md5": "55996e9496ffb123504adaeaa502c81f",
+  "real_trigger_count": 38,
+  "b3_installed_or_modified": false,
+  "synthetic_seams": [
+    "Auth por GUC local",
+    "has_role/b2b_phase1_order_visible e escopo mínimos do harness; somente o pin desse leitor é localizado em /tmp",
+    "schema e dependências de segundo nível B2/B3",
+    "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
+    "sem JWT/RLS/PostgREST/Storage"
+  ],
+  "passed": 16,
+  "total": 29,
+  "checks": [
+    {
+      "name": "gerador determinístico: 01–04/candidato/captura byte a byte",
+      "ok": true
+    },
+    {
+      "name": "artefatos revisáveis conservam o pin LIVE; localização existe só em /tmp",
+      "ok": true
+    },
+    {
+      "name": "01 PRE_OK com a captura pinada",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "pin divergente aborta sem trocar a função",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-candidate-alkx_fjs/bad-install.sql:17: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+    },
+    {
+      "name": "02 instala o candidato transacionalmente",
+      "ok": false,
+      "detail": "psql:/tmp/b2b-adjustment-candidate-alkx_fjs/02-install.sql.review:92: ERROR:  syntax error at or near \"REVOKE\"\nLINE 72: REVOKE ALL ON FUNCTION public.request_b2b_payment_terms_adju...\n         ^\n"
+    },
+    {
+      "name": "candidato executado tem o MD5 gerado",
+      "ok": false,
+      "detail": "{'actual': 'f9bf8f543564af480d08e7bebd111b88', 'expected': '55996e9496ffb123504adaeaa502c81f'}"
+    },
+    {
+      "name": "03 POST_OK e ACL preservada",
+      "ok": false,
+      "detail": "psql:/tmp/b2b-adjustment-candidate-alkx_fjs/03-post.sql.readonly:14: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+    },
+    {
+      "name": "rerun sobre o candidato aborta pelo pin da baseline",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-candidate-alkx_fjs/02-install.sql.review:92: ERROR:  syntax error at or near \"REVOKE\"\nLINE 72: REVOKE ALL ON FUNCTION public.request_b2b_payment_terms_adju...\n         ^\n"
+    },
+    {
+      "name": "TODOS os 38 gatilhos reais habilitados após instalar",
+      "ok": true
+    },
+    {
+      "name": "fixture de pendência criada pelo writer canônico",
+      "ok": true,
+      "detail": "{'id': 'c945b7c5-d9db-48a7-97b8-486e3ec83a98', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '1d7c0455-598e-4830-953f-40e0cf2fd888', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "C2_ACCOUNTING_PENDING nega pending→pending",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "negação contábil preserva pedido/termos/auditoria/notificações",
+      "ok": false
+    },
+    {
+      "name": "fixture validada criada pelo writer canônico",
+      "ok": true,
+      "detail": "{'id': 'bb61d154-ab92-473e-bd70-968080d225b3', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'a9b428cf-df4c-4c6f-bf2c-0f39d9363fd6', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "admin estrangeiro negado pelo escopo canônico no pedido validado",
+      "ok": false,
+      "detail": "ERROR:  C2_EXTERNAL_OWNER_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 22 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 25 at SQL statement\n"
+    },
+    {
+      "name": "negação de escopo validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "TODOS os gatilhos reais religados antes das chamadas legadas",
+      "ok": true
+    },
+    {
+      "name": "admin estrangeiro negado no legado sem snapshot",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "negação legada preserva estado integral",
+      "ok": false
+    },
+    {
+      "name": "revogação durante o lock é vista pela segunda autorização",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "revogação sob espera não grava efeitos",
+      "ok": false
+    },
+    {
+      "name": "mesmo tenant ainda solicita ajuste em pedido validado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mesmo tenant ainda solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "comprador sem papel financeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 12 at RAISE\n"
+    },
+    {
+      "name": "rollback com pin divergente aborta sem revogar",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-candidate-alkx_fjs/bad-rollback.sql:16: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+    },
+    {
+      "name": "04 rollback deny-only conclui",
+      "ok": false,
+      "detail": "psql:/tmp/b2b-adjustment-candidate-alkx_fjs/04-rollback-deny.sql.review:16: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+    },
+    {
+      "name": "rollback nega EXECUTE ao cliente sem restaurar corpo vulnerável",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "rollback não apaga nem reescreve histórico",
+      "ok": false
+    },
+    {
+      "name": "TODOS os 38 gatilhos continuam habilitados no fim",
+      "ok": true
+    },
+    {
+      "name": "B3 não foi instalado nem modificado nesta bateria",
+      "ok": true
+    }
+  ]
+}
