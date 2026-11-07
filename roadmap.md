@@ -1311,3 +1311,9 @@
 - [x] EnvasePage somente consulta; 494 Vitest passaram.
 - [ ] NO-GO: sincronizar hash de prova digital canônica antes da confirmação; PG reproduziu 42501, sem relaxar checks.
 - [ ] Repetir concorrência/revogação e revisar avanço de OS após corrigir prova; release permanece deny-only.
+
+## 07/11 18:44 — revisão física 093712ec: nulidade e camadas de instalação
+- [ ] Reproduzir CHECK/helpers anuláveis com origem, versão, conteúdo, unidade, quantidade e dimensões inválidas, gate ligado/desligado.
+- [ ] Corrigir somente o gerador local para validação fail-closed com nulidade explícita e IS TRUE/IS NOT TRUE; repetir regressões físicas.
+- [ ] Reconciliar PRE/POST em camadas: `delivery_confirm_apply_v1` e `delivery_send_apply_v1` ausentes em LIVE exigem dependências instaladas; demais seis corpos/owners/ACLs relatados coincidem, sem remover pins.
+- [ ] Preservar B3/B4 e fila anterior; nenhuma escrita hospedada, publicação, NF, cobrança ou envio. Homologação JWT/RLS/Storage/PostgREST/browser continua pendente.
