@@ -1,5 +1,5 @@
 {
-  "status": "PASS",
+  "status": "FAIL",
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -34,6 +34,15 @@
       "detail": "permission denied for table authz_tickets"
     },
     {
+      "name": "API própria permanece sem EXECUTE para anon/authenticated/service_role",
+      "status": "PASS"
+    },
+    {
+      "name": "lote do fornecedor é obrigatório na API de compra",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_PURCHASE_PARAMS_INVALID"
+    },
+    {
       "name": "produto de outro tenant é negado antes de criar lote/estoque",
       "status": "PASS",
       "detail": "FINISHED_PRODUCT_CATALOG_DENIED"
@@ -49,12 +58,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "d97912c8-1561-4700-8be3-369cc0c62d52",
+        "lote_id": "f86692e5-ba91-4d84-93ec-33723e59ce1c",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "2864722d-a27f-4001-a71d-9743045ad499",
+        "movimentacao_id": "61bd9b5a-35bf-45ac-aed4-7e8d1f9258ba",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "525d6974-2238-487d-83c8-7f9cd07dc90a",
+        "estoque_produto_id": "1e016904-66e4-43e3-ac9d-ad86a87f0e39",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -80,12 +89,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "fff39394-05ec-4f61-a740-66a19265fcae",
+        "lote_id": "5e03fd6f-f5d3-4b87-a96b-3d88cef810ab",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "7b4592c9-f2d5-46a1-a1ba-94ff3ece4219",
+        "movimentacao_id": "729d2c4a-92c0-4b5d-a04b-66c05ec69701",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "6eeab1c4-c463-4a2a-81a5-cd5914b256e6",
+        "estoque_produto_id": "7c815991-7b18-4c2b-bb2f-531985c4db06",
         "quantidade_conteudo": 50000.0,
         "conteudo_por_unidade": 25000.0
       }
@@ -111,12 +120,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "27141b39-458f-4b85-99a9-a616d602320c",
+        "lote_id": "c81c9462-c21a-4222-b9a7-70d48c69db39",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "40363ca9-40e2-476f-bd12-139b884acea9",
+        "movimentacao_id": "4b9bbe6a-6d5e-41d3-877c-5c323ffe1883",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "ab006dc0-8632-4146-84a4-50cd9f261654",
+        "estoque_produto_id": "581eb7ca-d856-4924-a1e9-b6d06995419d",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -142,12 +151,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "78d393a1-6810-449c-b815-d311a2ca2f97",
+        "lote_id": "196ea248-fb60-43bc-bbd2-af86df10f513",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "58e9a5cb-0369-49ea-867b-0d11802bca05",
+        "movimentacao_id": "ddc76ca2-6ac8-446d-bc4e-6f94b685903d",
         "embalagem_versao": 1,
         "unidade_conteudo": "ml",
-        "estoque_produto_id": "5729db53-4def-4b4d-9411-d3de518f64aa",
+        "estoque_produto_id": "fea14d8a-7d47-4974-8f29-dd8b70761326",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -177,20 +186,67 @@
       "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
     },
     {
+      "name": "mesma chave com lote do fornecedor divergente conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "mesma chave com fornecedor divergente conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "retorno antecipado de reserva não autoriza compra fora do contexto canônico",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_RESERVATION_CONTEXT_DENIED"
+    },
+    {
+      "name": "entrada agregada biológica sem envase preserva a negação original",
+      "status": "PASS",
+      "detail": "não possui registro de envase"
+    },
+    {
+      "name": "retorno antecipado legado de reserva não foi alterado para itens sem origem de compra",
+      "status": "PASS"
+    },
+    {
+      "name": "composição real dos guards nega entrada de compra disfarçada de reserva",
+      "status": "PASS",
+      "detail": "ENVASE_INSERT_CLOSED"
+    },
+    {
+      "name": "guard de tenant deriva do lote e nega produto de outra empresa",
+      "status": "PASS",
+      "detail": "tenant_catalog_cross_tenant_reference"
+    },
+    {
+      "name": "guard de tenant também nega microrganismo de outra empresa no lote",
+      "status": "PASS",
+      "detail": "tenant_catalog_cross_tenant_reference"
+    },
+    {
+      "name": "produto e microrganismo ficam vinculados ao tenant real do lote, sem exceção para revenda",
+      "status": "PASS"
+    },
+    {
       "name": "fertilizante kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase",
       "status": "PASS",
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "606c8df8-e2e9-4310-bc54-f86ae4e673dd",
+        "lote_id": "637105d4-cff1-4bbd-8cf8-8d0001536619",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "b8d7e16f-d398-40cc-9a4f-0926c5d3714d",
+        "movimentacao_id": "7dc87ac8-3148-47af-bead-c7d98e788610",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "5fab815f-ac33-4228-a9a1-bd6815930949",
+        "estoque_produto_id": "c785f7cf-f102-4d5b-9b65-545b5d58f0a4",
         "quantidade_conteudo": 75.0,
         "conteudo_por_unidade": 25.0
       }
+    },
+    {
+      "name": "divisão parcial usa quantidade_reservada somente no writer canônico de reserva",
+      "status": "PASS"
     },
     {
       "name": "parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros",
@@ -202,12 +258,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "a6d9a426-e199-4d84-82bc-80d9d822044d",
+        "lote_id": "5b262c42-f388-451f-9c72-ffc74896dde8",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "ca97d7ee-069b-4a74-9fce-f6c570e13cb2",
+        "movimentacao_id": "813c99bb-369d-4dbb-a41e-a0a8e08dc9d5",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "4bed8f80-55dc-4cf3-a06d-2464ed9d2489",
+        "estoque_produto_id": "a92f4d8b-4d1c-4177-81c2-5419a24f8bc2",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -228,12 +284,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "b7d3526a-0315-4a21-9d13-e2c9e8ca0fa3",
+        "lote_id": "507ff50a-0ec4-4a5a-89ce-7b69f6da0a96",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "5414381f-da8f-4687-a108-5aec90760ea6",
+        "movimentacao_id": "4b74598f-babc-4aa7-b850-994c2e9e2808",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "95729bd0-b319-4d60-aa72-32ace03b6aa6",
+        "estoque_produto_id": "a1fd3c23-3237-4e7f-8239-7fe4ffb412b8",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -256,20 +312,7 @@
       "status": "PASS"
     },
     {
-      "name": "POST confirma gate fechado após a bateria",
-      "status": "PASS"
-    },
-    {
-      "name": "rollback deny-only executa sem restaurar grants ou apagar objetos",
-      "status": "PASS"
-    },
-    {
-      "name": "compra após rollback permanece fechada",
-      "status": "PASS",
-      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
-    },
-    {
-      "name": "rollback preserva compras, estoque, entregas e histórico integralmente",
+      "name": "FAIL ERROR:  P0001: FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_guard_v1()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\nTraceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 234, in main\n    assert loaded.returncode == 0, loaded.stderr\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  P0001: FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_guard_v1()\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n",
       "status": "PASS"
     }
   ],
@@ -279,6 +322,7 @@
   "synthetic_seams": [
     "Auth/claims e chamada interna privilegiada somente no PG descartável",
     "schema de catálogo atual reconciliado na captura antiga; sem writers Owned ou preços",
+    "guard de tenant capturado e pinado; sonda isolada só para a função de entrada, além da composição real dos triggers",
     "produtos/demanda/comprovantes fictícios; entrada e downstream com triggers reais"
   ]
 }

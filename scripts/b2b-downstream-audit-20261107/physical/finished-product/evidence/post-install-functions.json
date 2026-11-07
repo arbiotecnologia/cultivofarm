@@ -27,9 +27,15 @@
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "d47d5f1f71c8c2ba16dc775ede4b34ae",
+      "md5": "e0298da2cbb8b64c22509041082544d6",
       "owner": "postgres",
       "signature": "platform_private.envase_insert_guard_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "874c9ca8b5b4e307cf995a0197f98efc",
+      "owner": "postgres",
+      "signature": "platform_private.estoque_produto_catalog_tenant_guard()"
     },
     {
       "acl": "{postgres=X/postgres}",
@@ -39,7 +45,7 @@
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "1157534613dfa372d1553566f7133890",
+      "md5": "0b7a0b72829ce363ca6d5da2823513a0",
       "owner": "postgres",
       "signature": "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"
     },
@@ -81,7 +87,7 @@
     },
     {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",
-      "md5": "818c4b7bdc7ccf9976b675b374faf21d",
+      "md5": "df83fefb547ea7243761816c356467f7",
       "owner": "postgres",
       "signature": "public.validate_estoque_entrada()"
     }
