@@ -34,8 +34,40 @@ PASS stub operacional existe só no harness depois da negação real
 PASS shared fence preserva título MANUAL não B2B sem devedor parceiro
 PASS projeção de origem legada desconhecida permanece fail-closed
 PASS shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado
+PASS impacto compartilhado: título manual de parceiro sem origem monetária bloqueia exposição
+PASS fixtures MANUAL canceladas após medição não contaminam a bateria seguinte
 PASS pedido interno não autorizado pelo downstream B4 é contido
 PASS contenção interna não cria título nem alocação
-FAIL writer integral antigo também permanece fechado para pedido interno :: ERROR:  B2B_INTERNAL_DOWNSTREAM_UNVERIFIED
-CONTEXT:  PL/pgSQL function generate_b2b_receivable_secure(uuid) line 15 at RAISE
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment')
+PASS writer integral antigo também permanece fechado para pedido interno
+PASS primeira NF parcial autorizada fictícia gera título
+PASS conversão não duplica exposição
+PASS residual = pedido restante + títulos sem dupla contagem
+PASS replay da mesma autorização devolve mesmo título
+PASS replay não duplica alocação
+PASS datas finais partem da emissão e calendário selado
+PASS juros financiados não são somados duas vezes
+PASS projeção financeira usa ator e tenant autorizados
+PASS baixa parcial local no ledger capturado
+PASS baixa reduz somente título, não residual do pedido
+PASS três documentos independentes fecham quantidade e residual
+PASS três títulos, um por documento
+PASS crédito após parciais preserva total menos baixa
+PASS cancelamento de NF paga exige reconciliação
+PASS cancelamento pago negado preserva histórico e saldo
+PASS atestação fictícia de cancelamento passa pela guarda com ator
+PASS substituição intermediária cancela somente título não pago
+PASS cancelamento restaura exatamente principal+juros do documento
+PASS documento substituto consome residual sem duplicar
+PASS substituição intermediária preserva centavos por item
+PASS histórico do título cancelado permanece
+PASS quantidade acima do pedido negada
+PASS tenant estrangeiro não faz replay nem lê recibo
+PASS pendência contábil bloqueia antes de qualquer título
+PASS writer B2B anterior continua negado após instalação
+PASS snapshot B3 não cotado também aloca
+PASS fora da cobertura do calendário falha fechado
+PASS duas sessões: somente uma consome o saldo final
+PASS corrida não duplica título nem residual
+PASS rollback exige POST completo e falha fechado sem baseline íntegra
+PASS rollback bloqueado preserva alocações, títulos e snapshots
+PASS rollback bloqueado não faz revogação parcial
