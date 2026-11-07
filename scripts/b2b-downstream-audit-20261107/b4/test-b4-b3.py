@@ -421,6 +421,32 @@ WHERE s.partner_id='{B3.P}';""")
                     UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ('{plain_title}','{partner_title}');""")
         check("fixtures MANUAL canceladas após medição não contaminam a bateria seguinte", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")[0] is not None)
 
+        # Históricos já existentes com vínculos ambíguos/conflitantes: reativar um
+        # por vez. As chamadas sempre ocorrem com todos os gatilhos habilitados.
+        ambiguous_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{AMBIGUOUS_TITLE}'").stdout.strip()
+        ambiguous_payment = {"amount_received": 10, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-AMBIGUOUS"}
+        B3.psql(f"UPDATE public.accounts_receivable SET status='OPEN' WHERE id='{AMBIGUOUS_TITLE}'")
+        deny("múltiplos parceiros no mesmo cliente: primeiro parceiro não apropria a dívida", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_AMBIG_A}',0,NULL)"), "CREDIT_PARTNER_LINK_AMBIGUOUS")
+        deny("múltiplos parceiros no mesmo cliente: segundo parceiro também não apropria a dívida", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_AMBIG_B}',0,NULL)"), "CREDIT_PARTNER_LINK_AMBIGUOUS")
+        deny("ambiguidade de cliente/parceiro bloqueia baixa sem dupla contagem", B3.out(B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{ambiguous_installment}','{js(ambiguous_payment)}'::jsonb);")), "CREDIT_PARTNER_LINK_AMBIGUOUS")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{AMBIGUOUS_TITLE}'")
+
+        conflict_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{CONFLICT_TITLE}'").stdout.strip()
+        conflict_payment = {"amount_received": 11, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-CONFLICT"}
+        B3.psql(f"UPDATE public.accounts_receivable SET status='OPEN' WHERE id='{CONFLICT_TITLE}'")
+        deny("conflito partner_id/customer_id é explícito para o parceiro do cliente", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "CREDIT_PARTNER_CONFLICT")
+        deny("conflito partner_id/customer_id é explícito para o parceiro declarado", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.PO}',0,NULL)"), "CREDIT_PARTNER_CONFLICT")
+        deny("conflito partner_id/customer_id bloqueia baixa e reconciliação silenciosa", B3.out(B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{conflict_installment}','{js(conflict_payment)}'::jsonb);")), "CREDIT_PARTNER_CONFLICT")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{CONFLICT_TITLE}'")
+
+        owner_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{OWNER_CONFLICT_TITLE}'").stdout.strip()
+        owner_payment = {"amount_received": 12, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-OWNER"}
+        B3.psql(f"UPDATE public.accounts_receivable SET status='OPEN' WHERE id='{OWNER_CONFLICT_TITLE}'")
+        deny("partner_id de outro owner não esconde a dívida do cliente no tenant", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "CREDIT_PARTNER_OWNER_MISMATCH")
+        deny("conflito de owner também bloqueia baixa sem backfill", B3.out(B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{owner_installment}','{js(owner_payment)}'::jsonb);")), "CREDIT_PARTNER_OWNER_MISMATCH")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{OWNER_CONFLICT_TITLE}'")
+        check("ambiguidade e conflitos não geram pagamentos nem alteram partner_id histórico", B3.psql(f"SELECT (SELECT count(*) FROM public.receivable_payments p JOIN public.accounts_receivable_installments i ON i.id=p.installment_id WHERE i.receivable_id IN ('{AMBIGUOUS_TITLE}','{CONFLICT_TITLE}','{OWNER_CONFLICT_TITLE}'))||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE id='{AMBIGUOUS_TITLE}' AND partner_id IS NULL)").stdout.strip() == "0|1")
+
         # Pedido INTERNO sintético separado: os gatilhos são pausados apenas para montar
         # a fixture e religados antes de qualquer chamada; nenhuma contenção é removida.
         internal_order = B3.u(350)
