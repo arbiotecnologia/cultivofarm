@@ -259,7 +259,8 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
     for sig in ["public.fn_b2b_credit_exposure(uuid,numeric,uuid)", "public.rpc_register_receivable_payment(uuid,jsonb)",
                 "public.generate_b2b_receivable_secure_impl(uuid)", "public.tg_auto_b2b_receivable()"]:
         name = sig.split("(", 1)[0]
-        source = fn(body, name)
+        source = canonical_function(fn(body, name))
+        body = body.replace(fn(body, name), source, 1)
         candidate_pins[sig] = md5_def(source)
     for name in ["platform_private.b2b_allocate_document", "platform_private.b2b_order_residual", "platform_private.b4_schedule_from_nf"]:
         match = re.findall(rf"CREATE (?:OR REPLACE )?FUNCTION {re.escape(name)}\(.*?\nEND \$\$;", body, re.S)
