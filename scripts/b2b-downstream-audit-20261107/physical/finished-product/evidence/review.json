@@ -14,7 +14,15 @@
       "status": "PASS"
     },
     {
-      "name": "nenhum grant foi adicionado",
+      "name": "somente capability e wrapper públicos têm grant authenticated candidato",
+      "status": "PASS"
+    },
+    {
+      "name": "writer privado continua sem grant de aplicativo",
+      "status": "PASS"
+    },
+    {
+      "name": "UI possui capability fail-closed e wrapper delega ao writer privado",
       "status": "PASS"
     },
     {
@@ -74,7 +82,7 @@
       "status": "PASS"
     },
     {
-      "name": "after: 49/49 e exit 0",
+      "name": "after: 58/58 e exit 0",
       "status": "PASS"
     },
     {
@@ -140,10 +148,18 @@
     {
       "name": "manifesto registra as camadas e o estado LIVE relatado sem certificá-lo",
       "status": "PASS"
+    },
+    {
+      "name": "captura POST só é reutilizada com o SHA exato do candidato",
+      "status": "PASS"
+    },
+    {
+      "name": "replay devolve snapshots imutáveis do ledger para o ACK da UI",
+      "status": "PASS"
     }
   ],
-  "passed": 35,
-  "total": 35,
+  "passed": 39,
+  "total": 39,
   "hosted": false,
-  "candidate_sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd"
+  "candidate_sha256": "597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef"
 }
