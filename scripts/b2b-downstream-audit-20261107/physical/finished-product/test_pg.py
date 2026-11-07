@@ -27,6 +27,10 @@ sys.path.insert(0, str(ATOMIC))
 import restore
 from restore import pg
 import test_pg as T
+catalog_spec = importlib.util.spec_from_file_location("finished_current_catalog", H / "catalog_foundation.py")
+catalog_module = importlib.util.module_from_spec(catalog_spec)
+catalog_spec.loader.exec_module(catalog_module)
+apply_current_catalog = catalog_module.apply
 spec = importlib.util.spec_from_file_location("finished_confirmation", CONF / "test_pg.py")
 C = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(C)
@@ -118,6 +122,8 @@ def restore_checkpoint():
     # Ativação exclusivamente no harness; os artefatos de release permanecem fechados.
     sql("GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;")
     ok("writers de confirmação/envio ativados somente no PostgreSQL descartável")
+    # Costura exclusivamente local da captura antiga com o catálogo exclusivo atual.
+    apply_current_catalog(sql, T.A)
 
 
 def group(os_id, stock_id, quantity, key, observed=None):
@@ -169,7 +175,7 @@ def fixture(group_name, unit, volume, quantity=2):
     # Apenas montagem upstream: produto acabado não passa por bioreator/CQ/envase.
     # Os writers sob teste executam depois, com session_replication_role=origin.
     sql("SET session_replication_role=replica;" + f"""
-    INSERT INTO public.produtos(id,nome,tipo,codigo,familia_catalogo) VALUES('{product}','{group_name.upper()} {unit} TESTE LOCAL','{kind}','FIN-{n}','{family}');
+    INSERT INTO public.produtos(id,nome,tipo,codigo,familia_catalogo,owner_organization_id) VALUES('{product}','{group_name.upper()} {unit} TESTE LOCAL','{kind}','FIN-{n}','{family}','{T.A}');
     INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,origem,status,numero_os)
       VALUES('{os_id}','{T.A}','{T.C}','{T.u(18)}','{T.u(20)}','{product}','agronomica','pronto_entrega','FIN-{n}');
     INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido)

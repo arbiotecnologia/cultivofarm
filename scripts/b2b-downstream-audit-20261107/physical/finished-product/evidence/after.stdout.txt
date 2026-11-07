@@ -1,23 +1,41 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.5s
+CHECKPOINT sql_calls=1 elapsed=1.7s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
 PASS instalação permanece operacionalmente desligada
-PASS gate fechado nega reserva de produto acabado
-PASS quimico kg: pedido/OS → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL
-PASS quimico kg: envio/confirmação/replays idempotentes sem segunda baixa
-PASS fertilizante g: pedido/OS → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL
-PASS fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa
-PASS quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000
-PASS quimico l: envio/confirmação/replays idempotentes sem segunda baixa
-PASS fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
-CHECKPOINT sql_calls=100 elapsed=16.8s
-PASS fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa
+PASS aplicativo não tem EXECUTE na entrada privada de compra
+PASS gate fechado nega compra/entrada interna
+PASS aplicativo não pode forjar ticket de compra
+PASS produto de outro tenant é negado antes de criar lote/estoque
+PASS compra de 0,5 embalagem é negada
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS quimico kg: compra → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL
+PASS quimico kg: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS fertilizante g: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS fertilizante g: compra → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL
+PASS fertilizante g: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
+PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+CHECKPOINT sql_calls=100 elapsed=11.2s
+PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
+PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
+PASS mesma chave de compra com quantidade diversa conflita
+PASS fertilizante kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
 PASS parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
 PASS 0,5 embalagem é negada na reserva whole-pack
 PASS peso não pode ser gravado como volume_total
-PASS B2B permanece fechado mesmo com produto acabado válido
+PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS B2B permanece fechado mesmo com compra e produto acabado válidos
 PASS nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação
+PASS revogação durante espera da compra é revalidada antes de criar lote/estoque
+PASS duas compras concorrentes com a mesma chave geram uma única entrada e replay
 PASS POST confirma gate fechado após a bateria
-RESULT 19 / 19 exit 0
+PASS rollback deny-only executa sem restaurar grants ou apagar objetos
+PASS compra após rollback permanece fechada
+PASS rollback preserva compras, estoque, entregas e histórico integralmente
+RESULT 37 / 37 exit 0

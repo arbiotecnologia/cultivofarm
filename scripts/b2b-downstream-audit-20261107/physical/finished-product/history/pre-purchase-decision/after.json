@@ -1,0 +1,116 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "candidato instalado com todos os PRE pins e sem novos grants",
+      "status": "PASS"
+    },
+    {
+      "name": "instalação permanece operacionalmente desligada",
+      "status": "PASS"
+    },
+    {
+      "name": "gate fechado nega reserva de produto acabado",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_STOCK_CONTRACT_DENIED"
+    },
+    {
+      "name": "quimico kg: pedido/OS → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "kg",
+        "origin": "produto_acabado",
+        "content": 50
+      }
+    },
+    {
+      "name": "quimico kg: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante g: pedido/OS → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "g",
+        "origin": "produto_acabado",
+        "content": 50000
+      }
+    },
+    {
+      "name": "fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000",
+      "status": "PASS",
+      "detail": {
+        "ml": 2000.0,
+        "qty": 2,
+        "unit": "l",
+        "origin": "produto_acabado",
+        "content": 2
+      }
+    },
+    {
+      "name": "quimico l: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000",
+      "status": "PASS",
+      "detail": {
+        "ml": 1000.0,
+        "qty": 2,
+        "unit": "ml",
+        "origin": "produto_acabado",
+        "content": 1000
+      }
+    },
+    {
+      "name": "fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros",
+      "status": "PASS"
+    },
+    {
+      "name": "0,5 embalagem é negada na reserva whole-pack",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED"
+    },
+    {
+      "name": "peso não pode ser gravado como volume_total",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "B2B permanece fechado mesmo com produto acabado válido",
+      "status": "PASS",
+      "detail": "DELIVERY_SCOPE_DENIED"
+    },
+    {
+      "name": "nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação",
+      "status": "PASS"
+    },
+    {
+      "name": "POST confirma gate fechado após a bateria",
+      "status": "PASS"
+    }
+  ],
+  "hosted": false,
+  "real_nf_or_receivable": false
+}

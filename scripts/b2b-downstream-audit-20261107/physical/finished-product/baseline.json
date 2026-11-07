@@ -1,5 +1,5 @@
 {
-  "source": "disposable_captured_composition",
+  "source": "disposable_captured_composition_with_current_catalog_schema_seam",
   "hosted": false,
   "functions": [
     {
@@ -33,6 +33,18 @@
       "signature": "platform_private.envase_insert_guard_v1()"
     },
     {
+      "acl": "{postgres=X/postgres}",
+      "md5": "4eab765e76ca79f16a7dd481887496d9",
+      "owner": "postgres",
+      "signature": "platform_private.guard_manual_lot_write_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "58abf38671745d272abeb923ee866083",
+      "owner": "postgres",
+      "signature": "platform_private.trg_lab_lot_biological_only()"
+    },
+    {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",
       "md5": "06e64b76968f91e19f03b24363ac610a",
       "owner": "postgres",
@@ -49,23 +61,274 @@
       "md5": "a4d47ccf5d116141ed46e9de9ea7eeaa",
       "owner": "postgres",
       "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "9e24938a8d716a02ba023c9fb7ce24e9",
+      "owner": "postgres",
+      "signature": "public.validate_estoque_entrada()"
     }
   ],
   "relations": [
     {
+      "acl": "",
+      "name": "authz_tickets",
+      "owner": "postgres",
+      "schema": "platform_private"
+    },
+    {
       "acl": "{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
       "name": "catalogo_volumes",
-      "owner": "postgres"
+      "owner": "postgres",
+      "schema": "public"
     },
     {
       "acl": "{postgres=arwdDxtm/postgres,authenticated=rxtm/postgres,service_role=arwdDxtm/postgres}",
       "name": "entregas",
-      "owner": "postgres"
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      "name": "estoque_movimentacoes",
+      "owner": "postgres",
+      "schema": "public"
     },
     {
       "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
       "name": "estoque_produto",
-      "owner": "postgres"
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}",
+      "name": "lotes",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres}",
+      "name": "product_packagings",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres}",
+      "name": "product_sale_units",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "name": "produtos",
+      "owner": "postgres",
+      "schema": "public"
+    }
+  ],
+  "catalog_columns": [
+    {
+      "type": "text",
+      "table": "catalogo_volumes",
+      "column": "medida",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "catalogo_volumes",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "numeric",
+      "table": "catalogo_volumes",
+      "column": "volume_ml",
+      "nullable": "YES"
+    },
+    {
+      "type": "boolean",
+      "table": "product_packagings",
+      "column": "ativo",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "product_packagings",
+      "column": "codigo",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "created_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "product_packagings",
+      "column": "descricao",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "numeric",
+      "table": "product_packagings",
+      "column": "peso_liquido_kg",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_packagings",
+      "column": "product_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "product_packagings",
+      "column": "valid_from",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "product_packagings",
+      "column": "valid_to",
+      "nullable": "YES"
+    },
+    {
+      "type": "integer",
+      "table": "product_packagings",
+      "column": "version",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "product_sale_units",
+      "column": "forma_fisica",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "product_sale_units",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_sale_units",
+      "column": "product_id",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "product_sale_units",
+      "column": "unidade_conteudo",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "product_sale_units",
+      "column": "updated_at",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "product_sale_units",
+      "column": "updated_by",
+      "nullable": "YES"
+    },
+    {
+      "type": "integer",
+      "table": "product_sale_units",
+      "column": "version",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "produtos",
+      "column": "owner_organization_id",
+      "nullable": "NO"
+    }
+  ],
+  "catalog_constraints": [
+    {
+      "name": "pp_codigo_version",
+      "table": "product_packagings",
+      "definition": "UNIQUE (product_id, codigo, version)"
+    },
+    {
+      "name": "pp_window",
+      "table": "product_packagings",
+      "definition": "CHECK (((valid_to IS NULL) OR (valid_to >= valid_from)))"
+    },
+    {
+      "name": "product_packagings_codigo_check",
+      "table": "product_packagings",
+      "definition": "CHECK ((btrim(codigo) <> ''::text))"
+    },
+    {
+      "name": "product_packagings_id_fkey",
+      "table": "product_packagings",
+      "definition": "FOREIGN KEY (id) REFERENCES catalogo_volumes(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "product_packagings_owner_organization_id_fkey",
+      "table": "product_packagings",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "product_packagings_peso_liquido_kg_check",
+      "table": "product_packagings",
+      "definition": "CHECK ((peso_liquido_kg > (0)::numeric))"
+    },
+    {
+      "name": "product_packagings_pkey",
+      "table": "product_packagings",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "product_packagings_product_id_fkey",
+      "table": "product_packagings",
+      "definition": "FOREIGN KEY (product_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "product_packagings_version_check",
+      "table": "product_packagings",
+      "definition": "CHECK ((version >= 1))"
+    },
+    {
+      "name": "product_sale_units_owner_organization_id_fkey",
+      "table": "product_sale_units",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)"
+    },
+    {
+      "name": "product_sale_units_pkey",
+      "table": "product_sale_units",
+      "definition": "PRIMARY KEY (product_id)"
+    },
+    {
+      "name": "product_sale_units_product_id_fkey",
+      "table": "product_sale_units",
+      "definition": "FOREIGN KEY (product_id) REFERENCES produtos(id)"
+    },
+    {
+      "name": "product_sale_units_unidade_conteudo_check",
+      "table": "product_sale_units",
+      "definition": "CHECK ((unidade_conteudo = ANY (ARRAY['kg'::text, 'g'::text, 'ml'::text, 'l'::text])))"
+    },
+    {
+      "name": "product_sale_units_version_check",
+      "table": "product_sale_units",
+      "definition": "CHECK ((version >= 1))"
     }
   ],
   "existing_candidate_columns": []

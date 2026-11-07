@@ -3,13 +3,25 @@
   "hosted": false,
   "publication": false,
   "real_nf_receivable_accounting_or_delivery": false,
-  "candidate_sha256": "551824126877d3ec589b998e472a15d1c428f17b5ae2f8fd3673497af6ed0081",
-  "changed_functions_pinned": 8,
+  "candidate_sha256": "af71a57593d263a0fd4a1ea4341d62cb3e44e2edbaa6a9cf64d495df3f90e89f",
+  "changed_functions_pinned": 11,
+  "new_private_functions_pinned_post": 3,
   "new_grants": 0,
   "operation_default": false,
+  "purchase_origin": "compra_produto_acabado_revenda",
+  "purchase_entry": {
+    "function": "platform_private.finished_product_purchase_entry_v1",
+    "private_no_client_execute": true,
+    "server_resolves_catalog_unit_content_version": true,
+    "creates_lot_stock_and_one_canonical_entry_ledger": true,
+    "manufacturing_cq_or_envase": false,
+    "idempotent_replay_and_conflict": true,
+    "post_wait_reauthorization": true,
+    "concurrent_single_entry": true
+  },
   "batteries": {
     "before": {"passed": 17, "total": 17, "exit_code": 0, "meaning": "reproducao_das_lacunas"},
-    "after": {"passed": 19, "total": 19, "exit_code": 0, "meaning": "candidato_local_com_gate_sintetico"},
+    "after": {"passed": 37, "total": 37, "exit_code": 0, "meaning": "compra_e_downstream_local_com_gate_sintetico_e_rollback"},
     "legacy_candidate": {"passed": 6, "total": 6, "exit_code": 0, "meaning": "biologico_com_candidato_instalado_e_desligado"}
   },
   "units": {
@@ -21,12 +33,12 @@
   "whole_pack_fraction_denied": true,
   "partial_cancel_merge": "2 de 3 sacos 25 kg; split/cancelamento/merge = 75 kg; sem litros",
   "b2b_delivery_scope": "DELIVERY_SCOPE_DENIED",
-  "postflight_function_pins": 8,
+  "rollback": "deny-only; compra fechada; lotes/estoque/entregas/ledger preservados",
   "blockers": [
-    "baseline LIVE independente dos corpos/owners/ACLs e relações",
-    "composição e revisão da referência canônica B3 de embalagens",
-    "entrada canônica de produto acabado fora do recorte e não certificada",
-    "JWT/RLS/Storage/PostgREST/browser e elegibilidade real não executados"
+    "baseline LIVE independente dos 11 corpos/owners/ACLs, relações e catálogo",
+    "dados e composição real ARBio, JWT/RLS/Storage/PostgREST/browser não executados",
+    "entrada privada sem caller/UI liberado; instalação e operação não aprovadas"
   ],
-  "historical_not_added": "119/119, 21/21 e 123/123 permanecem evidências anteriores separadas"
+  "historical_not_added": "119/119, 21/21 e 123/123 permanecem evidências anteriores separadas",
+  "superseded_local_candidate": "history/pre-purchase-decision/"
 }

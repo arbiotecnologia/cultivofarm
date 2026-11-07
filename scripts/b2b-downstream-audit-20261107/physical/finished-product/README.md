@@ -1,42 +1,62 @@
-# Produto acabado — reconciliação física local
+# Compra de produto acabado para revenda — reconciliação física local
 
-**Status: INATIVO / BLOQUEADO / NÃO APROVADO.** Somente PostgreSQL descartável; nenhuma operação hospedada, publicação, NF, cobrança, aprovação contábil ou envio externo.
+**Status: INATIVO / BLOQUEADO / NÃO APROVADO.** Somente PostgreSQL descartável; nenhuma operação hospedada, publicação, NF, cobrança, aprovação contábil, envio externo ou delegação.
 
-## Reprodução antes da correção
+## Decisão de origem incorporada
 
-A bateria `before` terminou **17/17, exit 0** e comprovou:
+Químicos e fertilizantes ARBio entram por **COMPRA DE PRODUTO ACABADO PARA REVENDA**. O fluxo positivo deste recorte é:
 
-- reserva por quantidade sem envase, mas entrega sólida sem unidade fechada;
-- `volume_total=50` em uma fixture de 50 kg virava `volume_entregue_ml=50000`;
-- apresentação líquida conseguia reservar/expedir/cancelar, mas envio e confirmação exigiam `programacao_producao`;
-- a confirmação tentava acionar fabricação laboratorial para químico/fertilizante;
-- B2B aprovado permanecia negado por `DELIVERY_SCOPE_DENIED`.
+`catálogo por empresa → compra/entrada privada de estoque → lote sem fabricação → reserva → expedição/em rota → comprovante fictício → entrega`, com cancelamento, replays e rollback.
 
-## Candidato
+Não há bioreator, `programacao_producao`, CQ ou envase nesses caminhos. O candidato anterior, baseado em estoque montado por fixture, foi preservado em `history/pre-purchase-decision/` e não é mais o candidato atual.
 
-`install.sql.review` pina corpo, owner e ACL de **8 funções** e owner/ACL das relações compartilhadas. O pacote adiciona snapshots de unidade/embalagem em `estoque_produto` e `entregas`, constraint de contrato, gate privado desligado e duas funções privadas de validação. Não adiciona grants nem políticas permissivas.
+## Entrada canônica implementada
 
-O candidato altera somente: reserva/split, writer interno de entrega, merge de cancelamento, lineage de envio/confirmação, sync laboratorial e os dois guards de imagem de envase. A comparação legada de envase desconta apenas as novas colunas aditivas; a constraint exige que permaneçam nulas no legado.
+`platform_private.finished_product_purchase_entry_v1` é privada, transacional, idempotente e nasce sem EXECUTE para `PUBLIC`, `anon`, `authenticated` e `service_role`. Ela:
 
-`rollback.sql.review` é deny-only: desliga o gate e preserva dados, colunas, corpos e histórico. `postflight.sql.review` contém os hashes normalizados medidos no PostgreSQL descartável e exige gate fechado.
+- deriva ator e empresa no servidor e reautoriza após locks/esperas;
+- exige o gate privado habilitado, papel/recursos de estoque existentes e catálogo ativo do mesmo tenant;
+- resolve no servidor a apresentação em `product_sale_units`, `product_packagings` e `catalogo_volumes`; o chamador não informa unidade, conteúdo ou versão;
+- usa tickets específicos no mecanismo `platform_private.authz_tickets` já existente e o contexto transacional canônico do motor de estoque;
+- cria `lotes` e `estoque_produto` com `programacao_id/volume_produzido/envase/CQ` ausentes e origem `compra_produto_acabado_revenda`;
+- registra fornecedor e referência de compra no lote e no ledger, sem preço, contas a pagar, documento fiscal ou cobrança;
+- exige exatamente um movimento `entrada`, com fingerprint e chave de idempotência; replay retorna os mesmos IDs e payload divergente conflita.
+
+Os guards reais de lote, item biológico, entrada, tenant, imagem de estoque e ledger foram integrados, não desligados. Nenhum grant novo foi adicionado. `catalog_foundation.py` apenas reconcilia a captura física antiga com o schema de catálogo atual já usado pelo B3; é costura sintética local, não instalação LIVE nem writer Owned.
+
+## Unidades e embalagem
+
+Cada compra recebe uma única embalagem/apresentação e quantidade inteira. Para sólidos, `product_packagings.peso_liquido_kg` resolve o conteúdo em kg/g; para líquidos, `catalogo_volumes.volume_ml` resolve L/ml.
+
+- 2×25 kg = **50 kg**, `volume_entregue_ml=NULL`;
+- 2×25.000 g = **50.000 g**, `volume_entregue_ml=NULL`;
+- 2×1 L = **2 L**, `volume_entregue_ml=2000`;
+- 2×500 ml = **1.000 ml**, `volume_entregue_ml=1000`.
+
+Peso é conteúdo para freight/logística e nunca é convertido em volume. A parcial de 2 de 3 sacos de 25 kg faz split, cancelamento e merge para **75 kg**; 0,5 embalagem é negada na compra e na reserva. Não há segunda baixa em envio, confirmação ou replays.
+
+## Objetos e pinos
+
+`install.sql.review` pina corpo, owner e ACL de **11 funções** compartilhadas, owner/ACL de 9 relações, colunas e constraints das dependências de catálogo, além da ausência prévia dos objetos novos. O candidato altera reserva/split, entrega, merge de cancelamento, lineage de envio/confirmação, sync laboratorial, guards de lote/entrada e guards de imagem de envase.
+
+`postflight.sql.review` contém hashes normalizados medidos das 11 funções alteradas e das 3 funções privadas novas, e exige gate fechado. `rollback.sql.review` é deny-only: desliga a operação e revoga writers sem apagar dados, colunas, corpos ou histórico. O POST de instalação não é reaplicado após o rollback porque a revogação intencional muda o ACL.
 
 ## Resultados finais
 
 | Escopo | Resultado | Evidência |
 |---|---:|---|
-| Reprodução original | 17/17, exit 0 | `evidence/before.json`, `before.stdout.txt`, `before.exitcode` |
-| kg, g, L, ml; whole-pack; parcial; envio/confirmação/cancelamento; replays; B2B negado | 19/19, exit 0 | `evidence/after.json`, `after.stdout.txt`, `after.exitcode` |
+| Reprodução original: peso→ml, lineage de fabricação e B2B fechado | 17/17, exit 0 | `evidence/before.json`, stdout e exitcode |
+| Compra/entrada, kg/g/L/ml, whole-pack, reserva/baixa/envio/entrega/cancelamento, replays, concorrência, revogação e rollback | **37/37, exit 0** | `evidence/after.json`, stdout e exitcode |
 | Legado biológico com candidato instalado e gate desligado | 6/6, exit 0 | `evidence/legacy-candidate.json`, stdout e exitcode |
 
-Casos positivos: 2×25 kg = 50 kg; 2×25.000 g = 50.000 g; 2×1 L = 2.000 ml; 2×500 ml = 1.000 ml. Peso nunca gera `volume_entregue_ml`. A parcial de 2 de 3 sacos de 25 kg faz split, cancelamento e merge para 75 kg; 0,5 embalagem é negada. Não há segunda baixa em envio/confirmação/replays.
+Candidato SHA256: `af71a57593d263a0fd4a1ea4341d62cb3e44e2edbaa6a9cf64d495df3f90e89f`.
 
 ## Bloqueios e limites
 
-1. **Baseline LIVE independente ausente:** os oito corpos/owners/ACLs e as relações precisam ser conferidos pelo auditor. Captura local não é prova de produção.
-2. **Dependência canônica B3 ausente nesta composição física:** os IDs/versões de embalagem são snapshots upstream sintéticos. Não foi criado catálogo/tabela paralela nem usado o catálogo líquido antigo como se fosse sólido. A ligação real com o catálogo B3 precisa ser composta e revisada.
-3. **Entrada de produto acabado fora do recorte:** fixtures upstream usam `session_replication_role=replica` apenas na montagem. Nenhum writer de entrada foi aberto ou certificado; os writers downstream executam com triggers habilitados.
-4. O gate nasce `enabled=false`; os testes positivos o ligam somente no banco descartável. Instalação não significa operação.
-5. B2B/OnFarm permanece fechado. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real, JWT, RLS, Storage, PostgREST ou browser.
-6. Nenhum efeito fiscal, financeiro, contábil, fiscal-SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG e NF/recebíveis continuam fora deste pacote.
+1. **Baseline LIVE independente ausente:** os 11 corpos/owners/ACLs, relações e o schema/constraints de catálogo precisam ser conferidos pelo auditor. A costura local não prova que a produção tem os mesmos pinos.
+2. **Sem exposição ao aplicativo:** a entrada privada não tem grant nem UI/caller liberado. Os positivos usam chamada interna privilegiada e claims sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser.
+3. **Dados reais não homologados:** produtos, embalagens, fornecedores, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
+4. **B2B/OnFarm permanece fechado** com `DELIVERY_SCOPE_DENIED`. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real.
+5. Nenhum efeito fiscal, financeiro, contábil, SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG, NF e recebíveis continuam fora deste pacote.
 
-Os históricos físicos anteriores 119/119, 21/21 e 123/123 permanecem em `../evidence/`; não foram somados às contagens deste recorte nem apresentados como E2E real.
+Os históricos físicos 119/119, 21/21 e 123/123 permanecem em `../evidence/`; não foram somados às contagens deste recorte nem apresentados como E2E real.
