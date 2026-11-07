@@ -316,7 +316,7 @@ def build():
         "source": str(MONEY.relative_to(ROOT)) + "#accounts_receivable",
         "owner": next((x.get("owner") for x in CAP.get("relations", []) if x.get("schema") == "public" and x.get("name") == "accounts_receivable"), "postgres"),
         "acl": ar["acl"], "rls": ar["rls"], "force_rls": ar["force"],
-        "columns": ar["columns"], "constraints": ar["constraints"], "indexes": ar_indexes, "triggers": ar_triggers,
+        "columns": ar["columns"], "constraints": ar_constraints, "indexes": ar_indexes, "triggers": ar_triggers,
         "columns_md5": rows_digest(ar["columns"], ["name", "type", "default", "notnull"]),
         "constraints_md5": rows_digest(ar["constraints"], ["name", "definition"]),
         "indexes_md5": rows_digest(ar_indexes, ["name", "definition", "valid"]),
