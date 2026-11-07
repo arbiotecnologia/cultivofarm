@@ -1,0 +1,17 @@
+
+ RUN  v3.2.4 /dev-server
+
+stdout | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; expiração descarta e restore não recupera
+cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/config/financialOpenSession.integration.test.tsx (26 tests) 1262ms
+
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+   Start at  05:23:12
+   Duration  24.58s (transform 14.24s, setup 180ms, collect 20.94s, tests 1.26s, environment 1.01s, prepare 130ms)
+
+JSON report written to /tmp/b3-review194331e/financial-fixture-focused.json

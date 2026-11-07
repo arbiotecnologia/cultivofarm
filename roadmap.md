@@ -1,9 +1,14 @@
+## 07/11 — B3 parcela única com taxa explícita (somente local/PG descartável)
+- [x] Permitir taxa explícita em 1 parcela somente para boleto/promissória/cartão de crédito; dinheiro/Pix/débito continuam únicos e sem juros.
+- [x] Provar o oráculo sintético 1000 a 1,8%: n1 = 1018,00 (principal 1000/juros 18) e n3 = 345,40/345,40/345,42 em publicação, resolução, simulação, create, UI e persistência; PG 172/172 e UI 29/29.
+- [x] Preservar pacote não aplicado/publicado, produção informada, PB-001036, B4/fiscal, SMTP e automações; nenhuma taxa/default remoto.
+
 ## 07/11 — B3 revisão 194331e (somente local/PG descartável)
-- [ ] Limite numérico explícito fail-closed em simulação/criação, com cadastro e pedido em análise preservados e UI indisponível.
-- [ ] Resposta de cotação recalcula uma única economia e snapshot pela condição, com autorização, idempotência e rollback.
-- [ ] Demonstrar criação interna positiva com fixtures isoladas e guards reais, sem contornar origem.
-- [ ] Reproduzir os 27 erros na base 347baf8 ou anterior, separar infra/defeito, corrigir o pertinente e guardar JSON/exit codes.
-- [ ] Manter datas estimadas e B4/fiscal fechado; entregar evidências e limitações, sem hosted/publicação.
+- [x] Limite numérico explícito fail-closed em simulação/criação, com cadastro e pedido em análise preservados e UI indisponível.
+- [x] Resposta de cotação recalcula uma única economia e snapshot pela condição, com autorização, idempotência e rollback.
+- [x] Demonstrar criação interna positiva com fixtures isoladas e guards reais, sem contornar origem.
+- [ ] Reproduzir os 27 erros na base 347baf8 ou anterior, separar infra/defeito, corrigir o pertinente e guardar JSON/exit codes; base reproduzida 27/27 e fixture 26/26. Suíte final interrompida em 114 arquivos, exit 143, sem JSON completo: pendente de nova janela de execução.
+- [x] Manter datas estimadas e B4/fiscal fechado; entregar evidências e limitações, sem hosted/publicação.
 
 ## 06/11 — Confirmação controlada de publicação de atribuição
 - [x] Reproduzir o confirm nativo antes do fence e substituir por diálogo controlado, sem SQL/publicação.

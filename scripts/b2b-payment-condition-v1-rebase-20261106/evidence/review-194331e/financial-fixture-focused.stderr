@@ -1,0 +1,172 @@
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > nova identidade não herda draft e descarta resposta tardia da identidade anterior
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; inativação descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; inativação descarta e restore não recupera
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10335,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; inativação descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; role descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; role descarta e restore não recupera
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10420,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; role descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; expiração descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; expiração descarta e restore não recupera
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":10369,"leaseRemainingMs":0,"requestRemainingMs":4631}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; expiração descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; revalidação descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > preserva draft por dois polls; revalidação descarta e restore não recupera
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > pending/valid/inativação/retry/restore remove valores e navegação na mesma URL
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > pending/valid/inativação/retry/restore remove valores e navegação na mesma URL
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10020,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > pending/valid/inativação/retry/restore remove valores e navegação na mesma URL
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > pending/valid/inativação/retry/restore remove valores e navegação na mesma URL
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [] pausa sem adotar RBAC novo
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [] pausa sem adotar RBAC novo
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10423,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [] pausa sem adotar RBAC novo
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [ 'administrador' ] pausa sem adotar RBAC novo
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [ 'administrador' ] pausa sem adotar RBAC novo
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10218,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [ 'administrador' ] pausa sem adotar RBAC novo
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [ 'financeiro', 'administrador' ] pausa sem adotar RBAC novo
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [ 'financeiro', 'administrador' ] pausa sem adotar RBAC novo
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10270,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > role atual [ 'financeiro', 'administrador' ] pausa sem adotar RBAC novo
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > timeout descarta confirmação tardia
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > timeout descarta confirmação tardia
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":10219,"leaseRemainingMs":0,"requestRemainingMs":4781}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > offline/restore descarta R$999 de consulta antiga
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"offline","visible":true,"online":false,"rttMs":10,"leaseRemainingMs":14990,"requestRemainingMs":null}
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > offline/restore descarta R$999 de consulta antiga
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > gate fechado preserva baseline sem monitor financeiro
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > login não exclusivo [ 'administrador' ] não entra no recorte financeiro
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > login não exclusivo [ 'financeiro', 'administrador' ] não entra no recorte financeiro
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+
+stderr | src/test/config/financialOpenSession.integration.test.tsx > financeiro sessão aberta candidata > login não exclusivo [ 'financeiro', 'consultor_tecnico' ] não entra no recorte financeiro
+The width(0) and height(0) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+

@@ -1293,7 +1293,8 @@ export default function NovoPedido() {
                               onClick={() => setSelectedMethod({ payment_method: o.payment_method, payment_condition_version: o.payment_condition_version,
                                 payment_deadline_days: o.payment_deadline_days })}>
                               {METHOD_KIND_LABEL[o.payment_method]}
-                              {o.installment_count && o.installment_count > 1 ? ` · ${o.installment_count}x` : ""}
+                              {o.installment_count ? ` · ${o.installment_count}x` : ""}
+                              {o.monthly_rate !== null ? ` · ${o.monthly_rate.toLocaleString("pt-BR")}% a.m.` : ""}
                               {o.payment_deadline_days >= 0 ? ` · ${o.payment_deadline_days} dias após a NF` : ""}
                             </Button>
                           );

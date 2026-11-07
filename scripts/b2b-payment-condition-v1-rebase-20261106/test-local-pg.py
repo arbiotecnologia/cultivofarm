@@ -31,6 +31,7 @@ UFIN, UGC = u(29), u(30)
 PC, UBC = u(85), u(86)  # parceiro/comprador sintéticos isolados para fronteiras de crédito
 PLD, PLQ = SP.PLD, SP.PLQ
 P3, PINT, PNA, P3B = u(81), u(82), u(83), u(84)
+P1 = u(87)  # plano sintético exclusivo do oráculo de parcela única com taxa explícita
 M_PIX, M_BOL, M_CASH, M_OFF, M_PROM, M_DEB = u(91), u(92), u(93), u(94), u(95), u(96)
 CAT, CAT_D, CAT_OFF = u(97), u(98), u(99)
 psql, as_user = SP.psql, SP.as_user
@@ -177,13 +178,15 @@ INSERT INTO public.commercial_payment_plans(id,active,pricing_mode,discount_perc
   max_days,minimum_order_amount,requires_financial_approval,requires_guarantee,requires_credit_approval,name,code) VALUES
   ('{P3}',true,'discount_from_base',0,0,1,'simple',3,90,NULL,false,false,false,'TESTE 3x','T3'),
   ('{P3B}',true,'discount_from_base',0,0,1,'simple',3,90,NULL,false,false,false,'TESTE 3x B','T3B'),
+  ('{P1}',true,'discount_from_base',0,0,1,'simple',1,90,NULL,false,false,false,'TESTE parcela única','T1'),
   ('{PINT}',true,'discount_from_base',0,2,3,'compound',3,90,NULL,false,false,false,'TESTE juros 3x','TJ'),
   ('{PNA}',true,'discount_from_base',0,0,1,'simple',1,30,NULL,false,false,false,'TESTE não publicado','TN');
 INSERT INTO public.commercial_payment_plan_assignments VALUES
   ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLD}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
   ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLQ}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
   ('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{PC}',NULL,CURRENT_DATE-1,NULL),
-  ('published','{P3B}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PINT}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{P3B}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P1}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{PINT}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
   ('draft','{PNA}','partner','{P}',NULL,CURRENT_DATE-1,NULL);
 """
 
@@ -286,10 +289,15 @@ def main():
         j, e = publish(UADM, P3B, "promissoria", M_PROM, 30, 3, 0, 0); check("promissória personalizável: 3x taxa explícita 0", j and j["condition"]["method"] == "promissoria", e)
         j, e = publish(UADM, P3B, "cartao_credito", M_PROM, 30, 2, "2.5", 0); check("cartão de crédito personalizável: 2x 2,5%", j and j["condition"]["installment_count"] == 2, e)
         j, e = publish(UADM, P3B, "cartao_debito", M_DEB, 1, 1, 0, 0); check("débito: parcela única com 1 dia", j and j["condition"]["installment_count"] == 1, e)
+        for method, pm in (("boleto", M_BOL), ("promissoria", M_PROM), ("cartao_credito", M_PROM)):
+            j, e = publish(UADM, P1, method, pm, 30, 1, "1.8", 0)
+            check(f"publicação sintética: {method} aceita 1 parcela com taxa explícita 1,8%",
+                  j and j["condition"]["installment_count"] == 1 and Decimal(str(j["condition"]["monthly_rate"])) == Decimal("1.8"), e)
         denied("plano com juros próprios recusado (uma fonte de juros)", publish(UADM, PINT, "boleto", M_BOL, 30, 3, "1", 0), "payment_condition_plan_interest_conflict")
         denied("Pix parcelado recusado", publish(UADM, P3, "pix", M_PIX, 5, 2, 0, 1), "check constraint")
         denied("boleto 4x recusado", publish(UADM, PNA, "boleto", M_BOL, 5, 4, "1", 0), "check constraint")
-        denied("parcela única com juros recusada", publish(UADM, PNA, "boleto", M_BOL, 5, 1, "1", 0), "check constraint")
+        for method, pm in (("dinheiro", M_CASH), ("pix", M_PIX), ("cartao_debito", M_DEB)):
+            denied(f"{method}: parcela única com juros continua recusada", publish(UADM, PNA, method, pm, 5, 1, "1.8", 0), "check constraint")
         denied("meio fora dos seis recusado", publish(UADM, PNA, "cheque", M_PIX, 5, 1, 0, 0), "check constraint")
         denied("prazo acima do plano recusado", publish(UADM, PNA, "pix", M_PIX, 31, 1, 0, 0), "payment_condition_deadline_exceeds_plan")
         denied("meio inativo no catálogo recusado", publish(UADM, PNA, "pix", M_OFF, 5, 1, 0, 0), "payment_method_catalog_unavailable")
@@ -299,7 +307,8 @@ def main():
         for nm, uid in (("comprador", UB), ("técnico", UT), ("gestor comercial (só leitura)", UGC), ("superadmin", SP.USUP)):
             denied(f"{nm} não configura", publish(uid, PNA, "pix", M_PIX, 5, 1, 0, 0), "forbidden")
         j, e = publish(UADMF, PLD, "pix", M_PIX, 2, 1, 0, 0); check("admin F publica a própria versão (isolada)", j and j["condition"]["organization_id"] == F, e)
-        for plan, m in ((PLD, "pix"), (PLD, "dinheiro"), (PLQ, "pix"), (PLQ, "boleto"), (P3, "boleto"), (P3, "pix"), (P3B, "promissoria")):
+        for plan, m in ((PLD, "pix"), (PLD, "dinheiro"), (PLQ, "pix"), (PLQ, "boleto"), (P3, "boleto"), (P3, "pix"), (P3B, "promissoria"),
+                        (P1, "boleto"), (P1, "promissoria"), (P1, "cartao_credito")):
             assign(UADM, P, plan, m, 1)
         assign(UADM, PC, P3, "boleto", 1)
         j, e = assign(UADMF, PF, PLD, "pix", 1); check("admin F atribui ao próprio parceiro", j and j["enabled"], e)
@@ -326,9 +335,54 @@ def main():
         check("cartão de crédito publicado mas não atribuído: indisponível ao comprador", j and [o["payment_method"] for o in j["options"]] == ["promissoria"], e or j)
         j, e = call(UADM, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"); check("ator interno de A vê opções do parceiro de A", j and len(j["options"]) == 2, e)
         denied("ator interno de F não vê parceiro de A", call(UADMF, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"), "forbidden_partner")
+        j, e = call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{P1}')")
+        check("resolução: boleto/promissória/crédito em 1x com 1,8% explícito ficam disponíveis ao comprador",
+              j and sorted((o["payment_method"], o["installment_count"], Decimal(str(o["monthly_rate"]))) for o in j["options"]) ==
+              sorted([("boleto", 1, Decimal("1.8")), ("promissoria", 1, Decimal("1.8")), ("cartao_credito", 1, Decimal("1.8"))]), e or j)
 
         # ---------- UMA verdade monetária ----------
         base = date.fromisoformat(psql("SELECT CURRENT_DATE").stdout.strip())
+        single_exp = price(1000, 1, "1.8", 30, base)
+        check("oráculo independente n=1: 1000 a 1,8% = 1018,00; principal 1000,00 e juros 18,00",
+              len(single_exp) == 1 and single_exp[0][2:] == (Decimal("1018.00"), Decimal("1000.00"), Decimal("18.00")), single_exp)
+        single_hash = None
+        for method in ("boleto", "promissoria", "cartao_credito"):
+            choice1 = ch(method, 1, 30)
+            j, e = sim(UB, P1, [L(1000)], choice1)
+            check(f"simulação {method} n=1: total 1018, principal 1000 e juros 18",
+                  j and rows_of(j["schedule"]) == single_exp and Decimal(str(j["final_amount"])) == Decimal("1018.00")
+                  and Decimal(str(j["net_amount_after_discount"])) == Decimal("1000.00")
+                  and Decimal(str(j["financial_interest_amount"])) == Decimal("18.00") and j["installment_count"] == 1
+                  and Decimal(str(j["payment_condition"]["monthly_rate"])) == Decimal("1.8"), e or j)
+            if method == "boleto" and j: single_hash = j["cart_hash"]
+        ONE = ch("boleto", 1, 30)
+        j, e = create(UB, P1, [L(1000)], single_hash, "TESTE-PRICE-SINGLE-1", ONE)
+        one_oid = j and j["id"]
+        check("create n=1: ACK total 1018, juros 18, principal 1000 e mesma escolha/hash",
+              j and Decimal(str(j["total"])) == Decimal("1018.00") and Decimal(str(j["final_amount"])) == Decimal("1018.00")
+              and Decimal(str(j["financial_interest_amount"])) == Decimal("18.00") and rows_of(j["schedule"]) == single_exp
+              and j["cart_hash"] == single_hash and j["payment_choice"] == ONE, e or j)
+        if one_oid:
+            row = psql(f"""SELECT json_build_object('o',(SELECT json_build_object('total',total,'final',final_amount_with_interest,'int',financial_interest_amount,'terms',payment_terms_id) FROM public.partner_orders WHERE id='{one_oid}'),
+              't',(SELECT json_agg(json_build_object('id',id,'final',final_amount,'int',financial_interest_amount,'n',installment_count,'first',first_due_date,'rate',monthly_interest_percent_snapshot)) FROM public.partner_order_payment_terms WHERE partner_order_id='{one_oid}'),
+              's',(SELECT json_agg(json_build_object('installment_number',installment_number,'due_date',due_date,'amount',amount,'principal_amount',principal_amount,'interest_amount',interest_amount)) FROM public.partner_order_payment_schedule WHERE partner_order_id='{one_oid}'),
+              'm',(SELECT json_build_object('final',financed_total,'int',financed_interest,'principal',principal,'rows',rows,'hash',cart_hash,'terms',payment_terms_id,'rate',condition->>'monthly_rate','n',condition->>'installment_count') FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{one_oid}'),
+              'i',(SELECT result_snapshot->>'final_amount' FROM public.partner_order_idempotency WHERE idempotency_key='TESTE-PRICE-SINGLE-1'))""").stdout.strip()
+            d1 = json.loads(row); D1 = lambda x: Decimal(str(x))
+            check("persistência n=1: pedido/termos/cronograma/snapshot/idempotência = 1018; principal 1000; juros 18; taxa 1,8%",
+                  D1(d1["o"]["total"]) == D1(d1["o"]["final"]) == D1(d1["t"][0]["final"]) == D1(d1["m"]["final"]) == D1(d1["i"]) == Decimal("1018.00")
+                  and D1(d1["o"]["int"]) == D1(d1["t"][0]["int"]) == D1(d1["m"]["int"]) == Decimal("18.00")
+                  and D1(d1["m"]["principal"]) == Decimal("1000.00") and len(d1["t"]) == 1 and d1["t"][0]["n"] == 1
+                  and D1(d1["t"][0]["rate"]) == D1(d1["m"]["rate"]) == Decimal("1.8") and d1["m"]["n"] == "1"
+                  and d1["o"]["terms"] == d1["t"][0]["id"] == d1["m"]["terms"] and rows_of(d1["s"]) == single_exp
+                  and rows_of(d1["m"]["rows"]) == single_exp and d1["t"][0]["first"] == single_exp[0][1] and d1["m"]["hash"] == single_hash, d1)
+            jr, er = call(UB, f"public.get_partner_order_payment_condition_secure('{one_oid}')")
+            check("leitor persistido n=1 devolve 1018, principal 1000, juros 18 e taxa 1,8%",
+                  jr and Decimal(str(jr["payment_condition"]["financed_total"])) == Decimal("1018.00")
+                  and Decimal(str(jr["payment_condition"]["principal"])) == Decimal("1000.00")
+                  and Decimal(str(jr["payment_condition"]["financed_interest"])) == Decimal("18.00")
+                  and Decimal(str(jr["payment_condition"]["monthly_rate"])) == Decimal("1.8")
+                  and rows_of(jr["payment_condition"]["schedule"]) == single_exp, er or jr)
         BOL = ch("boleto", 1, 30)
         j, e = sim(UB, P3, [L(1000)], BOL)
         exp = price(1000, 3, "1.8", 30, base)

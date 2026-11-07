@@ -24,6 +24,7 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{
   if(name==='h15_actor_organization'){s.h15++;const hold=s.hold;s.hold=undefined;return {data:hold?await hold():(s.h15===2&&s.finalOrg?s.finalOrg:(s.active===true&&s.password===false?s.org:null)),error:s.error?{}:null};}
   if(name==='get_financial_dashboard_summary'){const late=s.late;s.late=undefined;return late?await late():{data:{total_receivable_expected:100},error:null};}
   if(name==='get_top_financial_rankings')return {data:{},error:null};
+  if(name==='tenant_display_name_v1')return {data:{contract:'TENANT_DISPLAY_NAME_V1',organization_id:s.org,name:'Financeiro TESTE'},error:null};
   throw new Error('unexpected '+name);
  }
 }}));

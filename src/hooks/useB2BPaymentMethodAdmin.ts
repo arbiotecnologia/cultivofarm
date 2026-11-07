@@ -87,7 +87,8 @@ export function validateConfig(i: PublishInput, plan: AdminPlan | undefined): st
   const max = MAX_INSTALLMENTS[i.method];
   if (!Number.isInteger(i.installment_count) || i.installment_count < 1 || i.installment_count > max) return `Parcelas permitidas para este meio: 1 a ${max}.`;
   if (!Number.isFinite(i.monthly_rate) || i.monthly_rate < 0 || i.monthly_rate > 100) return "Informe a taxa Price mensal explicitamente (0 a 100%).";
-  if (i.installment_count === 1 && i.monthly_rate !== 0) return "Parcela única não tem juros (taxa 0).";
+  if (i.installment_count === 1 && i.monthly_rate !== 0 && ["dinheiro", "pix", "cartao_debito"].includes(i.method))
+    return "Dinheiro, Pix e débito exigem parcela única sem juros (taxa 0).";
   if (!i.payment_method_id) return "Selecione o meio no cadastro.";
   if (!i.category_id) return "Selecione a categoria de receita.";
   return null;

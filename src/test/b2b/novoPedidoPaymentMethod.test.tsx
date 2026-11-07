@@ -256,6 +256,31 @@ it("Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas 
   expect(await submitBtn()).toBeEnabled();
 });
 
+it("Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => {
+    if (n === "b2b_list_payment_condition_options_secure") return abortable(Promise.resolve({ data: {
+      contract: TEST_CONTRACT, partner_id: a?.p_partner_id, payment_plan_id: a?.p_payment_plan_id,
+      mode: "required", due_basis: "nf_issue", options: [{ ...BOLETO, available: true, payment_method_name: "Boleto", installment_count: 1, monthly_rate: 1.8 }],
+    }, error: null }));
+    if (n === "simulate_b2b_payment_condition_secure") return priceReply([1018], 1018)(a ?? {}).then((r) => ({ ...r, data: { ...r.data,
+      installment_count: 1,
+      payment_plan: { ...r.data.payment_plan, installment_count: 1 },
+      payment_condition: { ...r.data.payment_condition, installment_count: 1 },
+      schedule: [{ ...r.data.schedule[0], principal_amount: 1000, interest_amount: 18 }],
+    } }));
+    return base(n, a);
+  });
+  await toPayment();
+  fireEvent.click(await screen.findByRole("radio", { name: /Boleto · 1x · 1,8% a\.m\./ }));
+  expect((await screen.findAllByText(/1\.018,00/)).length).toBeGreaterThan(0);
+  expect((await screen.findAllByText(/R\$ 18,00/)).length).toBeGreaterThan(0);
+  expect((await screen.findAllByText(/1\.000,00/)).length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByText(/Parcelas estimadas/));
+  expect((await screen.findAllByText("R$ 1.018,00")).length).toBeGreaterThan(0);
+  expect(await submitBtn()).toBeEnabled();
+});
+
 it("crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado", async () => {
   const base = wrapped();
   state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "simulate_b2b_payment_condition_secure"

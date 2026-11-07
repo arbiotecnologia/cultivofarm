@@ -1,0 +1,620 @@
+Vitest caught 27 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "nova identidade não herda draft e descarta resposta tardia da identidade anterior". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "nova identidade não herda draft e descarta resposta tardia da identidade anterior". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; inativação descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; inativação descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; role descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; role descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; expiração descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; expiração descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; revalidação descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "preserva draft por dois polls; revalidação descarta e restore não recupera". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "pending/valid/inativação/retry/restore remove valores e navegação na mesma URL". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "pending/valid/inativação/retry/restore remove valores e navegação na mesma URL". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "role atual [] pausa sem adotar RBAC novo". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "role atual [] pausa sem adotar RBAC novo". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "role atual [ 'administrador' ] pausa sem adotar RBAC novo". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "role atual [ 'administrador' ] pausa sem adotar RBAC novo". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "role atual [ 'financeiro', 'administrador' ] pausa sem adotar RBAC novo". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "role atual [ 'financeiro', 'administrador' ] pausa sem adotar RBAC novo". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "timeout descarta confirmação tardia". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "offline/restore descarta R$999 de consulta antiga". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "offline/restore descarta R$999 de consulta antiga". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "gate fechado preserva baseline sem monitor financeiro". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "login não exclusivo [ 'administrador' ] não entra no recorte financeiro". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "login não exclusivo [ 'financeiro', 'administrador' ] não entra no recorte financeiro". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: unexpected tenant_display_name_v1
+ ❯ Object.call src/test/config/financialOpenSession.integration.test.tsx:27:9
+     25|   if(name==='get_financial_dashboard_summary'){const late=s.late;s.lat…
+     26|   if(name==='get_top_financial_rankings')return {data:{},error:null};
+     27|   throw new Error('unexpected '+name);
+       |         ^
+     28|  }
+     29| }}));
+ ❯ Object.rpc src/test/config/helpers/internalActorContextAdapter.ts:51:21
+ ❯ queryFn src/hooks/useActiveTenantName.ts:49:10
+ ❯ Object.fetchFn [as fn] ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:457:14
+ ❯ run ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:153:49
+ ❯ Object.start ../../../dev-server/node_modules/@tanstack/query-core/src/retryer.ts:218:9
+ ❯ Query.fetch ../../../dev-server/node_modules/@tanstack/query-core/src/query.ts:576:26
+ ❯ QueryObserver.#executeFetch ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:333:71
+ ❯ QueryObserver.onSubscribe ../../../dev-server/node_modules/@tanstack/query-core/src/queryObserver.ts:104:14
+ ❯ QueryObserver.subscribe ../../../dev-server/node_modules/@tanstack/query-core/src/subscribable.ts:11:10
+
+This error originated in "src/test/config/financialOpenSession.integration.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "login não exclusivo [ 'financeiro', 'consultor_tecnico' ] não entra no recorte financeiro". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-worker]: Timeout calling "onTaskUpdate"
+ ❯ Object.onTimeoutError ../../../dev-server/node_modules/vitest/dist/chunks/rpc.-pEldfrD.js:53:10
+ ❯ Timeout._onTimeout ../../../dev-server/node_modules/vitest/dist/chunks/index.B521nVV-.js:59:62
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-worker]: Timeout calling "onTaskUpdate"
+ ❯ Object.onTimeoutError ../../../dev-server/node_modules/vitest/dist/chunks/rpc.-pEldfrD.js:53:10
+ ❯ Timeout._onTimeout ../../../dev-server/node_modules/vitest/dist/chunks/index.B521nVV-.js:59:62
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
