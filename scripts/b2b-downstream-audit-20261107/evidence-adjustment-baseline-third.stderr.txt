@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-baseline.py", line 112, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-baseline.py", line 73, in main
+    psql(f"""INSERT INTO public.partner_orders(id,partner_id,status,total,created_by,payment_terms_id,requires_financial_approval,financial_approval_status,payment_condition_status)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             VALUES ('{legacy_id}','{SP.P}','em_analise_comercial',100,'{SP.UB}','{terms_id}',true,'pending','pending');
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             INSERT INTO public.partner_order_payment_terms(id,partner_order_id,payment_plan_id,approval_status,final_amount)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             VALUES ('{terms_id}','{legacy_id}','{SP.PLD}','pending',100);""")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  auth_required
+CONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 54 at RAISE
+
