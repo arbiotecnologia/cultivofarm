@@ -189,8 +189,11 @@ def main():
         restore_checkpoint()
         # A entrada direta sem envase é negada: não existe writer de produto acabado neste recorte.
         probe = fixture("quimico", "kg", None)
-        direct = f"INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{T.u(1999)}','{probe['lot']}','{probe['product']}',2,NULL,'disponivel');"
-        reject("produto acabado sem envase não tem entrada canônica aberta", direct, "23514", "não possui registro de envase")
+        direct = "CREATE TABLE public.local_finished_entry_probe(LIKE public.estoque_produto INCLUDING DEFAULTS);" + \
+                 "CREATE TRIGGER local_validate_entry BEFORE INSERT ON public.local_finished_entry_probe FOR EACH ROW EXECUTE FUNCTION public.validate_estoque_entrada();" + \
+                 f"INSERT INTO public.local_finished_entry_probe(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{T.u(1999)}','{probe['lot']}','{probe['product']}',2,NULL,'disponivel');"
+        reject("função real de entrada exige envase quando não há writer de produto acabado", direct, "23514", "não possui registro de envase")
+        sql("DROP TABLE public.local_finished_entry_probe;")
 
         # Dois sólidos: reserva real e limite exato do agrupamento por volume obrigatório.
         solids = [fixture("quimico", "kg", None), fixture("fertilizante", "g", None)]
