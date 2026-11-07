@@ -12,12 +12,12 @@ PASS fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa
 PASS quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: envio/confirmação/replays idempotentes sem segunda baixa
 PASS fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
-CHECKPOINT sql_calls=100 elapsed=13.4s
+CHECKPOINT sql_calls=100 elapsed=12.8s
 PASS fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa
 PASS parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros
 PASS 0,5 embalagem é negada na reserva whole-pack
-PASS FAIL peso não pode ser gravado como volume_total :: ERROR:  42501: ESTQ_TENANT_FORBIDDEN
-CONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE
-LOCATION:  exec_stmt_raise, pl_exec.c:3911
-
-RESULT 16 / 16 exit 1
+PASS peso não pode ser gravado como volume_total
+PASS B2B permanece fechado mesmo com produto acabado válido
+PASS nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação
+PASS POST confirma gate fechado após a bateria
+RESULT 19 / 19 exit 0

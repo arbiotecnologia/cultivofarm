@@ -1,5 +1,5 @@
 {
-  "status": "FAIL",
+  "status": "PASS",
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -93,7 +93,21 @@
       "detail": "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED"
     },
     {
-      "name": "FAIL peso não pode ser gravado como volume_total :: ERROR:  42501: ESTQ_TENANT_FORBIDDEN\nCONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "name": "peso não pode ser gravado como volume_total",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "B2B permanece fechado mesmo com produto acabado válido",
+      "status": "PASS",
+      "detail": "DELIVERY_SCOPE_DENIED"
+    },
+    {
+      "name": "nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação",
+      "status": "PASS"
+    },
+    {
+      "name": "POST confirma gate fechado após a bateria",
       "status": "PASS"
     }
   ],
