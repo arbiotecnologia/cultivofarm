@@ -1,0 +1,15 @@
+-- READ ONLY. Captura LOCAL de 2026-10-30; o auditor deve confrontar a fonte LIVE antes de qualquer uso.
+DO $guard$
+BEGIN
+  IF md5(pg_get_functiondef('public.request_b2b_payment_terms_adjustment_secure(uuid,text)'::regprocedure)) <> 'f9bf8f543564af480d08e7bebd111b88' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
+  END IF;
+  IF md5(pg_get_functiondef('public.b2b_phase1_order_visible(uuid)'::regprocedure)) <> '8812508716f279a88e3d5a31b15621d8' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_SCOPE_PIN_DRIFT';
+  END IF;
+  IF md5(pg_get_functiondef('platform_private.c2_accounting_pending_guard()'::regprocedure)) <> '669b19490a7a9700f0158db4b31885ad' THEN
+    RAISE EXCEPTION 'ACCOUNTING_GUARD_PIN_DRIFT';
+  END IF;
+END
+$guard$;
+SELECT 'PRE_OK' AS status;
