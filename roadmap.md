@@ -1,3 +1,8 @@
+## 07/11 — Resumo da condição B3 na prévia (sem produção/publicação)
+- [x] Cartão usa escolha/ACK V1 e parcelas exatas (6,22/6,22/6,21), não média; 1x com taxa e troca meio/versão testados. Legado preservado; 31/31 focados e reteste final 16/16, build automático OK. Typecheck separado não observado (execução manual vedada pelo ambiente); sessão externa não disponível ao agente, sem solicitar login nem alegar E2E real.
+- [x] Nomes dos parceiros adiados: leitor administrativo atual fornece somente UUIDs; não ampliar leituras nem SQL.
+- Auditor informou d9041a70 instalado com PRE/POST_OK e envios/cron false; piloto somente ARBio/parceiro fictício 7e52de9a, boleto 3x/1,8%/1 dia no plano fixture TESTE-B2B-PACK-20261106; não reproduzir instalação nem alterar dados.
+
 ## 07/11 — Cotação incompleta e coerência do vencimento (somente local)
 - [x] Restaurar count pelo gerador; parcial/duplicado/estrangeiro/vazio negados com estado integral preservado; positivos completos em INSTALL novo/legado e rollback legado; rollback novo deny-only.
 - [x] Prazo 30 > max_days 29 negado em resolução/create/quote sem clamp; terms/schedule coerentes no positivo. Pins regenerados; PG 226/226, UI 23/23, tipos exit 0 e build OK; evidências duráveis, sem produção/publicação.

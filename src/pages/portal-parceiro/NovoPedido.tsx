@@ -1263,6 +1263,12 @@ export default function NovoPedido() {
                     simulation ? { [simulation.payment_plan.id]: simulation.amounts.final_amount } : {}
                   }
                   loading={selSim.pending}
+                  conditionRequired={methodMode !== "legacy"}
+                  selectedCondition={requireMethod && selectedMethod
+                    ? (simulation as Partial<MethodSimulateResult> | null)?.payment_condition
+                      ?? methodList.find((o) => o.available && sameChoice(o, selectedMethod))
+                    : null}
+                  selectedSchedule={requireMethod ? simulation?.schedule : undefined}
                 />
 
                 {selectedPlanId && methodMode !== "legacy" && (

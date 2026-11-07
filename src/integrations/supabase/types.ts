@@ -21453,6 +21453,50 @@ export type Database = {
         Args: { p_claim: string; p_fence: string; p_user: string }
         Returns: Json
       }
+      b2b_list_payment_condition_options_secure: {
+        Args: { p_partner_id: string; p_payment_plan_id: string }
+        Returns: Json
+      }
+      b2b_payment_condition_activation_set: {
+        Args: {
+          p_expected_version: number
+          p_mode: string
+          p_pilot_partner_ids: string[]
+        }
+        Returns: Json
+      }
+      b2b_payment_condition_assign: {
+        Args: {
+          p_enabled: boolean
+          p_method: string
+          p_partner_id: string
+          p_plan_id: string
+          p_version: number
+        }
+        Returns: Json
+      }
+      b2b_payment_condition_config_list: { Args: never; Returns: Json }
+      b2b_payment_condition_publish: {
+        Args: {
+          p_category_id: string
+          p_deadline_days: number
+          p_expected_version: number
+          p_installment_count: number
+          p_method: string
+          p_monthly_rate: number
+          p_payment_method_id: string
+          p_plan_id: string
+        }
+        Returns: Json
+      }
+      b2b_payment_condition_retire: {
+        Args: {
+          p_expected_version: number
+          p_method: string
+          p_plan_id: string
+        }
+        Returns: Json
+      }
       b2b_phase1_order_visible: { Args: { p_order: string }; Returns: boolean }
       b2b_phase1_partner_visible: {
         Args: { p_partner: string; p_technical?: boolean }
@@ -21623,6 +21667,19 @@ export type Database = {
           p_simulation_id: string
         }
         Returns: string
+      }
+      create_partner_order_condition_secure: {
+        Args: {
+          p_expected_cart_hash: string
+          p_idempotency_key: string
+          p_items: Json
+          p_observacoes: string
+          p_partner_id: string
+          p_payment_choice: Json
+          p_payment_plan_id: string
+          p_requested_delivery_date: string
+        }
+        Returns: Json
       }
       create_partner_order_secure: {
         Args: {
@@ -22735,6 +22792,10 @@ export type Database = {
           }
       get_partner_catalog_volumes_secure: {
         Args: { p_partner_id: string }
+        Returns: Json
+      }
+      get_partner_order_payment_condition_secure: {
+        Args: { p_order_id: string }
         Returns: Json
       }
       get_partner_order_payment_terms_secure: {
@@ -26395,6 +26456,15 @@ export type Database = {
       set_partner_user_papel: {
         Args: { p_link_id: string; p_papel: string }
         Returns: undefined
+      }
+      simulate_b2b_payment_condition_secure: {
+        Args: {
+          p_items: Json
+          p_partner_id: string
+          p_payment_choice: Json
+          p_payment_plan_id: string
+        }
+        Returns: Json
       }
       simulate_b2b_payment_plan_secure: {
         Args: {
