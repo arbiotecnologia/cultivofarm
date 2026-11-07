@@ -28,6 +28,7 @@ u = SP.u
 A, F, P, PO, PF = SP.A, SP.F, SP.P, SP.PO, SP.PF
 UB, UT, UB2, UADM, UADMF, UINACT = SP.UB, SP.UT, SP.UB2, SP.UADM, SP.UADMF, SP.UINACT
 UFIN, UGC = u(29), u(30)
+PC, UBC = u(85), u(86)  # parceiro/comprador sintéticos isolados para fronteiras de crédito
 PLD, PLQ = SP.PLD, SP.PLQ
 P3, PINT, PNA, P3B = u(81), u(82), u(83), u(84)
 M_PIX, M_BOL, M_CASH, M_OFF, M_PROM, M_DEB = u(91), u(92), u(93), u(94), u(95), u(96)
@@ -156,9 +157,14 @@ BEGIN
   RETURN '{{}}'::jsonb;
 END $$;
 REVOKE ALL ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) TO authenticated;
-INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true);
-INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial');
-INSERT INTO platform_private.seam_entitlements VALUES ('{UFIN}','pedidos_b2b'),('{UGC}','pedidos_b2b'),('{UFIN}','catalogo_precos'),('{UGC}','catalogo_precos');
+INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true),('{UBC}','{A}',true);
+INSERT INTO public.partner_accounts VALUES ('{PC}',true,NULL,'{A}');
+INSERT INTO public.partner_users VALUES ('{UBC}','{PC}');
+INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial'),('{UBC}','parceiro_b2b');
+INSERT INTO platform_private.seam_entitlements VALUES ('{UFIN}','pedidos_b2b'),('{UGC}','pedidos_b2b'),('{UFIN}','catalogo_precos'),('{UGC}','catalogo_precos'),
+  ('{UBC}','pedidos_b2b'),('{UBC}','catalogo_precos');
+INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES
+  (gen_random_uuid(),'{P}',1000000,'block',false,0),(gen_random_uuid(),'{PF}',1000000,'block',false,0),(gen_random_uuid(),'{PC}',1018.11,'block',false,0);
 INSERT INTO public.payment_methods VALUES ('{M_PIX}','Pix TESTE',true),('{M_BOL}','Boleto TESTE',true),('{M_CASH}','Dinheiro TESTE',true),
   ('{M_OFF}','Inativo TESTE',false),('{M_PROM}','Promissória TESTE',true),('{M_DEB}','Débito TESTE',true);
 INSERT INTO public.financial_categories(id,name,type,active) VALUES ('{CAT}','Receita B2B TESTE','RECEITA',true),('{CAT_D}','Despesa TESTE','DESPESA',true),
@@ -171,7 +177,8 @@ INSERT INTO public.commercial_payment_plans(id,active,pricing_mode,discount_perc
   ('{PNA}',true,'discount_from_base',0,0,1,'simple',1,30,NULL,false,false,false,'TESTE não publicado','TN');
 INSERT INTO public.commercial_payment_plan_assignments VALUES
   ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLD}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
-  ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLQ}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{PC}',NULL,CURRENT_DATE-1,NULL),
   ('published','{P3B}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PINT}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
   ('draft','{PNA}','partner','{P}',NULL,CURRENT_DATE-1,NULL);
 """
@@ -253,10 +260,13 @@ def main():
         r = runf(work / "01-pre.sql.readonly"); check("01 PRE_OK", r.returncode == 0 and "PRE_OK" in r.stderr, r.stderr[-300:])
         r = runf(work / "02-install.sql.review"); check("02 install", r.returncode == 0, r.stderr[-600:])
         fm["install"] = {k: md5_of(s) for k, s in g["PUB"].items()}
+        fm["install"]["quote"] = md5_of(g["QUOTE_SIG"])
         write(fm["install"])
         r = runf(work / "03-post.sql.readonly"); check("03 POST_OK", r.returncode == 0 and "POST_OK" in r.stderr, r.stderr[-300:])
         r = runf(work / "02-install.sql.review"); check("rerun do install recusado", r.returncode != 0)
-        check("corpos LIVE originais intactos após install", md5_of(CREATE_SIG) == g["LIVE_PINS"][CREATE_SIG] and md5_of(SIM_SIG) == g["LIVE_PINS"][SIM_SIG])
+        check("create/simulate LIVE originais intactos; somente a resposta de cotação ganhou o ramo condicionado",
+              md5_of(CREATE_SIG) == g["LIVE_PINS"][CREATE_SIG] and md5_of(SIM_SIG) == g["LIVE_PINS"][SIM_SIG]
+              and md5_of(g["QUOTE_SIG"]) != g["LIVE_PINS"][g["QUOTE_SIG"]])
         check("sem dois contratos: nenhum objeto rev.2 B2B_PAYMENT_METHOD_V1 nem create antigo de 10 argumentos",
               psql("SELECT (to_regclass('public.b2b_payment_method_configs') IS NULL AND to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text,jsonb)') IS NULL)::text").stdout.strip() == "true")
 
@@ -478,6 +488,7 @@ def main():
         check("após rollback: snapshots/versões preservados", int(psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip()) >= 3
               and int(psql("SELECT count(*) FROM platform_private.b2b_condition_versions").stdout.strip()) >= 10)
         fm["deny"] = {k: md5_of(s) for k, s in g["PUB"].items()}
+        fm["deny"]["quote"] = md5_of(g["QUOTE_SIG"])
         (HERE / "fn-md5.json").write_text(json.dumps(fm, indent=2) + "\n")
     except Exception:
         for c in CHECKS:
