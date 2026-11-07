@@ -740,9 +740,11 @@ def build_quote(rollback=False):
               "      PERFORM platform_private.b2b_internal_assert_origin(v_order.internal_origin_snapshot,v_order.partner_id,v_order.cliente_id);\n"
               "    END IF;\n"
               "    v_cond2 := platform_private.b2b_resolve_condition(v_order.partner_id,v_plan.id,v_choice,false);\n"
-              "    IF v_cond2 IS DISTINCT FROM v_cond OR NOT public.b2b_phase1_order_visible(p_order_id)\n"
-              "       OR NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN\n"
+              "    IF v_cond2 IS DISTINCT FROM v_cond OR NOT public.b2b_phase1_order_visible(p_order_id) THEN\n"
               "      RAISE EXCEPTION 'payment_condition_stale' USING ERRCODE='PT409';\n"
+              "    END IF;\n"
+              "    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN\n"
+              "      RAISE EXCEPTION 'forbidden_quote_response' USING ERRCODE='42501';\n"
               "    END IF;\n"
               "  END IF;\n"
               "  SELECT COALESCE(SUM(subtotal),0)::numeric(14,2) INTO v_table\n", "Q5 reautorização após itens + carrinho canônico")
