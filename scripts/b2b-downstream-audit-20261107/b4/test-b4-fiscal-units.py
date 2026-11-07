@@ -32,6 +32,7 @@ T = load("b4_shared_for_fiscal_units", H / "test-b4-b3.py")
 B3 = T.B3
 B3.SP.PORT = "55490"
 G = B3.g
+G_PRODUCT = B3.u(400)
 CHECKS = []
 
 
