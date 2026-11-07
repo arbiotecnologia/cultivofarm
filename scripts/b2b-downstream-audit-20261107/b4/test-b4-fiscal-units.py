@@ -183,6 +183,21 @@ def main():
             check(name + ": conteúdo fiscal normalizado sem alterar preço", actual_normalized is not None and Decimal(str(actual_normalized)) == Decimal(str(current["expected_normalized"])) and money.get("normalized_unit") == current["expected_unit"], money)
             check(name + ": payload fiscal original preservado", T.sql_json(f"SELECT items->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'") == payload, payload)
 
+        split_a, split_b, split_c = B3.u(700), B3.u(701), B3.u(702)
+        document(split_a, split_order, item(split_item, 25, "KG", 25000, "G"))
+        document(split_b, split_order, item(split_item, 1, "UN", 25, "KG"))
+        first, first_error = allocate(split_a)
+        second, second_error = allocate(split_b)
+        check("duas NFs de 25 kg consomem exatamente duas embalagens", first is not None and first.get("success") and second is not None and second.get("success"), first_error or second_error or [first, second])
+        totals = T.sql_json(f"SELECT jsonb_build_object('documents',count(*),'quantity',coalesce(sum((item_money->0->>'quantity')::numeric),0),'principal',coalesce(sum((item_money->0->>'principal')::numeric),0)) FROM platform_private.b2b_document_allocations WHERE order_id='{split_order}'")
+        check("saldo anterior usa quantidade normalizada, não 25 kg brutos", totals == {"documents": 2, "quantity": 2, "principal": 360}, totals)
+        replay, replay_error = allocate(split_a)
+        check("replay da NF de 25 kg preserva o mesmo título", replay is not None and replay.get("replayed") and replay.get("receivable_id") == (first or {}).get("receivable_id"), replay_error or replay)
+        document(split_c, split_order, item(split_item, 1, "UN", 25, "KG"))
+        T.deny("terceira embalagem além das duas vendidas é negada", allocate(split_c), "FISCAL_QUANTITY_OVERALLOCATED")
+        final_count = B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{split_order}')||(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{split_order}')").stdout.strip()
+        check("replay e excesso não duplicam título nem alocação", final_count == "22", final_count)
+
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
     except Exception as exc:
         check("execução sem exceção de harness", False, repr(exc))
