@@ -3,12 +3,13 @@
   "hosted": false,
   "publication": false,
   "real_nf_receivable_accounting_or_delivery": false,
-  "candidate_sha256": "962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd",
+  "candidate_sha256": "597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef",
   "changed_functions_pinned": 11,
   "immutable_dependency_functions_pinned": 1,
   "immutable_dependency_triggers_pinned": 1,
   "new_private_functions_pinned_post": 3,
-  "new_grants": 0,
+  "new_public_functions_pinned_post": 2,
+  "new_grants": 2,
   "operation_default": false,
   "purchase_origin": "compra_produto_acabado_revenda",
   "live_reported_entry_guards": {
@@ -36,6 +37,8 @@
   "purchase_entry": {
     "function": "platform_private.finished_product_purchase_entry_v1",
     "private_no_client_execute": true,
+    "public_capability": "public.rpc_finished_product_purchase_capability_v1; contrato FINISHED_PRODUCT_PURCHASE_V1; ator+gate",
+    "public_wrapper_only": "public.rpc_finished_product_purchase_entry_v1 delega ao privado; anon/service_role sem EXECUTE",
     "server_resolves_catalog_unit_content_version": true,
     "supplier_lot_required_and_snapshotted": true,
     "creates_lot_stock_and_one_canonical_entry_ledger": true,
@@ -46,7 +49,7 @@
   },
   "batteries": {
     "before": {"passed": 17, "total": 17, "exit_code": 0, "meaning": "reproducao_das_lacunas"},
-    "after": {"passed": 49, "total": 49, "exit_code": 0, "meaning": "compra_guards_live_informados_downstream_e_rollback_local"},
+    "after": {"passed": 58, "total": 58, "exit_code": 0, "meaning": "capability_wrapper_compra_guards_downstream_replay_e_rollback_local"},
     "legacy_candidate": {"passed": 6, "total": 6, "exit_code": 0, "meaning": "biologico_com_candidato_instalado_e_desligado"},
     "null_contract_before": {"passed": 27, "total": 51, "exit_code": 1, "meaning": "24_falhas_funcionais_de_nulidade_antes_da_correcao"},
     "null_contract_after": {"passed": 51, "total": 51, "exit_code": 0, "meaning": "null_e_dimensoes_fechados_com_gate_on_off_e_seis_callers"},
@@ -58,7 +61,7 @@
     "l": "2 embalagens x 1 L = 2 L; volume_entregue_ml 2000",
     "ml": "2 embalagens x 500 ml = 1000 ml; volume_entregue_ml 1000"
   },
-  "artifact_review": {"passed": 35, "total": 35, "exit_code": 0, "evidence": "evidence/review.json"},
+  "artifact_review": {"passed": 39, "total": 39, "exit_code": 0, "evidence": "evidence/review.json"},
   "whole_pack_fraction_denied": true,
   "partial_cancel_merge": "2 de 3 sacos 25 kg; split/cancelamento/merge = 75 kg; sem litros",
   "b2b_delivery_scope": "DELIVERY_SCOPE_DENIED",
@@ -67,7 +70,7 @@
     "confirmar instalação das dependências canônicas delivery_confirm_apply_v1/delivery_send_apply_v1 antes da camada downstream; ausência relatada não autoriza remover pins",
     "conferência independente LIVE dos demais corpos, owners, ACLs, trigger, relações e catálogo; MD5s LIVE são relatos do auditor",
     "dados e composição real ARBio, JWT/RLS/Storage/PostgREST/browser não executados",
-    "entrada privada sem caller/UI liberado; instalação e operação não aprovadas"
+    "wrapper/capability e UI local continuam inativos até instalação coordenada, revisão independente e homologação real"
   ],
   "historical_not_added": "119/119, 21/21 e 123/123 permanecem evidências anteriores separadas; 37/37 anterior está em history/pre-live-entry-guards/; 19/19 físico e as baterias B3/B4 também permanecem separados",
   "superseded_local_candidates": [
