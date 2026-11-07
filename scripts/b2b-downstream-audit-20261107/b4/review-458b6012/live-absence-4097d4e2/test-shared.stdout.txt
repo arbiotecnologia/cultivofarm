@@ -32,40 +32,53 @@ PASS autorização fiscal continua service-only e sem integração de recebível
 PASS gate fiscal/contábil não comprovado permanece fechado
 PASS cliente não invoca alocador privado
 PASS stub operacional existe só no harness depois da negação real
-FAIL shared fence preserva título MANUAL não B2B sem devedor parceiro :: ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível
-CONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE
-
-FAIL projeção nova não inventa proveniência para MANUAL sem parceiro :: ERROR:  MONEY_ORIGIN_ACCESS_DENIED
-CONTEXT:  PL/pgSQL function public.rpc_receivable_money_projection_v1(uuid,integer,integer) line 6 at RAISE
-FAIL baixa MANUAL não B2B sem parceiro preserva o writer legado :: ERROR:  invalid input syntax for type uuid: ""
-LINE 1: SELECT public.rpc_register_receivable_payment('','{"amount_r...
-                                                      ^
-
-FAIL shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado :: ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível
-CONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE
-
-FAIL bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}
-FAIL pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1037.26, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998961.74, 'credit_limit_action': 'block', 'exposicao_projetada': 1038.26, 'percentual_utilizado': 0.1, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1036.22}
-FAIL baixa de origem desconhecida que afeta parceiro também falha fechado :: ERROR:  invalid input syntax for type uuid: ""
-LINE 1: SELECT public.rpc_register_receivable_payment('','{"amount_r...
-                                                      ^
-FAIL novo pedido do mesmo parceiro fica indisponível durante a inconsistência :: {'items': [{'nome': 'Biológico líquido TESTE', 'codigo': 'LIQ-1', 'item_id': '00000000-0000-0000-0000-000000000031', 'rule_id': None, 'item_tipo': 'produto', 'volume_ml': 1000.0, 'base_price': 1.0, 'quantidade': 1.0, 'reason_code': 'OK', 'min_quantity': 0.0, 'price_source': 'catalog_volume_price', 'pricing_mode': 'discount_from_base', 'quote_required': False, 'unidade_medida': 'unidade', 'condition_price': None, 'final_unit_price': 1.0, 'line_final_amount': 1.0, 'line_table_amount': 1.0, 'plan_discount_percent': 0.0}], 'credit': {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.04, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'credit_checked': True, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998650.81, 'credit_limit_action': 'block', 'exposicao_projetada': 1349.19, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}, 'amounts': {'final_amount': 1.04, 'table_amount': 1.0, 'discount_amount': 0.0, 'financial_interest_amount': 0.04, 'net_amount_after_discount': 1.0}, 'schedule': [{'amo
+PASS shared fence preserva título MANUAL não B2B sem devedor parceiro
+PASS projeção nova não inventa proveniência para MANUAL sem parceiro
+PASS baixa MANUAL não B2B sem parceiro preserva o writer legado
+PASS shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado
+PASS bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição
+PASS pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro
+PASS baixa de origem desconhecida que afeta parceiro também falha fechado
+FAIL novo pedido do mesmo parceiro fica indisponível durante a inconsistência :: ERROR:  MONEY_ORIGIN_ACCESS_DENIED
+CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 4 at RAISE
+PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment
+PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
+PL/pgSQL function platform_private.b2b_credit_checked(uuid,numeric,uuid) line 13 at assignment
+PL/pgSQL function simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) line 101 at assignment
 PASS impacto medido não altera pedidos atuais nem cria pedido novo
 PASS fixtures MANUAL canceladas após medição não contaminam a bateria seguinte
 PASS pedido interno não autorizado pelo downstream B4 é contido
 PASS contenção interna não cria título nem alocação
 PASS writer integral antigo também permanece fechado para pedido interno
-FAIL primeira NF parcial autorizada fictícia gera título :: ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível
-CONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE
-SQL statement "INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)
- VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id)"
-PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 122 at SQL statement
+PASS primeira NF parcial autorizada fictícia gera título
 PASS conversão não duplica exposição
 PASS residual = pedido restante + títulos sem dupla contagem
-FAIL replay da mesma autorização devolve mesmo título :: ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível
-CONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE
-SQL statement "INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)
- VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id)"
-PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 122 at SQL statement
-FAIL replay não duplica alocação :: 
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  invalid input syntax for type uuid: "None"\nLINE 1: ...nts_receivable_installments i WHERE receivable_id=\'None\')::t...\n                                                             ^\n')
+PASS replay da mesma autorização devolve mesmo título
+PASS replay não duplica alocação
+PASS datas finais partem da emissão e calendário selado
+PASS juros financiados não são somados duas vezes
+PASS projeção financeira usa ator e tenant autorizados
+PASS baixa parcial local no ledger capturado
+PASS baixa reduz somente título, não residual do pedido
+PASS três documentos independentes fecham quantidade e residual
+PASS três títulos, um por documento
+PASS crédito após parciais preserva total menos baixa
+PASS cancelamento de NF paga exige reconciliação
+PASS cancelamento pago negado preserva histórico e saldo
+PASS atestação fictícia de cancelamento passa pela guarda com ator
+PASS substituição intermediária cancela somente título não pago
+PASS cancelamento restaura exatamente principal+juros do documento
+PASS documento substituto consome residual sem duplicar
+PASS substituição intermediária preserva centavos por item
+PASS histórico do título cancelado permanece
+PASS quantidade acima do pedido negada
+PASS tenant estrangeiro não faz replay nem lê recibo
+PASS pendência contábil bloqueia antes de qualquer título
+PASS writer B2B anterior continua negado após instalação
+PASS snapshot B3 não cotado também aloca
+PASS fora da cobertura do calendário falha fechado
+PASS duas sessões: somente uma consome o saldo final
+PASS corrida não duplica título nem residual
+PASS rollback deny-only passa com PRE/POST e metadados íntegros
+PASS rollback preserva alocações, títulos e snapshots
+PASS rollback fecha writer legado sem apagar projeção nem histórico

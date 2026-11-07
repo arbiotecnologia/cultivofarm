@@ -14,8 +14,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 41,
-  "total": 53,
+  "passed": 78,
+  "total": 79,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -155,43 +155,36 @@
     },
     {
       "name": "shared fence preserva título MANUAL não B2B sem devedor parceiro",
-      "ok": false,
-      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\n"
+      "ok": true
     },
     {
       "name": "projeção nova não inventa proveniência para MANUAL sem parceiro",
-      "ok": false,
-      "detail": "ERROR:  MONEY_ORIGIN_ACCESS_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_receivable_money_projection_v1(uuid,integer,integer) line 6 at RAISE"
+      "ok": true
     },
     {
       "name": "baixa MANUAL não B2B sem parceiro preserva o writer legado",
-      "ok": false,
-      "detail": "ERROR:  invalid input syntax for type uuid: \"\"\nLINE 1: SELECT public.rpc_register_receivable_payment('','{\"amount_r...\n                                                      ^\n"
+      "ok": true
     },
     {
       "name": "shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado",
-      "ok": false,
-      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\n"
+      "ok": true
     },
     {
       "name": "bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição",
-      "ok": false,
-      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}"
+      "ok": true
     },
     {
       "name": "pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro",
-      "ok": false,
-      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1037.26, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998961.74, 'credit_limit_action': 'block', 'exposicao_projetada': 1038.26, 'percentual_utilizado': 0.1, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1036.22}"
+      "ok": true
     },
     {
       "name": "baixa de origem desconhecida que afeta parceiro também falha fechado",
-      "ok": false,
-      "detail": "ERROR:  invalid input syntax for type uuid: \"\"\nLINE 1: SELECT public.rpc_register_receivable_payment('','{\"amount_r...\n                                                      ^"
+      "ok": true
     },
     {
       "name": "novo pedido do mesmo parceiro fica indisponível durante a inconsistência",
       "ok": false,
-      "detail": "{'items': [{'nome': 'Biológico líquido TESTE', 'codigo': 'LIQ-1', 'item_id': '00000000-0000-0000-0000-000000000031', 'rule_id': None, 'item_tipo': 'produto', 'volume_ml': 1000.0, 'base_price': 1.0, 'quantidade': 1.0, 'reason_code': 'OK', 'min_quantity': 0.0, 'price_source': 'catalog_volume_price', 'pricing_mode': 'discount_from_base', 'quote_required': False, 'unidade_medida': 'unidade', 'condition_price': None, 'final_unit_price': 1.0, 'line_final_amount': 1.0, 'line_table_amount': 1.0, 'plan_discount_percent': 0.0}], 'credit': {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.04, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'credit_checked': True, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998650.81, 'credit_limit_action': 'block', 'exposicao_projetada': 1349.19, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}, 'amounts': {'final_amount': 1.04, 'table_amount': 1.0, 'discount_amount': 0.0, 'financial_interest_amount': 0.04, 'net_amount_after_discount': 1.0}, 'schedule': [{'amo"
+      "detail": "ERROR:  MONEY_ORIGIN_ACCESS_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment\nPL/pgSQL function platform_private.b2b_credit_checked(uuid,numeric,uuid) line 13 at assignment\nPL/pgSQL function simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) line 101 at assignment"
     },
     {
       "name": "impacto medido não altera pedidos atuais nem cria pedido novo",
@@ -215,8 +208,7 @@
     },
     {
       "name": "primeira NF parcial autorizada fictícia gera título",
-      "ok": false,
-      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\nSQL statement \"INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)\n VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id)\"\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 122 at SQL statement"
+      "ok": true
     },
     {
       "name": "conversão não duplica exposição",
@@ -228,18 +220,119 @@
     },
     {
       "name": "replay da mesma autorização devolve mesmo título",
-      "ok": false,
-      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\nSQL statement \"INSERT INTO public.accounts_receivable(id,organization_id,origin_type,origin_id,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by,b2b_document_id)\n VALUES(tid,org,'B2B_ORDER',d.order_id,customer,d.partner_id,'Documento fiscal autorizado — candidato interno',category,final,d.issue_date,(rows->0->>'due_date')::date,jsonb_array_length(rows),'OPEN',method_id,u,d.id)\"\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 122 at SQL statement"
+      "ok": true
     },
     {
       "name": "replay não duplica alocação",
-      "ok": false,
-      "detail": ""
+      "ok": true
     },
     {
-      "name": "execução sem exceção de harness",
-      "ok": false,
-      "detail": "RuntimeError('ERROR:  invalid input syntax for type uuid: \"None\"\\nLINE 1: ...nts_receivable_installments i WHERE receivable_id=\\'None\\')::t...\\n                                                             ^\\n')"
+      "name": "datas finais partem da emissão e calendário selado",
+      "ok": true
+    },
+    {
+      "name": "juros financiados não são somados duas vezes",
+      "ok": true
+    },
+    {
+      "name": "projeção financeira usa ator e tenant autorizados",
+      "ok": true
+    },
+    {
+      "name": "baixa parcial local no ledger capturado",
+      "ok": true
+    },
+    {
+      "name": "baixa reduz somente título, não residual do pedido",
+      "ok": true
+    },
+    {
+      "name": "três documentos independentes fecham quantidade e residual",
+      "ok": true
+    },
+    {
+      "name": "três títulos, um por documento",
+      "ok": true
+    },
+    {
+      "name": "crédito após parciais preserva total menos baixa",
+      "ok": true
+    },
+    {
+      "name": "cancelamento de NF paga exige reconciliação",
+      "ok": true
+    },
+    {
+      "name": "cancelamento pago negado preserva histórico e saldo",
+      "ok": true
+    },
+    {
+      "name": "atestação fictícia de cancelamento passa pela guarda com ator",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária cancela somente título não pago",
+      "ok": true
+    },
+    {
+      "name": "cancelamento restaura exatamente principal+juros do documento",
+      "ok": true
+    },
+    {
+      "name": "documento substituto consome residual sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária preserva centavos por item",
+      "ok": true
+    },
+    {
+      "name": "histórico do título cancelado permanece",
+      "ok": true
+    },
+    {
+      "name": "quantidade acima do pedido negada",
+      "ok": true
+    },
+    {
+      "name": "tenant estrangeiro não faz replay nem lê recibo",
+      "ok": true
+    },
+    {
+      "name": "pendência contábil bloqueia antes de qualquer título",
+      "ok": true
+    },
+    {
+      "name": "writer B2B anterior continua negado após instalação",
+      "ok": true
+    },
+    {
+      "name": "snapshot B3 não cotado também aloca",
+      "ok": true
+    },
+    {
+      "name": "fora da cobertura do calendário falha fechado",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: somente uma consome o saldo final",
+      "ok": true
+    },
+    {
+      "name": "corrida não duplica título nem residual",
+      "ok": true
+    },
+    {
+      "name": "rollback deny-only passa com PRE/POST e metadados íntegros",
+      "ok": true
+    },
+    {
+      "name": "rollback preserva alocações, títulos e snapshots",
+      "ok": true
+    },
+    {
+      "name": "rollback fecha writer legado sem apagar projeção nem histórico",
+      "ok": true
     }
   ],
   "hosted": "NOT_RUN",
