@@ -372,10 +372,26 @@ WHERE s.partner_id='{B3.P}';""")
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
         check("stub operacional existe só no harness depois da negação real", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
 
+        # Forma LIVE relatada: cinco títulos MANUAL ativos, partner_id NULL e
+        # customer_id ligado ao parceiro. Nenhum é alterado/cancelado no hosted.
+        check("instalação não faz backfill dos cinco históricos", B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE id IN ({','.join(repr(x) for x in REAL_MANUAL)}) AND partner_id IS NULL").stdout.strip() == "5")
+        deny("MANUAL real partner NULL + cliente único não pode ser omitido da exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        real_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{REAL_MANUAL[0]}'").stdout.strip()
+        real_payment = {"amount_received": 1, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-NULL-REAL"}
+        deny("baixa MANUAL real partner NULL também exige reconciliação", B3.out(B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{real_installment}','{js(real_payment)}'::jsonb);")), "MONEY_ORIGIN_UNPROVEN")
+        check("tentativa de baixa não altera o título histórico nem cria pagamento", B3.psql(f"SELECT (SELECT count(*) FROM public.receivable_payments WHERE installment_id='{real_installment}')||'|'||(SELECT partner_id IS NULL FROM public.accounts_receivable WHERE id='{REAL_MANUAL[0]}')").stdout.strip() == "0|t")
+        order_count_real_before = B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip()
+        real_sim, real_sim_error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
+        check("nova decisão do parceiro fica pendente de reconciliação na forma real", real_sim is None and "MONEY_ORIGIN_UNPROVEN" in (real_sim_error or ""), real_sim_error or real_sim)
+        check("falha na forma real não cria pedido", B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip() == order_count_real_before)
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ({','.join(repr(x) for x in REAL_MANUAL[:4])})")
+        deny("OVERDUE partner NULL continua explícito após cancelar somente os quatro OPEN locais", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        B3.psql(f"UPDATE public.accounts_receivable SET status='CANCELED' WHERE id='{REAL_MANUAL[4]}'")
+        check("cleanup dos cinco históricos locais restaura somente a fixture", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")[0] is not None)
+
         # Impacto dos fences compartilhados: MANUAL não B2B sem parceiro conserva
         # parcelas/baixa; origem desconhecida que afeta parceiro fica explicitamente
         # bloqueada, sem backfill, proveniência fictícia ou alteração de pedidos.
-        category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
         unlinked_customer = B3.u(302)
         B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}')")
         current_orders_before = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
