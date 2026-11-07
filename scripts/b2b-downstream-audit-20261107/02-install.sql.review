@@ -87,7 +87,7 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'status', 'adjustment_requested');
 END;
 $function$
-
+;
 
 REVOKE ALL ON FUNCTION public.request_b2b_payment_terms_adjustment_secure(uuid,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.request_b2b_payment_terms_adjustment_secure(uuid,text) TO authenticated, service_role;
