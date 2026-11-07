@@ -1,0 +1,43 @@
+PASS gerado determinístico: b4-candidate.sql.review
+PASS gerado determinístico: 01-pre.sql.readonly
+PASS gerado determinístico: 02-install.sql.review
+PASS gerado determinístico: 03-post.sql.readonly
+PASS gerado determinístico: 04-rollback-deny.sql.review
+PASS gerado determinístico: b4-pins.json
+PASS gerado determinístico: SHA256SUMS
+PASS gerado determinístico: b4-object-manifest.json
+PASS status permanece inativo/bloqueado/não aprovado
+PASS manifesto cobre 54 alterações sem contagem de testes sobreposta
+PASS histórico 63 preservado byte a byte
+PASS histórico não é promovido nem somado
+PASS ref canônico explícito
+PASS quatro achados do revisor têm entradas próprias
+PASS funções compartilhadas são REPLACE, nunca ausência presumida
+PASS índice compartilhado é DROP_AND_RECREATE com baseline capturada
+PASS projeção sem captura LIVE bloqueia instalação
+PASS demais substituições têm corpo/owner/ACL capturados
+PASS todos os objetos têm baseline e candidato
+PASS objetos novos exigem ausência no PRE
+PASS inventário de funções cobre exatamente o corpo candidato
+PASS duplicidade histórica do guard compartilhado fica visível
+PASS toda função candidata tem MD5 no manifesto
+PASS todo MD5 de função nova aparece no POST
+PASS owners e ACLs de substituições aparecem no PRE
+PASS tabela compartilhada tem todas as colunas
+PASS tabela compartilhada tem todas as constraints
+PASS tabela compartilhada tem ACL/RLS/owner
+PASS todos os índices compartilhados entram no PRE/POST
+PASS todos os triggers compartilhados entram no PRE/POST
+PASS trigger automático dependente também é pinado
+PASS coluna/FK novas exigem ausência e têm pós-condição
+PASS blocos DO do PRE balanceados
+PASS blocos DO do POST balanceados
+PASS instalação é transacional e contém PRE+POST
+PASS instalação não contém GRANT
+PASS instalação não injeta stub operacional
+PASS dependência operacional real permanece sempre deny
+PASS separação instalação/operação declarada
+PASS funções novas não herdam EXECUTE de PUBLIC
+PASS rollback é deny-only e exige POST completo
+PASS hashes gerados cobrem os artefatos
+42/42
