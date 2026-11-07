@@ -217,6 +217,17 @@ def main():
         liquid_snapshot = T.sql_json(f"SELECT jsonb_build_object('packaging',packaging_id_snapshot,'volume',volume_ml,'volume_snapshot',volume_ml_snapshot) FROM public.partner_order_items WHERE id='{liquid_item}'")
         check("líquido sem pack conserva volume_ml=1000 e conversão dimensional própria",
               liquid_snapshot == {"packaging": None, "volume": 1000, "volume_snapshot": 1000}, liquid_snapshot)
+        canonical_fixture = {
+            "status": "OBSERVED_IN_DISPOSABLE_PG",
+            "real_writers": ["public.solid_pack_offer_save_v1", "public.solid_pack_price_set_v1",
+                             "public.create_partner_order_condition_secure"],
+            "packaging_id": packaging_id,
+            "presentation": presentation,
+            "order_snapshot": gram_snapshot,
+            "freight_kg": str(freight_kg),
+            "liquid_without_pack": liquid_snapshot,
+            "liquid_pack_denial": liquid_pack_error,
+        }
         scenario("500 g: NF parcial 1 UN = 500 g", [gram_line], (1, "UN", 500, "G"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
         scenario("500 g: NF parcial 1 UN = 0,5 kg", [gram_line], (1, "UN", 0.5, "KG"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
         scenario("500 g: 500 g comerciais = 1 embalagem", [gram_line], (500, "G", 0.5, "KG"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
