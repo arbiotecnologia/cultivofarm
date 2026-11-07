@@ -481,6 +481,7 @@ WHERE s.partner_id='{B3.P}';""")
         check("primeira NF parcial autorizada fictícia gera título", data and data["success"] and not data["replayed"], error or data)
         title1 = data and data["receivable_id"]
         check("conversão não duplica exposição", exposure() == before, f"{before} -> {exposure()}")
+        check("partner_id e customer_id no mesmo parceiro selecionam o título uma única vez", B3.psql(f"SELECT count(*) FROM public.accounts_receivable a WHERE a.id='{title1}' AND (a.partner_id='{B3.P}' OR EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id='{B3.P}' AND pa.client_id=a.customer_id AND pa.commercial_owner_organization_id=a.organization_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL))").stdout.strip() == "1")
         check("residual = pedido restante + títulos sem dupla contagem", residual(quote_order) > 0)
         data2, error2 = allocate(B3.UADM, DOCS[0])
         check("replay da mesma autorização devolve mesmo título", data2 and data2["replayed"] and data2["receivable_id"] == title1, error2 or data2)
