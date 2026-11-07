@@ -80,8 +80,10 @@ CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$
     'iat', NULLIF(current_setting('request.jwt.claim.iat',true),'')
   )
 $$;
-UPDATE public.organizations SET partner_account_id=CASE id
-  WHEN '{SP.A}' THEN '{SP.P}' WHEN '{SP.F}' THEN '{SP.PF}' ELSE partner_account_id END;
+-- A guarda externa REAL exige que nenhuma organização aponte para o parceiro na criação.
+-- O vínculo organização-parceiro do controle legado é aplicado só depois das fixtures externas.
+UPDATE public.organizations SET partner_account_id=NULL WHERE id IN ('{SP.A}','{SP.F}');
+INSERT INTO public.user_roles VALUES ('{SP.USUP}','superadmin');
 UPDATE public.partner_users pu SET tenant_id=pa.commercial_owner_organization_id,
   valid_from=now()-interval '1 day', revoked_at=NULL
   FROM public.partner_accounts pa WHERE pa.id=pu.partner_id;
@@ -256,7 +258,7 @@ def main():
         if pending is None:
             raise RuntimeError(f"fixture pendente indisponível: {pending_error}")
         before = state(pending["id"])
-        r = request(SP.UADM, pending["id"], "TESTE negado")
+        r = request(SP.USUP, pending["id"], "TESTE negado")
         check("C2_ACCOUNTING_PENDING nega pending→pending", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
         check("negação contábil preserva pedido/termos/auditoria/notificações", state(pending["id"]) == before)
 
@@ -272,6 +274,8 @@ def main():
         r = request(SP.UADMF, validated["id"], "TESTE estrangeiro")
         check("admin estrangeiro negado pelo escopo real no pedido validado", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação de escopo validado preserva estado integral", state(validated["id"]) == before)
+        r = request(SP.USUP, validated["id"], "TESTE positivo validado")
+        check("superadmin cumulativo com papel administrativo solicita ajuste validado sem ampliar escopo", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
 
         # Fixture legada sem origem; preparação explícita, todos os gatilhos religados antes das chamadas.
         legacy_id = "10000000-0000-0000-0000-000000000001"
@@ -285,6 +289,7 @@ def main():
                        to_jsonb(src)||jsonb_build_object('id','{terms_id}'::uuid,'partner_order_id','{legacy_id}'::uuid,'approval_status','pending'))).*
                  FROM public.partner_order_payment_terms src WHERE src.partner_order_id='{validated['id']}';
                  ALTER TABLE public.partner_orders ENABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms ENABLE TRIGGER USER; COMMIT;""")
+        psql(f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'")
         check("TODOS os gatilhos reais religados antes das chamadas legadas", triggers_ok())
         before = state(legacy_id)
         r = request(SP.UADMF, legacy_id, "TESTE legado estrangeiro")
@@ -349,9 +354,7 @@ def main():
             psql(f"SELECT public._saas_user_has_feature('{SP.UADM}','pedidos_b2b')").stdout.strip() == "t",
         )
 
-        # Controles positivos no próprio tenant, sem alterar a economia nem os snapshots.
-        r = request(SP.UADM, validated["id"], "TESTE positivo validado")
-        check("mesmo tenant ainda solicita ajuste em pedido validado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
+        # Controle positivo legado no escopo efetivamente autorizado, sem alterar economia/snapshots.
         r = request(SP.UADM, legacy_id, "TESTE positivo legado")
         check("mesmo tenant ainda solicita ajuste no legado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
         r = request(SP.UB, legacy_id, "TESTE comprador")
