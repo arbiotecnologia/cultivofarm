@@ -306,6 +306,10 @@ def build():
 
     ar = next(t for t in FIN["tables"] if t["name"] == "accounts_receivable")
     ar_indexes = [x for x in FIN["indexes"] if x["table"] == "accounts_receivable"]
+    reported_index = LIVE_FACTS["index"]
+    captured_index = next(x for x in ar_indexes if x["name"] == reported_index["name"])
+    if captured_index["definition"] != reported_index["definition"]:
+        raise SystemExit("B4_REPORTED_LIVE_INDEX_MISMATCH")
     ar_triggers = ar["triggers"]
     baseline_schema = {
         "source": str(MONEY.relative_to(ROOT)) + "#accounts_receivable",
