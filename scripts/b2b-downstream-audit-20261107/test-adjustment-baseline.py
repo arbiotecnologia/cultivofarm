@@ -60,7 +60,7 @@ def main():
         origin = psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{order['id']}'").stdout.strip() if order else ""
         before = psql(f"SELECT financial_approval_status||'|'||payment_condition_status FROM public.partner_orders WHERE id='{order['id']}'").stdout.strip() if order else ""
         terms_before = psql(f"SELECT approval_status FROM public.partner_order_payment_terms WHERE partner_order_id='{order['id']}'").stdout.strip() if order else ""
-        check("fixture contábil está pending→pending e com contrato REAL", origin == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1" and before == "pending|pending" and terms_before == "pending", {"origin": origin, "order": before, "terms": terms_before})
+        check("fixture contábil tem financial/terms pending e contrato REAL", origin == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1" and before == "pending|defined" and terms_before == "pending", {"origin": origin, "order": before, "terms": terms_before})
 
         result = SP.as_user(SP.UADM, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{order['id']}','TESTE pending para pending')::text;") if order else None
         after = psql(f"SELECT financial_approval_status||'|'||payment_condition_status FROM public.partner_orders WHERE id='{order['id']}'").stdout.strip() if order else ""
@@ -78,7 +78,26 @@ def main():
         check("controle de escopo não depende do contrato de pendência", validated_origin == "C2_EXTERNAL_ORDER_ORIGIN_V1", validated_origin)
         legacy_result = SP.as_user(SP.UADMF, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{validated['id']}','TESTE escopo estrangeiro')::text;") if validated else None
         foreign_notes = psql(f"SELECT approval_notes FROM public.partner_order_payment_terms WHERE partner_order_id='{validated['id']}'").stdout.strip() if validated else ""
-        check("LACUNA DE ESCOPO CONFIRMADA LOCALMENTE: admin de outro tenant altera pedido legado B3", legacy_result is not None and legacy_result.returncode == 0 and foreign_notes == "TESTE escopo estrangeiro", (legacy_result.stderr if legacy_result is not None else "sem chamada", foreign_notes))
+        check("controle externo validado: gatilho REAL de origem nega admin estrangeiro", legacy_result is not None and legacy_result.returncode != 0 and "C2_EXTERNAL_OWNER_DENIED" in legacy_result.stderr and foreign_notes != "TESTE escopo estrangeiro", (legacy_result.stderr if legacy_result is not None else "sem chamada", foreign_notes))
+
+        # Fixture genuinamente legada (sem qualquer snapshot de origem). As linhas mínimas são inseridas numa
+        # transação de preparação com os gatilhos das duas tabelas temporariamente desligados; TODOS são
+        # religados e conferidos ANTES da RPC. Essa costura não prova criação canônica nem RLS.
+        legacy_id = "10000000-0000-0000-0000-000000000001"
+        terms_id = "10000000-0000-0000-0000-000000000002"
+        psql(f"""BEGIN;
+                 ALTER TABLE public.partner_orders DISABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms DISABLE TRIGGER USER;
+                 INSERT INTO public.partner_orders(id,partner_id,status,total,created_by,payment_terms_id,requires_financial_approval,financial_approval_status,payment_condition_status)
+                 VALUES ('{legacy_id}','{SP.P}','em_analise_comercial',100,'{SP.UB}','{terms_id}',true,'pending','pending');
+                 INSERT INTO public.partner_order_payment_terms(id,partner_order_id,payment_plan_id,approval_status,final_amount)
+                 VALUES ('{terms_id}','{legacy_id}','{SP.PLD}','pending',100);
+                 ALTER TABLE public.partner_orders ENABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms ENABLE TRIGGER USER; COMMIT;""")
+        rows_before_legacy_call = psql("SELECT t.tgname||'|'||c.relnamespace::regnamespace::text||'.'||c.relname||'|'||t.tgenabled::text FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid WHERE NOT t.tgisinternal ORDER BY 1").stdout.strip().splitlines()
+        actual_before_legacy = {(r.split("|")[0], r.split("|")[1]): r.split("|")[2] for r in rows_before_legacy_call}
+        check("TODOS os gatilhos reais religados antes da chamada legada", all(actual_before_legacy.get((name, table)) not in (None, "D") for name, table in expected))
+        true_legacy_result = SP.as_user(SP.UADMF, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{legacy_id}','TESTE legado sem origem')::text;")
+        true_legacy_notes = psql(f"SELECT approval_notes FROM public.partner_order_payment_terms WHERE id='{terms_id}'").stdout.strip()
+        check("LACUNA LEGADA CONFIRMADA LOCALMENTE: sem snapshot de origem, admin estrangeiro altera ajuste", true_legacy_result.returncode == 0 and true_legacy_notes == "TESTE legado sem origem", (true_legacy_result.stderr, true_legacy_notes))
 
         # Controle da guarda contábil isolada: pending→approved é negado, mostrando por que o delta escapa.
         control = psql("BEGIN; ALTER TABLE public.partner_orders DISABLE TRIGGER USER; ALTER TABLE public.partner_orders ENABLE TRIGGER zz_c2_accounting_pending;\n"
@@ -95,7 +114,7 @@ def main():
             "live_source_still_requires_auditor_confirmation": True,
             "b3_installed_or_modified": False,
             "real_trigger_count": len(expected),
-            "synthetic_seams": ["Auth por GUC local", "has_role/b2b_phase1_order_visible e escopo mínimos do harness", "schema e dependências de segundo nível do harness B2/B3", "sem JWT/RLS/PostgREST/Storage"],
+            "synthetic_seams": ["Auth por GUC local", "has_role/b2b_phase1_order_visible e escopo mínimos do harness", "schema e dependências de segundo nível do harness B2/B3", "fixture legada mínima inserida com gatilhos de duas tabelas pausados; todos religados e conferidos antes da RPC", "sem JWT/RLS/PostgREST/Storage"],
             "passed": sum(c["ok"] for c in checks),
             "total": len(checks),
             "checks": checks,
