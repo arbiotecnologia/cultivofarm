@@ -836,6 +836,21 @@ BEGIN
    OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at'-'origem_estoque'-'unidade_comercial'-'conteudo_por_unidade'-'unidade_conteudo'-'quantidade_conteudo'-'embalagem_id'-'embalagem_versao') IS DISTINCT FROM (p.payload-'origem_estoque'-'unidade_comercial'-'conteudo_por_unidade'-'unidade_conteudo'-'quantidade_conteudo'-'embalagem_id'-'embalagem_versao') THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
   RETURN NEW;
  END IF;
+ -- Compra para revenda: contexto transacional e ticket específicos do writer privado.
+ IF TG_TABLE_NAME='estoque_produto' AND NEW.origem_estoque='compra_produto_acabado_revenda' THEN
+  SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();
+  IF FOUND AND c.item=NEW.id AND c.ctx->>'acao'='entrada' AND c.ctx->>'origem'='finished_product_purchase_entry_v1'
+   AND c.ctx->'metadata'->>'stock_request_item'=NEW.id::text
+   AND c.ctx->'metadata'->>'produto_id'=NEW.produto_id::text
+   AND c.ctx->'metadata'->>'embalagem_id'=NEW.embalagem_id::text
+   AND c.ctx->'metadata'->>'unidade_conteudo'=NEW.unidade_conteudo
+   AND (c.ctx->'metadata'->>'conteudo_por_unidade')::numeric=NEW.conteudo_por_unidade
+   AND (c.ctx->'metadata'->>'quantidade_conteudo')::numeric=NEW.quantidade_conteudo
+   AND platform_private.finished_product_stock_valid_v1(NEW)
+   AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
+  THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED' USING ERRCODE='42501';
+ END IF;
  -- Preserve ONLY the installed canonical partial reservation semantics under
  -- its private txid/actor/parent context, not an invented envase permit.
  IF TG_TABLE_NAME='estoque_produto' THEN

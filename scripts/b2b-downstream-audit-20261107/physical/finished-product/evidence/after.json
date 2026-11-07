@@ -44,7 +44,156 @@
       "detail": "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED"
     },
     {
-      "name": "FAIL ERROR:  ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 30 at RAISE\nSQL statement \"INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)\n VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version)\"\nPL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 86 at SQL statement\n\nTraceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 101, in main\n    item = finished(group, unit, per_unit)\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 59, in finished\n    received = json.loads(B.last(purchase(item, quantity, key)))\n                          ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 61, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 57, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 30 at RAISE\nSQL statement \"INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)\n VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version)\"\nPL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 86 at SQL statement\n\n",
+      "name": "quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "97c773f2-d0d0-41eb-8a2c-725dd3b6ff8c",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "26315865-bb04-464f-989c-c5ae9ea79827",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "kg",
+        "estoque_produto_id": "f397153c-aa83-433b-a117-bdc9e2e6b41b",
+        "quantidade_conteudo": 50.0,
+        "conteudo_por_unidade": 25.0
+      }
+    },
+    {
+      "name": "quimico kg: compra → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "kg",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 50.0
+      }
+    },
+    {
+      "name": "quimico kg: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante g: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "ab28c6c1-53a7-40b8-bff7-e537bf3d3118",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "26316b9d-cb06-46ea-84e7-147d896875f2",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "g",
+        "estoque_produto_id": "6fe49ee5-2d82-45c2-85f5-b5e023a4dfee",
+        "quantidade_conteudo": 50000.0,
+        "conteudo_por_unidade": 25000.0
+      }
+    },
+    {
+      "name": "fertilizante g: compra → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "g",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 50000.0
+      }
+    },
+    {
+      "name": "fertilizante g: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "da714bab-8c0e-4b47-bb64-15061d289845",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "f4e36f85-f8d3-4c18-a706-61ffba1efa79",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "l",
+        "estoque_produto_id": "5c2d3ce5-7deb-40ca-b2c5-16076615bbda",
+        "quantidade_conteudo": 2.0,
+        "conteudo_por_unidade": 1.0
+      }
+    },
+    {
+      "name": "quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000",
+      "status": "PASS",
+      "detail": {
+        "ml": 2000.0,
+        "qty": 2,
+        "unit": "l",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 2.0
+      }
+    },
+    {
+      "name": "quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "8e31cf68-6edf-420b-bef9-cd6fb64f1c09",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "667cc40e-3fae-4ac5-95e9-fea453785aec",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "ml",
+        "estoque_produto_id": "5ad89b75-cc6a-4a5c-82da-34dfe22efbab",
+        "quantidade_conteudo": 1000.0,
+        "conteudo_por_unidade": 500.0
+      }
+    },
+    {
+      "name": "fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000",
+      "status": "PASS",
+      "detail": {
+        "ml": 1000.0,
+        "qty": 2,
+        "unit": "ml",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 1000.0
+      }
+    },
+    {
+      "name": "fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada",
+      "status": "PASS"
+    },
+    {
+      "name": "mesma chave de compra com quantidade diversa conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "fertilizante kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "bdf03417-d51c-42c5-b915-b44f5858d659",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "0b1c8b34-9cf9-4a7d-9249-a8d3019f5402",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "kg",
+        "estoque_produto_id": "0316b503-97e2-4a3d-bfba-e9acafcc9aed",
+        "quantidade_conteudo": 75.0,
+        "conteudo_por_unidade": 25.0
+      }
+    },
+    {
+      "name": "FAIL ERROR:  FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 24 at RAISE\nSQL statement \"INSERT INTO public.estoque_produto (\n      produto_id, lote_id, microrganismo_id, envase_id,\n      quantidade, volume_total, validade, status,\n      reservado_para_os_id, reservado_para_os_tipo,\n      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,\n      quantidade_reservada, observacao_reserva,\n      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao\n    ) VALUES (\n      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,\n      p_qty, v_volume_reservado, v_item.validade, 'reservado',\n      p_os_id, p_os_tipo,\n      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,\n      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,\n      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,\n      p_qty, p_observacao,\n      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao\n    ) RETURNING id\"\nPL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment\nPL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment\n\nTraceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 140, in main\n    reserved = json.loads(B.last(B.reserve(partial[\"os\"], partial[\"stock\"], 2, \"after-reserve-partial\")))[\"itens\"][0]\n                          ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 61, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 57, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 24 at RAISE\nSQL statement \"INSERT INTO public.estoque_produto (\n      produto_id, lote_id, microrganismo_id, envase_id,\n      quantidade, volume_total, validade, status,\n      reservado_para_os_id, reservado_para_os_tipo,\n      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,\n      quantidade_reservada, observacao_reserva,\n      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao\n    ) VALUES (\n      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,\n      p_qty, v_volume_reservado, v_item.validade, 'reservado',\n      p_os_id, p_os_tipo,\n      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,\n      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,\n      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,\n      p_qty, p_observacao,\n      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao\n    ) RETURNING id\"\nPL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment\nPL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment\n\n",
       "status": "PASS"
     }
   ],

@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.2s
+CHECKPOINT sql_calls=1 elapsed=2.3s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -9,18 +9,49 @@ PASS gate fechado nega compra/entrada interna
 PASS aplicativo não pode forjar ticket de compra
 PASS produto de outro tenant é negado antes de criar lote/estoque
 PASS compra de 0,5 embalagem é negada
-PASS FAIL ERROR:  ENVASE_INSERT_CLOSED
-CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 30 at RAISE
-SQL statement "INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)
- VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version)"
-PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 86 at SQL statement
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS quimico kg: compra → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL
+PASS quimico kg: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS fertilizante g: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS fertilizante g: compra → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL
+PASS fertilizante g: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
+PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+CHECKPOINT sql_calls=100 elapsed=15.6s
+PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
+PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
+PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
+PASS mesma chave de compra com quantidade diversa conflita
+PASS fertilizante kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
+PASS FAIL ERROR:  FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED
+CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 24 at RAISE
+SQL statement "INSERT INTO public.estoque_produto (
+      produto_id, lote_id, microrganismo_id, envase_id,
+      quantidade, volume_total, validade, status,
+      reservado_para_os_id, reservado_para_os_tipo,
+      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,
+      quantidade_reservada, observacao_reserva,
+      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
+    ) VALUES (
+      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,
+      p_qty, v_volume_reservado, v_item.validade, 'reservado',
+      p_os_id, p_os_tipo,
+      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,
+      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,
+      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,
+      p_qty, p_observacao,
+      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao
+    ) RETURNING id"
+PL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement
+PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment
+PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment
 
 Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 101, in main
-    item = finished(group, unit, per_unit)
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 59, in finished
-    received = json.loads(B.last(purchase(item, quantity, key)))
-                          ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 140, in main
+    reserved = json.loads(B.last(B.reserve(partial["os"], partial["stock"], 2, "after-reserve-partial")))["itens"][0]
+                          ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
     return sql(statement).splitlines()[-1]
            ~~~^^^^^^^^^^^
@@ -30,11 +61,28 @@ Traceback (most recent call last):
   File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
     assert r.returncode==0,r.stderr[-3000:]
            ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  ENVASE_INSERT_CLOSED
-CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 30 at RAISE
-SQL statement "INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)
- VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version)"
-PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 86 at SQL statement
+AssertionError: ERROR:  FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED
+CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 24 at RAISE
+SQL statement "INSERT INTO public.estoque_produto (
+      produto_id, lote_id, microrganismo_id, envase_id,
+      quantidade, volume_total, validade, status,
+      reservado_para_os_id, reservado_para_os_tipo,
+      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,
+      quantidade_reservada, observacao_reserva,
+      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
+    ) VALUES (
+      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,
+      p_qty, v_volume_reservado, v_item.validade, 'reservado',
+      p_os_id, p_os_tipo,
+      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,
+      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,
+      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,
+      p_qty, p_observacao,
+      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao
+    ) RETURNING id"
+PL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement
+PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment
+PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment
 
 
-RESULT 10 / 10 exit 1
+RESULT 25 / 25 exit 1
