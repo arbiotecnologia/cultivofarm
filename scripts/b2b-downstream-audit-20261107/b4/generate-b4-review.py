@@ -288,8 +288,21 @@ def build():
 
     baselines = {name: baseline_function(name) for name in sorted(REPLACED)}
     missing = [SIGS[name] for name, meta in baselines.items() if meta["status"] == "MISSING_BLOCKS_INSTALL"]
-    if missing != ["public.rpc_receivable_money_projection_v1(uuid,integer,integer)"]:
+    if missing:
         raise SystemExit(f"B4_UNEXPECTED_BASELINE_COMPLETENESS {missing}")
+    baselines[PROJECTION] = {
+        "status": "ABSENCE_CONFIRMED_BY_AUDITOR_READONLY",
+        "source": "live-readonly-4097d4e2.json#projection",
+        "body_md5": None, "owner": None, "acl": None,
+    }
+    if any(f["name"] == "rpc_receivable_money_projection_v1" for f in CAP["functions"]) or any(
+            f["signature"].split("(", 1)[0] == "rpc_receivable_money_projection_v1" for f in FIN["functions"]):
+        raise SystemExit("B4_PROJECTION_FALSE_BASELINE_PRESENT")
+    for sig, fact in LIVE_FACTS["functions"].items():
+        name = next(name for name, candidate_sig in SIGS.items() if candidate_sig == sig)
+        baseline = baselines[name]
+        if (baseline.get("body_md5"), baseline.get("owner"), baseline.get("acl")) != (fact["body_md5"], fact["owner"], fact["acl"]):
+            raise SystemExit(f"B4_REPORTED_LIVE_FUNCTION_MISMATCH {sig}")
 
     ar = next(t for t in FIN["tables"] if t["name"] == "accounts_receivable")
     ar_indexes = [x for x in FIN["indexes"] if x["table"] == "accounts_receivable"]
