@@ -26,6 +26,7 @@
 - Diálogos são fechados e texto descartado quando pendência, permissão, ator/tenant/época ou pedido mudam. Callbacks capturados revalidam flags atuais e o monitor de autorização antes do dispatch; aprovação revalida também status aprovado. Nenhum endpoint novo.
 - Price continua identificado pela presença do snapshot validado **B2B_PAYMENT_CONDITION_V1**, cujo contrato usa o cronograma canônico Price; não depende de `monthly_rate > 0`. Legado não muda.
 - Evidências deste complemento são separadas em `handlers-*.txt/json`; as evidências anteriores não são sobrescritas. Transporte/Auth locais sintéticos, sem prova JWT/RLS/browser autenticado.
+- Resultado: **67/67** em quatro arquivos, incluindo as 31 regressões anteriores, exit **0**. Dez novos casos montados cobrem callbacks antigos após mudanças de contexto/flags e lease vencida sem renderização. Build automático **OK** às 15:15:43 UTC; typecheck separado e fullsuite **NOT_RUN**. Reteste visual autenticado vendedor/FSF permanece com auditor.
 
 ## Prova real informada pelo auditor
 Renato relatou leitura na prévia de PB001037: duas embalagens de 25 kg, tabela 20, desconto 2, líquido 18, juros 0,65, total 18,65 e 3x a 1,8%; aprovação de pedido desabilitada pela pendência fiscal. Não foi execução deste agente. Sessões vendedor/FSF continuam com o auditor; o ambiente do agente informa `external_unmanaged`, sem restauração de sessão autenticada disponível. Não foi pedido login nem realizada aprovação real. Reteste visual autenticado deste delta aguarda o auditor.
