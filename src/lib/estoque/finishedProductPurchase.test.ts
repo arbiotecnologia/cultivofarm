@@ -51,7 +51,7 @@ describe("contrato de compra para revenda", () => {
   });
 
   it("ACK confirma 2 UN de 500 g = 1.000 g e rejeita dimensão inválida", () => {
-    expect(parseFinishedProductPurchaseAck()).toMatchObject({ conteudo_por_unidade: 500, quantidade_conteudo: 1000, unidade_conteudo: "g" });
+    expect(parseFinishedProductPurchaseAck(ack())).toMatchObject({ conteudo_por_unidade: 500, quantidade_conteudo: 1000, unidade_conteudo: "g" });
     expect(() => parseFinishedProductPurchaseAck({ ...ack(), unidade_conteudo: "L" })).toThrow();
     expect(() => parseFinishedProductPurchaseAck({ ...ack(), quantidade_conteudo: "NaN" })).toThrow();
   });

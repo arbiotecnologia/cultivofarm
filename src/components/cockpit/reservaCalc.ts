@@ -30,9 +30,13 @@ export function computeTotals(
     const quantity = Number(qtys[it.id] ?? 0);
     if (!quantity || isNaN(quantity)) continue;
     totalUn += quantity;
-    const content = stockContentTotal(it, quantity);
-    if (content?.unit === "l") totalL += content.value;
-    if (content?.unit === "ml") totalL += content.value / 1000;
+    const fullContent = stockContentTotal(it);
+    const fullQuantity = Number(it.quantidade ?? 0);
+    if (fullContent && fullQuantity > 0) {
+      const proportional = fullContent.value * quantity / fullQuantity;
+      if (fullContent.unit === "l") totalL += proportional;
+      if (fullContent.unit === "ml") totalL += proportional / 1000;
+    }
   }
   return { totalUn, totalL };
 }
