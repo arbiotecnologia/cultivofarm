@@ -53,6 +53,7 @@ SIGS = {
     "platform_private.b2b_legacy_money_row": "platform_private.b2b_legacy_money_row(uuid)",
     "platform_private.b2b_allocation_money_row": "platform_private.b2b_allocation_money_row(uuid)",
     "platform_private.b2b_proven_money_row": "platform_private.b2b_proven_money_row(uuid)",
+    "platform_private.b2b_proven_money_row_internal": "platform_private.b2b_proven_money_row_internal(uuid,uuid)",
     "public.rpc_receivable_money_projection_v1": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
     "platform_private.b2b_order_residual": "platform_private.b2b_order_residual(uuid)",
     "platform_private.b2b_credit_balances": "platform_private.b2b_credit_balances(uuid,uuid)",
