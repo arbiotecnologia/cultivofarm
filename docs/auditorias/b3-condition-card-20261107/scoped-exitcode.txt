@@ -1,0 +1,4 @@
+Vitest exit code: 0
+Original executor capture: 611bddf7-56a2-49be-8e8f-d72fc0ab17b6.log
+Captured marker: EXIT=0
+Overall shell command exit: 0.

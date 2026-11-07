@@ -1,4 +1,5 @@
 ## 07/11 — Resumo da condição B3 na prévia (sem produção/publicação)
+- [x] 14:29 — Auditor confirmou prévia real teste4 em 07673d20 após segunda recarga, valores corretos e nenhum novo pedido (PB001037 já existente). Corrigida preservação: *.log ignorado convertido byte a byte em .txt, resultados/exitcode/hashes em JSON e txt; build OK sem código numérico capturado, typecheck separado NÃO executado. Nenhuma suíte repetida; vendedor/FSF seguem com auditor.
 - [x] Cartão usa escolha/ACK V1 e parcelas exatas (6,22/6,22/6,21), não média; 1x com taxa e troca meio/versão testados. Legado preservado; 31/31 focados e reteste final 16/16, build automático OK. Typecheck separado não observado (execução manual vedada pelo ambiente); sessão externa não disponível ao agente, sem solicitar login nem alegar E2E real.
 - [x] Nomes dos parceiros adiados: leitor administrativo atual fornece somente UUIDs; não ampliar leituras nem SQL.
 - Auditor informou d9041a70 instalado com PRE/POST_OK e envios/cron false; piloto somente ARBio/parceiro fictício 7e52de9a, boleto 3x/1,8%/1 dia no plano fixture TESTE-B2B-PACK-20261106; não reproduzir instalação nem alterar dados.
