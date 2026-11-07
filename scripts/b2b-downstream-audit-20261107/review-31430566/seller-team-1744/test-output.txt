@@ -1,4 +1,4 @@
-173/175
+175/175
 PASS gerador determinístico: capturas/candidato/01–04/pins byte a byte 
 PASS nenhum artefato executa GRANT ou substitui pin temporário 
 PASS todos os pinos públicos/privados estão no PRE/POST/install/rollback 
@@ -20,10 +20,10 @@ PASS corpo real capturado executado: public._saas_user_has_feature(uuid,text) {'
 PASS corpo real capturado executado: public._saas_trg_require_feature() {'actual': '13ed48832f81cbb35434688ca35fda4b', 'expected': '13ed48832f81cbb35434688ca35fda4b'}
 PASS corpo real capturado executado: platform_private.c2_accounting_pending_guard() {'actual': '669b19490a7a9700f0158db4b31885ad', 'expected': '669b19490a7a9700f0158db4b31885ad'}
 PASS 01 PRE_OK com corpos/owners/ACLs reais, sem localização 
-PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-455dx7p5/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE
 
-PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-455dx7p5/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
+PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
 CONTEXT:  PL/pgSQL function inline_code_block line 33 at RAISE
 
 PASS owner divergente de núcleo privado é detectado psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:53: ERROR:  ADJUSTMENT_OWNER_DRIFT: platform_private.has_role(uuid,public.app_role)
@@ -36,9 +36,7 @@ PASS owner/ACL restaurados ao estado capturado voltam a passar no PRE
 PASS 02 instala o candidato transacionalmente sem GRANT 
 PASS candidato executado tem o MD5 gerado {'actual': '1698b9355688d0068246292cbe652a79', 'expected': '1698b9355688d0068246292cbe652a79'}
 PASS helper vendedor executado tem MD5 gerado e ACL totalmente privada {'md5': 'c46617ec2a1320c9c05e3da33af8a350', 'closed': 't'}
-FAIL helper vendedor não pode ser chamado diretamente por authenticated ERROR:  syntax error at or near "("
-LINE 1: ...rivate.b2b_seller_financial_scope_error(uuid,uuid)('00000000...
-                                                             ^
+PASS helper vendedor não pode ser chamado diretamente por authenticated ERROR:  permission denied for function b2b_seller_financial_scope_error
 
 PASS candidato approve executado tem owner/ACL preservados e MD5 gerado {'actual': '20fa5eee63ab89fe56cf46b4f9fe01a2', 'expected': '20fa5eee63ab89fe56cf46b4f9fe01a2'}
 PASS candidato reject executado tem owner/ACL preservados e MD5 gerado {'actual': 'b1ee789f30e5612a4cd1c27f9dda578f', 'expected': 'b1ee789f30e5612a4cd1c27f9dda578f'}
@@ -62,7 +60,7 @@ PASS reject: pedido inexistente não revela payment_terms_not_defined ERROR:  b2
 CONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 16 at RAISE
 
 PASS reject: pedido inexistente não produz efeitos 
-PASS fixture de pendência criada pelo writer canônico com guards reais {'id': 'dc4303e5-b2ee-4f01-ae33-a12a84793b3d', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '6806a848-8b19-4582-b598-bac2a1650bd3', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '17bdc5e3-0c22-4086-80c0-24246ffa7484', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '4a7c57a1-9232-4ff9-9aa6-f6b86ba01ef0', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível ERROR:  C2_ACCOUNTING_PENDING
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 34 at RAISE
 
@@ -75,7 +73,7 @@ PASS reject: pendência contábil é negada antes de qualquer decisão ERROR:  C
 CONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 34 at RAISE
 
 PASS reject: pendência contábil preserva estado integral 
-PASS fixture validada criada pelo writer canônico com guards reais {'id': '9d6002f3-336b-47de-9aff-6e077a5eab55', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '444990d5-df4c-4cd7-94dc-ea8ecefedef7', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture validada criada pelo writer canônico com guards reais {'id': '17f3d79f-3562-4b37-adc2-5fa5d1882a1b', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'b04e09d4-438f-4f02-b72b-5ef56b14695e', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS FSF/admin estrangeiro com vínculo próprio é negado no pedido validado ERROR:  b2b_phase1_scope_denied
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE
 
@@ -274,7 +272,7 @@ PASS reject: comprador sem papel financeiro continua negado ERROR:  unauthorized
 CONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE
 
 PASS reject: negação do comprador preserva estado 
-PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-455dx7p5/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE
 
 PASS 04 rollback deny-only conclui 
@@ -285,9 +283,7 @@ PASS rollback fecha approve sem restaurar corpo anterior ERROR:  permission deni
 PASS rollback fecha reject sem restaurar corpo anterior ERROR:  permission denied for function reject_b2b_payment_terms_secure
 
 PASS rollback não apaga nem reescreve histórico 
-FAIL rollback mantém helper sem EXECUTE de cliente ERROR:  syntax error at or near "("
-LINE 1: ...rivate.b2b_seller_financial_scope_error(uuid,uuid)('00000000...
-                                                             ^
+PASS rollback mantém helper sem EXECUTE de cliente ERROR:  permission denied for function b2b_seller_financial_scope_error
 
 PASS TODOS os 38 gatilhos continuam habilitados no fim 
 PASS B3 não foi instalado nem modificado nesta bateria 

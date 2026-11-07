@@ -225,7 +225,7 @@
     "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
     "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted"
   ],
-  "passed": 173,
+  "passed": 175,
   "total": 175,
   "checks": [
     {
@@ -332,12 +332,12 @@
     {
       "name": "pin divergente do writer aborta sem trocar a função",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-455dx7p5/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
     },
     {
       "name": "pin privado divergente aborta antes da troca",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-455dx7p5/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 33 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 33 at RAISE\n"
     },
     {
       "name": "owner divergente de núcleo privado é detectado",
@@ -371,8 +371,8 @@
     },
     {
       "name": "helper vendedor não pode ser chamado diretamente por authenticated",
-      "ok": false,
-      "detail": "ERROR:  syntax error at or near \"(\"\nLINE 1: ...rivate.b2b_seller_financial_scope_error(uuid,uuid)('00000000...\n                                                             ^\n"
+      "ok": true,
+      "detail": "ERROR:  permission denied for function b2b_seller_financial_scope_error\n"
     },
     {
       "name": "candidato approve executado tem owner/ACL preservados e MD5 gerado",
@@ -433,7 +433,7 @@
     {
       "name": "fixture de pendência criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': 'dc4303e5-b2ee-4f01-ae33-a12a84793b3d', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '6806a848-8b19-4582-b598-bac2a1650bd3', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': '17bdc5e3-0c22-4086-80c0-24246ffa7484', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '4a7c57a1-9232-4ff9-9aa6-f6b86ba01ef0', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível",
@@ -465,7 +465,7 @@
     {
       "name": "fixture validada criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': '9d6002f3-336b-47de-9aff-6e077a5eab55', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '444990d5-df4c-4cd7-94dc-ea8ecefedef7', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': '17f3d79f-3562-4b37-adc2-5fa5d1882a1b', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'b04e09d4-438f-4f02-b72b-5ef56b14695e', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "FSF/admin estrangeiro com vínculo próprio é negado no pedido validado",
@@ -1000,7 +1000,7 @@
     {
       "name": "rollback com pin divergente aborta sem revogar",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-455dx7p5/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
     },
     {
       "name": "04 rollback deny-only conclui",
@@ -1028,8 +1028,8 @@
     },
     {
       "name": "rollback mantém helper sem EXECUTE de cliente",
-      "ok": false,
-      "detail": "ERROR:  syntax error at or near \"(\"\nLINE 1: ...rivate.b2b_seller_financial_scope_error(uuid,uuid)('00000000...\n                                                             ^\n"
+      "ok": true,
+      "detail": "ERROR:  permission denied for function b2b_seller_financial_scope_error\n"
     },
     {
       "name": "TODOS os 38 gatilhos continuam habilitados no fim",
