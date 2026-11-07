@@ -1263,3 +1263,337 @@ cultivo-authz-load {"event":"auto_retry","state":"expired","reason":"timeout","v
  ✓ src/test/config/authzEnvironment.test.ts (9 tests) 27ms
  ✓ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests) 28ms
  ✓ src/test/fiscal/h7m.smokesHomologacao.test.ts (12 tests) 14ms
+ ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 18ms
+ ✓ src/test/financeiro/receiptPdfLayout.edge.test.ts (6 tests) 356ms
+ ✓ src/test/comunicacao/fase2-schema-onfarm.test.ts (11 tests) 25ms
+ ✓ src/test/comercial/campanhasComerciais.ui.test.tsx (8 tests) 1264ms
+   ✓ CampanhasComerciais — camada de interface > mantém Salvar desabilitado com campos obrigatórios vazios  309ms
+ ✓ src/test/cockpit-laboratorio/cacheScope.test.tsx (18 tests) 492ms
+   ✓ Cockpit scopes: real QueryClient, simulated Auth > real Cockpit executes only list RPC and purges legacy caches; never mounts operational children  343ms
+ ✓ src/test/fiscal/xmlEngineXsdBundle.test.ts (19 tests) 28ms
+ ✓ src/test/portalAcompanhamentoProdutor.test.tsx (10 tests) 839ms
+   ✓ Fase 10.1 — /portal/acompanhamento > (1-5) renderiza a tela com as 4 abas  825ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_3_4.test.ts (17 tests) 12ms
+ ✓ src/test/comunicacao/notification-push-contained.test.tsx (13 tests) 122ms
+ ✓ src/test/migration_integration.test.tsx (3 tests) 158ms
+ ✓ src/test/comercial/commercialKpisScope.test.tsx (7 tests) 352ms
+ ✓ src/test/fiscal/draftSaveCasClient.test.tsx (14 tests) 115ms
+ ✓ src/test/config/usuariosListQuery.test.ts (18 tests) 22ms
+ ✓ src/test/saas/navigation-inventory.test.tsx (115 tests) 124ms
+ ✓ src/test/catalogo/catalogo-fase27e-certificacao-final.test.ts (17 tests) 21ms
+ ✓ src/test/security/h9dl3r2-customer-statement-live-columns.static.test.ts (10 tests) 12ms
+ ✓ src/test/catalogo/solidPackPriceSave.test.tsx (23 tests) 1122ms
+ ✓ src/test/catalogo/catalogLabelDisplay.test.tsx (6 tests) 382ms
+ ✓ src/test/config/partnerUsers.session.test.tsx (14 tests) 879ms
+ ✓ src/test/estoque/stock-caller-compatibility.test.ts (12 tests) 25ms
+ ✓ src/test/visita/recomendacaoSyncContract.test.ts (40 tests) 197ms
+ ✓ src/test/comercial/commercial-alerts-prices-feedback.test.tsx (8 tests) 1181ms
+ ✓ src/test/visita/campoSyncRuntimeGate.test.tsx (14 tests) 340ms
+ ✓ src/test/saas/b2b-catalog-scope-fix.test.ts (8 tests) 58ms
+ ✓ src/test/catalogo/catalogo-item-drawer.test.tsx (16 tests) 13ms
+ ✓ src/test/equipe-tecnica/evidencias.test.ts (18 tests) 15ms
+ ✓ src/test/estoque/motor-estoque-fase28c.test.ts (39 tests) 24ms
+ ✓ src/test/mobilePerfil.hardening.test.tsx (8 tests) 298ms
+ ✓ src/test/security/zip.review.test.ts (11 tests) 100ms
+ ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 410ms
+ ✓ src/test/fiscal/h14PostAudit.test.ts (11 tests) 206ms
+ ✓ src/test/ordens-servico/cq-phase-trace.test.tsx (17 tests) 766ms
+ ✓ src/test/fiscal/fase3_12.static.test.ts (34 tests) 19ms
+ ✓ src/test/catalogo/globalCatalogReadOnly.render.test.tsx (6 tests) 862ms
+   ✓ catálogo global somente consulta (render real, Administrador de empresa) > Produtos: não usa lista global nem oferece exclusão/DML global  381ms
+ ✓ src/test/saas/superadmin-home-plataforma.test.ts (14 tests) 16ms
+ ✓ src/test/security/clientDocumentLoader.review.test.ts (12 tests) 105ms
+ ✓ src/test/fiscal/useFiscalFieldFocus.test.tsx (9 tests) 92ms
+ ✓ src/test/visita/wizardRecomendacaoSelection.test.tsx (4 tests) 1509ms
+   ✓ seleção de recomendação por identidade > oferece químicos/adubos e preserva oculto histórico sem oferecer nova seleção  782ms
+   ✓ seleção de recomendação por identidade > flag químico legado pode ser desmarcado sem reparo automático  399ms
+ ✓ src/test/multiportal.contexts.session.test.tsx (15 tests) 3703ms
+   ✓ contextos com QueryClient real > payload inválido null não se torna negativa explícita  1018ms
+   ✓ contextos com QueryClient real > payload inválido {} não se torna negativa explícita  1020ms
+   ✓ contextos com QueryClient real > payload inválido {"available_contexts":[],"has_technical_access":"false"} não se torna negativa explícita  1020ms
+ ✓ src/test/security/h9e1-visit-status-convergence.static.test.ts (7 tests) 14ms
+ ✓ src/test/config/authzTimeout10s.test.ts (4 tests) 28ms
+ ✓ src/test/financeiro/contasReceberLacunas.test.ts (14 tests) 15ms
+ ✓ src/test/config/authzV6.edges.test.ts (5 tests) 326ms
+ ✓ src/test/security/h9dl3r-report-columns-active-scope.static.test.ts (9 tests) 11ms
+ ✓ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests) 27ms
+ ✓ src/test/navigation/sidebar-adequacoes.test.tsx (11 tests) 18ms
+ ✓ src/test/fiscal/sinief49/crossCutting.test.ts (13 tests) 17ms
+ ✓ src/test/config/authzV6.candidates.test.ts (15 tests) 68ms
+ ✓ src/test/catalogo/h3b-preco-canonico-fichas.test.ts (13 tests) 15ms
+ ✓ src/test/fiscal/fase8.xsd.icms20.test.ts (3 tests) 176ms
+ ✓ src/test/cq/consulta.test.ts (21 tests) 47ms
+ ✓ src/test/visita/recomendacaoWizardSave.test.tsx (4 tests) 1236ms
+   ✓ salvar criação sem produto/encaminhamento usa versão1 e limpa só após recibo  503ms
+ ✓ src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx (24 tests) 131ms
+ ✓ src/test/config/userLinks.test.ts (25 tests) 21ms
+ ✓ src/test/equipe-tecnica/attachmentLeaseDeadline.test.tsx (5 tests) 65ms
+ ✓ src/test/financeiro/b2bFinancial.session.test.tsx (14 tests) 767ms
+ ✓ src/test/comunicacao/fase1.test.ts (19 tests) 22ms
+ ✓ src/test/fiscal/invoice_items_state_guard.test.ts (17 tests) 14ms
+ ✓ src/test/security/h9gr-visit-log-canonico.static.test.ts (9 tests) 13ms
+ ✓ src/test/financeiro/contasReceber.test.ts (16 tests) 38ms
+ ✓ src/test/security/h7p-repo-only-migrations.static.test.ts (9 tests) 15ms
+ ✓ src/test/config/authzRenewalMargin.test.ts (7 tests) 293ms
+ ✓ src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx (7 tests) 1807ms
+   ✓ ClienteDocumentosTab — abridor autenticado incondicional > gate Blob ativo e happy path prepara/baixa sem URL assinada, popup ou submit  463ms
+ ✓ src/test/config/portalCliente.session.test.tsx (13 tests) 620ms
+ ✓ src/test/fiscal/sinief49/valueReduction.test.ts (6 tests) 16ms
+ ✓ src/test/ordens-servico/formProgression.test.tsx (2 tests) 2622ms
+   ✓ Nova OS — progressão do formulário real com transporte fake, sem escrita hosted > filtra familyNULL/dose100 e biológico sem dose, deixando somente sintético fabricável  1376ms
+   ✓ Nova OS — progressão do formulário real com transporte fake, sem escrita hosted > permite escolher fazenda e talhão antes de completar o submit  1241ms
+ ✓ src/test/config/commercialOwnOrders.session.test.tsx (16 tests) 596ms
+ ✓ src/test/catalogo/globalCatalogContainment.test.ts (16 tests) 33ms
+ ✓ src/test/estoque/stock-p1-containment.test.ts (9 tests) 15ms
+ ✓ src/test/config/connection-binding.static.test.ts (9 tests) 12ms
+ ✓ src/test/catalogo/catalogo-fase27b-useCatalogoUnificado.test.ts (13 tests) 14ms
+ ✓ src/test/security/h9dl3r3-deliveries-report-net-cash.static.test.ts (10 tests) 12ms
+ ✓ src/test/fiscal/transportPersistenceSafety.test.ts (9 tests) 17ms
+ ✓ src/test/fiscal/h7c.asn1Screen.test.ts (14 tests) 59ms
+ ✓ src/test/ordens-servico/validacao.test.ts (36 tests) 117ms
+ ✓ src/test/config/myPartner.session.test.tsx (7 tests) 408ms
+ ✓ src/test/visita/recomendacaoOfflineIntegration.test.tsx (6 tests) 290ms
+ ✓ src/lib/b2bSla.test.ts (12 tests) 24ms
+ ✓ src/test/comunicacao/fase2-4-hardening.test.ts (20 tests) 23ms
+ ✓ src/test/saas/subscription-transition-timeout.test.ts (8 tests) 33ms
+ ✓ src/test/comunicacao/notif3-global-containment.test.ts (7 tests) 488ms
+ ✓ src/test/catalogo/catalogFamilyRead.test.tsx (11 tests) 315ms
+ ✓ src/test/equipe-tecnica/AttachmentOpener.ownership.test.tsx (7 tests) 258ms
+ ✓ src/test/cq/hardening.test.tsx (10 tests) 433ms
+   ✓ CQ hardening local — sem banco > erro imediato associado aos campos, sem vazio enganoso nem nova consulta  418ms
+ ✓ src/test/config/edicaoUsuario.test.ts (14 tests) 16ms
+ ✓ src/test/fiscal/rpc_financial_document_soft_delete.test.ts (10 tests) 17ms
+ ✓ src/test/comunicacao/fase2-attempts.test.ts (8 tests) 9ms
+ ✓ src/test/saas/d51-gate.test.ts (10 tests) 22ms
+ ✓ src/test/visita/visitaRouteGuard.test.tsx (9 tests) 153ms
+ ✓ src/test/visita/visitaPdfExportFence.test.tsx (8 tests) 62ms
+ ✓ src/test/catalogo/catalogo-fase27d-renderizacao.test.ts (14 tests) 13ms
+ ✓ src/test/entregas/registrarEntregaMetadataSubmit.test.tsx (1 test) 876ms
+   ✓ RegistrarEntregaDialog -> atomic group with auto-filled recipient/address (real dialog) > submits successfully with every auto-filled field preserved, no clearing  869ms
+ ✓ src/test/fiscal/fase3_19_1.audit.test.ts (10 tests) 18ms
+ ✓ src/test/comunicacao/fase02-static.test.ts (6 tests) 409ms
+ ✓ src/test/dashboard-producao/producao.test.ts (13 tests) 60ms
+ ✓ src/test/fiscal/fase_corretiva_blocos_2_6.test.ts (15 tests) 11ms
+ ✓ src/test/fiscal/cnpjAlpha.test.ts (13 tests) 20ms
+ ✓ src/test/saas/org-onboarding.test.ts (13 tests) 46ms
+ ✓ src/test/catalogo/catalogo-fase26f.certificacao.test.ts (12 tests) 10ms
+ ✓ src/test/equipe-tecnica/pagina.static.test.ts (14 tests) 16ms
+ ✓ src/test/executivo-p1.test.tsx (22 tests) 1190ms
+ ✓ src/test/portalGuard.authorization.test.tsx (9 tests) 111ms
+ ✓ src/test/portalB2BUsuariosClientes.contract.test.ts (7 tests) 82ms
+ ✓ src/test/catalogo/ficha-ia-client.test.ts (16 tests) 43ms
+ ✓ src/test/monitoramento/pageRuntimeGate.test.tsx (5 tests) 973ms
+   ✓ página envia origem+versão 3 e timestamp observado pelo contrato v2, PT409 não repete  568ms
+ ✓ src/test/cockpit-laboratorio/refinamentos.test.tsx (7 tests) 859ms
+   ✓ FinalizarOSButton > impede envio duplicado enquanto a primeira finalização está em andamento  370ms
+ ✓ src/test/visita/diagnosticPdfProposal.test.ts (9 tests) 204ms
+ ✓ src/test/integration/financeiro.estorno.test.ts (6 tests) 10ms
+ ✓ src/test/catalogo/authContextReceiver.realClient.test.ts (5 tests) 43ms
+ ✓ src/test/fiscal/fase3_19_5.canonical.test.ts (12 tests) 10ms
+ ✓ src/test/fiscal/fase3_20.migration.static.test.ts (9 tests) 17ms
+ ✓ src/test/fiscal/sinief49/deliveryRefusal.test.ts (6 tests) 11ms
+ ✓ src/test/financeiro/contaDrawerSaldoDocs.test.ts (8 tests) 13ms
+ ✓ src/test/equipe-tecnica/EvidenciasGallery.session.test.tsx (8 tests) 638ms
+ ✓ src/test/estoque/reserva-calc-fase28c.test.ts (17 tests) 12ms
+ ✓ src/test/envase/envasePageScope.test.tsx (5 tests) 2174ms
+   ✓ Envase mounted current-query fences > FSF clears immediately and refuses old history/products  360ms
+   ✓ Envase mounted current-query fences > unmount retires pending promises and realtime timers  1304ms
+ ✓ src/test/comunicacao/realtime-inapp-audit.test.ts (8 tests) 64ms
+ ✓ src/test/config/edicaoUsuarioDeadline.test.ts (8 tests) 35ms
+ ✓ src/test/fiscal/h17Readiness.test.ts (15 tests) 64ms
+ ✓ src/lib/geo.capture.test.ts (9 tests) 55ms
+ ✓ src/test/fiscal/fase3_21.migration.static.test.ts (8 tests) 22ms
+ ✓ src/test/fiscal/rls/mask.sql.test.ts (2 tests | 1 skipped) 3ms
+ ✓ src/test/saas/platformCatalogCompositionSql.test.ts (9 tests) 20ms
+ ✓ src/test/fiscal/xmlEngineCertificateStorage.test.ts (20 tests) 13ms
+ ✓ src/test/dashboard.visao-geral.resiliencia.test.tsx (5 tests) 536ms
+ ✓ src/test/comunicacao/gate5-inapp.test.ts (10 tests) 10ms
+ ✓ src/test/catalogo/c1bFichas.test.tsx (5 tests) 773ms
+ ✓ src/test/financeiro/receiptCancelCurrency.edge.test.ts (5 tests) 330ms
+ ✓ src/test/fiscal/fase3_16_2c.ui.test.tsx (4 tests) 511ms
+ ✓ src/test/protocolos/productTechnicalProfileReadOnly.test.tsx (3 tests) 982ms
+   ✓ contenção da edição B2B da ficha global > gestor comercial consulta o texto B2B sem escrita ou oferta de salvar  574ms
+ ✓ src/test/financeiro/novaContaDeadline.test.ts (11 tests) 37ms
+ ✓ src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx (4 tests) 75ms
+ ✓ src/test/fiscal/fase3_20_2.migration.static.test.ts (7 tests) 13ms
+ ✓ src/test/catalogo/tenantExclusiveCatalog.test.ts (8 tests) 13ms
+ ✓ src/test/comunicacao/fase2-5-correcao.test.ts (9 tests) 31ms
+ ✓ src/test/catalogo/h3c-fonte-canonica-preco.test.ts (10 tests) 23ms
+ ✓ src/pwa/PwaManualCheckButton.test.tsx (7 tests) 417ms
+ ✓ src/test/config/commercialRegistration.producer.test.tsx (4 tests) 1486ms
+   ✓ produtor próprio cria com UUID, sem atribuir empresa pelo formulário  609ms
+   ✓ produtor não mostra resultado antigo após troca: sucesso  363ms
+ ✓ src/test/navigation.fase4.test.ts (6 tests) 25ms
+ ✓ src/test/entregas/deliverySendPersistence.test.ts (11 tests) 17ms
+ ✓ src/test/fiscal/h7a.certificateRef.static.test.ts (6 tests) 10ms
+ ✓ src/test/comunicacao/d51-2-f-saas-isolation.test.ts (7 tests) 13ms
+ ✓ src/test/visita/acoesPersistencia.test.ts (10 tests) 13ms
+ ✓ src/test/saas/d51-unified-onboarding.test.ts (5 tests) 9ms
+ ✓ src/test/catalogo/catalogo-fase28a-pos-certificacao.test.ts (11 tests) 18ms
+ ✓ src/test/saas/limits-backoffice-scope.test.tsx (3 tests) 849ms
+   ✓ Limites de uso do plano — editor > agrupa por módulo/funcionalidade, mostra unidade e estados, sem JSON  827ms
+ ✓ src/test/security/d51-5-p1-fiscal.test.ts (4 tests) 8ms
+ ✓ src/test/config/runtimeHarnessCanonicalLock.test.ts (15 tests) 14ms
+ ✓ src/test/planejamento-producao/publicacao-idempotente.test.ts (11 tests) 16ms
+ ✓ src/test/visita/wizardNavigation.optionalAttachments.test.tsx (6 tests) 3017ms
+   ✓ navega às etapas 7 e 8 com recomendação persistida e zero anexos sem mutação  780ms
+   ✓ preserva leitura sem mutações com workspace finalizado e registro local antigo  362ms
+   ✓ preserva leitura sem mutações com workspace enviado_aprovacao e registro local antigo  416ms
+   ✓ wizard-campo-flag ausente mantém 4 Diagnóstico bloqueado  582ms
+   ✓ wizard-diag-flag ausente mantém 5 Recomendação bloqueado  443ms
+   ✓ wizard-rec-flag ausente mantém 7 Revisão bloqueado  430ms
+ ✓ src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts (7 tests) 32ms
+ ✓ src/test/saas/d52-entitlements-ui.test.ts (7 tests) 13ms
+ ✓ src/test/pedidos/concurrentAttemptHook.test.tsx (4 tests) 310ms
+ ✓ src/test/equipe-tecnica/attachmentBlobGate.integration.test.tsx (2 tests) 284ms
+ ✓ src/test/catalogo/catalogo-fase27c-listagem-kpis.test.ts (11 tests) 15ms
+ ✓ src/test/fiscal/certificateExpiryStatus.test.ts (10 tests) 11ms
+ ✓ src/test/catalogo/h3-base-tecnica-catalogo.test.ts (9 tests) 13ms
+ ✓ src/test/saas/useEntitlements.test.tsx (10 tests) 1609ms
+   ✓ D52 P0 — decisão server-side de entitlements > mantém erro fail-closed sem consultar features  1029ms
+ ✓ src/test/b2bTecnicoCampo.permissions.test.ts (12 tests) 11ms
+ ✓ src/test/fiscal/revoke_structural_privileges.test.ts (7 tests) 17ms
+ ✓ src/test/comercial/partnerOrderFlowArbio.audit.test.ts (6 tests) 15ms
+ ✓ src/test/security/h9c-applied-forwards.static.test.ts (6 tests) 26ms
+ ✓ src/test/fiscal/rls/harness.test.ts (4 tests | 2 skipped) 7ms
+ ✓ src/test/fiscal/h7b.idempotencia.test.ts (9 tests) 25ms
+ ✓ src/test/fiscal/sinief49/staging/guard.test.ts (10 tests) 7ms
+ ✓ src/test/ordens-servico/approval.test.tsx (10 tests) 1181ms
+   ✓ aprovação existente — transporte fake, não homologação > usa assinatura existente e bloqueia duplo clique sem iniciar programação  397ms
+ ✓ src/test/catalogo/partnerOutletContext.test.tsx (5 tests) 262ms
+ ✓ src/test/catalogo/catalogo-fase27a-fontes-canonicas.test.ts (14 tests) 50ms
+ ✓ src/test/catalogo/tenant-visibility-sql-candidate.test.ts (9 tests) 16ms
+ ✓ src/test/security/d51-5-p0c-portal-users.test.ts (6 tests) 11ms
+ ✓ src/test/navigation/useTabParam.test.tsx (9 tests) 79ms
+ ✓ src/test/fiscal/fase3_19_6.canonical.test.ts (16 tests) 16ms
+ ✓ src/test/security/h9c-secdef-least-privilege.static.test.ts (6 tests) 40ms
+ ✓ src/test/security/transport.review.test.ts (10 tests) 236ms
+ ✓ src/test/config/cultivofarm-runtime.static.test.ts (2 tests) 9305ms
+   ✓ CultivoFarm independente da geração Cloud > permite somente o cliente canônico e nenhum contrato gerenciado em produção  9289ms
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 106637ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  106633ms
+ ✓ src/test/financeiro/deliveryPendingReadOnly.test.tsx (6 tests) 918ms
+   ✓ marcação sem cobrança também permanece somente leitura  621ms
+ ✓ src/test/security/d51-2-publication-blocking-rls.test.ts (6 tests) 13ms
+ ✓ src/test/fiscal/fase3_21.resolver_micro.test.ts (6 tests) 9ms
+ ✓ src/test/fiscal/sinief49/staging/verifier.test.ts (4 tests) 22ms
+ ✓ src/test/fiscal/h7h.matrizStatusGuard.test.ts (14 tests) 23ms
+ ✓ src/test/comercial/matriz-simulacao.test.ts (7 tests) 26ms
+ ✓ src/test/agenda/agenda-grid.test.ts (11 tests) 15ms
+ ✓ src/test/visita/aprovacaoCard.read.test.tsx (3 tests) 329ms
+ ✓ src/test/offlineDb.claim.test.ts (5 tests) 32ms
+ ✓ src/test/saas/d52-subscription-lifecycle.test.ts (7 tests) 8ms
+ ✓ src/test/fiscal/homologacao_customer_picker.test.ts (11 tests) 12ms
+ ✓ src/test/aplicacoes/camera-dialog.test.tsx (5 tests) 402ms
+   ✓ CameraCaptureDialog: encerramento do stream em falhas > encerra todas as tracks quando video.play() rejeita e oferece o fallback  394ms
+ ✓ src/test/comunicacao/gate6-observabilidade.test.ts (8 tests) 8ms
+ ✓ src/test/fiscal/fase3_10.static.test.ts (15 tests) 41ms
+ ✓ src/test/financeiro/contasReceberTela.test.tsx (3 tests) 409ms
+ ✓ src/test/catalogo/partnerOrderDraftStore.test.ts (14 tests) 17ms
+ ✓ src/test/estoque/catalogo-volumes-fase28c.test.ts (12 tests) 49ms
+ ✓ src/test/navigation.fase6.test.ts (5 tests) 21ms
+ ✓ src/test/motorB2BRpcIntegration.test.ts (4 tests) 3690ms
+   ✓ Fase 12b — Motor B2B RPC integration > todas as RPCs existem e respondem (não retornam 404)  3252ms
+ ✓ src/test/protocolos/microrganismos-tab-cat08.test.ts (6 tests) 34ms
+ ✓ src/test/security/technicalAttachmentOpener.review.test.tsx (4 tests) 91ms
+ ✓ src/test/saas/d51-invite-email.test.ts (6 tests) 18ms
+ ✓ src/test/config/criacaoUsuarioReentrada.test.ts (5 tests) 38ms
+ ✓ src/test/lotes/gerar-lote-live-scope.test.tsx (6 tests) 863ms
+   ✓ formulário com useStorageAccessScope real, Auth/transporte sintéticos > role durante await descarta dados e resposta  398ms
+ ✓ src/test/saas/b2b-formal-header-projection.test.tsx (5 tests) 368ms
+ ✓ src/test/saas/meuPlano.test.ts (8 tests) 37ms
+ ✓ src/test/config/producerWorkspace.session.test.tsx (4 tests) 235ms
+ ✓ src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx (3 tests) 1360ms
+   ✓ ClienteDocumentosTab dentro de form pai > Preparar não submete o form pai nem assina URL  720ms
+   ✓ ClienteDocumentosTab dentro de form pai > Excluir abre confirmação sem executar exclusão nem submeter  308ms
+   ✓ ClienteDocumentosTab dentro de form pai > Enviar com arquivo sem tipo nega por validação sem submeter  329ms
+ ✓ src/test/protocolos/base-tecnica.rename.test.ts (8 tests) 25ms
+ ✓ src/test/visita/pdfVisitaAuthenticated.test.ts (3 tests) 83ms
+ ✓ src/test/fiscal/bloco3_labels_pt_br.test.ts (4 tests) 9ms
+ ✓ src/test/fiscal/policyParityDiff.test.ts (6 tests) 15ms
+ ✓ src/test/comercial/assignmentPublication.test.tsx (3 tests) 296ms
+ ✓ src/test/financeiro/categorias.readOnly.test.tsx (4 tests) 314ms
+ ✓ src/test/financeiro/bateriaB2bOffline.test.ts (15 tests) 13ms
+ ✓ src/test/fiscal/h7j.deleteGuard.static.test.ts (7 tests) 14ms
+ ✓ src/test/comunicacao/gate4-consent-ui.test.ts (10 tests) 15ms
+ ✓ src/test/fiscal/ownedProductFiscal.test.ts (16 tests) 22ms
+ ✓ src/test/ui/masked-input-telefone.test.tsx (7 tests) 126ms
+ ✓ src/test/fiscal/sinief49/effectiveSale.test.ts (6 tests) 11ms
+ ✓ src/lib/portalDisplayLabel.test.ts (9 tests) 10ms
+ ✓ src/test/fiscal/mask.test.ts (9 tests) 10ms
+ ✓ src/test/ordens-servico/trace.test.tsx (6 tests) 180ms
+ ✓ src/test/saas/empresa-cadastro-completo.test.ts (7 tests) 26ms
+ ✓ src/test/catalogo/catalogo-errors.test.tsx (11 tests) 330ms
+   ✓ consultas atômicas > oculta KPIs na falha parcial e refaz todas as consultas no retry  314ms
+ ✓ src/test/visita/safeHome.test.ts (12 tests) 13ms
+ ✓ src/test/entregas/reservaDeferredRuntimeGate.test.tsx (6 tests) 68ms
+ ✓ src/test/visita/visitaRouteGuardContexto.test.tsx (5 tests) 107ms
+ ✓ src/test/portalParceiroSolicitacoes.test.tsx (9 tests) 10ms
+ ✓ src/test/fiscal/sinief49/advancePayment.test.ts (6 tests) 12ms
+ ✓ src/test/lib/inscricao-estadual-cadastro.test.tsx (20 tests) 272ms
+ ✓ src/test/config/externalUserEditCandidate.test.ts (14 tests) 45ms
+ ✓ src/test/saas/meuPlanoTab.render.test.tsx (5 tests) 352ms
+ ✓ src/test/saas/plan-version-succession-editor.test.tsx (1 test) 1251ms
+   ✓ editor — versão publicada como origem de nova versão > carrega v1 como origem, avisa imutabilidade, cria v2 com draftId nulo e bloqueia publicar  1242ms
+ ✓ src/test/saas/b2b-p2a-commercial-preview.test.ts (14 tests) 11ms
+ ✓ src/test/config/ultimoAdminMensagens.test.ts (7 tests) 10ms
+ ✓ src/lib/visita/wizardWorkspaceState.test.ts (12 tests) 10ms
+ ✓ src/test/saas/useAlterarAssinatura.test.tsx (3 tests) 223ms
+ ✓ src/test/saas/onboarding-cnpj.test.ts (6 tests) 10ms
+ ✓ src/test/config/scopedPortalQuery.session.test.tsx (11 tests) 131ms
+ ✓ src/test/config/adminCatalogEdgeSecurity.test.ts (7 tests) 15ms
+ ✓ src/test/visita/portalRoleContext.test.ts (8 tests) 11ms
+ ✓ src/test/config/producerPages.session.test.tsx (5 tests) 323ms
+ ✓ src/test/cockpit-laboratorio/auditoria.test.ts (9 tests) 80ms
+ ✓ src/test/equipe-tecnica/consultores.test.ts (11 tests) 16ms
+ ✓ src/test/fiscal/fiscalServicos.globalAuthorization.test.tsx (5 tests) 1111ms
+   ✓ serviço global — página real com leitores simulados > administrador apenas consulta e não recebe editor IBS/CBS  519ms
+ ✓ src/test/saas/recovery-flow.test.ts (5 tests) 11ms
+ ✓ src/test/config/adminPasswordPage.test.ts (2 tests) 13ms
+ ✓ src/test/fiscal/fase3_19_7.parity.test.ts (11 tests) 17ms
+ ✓ src/test/executivo-family-p1.test.tsx (2 tests) 117ms
+ ✓ src/test/catalogo/formatUnidades.guard.test.ts (90 tests) 73ms
+ ✓ src/test/offlineCheckinQueue.business.test.ts (4 tests) 15ms
+ ✓ src/test/multiportal.foundation.test.ts (11 tests) 11ms
+ ✓ src/test/fiscal/sinief49/stockLoss.test.ts (6 tests) 12ms
+ ✓ src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx (2 tests) 47ms
+ ✓ src/test/entregas/deliveryContainmentStock.test.tsx (7 tests) 595ms
+   ✓ reserva de embalagem com destino selecionado não envia nem anuncia sucesso  339ms
+ ✓ src/test/config/adminPassword.test.ts (17 tests) 19ms
+ ✓ src/test/portalProdutorPedidosSimulacoes.test.tsx (6 tests) 19ms
+ ✓ src/test/saas/portal-entitlement-gates.test.ts (4 tests) 10ms
+ ✓ src/test/fiscal/h7b.binding.static.test.ts (7 tests) 6ms
+ ✓ src/test/fiscal/fase3_20_2.rpc_associate_microorganism.test.ts (3 tests) 148ms
+ ✓ src/test/fiscal/fiscal_certificates_revoke_privileges.test.ts (5 tests) 15ms
+ ✓ src/test/fiscal/h7.sefazEndpoints.test.ts (9 tests) 23ms
+ ✓ src/test/multiportal.superadmin.test.tsx (3 tests) 96ms
+ ✓ src/pwa/PwaUpdateNotifier.test.tsx (4 tests) 354ms
+ ✓ src/test/visita/cabecalhoContexto.static.test.ts (7 tests) 12ms
+ ✓ src/test/saas/pos-d52-commercial-payment-foundation.test.ts (6 tests) 11ms
+ ✓ src/test/saas/c2-final-integrated-manual-postgres.test.ts (1 test) 100324ms
+   ✓ integrates reconciled origin, receipt lock order and the LIVE manual installments correction  100321ms
+ ✓ src/test/fiscal/h7k.preflight.static.test.ts (8 tests) 6ms
+ ✓ src/test/pedidos/pedidosB2BStatusFilter.test.tsx (6 tests) 48ms
+ ✓ src/test/fiscal/h7i.ingestaoCertificado.static.test.ts (4 tests) 142ms
+ ✓ src/test/entregas/registrarEntregaObservedSnapshot.test.tsx (1 test) 658ms
+   ✓ RegistrarEntregaDialog observed snapshot (real dialog) > keeps revisions from first selection even if the lists refresh before confirming  656ms
+ ✓ src/test/config/b2bProvisioning.proposal.test.ts (15 tests) 9ms
+ ✓ src/test/catalogo/formatUnidades.test.ts (10 tests) 38ms
+ ✓ src/test/fiscal/h7e.corsAllowlist.static.test.ts (6 tests) 11ms
+ ✓ src/test/integration/biAgronomico.problemaSelector.test.tsx (2 tests) 241ms
+ ✓ src/test/financeiro/receivableSemantics.test.ts (7 tests) 7ms
+ ✓ src/test/fiscal/sinief49/integration.static.test.ts (5 tests) 14ms
+ ✓ src/test/fluxo-tecnico/osOnfarmQueryProposal.test.tsx (2 tests) 374ms
+ ✓ src/test/navigation.fase7-2.test.ts (10 tests) 19ms
+ ✓ src/test/integration/previsaoClimatica.problemaSelector.test.tsx (2 tests) 243ms
+ ✓ src/test/navigation.fase6-1.test.ts (10 tests) 13ms
+ ✓ src/test/auth/loginLogo.test.tsx (4 tests) 379ms
+ ✓ src/test/saas/c2-order-concurrency-postgres.test.ts (1 test) 133326ms
+   ✓ serializes canonical orders and billing with two real local PostgreSQL connections  133323ms
+ ✓ src/test/config/userLinksQuery.test.ts (5 tests) 17ms
+ ✓ src/test/lib/phone-normalization.test.ts (10 tests) 13ms
+ ✓ src/test/catalogo/partnerFingerprint.test.ts (8 tests) 26ms
+ ✓ src/test/envase/envasePageReadOnly.test.tsx (2 tests) 751ms
+   ✓ EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history  416ms
+   ✓ EnvasePage contained independent contracts > keeps existing label view and print available without calling a writer  333ms
+ ✓ src/test/saas/assinatura-legada-regularizacao.test.ts (6 tests) 6ms
