@@ -126,7 +126,9 @@ def write(pre, post):
     for name,value in [('candidate.sql.review',delta),('preflight.sql.review',guard(pre,'ENVASE_PRE_DRIFT')),('postflight.sql.review',guard(post,'ENVASE_POST_DRIFT')),('state.sql.review',STATE+';\n')]: (H/name).write_text(value)
     (H/'install.sql.review').write_text("BEGIN; SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='30s';\n"+guard(pre,'ENVASE_PRE_DRIFT')+delta+guard(post,'ENVASE_POST_DRIFT')+'COMMIT;\n')
     # Candidate deliberately leaves writer closed. Separate release requires independent review.
-    (H/'release.sql.review').write_text("BEGIN;\n"+guard(post,'ENVASE_RELEASE_DRIFT')+"DO $blocked$ BEGIN RAISE EXCEPTION 'ENVASE_RELEASE_REVIEW_AND_CONCURRENCY_REQUIRED' USING ERRCODE='42501'; END $blocked$;\nROLLBACK;\n")
+    # The pre-matrix denial is a distinct stub. Never overwrite a reviewed release
+    # when a targeted regression stops before write_release().
+    (H/'release-stub.sql.review').write_text("BEGIN;\n"+guard(post,'ENVASE_RELEASE_DRIFT')+"DO $blocked$ BEGIN RAISE EXCEPTION 'ENVASE_RELEASE_REVIEW_AND_CONCURRENCY_REQUIRED' USING ERRCODE='42501'; END $blocked$;\nROLLBACK;\n")
     (H/'rollback.sql.review').write_text("BEGIN; SET LOCAL lock_timeout='3s';\n"+guard(post,'ENVASE_ROLLBACK_DRIFT')+f"REVOKE EXECUTE ON FUNCTION {RPC} FROM PUBLIC,anon,authenticated,service_role;\nCREATE OR REPLACE FUNCTION public.rpc_envase_capability_v1(p_lote uuid,p_os uuid,p_prog uuid,p_origem text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $deny$ BEGIN RETURN jsonb_build_object('capability','envase_isolated_v1','available',false,'actor_id',auth.uid(),'organization_id',NULL,'lote_id',p_lote,'os_id',p_os,'programacao_id',p_prog); END $deny$;\nCOMMIT;\n")
     for n,v in [('pre-state.json',pre),('post-state.json',post)]: (H/n).write_text(json.dumps(v,indent=2)+'\n')
 
