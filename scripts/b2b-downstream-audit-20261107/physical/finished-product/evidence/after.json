@@ -54,7 +54,37 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL ",
+      "name": "quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000",
+      "status": "PASS",
+      "detail": {
+        "ml": 2000.0,
+        "qty": 2,
+        "unit": "l",
+        "origin": "produto_acabado",
+        "content": 2
+      }
+    },
+    {
+      "name": "quimico l: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000",
+      "status": "PASS",
+      "detail": {
+        "ml": 1000.0,
+        "qty": 2,
+        "unit": "ml",
+        "origin": "produto_acabado",
+        "content": 1000
+      }
+    },
+    {
+      "name": "fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL ERROR:  ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nSQL statement \"INSERT INTO public.estoque_produto (\n      produto_id, lote_id, microrganismo_id, envase_id,\n      quantidade, volume_total, validade, status,\n      reservado_para_os_id, reservado_para_os_tipo,\n      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,\n      quantidade_reservada, observacao_reserva,\n      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao\n    ) VALUES (\n      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,\n      p_qty, v_volume_reservado, v_item.validade, 'reservado',\n      p_os_id, p_os_tipo,\n      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,\n      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,\n      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,\n      p_qty, p_observacao,\n      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao\n    ) RETURNING id\"\nPL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment\nPL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment\n",
       "status": "PASS"
     }
   ],
