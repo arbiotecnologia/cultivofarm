@@ -129,29 +129,11 @@ def main():
             T.approve_order(order_id)
             return order_id, item_id
 
+        scenarios = []
+
         def scenario(name, lines, fiscal_item, expected_error=None, expected_qty=None, expected_normalized=None, expected_unit=None):
-            nonlocal sequence
-            sequence += 1
-            order_id, item_id = make_order(lines)
-            doc_id = B3.u(600 + sequence)
-            payload = item(item_id, *fiscal_item)
-            document(doc_id, order_id, payload)
-            before = B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}')+(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{order_id}')").stdout.strip()
-            data, error = allocate(doc_id)
-            if expected_error:
-                T.deny(name, (data, error), expected_error)
-                after = B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}')+(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{order_id}')").stdout.strip()
-                check(name + ": nenhum título/alocação", before == after == "0", f"before={before}, after={after}")
-                return
-            check(name, data is not None and data.get("success") and not data.get("replayed"), error or data)
-            if data is None:
-                return
-            money = T.sql_json(f"SELECT item_money->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'")
-            actual_qty = money.get("order_quantity")
-            actual_normalized = money.get("normalized_quantity")
-            check(name + ": quantidade de pedido normalizada", actual_qty is not None and Decimal(str(actual_qty)) == Decimal(str(expected_qty)), money)
-            check(name + ": conteúdo fiscal normalizado sem alterar preço", actual_normalized is not None and Decimal(str(actual_normalized)) == Decimal(str(expected_normalized)) and money.get("normalized_unit") == expected_unit, money)
-            check(name + ": payload fiscal original preservado", T.sql_json(f"SELECT items->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'") == payload, payload)
+            scenarios.append({"name": name, "lines": lines, "fiscal_item": fiscal_item, "expected_error": expected_error,
+                              "expected_qty": expected_qty, "expected_normalized": expected_normalized, "expected_unit": expected_unit})
 
         snapshot_order, snapshot_item = make_order([B3.S(2)])
         snapshot = T.sql_json(f"SELECT jsonb_build_object('quantity',quantidade,'unit',unidade_medida,'content',packaging_peso_liquido_kg_snapshot,'content_unit',packaging_unidade_conteudo_snapshot,'volume',volume_ml) FROM public.partner_order_items WHERE id='{snapshot_item}'")
@@ -171,6 +153,34 @@ def main():
         scenario("1.000 ml = 1 unidade líquida; 1 L tributável", [B3.L(2)], (1000, "ML", 1, "L"), expected_qty=1, expected_normalized=1000, expected_unit="ml")
         scenario("500 ml podem ser meia unidade líquida não wholepack", [B3.L(2)], (500, "ML", 0.5, "L"), expected_qty=Decimal("0.5"), expected_normalized=500, expected_unit="ml")
         scenario("kg não converte em volume líquido", [B3.L(2)], (25, "KG", 25, "KG"), expected_error="FISCAL_UNIT_MISMATCH")
+
+        # Nenhum título existe enquanto os pedidos são criados: a exposição de um
+        # cenário não pode interferir na fixture do seguinte.
+        for position, current in enumerate(scenarios, start=1):
+            order_id, item_id = make_order(current["lines"])
+            current.update(order_id=order_id, item_id=item_id, doc_id=B3.u(600 + position))
+
+        for current in scenarios:
+            name = current["name"]
+            order_id, item_id, doc_id = current["order_id"], current["item_id"], current["doc_id"]
+            payload = item(item_id, *current["fiscal_item"])
+            document(doc_id, order_id, payload)
+            before = B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}')+(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{order_id}')").stdout.strip()
+            data, error = allocate(doc_id)
+            if current["expected_error"]:
+                T.deny(name, (data, error), current["expected_error"])
+                after = B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{order_id}')+(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{order_id}')").stdout.strip()
+                check(name + ": nenhum título/alocação", before == after == "0", f"before={before}, after={after}")
+                continue
+            check(name, data is not None and data.get("success") and not data.get("replayed"), error or data)
+            if data is None:
+                continue
+            money = T.sql_json(f"SELECT item_money->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'")
+            actual_qty = money.get("order_quantity")
+            actual_normalized = money.get("normalized_quantity")
+            check(name + ": quantidade de pedido normalizada", actual_qty is not None and Decimal(str(actual_qty)) == Decimal(str(current["expected_qty"])), money)
+            check(name + ": conteúdo fiscal normalizado sem alterar preço", actual_normalized is not None and Decimal(str(actual_normalized)) == Decimal(str(current["expected_normalized"])) and money.get("normalized_unit") == current["expected_unit"], money)
+            check(name + ": payload fiscal original preservado", T.sql_json(f"SELECT items->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'") == payload, payload)
 
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
     except Exception as exc:
