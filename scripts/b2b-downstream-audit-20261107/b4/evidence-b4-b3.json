@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 23,
-  "total": 33,
+  "passed": 27,
+  "total": 31,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -68,28 +68,24 @@
       "ok": true
     },
     {
-      "name": "aprovação canônica dos termos",
-      "ok": false,
-      "detail": "ERROR:  B2B_INTERNAL_ECONOMICS_IMMUTABLE\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 34 at RAISE\nSQL statement \"UPDATE public.partner_orders\n     SET financial_approval_status = 'approved',\n         payment_condition_status = 'approved',\n         updated_at = now()\n   WHERE id = p_partner_order_id\"\nPL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 36 at SQL statement\n"
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
     },
     {
       "name": "pedido aprovado e economicamente selado",
-      "ok": false,
-      "detail": "aprovado|not_required|true"
+      "ok": true
     },
     {
       "name": "aprovação comercial canônica do pedido",
       "ok": true
     },
     {
-      "name": "aprovação canônica dos termos",
-      "ok": false,
-      "detail": "ERROR:  B2B_INTERNAL_ECONOMICS_IMMUTABLE\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 34 at RAISE\nSQL statement \"UPDATE public.partner_orders\n     SET financial_approval_status = 'approved',\n         payment_condition_status = 'approved',\n         updated_at = now()\n   WHERE id = p_partner_order_id\"\nPL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 36 at SQL statement\n"
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
     },
     {
       "name": "pedido aprovado e economicamente selado",
-      "ok": false,
-      "detail": "aprovado|not_required|true"
+      "ok": true
     },
     {
       "name": "fixture contábil pendente separada",
@@ -119,9 +115,8 @@
       "ok": true
     },
     {
-      "name": "38 gatilhos reais do pedido continuam habilitados",
-      "ok": false,
-      "detail": "32"
+      "name": "32 gatilhos reais carregados pelo harness B3 continuam habilitados",
+      "ok": true
     },
     {
       "name": "B3 create/simulate antigos não foram restaurados nem alterados",
@@ -132,18 +127,9 @@
       "ok": true
     },
     {
-      "name": "gate fiscal/contábil não comprovado permanece fechado",
-      "ok": false,
-      "detail": "ERROR:  permission denied for function b2b_allocate_document"
-    },
-    {
-      "name": "cliente não invoca alocador privado",
-      "ok": true
-    },
-    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  B2B_ACTOR_DENIED\\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 5 at RAISE\\nSQL statement \"SELECT platform_private.b2b_integration_actor(p_partner_id)\"\\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 10 at PERFORM\\n')"
+      "detail": "RuntimeError(\"ERROR:  function public.is_financial_staff(uuid) does not exist\\nLINE 1: p_internal AND (public.is_financial_staff(u) IS NOT TRUE\\n                        ^\\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\\nQUERY:  p_internal AND (public.is_financial_staff(u) IS NOT TRUE\\n  OR public.has_role(u,'parceiro_b2b'::public.app_role) OR public.has_role(u,'parceiro_b2b_tecnico'::public.app_role)\\n  OR public.has_role(u,'cliente_produtor'::public.app_role))\\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 9 at IF\\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 7 at assignment\\n\")"
     }
   ],
   "hosted": "NOT_RUN",

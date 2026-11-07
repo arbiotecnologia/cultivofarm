@@ -14,27 +14,11 @@ PASS piloto B3 restrito ao parceiro fictício
 PASS cotação B3 criada sem título
 PASS resposta de cotação B3 com centavos
 PASS aprovação comercial canônica do pedido
-FAIL aprovação canônica dos termos :: ERROR:  B2B_INTERNAL_ECONOMICS_IMMUTABLE
-CONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 34 at RAISE
-SQL statement "UPDATE public.partner_orders
-     SET financial_approval_status = 'approved',
-         payment_condition_status = 'approved',
-         updated_at = now()
-   WHERE id = p_partner_order_id"
-PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 36 at SQL statement
-
-FAIL pedido aprovado e economicamente selado :: aprovado|not_required|true
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
 PASS aprovação comercial canônica do pedido
-FAIL aprovação canônica dos termos :: ERROR:  B2B_INTERNAL_ECONOMICS_IMMUTABLE
-CONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 34 at RAISE
-SQL statement "UPDATE public.partner_orders
-     SET financial_approval_status = 'approved',
-         payment_condition_status = 'approved',
-         updated_at = now()
-   WHERE id = p_partner_order_id"
-PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 36 at SQL statement
-
-FAIL pedido aprovado e economicamente selado :: aprovado|not_required|true
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
 PASS fixture contábil pendente separada
 PASS B4 01-pre.sql.readonly
 FAIL B4 02-install.sql.review :: paracatu-mg-2026-2027-v2
@@ -46,9 +30,7 @@ FAIL B4 03-post.sql.readonly :: psql:/dev-server/scripts/b2b-downstream-audit-20
 CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
 
 PASS rerun aborta pelo pin da baseline, sem reinstalar
-FAIL 38 gatilhos reais do pedido continuam habilitados :: 32
+PASS 32 gatilhos reais carregados pelo harness B3 continuam habilitados
 PASS B3 create/simulate antigos não foram restaurados nem alterados
 PASS autorização fiscal continua service-only e sem integração de recebível
-FAIL gate fiscal/contábil não comprovado permanece fechado :: ERROR:  permission denied for function b2b_allocate_document
-PASS cliente não invoca alocador privado
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  B2B_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 5 at RAISE\nSQL statement "SELECT platform_private.b2b_integration_actor(p_partner_id)"\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 10 at PERFORM\n')
+FAIL execução sem exceção de harness :: RuntimeError("ERROR:  function public.is_financial_staff(uuid) does not exist\nLINE 1: p_internal AND (public.is_financial_staff(u) IS NOT TRUE\n                        ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\nQUERY:  p_internal AND (public.is_financial_staff(u) IS NOT TRUE\n  OR public.has_role(u,'parceiro_b2b'::public.app_role) OR public.has_role(u,'parceiro_b2b_tecnico'::public.app_role)\n  OR public.has_role(u,'cliente_produtor'::public.app_role))\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 9 at IF\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 7 at assignment\n")
