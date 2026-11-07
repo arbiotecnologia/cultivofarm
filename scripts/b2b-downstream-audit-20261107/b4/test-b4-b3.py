@@ -410,11 +410,15 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("corrida não duplica título nem residual", residual(direct_order) == 0 and B3.psql(f"SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{direct_order}'").stdout.strip() == "2")
 
         allocations_before = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
+        # Remove somente a costura operacional do harness antes do POST/rollback;
+        # o corpo real always-deny instalado é restaurado byte a byte.
+        B3.psql(real_dependencies + ";")
         rollback = runfile(H / "04-rollback-deny.sql.review")
-        check("rollback exige POST completo e falha fechado sem baseline íntegra", rollback.returncode != 0 and "B4_" in rollback.stderr, rollback.stderr[-900:])
-        check("rollback bloqueado preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
+        check("rollback deny-only passa com PRE/POST e metadados íntegros", rollback.returncode == 0, rollback.stderr[-1200:])
+        check("rollback preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
               and B3.psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip() >= "3")
-        check("rollback bloqueado não faz revogação parcial", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE')").stdout.strip() == "t")
+        check("rollback fecha writer legado sem apagar projeção nem histórico", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE')").stdout.strip() == "f"
+              and B3.psql("SELECT to_regprocedure('public.rpc_receivable_money_projection_v1(uuid,integer,integer)') IS NOT NULL").stdout.strip() == "t")
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
     except Exception as exc:
         check("execução sem exceção de harness", False, repr(exc))
