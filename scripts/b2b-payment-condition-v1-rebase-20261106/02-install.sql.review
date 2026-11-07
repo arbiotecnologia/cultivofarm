@@ -1112,6 +1112,8 @@ BEGIN
   END IF;
   -- (2) credito do parceiro, somente depois da versão (não inverter create/config_publish/quote).
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_order.partner_id::text, 0));
+
+  SELECT count(*) INTO v_count_items FROM public.partner_order_items WHERE order_id = p_order_id;
   IF v_count_items = 0 THEN RAISE EXCEPTION 'empty_cart'; END IF;
 
   SELECT count(*), count(DISTINCT (l->>'item_id')::uuid)
