@@ -339,6 +339,11 @@ def main():
         r = request(SP.UADMF, legacy_id, "TESTE legado estrangeiro")
         check("FSF/admin estrangeiro negado no legado sem snapshot pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação legada preserva estado integral", state(legacy_id) == before)
+        for kind in ("approve", "reject"):
+            before_decision = state(legacy_id)
+            r = decision(SP.UADMF, kind, legacy_id, "TESTE legado estrangeiro")
+            check(f"{kind}: FSF negado no legado pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+            check(f"{kind}: negação FSF no legado preserva estado", state(legacy_id) == before_decision)
         r = request(UCUMUL, legacy_id, "TESTE cumulativo sem vínculo da organização")
         check("admin+parceiro com apenas partner_users único não vira positivo interno", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação do caminho partner_users para admin cumulativo preserva estado", state(legacy_id) == before)
