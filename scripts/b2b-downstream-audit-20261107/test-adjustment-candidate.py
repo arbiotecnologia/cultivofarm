@@ -451,7 +451,7 @@ def main():
         during_lock(
             "perfil inativado",
             f"UPDATE public.profiles SET ativo=false WHERE user_id='{SP.UADM}'",
-            "b2b_phase1_scope_denied",
+            "unauthorized",
             f"UPDATE public.profiles SET ativo=true WHERE user_id='{SP.UADM}'",
         )
         during_lock(
