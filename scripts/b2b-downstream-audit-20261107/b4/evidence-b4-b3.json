@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 20,
-  "total": 30,
+  "passed": 23,
+  "total": 33,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -65,31 +65,31 @@
     },
     {
       "name": "aprovação comercial canônica do pedido",
-      "ok": false,
-      "detail": "ERROR:  function platform_private.c2_order_partner_recipients(uuid) does not exist\nLINE 1: SELECT r FROM platform_private.c2_order_partner_recipients(v...\n                      ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\nQUERY:  SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r\nCONTEXT:  PL/pgSQL function approve_partner_order(uuid,text,date) line 94 at FOR over SELECT rows\n"
+      "ok": true
     },
     {
       "name": "aprovação canônica dos termos",
-      "ok": true
+      "ok": false,
+      "detail": "ERROR:  B2B_INTERNAL_ECONOMICS_IMMUTABLE\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 34 at RAISE\nSQL statement \"UPDATE public.partner_orders\n     SET financial_approval_status = 'approved',\n         payment_condition_status = 'approved',\n         updated_at = now()\n   WHERE id = p_partner_order_id\"\nPL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 36 at SQL statement\n"
     },
     {
       "name": "pedido aprovado e economicamente selado",
       "ok": false,
-      "detail": "em_analise_comercial|approved|false"
+      "detail": "aprovado|not_required|true"
     },
     {
       "name": "aprovação comercial canônica do pedido",
-      "ok": false,
-      "detail": "ERROR:  function platform_private.c2_order_partner_recipients(uuid) does not exist\nLINE 1: SELECT r FROM platform_private.c2_order_partner_recipients(v...\n                      ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\nQUERY:  SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r\nCONTEXT:  PL/pgSQL function approve_partner_order(uuid,text,date) line 94 at FOR over SELECT rows\n"
+      "ok": true
     },
     {
       "name": "aprovação canônica dos termos",
-      "ok": true
+      "ok": false,
+      "detail": "ERROR:  B2B_INTERNAL_ECONOMICS_IMMUTABLE\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 34 at RAISE\nSQL statement \"UPDATE public.partner_orders\n     SET financial_approval_status = 'approved',\n         payment_condition_status = 'approved',\n         updated_at = now()\n   WHERE id = p_partner_order_id\"\nPL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 36 at SQL statement\n"
     },
     {
       "name": "pedido aprovado e economicamente selado",
       "ok": false,
-      "detail": "em_analise_comercial|approved|false"
+      "detail": "aprovado|not_required|true"
     },
     {
       "name": "fixture contábil pendente separada",
@@ -97,13 +97,17 @@
     },
     {
       "name": "B4 01-pre.sql.readonly",
-      "ok": false,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "B4 02-install.sql.review",
       "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:1101: ERROR:  B4_INSTALL_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+      "detail": "paracatu-mg-2026-2027-v2\npsql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:1101: ERROR:  B4_INSTALL_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+    },
+    {
+      "name": "diagnóstico dos pinos após falha de instalação",
+      "ok": false,
+      "detail": "{'diagnostic_exit': 0, 'expected': {'public.fn_b2b_credit_exposure(uuid,numeric,uuid)': '9bee7ca43f973d13d0c564481510b5f1', 'public.rpc_register_receivable_payment(uuid,jsonb)': 'e0f8dcee3db59ffc81dee0b2bef6c0a5', 'public.generate_b2b_receivable_secure_impl(uuid)': 'bea5cf67e8797b46d53c785e4c3fb93a', 'public.tg_auto_b2b_receivable()': '1dc6734bf76e65f86d8c67fc877ad474', 'platform_private.b2b_allocate_document(uuid)': '24a32cebcf84f6eec4cebc28cb66508e', 'platform_private.b2b_order_residual(uuid)': '9e39b70dfdf09f6eaf4257cd785455af', 'platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)': '94dba3db640a80d6fecb5dc61c19c48a'}, 'actual': {'public.fn_b2b_credit_exposure(uuid,numeric,uuid)': 'cafd0ca7233b7b1db79d9f4990fbff1a', 'public.rpc_register_receivable_payment(uuid,jsonb)': 'a0f9219c8f0531609044d247acd832a5', 'public.generate_b2b_receivable_secure_impl(uuid)': '3a4ca7fcd75f9fd3a183b6917fe05cd2', 'public.tg_auto_b2b_receivable()': 'd179755ea3701a723338d08283d42fe5', 'platform_private.b2b_allocate_document(uuid)': '95a81488cc743ba6ed9ce6c2741e4b91', 'platform_private.b2b_order_residual(uuid)': 'ffd5b7695bd51e1ef2913f2759d0821c',"
     },
     {
       "name": "B4 03-post.sql.readonly",
@@ -112,13 +116,12 @@
     },
     {
       "name": "rerun aborta pelo pin da baseline, sem reinstalar",
-      "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:1101: ERROR:  B4_INSTALL_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
+      "ok": true
     },
     {
       "name": "38 gatilhos reais do pedido continuam habilitados",
       "ok": false,
-      "detail": ""
+      "detail": "32"
     },
     {
       "name": "B3 create/simulate antigos não foram restaurados nem alterados",
@@ -129,9 +132,18 @@
       "ok": true
     },
     {
+      "name": "gate fiscal/contábil não comprovado permanece fechado",
+      "ok": false,
+      "detail": "ERROR:  permission denied for function b2b_allocate_document"
+    },
+    {
+      "name": "cliente não invoca alocador privado",
+      "ok": true
+    },
+    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  relation \"platform_private.b2b_authorized_documents\" does not exist\\nLINE 1: INSERT INTO platform_private.b2b_authorized_documents VALUES...\\n                    ^\\n')"
+      "detail": "RuntimeError('ERROR:  B2B_ACTOR_DENIED\\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 5 at RAISE\\nSQL statement \"SELECT platform_private.b2b_integration_actor(p_partner_id)\"\\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 10 at PERFORM\\n')"
     }
   ],
   "hosted": "NOT_RUN",

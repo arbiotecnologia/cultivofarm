@@ -18,3 +18,4 @@ DO $guard$ BEGIN
  IF md5(pg_get_functiondef('public.get_partner_order_payment_condition_secure(uuid)'::regprocedure))<>'7ffe3bbbefd040bab1b3ce1bce8069a7' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.get_partner_order_payment_condition_secure(uuid)'; END IF;
  IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure))<>'e7cb6a6c7fd3a305a54e62184dacd9be' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
 END $guard$;
+SELECT 'PRE_OK' AS status;
