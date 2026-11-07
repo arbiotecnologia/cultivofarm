@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.6s
+CHECKPOINT sql_calls=1 elapsed=2.9s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS função real de entrada exige envase quando não há writer de produto acabado
@@ -11,10 +11,13 @@ PASS fertilizante: entrega sem unidade de conteúdo é fechada antes da baixa
 PASS fertilizante: nenhuma entrega/movimento de expedição após a negação
 PASS REPRODUZIDO: 50 kg em volume_total viram 50.000 ml; peso não é unidade válida
 PASS apresentação L: pedido/OS → reserva → baixa com 2 UN e 2.000 ml
+PASS apresentação L acabada: envio exige programação de produção inexistente
+PASS apresentação L acabada: confirmação também não aceita lineage sem produção
+PASS apresentação L: cancelamento canônico recompõe estoque sem efeitos fiscais/financeiros
 FAIL execução terminou no ponto concreto Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 227, in main
-    sent = json.loads(last(send(delivery, "liquid")))
-                      ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 253, in main
+    reserved = json.loads(last(reserve(b2b["os"], b2b["stock"], 2, "finished-reserve-b2b")))["itens"][0]
+                          ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in last
     return sql(statement).splitlines()[-1]
            ~~~^^^^^^^^^^^
@@ -22,7 +25,5 @@ FAIL execução terminou no ponto concreto Traceback (most recent call last):
     return pg.sql(statement)
            ~~~~~~^^^^^^^^^^^
   File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
-    assert r.returncode==0,r.stderr[-3000:]
-           ^^^^^^^^^^^^^^^
-AssertionError: ERROR: 
-RESULT 11 / 12 exit 1
+    
+RESULT 14 / 15 exit 1
