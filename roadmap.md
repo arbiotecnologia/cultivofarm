@@ -1,3 +1,8 @@
+## 07/11 16:56 — Complemento B4: normalização fiscal e embalagem inteira
+- [x] Reproduzir isoladamente 2 embalagens de 25 kg, NF parcial de 1 embalagem=25 kg e tentativas de 0,5 embalagem, 50 kg tratados como 50 embalagens e quantidade/unidade divergentes, sem documento real. Antes 87/108, exit 1: fração e divergências criaram títulos fictícios; kg/g/ml foram comparados como unidades do pedido.
+- [x] Demonstrar a composição dos guards e corrigir somente `b2b_allocate_document`: contrato estrito, snapshot, kg↔g/L↔ml sem peso→volume, wholepack inteiro e parciais por `item_money.quantity`. Mesma matriz 123/123 e ampliada 132/132, exit 0; duas NFs de 25 kg consomem 2 UN, replay preserva título e terceira UN é negada.
+- [x] Consolidar evidências, pins, hashes e limites em `b4/review-458b6012/fiscal-units/`; regressões B4 73/73 e manifesto 42/42, exit 0. Candidato SHA256 `14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd`, INATIVO/BLOQUEADO/NÃO APROVADO; sem hosted/publicação/cobranças/envios/delegação, grants ou backfill.
+
 ## 07/11 16:45 — Revisão independente B4 458b6012 e decisões financeiras
 - [x] Inventariar 54 alterações B4 com funções compartilhadas, índice, gatilhos, tabela/35 colunas/16 constraints/13 índices/9 gatilhos, owners e ACLs. Manifesto estático 42/42, exit 0; PRE/install/POST/rollback fail-closed e sem sobrescrever desconhecido.
 - [x] Bloquear instalação por baseline LIVE não capturada de `rpc_receivable_money_projection_v1(uuid,integer,integer)`; corpos antigos homônimos não foram promovidos a baseline. Instalação e rollback não concluíram no harness e não causaram revogação parcial.

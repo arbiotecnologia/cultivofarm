@@ -1,0 +1,113 @@
+PASS boot B3 com gatilhos reais
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+PASS condição B3 fictícia publicada
+PASS piloto B3 restrito ao parceiro fictício
+PASS componente B4 executado somente no PG descartável
+PASS stub operacional restrito ao harness
+PASS fixture 1: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN
+PASS fixture 2: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 3: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 4: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 5: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 6: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 7: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 8: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 9: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 10: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 11: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 12: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 13: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 14: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 15: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 16: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+FAIL 1 UN = 25 kg em NF parcial :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
+FAIL 0,5 UN é fração de embalagem inteira :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
+PASS 0,5 UN é fração de embalagem inteira: nenhum título/alocação
+FAIL 12,5 kg também é fração de embalagem inteira :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+PASS 12,5 kg também é fração de embalagem inteira: nenhum título/alocação
+FAIL 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+FAIL 50 kg = 2 embalagens, nunca 50 embalagens :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+FAIL 50.000 g = 2 embalagens, nunca 50.000 embalagens :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+FAIL 50 UN com apenas 50 kg tributáveis é divergente :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
+PASS 50 UN com apenas 50 kg tributáveis é divergente: nenhum título/alocação
+FAIL 1 UN com 50 kg tributáveis é divergente :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 78 at RAISE
+PASS 1 UN com 50 kg tributáveis é divergente: nenhum título/alocação
+PASS peso não converte em litros
+PASS peso não converte em litros: nenhum título/alocação
+PASS unidade tributável em litros diverge do conteúdo em kg
+PASS unidade tributável em litros diverge do conteúdo em kg: nenhum título/alocação
+PASS quantidade sem código de unidade falha fechado
+PASS quantidade sem código de unidade falha fechado: nenhum título/alocação
+FAIL 1 L = 1 unidade líquida; 1.000 ml tributáveis :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+FAIL 1.000 ml = 1 unidade líquida; 1 L tributável :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+FAIL 500 ml podem ser meia unidade líquida não wholepack :: ERROR:  FISCAL_UNIT_MISMATCH
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 70 at RAISE
+PASS kg não converte em volume líquido
+PASS kg não converte em volume líquido: nenhum título/alocação

@@ -1,0 +1,25 @@
+PASS boot B3 com gatilhos reais
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+PASS condição B3 fictícia publicada
+PASS piloto B3 restrito ao parceiro fictício
+PASS componente B4 executado somente no PG descartável
+PASS stub operacional restrito ao harness
+PASS fixture 1: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN
+PASS fixture 3: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS 1 UN = 25 kg em NF parcial
+FAIL execução sem exceção de harness :: KeyError('order_quantity')

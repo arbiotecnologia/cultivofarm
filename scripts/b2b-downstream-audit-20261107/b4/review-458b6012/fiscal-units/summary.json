@@ -1,0 +1,44 @@
+{
+  "status": "INACTIVE_BLOCKED_NOT_APPROVED",
+  "scope": "disposable PostgreSQL component only; no hosted writes or real fiscal documents",
+  "before": {
+    "passed": 87,
+    "total": 108,
+    "exit_code": 1,
+    "candidate_sha256": "d9a2089559c8e388316b9bb17cb4939b8215b500e58f94bbdbd8cd10ae67ccb7"
+  },
+  "after_core": {
+    "passed": 123,
+    "total": 123,
+    "exit_code": 0
+  },
+  "after_extended": {
+    "passed": 132,
+    "total": 132,
+    "exit_code": 0
+  },
+  "b4_regressions": {
+    "passed": 73,
+    "total": 73,
+    "exit_code": 0
+  },
+  "manifest": {
+    "passed": 42,
+    "total": 42,
+    "exit_code": 0,
+    "objects": 54
+  },
+  "candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd",
+  "changed_candidate_objects": [
+    "platform_private.b2b_allocate_document(uuid)"
+  ],
+  "hosted": "NOT_RUN",
+  "real_nf_or_charges": false,
+  "publication": false,
+  "delegation": false,
+  "blockers": [
+    "LIVE rpc_receivable_money_projection_v1 baseline absent",
+    "MONEY_ORIGIN_UNPROVEN manual partner titles",
+    "JWT/RLS/Storage/PostgREST/browser NOT_RUN"
+  ]
+}

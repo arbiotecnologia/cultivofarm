@@ -1,0 +1,29 @@
+{
+  "kind": "DISPOSABLE_COMPONENT_MATRIX_NOT_HOSTED_E2E",
+  "before": {"candidate_sha256": "d9a2089559c8e388316b9bb17cb4939b8215b500e58f94bbdbd8cd10ae67ccb7", "passed": 87, "total": 108, "exit_code": 1},
+  "after_core": {"candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd", "passed": 123, "total": 123, "exit_code": 0},
+  "after_extended": {"candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd", "passed": 132, "total": 132, "exit_code": 0},
+  "scenarios": [
+    {"scenario": "2x25 kg; NF parcial 1 UN=25 kg", "before": "aceito sem recibo normalizado", "after": "1 UN; 25 kg; principal do snapshot"},
+    {"scenario": "0,5 UN=12,5 kg wholepack", "before": "título/alocação fictícios criados", "after": "FISCAL_WHOLE_PACKAGE_FRACTION; zero efeitos"},
+    {"scenario": "12,5 kg=12.500 g wholepack", "before": "FISCAL_QUANTITY_OVERALLOCATED incorreto", "after": "FISCAL_WHOLE_PACKAGE_FRACTION; zero efeitos"},
+    {"scenario": "25 kg=25.000 g", "before": "FISCAL_QUANTITY_OVERALLOCATED", "after": "1 UN; 25 kg"},
+    {"scenario": "50 kg", "before": "50 tratado como quantidade de pedido e negado", "after": "2 UN; nunca 50 UN"},
+    {"scenario": "50.000 g", "before": "50.000 tratado como quantidade de pedido e negado", "after": "2 UN; 50 kg"},
+    {"scenario": "50 UN com somente 50 kg tributáveis", "before": "FISCAL_QUANTITY_OVERALLOCATED", "after": "FISCAL_QUANTITY_UNIT_DIVERGENCE; zero efeitos"},
+    {"scenario": "1 UN com 50 kg tributáveis", "before": "título/alocação fictícios criados", "after": "FISCAL_QUANTITY_UNIT_DIVERGENCE; zero efeitos"},
+    {"scenario": "conteúdo em kg informado em L", "before": "sem validação de grandeza", "after": "FISCAL_UNIT_MISMATCH; zero efeitos"},
+    {"scenario": "sem códigos de unidade", "before": "título/alocação fictícios criados", "after": "FISCAL_UNIT_CONTRACT_REQUIRED; zero efeitos"},
+    {"scenario": "1 L=1.000 ml em item líquido", "before": "aceito sem recibo normalizado", "after": "1 UN; 1.000 ml"},
+    {"scenario": "1.000 ml com 1 L tributável", "before": "FISCAL_QUANTITY_OVERALLOCATED", "after": "1 UN; 1.000 ml"},
+    {"scenario": "500 ml=0,5 L em líquido não wholepack", "before": "FISCAL_QUANTITY_OVERALLOCATED", "after": "0,5 UN; 500 ml"},
+    {"scenario": "kg em item líquido", "before": "sem validação de grandeza", "after": "FISCAL_UNIT_MISMATCH; zero efeitos"},
+    {"scenario": "duas NFs de 25 kg no mesmo pedido 2x25 kg", "before": "NOT_RUN nesta extensão", "after": "2 UN totais; principal 360; replay idempotente; terceira UN negada"}
+  ],
+  "pending_risks": [
+    "baseline LIVE da projeção ausente; instalação bloqueada",
+    "MONEY_ORIGIN_UNPROVEN em títulos manuais de parceiros sem decisão",
+    "documentos antigos sem unidades exigem nova atestação; sem backfill",
+    "JWT/RLS/Storage/PostgREST/browser e NF/cobrança reais NOT_RUN"
+  ]
+}
