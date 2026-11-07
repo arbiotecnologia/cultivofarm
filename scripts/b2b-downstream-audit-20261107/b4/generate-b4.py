@@ -387,7 +387,12 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
   THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
   wholepack:=NULLIF(base->>'packaging_id_snapshot','') IS NOT NULL;
   IF wholepack THEN
-   content_unit:=lower(base->>'packaging_unidade_conteudo_snapshot'); content_per_unit:=(base->>'packaging_peso_liquido_kg_snapshot')::numeric;
+   -- product_packagings.peso_liquido_kg e seu snapshot armazenam SEMPRE kg.
+   -- packaging_unidade_conteudo_snapshot='g' controla apenas o rótulo (0,500 kg -> 500 g),
+   -- nunca a dimensão do número guardado. Whole-pack líquido não é presumido: o writer exige sólido.
+   IF lower(base->>'packaging_unidade_conteudo_snapshot') NOT IN ('kg','g')
+   THEN RAISE EXCEPTION 'FISCAL_ITEM_UNIT_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+   content_unit:='kg'; content_per_unit:=(base->>'packaging_peso_liquido_kg_snapshot')::numeric;
   ELSE
    content_unit:='ml';
    IF NULLIF(base->>'volume_ml','') IS NOT NULL AND NULLIF(base->>'volume_ml_snapshot','') IS NOT NULL
