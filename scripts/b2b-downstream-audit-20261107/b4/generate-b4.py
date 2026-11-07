@@ -211,11 +211,11 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
 
     # Crédito/pagamento/gerador/shared guard extraídos SEM os overloads create/simulate históricos.
     credit = fn(deltas, "public.fn_b2b_credit_exposure")
-    credit = delta(credit,
+    partial = delta(partial,
         "DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int;",
         "DECLARE org uuid:=platform_private.b2b_integration_actor(p_partner); po record; i record; row jsonb; open_amount numeric:=0; overdue numeric:=0; committed numeric:=0; pending numeric:=0; balance numeric; residual numeric; tolerance int; debtor uuid;",
         "credit debtor scope declaration")
-    credit = delta(credit,
+    partial = delta(partial,
         " FOR i IN SELECT s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id WHERE a.organization_id=org AND s.organization_id=org AND a.partner_id=p_partner AND a.status<>'CANCELED' AND s.status<>'CANCELED' LOOP\n  row:=platform_private.b2b_proven_money_row(i.id);",
         """ FOR i IN SELECT a.id AS receivable_id,s.id,s.due_date FROM public.accounts_receivable_installments s JOIN public.accounts_receivable a ON a.id=s.receivable_id
   WHERE a.organization_id=org AND s.organization_id=org AND a.status<>'CANCELED' AND s.status<>'CANCELED'
