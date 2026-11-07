@@ -30,7 +30,10 @@ def main():
     check("candidato e resultados têm o mesmo SHA256", candidate_hash == results["candidate_sha256"] == manifest["files"]["candidate.sql.review"]["sha256"])
     check("status continua inativo e não aprovado", results["status"] == "PASS_LOCAL_INACTIVE_BLOCKED_NOT_APPROVED" and manifest["status"] == "INACTIVE_NOT_APPROVED")
     check("nenhuma operação hosted/publicação foi registrada", not results["hosted"] and not results["publication"] and not manifest["hosted"])
-    check("nenhum grant foi adicionado", not manifest["new_grants"] and not re.search(r"(?im)^\s*GRANT\s", candidate))
+    expected_grants = ["public.rpc_finished_product_purchase_capability_v1():authenticated", "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date):authenticated"]
+    check("somente capability e wrapper públicos têm grant authenticated candidato", manifest["new_grants"] == expected_grants and len(re.findall(r"(?im)^\s*GRANT\s", candidate)) == 2)
+    check("writer privado continua sem grant de aplicativo", "GRANT EXECUTE ON FUNCTION platform_private.finished_product_purchase_entry_v1" not in candidate)
+    check("UI possui capability fail-closed e wrapper delega ao writer privado", "rpc_finished_product_purchase_capability_v1" in candidate and "RETURN platform_private.finished_product_purchase_entry_v1" in candidate)
 
     reported = facts["functions"]
     captured = {x["signature"]: x for x in baseline["functions"] + baseline["dependency_functions"]}
@@ -47,7 +50,7 @@ def main():
     check("entrada biológica sem envase permanece fechada", "ELSIF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id)" in candidate)
     check("lote do fornecedor é obrigatório e entra no fingerprint/snapshots", "p_lote_fornecedor text" in candidate and "'supplier_lot'" in candidate and "'lote_fornecedor'" in candidate)
 
-    check("rollback é deny-only e não destrói histórico", "SET enabled=false" in rollback and not re.search(r"(?im)^\s*(DROP|DELETE|TRUNCATE)\s", rollback))
+    check("rollback é deny-only e não destrói histórico", "SET enabled=false" in rollback and "public.rpc_finished_product_purchase_entry_v1" in rollback and not re.search(r"(?im)^\s*(DROP|DELETE|TRUNCATE)\s", rollback))
     for name, expected in (("before", 17), ("after", 49), ("legacy-candidate", 6)):
         data = json.loads((EVIDENCE / f"{name}.json").read_text())
         total = data.get("total", len(data.get("checks", [])))
