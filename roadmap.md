@@ -1,3 +1,11 @@
+## 07/11 15:27 — Auditoria local B2B ARBio até faturamento/entrega
+- [x] Registrar marco histórico sem reabrir B3: base original `e9aede7708f75b8e10761aca573b42905ebf5259` PUBLICADA; reteste ARBio produção PASS, FSF JWT 403 na condição e `[]` em pedidos, comprador Price R$ 18,65 PASS — relatos do auditor, não executados nesta etapa.
+- [ ] Prioridade: reproduzir `request_b2b_payment_terms_adjustment_secure` pending→pending durante pendência contábil e no escopo legado, com TODOS os triggers reais disponíveis no pacote; corrigir somente se confirmado, em delta revisável deny-only, sem ampliar acessos.
+- [ ] Mapear e testar em PostgreSQL descartável os contratos existentes pedido/cotação/aprovações → faturamento parcial/NF autorizada simulada localmente sem rede → recebível idempotente → estoque/reserva/baixa → envase/expedição/em rota/confirmação/cancelamento/estorno; separar contratos instaláveis, inativos e não liberados.
+- [ ] Cobrir biológicos, químicos, fertilizantes, kg/g/embalagem inteira e L/ml, peso somente para frete, Price B3/crédito total/parciais sem duplicação; calendário Paracatu-MG+nacionais sem fonte versionada permanece fail-closed/BLOCKED, sem feriados inventados.
+- [ ] Preservar os 67 testes UI B3, executar focados/typecheck/build conforme o delta e guardar JSON/TXT com exit codes, matriz cenário-resultado-evidência-risco, PRE/POST/hashes/rollback se houver SQL; não repetir suíte completa sem necessidade.
+- Bloqueios desta execução: nenhum banco hospedado, NF/cobrança/aprovação contábil real, envio, publicação ou subagente; fonte LIVE será conferida pelo auditor e migrations do repositório não são presumidas como produção.
+
 ## 07/11 15:10 — Painel financeiro vendedor B3 (sem SQL/dados/publicação)
 - [x] Complemento 15:14: handlers revalidam flags/monitor; diálogos fecham por pendência/ator/tenant/época/pedido/permissão e callbacks antigos negam dispatch. 67/67 focados incluindo 31 anteriores, exit 0; build automático OK. Guards LIVE conciliados como relato do auditor; caso legado sem vulnerabilidade demonstrada, PG não executado.
 - [x] Ler snapshot V1 pelo leitor existente; sinalizar datas estimadas na emissão da NF e juros Price, preservando legado.
