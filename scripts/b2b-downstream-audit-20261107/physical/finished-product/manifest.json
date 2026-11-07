@@ -47,6 +47,58 @@
     "rollback.sql.review": {
       "sha256": "be726eba72da3eed65ef94d2b4a3be2dc1015615caf0c11c1635cd0d1df1b2f5",
       "bytes": 305
+    },
+    "README.md": {
+      "sha256": "3cc66fa2df0957b7e9715771b3332509b506444294ee98190830f4319dc5e5ba",
+      "bytes": 3771
+    },
+    "results.json": {
+      "sha256": "28fbde65eb278798eba8bc6c4addbcf7fa3a86cbe0b5eb69c2c693773a075835",
+      "bytes": 1597
+    },
+    "assemble.py": {
+      "sha256": "1a59e38497ba7264876232426ce8ab6320cd5c7672ff60868edbb05bf867cd77",
+      "bytes": 22942
+    },
+    "capture_baseline.py": {
+      "sha256": "bf4f4d10c1f4c9af03e807e680d5d58c44fefee7a1488b1333cc0b17028065c3",
+      "bytes": 2673
+    },
+    "test_pg.py": {
+      "sha256": "d8f69db1f7426ee7c1162ad3d1f153776326940470d61edb0c8203013ced52ba",
+      "bytes": 17803
+    },
+    "test_after.py": {
+      "sha256": "2eb7b4ccf3f2849355794bcfac9ce0a10c3fac02a16dcca8f40cfd08c53baee0",
+      "bytes": 10117
+    },
+    "test_legacy_candidate.py": {
+      "sha256": "87e5eefed88fb69007790fec324ff0d5d598150f73b66d6b598f571946334ed9",
+      "bytes": 2572
+    },
+    "evidence/post-install-functions.json": {
+      "sha256": "8fde3e2017eeba2979ea06d7bdf749443c28497a9dfb7aa30627ba5ecf50c5b2",
+      "bytes": 1782
+    },
+    "evidence/before.json": {
+      "sha256": "d2e45f567a31fd99826eb4119a1f2ea6b63e69c87e68ab14fa7ad1bb0d16d0ad",
+      "bytes": 6714
+    },
+    "evidence/after.json": {
+      "sha256": "e8ea8ea33ea48c1add317eee3feb54feb491dd409a32233a19b424aa073678c1",
+      "bytes": 3213
+    },
+    "evidence/legacy-candidate.json": {
+      "sha256": "f07b80e6f4829af65a2bbf0e599d952325fa19b3eb16f66f08bfd489008de896",
+      "bytes": 954
     }
+  },
+  "results": "results.json",
+  "review": "README.md",
+  "post_function_pins": 8,
+  "tests": {
+    "before": "17/17",
+    "after": "19/19",
+    "legacy_candidate": "6/6"
   }
 }
