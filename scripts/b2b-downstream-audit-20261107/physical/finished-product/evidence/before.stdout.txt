@@ -1,18 +1,16 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.3s
+CHECKPOINT sql_calls=1 elapsed=2.8s
 PASS checkpoint descartável da composição capturada restaurado
 FAIL execução terminou no ponto concreto Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 172, in main
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 174, in main
     restore_checkpoint()
     ~~~~~~~~~~~~~~~~~~^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 99, in restore_checkpoint
-    sql((CONF / "install.sql.review").read_text())
-    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 53, in sql
-    return pg.sql(statement)
-           ~~~~~~^^^^^^^^^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
-    assert r.returncode==0,r.stderr[-3000:]
-           ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  CONFIRM_P
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 102, in restore_checkpoint
+    raise AssertionError("INSTALLER_PIN_FAILED " + installer.name + "\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
+AssertionError: INSTALLER_PIN_FAILED install.sql.review
+ERROR:  P0001: CONFIRM_PRE_DRIFT
+CONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+
+
 RESULT 1 / 2 exit 1
