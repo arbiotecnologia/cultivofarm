@@ -39,6 +39,10 @@ Cobertura atual: pin divergente do writer/privado, owner/ACL divergentes, PRE/PO
 
 Além dos quatro pinos anteriores, os MD5 LIVE relatados de `b2b_phase1_partner_visible` (`915f516e…`), `b2b_actor_scope` (`c3f29977…`) e `platform_actor_access_ready` (`048249c0…`) correspondem exatamente às capturas locais executadas. Isso não é nova leitura LIVE. As demais dependências/owners/ACLs vêm de captura LOCAL e exigem conferência independente. Detalhes e matriz em `review-31430566/scope-live-1638/`. **Não aprovado nem aplicado; nenhum positivo sintético certifica o admin vendedor ARBio.**
 
+### Revisão 458b6012 das três decisões — 134/134, exit 0
+
+Os 76 testes anteriores foram preservados em `review-31430566/historical-76/` e não somados. Request/approve/reject agora compartilham o mesmo escopo canônico, `FOR UPDATE`, reautorização pós-lock e bloqueio `C2_ACCOUNTING_PENDING`, com owner/ACL preservados e sem grants. FSF, comprador, pedido ausente e pendência contábil foram negados sem efeitos; revogações durante lock também fecharam approve/reject. Nos três papéis internos, positivos ocorreram somente no legado sintético; no externo validado, o guard real de origem negou todos. Rollback deny-only fechou os três writers sem apagar histórico. Evidência atual: `review-31430566/scope-live-1638/decision-candidates.json`; **INATIVO/NÃO APROVADO**.
+
 ## 2. Resultados downstream executados
 
 | Componente | Resultado atual | Evidência | Limite |
