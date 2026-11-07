@@ -1,3 +1,9 @@
+## 07/11 16:29 — Revisão independente 31430566 do ajuste B2B
+- [ ] Substituir as costuras mínimas de `has_role`/`b2b_phase1_order_visible` pelos corpos reais capturados e por suas dependências de Auth/escopo; manter os 38 gatilhos reais e todas as contenções.
+- [ ] Pinar wrappers e funções privadas, owners e ACLs no PRE/POST/rollback, sem grants novos nem localização de pinos em `/tmp`; negar pedido ausente como escopo não autorizado.
+- [ ] Testar em PostgreSQL descartável revogação de papel, perfil, vínculo organização-parceiro, lease e feature durante o lock, além de legado, C2 pending, positivos, concorrência, idempotência e rollback deny-only.
+- [ ] Consolidar artefatos pequenos, evidências JSON/TXT/exit codes e hashes separadamente para nova revisão; candidato inativo, sem operação hospedada/publicação e sem aprovação de implantação.
+
 ## 07/11 16:05 — Reconciliação física local sobre a base atual
 - [x] Diagnosticar `ENVASE_RELEASE_DRIFT`: o recorte `ENVASE_TARGETED=1` sobrescrevia o release revisado com o stub pré-matriz. Stub separado em `release-stub.sql.review`; nenhum pino, guard, grant ou SQL candidato alterado. Cache `/tmp` ausente também corrigido somente no harness.
 - [x] Rerodar envase/estoque e confirmação física em PostgreSQL descartável: matriz completa 119/119, recorte 21/21 com release SHA256 inalterado, e expedição/em rota/confirmação/cancelamento/isolamento/concorrência/idempotência 123/123, exits 0.
