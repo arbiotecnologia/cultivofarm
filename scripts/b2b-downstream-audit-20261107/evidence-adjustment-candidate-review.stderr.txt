@@ -1,12 +1,21 @@
 Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 416, in <module>
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 419, in <module>
     sys.exit(main())
              ~~~~^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 170, in main
-    psql(generated[meta["capture"]].rstrip() + ";\n")
-    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
-    raise RuntimeError(r.stderr)
-RuntimeError: ERROR:  cannot change name of input parameter "u"
-HINT:  Use DROP FUNCTION platform_private.platform_actor_access_ready(uuid) first.
-
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 257, in main
+    raise RuntimeError(f"fixture pendente indisponível: {pending_error}")
+RuntimeError: fixture pendente indisponível: ERROR:  C2_EXTERNAL_ORIGIN_DENIED
+CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 21 at PERFORM
+SQL statement "INSERT INTO public.partner_orders(
+    partner_id, status, subtotal, desconto_total, total, observacoes, created_by,
+    requested_delivery_date, ready_for_production, payment_plan_id, payment_condition_status,
+    credit_block_reason
+  ) VALUES (
+    p_partner_id, v_status, 0, 0, 0, NULLIF(p_observacoes,''), v_uid,
+    p_requested_delivery_date, false, p_payment_plan_id,
+    CASE WHEN v_quote THEN 'quote_required' ELSE 'defined' END,
+    v_block_reason
+  ) RETURNING id, numero"
+PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 209 at SQL statement
