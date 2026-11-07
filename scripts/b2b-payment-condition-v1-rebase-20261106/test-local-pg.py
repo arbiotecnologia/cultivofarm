@@ -467,11 +467,11 @@ def main():
         # Revogação REAL de papel enquanto a resposta espera o advisory de crédito: tudo é desfeito.
         res = parallel([f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{P}',0)); SELECT pg_sleep(1.2); COMMIT;",
                         session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{oq}','{js(qlines)}'::jsonb,NULL,NULL,NULL);"),
-                        f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador';"], [0,0.3,0.7])
+                        f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador'; INSERT INTO public.user_roles VALUES ('{UADM}','financeiro');"], [0,0.3,0.7])
         check("cotação: revogação do vendedor durante espera nega e restaura itens/termos",
               res[1].returncode != 0 and "forbidden" in res[1].stderr
               and psql(f"SELECT subtotal||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}') FROM public.partner_order_items WHERE id='{qi}'").stdout.strip() == "0.00:0", res[1].stderr[-250:])
-        psql(f"INSERT INTO public.user_roles VALUES ('{UADM}','administrador')")
+        psql(f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='financeiro'; INSERT INTO public.user_roles VALUES ('{UADM}','administrador')")
         j, e = respond(UADM, oq, qlines)
         check("cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
               j and Decimal(str(j["final_amount"])) == Decimal("1036.22") and Decimal(str(j["total"])) == Decimal("1036.22")
@@ -501,9 +501,9 @@ def main():
                   res[1].returncode != 0 and token in res[1].stderr
                   and psql(f"SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{oq}'").stdout.strip() == "1",
                   res[1].stderr[-300:])
-        replay_revocation("papel revogado",
-                          f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador';",
-                          f"INSERT INTO public.user_roles VALUES ('{UADM}','administrador');", "forbidden_quote_response")
+        replay_revocation("papel administrador revogado (origem permanece válida via financeiro)",
+                          f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador'; INSERT INTO public.user_roles VALUES ('{UADM}','financeiro');",
+                          f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='financeiro'; INSERT INTO public.user_roles VALUES ('{UADM}','administrador');", "forbidden_quote_response")
         replay_revocation("perfil desativado",
                           f"UPDATE public.profiles SET ativo=false WHERE user_id='{UADM}';",
                           f"UPDATE public.profiles SET ativo=true WHERE user_id='{UADM}';", "C2_EXTERNAL_OWNER_DENIED")
