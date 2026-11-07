@@ -79,15 +79,31 @@ def fn(src, name, label=None):
     return found[0]
 
 
+def canonical_function(src):
+    """Serializa o cabeçalho no formato de pg_get_functiondef, sem tocar no corpo PL/pgSQL."""
+    text = normalize_function(src.rstrip().removesuffix(";").rstrip())
+    match = re.match(r"(CREATE OR REPLACE FUNCTION .*?)\s+RETURNS\s+(.*?)\s+LANGUAGE\s+(\w+)(.*?)\s+AS\s+(\$(?:function)?\$)(.*)\5\s*$", text, re.S)
+    if not match:
+        raise SystemExit("CANONICAL_FUNCTION_HEADER")
+    signature, returns, language, attributes, _tag, body = match.groups()
+    signature = re.sub(r",\s*", ", ", signature)
+    signature = re.sub(r"\bint\b", "integer", signature)
+    header = f"{signature}\n RETURNS {returns}\n LANGUAGE {language}\n"
+    if re.search(r"\bIMMUTABLE\b", attributes):
+        header += " IMMUTABLE\n"
+    elif re.search(r"\bSTABLE\b", attributes):
+        header += " STABLE\n"
+    if re.search(r"\bSECURITY DEFINER\b", attributes):
+        header += " SECURITY DEFINER\n"
+    path = re.search(r"SET search_path\s*(?:=|TO)\s*'([^']*)'", attributes)
+    if path:
+        header += f" SET search_path TO '{path.group(1)}'\n"
+    return header + "AS $function$" + body + "$function$"
+
+
 def md5_def(src):
-    text = src.rstrip()
-    if text.endswith(";"):
-        text = text[:-1].rstrip()
-    # pg_get_functiondef omite VOLATILE (default) e termina o texto com uma quebra de linha.
-    text = text.replace("\n VOLATILE SECURITY DEFINER\n", "\n SECURITY DEFINER\n")
-    text = re.sub(r"SET search_path\s*=\s*", "SET search_path TO ", text)
-    text = re.sub(r"SET search_path='([^']*)'", r"SET search_path TO '\1'", text)
-    return hashlib.md5((text + "\n").encode()).hexdigest()
+    # md5(pg_get_functiondef(...)) inclui uma quebra de linha final.
+    return hashlib.md5((src.rstrip().removesuffix(";").rstrip() + "\n").encode()).hexdigest()
 
 
 def sql_literal(text):
