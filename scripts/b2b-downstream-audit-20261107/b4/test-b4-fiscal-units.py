@@ -147,8 +147,10 @@ def main():
             if data is None:
                 return
             money = T.sql_json(f"SELECT item_money->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'")
-            check(name + ": quantidade de pedido normalizada", Decimal(str(money["order_quantity"])) == Decimal(str(expected_qty)), money)
-            check(name + ": conteúdo fiscal normalizado sem alterar preço", Decimal(str(money["normalized_quantity"])) == Decimal(str(expected_normalized)) and money["normalized_unit"] == expected_unit, money)
+            actual_qty = money.get("order_quantity")
+            actual_normalized = money.get("normalized_quantity")
+            check(name + ": quantidade de pedido normalizada", actual_qty is not None and Decimal(str(actual_qty)) == Decimal(str(expected_qty)), money)
+            check(name + ": conteúdo fiscal normalizado sem alterar preço", actual_normalized is not None and Decimal(str(actual_normalized)) == Decimal(str(expected_normalized)) and money.get("normalized_unit") == expected_unit, money)
             check(name + ": payload fiscal original preservado", T.sql_json(f"SELECT items->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'") == payload, payload)
 
         snapshot_order, snapshot_item = make_order([B3.S(2)])
