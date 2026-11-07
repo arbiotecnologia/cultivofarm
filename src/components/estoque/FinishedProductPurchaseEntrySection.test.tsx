@@ -37,7 +37,7 @@ describe("entrada de revenda condicionada à capability", () => {
     },
   );
 
-  it("mostra a escolha somente com ACK compatível e monta o formulário apenas na aba", () => {
+  it("mostra a escolha somente com ACK compatível e monta o formulário apenas na aba", async () => {
     mocks.capability.mockReturnValue({ data: { contract: "FINISHED_PRODUCT_PURCHASE_V1", available: true } });
     renderSection();
     expect(screen.getByText("envase biológico preservado")).toBeInTheDocument();
