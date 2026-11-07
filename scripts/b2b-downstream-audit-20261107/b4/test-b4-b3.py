@@ -282,10 +282,10 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         projection, projection_error = server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{title1}',0,1000)")
         check("projeção financeira usa ator e tenant autorizados", projection is not None, projection_error)
         installment1 = projection[0]["id"]
-        payment = {"amount_received": 100, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-PAY-1"}
+        payment = {"amount_received": 10, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-PAY-1"}
         payment_result = call(B3.UFIN, f"public.rpc_register_receivable_payment('{installment1}','{js(payment)}'::jsonb)")
         check("baixa parcial local no ledger capturado", payment_result[0] is not None, payment_result[1])
-        check("baixa reduz somente título, não residual do pedido", exposure() == before - Decimal("100") and residual(quote_order) > 0)
+        check("baixa reduz somente título, não residual do pedido", exposure() == before - Decimal("10") and residual(quote_order) > 0)
 
         document(DOCS[1], quote_order, quote_item, 1, issue="2026-11-01")
         document(DOCS[2], quote_order, quote_item, 1, issue="2026-12-01")
@@ -293,14 +293,15 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         third, error3 = allocate(B3.UADM, DOCS[2])
         check("três documentos independentes fecham quantidade e residual", second and third and residual(quote_order) == 0, error or error3)
         check("três títulos, um por documento", B3.psql(f"SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{quote_order}'").stdout.strip() == "3")
-        check("crédito após parciais preserva total menos baixa", exposure() == before - Decimal("100"), exposure())
+        check("crédito após parciais preserva total menos baixa", exposure() == before - Decimal("10"), exposure())
 
         before_paid = B3.psql(f"SELECT jsonb_build_object('alloc',(SELECT count(*) FROM platform_private.b2b_document_allocations),'pay',(SELECT count(*) FROM receivable_payments),'residual',platform_private.b2b_order_residual('{quote_order}'))").stdout.strip()
         deny("cancelamento de NF paga exige reconciliação", allocate(B3.UADM, DOCS[0]) if False else server_call(B3.UADM, f"platform_private.b2b_reverse_allocation('{DOCS[0]}')"), "FISCAL_PAID_RECONCILIATION_REQUIRED")
         check("cancelamento pago negado preserva histórico e saldo", B3.psql(f"SELECT jsonb_build_object('alloc',(SELECT count(*) FROM platform_private.b2b_document_allocations),'pay',(SELECT count(*) FROM receivable_payments),'residual',platform_private.b2b_order_residual('{quote_order}'))").stdout.strip() == before_paid)
 
         canceled_money = B3.psql(f"SELECT item_money FROM platform_private.b2b_document_allocations WHERE document_id='{DOCS[1]}'").stdout.strip()
-        B3.psql(f"INSERT INTO platform_private.b2b_cancellation_attestations VALUES('{DOCS[1]}','{B3.A}','cancel-middle','{'b'*64}')")
+        attestation = server_run(B3.UADM, f"INSERT INTO platform_private.b2b_cancellation_attestations VALUES('{DOCS[1]}','{B3.A}','cancel-middle','{'b'*64}');")
+        check("atestação fictícia de cancelamento passa pela guarda com ator", attestation.returncode == 0, attestation.stderr[-700:])
         reversed_result, reversed_error = server_call(B3.UADM, f"platform_private.b2b_reverse_allocation('{DOCS[1]}')")
         check("substituição intermediária cancela somente título não pago", reversed_result and reversed_result["success"], reversed_error)
         restored = residual(quote_order)
