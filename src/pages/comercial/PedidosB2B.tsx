@@ -386,6 +386,7 @@ export default function PedidosB2B() {
               <div className="space-y-3 text-sm">
                 <PaymentTermsSection
                   partnerOrderId={detail.id}
+                  accountingPending={isAccountingPending(detail)}
                   canApprove={role === "administrador" || role === "financeiro" || role === "gestor_comercial"}
                   requiresFinancialApproval={(detail as any).requires_financial_approval}
                   requiresCreditApproval={(detail as any).requires_credit_approval}

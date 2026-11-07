@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   usePartnerOrderPaymentTerms,
+  usePartnerOrderPaymentCondition,
   useApprovePaymentTerms,
   useRejectPaymentTerms,
   useRequestPaymentTermsAdjustment,
@@ -19,6 +20,7 @@ import { ShieldCheck, ShieldAlert, MessageCircle, RefreshCw } from "lucide-react
 interface Props {
   partnerOrderId: string;
   canApprove: boolean;
+  accountingPending?: boolean;
   requiresFinancialApproval?: boolean;
   requiresCreditApproval?: boolean;
   requiresGuarantee?: boolean;
@@ -41,11 +43,14 @@ const statusLabel: Record<string, string> = {
 export function PaymentTermsSection({
   partnerOrderId,
   canApprove,
+  accountingPending = false,
   requiresFinancialApproval,
   requiresCreditApproval,
   requiresGuarantee,
 }: Props) {
   const termsQuery = usePartnerOrderPaymentTerms(partnerOrderId);
+  const conditionQuery = usePartnerOrderPaymentCondition(partnerOrderId);
+  const condition = conditionQuery.data;
   const read = termsQuery.data;
   const terms = read?.state === "present" ? read.terms : null;
   const approve = useApprovePaymentTerms();
@@ -55,6 +60,7 @@ export function PaymentTermsSection({
 
   const [dialog, setDialog] = useState<null | "reject" | "adjust" | "note">(null);
   const [text, setText] = useState("");
+  const decisionsUnavailable = accountingPending || !canApprove || conditionQuery.isError || conditionQuery.data === undefined;
 
   if (termsQuery.isError || read?.state === "unverified") {
     return (
@@ -81,6 +87,7 @@ export function PaymentTermsSection({
   }
 
   const submit = () => {
+    if (decisionsUnavailable) return;
     if (!text.trim()) { toast.error("Informe o texto."); return; }
     const done = () => { setDialog(null); setText(""); };
     if (dialog === "reject") {
@@ -101,7 +108,7 @@ export function PaymentTermsSection({
     }
   };
 
-  const disabled = terms.approval_status === "approved" || !canApprove;
+  const disabled = terms.approval_status === "approved" || decisionsUnavailable;
 
   return (
     <>
@@ -118,11 +125,16 @@ export function PaymentTermsSection({
             <Field label="Valor de tabela" value={fmt(terms.table_amount)} />
             <Field label="Desconto" value={`${fmt(terms.discount_amount)} (${terms.discount_percent_snapshot}%)`} />
             <Field label="Base líquida" value={fmt(terms.net_amount_after_discount)} />
-            <Field label="Juros" value={`${fmt(terms.financial_interest_amount)} (${terms.monthly_interest_percent_snapshot}% a.m. × ${terms.months_count_snapshot}m)`} />
+            <Field label="Juros" value={condition
+              ? `${fmt(terms.financial_interest_amount)} (Price · ${condition.monthly_rate}% a.m. · ${condition.installment_count} parcela(s))`
+              : `${fmt(terms.financial_interest_amount)} (${terms.monthly_interest_percent_snapshot}% a.m. × ${terms.months_count_snapshot}m)`} />
             <Field label="Valor final" value={fmt(terms.final_amount)} highlight />
-            <Field label="1º vencimento" value={fmtDate(terms.first_due_date)} />
-            <Field label="Parcelas" value={`${terms.installment_count}x`} />
+            <Field label={condition ? "1º vencimento estimado" : "1º vencimento"} value={fmtDate(terms.first_due_date)} />
+            <Field label="Parcelas" value={`${condition?.installment_count ?? terms.installment_count}x`} />
           </div>
+          {condition && <p className="text-xs text-muted-foreground">Datas estimadas: os vencimentos serão recalculados na emissão da NF, que é a data-base do pagamento.</p>}
+          {conditionQuery.isError && <p className="text-destructive text-xs">Snapshot da condição indisponível. Decisões financeiras bloqueadas.</p>}
+          {accountingPending && <p className="text-destructive text-xs">Decisões financeiras indisponíveis enquanto a validação fiscal/contábil do pedido estiver pendente.</p>}
 
           <div className="flex flex-wrap gap-1 pt-1">
             {requiresFinancialApproval && <Badge variant="outline">Exige aprovação financeira</Badge>}
@@ -141,10 +153,10 @@ export function PaymentTermsSection({
             <div className="flex flex-wrap gap-2 pt-2">
               <Button
                 size="sm"
-                onClick={() => approve.mutate({ orderId: partnerOrderId }, {
+                onClick={() => { if (disabled) return; approve.mutate({ orderId: partnerOrderId }, {
                   onSuccess: () => toast.success("Condição aprovada"),
                   onError: (e: any) => toast.error(e.message ?? "Erro"),
-                })}
+                }); }}
                 disabled={disabled || approve.isPending}
               >
                 <ShieldCheck className="h-4 w-4 mr-1" /> Aprovar
@@ -152,10 +164,10 @@ export function PaymentTermsSection({
               <Button size="sm" variant="destructive" onClick={() => setDialog("reject")} disabled={disabled}>
                 <ShieldAlert className="h-4 w-4 mr-1" /> Reprovar
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setDialog("adjust")} disabled={!canApprove}>
+              <Button size="sm" variant="outline" onClick={() => setDialog("adjust")} disabled={decisionsUnavailable}>
                 <RefreshCw className="h-4 w-4 mr-1" /> Solicitar ajuste
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setDialog("note")}>
+              <Button size="sm" variant="outline" onClick={() => setDialog("note")} disabled={decisionsUnavailable}>
                 <MessageCircle className="h-4 w-4 mr-1" /> Observação/Garantia
               </Button>
             </div>
@@ -180,7 +192,7 @@ export function PaymentTermsSection({
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(null)}>Cancelar</Button>
-            <Button onClick={submit}>Confirmar</Button>
+            <Button onClick={submit} disabled={decisionsUnavailable}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
