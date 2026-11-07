@@ -275,11 +275,14 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
         check("stub operacional existe só no harness depois da negação real", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
 
-        # Impacto dos fences compartilhados: títulos não B2B preservam seus caminhos;
-        # origem monetária desconhecida continua indisponível, sem backfill.
+        # Impacto dos fences compartilhados: MANUAL não B2B sem parceiro conserva
+        # parcelas/baixa; origem desconhecida que afeta parceiro fica explicitamente
+        # bloqueada, sem backfill, proveniência fictícia ou alteração de pedidos.
         category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
         unlinked_customer = B3.u(302)
         B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}')")
+        current_orders_before = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
+        order_count_before = B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip()
         def manual_title(title_id, customer_id, amount):
             return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
               (id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
@@ -287,11 +290,23 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         plain_title = B3.u(340)
         plain_result = manual_title(plain_title, unlinked_customer, "7.00")
         check("shared fence preserva título MANUAL não B2B sem devedor parceiro", plain_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip() == "1", plain_result.stderr[-900:])
-        deny("projeção de origem legada desconhecida permanece fail-closed", server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
+        deny("projeção nova não inventa proveniência para MANUAL sem parceiro", server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
+        plain_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip()
+        plain_payment = {"amount_received": 7, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-PLAIN"}
+        plain_pay_result = B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{plain_installment}','{js(plain_payment)}'::jsonb)::text;")
+        check("baixa MANUAL não B2B sem parceiro preserva o writer legado", plain_pay_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.receivable_payments WHERE installment_id='{plain_installment}' AND amount_received=7").stdout.strip() == "1", (plain_pay_result.stderr + plain_pay_result.stdout)[-1200:])
         partner_title = B3.u(341)
         partner_result = manual_title(partner_title, CUSTOMER, "8.00")
         check("shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado", partner_result.returncode == 0 and B3.psql(f"SELECT partner_id FROM public.accounts_receivable WHERE id='{partner_title}'").stdout.strip() == str(B3.P), partner_result.stderr[-1200:])
-        deny("impacto compartilhado: título manual de parceiro sem origem monetária bloqueia exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        deny("bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        deny("pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',1,'{quote_order}')"), "MONEY_ORIGIN_UNPROVEN")
+        partner_installment = B3.psql(f"SELECT id FROM public.accounts_receivable_installments WHERE receivable_id='{partner_title}'").stdout.strip()
+        partner_payment = {"amount_received": 8, "payment_method_id": B3.M_BOL, "idempotency_key": "TESTE-B4-MANUAL-PARTNER"}
+        deny("baixa de origem desconhecida que afeta parceiro também falha fechado", B3.out(B3.as_user(B3.UFIN, f"SELECT public.rpc_register_receivable_payment('{partner_installment}','{js(partner_payment)}'::jsonb);")), "MONEY_ORIGIN_UNPROVEN")
+        impacted_sim, impacted_sim_error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
+        check("novo pedido do mesmo parceiro fica indisponível durante a inconsistência", impacted_sim is None and "MONEY_ORIGIN_UNPROVEN" in (impacted_sim_error or ""), impacted_sim_error or impacted_sim)
+        current_orders_after = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
+        check("impacto medido não altera pedidos atuais nem cria pedido novo", current_orders_after == current_orders_before and B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip() == order_count_before)
         # Cleanup exclusivamente da fixture descartável, após medir o impacto; não é rollback de produção.
         B3.psql(f"""UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id IN ('{plain_title}','{partner_title}');
                     UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ('{plain_title}','{partner_title}');""")
