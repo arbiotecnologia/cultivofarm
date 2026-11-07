@@ -196,6 +196,27 @@ def main():
         snapshot_order, snapshot_item = make_order([B3.S(2)])
         snapshot = T.sql_json(f"SELECT jsonb_build_object('quantity',quantidade,'unit',unidade_medida,'content',packaging_peso_liquido_kg_snapshot,'content_unit',packaging_unidade_conteudo_snapshot,'volume',volume_ml) FROM public.partner_order_items WHERE id='{snapshot_item}'")
         check("fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN", snapshot == {"quantity": 2, "unit": "unidade", "content": 25, "content_unit": "kg", "volume": None}, snapshot)
+        gram_order, gram_item = make_order([gram_line])
+        gram_snapshot = T.sql_json(f"""SELECT jsonb_build_object('quantity',i.quantidade,'unit',i.unidade_medida,
+        'content_kg',i.packaging_peso_liquido_kg_snapshot,'display_unit',i.packaging_unidade_conteudo_snapshot,
+        'volume',i.volume_ml,'unit_price',i.preco_unitario_final_snapshot,'order_total',o.total)
+        FROM public.partner_order_items i JOIN public.partner_orders o ON o.id=i.order_id WHERE i.id='{gram_item}'""")
+        gram_ok = (gram_snapshot and Decimal(str(gram_snapshot["quantity"])) == 2
+                   and Decimal(str(gram_snapshot["content_kg"])) == Decimal("0.500")
+                   and gram_snapshot["display_unit"] == "g" and gram_snapshot["volume"] is None
+                   and Decimal(str(gram_snapshot["unit_price"])) == Decimal("90")
+                   and Decimal(str(gram_snapshot["order_total"])) == Decimal("180"))
+        check("pedido REAL de 2 UN congela 0,500 kg por embalagem e preço total R$180", gram_ok, gram_snapshot)
+        freight_kg = Decimal(str(gram_snapshot["quantity"])) * Decimal(str(gram_snapshot["content_kg"]))
+        check("frete dimensional do pedido de 500 g permanece 1 kg", freight_kg == Decimal("1.000"), freight_kg)
+        liquid_order, liquid_item = make_order([B3.L(2)])
+        liquid_snapshot = T.sql_json(f"SELECT jsonb_build_object('packaging',packaging_id_snapshot,'volume',volume_ml,'volume_snapshot',volume_ml_snapshot) FROM public.partner_order_items WHERE id='{liquid_item}'")
+        check("líquido sem pack conserva volume_ml=1000 e conversão dimensional própria",
+              liquid_snapshot == {"packaging": None, "volume": 1000, "volume_snapshot": 1000}, liquid_snapshot)
+        scenario("500 g: NF parcial 1 UN = 500 g", [gram_line], (1, "UN", 500, "G"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
+        scenario("500 g: NF parcial 1 UN = 0,5 kg", [gram_line], (1, "UN", 0.5, "KG"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
+        scenario("500 g: 500 g comerciais = 1 embalagem", [gram_line], (500, "G", 0.5, "KG"), expected_qty=1, expected_normalized=Decimal("0.5"), expected_unit="kg")
+        scenario("500 g: 1 UN com 0,5 g tributáveis deve negar", [gram_line], (1, "UN", 0.5, "G"), expected_error="FISCAL_QUANTITY_UNIT_DIVERGENCE")
         scenario("1 UN = 25 kg em NF parcial", [B3.S(2)], (1, "UN", 25, "KG"), expected_qty=1, expected_normalized=25, expected_unit="kg")
         scenario("0,5 UN é fração de embalagem inteira", [B3.S(2)], (0.5, "UN", 12.5, "KG"), expected_error="FISCAL_WHOLE_PACKAGE_FRACTION")
         scenario("12,5 kg também é fração de embalagem inteira", [B3.S(2)], (12.5, "KG", 12500, "G"), expected_error="FISCAL_WHOLE_PACKAGE_FRACTION")
