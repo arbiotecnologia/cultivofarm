@@ -3,7 +3,10 @@
 
 Todos os 38 gatilhos reais ficam ativos nas chamadas. Wrappers, núcleos privados,
 readiness, escopo, feature e gatilhos de Auth/SaaS usam os corpos capturados, com
-owner/ACL reproduzidos. O esquema e os dados são sintéticos: não provam JWT/RLS.
+owner/ACL reproduzidos. O esquema e os dados são sintéticos: não provam JWT/RLS nem
+elegibilidade de qualquer administrador vendedor hospedado. O positivo interno comum
+usa exclusivamente organizations.partner_account_id com o owner comercial coerente;
+partner_users único não é tratado como elevação de admin/financeiro/comercial.
 A fixture legada pausa gatilhos somente na preparação e os religa antes das RPCs.
 """
 import hashlib
