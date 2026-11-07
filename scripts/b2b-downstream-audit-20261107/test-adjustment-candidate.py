@@ -359,41 +359,65 @@ def main():
             r = decision(SP.UADMF, kind, legacy_id, "TESTE legado estrangeiro")
             check(f"{kind}: FSF negado no legado pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
             check(f"{kind}: negação FSF no legado preserva estado", state(legacy_id) == before_decision)
-        r = request(UCUMUL, legacy_id, "TESTE cumulativo sem vínculo da organização")
-        check("admin+parceiro com apenas partner_users único não vira positivo interno", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
-        check("negação do caminho partner_users para admin cumulativo preserva estado", state(legacy_id) == before)
+        for uid, label in ((UCUMUL, "administrador+parceiro_b2b"), (UMIXC, "administrador+cliente_produtor"), (SP.USUP, "administrador+superadmin")):
+            for operation in ("request", "approve", "reject"):
+                before_mixed = state(legacy_id)
+                r = request(uid, legacy_id, "TESTE misto " + label) if operation == "request" else decision(uid, operation, legacy_id, "TESTE misto " + label)
+                check(f"{operation}: {label} é negado mesmo no tenant vendedor", r.returncode != 0 and "unauthorized" in r.stderr, r.stderr)
+                check(f"{operation}: mistura {label} preserva estado integral", state(legacy_id) == before_mixed)
 
-        # Positivo INTERNO SINTÉTICO: usa o caminho real organizations.partner_account_id,
-        # com o parceiro pertencente à mesma organização. Não certifica nenhum admin hospedado.
-        psql(f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'")
-        seller_path = psql(f"""SELECT o.partner_account_id=pa.id
+        # Positivo da equipe vendedora: owner comercial direto, sem vínculo de comprador.
+        seller_path = psql(f"""SELECT o.partner_account_id IS NULL
                                       AND pa.commercial_owner_organization_id=o.id
                                       AND o.ativo AND o.status='ativa'
                                       AND pa.ativo AND pa.deleted_at IS NULL
+                                      AND NOT EXISTS(SELECT 1 FROM public.partner_users pu
+                                                     WHERE pu.user_id IN ('{SP.UADM}','{UFIN}','{UGC}'))
                                FROM public.organizations o
-                               JOIN public.partner_accounts pa ON pa.id=o.partner_account_id
+                               JOIN public.partner_accounts pa ON pa.commercial_owner_organization_id=o.id
                                WHERE o.id='{SP.A}' AND pa.id='{SP.P}'""").stdout.strip()
-        check("fixture do positivo interno tem caminho organização→parceiro→dono vendedor coerente", seller_path == "t", seller_path)
+        check("fixture vendedora tem owner direto, organizations.partner_account_id NULL e zero partner_users", seller_path == "t", seller_path)
         internal_roles = psql(f"""SELECT NOT EXISTS(
                                       SELECT 1 FROM public.user_roles
                                       WHERE user_id IN ('{SP.UADM}','{UFIN}','{UGC}')
                                         AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin')
                                     )""").stdout.strip()
-        check("positivos internos não dependem de superadmin nem papel externo", internal_roles == "t", internal_roles)
-        scope = SP.as_user(SP.UADM, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
-        foreign_scope = SP.as_user(SP.UADMF, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
-        check("escopo real admite o caminho interno sintético e preserva a negação FSF", scope.returncode == 0 and scope.stdout.strip() == "true" and foreign_scope.returncode == 0 and foreign_scope.stdout.strip() == "false", (scope.stdout, scope.stderr, foreign_scope.stdout, foreign_scope.stderr))
+        check("positivos internos não dependem de superadmin nem papel externo/cliente", internal_roles == "t", internal_roles)
 
         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
-            before_validated = state(validated["id"])
-            r = request(uid, validated["id"], "TESTE validado interno " + label)
-            check(f"{label}: escopo não basta; guard real nega ajuste no externo validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
-            check(f"{label}: negação de origem no validado preserva estado integral", state(validated["id"]) == before_validated)
-            for kind in ("approve", "reject"):
-                before_decision = state(validated["id"])
-                r = decision(uid, kind, validated["id"], "TESTE validado interno " + label)
-                check(f"{kind}/{label}: guard real de origem também nega decisão no validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
-                check(f"{kind}/{label}: negação de origem preserva estado integral", state(validated["id"]) == before_decision)
+            r = request(uid, validated["id"], "TESTE validado vendedor " + label)
+            check(f"{label}: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
+            r = decision(uid, "approve", validated["id"], "TESTE approve validado " + label)
+            check(f"approve/{label}: positivo C2 validado com guard de origem ativa", r.returncode == 0 and '"approved"' in r.stdout, r.stderr)
+            check(f"approve/{label}: pedido e condição aprovados", psql(f"SELECT o.financial_approval_status='approved' AND t.approval_status='approved' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id AND t.partner_order_id=o.id WHERE o.id='{validated['id']}'").stdout.strip() == "t")
+            r = request(uid, validated["id"], "TESTE prepara reject validado " + label)
+            check(f"{label}: nova solicitação não duplica a condição", r.returncode == 0 and psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{validated['id']}'").stdout.strip() == "1", r.stderr)
+            r = decision(uid, "reject", validated["id"], "TESTE reject validado " + label)
+            check(f"reject/{label}: positivo C2 validado com guard de origem ativa", r.returncode == 0 and '"rejected"' in r.stdout, r.stderr)
+            check(f"reject/{label}: pedido e condição rejeitados", psql(f"SELECT o.financial_approval_status='rejected' AND t.approval_status='rejected' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id AND t.partner_order_id=o.id WHERE o.id='{validated['id']}'").stdout.strip() == "t")
+
+        # Controle de que a guarda C2 não foi contornada: o shape proibido por ela continua negado.
+        psql(f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'")
+        before_origin = state(validated["id"])
+        r = request(SP.UADM, validated["id"], "TESTE origem proibida")
+        check("guard C2 real continua negando organizations.partner_account_id no parceiro do pedido", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
+        check("negação da guarda C2 preserva estado integral", state(validated["id"]) == before_origin)
+        psql(f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'")
+
+        # Integridade pedido↔condição nas três operações, com todos os gatilhos ativos.
+        for operation in ("request", "approve", "reject"):
+            psql(f"UPDATE public.partner_orders SET payment_terms_id=(SELECT payment_terms_id FROM public.partner_orders WHERE id='{validated['id']}') WHERE id='{legacy_id}'")
+            before_mismatch = state(legacy_id)
+            r = request(SP.UADM, legacy_id, "TESTE mismatch") if operation == "request" else decision(SP.UADM, operation, legacy_id, "TESTE mismatch")
+            check(f"{operation}: condição associada a outro pedido é negada", r.returncode != 0 and "payment_terms_order_mismatch" in r.stderr, r.stderr)
+            check(f"{operation}: mismatch não altera pedido/condição/auditoria/notificações", state(legacy_id) == before_mismatch)
+            psql(f"UPDATE public.partner_orders SET payment_terms_id='{terms_id}' WHERE id='{legacy_id}'")
+        psql(f"UPDATE public.partner_orders SET payment_terms_id=NULL WHERE id='{legacy_id}'")
+        before_missing_terms = state(legacy_id)
+        r = request(SP.UADM, legacy_id, "TESTE terms ausente")
+        check("pedido do vendedor sem condição falha fechado", r.returncode != 0 and "payment_terms_not_defined" in r.stderr, r.stderr)
+        check("condição ausente não produz efeitos", state(legacy_id) == before_missing_terms)
+        psql(f"UPDATE public.partner_orders SET payment_terms_id='{terms_id}' WHERE id='{legacy_id}'")
 
         def during_lock(label, mutation, token, restore, kind="request"):
             before = state(legacy_id)
