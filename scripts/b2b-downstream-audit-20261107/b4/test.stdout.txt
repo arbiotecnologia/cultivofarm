@@ -37,13 +37,4 @@ PASS replay não duplica alocação
 PASS datas finais partem da emissão e calendário selado
 PASS juros financiados não são somados duas vezes
 PASS projeção financeira usa ator e tenant autorizados
-FAIL baixa parcial local no ledger capturado :: ERROR:  Valor excede o saldo da parcela (saldo: 34.54).
-CONTEXT:  PL/pgSQL function rpc_register_receivable_payment(uuid,jsonb) line 88 at RAISE
-FAIL baixa reduz somente título, não residual do pedido :: 
-PASS três documentos independentes fecham quantidade e residual
-PASS três títulos, um por documento
-FAIL crédito após parciais preserva total menos baixa :: 1348.15
-FAIL cancelamento de NF paga exige reconciliação :: ERROR:  FISCAL_CANCELLATION_UNPROVEN
-CONTEXT:  PL/pgSQL function platform_private.b2b_reverse_allocation(uuid,uuid) line 27 at RAISE
-PASS cancelamento pago negado preserva histórico e saldo
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  B2B_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 5 at RAISE\nPL/pgSQL function platform_private.b2b_cancellation_fence() line 5 at assignment\n')
+FAIL execução sem exceção de harness :: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
