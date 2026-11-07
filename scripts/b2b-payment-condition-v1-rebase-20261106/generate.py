@@ -31,7 +31,7 @@ CAP = {"create": HERE / "captured/public.create_partner_order_secure.c34e7404.li
 LIVE_PINS = {
     "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "c34e740473afb7a365d362db854069cb",
     "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee",
-    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "e57d3a64166b4b49de2d0f3bbbc9d6403b",
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "e57d3a6416910937bd02c9180dff0cf1",
     "platform_private.b2b_partner_catalog_reader(uuid)": "bd985484b69c8fa6e63a920eff518369",
     "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
     "public.get_partner_order_payment_terms_secure(uuid)": "efb3d18c65088d7d69471fc5aa9ac859",
@@ -102,7 +102,7 @@ def extract(src, start, end, label):
 def live(name):
     t = CAP[name].read_text()
     pin = {"create": "c34e740473afb7a365d362db854069cb", "sim": "37d4f45e388ed7b38f6f397b672629ee",
-           "quote": "e57d3a64166b4b49de2d0f3bbbc9d6403b"}[name]
+           "quote": "e57d3a6416910937bd02c9180dff0cf1"}[name]
     if hashlib.md5(t.encode()).hexdigest() != pin:
         raise SystemExit(f"LIVE_CAPTURE_DRIFT {name}")
     return t.rstrip("\n")
