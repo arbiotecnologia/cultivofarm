@@ -1,8 +1,9 @@
 ## 07/11 17:05 — Cobertura física de químicos/fertilizantes e apresentação L
-- [ ] Rastrear os caminhos canônicos atuais de produto acabado, reserva/baixa, envase/expedição/confirmação/cancelamento por grupo, sem forçar químico/fertilizante pelo bioreator nem criar cadastro paralelo.
-- [ ] Criar fixtures fictícias isoladas conforme os schemas/writers atuais para químicos/fertilizantes em kg/g por embalagem inteira e apresentação L, com pedido→reserva/baixa→envio/confirmação/cancelamento e unidades preservadas; peso somente frete.
-- [ ] Corrigir somente lacuna comprovada por gerador, manter gates/pins B4 e normalização fiscal enfileirados e fechados, e repetir regressões físicas focadas com JSON/TXT/exit codes/hashes.
-- [ ] Consolidar limites sem hosted/publicação/envios/NF/cobrança real/delegação; PASS sintético não libera produção nem prova JWT/RLS/Storage.
+- [x] Rastrear os caminhos canônicos e reproduzir 17/17: reserva por quantidade funciona, mas 50 kg viravam 50.000 ml; envio/confirmação exigiam programação de produção e a confirmação tentava acionar fabricação laboratorial. B2B aprovado permaneceu negado por `DELIVERY_SCOPE_DENIED`.
+- [x] Criar fixtures fictícias isoladas e candidato aditivo com snapshots de unidade/embalagem, whole-pack e gate privado desligado: kg/g/L/ml, pedido/OS manual→reserva/baixa→envio/confirmação/cancelamento, parcial 2 de 3 sacos 25 kg, replays e 0,5 embalagem negada. Matriz final 19/19 e legado biológico com candidato desligado 6/6, exits 0.
+- [x] Corrigir por gerador somente oito funções pinadas e relações compartilhadas, sem grants novos; PRE/POST com hashes normalizados, rollback deny-only e candidato SHA256 `551824126877d3ec589b998e472a15d1c428f17b5ae2f8fd3673497af6ed0081`. B3/B4, preços, crédito e normalização fiscal não foram reabertos.
+- [x] Consolidar `physical/finished-product/` com README, baseline, JSON/TXT/exit codes, manifesto e hashes; sem hosted/publicação/envios/NF/cobrança real/delegação. PASS sintético não libera produção nem prova JWT/RLS/Storage.
+- [ ] Auditor: conferir baseline LIVE dos oito corpos/owners/ACLs e relações; compor a referência canônica B3 de embalagens e definir/revisar a entrada canônica de produto acabado. Snapshots de embalagem e fixtures upstream são sintéticos; instalação/operação continuam BLOQUEADAS/NÃO APROVADAS.
 
 ## 07/11 16:56 — Complemento B4: normalização fiscal e embalagem inteira
 - [x] Reproduzir isoladamente 2 embalagens de 25 kg, NF parcial de 1 embalagem=25 kg e tentativas de 0,5 embalagem, 50 kg tratados como 50 embalagens e quantidade/unidade divergentes, sem documento real. Antes 87/108, exit 1: fração e divergências criaram títulos fictícios; kg/g/ml foram comparados como unidades do pedido.
