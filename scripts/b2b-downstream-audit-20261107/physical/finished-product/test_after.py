@@ -61,7 +61,7 @@ def purchase(item, quantity, key, internal=True, actor=None, supplier_lot=None, 
 def public_purchase(item, quantity, key, actor=None, supplier_lot=None):
     actor = actor or B.T.U
     supplier_lot = supplier_lot or f"LOTE-{key}"
-    return B.T.actor(actor) + f"""SELECT public.rpc_finished_product_purchase_entry_v1(
+    return B.T.actor(actor) + f"SET request.jwt.claims='{{\"sub\":\"{actor}\",\"iat\":1}}';" + f"""SELECT public.rpc_finished_product_purchase_entry_v1(
       '{item['product']}','{item['packaging']}','{supplier_lot}',{quantity},
       'COMPRA-{key}','FORNECEDOR FICTICIO {key}','{key}','2028-12-31');"""
 
