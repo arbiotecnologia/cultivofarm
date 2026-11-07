@@ -390,7 +390,7 @@ def main():
 
             def caller():
                 time.sleep(0.25)
-                caller_result["r"] = request(SP.UADM, legacy_id, "TESTE " + label)
+                caller_result["r"] = request(SP.UADM, legacy_id, "TESTE " + label) if kind == "request" else decision(SP.UADM, kind, legacy_id, "TESTE " + label)
 
             first = threading.Thread(target=blocker)
             second = threading.Thread(target=caller)
