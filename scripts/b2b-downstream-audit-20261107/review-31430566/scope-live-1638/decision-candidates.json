@@ -1,0 +1,828 @@
+{
+  "kind": "DISPOSABLE_PG_CANDIDATE_REAL_AUTH_SCOPING_ALL_REAL_TRIGGERS_NOT_HOSTED_PROOF",
+  "review": "31430566",
+  "status": "INACTIVE_NOT_APPROVED",
+  "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
+  "live_source_still_requires_auditor_confirmation": true,
+  "auditor_reported_live_md5": {
+    "public.b2b_phase1_order_visible(uuid)": "8812508716f279a88e3d5a31b15621d8",
+    "platform_private.b2b_phase1_order_visible(uuid)": "8504f07fbc3a7975accf919f386d00eb",
+    "public.has_role(uuid,public.app_role)": "4d90e93d521a4819d9085f28d742030f",
+    "platform_private.has_role(uuid,public.app_role)": "c5af5b55de6d79da9b73a33948746ae2",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "915f516e605af7cc14584e2e762a2661",
+    "platform_private.b2b_actor_scope(uuid)": "c3f2997746f24bc2efd15db5c0ccc862",
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84"
+  },
+  "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
+  "candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+  "request_candidate_sql_changed_in_scope_review": false,
+  "decision_review": "458b6012",
+  "decision_candidates": {
+    "request": {
+      "signature": "public.request_b2b_payment_terms_adjustment_secure(uuid,text)",
+      "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
+      "candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "approve": {
+      "signature": "public.approve_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "a61daa8542058bdbf239903d655c2a1b",
+      "candidate_md5": "9e9b3cb27dd669d6d5f7575e6ecb2ac7",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "reject": {
+      "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
+      "candidate_md5": "ff2ca3bf69aae9e51348df03c1373037",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    }
+  },
+  "historical_76_evidence": "review-31430566/historical-76/adjustment-candidate.json",
+  "supersedes_candidate_md5": "55996e9496ffb123504adaeaa502c81f",
+  "historical_minimal_evidence": "evidence/adjustment-candidate-minimal-29.json",
+  "historical_60_evidence": "review-31430566/historical-60/adjustment-candidate.json",
+  "positive_internal_seller": {
+    "classification": "SYNTHETIC_CONTROL_ONLY",
+    "path": "organizations.partner_account_id com partner_accounts.commercial_owner_organization_id coerente",
+    "roles": [
+      "administrador",
+      "financeiro",
+      "gestor_comercial"
+    ],
+    "superadmin_used": false,
+    "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS",
+    "legacy_only": true,
+    "external_validated": "DENIED_BY_REAL_C2_EXTERNAL_ORIGIN_DENIED_FOR_ALL_THREE_ROLES"
+  },
+  "partner_users_semantics": "caminho externo capturado; admin+parceiro sem organizations.partner_account_id foi negado e não promovido a vendedor",
+  "dependencies": {
+    "platform_private.platform_actor_access_ready(uuid)": {
+      "source_signature": "platform_private.platform_actor_access_ready(p_user uuid)",
+      "md5": "048249c0c2106c3761e26eacb8d0de84",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.platform_actor_access_ready.048249c0.sql"
+    },
+    "platform_private.entitlements_for_user(uuid)": {
+      "source_signature": "platform_private.entitlements_for_user(_uid uuid)",
+      "md5": "7f4ec7facaebbdf35444dd490fdebe56",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/platform_private.entitlements_for_user.7f4ec7fa.sql"
+    },
+    "platform_private.has_role(uuid,public.app_role)": {
+      "source_signature": "platform_private.has_role(_user_id uuid, _role app_role)",
+      "md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.has_role.c5af5b55.sql"
+    },
+    "public.has_role(uuid,public.app_role)": {
+      "source_signature": "public.has_role(_user_id uuid, _role app_role)",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.has_role.4d90e93d.sql"
+    },
+    "public.is_platform_superadmin(uuid)": {
+      "source_signature": "public.is_platform_superadmin(_user_id uuid)",
+      "md5": "3dfe79d976821244d9b7a7f893d765f2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.is_platform_superadmin.3dfe79d9.sql"
+    },
+    "public.is_valid_b2b_partner_user(uuid,uuid)": {
+      "source_signature": "public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)",
+      "md5": "0bb0dea04be8ca84c66db7ca6329876c",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.is_valid_b2b_partner_user.0bb0dea0.sql"
+    },
+    "platform_private.b2b_actor_scope(uuid)": {
+      "source_signature": "platform_private.b2b_actor_scope(_uid uuid)",
+      "md5": "c3f2997746f24bc2efd15db5c0ccc862",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/platform_private.b2b_actor_scope.c3f29977.sql"
+    },
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": {
+      "source_signature": "platform_private.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+      "md5": "915f516e605af7cc14584e2e762a2661",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.b2b_phase1_partner_visible.915f516e.sql"
+    },
+    "public.b2b_phase1_partner_visible(uuid,boolean)": {
+      "source_signature": "public.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+      "md5": "6b3defc01a66040146562c60ad224f03",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.b2b_phase1_partner_visible.6b3defc0.sql"
+    },
+    "platform_private.b2b_phase1_order_visible(uuid)": {
+      "source_signature": "platform_private.b2b_phase1_order_visible(p_order uuid)",
+      "md5": "8504f07fbc3a7975accf919f386d00eb",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.b2b_phase1_order_visible.8504f07f.sql"
+    },
+    "public.b2b_phase1_order_visible(uuid)": {
+      "source_signature": "public.b2b_phase1_order_visible(p_order uuid)",
+      "md5": "8812508716f279a88e3d5a31b15621d8",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.b2b_phase1_order_visible.88125087.sql"
+    },
+    "public._saas_user_has_feature(uuid,text)": {
+      "source_signature": "public._saas_user_has_feature(_uid uuid, _feature_key text)",
+      "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/public._saas_user_has_feature.501dd958.sql"
+    },
+    "public._saas_trg_require_feature()": {
+      "source_signature": "public._saas_trg_require_feature()",
+      "md5": "13ed48832f81cbb35434688ca35fda4b",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "acl_md5": "578c00048ab38c285e229e11ff6211ec",
+      "capture": "captured/auth-scoping/public._saas_trg_require_feature.13ed4883.sql"
+    },
+    "platform_private.c2_accounting_pending_guard()": {
+      "source_signature": "platform_private.c2_accounting_pending_guard()",
+      "md5": "669b19490a7a9700f0158db4b31885ad",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+      "capture": "captured/auth-scoping/platform_private.c2_accounting_pending_guard.669b1949.sql"
+    }
+  },
+  "actual_dependency_md5": {
+    "platform_private.platform_actor_access_ready(uuid)": "048249c0c2106c3761e26eacb8d0de84",
+    "platform_private.entitlements_for_user(uuid)": "7f4ec7facaebbdf35444dd490fdebe56",
+    "platform_private.has_role(uuid,public.app_role)": "c5af5b55de6d79da9b73a33948746ae2",
+    "public.has_role(uuid,public.app_role)": "4d90e93d521a4819d9085f28d742030f",
+    "public.is_platform_superadmin(uuid)": "3dfe79d976821244d9b7a7f893d765f2",
+    "public.is_valid_b2b_partner_user(uuid,uuid)": "0bb0dea04be8ca84c66db7ca6329876c",
+    "platform_private.b2b_actor_scope(uuid)": "c3f2997746f24bc2efd15db5c0ccc862",
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "915f516e605af7cc14584e2e762a2661",
+    "public.b2b_phase1_partner_visible(uuid,boolean)": "6b3defc01a66040146562c60ad224f03",
+    "platform_private.b2b_phase1_order_visible(uuid)": "8504f07fbc3a7975accf919f386d00eb",
+    "public.b2b_phase1_order_visible(uuid)": "8812508716f279a88e3d5a31b15621d8",
+    "public._saas_user_has_feature(uuid,text)": "501dd958e117d2df8a4d38f6bcbeed04",
+    "public._saas_trg_require_feature()": "13ed48832f81cbb35434688ca35fda4b",
+    "platform_private.c2_accounting_pending_guard()": "669b19490a7a9700f0158db4b31885ad"
+  },
+  "temporary_pin_substitution": false,
+  "real_trigger_count": 38,
+  "b3_installed_or_modified": false,
+  "synthetic_seams": [
+    "Auth por GUC local; auth.jwt sintético apenas para transportar sub/iat ao corpo real de readiness",
+    "esquema mínimo e fixtures de assinatura/feature; resolvedores e gatilhos SaaS são corpos reais capturados",
+    "vínculos organizations.partner_account_id e partner_users montados em schema reduzido; positivos são controles sintéticos e não provam vínculo/elegibilidade de admin vendedor hospedado",
+    "demais dependências de segundo nível B2/B3",
+    "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
+    "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted"
+  ],
+  "passed": 134,
+  "total": 134,
+  "checks": [
+    {
+      "name": "gerador determinístico: capturas/candidato/01–04/pins byte a byte",
+      "ok": true
+    },
+    {
+      "name": "nenhum artefato executa GRANT ou substitui pin temporário",
+      "ok": true
+    },
+    {
+      "name": "todos os pinos públicos/privados estão no PRE/POST/install/rollback",
+      "ok": true
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.platform_actor_access_ready(uuid)",
+      "ok": true,
+      "detail": "{'actual': '048249c0c2106c3761e26eacb8d0de84', 'expected': '048249c0c2106c3761e26eacb8d0de84'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.entitlements_for_user(uuid)",
+      "ok": true,
+      "detail": "{'actual': '7f4ec7facaebbdf35444dd490fdebe56', 'expected': '7f4ec7facaebbdf35444dd490fdebe56'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.has_role(uuid,public.app_role)",
+      "ok": true,
+      "detail": "{'actual': 'c5af5b55de6d79da9b73a33948746ae2', 'expected': 'c5af5b55de6d79da9b73a33948746ae2'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.has_role(uuid,public.app_role)",
+      "ok": true,
+      "detail": "{'actual': '4d90e93d521a4819d9085f28d742030f', 'expected': '4d90e93d521a4819d9085f28d742030f'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.is_platform_superadmin(uuid)",
+      "ok": true,
+      "detail": "{'actual': '3dfe79d976821244d9b7a7f893d765f2', 'expected': '3dfe79d976821244d9b7a7f893d765f2'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.is_valid_b2b_partner_user(uuid,uuid)",
+      "ok": true,
+      "detail": "{'actual': '0bb0dea04be8ca84c66db7ca6329876c', 'expected': '0bb0dea04be8ca84c66db7ca6329876c'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.b2b_actor_scope(uuid)",
+      "ok": true,
+      "detail": "{'actual': 'c3f2997746f24bc2efd15db5c0ccc862', 'expected': 'c3f2997746f24bc2efd15db5c0ccc862'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+      "ok": true,
+      "detail": "{'actual': '915f516e605af7cc14584e2e762a2661', 'expected': '915f516e605af7cc14584e2e762a2661'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.b2b_phase1_partner_visible(uuid,boolean)",
+      "ok": true,
+      "detail": "{'actual': '6b3defc01a66040146562c60ad224f03', 'expected': '6b3defc01a66040146562c60ad224f03'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.b2b_phase1_order_visible(uuid)",
+      "ok": true,
+      "detail": "{'actual': '8504f07fbc3a7975accf919f386d00eb', 'expected': '8504f07fbc3a7975accf919f386d00eb'}"
+    },
+    {
+      "name": "corpo real capturado executado: public.b2b_phase1_order_visible(uuid)",
+      "ok": true,
+      "detail": "{'actual': '8812508716f279a88e3d5a31b15621d8', 'expected': '8812508716f279a88e3d5a31b15621d8'}"
+    },
+    {
+      "name": "corpo real capturado executado: public._saas_user_has_feature(uuid,text)",
+      "ok": true,
+      "detail": "{'actual': '501dd958e117d2df8a4d38f6bcbeed04', 'expected': '501dd958e117d2df8a4d38f6bcbeed04'}"
+    },
+    {
+      "name": "corpo real capturado executado: public._saas_trg_require_feature()",
+      "ok": true,
+      "detail": "{'actual': '13ed48832f81cbb35434688ca35fda4b', 'expected': '13ed48832f81cbb35434688ca35fda4b'}"
+    },
+    {
+      "name": "corpo real capturado executado: platform_private.c2_accounting_pending_guard()",
+      "ok": true,
+      "detail": "{'actual': '669b19490a7a9700f0158db4b31885ad', 'expected': '669b19490a7a9700f0158db4b31885ad'}"
+    },
+    {
+      "name": "01 PRE_OK com corpos/owners/ACLs reais, sem localização",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "pin divergente do writer aborta sem trocar a função",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-review-qho_vzeu/bad-install.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE\n"
+    },
+    {
+      "name": "pin privado divergente aborta antes da troca",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-review-qho_vzeu/bad-private-install.sql:55: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+    },
+    {
+      "name": "owner divergente de núcleo privado é detectado",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:51: ERROR:  ADJUSTMENT_OWNER_DRIFT: platform_private.has_role(uuid,public.app_role)\nCONTEXT:  PL/pgSQL function inline_code_block line 34 at RAISE\n"
+    },
+    {
+      "name": "ACL divergente de núcleo privado é detectada",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:51: ERROR:  ADJUSTMENT_ACL_DRIFT: platform_private.has_role(uuid,public.app_role)\nCONTEXT:  PL/pgSQL function inline_code_block line 46 at RAISE\n"
+    },
+    {
+      "name": "owner/ACL restaurados ao estado capturado voltam a passar no PRE",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "02 instala o candidato transacionalmente sem GRANT",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "candidato executado tem o MD5 gerado",
+      "ok": true,
+      "detail": "{'actual': '7eb3b5be33552f6bd4eecd56796502ed', 'expected': '7eb3b5be33552f6bd4eecd56796502ed'}"
+    },
+    {
+      "name": "candidato approve executado tem owner/ACL preservados e MD5 gerado",
+      "ok": true,
+      "detail": "{'actual': '9e9b3cb27dd669d6d5f7575e6ecb2ac7', 'expected': '9e9b3cb27dd669d6d5f7575e6ecb2ac7'}"
+    },
+    {
+      "name": "candidato reject executado tem owner/ACL preservados e MD5 gerado",
+      "ok": true,
+      "detail": "{'actual': 'ff2ca3bf69aae9e51348df03c1373037', 'expected': 'ff2ca3bf69aae9e51348df03c1373037'}"
+    },
+    {
+      "name": "03 POST_OK confirma wrappers, privados, owners e ACLs",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "rerun sobre o candidato aborta pelo pin da baseline",
+      "ok": true,
+      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/02-install.sql.review:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE\n"
+    },
+    {
+      "name": "TODOS os 38 gatilhos reais habilitados após instalar",
+      "ok": true
+    },
+    {
+      "name": "pedido inexistente nega como escopo, sem payment_terms_not_defined permissivo",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "pedido inexistente não produz efeitos nem oráculo de dados",
+      "ok": true
+    },
+    {
+      "name": "pedido NULL também é negado fail-closed",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "approve: pedido inexistente não revela payment_terms_not_defined",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "approve: pedido inexistente não produz efeitos",
+      "ok": true
+    },
+    {
+      "name": "reject: pedido inexistente não revela payment_terms_not_defined",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "reject: pedido inexistente não produz efeitos",
+      "ok": true
+    },
+    {
+      "name": "fixture de pendência criada pelo writer canônico com guards reais",
+      "ok": true,
+      "detail": "{'id': '2f19aa05-18b8-4e71-8ecc-df7b655ce523', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '8c0c734b-322b-4c18-8699-806c283a3864', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "C2_ACCOUNTING_PENDING nega pending→pending",
+      "ok": true,
+      "detail": "ERROR:  C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 37 at RAISE\n"
+    },
+    {
+      "name": "negação contábil preserva pedido/termos/auditoria/notificações",
+      "ok": true
+    },
+    {
+      "name": "approve: pendência contábil é negada antes de qualquer decisão",
+      "ok": true,
+      "detail": "ERROR:  C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 37 at RAISE\n"
+    },
+    {
+      "name": "approve: pendência contábil preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject: pendência contábil é negada antes de qualquer decisão",
+      "ok": true,
+      "detail": "ERROR:  C2_ACCOUNTING_PENDING\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 40 at RAISE\n"
+    },
+    {
+      "name": "reject: pendência contábil preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "fixture validada criada pelo writer canônico com guards reais",
+      "ok": true,
+      "detail": "{'id': 'b2cf50d8-bded-40f7-a420-dbc1d7ddafc9', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'c33cae29-648b-43db-8e25-7c858bdb7887', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+    },
+    {
+      "name": "FSF/admin estrangeiro com vínculo próprio é negado no pedido validado",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "negação de escopo validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve: FSF/admin estrangeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "approve: negação estrangeira preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject: FSF/admin estrangeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "reject: negação estrangeira preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "TODOS os gatilhos reais religados antes das chamadas legadas",
+      "ok": true
+    },
+    {
+      "name": "FSF/admin estrangeiro negado no legado sem snapshot pelo escopo real",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "negação legada preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve: FSF negado no legado pelo escopo real",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "approve: negação FSF no legado preserva estado",
+      "ok": true
+    },
+    {
+      "name": "reject: FSF negado no legado pelo escopo real",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "reject: negação FSF no legado preserva estado",
+      "ok": true
+    },
+    {
+      "name": "admin+parceiro com apenas partner_users único não vira positivo interno",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE\n"
+    },
+    {
+      "name": "negação do caminho partner_users para admin cumulativo preserva estado",
+      "ok": true
+    },
+    {
+      "name": "fixture do positivo interno tem caminho organização→parceiro→dono vendedor coerente",
+      "ok": true,
+      "detail": "t"
+    },
+    {
+      "name": "positivos internos não dependem de superadmin nem papel externo",
+      "ok": true,
+      "detail": "t"
+    },
+    {
+      "name": "escopo real admite o caminho interno sintético e preserva a negação FSF",
+      "ok": true,
+      "detail": "('true\\n', '', 'false\\n', '')"
+    },
+    {
+      "name": "administrador: escopo não basta; guard real nega ajuste no externo validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement\n"
+    },
+    {
+      "name": "administrador: negação de origem no validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve/administrador: guard real de origem também nega decisão no validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'approved',\n         approved_by = v_uid,\n         approved_at = now(),\n         approval_notes = COALESCE(p_notes, approval_notes),\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 41 at SQL statement\n"
+    },
+    {
+      "name": "approve/administrador: negação de origem preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject/administrador: guard real de origem também nega decisão no validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'rejected',\n         approved_by = v_uid,\n         approved_at = now(),\n         approval_notes = p_reason,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 44 at SQL statement\n"
+    },
+    {
+      "name": "reject/administrador: negação de origem preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "financeiro: escopo não basta; guard real nega ajuste no externo validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement\n"
+    },
+    {
+      "name": "financeiro: negação de origem no validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve/financeiro: guard real de origem também nega decisão no validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'approved',\n         approved_by = v_uid,\n         approved_at = now(),\n         approval_notes = COALESCE(p_notes, approval_notes),\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 41 at SQL statement\n"
+    },
+    {
+      "name": "approve/financeiro: negação de origem preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject/financeiro: guard real de origem também nega decisão no validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'rejected',\n         approved_by = v_uid,\n         approved_at = now(),\n         approval_notes = p_reason,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 44 at SQL statement\n"
+    },
+    {
+      "name": "reject/financeiro: negação de origem preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: escopo não basta; guard real nega ajuste no externo validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement\n"
+    },
+    {
+      "name": "gestor_comercial: negação de origem no validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "approve/gestor_comercial: guard real de origem também nega decisão no validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'approved',\n         approved_by = v_uid,\n         approved_at = now(),\n         approval_notes = COALESCE(p_notes, approval_notes),\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 41 at SQL statement\n"
+    },
+    {
+      "name": "approve/gestor_comercial: negação de origem preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "reject/gestor_comercial: guard real de origem também nega decisão no validado",
+      "ok": true,
+      "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'rejected',\n         approved_by = v_uid,\n         approved_at = now(),\n         approval_notes = p_reason,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 44 at SQL statement\n"
+    },
+    {
+      "name": "reject/gestor_comercial: negação de origem preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: papel administrativo é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: papel administrativo preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: perfil inativado é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 29 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: perfil inativado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: senha provisória reaberta é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: senha provisória reaberta preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: vínculo organização-parceiro do vendedor removido é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 29 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: vínculo organização-parceiro do vendedor removido preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: convite administrativo em processing é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: convite administrativo em processing preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: access_valid_after posterior ao JWT iat é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: access_valid_after posterior ao JWT iat preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: feature pedidos_b2b revogada é negada",
+      "ok": true,
+      "detail": "ERROR:  saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível\nCONTEXT:  PL/pgSQL function public._saas_trg_require_feature() line 19 at RAISE\nSQL statement \"UPDATE public.partner_orders\n     SET financial_approval_status = 'pending',\n         payment_condition_status = 'adjustment_requested',\n         updated_at = now()\n   WHERE id = p_partner_order_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 47 at SQL statement\n"
+    },
+    {
+      "name": "revogação durante lock: feature pedidos_b2b revogada preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "feature restaurada pelo resolvedor real de entitlements",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: approve com papel administrativo revogado é negada",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 33 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: approve com papel administrativo revogado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "revogação durante lock: reject com vínculo vendedor revogado é negada",
+      "ok": true,
+      "detail": "ERROR:  b2b_phase1_scope_denied\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 32 at RAISE\n"
+    },
+    {
+      "name": "revogação durante lock: reject com vínculo vendedor revogado preserva todo o estado",
+      "ok": true
+    },
+    {
+      "name": "controle sintético administrador: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "controle sintético financeiro: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "controle sintético gestor_comercial: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "administrador: prepara approve somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/administrador: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/administrador: estados financeiro e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "administrador: prepara reject somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/administrador: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/administrador: estados financeiro e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "financeiro: prepara approve somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/financeiro: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/financeiro: estados financeiro e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "financeiro: prepara reject somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/financeiro: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/financeiro: estados financeiro e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: prepara approve somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/gestor_comercial: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "approve/gestor_comercial: estados financeiro e condição aprovados",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: prepara reject somente no legado sintético",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/gestor_comercial: positivo sintético no caminho dono vendedor",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reject/gestor_comercial: estados financeiro e condição rejeitados",
+      "ok": true
+    },
+    {
+      "name": "comprador sem papel financeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 14 at RAISE\n"
+    },
+    {
+      "name": "approve: comprador sem papel financeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 17 at RAISE\n"
+    },
+    {
+      "name": "approve: negação do comprador preserva estado",
+      "ok": true
+    },
+    {
+      "name": "reject: comprador sem papel financeiro continua negado",
+      "ok": true,
+      "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 17 at RAISE\n"
+    },
+    {
+      "name": "reject: negação do comprador preserva estado",
+      "ok": true
+    },
+    {
+      "name": "rollback com pin divergente aborta sem revogar",
+      "ok": true,
+      "detail": "psql:/tmp/b2b-adjustment-review-qho_vzeu/bad-rollback.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE\n"
+    },
+    {
+      "name": "04 rollback deny-only conclui",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "rollback nega EXECUTE ao cliente sem restaurar corpo vulnerável",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function request_b2b_payment_terms_adjustment_secure\n"
+    },
+    {
+      "name": "rollback fecha approve sem restaurar corpo anterior",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function approve_b2b_payment_terms_secure\n"
+    },
+    {
+      "name": "rollback fecha reject sem restaurar corpo anterior",
+      "ok": true,
+      "detail": "ERROR:  permission denied for function reject_b2b_payment_terms_secure\n"
+    },
+    {
+      "name": "rollback não apaga nem reescreve histórico",
+      "ok": true
+    },
+    {
+      "name": "TODOS os 38 gatilhos continuam habilitados no fim",
+      "ok": true
+    },
+    {
+      "name": "B3 não foi instalado nem modificado nesta bateria",
+      "ok": true
+    }
+  ]
+}
