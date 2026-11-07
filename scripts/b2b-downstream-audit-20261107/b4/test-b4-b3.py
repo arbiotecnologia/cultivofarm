@@ -290,7 +290,14 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
             function_objects = [x for x in json.loads((H / "b4-object-manifest.json").read_text())["objects"] if x["kind"] == "function"]
             values = ",".join("('" + x["candidate"]["signature"] + "','" + x["candidate"]["body_md5"] + "')" for x in function_objects)
             mismatch_sql = "SELECT x.sig||'|'||x.expected||'|'||coalesce(md5(pg_get_functiondef(x.sig::regprocedure)),'MISSING') FROM (VALUES " + values + ") x(sig,expected) WHERE to_regprocedure(x.sig) IS NULL OR md5(pg_get_functiondef(x.sig::regprocedure)) IS DISTINCT FROM x.expected ORDER BY x.sig"
-            print("POST_FUNCTION_HASH_DEBUG\n" + B3.psql(mismatch_sql).stdout, flush=True)
+            mismatch_output = B3.psql(mismatch_sql).stdout
+            print("POST_FUNCTION_HASH_DEBUG\n" + mismatch_output, flush=True)
+            actual_definitions = {}
+            for line in mismatch_output.strip().splitlines():
+                sig = line.split("|", 1)[0]
+                actual_definitions[sig] = B3.psql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)").stdout
+            diagnostic_path = H / "review-458b6012/live-absence-4097d4e2/diagnostic-function-definitions.json"
+            diagnostic_path.write_text(json.dumps(actual_definitions, indent=2) + "\n")
             raise RuntimeError("instalação oficial falhou; diagnóstico de hashes concluído fora do aceite")
         check("instalação descartável cria projeção nova e passa PRE+POST íntegros", install.returncode == 0, install.stderr[-1400:])
         post = runfile(H / "03-post.sql.readonly")
