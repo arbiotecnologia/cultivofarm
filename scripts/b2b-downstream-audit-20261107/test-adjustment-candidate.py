@@ -245,6 +245,12 @@ def main():
         candidate_md5 = psql(f"SELECT md5(pg_get_functiondef('{G.SIG}'::regprocedure))").stdout.strip()
         expected_candidate_md5 = pins["candidate_md5"]
         check("candidato executado tem o MD5 gerado", candidate_md5 == expected_candidate_md5, {"actual": candidate_md5, "expected": expected_candidate_md5})
+        helper_actual = psql(f"SELECT md5(pg_get_functiondef('{G.HELPER_SIG}'::regprocedure))").stdout.strip()
+        helper_closed = psql(f"""SELECT NOT has_function_privilege('PUBLIC','{G.HELPER_SIG}','EXECUTE')
+                                      AND NOT has_function_privilege('anon','{G.HELPER_SIG}','EXECUTE')
+                                      AND NOT has_function_privilege('authenticated','{G.HELPER_SIG}','EXECUTE')
+                                      AND NOT has_function_privilege('service_role','{G.HELPER_SIG}','EXECUTE')""").stdout.strip()
+        check("helper vendedor executado tem MD5 gerado e ACL totalmente privada", helper_actual == helper_pin["candidate_md5"] and helper_closed == "t", {"md5": helper_actual, "closed": helper_closed})
         for kind in ("approve", "reject"):
             meta = pins["decision_candidates"][kind]
             actual = psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip()
