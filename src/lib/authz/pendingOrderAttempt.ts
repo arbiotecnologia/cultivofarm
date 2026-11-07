@@ -65,7 +65,7 @@ export function orderAttemptFingerprint(input: {
   partner_id: string; observacoes?: string | null; requested_delivery_date?: string | null;
   payment_plan_id?: string | null; installment_count?: number | null; first_due_date?: string | null;
   items: Array<{ item_id: string; item_tipo: string; quantidade: number; unidade_pedido: string; volume_ml?: number | null; packaging_id?: string | null }>;
-  payment_method?: { config_id: string; version: number } | null;
+  payment_method?: { payment_method: string; payment_condition_version: number; payment_deadline_days: number } | null;
 }): string {
   // packaging_id só entra quando presente: impressões de linhas líquidas permanecem idênticas às já gravadas.
   const items = input.items.map(i => [i.item_id, i.item_tipo, Number(i.quantidade), i.unidade_pedido, i.volume_ml ?? null,
@@ -73,8 +73,9 @@ export function orderAttemptFingerprint(input: {
     .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
   return digest(JSON.stringify([input.partner_id, input.observacoes || null, input.requested_delivery_date || null,
     input.payment_plan_id ?? null, input.installment_count ?? null, input.first_due_date || null, items,
-    // Meio/versão só entram quando presentes: impressões antigas permanecem idênticas.
-    ...(input.payment_method ? [["pm", input.payment_method.config_id, input.payment_method.version]] : [])]));
+    // Meio/versão/prazo só entram quando presentes: impressões antigas permanecem idênticas.
+    ...(input.payment_method ? [["pc", input.payment_method.payment_method, input.payment_method.payment_condition_version,
+      input.payment_method.payment_deadline_days]] : [])]));
 }
 
 export function readOrderAttempt(slot: string | null): OrderAttempt | null {
