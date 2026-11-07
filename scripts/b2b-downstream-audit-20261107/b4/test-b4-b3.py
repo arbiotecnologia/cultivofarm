@@ -45,6 +45,8 @@ OWNER_CONFLICT_TITLE = B3.u(367)
 P_AMBIG_A, P_AMBIG_B = B3.u(370), B3.u(371)
 SHARED_CUSTOMER = B3.u(372)
 OTHER_CUSTOMER = B3.u(374)
+ZERO_CUSTOMER = B3.u(375)
+P_ZERO = B3.u(369)
 
 
 def check(name, ok, detail=""):
@@ -250,15 +252,16 @@ ALTER TABLE public.partner_order_payment_schedule ADD COLUMN IF NOT EXISTS id uu
         B3.psql(f"""ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS client_id uuid;
 CREATE TABLE IF NOT EXISTS public.clientes(id uuid PRIMARY KEY,organization_id uuid);
 INSERT INTO public.clientes(id,organization_id) VALUES
-('{CUSTOMER}','{B3.A}'),('{SHARED_CUSTOMER}','{B3.A}'),('{OTHER_CUSTOMER}','{B3.A}') ON CONFLICT (id) DO NOTHING;
+('{CUSTOMER}','{B3.A}'),('{SHARED_CUSTOMER}','{B3.A}'),('{OTHER_CUSTOMER}','{B3.A}'),('{ZERO_CUSTOMER}','{B3.A}') ON CONFLICT (id) DO NOTHING;
 UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}';
 UPDATE public.partner_accounts SET client_id='{OTHER_CUSTOMER}' WHERE id='{B3.PO}';
 INSERT INTO public.partner_accounts(id,ativo,deleted_at,commercial_owner_organization_id,client_id) VALUES
-('{P_AMBIG_A}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}'),('{P_AMBIG_B}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}');
+('{P_AMBIG_A}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}'),('{P_AMBIG_B}',true,NULL,'{B3.A}','{SHARED_CUSTOMER}'),
+('{P_ZERO}',true,NULL,'{B3.A}','{ZERO_CUSTOMER}');
 INSERT INTO public.partner_financial_settings
 SELECT (jsonb_populate_record(NULL::public.partner_financial_settings,to_jsonb(s)||jsonb_build_object('id',gen_random_uuid(),'partner_id',x.partner_id))).*
 FROM public.partner_financial_settings s CROSS JOIN (VALUES
-('{B3.PO}'::uuid),('{P_AMBIG_A}'::uuid),('{P_AMBIG_B}'::uuid)) x(partner_id)
+('{B3.PO}'::uuid),('{P_AMBIG_A}'::uuid),('{P_AMBIG_B}'::uuid),('{P_ZERO}'::uuid)) x(partner_id)
 WHERE s.partner_id='{B3.P}';""")
         for plan in [B3.P3, B3.PLQ]:
             data, error = B3.publish(B3.UFIN, plan, "boleto", B3.M_BOL, 30, 3, "1.8", 0)
@@ -372,32 +375,32 @@ WHERE s.partner_id='{B3.P}';""")
 
         # Revisão final 18:33: somente NULL é limite não definido. Zero é uma
         # configuração válida de limite zero; negativo/NaN continuam inválidos.
-        original_settings = B3.psql(f"SELECT credit_limit::text||'|'||credit_limit_action FROM public.partner_financial_settings WHERE partner_id='{B3.P}' AND active IS TRUE").stdout.strip()
+        original_settings = B3.psql(f"SELECT credit_limit::text||'|'||credit_limit_action FROM public.partner_financial_settings WHERE partner_id='{P_ZERO}' AND active IS TRUE").stdout.strip()
         def local_limit(value, action="block"):
-            B3.psql(f"UPDATE public.partner_financial_settings SET credit_limit={value},credit_limit_action='{action}' WHERE partner_id='{B3.P}' AND active IS TRUE")
+            B3.psql(f"UPDATE public.partner_financial_settings SET credit_limit={value},credit_limit_action='{action}' WHERE partner_id='{P_ZERO}' AND active IS TRUE")
         def config_block():
-            return B3.psql(f"SELECT coalesce(platform_private.b2b_credit_config_block('{B3.P}'),'<NULL>')").stdout.strip()
+            return B3.psql(f"SELECT coalesce(platform_private.b2b_credit_config_block('{P_ZERO}'),'<NULL>')").stdout.strip()
 
         local_limit("0")
         check("crédito: zero é configuração válida, não limite_nao_definido", config_block() == "<NULL>", config_block())
         zero_idle, zero_idle_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")
         check("crédito: limite zero sem exposição positiva não é NO_LIMIT_DEFINED", zero_idle is not None and zero_idle["credit_limit"] == 0 and zero_idle["reason_code"] == "OK", zero_idle_error or zero_idle)
-        zero_positive, zero_positive_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',1,NULL)")
+        zero_positive, zero_positive_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_ZERO}',1,NULL)")
         check("crédito: limite zero bloqueia exposição positiva como limite excedido", zero_positive is not None and zero_positive["reason_code"] == "LIMIT_EXCEEDED_BLOCK", zero_positive_error or zero_positive)
         local_limit("0", "approval_required")
-        zero_approval, zero_approval_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',1,NULL)")
+        zero_approval, zero_approval_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_ZERO}',1,NULL)")
         check("crédito: limite zero com aprovação mantém LIMIT_EXCEEDED_APPROVAL", zero_approval is not None and zero_approval["reason_code"] == "LIMIT_EXCEEDED_APPROVAL", zero_approval_error or zero_approval)
         local_limit("0")
         zero_title = B3.u(368)
-        zero_title_result = manual_title(zero_title, CUSTOMER, "1.00")
+        zero_title_result = manual_title(zero_title, ZERO_CUSTOMER, "1.00")
         check("crédito: título local positivo com limite zero é negado sem nascer", zero_title_result.returncode != 0 and "CREDIT_LIMIT_EXCEEDED" in zero_title_result.stderr and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE id='{zero_title}'").stdout.strip() == "0", zero_title_result.stderr[-900:])
         for value, label in [("NULL", "NULL"), ("-1", "negativo"), ("'NaN'", "NaN")]:
             local_limit(value)
             check(f"crédito: {label} permanece configuração ausente/inválida e fechada", config_block() == "limite_nao_definido", config_block())
-            deny(f"crédito: exposição com limite {label} falha fechado", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',1,NULL)"), "CREDIT_SETTINGS_INCOMPLETE")
+            deny(f"crédito: exposição com limite {label} falha fechado", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_ZERO}',1,NULL)"), "CREDIT_SETTINGS_INCOMPLETE")
         limit_sql, limit_action = original_settings.split("|", 1)
         local_limit("NULL" if limit_sql == "" else f"'{limit_sql}'", limit_action)
-        check("crédito: configuração original da fixture local restaurada", B3.psql(f"SELECT credit_limit::text||'|'||credit_limit_action FROM public.partner_financial_settings WHERE partner_id='{B3.P}' AND active IS TRUE").stdout.strip() == original_settings)
+        check("crédito: configuração original da fixture local restaurada", B3.psql(f"SELECT credit_limit::text||'|'||credit_limit_action FROM public.partner_financial_settings WHERE partner_id='{P_ZERO}' AND active IS TRUE").stdout.strip() == original_settings)
 
         # Forma LIVE relatada: cinco títulos MANUAL ativos, partner_id NULL e
         # customer_id ligado ao parceiro. Nenhum é alterado/cancelado no hosted.
