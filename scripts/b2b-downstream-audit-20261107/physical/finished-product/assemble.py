@@ -429,37 +429,61 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
     downstream_bodies = [confirm, send]
     foundation_candidate = "\n\n".join(foundation_bodies) + "\n"
     downstream_candidate = "\n\n".join(downstream_bodies) + "\n"
-    post = []
+    post_blocks = {}
     post_capture_path = HERE / "evidence/post-install-functions.json"
     post_capture = json.loads(post_capture_path.read_text())["functions"] if post_capture_path.exists() else []
     post_by_signature = {x["signature"]: x for x in post_capture}
+    body_by_signature = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync, "platform_private.guard_manual_lot_write_v1": lot_guard, "platform_private.trg_lab_lot_biological_only": lab_guard, "public.validate_estoque_entrada": entry_validate, "platform_private.envase_insert_guard_v1": entry_guard, "platform_private.envase_insert_final_v1": entry_final}
     for entry in BASE["functions"]:
-        body = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync, "platform_private.guard_manual_lot_write_v1": lot_guard, "platform_private.trg_lab_lot_biological_only": lab_guard, "public.validate_estoque_entrada": entry_validate, "platform_private.envase_insert_guard_v1": entry_guard, "platform_private.envase_insert_final_v1": entry_final}[entry["signature"].split("(", 1)[0]]
-        if entry["signature"] in post_by_signature:
-            measured = post_by_signature[entry["signature"]]
-            if measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
-                raise AssertionError("POST owner/ACL drift " + entry["signature"])
-            post.append(function_pin(entry, measured["md5"]))
-        else:
-            post.append(f"-- POST_RUNTIME_REQUIRED {entry['signature']} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}")
-    for entry in BASE.get("dependency_functions", []):
-        if entry["signature"] in post_by_signature:
-            measured = post_by_signature[entry["signature"]]
-            if measured["md5"] != entry["md5"] or measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
-                raise AssertionError("POST dependency drift " + entry["signature"])
-            post.append(function_pin(entry))
-        else:
-            post.append(f"-- POST_RUNTIME_REQUIRED_DEPENDENCY {entry['signature']}")
-    for entry in BASE.get("dependency_triggers", []):
-        post.append(trigger_pin(entry))
-    for signature in ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]:
+        signature = entry["signature"]
+        body = body_by_signature[signature.split("(", 1)[0]]
         if signature in post_by_signature:
-            post.append(function_pin(post_by_signature[signature]))
+            measured = post_by_signature[signature]
+            if measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
+                raise AssertionError("POST owner/ACL drift " + signature)
+            post_blocks[signature] = function_pin(entry, measured["md5"])
         else:
-            post.append(f"-- POST_RUNTIME_REQUIRED_NEW_OBJECT {signature}")
+            post_blocks[signature] = f"-- POST_RUNTIME_REQUIRED {signature} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}"
+    for entry in BASE.get("dependency_functions", []):
+        signature = entry["signature"]
+        if signature in post_by_signature:
+            measured = post_by_signature[signature]
+            if measured["md5"] != entry["md5"] or measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
+                raise AssertionError("POST dependency drift " + signature)
+            post_blocks[signature] = function_pin(entry)
+        else:
+            post_blocks[signature] = f"-- POST_RUNTIME_REQUIRED_DEPENDENCY {signature}"
+    for entry in BASE.get("dependency_triggers", []):
+        post_blocks["trigger:" + entry["name"]] = trigger_pin(entry)
+    new_signatures = ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]
+    for signature in new_signatures:
+        if signature in post_by_signature:
+            post_blocks[signature] = function_pin(post_by_signature[signature])
+        else:
+            post_blocks[signature] = f"-- POST_RUNTIME_REQUIRED_NEW_OBJECT {signature}"
+
+    post = [post_blocks[x["signature"]] for x in BASE["functions"]]
+    post += [post_blocks[x["signature"]] for x in BASE.get("dependency_functions", [])]
+    post += [post_blocks["trigger:" + x["name"]] for x in BASE.get("dependency_triggers", [])]
+    post += [post_blocks[x] for x in new_signatures]
+    foundation_post = [post_blocks[x["signature"]] for x in foundation_entries]
+    foundation_post += [post_blocks[x["signature"]] for x in BASE.get("dependency_functions", [])]
+    foundation_post += [post_blocks["trigger:" + x["name"]] for x in BASE.get("dependency_triggers", [])]
+    foundation_post += [post_blocks[x] for x in new_signatures]
+    downstream_post = [post_blocks[x["signature"]] for x in downstream_entries]
+    gate_closed = "DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;"
+    downstream_pre = ["-- Camada downstream INATIVA: exige as dependências de confirmação/envio e o POST exato da entrada."]
+    downstream_pre += [dependency_pin(x) for x in downstream_entries] + foundation_post + [gate_closed]
+
     (HERE / "candidate.sql.review").write_text(candidate)
+    (HERE / "candidate-foundation.sql.review").write_text(foundation_candidate)
+    (HERE / "candidate-downstream.sql.review").write_text(downstream_candidate)
     (HERE / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
-    (HERE / "postflight.sql.review").write_text("\n".join(post) + "\nDO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;\n")
+    (HERE / "install-foundation.sql.review").write_text("\n\n".join(foundation_pre) + "\n\n" + foundation_candidate)
+    (HERE / "install-downstream.sql.review").write_text("\n\n".join(downstream_pre) + "\n\n" + downstream_candidate)
+    (HERE / "postflight.sql.review").write_text("\n".join(post) + "\n" + gate_closed + "\n")
+    (HERE / "postflight-foundation.sql.review").write_text("\n".join(foundation_post) + "\n" + gate_closed + "\n")
+    (HERE / "postflight-downstream.sql.review").write_text("\n".join(downstream_post) + "\n" + gate_closed + "\n")
     (HERE / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
     manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": [], "files": {}}
     for name in ["baseline.json", "candidate.sql.review", "install.sql.review", "postflight.sql.review", "rollback.sql.review"]:
