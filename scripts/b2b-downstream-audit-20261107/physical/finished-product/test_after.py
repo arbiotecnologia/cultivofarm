@@ -18,11 +18,9 @@ def finished(group, unit, per_unit, quantity=2):
     item = B.fixture(group, unit.upper(), volume, quantity)
     B.SEQUENCE += 1
     packaging = B.T.u(3000 + B.SEQUENCE)
-    code = "PK-" + str(3000 + B.SEQUENCE)
-    description = f"Embalagem {per_unit} {unit} TESTE LOCAL"
+    # Snapshot de embalagem upstream sintético: não cria catálogo/tabela paralela.
+    # A ligação com o catálogo B3 permanece dependência explícita de instalação.
     B.sql("SET session_replication_role=replica;" + f"""
-    INSERT INTO public.catalogo_volumes(id,origem,produto_id,microrganismo_id,volume_ml,descricao,preco,ativo,owner_organization_id,tipo)
-      VALUES('{packaging}','produto','{item['product']}',NULL,NULL,'{description}',0.01,true,'{B.T.A}','embalagem');
     UPDATE public.estoque_produto SET origem_estoque='produto_acabado',unidade_comercial='unidade',conteudo_por_unidade={per_unit},unidade_conteudo='{unit}',quantidade_conteudo={quantity * per_unit},embalagem_id='{packaging}',embalagem_versao=1 WHERE id='{item['stock']}';
     SET session_replication_role=origin;
     """)
@@ -113,7 +111,7 @@ def main():
     finally:
         out = {"status": "PASS" if status == 0 else "FAIL", "checks": B.CHECKS, "hosted": False, "real_nf_or_receivable": False}
         (RESULTS / "after.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
-        print(f"RESULT {sum(x['ok'] for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
+        print(f"RESULT {sum(x['passed'] for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
     return status
 
 
