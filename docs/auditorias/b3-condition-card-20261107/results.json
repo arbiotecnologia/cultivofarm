@@ -1,0 +1,93 @@
+{
+  "scope": "Evidence preservation only; no tests rerun, runtime/SQL/data/publication changes",
+  "source_commit_reported_by_auditor": "07673d20",
+  "runs": [
+    {
+      "id": "scoped",
+      "start_utc": "2026-11-07T14:25:32Z",
+      "files_passed": 3,
+      "tests_passed": 31,
+      "vitest_exit_code": 0,
+      "duration_seconds": 23.98,
+      "output": "scoped-tests.txt",
+      "exit_evidence": "scoped-exitcode.txt"
+    },
+    {
+      "id": "final",
+      "start_utc": "2026-11-07T14:26:30Z",
+      "files_passed": 1,
+      "tests_passed": 16,
+      "vitest_exit_code": 0,
+      "overall_shell_exit_code": 1,
+      "overall_shell_exit_reason": "Optional lookup after successful test returned no match",
+      "duration_seconds": 23.88,
+      "output": "final-tests.txt",
+      "exit_evidence": "final-exitcode.txt"
+    }
+  ],
+  "automatic_build": {
+    "status": "build OK",
+    "timestamps_utc": [
+      "2026-11-07T14:24:13Z",
+      "2026-11-07T14:24:56Z",
+      "2026-11-07T14:25:25Z",
+      "2026-11-07T14:26:18Z"
+    ],
+    "exit_code": null,
+    "exit_code_reason": "Automatic harness captured status, not numeric exit code",
+    "output": "automatic-build.txt"
+  },
+  "separate_typecheck": {
+    "status": "NOT_RUN",
+    "claimed_executed": false
+  },
+  "auditor_real_preview": {
+    "provenance": "User/auditor report, not agent execution",
+    "commit": "07673d20",
+    "actor": "teste4",
+    "reload": "second",
+    "installments": [
+      6.22,
+      6.22,
+      6.21
+    ],
+    "interest": 0.65,
+    "total": 18.65,
+    "new_order_created": false,
+    "existing_order_reported": "PB001037",
+    "seller_fsf_sessions": "Auditor continuing; not certified here"
+  },
+  "artifacts": [
+    {
+      "path": "scoped-tests.txt",
+      "bytes": 1915068,
+      "sha256": "782000aef73886bc375a3cd81275a3af30cb98da80c70e180d211b82e86292c6",
+      "source": "scoped-tests.log",
+      "copy": "byte-identical original capture; no rerun"
+    },
+    {
+      "path": "final-tests.txt",
+      "bytes": 4860,
+      "sha256": "bc0457d2bf2de5dbd0a7c61ee3e9887b09f90f30310397314b0352d24d89580a",
+      "source": "final-tests.log",
+      "copy": "byte-identical original capture; no rerun"
+    },
+    {
+      "path": "automatic-build.txt",
+      "bytes": 179,
+      "sha256": "488c93593f54814be90f085f537c96248b5c84bd710377ae95e6105868665fe9",
+      "source": "automatic-build.log",
+      "copy": "byte-identical original capture; no rerun"
+    },
+    {
+      "path": "scoped-exitcode.txt",
+      "bytes": 143,
+      "sha256": "0667ac5b8449a93e06aecaedd8f83ec813e33f2758495256d271bfbeb3e3409b"
+    },
+    {
+      "path": "final-exitcode.txt",
+      "bytes": 220,
+      "sha256": "248d5c879a8d833f58e16cfbcd044b1d33ce7d4a3bbcfc36193b9cec7b4660c2"
+    }
+  ]
+}
