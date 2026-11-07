@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 416, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 170, in main
+    psql(generated[meta["capture"]].rstrip() + ";\n")
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  cannot change name of input parameter "u"
+HINT:  Use DROP FUNCTION platform_private.platform_actor_access_ready(uuid) first.
+
