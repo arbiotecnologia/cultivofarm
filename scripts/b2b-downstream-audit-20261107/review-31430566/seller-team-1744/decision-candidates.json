@@ -225,8 +225,8 @@
     "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
     "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted"
   ],
-  "passed": 175,
-  "total": 175,
+  "passed": 187,
+  "total": 199,
   "checks": [
     {
       "name": "gerador determinístico: capturas/candidato/01–04/pins byte a byte",
@@ -332,12 +332,12 @@
     {
       "name": "pin divergente do writer aborta sem trocar a função",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-1uawbk6v/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-yo8_aqnh/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
     },
     {
       "name": "pin privado divergente aborta antes da troca",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-1uawbk6v/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 33 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-yo8_aqnh/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 33 at RAISE\n"
     },
     {
       "name": "owner divergente de núcleo privado é detectado",
@@ -433,7 +433,7 @@
     {
       "name": "fixture de pendência criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': '14bf0728-b1cc-4772-ac7d-f9c9f157a8cb', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '0fd3945b-86bc-4633-8d6e-e3bc7f79253c', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': '6fa36740-def3-45a5-bcdc-469b7b757b7b', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '40e660df-2ac8-46a8-b9ca-4698a3a12bb3', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível",
@@ -465,7 +465,7 @@
     {
       "name": "fixture validada criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': 'f7e30d79-b1cf-4289-ae72-9cb8582f5f65', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '3315d061-d9e0-4ef4-868f-7cce95a28f01', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': 'e07f8fa4-42cf-4d80-9eca-444ff68bd844', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '2eabe5e8-1741-41e0-a695-69c6ca97756d', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "FSF/admin estrangeiro com vínculo próprio é negado no pedido validado",
@@ -840,6 +840,120 @@
       "ok": true
     },
     {
+      "name": "terms-lock request/papel revogado: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock request/papel revogado: sessão bloqueadora concluiu a mutação",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock request/papel revogado: revogação/troca após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock request/papel revogado: rollback preserva todo o estado",
+      "ok": true,
+      "detail": "{'after': {'order': '{\"id\": \"10000000-0000-0000-0000-000000000001\", \"total\": 100.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-11-07T18:35:36.435597+00:00\", \"created_by\": \"00000000-0000-0000-0000-000000000021\", \"partner_id\": \"00000000-0000-0000-0000-000000000011\", \"updated_at\": \"2026-11-07T18:35:40.993668+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": \"10000000-0000-0000-0000-000000000002\", \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"pending\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": true, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}', 'terms': '[{\"id\": \"10000000-0000-0000-0000-000000000002\", \"created_at\": \"2026-11-07T18:35:35.734853+00:00\", \"created_by\": \"00000000-0000-"
+    },
+    {
+      "name": "terms-lock request/termos substituídos por condição de outro pedido: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock request/termos substituídos por condição de outro pedido: sessão bloqueadora concluiu a mutação",
+      "ok": false,
+      "detail": "ERROR:  deadlock detected\nDETAIL:  Process 1764 waits for ShareLock on transaction 1201; blocked by process 1767.\nProcess 1767 waits for ShareLock on transaction 1200; blocked by process 1764.\nHINT:  See server log for query details.\nCONTEXT:  while locking tuple (0,12) in relation \"partner_orders\"\nSQL statement \"SELECT *        FROM public.partner_orders WHERE id=parent FOR UPDATE\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 12 at SQL statement\n"
+    },
+    {
+      "name": "terms-lock request/termos substituídos por condição de outro pedido: revogação/troca após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock request/termos substituídos por condição de outro pedido: rollback não adiciona efeitos à troca externa",
+      "ok": false,
+      "detail": "{'after': {'order': '{\"id\": \"10000000-0000-0000-0000-000000000001\", \"total\": 100.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-11-07T18:35:36.435597+00:00\", \"created_by\": \"00000000-0000-0000-0000-000000000021\", \"partner_id\": \"00000000-0000-0000-0000-000000000011\", \"updated_at\": \"2026-11-07T18:35:40.993668+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": \"10000000-0000-0000-0000-000000000002\", \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"pending\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": true, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}', 'terms': '[{\"id\": \"10000000-0000-0000-0000-000000000002\", \"created_at\": \"2026-11-07T18:35:35.734853+00:00\", \"created_by\": \"00000000-0000-"
+    },
+    {
+      "name": "terms-lock approve/papel revogado: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock approve/papel revogado: sessão bloqueadora concluiu a mutação",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock approve/papel revogado: revogação/troca após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock approve/papel revogado: rollback preserva todo o estado",
+      "ok": true,
+      "detail": "{'after': {'order': '{\"id\": \"10000000-0000-0000-0000-000000000001\", \"total\": 100.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-11-07T18:35:36.435597+00:00\", \"created_by\": \"00000000-0000-0000-0000-000000000021\", \"partner_id\": \"00000000-0000-0000-0000-000000000011\", \"updated_at\": \"2026-11-07T18:35:40.993668+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": \"10000000-0000-0000-0000-000000000002\", \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"pending\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": true, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}', 'terms': '[{\"id\": \"10000000-0000-0000-0000-000000000002\", \"created_at\": \"2026-11-07T18:35:35.734853+00:00\", \"created_by\": \"00000000-0000-"
+    },
+    {
+      "name": "terms-lock approve/termos substituídos por condição de outro pedido: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock approve/termos substituídos por condição de outro pedido: sessão bloqueadora concluiu a mutação",
+      "ok": false,
+      "detail": "ERROR:  deadlock detected\nDETAIL:  Process 1838 waits for ShareLock on transaction 1207; blocked by process 1842.\nProcess 1842 waits for ShareLock on transaction 1206; blocked by process 1838.\nHINT:  See server log for query details.\nCONTEXT:  while locking tuple (0,12) in relation \"partner_orders\"\nSQL statement \"SELECT *        FROM public.partner_orders WHERE id=parent FOR UPDATE\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 12 at SQL statement\n"
+    },
+    {
+      "name": "terms-lock approve/termos substituídos por condição de outro pedido: revogação/troca após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock approve/termos substituídos por condição de outro pedido: rollback não adiciona efeitos à troca externa",
+      "ok": false,
+      "detail": "{'after': {'order': '{\"id\": \"10000000-0000-0000-0000-000000000001\", \"total\": 100.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-11-07T18:35:36.435597+00:00\", \"created_by\": \"00000000-0000-0000-0000-000000000021\", \"partner_id\": \"00000000-0000-0000-0000-000000000011\", \"updated_at\": \"2026-11-07T18:35:40.993668+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": \"10000000-0000-0000-0000-000000000002\", \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"pending\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": true, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}', 'terms': '[{\"id\": \"10000000-0000-0000-0000-000000000002\", \"created_at\": \"2026-11-07T18:35:35.734853+00:00\", \"created_by\": \"00000000-0000-"
+    },
+    {
+      "name": "terms-lock reject/papel revogado: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock reject/papel revogado: sessão bloqueadora concluiu a mutação",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock reject/papel revogado: revogação/troca após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock reject/papel revogado: rollback preserva todo o estado",
+      "ok": true,
+      "detail": "{'after': {'order': '{\"id\": \"10000000-0000-0000-0000-000000000001\", \"total\": 100.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-11-07T18:35:36.435597+00:00\", \"created_by\": \"00000000-0000-0000-0000-000000000021\", \"partner_id\": \"00000000-0000-0000-0000-000000000011\", \"updated_at\": \"2026-11-07T18:35:40.993668+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": \"10000000-0000-0000-0000-000000000002\", \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"pending\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": true, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}', 'terms': '[{\"id\": \"10000000-0000-0000-0000-000000000002\", \"created_at\": \"2026-11-07T18:35:35.734853+00:00\", \"created_by\": \"00000000-0000-"
+    },
+    {
+      "name": "terms-lock reject/termos substituídos por condição de outro pedido: duas sessões ainda concorrentes durante a espera",
+      "ok": true
+    },
+    {
+      "name": "terms-lock reject/termos substituídos por condição de outro pedido: sessão bloqueadora concluiu a mutação",
+      "ok": false,
+      "detail": "ERROR:  deadlock detected\nDETAIL:  Process 1913 waits for ShareLock on transaction 1213; blocked by process 1916.\nProcess 1916 waits for ShareLock on transaction 1212; blocked by process 1913.\nHINT:  See server log for query details.\nCONTEXT:  while locking tuple (0,12) in relation \"partner_orders\"\nSQL statement \"SELECT *        FROM public.partner_orders WHERE id=parent FOR UPDATE\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 12 at SQL statement\n"
+    },
+    {
+      "name": "terms-lock reject/termos substituídos por condição de outro pedido: revogação/troca após espera é negada",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "terms-lock reject/termos substituídos por condição de outro pedido: rollback não adiciona efeitos à troca externa",
+      "ok": false,
+      "detail": "{'after': {'order': '{\"id\": \"10000000-0000-0000-0000-000000000001\", \"total\": 100.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-11-07T18:35:36.435597+00:00\", \"created_by\": \"00000000-0000-0000-0000-000000000021\", \"partner_id\": \"00000000-0000-0000-0000-000000000011\", \"updated_at\": \"2026-11-07T18:35:40.993668+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": \"10000000-0000-0000-0000-000000000002\", \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"pending\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": true, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}', 'terms': '[{\"id\": \"10000000-0000-0000-0000-000000000002\", \"created_at\": \"2026-11-07T18:35:35.734853+00:00\", \"created_by\": \"00000000-0000-"
+    },
+    {
       "name": "revogação durante lock: approve com papel administrativo revogado é negada",
       "ok": true,
       "detail": "ERROR:  unauthorized\nCONTEXT:  PL/pgSQL function approve_b2b_payment_terms_secure(uuid,text) line 28 at RAISE\n"
@@ -1000,7 +1114,7 @@
     {
       "name": "rollback com pin divergente aborta sem revogar",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-1uawbk6v/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-yo8_aqnh/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE\n"
     },
     {
       "name": "04 rollback deny-only conclui",
