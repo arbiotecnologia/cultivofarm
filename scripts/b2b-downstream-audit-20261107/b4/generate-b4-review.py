@@ -397,6 +397,8 @@ def build():
         "candidate_sha256": sha_text(body), "object_count": len(entries), "objects": entries,
         "duplicate_definitions_in_historical_body": duplicate_names,
         "missing_baseline": missing,
+        "dependent_trigger_pins": auto_triggers,
+        "post_shared_schema_md5": {"columns": post_columns_md5, "constraints": post_constraints_md5, "indexes": post_indexes_md5, "triggers": post_triggers_md5},
         "operation_separation": {"installation_grants_operation": False, "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL", "test_stub_allowed_in_install": False},
         "shared_impact": "testado separadamente em PG descartável; resultado não autoriza regressão nem instalação",
         "limitations": ["capturas não são nova leitura LIVE", "POST não é prova JWT/RLS/PostgREST/Storage", "63/63 históricos preservados separadamente e não somados"],
