@@ -244,6 +244,7 @@ def main():
         partner, order, order_item = T.u(1901), T.u(1902), T.u(1903)
         sql("SET session_replication_role=replica;" + f"""
         INSERT INTO public.partner_accounts(id,razao_social,commercial_owner_organization_id) VALUES('{partner}','PARCEIRO TESTE LOCAL','{T.A}');
+        UPDATE public.organizations SET partner_account_id='{partner}' WHERE id='{T.A}';
         INSERT INTO public.partner_orders(id,partner_id,status,financial_status,financial_approval_status,payment_condition_status)
           VALUES('{order}','{partner}','aprovado','pendente','not_required','approved');
         INSERT INTO public.partner_order_items(id,order_id,product_id,quantidade) VALUES('{order_item}','{order}','{b2b['product']}',2);
