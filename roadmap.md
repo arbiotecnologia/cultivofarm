@@ -1,3 +1,10 @@
+## 07/11 16:29 — Revisão independente 31430566 do ajuste B2B
+- [x] Substituir as costuras mínimas de `has_role`/`b2b_phase1_order_visible` pelos corpos reais capturados e por 14 dependências de Auth/escopo/SaaS; manter os 38 gatilhos reais e todas as contenções. Evidência antiga 29/29 preservada apenas como histórico.
+- [x] Pinar wrappers e funções privadas, owners e ACLs no PRE/POST/rollback, sem grants novos nem localização de pinos em `/tmp`; pedido ausente/NULL nega como `b2b_phase1_scope_denied`, sem `payment_terms_not_defined` permissivo.
+- [x] PostgreSQL descartável 60/60, exit 0: revogação de papel, perfil, vínculo organização-parceiro, lease e feature `pedidos_b2b` durante lock, legado, C2 pending, positivos sem ampliar escopo, concorrência e rollback deny-only. Não foi acrescentado contrato de idempotência ao ajuste.
+- [x] Artefatos pequenos em `scripts/b2b-downstream-audit-20261107/review-31430566/`, evidências JSON/TXT/exit codes, diff e hashes verificados. Novo candidato MD5 `7eb3b5be33552f6bd4eecd56796502ed`, INATIVO/NÃO APROVADO; nenhuma operação hospedada/publicação ou implantação autorizada.
+- [ ] Conferência LIVE dos demais corpos/owners/ACLs e qualquer instalação continuam com o auditor; Auth/schema/vínculos/assinatura locais não provam JWT/RLS/PostgREST/Storage. Resultados físicos downstream e B4 permanecem separados e preservados.
+
 ## 07/11 16:05 — Reconciliação física local sobre a base atual
 - [x] Diagnosticar `ENVASE_RELEASE_DRIFT`: o recorte `ENVASE_TARGETED=1` sobrescrevia o release revisado com o stub pré-matriz. Stub separado em `release-stub.sql.review`; nenhum pino, guard, grant ou SQL candidato alterado. Cache `/tmp` ausente também corrigido somente no harness.
 - [x] Rerodar envase/estoque e confirmação física em PostgreSQL descartável: matriz completa 119/119, recorte 21/21 com release SHA256 inalterado, e expedição/em rota/confirmação/cancelamento/isolamento/concorrência/idempotência 123/123, exits 0.

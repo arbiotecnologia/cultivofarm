@@ -2,16 +2,51 @@
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 DO $guard$
+DECLARE d record;
 BEGIN
-  IF md5(pg_get_functiondef('public.request_b2b_payment_terms_adjustment_secure(uuid,text)'::regprocedure)) <> '55996e9496ffb123504adaeaa502c81f' THEN
-    RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
-  END IF;
-  IF md5(pg_get_functiondef('public.b2b_phase1_order_visible(uuid)'::regprocedure)) <> '8812508716f279a88e3d5a31b15621d8' THEN
-    RAISE EXCEPTION 'ADJUSTMENT_SCOPE_PIN_DRIFT';
-  END IF;
-  IF md5(pg_get_functiondef('platform_private.c2_accounting_pending_guard()'::regprocedure)) <> '669b19490a7a9700f0158db4b31885ad' THEN
-    RAISE EXCEPTION 'ACCOUNTING_GUARD_PIN_DRIFT';
-  END IF;
+  FOR d IN SELECT * FROM (VALUES
+    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '7eb3b5be33552f6bd4eecd56796502ed', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.has_role(uuid,public.app_role)', '4d90e93d521a4819d9085f28d742030f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.is_platform_superadmin(uuid)', '3dfe79d976821244d9b7a7f893d765f2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.is_valid_b2b_partner_user(uuid,uuid)', '0bb0dea04be8ca84c66db7ca6329876c', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.b2b_actor_scope(uuid)', 'c3f2997746f24bc2efd15db5c0ccc862', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.b2b_phase1_partner_visible(uuid,boolean)', '915f516e605af7cc14584e2e762a2661', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.b2b_phase1_partner_visible(uuid,boolean)', '6b3defc01a66040146562c60ad224f03', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.b2b_phase1_order_visible(uuid)', '8504f07fbc3a7975accf919f386d00eb', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.b2b_phase1_order_visible(uuid)', '8812508716f279a88e3d5a31b15621d8', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public._saas_user_has_feature(uuid,text)', '501dd958e117d2df8a4d38f6bcbeed04', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('public._saas_trg_require_feature()', '13ed48832f81cbb35434688ca35fda4b', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.c2_accounting_pending_guard()', '669b19490a7a9700f0158db4b31885ad', 'postgres', 'aae127bcdd4f7096876d7094c14eabd1')
+  ) AS x(sig, body_md5, owner, acl_md5)
+  LOOP
+    IF to_regprocedure(d.sig) IS NULL THEN
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
+    END IF;
+    IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
+      IF d.sig = 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)' THEN
+        RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
+      END IF;
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;
+    END IF;
+    IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN
+      RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: %', d.sig;
+    END IF;
+    IF (
+      SELECT md5(string_agg(v.entry, '|' ORDER BY v.entry))
+      FROM (
+        SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END
+          || '=' || a.privilege_type || CASE WHEN a.is_grantable THEN '*' ELSE '' END
+          || '/' || a.grantor::regrole::text AS entry
+        FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f',p.proowner))) a
+        WHERE p.oid=d.sig::regprocedure
+      ) v
+    ) IS DISTINCT FROM d.acl_md5 THEN
+      RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT: %', d.sig;
+    END IF;
+  END LOOP;
 END
 $guard$;
 REVOKE ALL ON FUNCTION public.request_b2b_payment_terms_adjustment_secure(uuid,text) FROM PUBLIC, anon;
@@ -19,10 +54,11 @@ REVOKE EXECUTE ON FUNCTION public.request_b2b_payment_terms_adjustment_secure(uu
 DO $deny$
 BEGIN
   IF has_function_privilege('authenticated', 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'EXECUTE')
-     OR has_function_privilege('anon', 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'EXECUTE') THEN
+     OR has_function_privilege('anon', 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'EXECUTE')
+     OR NOT has_function_privilege('service_role', 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'EXECUTE') THEN
     RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED';
   END IF;
-  IF md5(pg_get_functiondef('public.request_b2b_payment_terms_adjustment_secure(uuid,text)'::regprocedure)) <> '55996e9496ffb123504adaeaa502c81f' THEN
+  IF md5(pg_get_functiondef('public.request_b2b_payment_terms_adjustment_secure(uuid,text)'::regprocedure)) <> '7eb3b5be33552f6bd4eecd56796502ed' THEN
     RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED';
   END IF;
 END

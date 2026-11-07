@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gera o delta revisável do ajuste B2B a partir da captura LOCAL identificada. Sem rede/banco."""
+"""Gera o delta revisável do ajuste B2B a partir de capturas LOCAIS. Sem rede/banco."""
 import hashlib
 import json
 import pathlib
@@ -8,10 +8,88 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 SOURCE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"
 SIG = "public.request_b2b_payment_terms_adjustment_secure(uuid,text)"
+REQUEST_SOURCE = "public.request_b2b_payment_terms_adjustment_secure(p_partner_order_id uuid, p_notes text)"
 BASE_MD5 = "f9bf8f543564af480d08e7bebd111b88"
 VISIBLE_MD5 = "8812508716f279a88e3d5a31b15621d8"
+PRIVATE_VISIBLE_MD5 = "8504f07fbc3a7975accf919f386d00eb"
+ROLE_MD5 = "4d90e93d521a4819d9085f28d742030f"
+PRIVATE_ROLE_MD5 = "c5af5b55de6d79da9b73a33948746ae2"
 ACCOUNTING_GUARD_MD5 = "669b19490a7a9700f0158db4b31885ad"
 CONTRACT = "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1"
+
+# regprocedure -> (assinatura na captura, md5 conferido, arquivo local gerado).
+DEPENDENCIES = {
+    "platform_private.platform_actor_access_ready(uuid)": (
+        "platform_private.platform_actor_access_ready(p_user uuid)",
+        "048249c0c2106c3761e26eacb8d0de84",
+        "platform_private.platform_actor_access_ready.048249c0.sql",
+    ),
+    "platform_private.entitlements_for_user(uuid)": (
+        "platform_private.entitlements_for_user(_uid uuid)",
+        "7f4ec7facaebbdf35444dd490fdebe56",
+        "platform_private.entitlements_for_user.7f4ec7fa.sql",
+    ),
+    "platform_private.has_role(uuid,public.app_role)": (
+        "platform_private.has_role(_user_id uuid, _role app_role)",
+        PRIVATE_ROLE_MD5,
+        "platform_private.has_role.c5af5b55.sql",
+    ),
+    "public.has_role(uuid,public.app_role)": (
+        "public.has_role(_user_id uuid, _role app_role)",
+        ROLE_MD5,
+        "public.has_role.4d90e93d.sql",
+    ),
+    "public.is_platform_superadmin(uuid)": (
+        "public.is_platform_superadmin(_user_id uuid)",
+        "3dfe79d976821244d9b7a7f893d765f2",
+        "public.is_platform_superadmin.3dfe79d9.sql",
+    ),
+    "public.is_valid_b2b_partner_user(uuid,uuid)": (
+        "public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)",
+        "0bb0dea04be8ca84c66db7ca6329876c",
+        "public.is_valid_b2b_partner_user.0bb0dea0.sql",
+    ),
+    "platform_private.b2b_actor_scope(uuid)": (
+        "platform_private.b2b_actor_scope(_uid uuid)",
+        "c3f2997746f24bc2efd15db5c0ccc862",
+        "platform_private.b2b_actor_scope.c3f29977.sql",
+    ),
+    "platform_private.b2b_phase1_partner_visible(uuid,boolean)": (
+        "platform_private.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+        "915f516e605af7cc14584e2e762a2661",
+        "platform_private.b2b_phase1_partner_visible.915f516e.sql",
+    ),
+    "public.b2b_phase1_partner_visible(uuid,boolean)": (
+        "public.b2b_phase1_partner_visible(p_partner uuid, p_technical boolean)",
+        "6b3defc01a66040146562c60ad224f03",
+        "public.b2b_phase1_partner_visible.6b3defc0.sql",
+    ),
+    "platform_private.b2b_phase1_order_visible(uuid)": (
+        "platform_private.b2b_phase1_order_visible(p_order uuid)",
+        PRIVATE_VISIBLE_MD5,
+        "platform_private.b2b_phase1_order_visible.8504f07f.sql",
+    ),
+    "public.b2b_phase1_order_visible(uuid)": (
+        "public.b2b_phase1_order_visible(p_order uuid)",
+        VISIBLE_MD5,
+        "public.b2b_phase1_order_visible.88125087.sql",
+    ),
+    "public._saas_user_has_feature(uuid,text)": (
+        "public._saas_user_has_feature(_uid uuid, _feature_key text)",
+        "501dd958e117d2df8a4d38f6bcbeed04",
+        "public._saas_user_has_feature.501dd958.sql",
+    ),
+    "public._saas_trg_require_feature()": (
+        "public._saas_trg_require_feature()",
+        "13ed48832f81cbb35434688ca35fda4b",
+        "public._saas_trg_require_feature.13ed4883.sql",
+    ),
+    "platform_private.c2_accounting_pending_guard()": (
+        "platform_private.c2_accounting_pending_guard()",
+        ACCOUNTING_GUARD_MD5,
+        "platform_private.c2_accounting_pending_guard.669b1949.sql",
+    ),
+}
 
 
 def delta(src, anchor, replacement, label):
@@ -21,37 +99,137 @@ def delta(src, anchor, replacement, label):
     return src.replace(anchor, replacement)
 
 
-def source_body():
+def captures():
     data = json.loads(SOURCE.read_text())
-    rows = [f for f in data["functions"] if f.get("signature") == "public.request_b2b_payment_terms_adjustment_secure(p_partner_order_id uuid, p_notes text)"]
-    if len(rows) != 1:
-        raise SystemExit("captura do ajuste ausente ou ambígua")
-    body = rows[0]["body"]
-    if hashlib.md5(body.encode()).hexdigest() != BASE_MD5:
-        raise SystemExit("captura do ajuste divergente")
-    return body
+    return {f.get("signature"): f for f in data["functions"]}
+
+
+def captured(source_signature, expected_md5):
+    rows = captures()
+    if source_signature not in rows:
+        raise SystemExit(f"captura ausente: {source_signature}")
+    row = rows[source_signature]
+    body = row["body"]
+    actual = hashlib.md5(body.encode()).hexdigest()
+    if actual != expected_md5 or row.get("md5") != expected_md5:
+        raise SystemExit(f"captura divergente: {source_signature}: {actual}")
+    if not row.get("owner") or not row.get("acl"):
+        raise SystemExit(f"owner/ACL ausentes: {source_signature}")
+    return row
+
+
+def source_body():
+    return captured(REQUEST_SOURCE, BASE_MD5)["body"]
 
 
 def candidate_body():
     body = source_body()
-    body = delta(body, "  v_numero text;\nBEGIN\n  IF v_uid IS NULL", "  v_numero text;\n  v_origin jsonb;\nBEGIN\n  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF v_uid IS NULL", "A1 escopo de entrada")
-    body = delta(body, "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
-                 "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n    INTO v_terms_id, v_created_by, v_numero, v_origin\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id\n  FOR UPDATE;\n\n  -- Revalida depois da espera pelo lock: papel/perfil/vínculo/escopo podem ter sido revogados.\n  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF NOT (public.has_role(v_uid,'administrador')\n       OR public.has_role(v_uid,'financeiro')\n       OR public.has_role(v_uid,'gestor_comercial')) THEN\n    RAISE EXCEPTION 'unauthorized';\n  END IF;\n  -- O gatilho contábil protege mudanças de financial_approval_status; pending→pending também é decisão proibida.\n  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN\n    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';\n  END IF;\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;", "A2 lock/reautorização/contabilidade")
+    body = delta(
+        body,
+        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n  IF NOT (public.has_role(v_uid,'administrador')",
+        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n"
+        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
+        "  IF NOT (public.has_role(v_uid,'administrador')",
+        "A1 Auth antes do escopo de entrada",
+    )
+    body = delta(
+        body,
+        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
+        "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n"
+        "    INTO v_terms_id, v_created_by, v_numero, v_origin\n"
+        "  FROM public.partner_orders po\n"
+        "  WHERE po.id = p_partner_order_id\n"
+        "  FOR UPDATE;\n\n"
+        "  -- Pedido ausente, estrangeiro ou removido durante a espera segue a mesma negação, sem oráculo.\n"
+        "  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
+        "  -- Revalida depois da espera pelo lock: papel/perfil/vínculo/escopo podem ter sido revogados.\n"
+        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
+        "  IF NOT (public.has_role(v_uid,'administrador')\n"
+        "       OR public.has_role(v_uid,'financeiro')\n"
+        "       OR public.has_role(v_uid,'gestor_comercial')) THEN\n"
+        "    RAISE EXCEPTION 'unauthorized';\n"
+        "  END IF;\n"
+        "  -- O gatilho contábil protege mudanças de financial_approval_status; pending→pending também é decisão proibida.\n"
+        "  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN\n"
+        "    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';\n"
+        "  END IF;\n"
+        "  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
+        "A2 lock/missing/reautorização/contabilidade",
+    )
+    body = delta(body, "  v_numero text;\nBEGIN", "  v_numero text;\n  v_origin jsonb;\nBEGIN", "A0 snapshot de origem")
     return body
 
 
-def assertions(expected_request, expected_visible=VISIBLE_MD5):
+def acl_entries(acl):
+    """Converte a ACL capturada em entradas canônicas de aclexplode."""
+    if not (acl.startswith("{") and acl.endswith("}")):
+        raise SystemExit(f"ACL inválida: {acl}")
+    result = []
+    for raw in acl[1:-1].split(","):
+        grantee, right = raw.split("=", 1)
+        privilege, grantor = right.split("/", 1)
+        grantable = privilege.endswith("*")
+        privilege = privilege.rstrip("*")
+        privilege = {"X": "EXECUTE"}.get(privilege, privilege)
+        result.append({
+            "grantee": grantee or "PUBLIC",
+            "privilege": privilege,
+            "grantable": grantable,
+            "grantor": grantor,
+        })
+    return sorted(result, key=lambda x: (x["grantee"], x["privilege"], x["grantor"]))
+
+
+def acl_md5(acl):
+    lines = [
+        f"{x['grantee']}={x['privilege']}{'*' if x['grantable'] else ''}/{x['grantor']}"
+        for x in acl_entries(acl)
+    ]
+    return hashlib.md5("|".join(lines).encode()).hexdigest()
+
+
+def assertions(expected_request):
+    request = captured(REQUEST_SOURCE, BASE_MD5)
+    rows = [(SIG, expected_request, request["owner"], acl_md5(request["acl"]))]
+    for reg, (source_signature, md5, _) in DEPENDENCIES.items():
+        row = captured(source_signature, md5)
+        rows.append((reg, md5, row["owner"], acl_md5(row["acl"])))
+    values = ",\n    ".join(
+        f"('{sig}', '{body_md5}', '{owner}', '{acl_digest}')"
+        for sig, body_md5, owner, acl_digest in rows
+    )
     return f"""DO $guard$
+DECLARE d record;
 BEGIN
-  IF md5(pg_get_functiondef('{SIG}'::regprocedure)) <> '{expected_request}' THEN
-    RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
-  END IF;
-  IF md5(pg_get_functiondef('public.b2b_phase1_order_visible(uuid)'::regprocedure)) <> '{expected_visible}' THEN
-    RAISE EXCEPTION 'ADJUSTMENT_SCOPE_PIN_DRIFT';
-  END IF;
-  IF md5(pg_get_functiondef('platform_private.c2_accounting_pending_guard()'::regprocedure)) <> '{ACCOUNTING_GUARD_MD5}' THEN
-    RAISE EXCEPTION 'ACCOUNTING_GUARD_PIN_DRIFT';
-  END IF;
+  FOR d IN SELECT * FROM (VALUES
+    {values}
+  ) AS x(sig, body_md5, owner, acl_md5)
+  LOOP
+    IF to_regprocedure(d.sig) IS NULL THEN
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
+    END IF;
+    IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
+      IF d.sig = '{SIG}' THEN
+        RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
+      END IF;
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;
+    END IF;
+    IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN
+      RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: %', d.sig;
+    END IF;
+    IF (
+      SELECT md5(string_agg(v.entry, '|' ORDER BY v.entry))
+      FROM (
+        SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END
+          || '=' || a.privilege_type || CASE WHEN a.is_grantable THEN '*' ELSE '' END
+          || '/' || a.grantor::regrole::text AS entry
+        FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f',p.proowner))) a
+        WHERE p.oid=d.sig::regprocedure
+      ) v
+    ) IS DISTINCT FROM d.acl_md5 THEN
+      RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT: %', d.sig;
+    END IF;
+  END LOOP;
 END
 $guard$;"""
 
@@ -60,19 +238,85 @@ def build():
     base = source_body()
     candidate = candidate_body()
     candidate_md5 = hashlib.md5(candidate.encode()).hexdigest()
-    pre = f"""-- READ ONLY. Captura LOCAL de 2026-10-30; o auditor deve confrontar a fonte LIVE antes de qualquer uso.\n{assertions(BASE_MD5)}\nSELECT 'PRE_OK' AS status;\n"""
-    install = f"""-- CANDIDATO INATIVO. Não aplicar sem revisão e preflight LIVE independente.\nBEGIN;\nSET LOCAL lock_timeout = '3s';\nSET LOCAL statement_timeout = '30s';\n{assertions(BASE_MD5)}\n\n{candidate};\n\nREVOKE ALL ON FUNCTION {SIG} FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION {SIG} TO authenticated, service_role;\n\n{assertions(candidate_md5)}\nCOMMIT;\n"""
-    post = f"""-- READ ONLY.\n{assertions(candidate_md5)}\nDO $acl$\nBEGIN\n  IF NOT has_function_privilege('authenticated', '{SIG}', 'EXECUTE')\n     OR NOT has_function_privilege('service_role', '{SIG}', 'EXECUTE')\n     OR has_function_privilege('anon', '{SIG}', 'EXECUTE') THEN\n    RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT';\n  END IF;\nEND\n$acl$;\nSELECT 'POST_OK' AS status;\n"""
-    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura o corpo que permitia pending→pending/escopo legado.\nBEGIN;\nSET LOCAL lock_timeout = '3s';\n{assertions(candidate_md5)}\nREVOKE ALL ON FUNCTION {SIG} FROM PUBLIC, anon;\nREVOKE EXECUTE ON FUNCTION {SIG} FROM authenticated;\nDO $deny$\nBEGIN\n  IF has_function_privilege('authenticated', '{SIG}', 'EXECUTE')\n     OR has_function_privilege('anon', '{SIG}', 'EXECUTE') THEN\n    RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED';\n  END IF;\n  IF md5(pg_get_functiondef('{SIG}'::regprocedure)) <> '{candidate_md5}' THEN\n    RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED';\n  END IF;\nEND\n$deny$;\nCOMMIT;\n"""
-    return {
+    pre = (
+        "-- READ ONLY. Capturas LOCAIS; o auditor deve confrontar corpos, owners e ACLs LIVE antes de qualquer uso.\n"
+        f"{assertions(BASE_MD5)}\nSELECT 'PRE_OK' AS status;\n"
+    )
+    install = f"""-- CANDIDATO INATIVO. Não aplicar sem revisão e preflight LIVE independente.
+-- CREATE OR REPLACE preserva owner/ACL; nenhuma concessão de privilégio é executada.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+SET LOCAL statement_timeout = '30s';
+{assertions(BASE_MD5)}
+
+{candidate};
+
+{assertions(candidate_md5)}
+COMMIT;
+"""
+    post = f"""-- READ ONLY. Confere corpo, owner e ACL do writer e de wrappers/núcleos privados.
+{assertions(candidate_md5)}
+SELECT 'POST_OK' AS status;
+"""
+    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura o corpo que permitia pending→pending/escopo legado.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+{assertions(candidate_md5)}
+REVOKE ALL ON FUNCTION {SIG} FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION {SIG} FROM authenticated;
+DO $deny$
+BEGIN
+  IF has_function_privilege('authenticated', '{SIG}', 'EXECUTE')
+     OR has_function_privilege('anon', '{SIG}', 'EXECUTE')
+     OR NOT has_function_privilege('service_role', '{SIG}', 'EXECUTE') THEN
+    RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED';
+  END IF;
+  IF md5(pg_get_functiondef('{SIG}'::regprocedure)) <> '{candidate_md5}' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED';
+  END IF;
+END
+$deny$;
+COMMIT;
+"""
+    files = {
         "captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql": base + "\n",
         "candidate/public.request_b2b_payment_terms_adjustment_secure.sql.review": candidate + "\n",
         "01-pre.sql.readonly": pre,
         "02-install.sql.review": install,
         "03-post.sql.readonly": post,
         "04-rollback-deny.sql.review": rollback,
-        "adjustment-pins.json": json.dumps({"source": str(SOURCE.relative_to(ROOT)), "source_md5": BASE_MD5, "scope_md5": VISIBLE_MD5, "accounting_guard_md5": ACCOUNTING_GUARD_MD5, "candidate_md5": candidate_md5, "contract": CONTRACT}, indent=2) + "\n",
     }
+    dependencies = {}
+    for reg, (source_signature, md5, filename) in DEPENDENCIES.items():
+        row = captured(source_signature, md5)
+        capture_name = f"captured/auth-scoping/{filename}"
+        files[capture_name] = row["body"] + "\n"
+        dependencies[reg] = {
+            "source_signature": source_signature,
+            "md5": md5,
+            "owner": row["owner"],
+            "acl": row["acl"],
+            "acl_md5": acl_md5(row["acl"]),
+            "capture": capture_name,
+        }
+    files["adjustment-pins.json"] = json.dumps({
+        "review": "31430566",
+        "status": "INACTIVE_NOT_APPROVED",
+        "source": str(SOURCE.relative_to(ROOT)),
+        "source_md5": BASE_MD5,
+        "request_owner": captured(REQUEST_SOURCE, BASE_MD5)["owner"],
+        "request_acl": captured(REQUEST_SOURCE, BASE_MD5)["acl"],
+        "scope_md5": VISIBLE_MD5,
+        "private_scope_md5": PRIVATE_VISIBLE_MD5,
+        "role_md5": ROLE_MD5,
+        "private_role_md5": PRIVATE_ROLE_MD5,
+        "accounting_guard_md5": ACCOUNTING_GUARD_MD5,
+        "candidate_md5": candidate_md5,
+        "contract": CONTRACT,
+        "temporary_pin_substitution": False,
+        "dependencies": dependencies,
+    }, indent=2) + "\n"
+    return files
 
 
 def main():

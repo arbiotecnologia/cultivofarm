@@ -1,0 +1,38 @@
+{
+  "kind": "LOCAL_REVIEW_ONLY_NO_HOSTED",
+  "review": "31430566",
+  "status": "INACTIVE_NOT_APPROVED",
+  "candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+  "supersedes_candidate_md5": "55996e9496ffb123504adaeaa502c81f",
+  "temporary_pin_substitution": false,
+  "test": {
+    "command": "python3 test-adjustment-candidate.py",
+    "exit_code": 0,
+    "passed": 60,
+    "total": 60,
+    "evidence_sha256": "7f9de0b61976ca05a4edfe220a6fe12da11dc40107e8c002de4a9ee9640daa5d",
+    "stdout_sha256": "79969ae17a9f317971ca10056772ca384902ddf9921a8afe35de0d99d18433ad",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "sources": {
+    "generate-adjustment-fix.py": "f33208febc4f30b29a0aeb434e2dd5ead2881d758bbb24c06f162a9e53d7ef69",
+    "test-adjustment-candidate.py": "05b4dc5043777fc30c3b2c34f4d7202822e2d0bae5ca4f60a86b1254ac52f1a7",
+    "adjustment-pins.json": "e81746c11ddc8b3101321867646a0734e5962ed6278fd713a200394c405829c8",
+    "SHA256SUMS": "e5c562dadfb06935879ceaf4d10c65669f7674b056f246d9787030d385d60644",
+    "01-pre.sql.readonly": "51047e5d407b069409cf436d1de3f40db87a2523e810cf36e52a273cac9a5c7a",
+    "02-install.sql.review": "774f49090e120b3cb9bc6240e2f0921674ea7f521c1045115810b6505b729bc1",
+    "03-post.sql.readonly": "8b7e172302c82692f7ccb1fc959341f9fde7b2b064fc5c21bf3c0bb792849c82",
+    "04-rollback-deny.sql.review": "80adab6e73edf55d28d8883aff2b345ce42242ce69c9441b35db7e623113f551",
+    "candidate/public.request_b2b_payment_terms_adjustment_secure.sql.review": "37c1963bade82cc34282449a8296740f616ffa1761ac01ba4ff177e4cc46ae30",
+    "review-31430566/candidate-from-captured.diff": "33338f7fb17d2424a419e3e88f3f299b0fbd4510c14c950fde6692f2bcca33d6"
+  },
+  "hosted_operations": false,
+  "publication": false,
+  "subagents": false,
+  "limits": [
+    "Auth/schema/vínculos/assinatura sintéticos",
+    "sem JWT/RLS/PostgREST/Storage",
+    "demais fontes/owners/ACLs exigem conferência LIVE",
+    "nenhuma aprovação de implantação"
+  ]
+}
