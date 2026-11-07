@@ -37,4 +37,31 @@ PASS replay não duplica alocação
 PASS datas finais partem da emissão e calendário selado
 PASS juros financiados não são somados duas vezes
 PASS projeção financeira usa ator e tenant autorizados
-FAIL execução sem exceção de harness :: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+PASS baixa parcial local no ledger capturado
+PASS baixa reduz somente título, não residual do pedido
+PASS três documentos independentes fecham quantidade e residual
+PASS três títulos, um por documento
+PASS crédito após parciais preserva total menos baixa
+PASS cancelamento de NF paga exige reconciliação
+PASS cancelamento pago negado preserva histórico e saldo
+PASS atestação fictícia de cancelamento passa pela guarda com ator
+PASS substituição intermediária cancela somente título não pago
+PASS cancelamento restaura exatamente principal+juros do documento
+PASS documento substituto consome residual sem duplicar
+PASS substituição intermediária preserva centavos por item
+PASS histórico do título cancelado permanece
+PASS quantidade acima do pedido negada
+FAIL tenant estrangeiro não faz replay nem lê recibo :: ERROR:  forbidden_partner
+CONTEXT:  PL/pgSQL function platform_private.c2_order_actor_scope(uuid,uuid) line 5 at RAISE
+SQL statement "SELECT platform_private.c2_order_actor_scope(u,p_partner)"
+PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 6 at PERFORM
+PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 7 at assignment
+PASS pendência contábil bloqueia antes de qualquer título
+PASS writer B2B anterior continua negado após instalação
+PASS snapshot B3 não cotado também aloca
+PASS fora da cobertura do calendário falha fechado
+PASS duas sessões: somente uma consome o saldo final
+PASS corrida não duplica título nem residual
+PASS rollback deny-only conclui
+PASS rollback preserva alocações, títulos e snapshots
+PASS rollback fecha writer manual e projeção ao cliente

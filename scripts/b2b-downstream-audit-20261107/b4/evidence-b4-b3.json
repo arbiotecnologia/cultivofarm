@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 39,
-  "total": 40,
+  "passed": 62,
+  "total": 63,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -160,9 +160,101 @@
       "ok": true
     },
     {
-      "name": "execução sem exceção de harness",
+      "name": "baixa parcial local no ledger capturado",
+      "ok": true
+    },
+    {
+      "name": "baixa reduz somente título, não residual do pedido",
+      "ok": true
+    },
+    {
+      "name": "três documentos independentes fecham quantidade e residual",
+      "ok": true
+    },
+    {
+      "name": "três títulos, um por documento",
+      "ok": true
+    },
+    {
+      "name": "crédito após parciais preserva total menos baixa",
+      "ok": true
+    },
+    {
+      "name": "cancelamento de NF paga exige reconciliação",
+      "ok": true
+    },
+    {
+      "name": "cancelamento pago negado preserva histórico e saldo",
+      "ok": true
+    },
+    {
+      "name": "atestação fictícia de cancelamento passa pela guarda com ator",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária cancela somente título não pago",
+      "ok": true
+    },
+    {
+      "name": "cancelamento restaura exatamente principal+juros do documento",
+      "ok": true
+    },
+    {
+      "name": "documento substituto consome residual sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária preserva centavos por item",
+      "ok": true
+    },
+    {
+      "name": "histórico do título cancelado permanece",
+      "ok": true
+    },
+    {
+      "name": "quantidade acima do pedido negada",
+      "ok": true
+    },
+    {
+      "name": "tenant estrangeiro não faz replay nem lê recibo",
       "ok": false,
-      "detail": "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+      "detail": "ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.c2_order_actor_scope(uuid,uuid) line 5 at RAISE\nSQL statement \"SELECT platform_private.c2_order_actor_scope(u,p_partner)\"\nPL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 6 at PERFORM\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 7 at assignment"
+    },
+    {
+      "name": "pendência contábil bloqueia antes de qualquer título",
+      "ok": true
+    },
+    {
+      "name": "writer B2B anterior continua negado após instalação",
+      "ok": true
+    },
+    {
+      "name": "snapshot B3 não cotado também aloca",
+      "ok": true
+    },
+    {
+      "name": "fora da cobertura do calendário falha fechado",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: somente uma consome o saldo final",
+      "ok": true
+    },
+    {
+      "name": "corrida não duplica título nem residual",
+      "ok": true
+    },
+    {
+      "name": "rollback deny-only conclui",
+      "ok": true
+    },
+    {
+      "name": "rollback preserva alocações, títulos e snapshots",
+      "ok": true
+    },
+    {
+      "name": "rollback fecha writer manual e projeção ao cliente",
+      "ok": true
     }
   ],
   "hosted": "NOT_RUN",
