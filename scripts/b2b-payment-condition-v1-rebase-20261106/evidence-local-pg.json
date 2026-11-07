@@ -2,7 +2,7 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 184,
+  "passed": 185,
   "total": 185,
   "checks": [
     {
@@ -375,8 +375,7 @@
     },
     {
       "name": "cotação: revogação do vendedor durante espera nega e restaura itens/termos",
-      "ok": false,
-      "detail": "ERROR:  payment_condition_stale\nCONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 153 at RAISE\n"
+      "ok": true
     },
     {
       "name": "cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
