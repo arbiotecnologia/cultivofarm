@@ -1,0 +1,42 @@
+5:PASS helper vendedor novo tem manifesto de corpo/owner/ACL e nenhum EXECUTE de cliente 
+12:PASS corpo real capturado executado: public.is_platform_superadmin(uuid) {'actual': '3dfe79d976821244d9b7a7f893d765f2', 'expected': '3dfe79d976821244d9b7a7f893d765f2'}
+38:PASS helper vendedor executado tem MD5 gerado e ACL totalmente privada {'md5': 'c46617ec2a1320c9c05e3da33af8a350', 'closed': 't'}
+39:PASS helper vendedor não pode ser chamado diretamente por authenticated ERROR:  permission denied for function b2b_seller_financial_scope_error
+64:PASS C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível ERROR:  C2_ACCOUNTING_PENDING
+68:PASS approve: pendência contábil é negada antes de qualquer decisão ERROR:  C2_ACCOUNTING_PENDING
+72:PASS reject: pendência contábil é negada antes de qualquer decisão ERROR:  C2_ACCOUNTING_PENDING
+77:PASS FSF/admin estrangeiro com vínculo próprio é negado no pedido validado ERROR:  b2b_phase1_scope_denied
+81:PASS approve: FSF/admin estrangeiro continua negado ERROR:  b2b_phase1_scope_denied
+85:PASS reject: FSF/admin estrangeiro continua negado ERROR:  b2b_phase1_scope_denied
+90:PASS FSF/admin estrangeiro negado no legado sem snapshot pelo escopo real ERROR:  b2b_phase1_scope_denied
+94:PASS approve: FSF negado no legado pelo escopo real ERROR:  b2b_phase1_scope_denied
+97:PASS approve: negação FSF no legado preserva estado 
+98:PASS reject: FSF negado no legado pelo escopo real ERROR:  b2b_phase1_scope_denied
+101:PASS reject: negação FSF no legado preserva estado 
+126:PASS request: administrador+superadmin é negado mesmo no tenant vendedor ERROR:  unauthorized
+129:PASS request: mistura administrador+superadmin preserva estado integral 
+130:PASS approve: administrador+superadmin é negado mesmo no tenant vendedor ERROR:  unauthorized
+133:PASS approve: mistura administrador+superadmin preserva estado integral 
+134:PASS reject: administrador+superadmin é negado mesmo no tenant vendedor ERROR:  unauthorized
+137:PASS reject: mistura administrador+superadmin preserva estado integral 
+139:PASS positivos internos não dependem de superadmin nem papel externo/cliente t
+140:PASS administrador: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador 
+141:PASS approve/administrador: positivo C2 validado com guard de origem ativa 
+144:PASS reject/administrador: positivo C2 validado com guard de origem ativa 
+146:PASS financeiro: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador 
+147:PASS approve/financeiro: positivo C2 validado com guard de origem ativa 
+150:PASS reject/financeiro: positivo C2 validado com guard de origem ativa 
+152:PASS gestor_comercial: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador 
+153:PASS approve/gestor_comercial: positivo C2 validado com guard de origem ativa 
+156:PASS reject/gestor_comercial: positivo C2 validado com guard de origem ativa 
+170:PASS request: condição associada a outro pedido é negada ERROR:  payment_terms_order_mismatch
+174:PASS approve: condição associada a outro pedido é negada ERROR:  payment_terms_order_mismatch
+178:PASS reject: condição associada a outro pedido é negada ERROR:  payment_terms_order_mismatch
+198:PASS revogação durante lock: dono comercial vendedor revogado é negada ERROR:  b2b_phase1_scope_denied
+201:PASS revogação durante lock: dono comercial vendedor revogado preserva todo o estado 
+202:PASS revogação durante lock: organização vendedora inativada é negada ERROR:  b2b_phase1_scope_denied
+205:PASS revogação durante lock: organização vendedora inativada preserva todo o estado 
+210:PASS revogação durante lock: papel B2B misto concedido durante o lock é negada ERROR:  unauthorized
+213:PASS revogação durante lock: papel B2B misto concedido durante o lock preserva todo o estado 
+231:PASS revogação durante lock: reject com dono comercial revogado é negada ERROR:  b2b_phase1_scope_denied
+234:PASS revogação durante lock: reject com dono comercial revogado preserva todo o estado 
