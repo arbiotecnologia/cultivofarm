@@ -374,8 +374,13 @@ def main():
             r = request(uid, validated["id"], "TESTE validado interno " + label)
             check(f"{label}: escopo não basta; guard real nega ajuste no externo validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
             check(f"{label}: negação de origem no validado preserva estado integral", state(validated["id"]) == before_validated)
+            for kind in ("approve", "reject"):
+                before_decision = state(validated["id"])
+                r = decision(uid, kind, validated["id"], "TESTE validado interno " + label)
+                check(f"{kind}/{label}: guard real de origem também nega decisão no validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
+                check(f"{kind}/{label}: negação de origem preserva estado integral", state(validated["id"]) == before_decision)
 
-        def during_lock(label, mutation, token, restore):
+        def during_lock(label, mutation, token, restore, kind="request"):
             before = state(legacy_id)
             blocker_result = {}
             caller_result = {}
