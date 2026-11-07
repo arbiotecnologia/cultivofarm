@@ -85,7 +85,7 @@ def restore_checkpoint():
         roles.add(item["owner"])
     for item in metadata["policies"]:
         roles.update(item["roles"])
-    for entry in (x.get("acl") or "" for x in metadata["relations"] + metadata["functions"]):
+    for entry in (x.get("acl") or "" for x in metadata["relations"] + metadata["functions"] + metadata["schemas"]):
         for acl in entry.strip("{}").split(","):
             if "=" in acl:
                 roles.update([acl.split("=")[0], acl.split("/")[-1]])
