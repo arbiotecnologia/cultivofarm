@@ -571,6 +571,8 @@ BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;"""
         check("comprador lê condição/parcelas do pedido (mesmo total, estimado)", j and j["present"] and Decimal(str(j["payment_condition"]["financed_total"])) == Decimal("1036.22")
               and j["payment_condition"]["estimated"] is True, e or j)
         denied("admin F não lê pedido de A", call(UADMF, f"public.get_partner_order_payment_condition_secure('{oid}')"), "forbidden")
+        rfq = legacy(UB2, PLQ, [SF(1)], "TESTE-LEG-FQ", partner=PF); jfq, efq = out(rfq)
+        check("cotação LEGADA de F pronta para controle de rollback", jfq and jfq["status"] == "aguardando_cotacao", efq or jfq)
         check("PB-001036/teste4 fora do escopo: nenhum pedido real no PG descartável", psql("SELECT count(*) FROM public.partner_orders WHERE numero='PB-001036'").stdout.strip() == "0")
 
         # ---------- rollback deny-only transacional ----------
@@ -581,6 +583,14 @@ BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;"""
         check("04 com pin divergente aborta sem mudar nada", r.returncode != 0 and md5_of(g["PUB"]["read"]) == fm["install"]["read"], r.stderr[-200:])
         r = runf(work / "04-rollback-deny.sql.review"); check("04 rollback deny-only", r.returncode == 0, r.stderr[-300:])
         denied("após rollback: opções negadas", call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"), "permission denied")
+        qi_pending = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq_pending}'").stdout.strip()
+        denied("após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado",
+               respond(UADM, oq_pending, [{"item_id": qi_pending, "unit_price": 1000}]), "b2b_payment_condition_rolled_back")
+        check("rollback da cotação é atômico", psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq_pending}'").stdout.strip() == "0")
+        if jfq:
+            qfi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{jfq['id']}'").stdout.strip()
+            j, e = respond(UADMF, jfq["id"], [{"item_id": qfi, "unit_price": 90}])
+            check("após rollback: cotação LEGADA de empresa não ativada (papel FSF) continua funcionando", j and Decimal(str(j["final_amount"])) == Decimal("90.00"), e or j)
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-2")
         check("após rollback: empresa ativada continua bloqueada (nunca reabre fallback)", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr)
         r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F2", partner=PF); check("após rollback: empresa não ativada segue contrato atual", r.returncode == 0, r.stderr[-200:])
