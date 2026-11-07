@@ -55,6 +55,9 @@ function validReply(r: unknown, partnerId: string, planId: string, method?: Paym
   if (x.payment_condition_contract !== PAYMENT_METHOD_CONTRACT || !sameChoice(x.payment_choice, method) || !pm || pm.estimated !== true ||
       x.schedule_estimated !== true || x.due_basis !== "nf_issue" || !Number.isInteger(pm.installment_count)) return false;
   if (x.quote_required) return Array.isArray(x.schedule) && x.schedule.length === 0;
+  const credit = (x as unknown as { credit?: { credit_checked?: unknown; credit_limit?: unknown; exposicao_projetada?: unknown } }).credit;
+  if (!credit || credit.credit_checked !== true || typeof credit.credit_limit !== "number" || !Number.isFinite(credit.credit_limit) || credit.credit_limit < 0 ||
+      typeof credit.exposicao_projetada !== "number" || !Number.isFinite(credit.exposicao_projetada)) return false;
   const sched = x.schedule as Array<{ amount?: unknown; due_date?: unknown }> | undefined;
   if (!Array.isArray(sched) || sched.length !== pm.installment_count || x.installment_count !== pm.installment_count) return false;
   if (!sched.every((s) => !!s && typeof s.amount === "number" && Number.isFinite(s.amount) && typeof s.due_date === "string" && DATE.test(s.due_date))) return false;

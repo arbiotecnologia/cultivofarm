@@ -237,7 +237,7 @@ function priceReply(rows: number[], final: number) {
     payment_condition_contract: TEST_CONTRACT, payment_choice: BOLETO,
     payment_condition: { payment_method_name: "Boleto", installment_count: 3, monthly_rate: 1.8, deadline_days: 30, due_basis: "nf_issue", estimated: true },
     schedule: rows.map((amount, i) => ({ installment_number: i + 1, due_date: `2027-0${i + 1}-05`, amount, principal_amount: amount, interest_amount: 0 })),
-    warnings: [], credit: null }, error: null });
+    warnings: [], credit: { credit_limit: 1000000, exposicao_projetada: final, credit_checked: true } }, error: null });
 }
 function boletoOptions(a: Record<string, unknown>) {
   return abortable(Promise.resolve({ data: { contract: TEST_CONTRACT, partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,

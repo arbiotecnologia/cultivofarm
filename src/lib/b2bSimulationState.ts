@@ -41,7 +41,12 @@ export function describeSimulationFailure(key: string, error: unknown): Simulati
       detail: "O servidor não autorizou o preço de um ou mais itens do carrinho para esta conta. Nenhum valor foi aplicado. Se persistir, informe a empresa fornecedora.",
       retryable: true };
   }
-  if (/payment_method_stale/.test(msg)) {
+  if (/CREDIT_SETTINGS_INCOMPLETE|CREDIT_CALCULATION_INVALID|credit_(settings|calculation|unavailable)/i.test(msg)) {
+    return { ...base, title: "Condição financeira indisponível.",
+      detail: "O limite de crédito explícito ou o cálculo financeiro não está íntegro agora. Nenhum valor foi aplicado e o pedido não pode ser enviado; informe a empresa fornecedora.",
+      retryable: false };
+  }
+  if (/payment_(method|condition)_stale/.test(msg)) {
     return { ...base, title: "A configuração deste meio de pagamento mudou.",
       detail: "A empresa fornecedora atualizou o meio escolhido. Recarregue as opções e escolha novamente. Nenhum valor foi aplicado.", retryable: false };
   }
