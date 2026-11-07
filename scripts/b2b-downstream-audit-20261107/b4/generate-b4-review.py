@@ -30,8 +30,11 @@ def load(name, path):
 G = load("b4_base_generator", H / "generate-b4.py")
 CAP = json.loads(CAPTURE.read_text())
 FIN = json.loads(MONEY.read_text())
+LIVE_FACTS = json.loads(LIVE_FACTS_PATH.read_text())
 if CAPTURE and FIN.get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_CAPTURE_REF_DRIFT")
+if LIVE_FACTS.get("canonical_ref") != "swzpzcwiasxmjutrmvkm" or LIVE_FACTS.get("hosted_write") is not False:
+    raise SystemExit("B4_LIVE_FACTS_REF_OR_WRITE_DRIFT")
 if hashlib.sha256(HISTORICAL.read_bytes()).hexdigest() != EXPECTED_HISTORICAL_SHA256:
     raise SystemExit("B4_HISTORICAL_CANDIDATE_DRIFT")
 
