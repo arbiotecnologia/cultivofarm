@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-baseline.py", line 112, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-baseline.py", line 50, in main
+    rows = psql("SELECT t.tgname||'|'||c.relnamespace::regnamespace||'.'||c.relname||'|'||t.tgenabled FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid WHERE NOT t.tgisinternal ORDER BY 1").stdout.strip().splitlines()
+           ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  operator is not unique: text || "char"
+LINE 1: ...|c.relnamespace::regnamespace||'.'||c.relname||'|'||t.tgenab...
+                                                             ^
+HINT:  Could not choose a best candidate operator. You might need to add explicit type casts.
+
