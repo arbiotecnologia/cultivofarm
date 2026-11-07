@@ -151,8 +151,9 @@ def main():
 
         # Prova isolada da função LIVE informada: reserva não é atalho para uma entrada de compra.
         B.sql("CREATE TABLE public.local_purchase_entry_guard_probe(LIKE public.estoque_produto INCLUDING DEFAULTS);CREATE TRIGGER local_validate_purchase_entry BEFORE INSERT ON public.local_purchase_entry_guard_probe FOR EACH ROW EXECUTE FUNCTION public.validate_estoque_entrada();")
-        common_probe = f"id='{B.T.u(8801)}',lote_id='{first_item['lot']}',produto_id='{first_item['product']}',quantidade=1,status='reservado',origem_estoque='compra_produto_acabado_revenda',unidade_comercial='unidade',conteudo_por_unidade=25,unidade_conteudo='kg',quantidade_conteudo=25,embalagem_id='{first_item['packaging']}',embalagem_versao=1"
-        B.reject("retorno antecipado de reserva não autoriza compra fora do contexto canônico", f"INSERT INTO public.local_purchase_entry_guard_probe({common_probe},quantidade_reservada) VALUES({common_probe.replace('id=', 'id=', 1)},1);", "42501", "FINISHED_PRODUCT_RESERVATION_CONTEXT_DENIED")
+        probe_columns = "id,lote_id,produto_id,quantidade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao,quantidade_reservada"
+        probe_values = f"'{B.T.u(8801)}','{first_item['lot']}','{first_item['product']}',1,'reservado','compra_produto_acabado_revenda','unidade',25,'kg',25,'{first_item['packaging']}',1,1"
+        B.reject("retorno antecipado de reserva não autoriza compra fora do contexto canônico", f"INSERT INTO public.local_purchase_entry_guard_probe({probe_columns}) VALUES({probe_values});", "42501", "FINISHED_PRODUCT_RESERVATION_CONTEXT_DENIED")
         B.reject("entrada agregada biológica sem envase preserva a negação original", f"INSERT INTO public.local_purchase_entry_guard_probe(id,lote_id,produto_id,quantidade,status) VALUES('{B.T.u(8802)}','{first_item['lot']}','{first_item['product']}',1,'disponivel');", "23514", "não possui registro de envase")
         B.sql(f"INSERT INTO public.local_purchase_entry_guard_probe(id,lote_id,produto_id,quantidade,status,quantidade_reservada) VALUES('{B.T.u(8803)}','{first_item['lot']}','{first_item['product']}',1,'reservado',1);")
         B.ok("retorno antecipado legado de reserva não foi alterado para itens sem origem de compra")
