@@ -109,6 +109,10 @@ def legacy(uid, plan, items, key, partner=P):
     return as_user(uid, f"SELECT public.create_partner_order_secure('{partner}',NULL,'{js(items)}'::jsonb,NULL,'{plan}',NULL,NULL,'{h}','{key}')::text;")
 
 
+def respond(uid, order_id, lines, motivo=None):
+    return call(uid, f"public.respond_b2b_order_quote_secure('{order_id}','{js(lines)}'::jsonb,NULL,NULL,{('NULL' if motivo is None else repr(motivo))})")
+
+
 def price(principal, n, rate, due_days, base):
     """Price independente (Decimal, centavos ROUND_HALF_UP; última parcela absorve o resíduo do principal)."""
     c = Decimal("0.01"); bal = Decimal(str(principal)).quantize(c); i = Decimal(str(rate)) / 100
@@ -278,6 +282,7 @@ def main():
         j, e = publish(UADM, PLD, "pix", M_PIX, 5, 1, 0, 0); check("admin A publica Pix v1 (5 dias)", j and j["condition"]["version"] == 1, e)
         j, e = publish(UFIN, P3, "boleto", M_BOL, 30, 3, "1.8", 0); check("financeiro A publica boleto 3x Price 1,8% em 30 dias", j and j["condition"]["deadline_days"] == 30, e)
         publish(UADM, PLD, "dinheiro", M_CASH, 0, 1, 0, 0); publish(UADM, PLQ, "pix", M_PIX, 5, 1, 0, 0); publish(UADM, P3, "pix", M_PIX, 5, 1, 0, 0)
+        publish(UADM, PLQ, "boleto", M_BOL, 30, 3, "1.8", 0)
         j, e = publish(UADM, P3B, "promissoria", M_PROM, 30, 3, 0, 0); check("promissória personalizável: 3x taxa explícita 0", j and j["condition"]["method"] == "promissoria", e)
         j, e = publish(UADM, P3B, "cartao_credito", M_PROM, 30, 2, "2.5", 0); check("cartão de crédito personalizável: 2x 2,5%", j and j["condition"]["installment_count"] == 2, e)
         j, e = publish(UADM, P3B, "cartao_debito", M_DEB, 1, 1, 0, 0); check("débito: parcela única com 1 dia", j and j["condition"]["installment_count"] == 1, e)
@@ -294,8 +299,9 @@ def main():
         for nm, uid in (("comprador", UB), ("técnico", UT), ("gestor comercial (só leitura)", UGC), ("superadmin", SP.USUP)):
             denied(f"{nm} não configura", publish(uid, PNA, "pix", M_PIX, 5, 1, 0, 0), "forbidden")
         j, e = publish(UADMF, PLD, "pix", M_PIX, 2, 1, 0, 0); check("admin F publica a própria versão (isolada)", j and j["condition"]["organization_id"] == F, e)
-        for plan, m in ((PLD, "pix"), (PLD, "dinheiro"), (PLQ, "pix"), (P3, "boleto"), (P3, "pix"), (P3B, "promissoria")):
+        for plan, m in ((PLD, "pix"), (PLD, "dinheiro"), (PLQ, "pix"), (PLQ, "boleto"), (P3, "boleto"), (P3, "pix"), (P3B, "promissoria")):
             assign(UADM, P, plan, m, 1)
+        assign(UADM, PC, P3, "boleto", 1)
         j, e = assign(UADMF, PF, PLD, "pix", 1); check("admin F atribui ao próprio parceiro", j and j["enabled"], e)
         denied("admin A não atribui parceiro de F", assign(UADM, PF, PLD, "pix", 1), "forbidden_partner")
         denied("admin F não atribui parceiro de A", assign(UADMF, P, PLD, "pix", 1), "forbidden_partner")
