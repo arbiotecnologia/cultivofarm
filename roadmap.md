@@ -1,3 +1,10 @@
+## 07/11 16:45 — Revisão independente B4 458b6012 e decisões financeiras
+- [ ] Inventariar todos os objetos criados/substituídos/removidos pelo candidato B4, incluindo funções compartilhadas, índice, gatilhos, tabelas, colunas, constraints, owners e ACLs; PRE/POST/rollback fail-closed contra baseline LIVE relatada ou captura identificada, sem sobrescrever desconhecido.
+- [ ] Separar instalação de operação: `b2b_integration_dependencies` permanece real e fail-closed; nenhuma costura fictícia entra no pacote instalável.
+- [ ] Medir em PostgreSQL descartável os fences compartilhados em pedidos internos e recebíveis não B2B, sem ampliar autorização nem somar contagens sobrepostas; 63/63 históricos não são E2E real.
+- [ ] Revisar `approve_b2b_payment_terms_secure` e `reject_b2b_payment_terms_secure` com a mesma semântica de vendedor, escopo e reautorização pós-lock já aplicada ao ajuste, mantendo FSF/comprador/pending contábil negados e candidato inativo.
+- [ ] Preservar a reconciliação física e a autenticação em andamento; entregar artefatos separados, evidências JSON/TXT/exit codes e hashes, sem banco hospedado/publicação/delegação ou aprovação de implantação.
+
 ## 07/11 16:38 — Achado LIVE de escopo vendedor no ajuste B2B
 - [x] Rebaixar a evidência 60/60 a histórico: ela não prova elegibilidade do administrador vendedor nem produção; o positivo superadmin foi removido da matriz atual e script/evidência antigos ficaram preservados separadamente.
 - [x] Confirmar que as capturas locais executadas de `b2b_phase1_partner_visible`, `b2b_actor_scope` e `platform_actor_access_ready` têm exatamente os MD5 relatados LIVE `915f516e…`, `c3f29977…` e `048249c0…`; nenhum stub novo. Isso não é nova leitura LIVE, e as demais fontes continuam pendentes de conferência.
