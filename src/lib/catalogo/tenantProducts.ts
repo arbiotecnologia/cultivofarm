@@ -23,6 +23,7 @@ export interface TenantProduct {
   codigo: string | null;
   descricao: string | null;
   tipo: string | null;
+  familia_catalogo?: string | null;
   ativo: boolean | null;
   valor_ha_brl: number | null;
   updated_at: string;

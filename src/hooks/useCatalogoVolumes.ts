@@ -9,6 +9,7 @@ export interface CatalogoVolume {
   produto_id: string | null;
   microrganismo_id: string | null;
   volume_ml: number;
+  medida?: "volume" | "embalagem" | null;
   rotulo: string | null;
   preco_brl: number;
   moeda: string;
