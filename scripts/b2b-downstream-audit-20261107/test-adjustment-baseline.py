@@ -67,16 +67,18 @@ def main():
         terms_after = psql(f"SELECT approval_status||'|'||approval_notes FROM public.partner_order_payment_terms WHERE partner_order_id='{order['id']}'").stdout.strip() if order else ""
         check("LACUNA CONFIRMADA LOCALMENTE: pending→pending conclui apesar do contrato contábil", result is not None and result.returncode == 0 and after == "pending|adjustment_requested", (result.stderr if result is not None else "sem chamada", after, terms_after))
 
-        # Pedido legado sintético, SEM snapshot C2: separa a ausência de escopo da pendência contábil.
-        legacy_id = "10000000-0000-0000-0000-000000000001"
-        terms_id = "10000000-0000-0000-0000-000000000002"
-        psql(f"""INSERT INTO public.partner_orders(id,partner_id,status,total,created_by,payment_terms_id,requires_financial_approval,financial_approval_status,payment_condition_status)
-                 VALUES ('{legacy_id}','{SP.P}','em_analise_comercial',100,'{SP.UB}','{terms_id}',true,'pending','pending');
-                 INSERT INTO public.partner_order_payment_terms(id,partner_order_id,payment_plan_id,approval_status,final_amount)
-                 VALUES ('{terms_id}','{legacy_id}','{SP.PLD}','pending',100);""")
-        legacy_result = SP.as_user(SP.UADMF, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{legacy_id}','TESTE escopo estrangeiro')::text;")
-        foreign_notes = psql(f"SELECT approval_notes FROM public.partner_order_payment_terms WHERE id='{terms_id}'").stdout.strip()
-        check("LACUNA DE ESCOPO CONFIRMADA LOCALMENTE: admin de outro tenant altera pedido legado", legacy_result.returncode == 0 and foreign_notes == "TESTE escopo estrangeiro", (legacy_result.stderr, foreign_notes))
+        # Pedido B3-legado (B3 não instalado), mas com origem externa VALIDADA: separa escopo da pendência.
+        settings_id = "10000000-0000-0000-0000-000000000003"
+        psql(f"""INSERT INTO public.company_fiscal_settings(id,organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)
+                 VALUES ('{settings_id}','{SP.A}',true,'VALIDATED',now(),'EMPRESA FICTICIA TESTE','00000000000000',1);""")
+        validated_created = B.legacy(SP.UB, SP.PLD, [B.L(1)], "TESTE-AJUSTE-SCOPE-BASELINE")
+        validated, validated_error = B.out(validated_created)
+        check("pedido fictício validado criado pelo writer canônico", validated is not None, validated_error or validated)
+        validated_origin = psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{validated['id']}'").stdout.strip() if validated else ""
+        check("controle de escopo não depende do contrato de pendência", validated_origin == "C2_EXTERNAL_ORDER_ORIGIN_V1", validated_origin)
+        legacy_result = SP.as_user(SP.UADMF, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{validated['id']}','TESTE escopo estrangeiro')::text;") if validated else None
+        foreign_notes = psql(f"SELECT approval_notes FROM public.partner_order_payment_terms WHERE partner_order_id='{validated['id']}'").stdout.strip() if validated else ""
+        check("LACUNA DE ESCOPO CONFIRMADA LOCALMENTE: admin de outro tenant altera pedido legado B3", legacy_result is not None and legacy_result.returncode == 0 and foreign_notes == "TESTE escopo estrangeiro", (legacy_result.stderr if legacy_result is not None else "sem chamada", foreign_notes))
 
         # Controle da guarda contábil isolada: pending→approved é negado, mostrando por que o delta escapa.
         control = psql("BEGIN; ALTER TABLE public.partner_orders DISABLE TRIGGER USER; ALTER TABLE public.partner_orders ENABLE TRIGGER zz_c2_accounting_pending;\n"
