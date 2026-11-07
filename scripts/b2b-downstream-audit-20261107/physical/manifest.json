@@ -1,0 +1,93 @@
+{
+  "kind": "LOCAL_REVIEW_ONLY_NO_HOSTED",
+  "sources": [
+    {
+      "file": "scripts/stock-envase-recovery-20261027/isolated/assemble.py",
+      "sha256": "6fa62b4ee0b812ac5595e1fbc34e8dcf7420c2f80b2332e0493506aa61e55ab0"
+    },
+    {
+      "file": "scripts/stock-envase-recovery-20261027/isolated/test_pg.py",
+      "sha256": "998e340b68d97807d37888f94d9e7b89517a67bb0addd460a8599ccbe37bd8ea"
+    },
+    {
+      "file": "scripts/stock-envase-recovery-20261027/isolated/release.sql.review",
+      "sha256": "ea8083ea5a1f31e29b8ef289021b6c3fedad104bd6044b2cf0b25aef799ba93b"
+    },
+    {
+      "file": "scripts/stock-envase-recovery-20261027/isolated/release-stub.sql.review",
+      "sha256": "3dd3d226c3437389b54ad31a26769c7a0f5218ff3876fa4259003389403c5493"
+    },
+    {
+      "file": "scripts/stock-envase-recovery-20261027/isolated/release-preflight.sql.review",
+      "sha256": "0b3e5f48162211e7db913d0555875be7b0bdc512e599a1f3863e5f0531a40ebd"
+    },
+    {
+      "file": "scripts/stock-envase-recovery-20261027/isolated/release-postflight.sql.review",
+      "sha256": "a84a79c99a5d261a6416c6f6a46d6877981e2dbd882df7e3f9ce90a1010a1dd3"
+    },
+    {
+      "file": "scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py",
+      "sha256": "99c655ce522d3e16dc8170466778327f64869dcc335ef632811e573060fd409e"
+    },
+    {
+      "file": "scripts/delivery-atomic-hardening-20261030/confirmation/test-results.json",
+      "sha256": "8b0e930e60c54a198511a2b70b16b19f8ec72d9e32844f925d9a66ededccdd09"
+    },
+    {
+      "file": "scripts/delivery-atomic-hardening-20261030/confirmation/sources.json",
+      "sha256": "766178ea7608f0a39222a0fd729654099b75a6c927166c0b75ddb8b13bd53b49"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/02-install.sql.review",
+      "sha256": "6a23881e8b6fe4b4f141a0043d360c10a648fb4a885cc9e15aeabc09b183d4b1"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/04-rollback-deny.sql.review",
+      "sha256": "5ba772edb97900faa56d3c977ab4c27dca5683a40bdda66fd7cf20d54357d46a"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review",
+      "sha256": "c90617fddc85e0f2c556a792ebc9d5ce102e0231f66eb6c654c829a53617cf34"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/04-rollback-deny.sql.review",
+      "sha256": "b1356310b97bf7c874651f61576e7b24a66f0281fc98bae7a3e83e7c4e9b1fdf"
+    }
+  ],
+  "evidence": [
+    {
+      "name": "envase-full",
+      "exit_code": 0,
+      "stdout_sha256": "139e47f6465ad3f5da7f9ca2a77fe3182de0aa98f7ffcfdec723f3765b7e6bb9",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "envase-targeted",
+      "exit_code": 0,
+      "stdout_sha256": "7fa2052903c17b6f9bca92a731acdc08851c2e5305bce7cb302bc19385642128",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "confirmation",
+      "exit_code": 0,
+      "stdout_sha256": "b449fb354f5635a4d331bccfa7ab797b97eba09f85874de12c024969c6b1b42d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "confirmation-checkpoint-failure",
+      "exit_code": 1,
+      "stdout_sha256": "c2416724f2d378e5258ad64ebc732f0c0ac9adffea1b4a8f2ba3ddff5125953d",
+      "stderr_sha256": "d95f1a5582d30e9aee88585f4ebdb3fcc2014ce0ef0bf164f1956abc539002d1"
+    },
+    {
+      "name": "order",
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "921b60a7fd52e978fbb551cacd29df2d6708879400278e1fcc70fceeb0c6f8e0"
+    },
+    {
+      "name": "release-unchanged-comparison",
+      "exit_code": 0
+    }
+  ]
+}

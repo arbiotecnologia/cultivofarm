@@ -1,0 +1,231 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.9s
+CHECKPOINT sql_calls=100 elapsed=5.4s
+CHECKPOINT sql_calls=200 elapsed=8.0s
+CHECKPOINT sql_calls=300 elapsed=10.5s
+CHECKPOINT sql_calls=400 elapsed=13.5s
+CHECKPOINT sql_calls=500 elapsed=17.0s
+CHECKPOINT sql_calls=600 elapsed=19.9s
+CHECKPOINT sql_calls=700 elapsed=22.6s
+CHECKPOINT sql_calls=800 elapsed=24.9s
+CHECKPOINT sql_calls=900 elapsed=27.2s
+CHECKPOINT sql_calls=1000 elapsed=29.5s
+CHECKPOINT sql_calls=1100 elapsed=32.4s
+CHECKPOINT sql_calls=1200 elapsed=34.8s
+CHECKPOINT sql_calls=1300 elapsed=36.9s
+CHECKPOINT sql_calls=1400 elapsed=38.8s
+CHECKPOINT sql_calls=1500 elapsed=40.7s
+CHECKPOINT sql_calls=1600 elapsed=42.5s
+CHECKPOINT sql_calls=1700 elapsed=44.5s
+CHECKPOINT sql_calls=1800 elapsed=46.7s
+CHECKPOINT sql_calls=1900 elapsed=48.8s
+CHECKPOINT sql_calls=2000 elapsed=50.9s
+CHECKPOINT sql_calls=2100 elapsed=52.8s
+CHECKPOINT sql_calls=2200 elapsed=54.6s
+CHECKPOINT sql_calls=2300 elapsed=56.3s
+CHECKPOINT sql_calls=2400 elapsed=58.2s
+CHECKPOINT sql_calls=2500 elapsed=59.9s
+CHECKPOINT sql_calls=2600 elapsed=62.0s
+CHECKPOINT sql_calls=2700 elapsed=64.0s
+CHECKPOINT sql_calls=2800 elapsed=66.7s
+CHECKPOINT sql_calls=2900 elapsed=69.4s
+CHECKPOINT sql_calls=3000 elapsed=72.0s
+CHECKPOINT sql_calls=3100 elapsed=74.5s
+CHECKPOINT sql_calls=3200 elapsed=76.6s
+CHECKPOINT sql_calls=3300 elapsed=78.8s
+CHECKPOINT sql_calls=3400 elapsed=81.2s
+CHECKPOINT sql_calls=3500 elapsed=83.3s
+CHECKPOINT sql_calls=3600 elapsed=85.6s
+CHECKPOINT sql_calls=3700 elapsed=87.9s
+CHECKPOINT sql_calls=3800 elapsed=90.2s
+CHECKPOINT sql_calls=3900 elapsed=92.3s
+CHECKPOINT sql_calls=4000 elapsed=94.5s
+CHECKPOINT sql_calls=4100 elapsed=96.6s
+CHECKPOINT sql_calls=4200 elapsed=98.8s
+CHECKPOINT sql_calls=4300 elapsed=101.0s
+CHECKPOINT sql_calls=4400 elapsed=103.1s
+CHECKPOINT sql_calls=4500 elapsed=105.4s
+CHECKPOINT sql_calls=4600 elapsed=107.7s
+CHECKPOINT sql_calls=4700 elapsed=110.0s
+CHECKPOINT sql_calls=4800 elapsed=112.5s
+CHECKPOINT sql_calls=4900 elapsed=115.1s
+CHECKPOINT sql_calls=5000 elapsed=117.3s
+CHECKPOINT sql_calls=5100 elapsed=119.8s
+CHECKPOINT sql_calls=5200 elapsed=122.0s
+CHECKPOINT sql_calls=5300 elapsed=124.4s
+CHECKPOINT sql_calls=5400 elapsed=126.6s
+CHECKPOINT sql_calls=5500 elapsed=128.8s
+CHECKPOINT sql_calls=5600 elapsed=131.6s
+CHECKPOINT sql_calls=5700 elapsed=134.1s
+CHECKPOINT sql_calls=5800 elapsed=136.5s
+CHECKPOINT sql_calls=5900 elapsed=138.8s
+CHECKPOINT sql_calls=6000 elapsed=141.6s
+CHECKPOINT sql_calls=6100 elapsed=144.3s
+CHECKPOINT sql_calls=6200 elapsed=146.8s
+CHECKPOINT sql_calls=6300 elapsed=149.0s
+CHECKPOINT sql_calls=6400 elapsed=151.3s
+CHECKPOINT sql_calls=6500 elapsed=154.0s
+CHECKPOINT sql_calls=6600 elapsed=157.0s
+CHECKPOINT sql_calls=6700 elapsed=160.2s
+CHECKPOINT sql_calls=6800 elapsed=163.4s
+CHECKPOINT sql_calls=6900 elapsed=167.0s
+CHECKPOINT sql_calls=7000 elapsed=170.0s
+CHECKPOINT sql_calls=7100 elapsed=173.1s
+CHECKPOINT sql_calls=7200 elapsed=176.3s
+CHECKPOINT sql_calls=7300 elapsed=179.1s
+CHECKPOINT sql_calls=7400 elapsed=181.8s
+CHECKPOINT sql_calls=7500 elapsed=184.1s
+CHECKPOINT sql_calls=7600 elapsed=186.8s
+CHECKPOINT sql_calls=7700 elapsed=189.6s
+CHECKPOINT sql_calls=7800 elapsed=192.3s
+CHECKPOINT sql_calls=7900 elapsed=195.2s
+CHECKPOINT sql_calls=8000 elapsed=198.0s
+CHECKPOINT sql_calls=8100 elapsed=201.0s
+CHECKPOINT sql_calls=8200 elapsed=204.1s
+CHECKPOINT sql_calls=8300 elapsed=206.7s
+CHECKPOINT sql_calls=8400 elapsed=209.5s
+CHECKPOINT sql_calls=8500 elapsed=212.2s
+CHECKPOINT sql_calls=8600 elapsed=215.1s
+CHECKPOINT sql_calls=8700 elapsed=217.3s
+CHECKPOINT sql_calls=8800 elapsed=220.2s
+CHECKPOINT sql_calls=8900 elapsed=222.7s
+CHECKPOINT sql_calls=9000 elapsed=225.2s
+CHECKPOINT sql_calls=9100 elapsed=228.1s
+CHECKPOINT sql_calls=9200 elapsed=230.8s
+CHECKPOINT sql_calls=9300 elapsed=233.7s
+CHECKPOINT sql_calls=9400 elapsed=236.6s
+CHECKPOINT sql_calls=9500 elapsed=239.4s
+CHECKPOINT sql_calls=9600 elapsed=242.1s
+CHECKPOINT sql_calls=9700 elapsed=245.0s
+CHECKPOINT sql_calls=9800 elapsed=247.8s
+CHECKPOINT sql_calls=9900 elapsed=250.5s
+CHECKPOINT sql_calls=10000 elapsed=253.2s
+CHECKPOINT sql_calls=10100 elapsed=256.1s
+CHECKPOINT sql_calls=10200 elapsed=259.0s
+CHECKPOINT sql_calls=10300 elapsed=261.8s
+CHECKPOINT sql_calls=10400 elapsed=264.8s
+CHECKPOINT sql_calls=10500 elapsed=267.8s
+CHECKPOINT sql_calls=10600 elapsed=270.9s
+PASS full captured restore: no unresolved objects
+PASS reported applied composition restored in order; all installer PRE/POST pass
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS exact deterministic PRE/POST measured; probe rolls back
+PASS PRE drift aborts exactly
+PASS forced POST aborts installation
+PASS install COMMIT and exact POST; writer remains closed
+PASS legacy client closure public.rpc_confirmar_recebimento_entrega(uuid,jsonb)
+PASS legacy client closure public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text)
+PASS legacy client closure public.rpc_vincular_etiqueta_embalagem(uuid,uuid)
+PASS legacy exact POST and effective ACL closure verified; bodies/service grants unchanged
+PASS rerun refuses changed exact state
+PASS capability unavailable while canonical writer ACL closed
+PASS unqualified release stub denies before matrix generates reviewed release
+PASS local-only grant permits in-scope production actor capability
+PASS foreign FSF cannot envase AR Bio
+PASS missing key denied before writes
+PASS NULL key denied before writes
+PASS missing gate singleton fails PT503, not overwritten FOUND
+PASS manual production envase completes CQ->stock->pronto_entrega
+PASS exact pre-trigger tenant payload accepted; every row permit consumed
+PASS transition ticket consumed and OS ready
+PASS endpoint capability remains available for exact replay after OS ready
+CHECKPOINT sql_calls=10700 elapsed=279.6s
+PASS exact replay same result with zero full-row mutations
+PASS operator substitution conflicts
+PASS partial reason substitution conflicts
+PASS legacy receipt without fingerprint denied unchanged
+PASS fresh key on ready OS denied
+PASS inactive same actor cannot replay
+PASS ledger injected failure rolls back all envase writes
+PASS ledger failure preserved full envase/stock/receipt/event/lot/CQ snapshots
+PASS observed same-key wait: one write and one replay
+PASS active profile revoked during observed lote lock wait: 42501 and no envase
+PASS terminal OS committed during observed OS wait denies partial before writes
+PASS CQ revoked during observed lote wait denies partial before writes
+PASS REPEATABLE READ explicitly unsupported without writes
+PASS SERIALIZABLE explicitly unsupported without writes
+PASS READ COMMITTED partial reserves 2000ml with 3000ml pending
+PASS production cannot override partial
+PASS manager override requires reason
+PASS manager reasoned override completes without finance
+PASS role revoked during observed gate wait denies with 42501
+PASS role revoked during observed os wait denies with 42501
+PASS role revoked during observed programacao wait denies with 42501
+PASS role revoked during observed lote wait denies with 42501
+PASS tenant revoked during observed gate wait denies with 42501
+CHECKPOINT sql_calls=10800 elapsed=286.9s
+PASS tenant revoked during observed os wait denies with 42501
+PASS tenant revoked during observed programacao wait denies with 42501
+PASS tenant revoked during observed lote wait denies with 42501
+PASS SaaS revoked during observed gate wait denies with 42501
+PASS SaaS revoked during observed os wait denies with 42501
+PASS SaaS revoked during observed programacao wait denies with 42501
+PASS SaaS revoked during observed lote wait denies with 42501
+PASS item N failure rolls back prior item stock ledger receipt
+PASS lock timeout rolls back whole receipt and stock
+PASS existing reserved stock foreign root cannot cover own OS
+PASS real unique index prevents second manufacturing lot root
+PASS owner indirect envase without permit denied
+PASS owner indirect stock without permit denied
+PASS client cannot mint private permit
+PASS all one-shot private permits consumed or rolled back
+PASS demand changed during observed wait uses fresh 5000ml context
+PASS installed canonical motor split preserved with private parent context
+PASS historical clock fixture exact replay after validity expired has zero writes
+PASS exact permit rejects changed organization_id
+PASS exact permit rejects changed lote_id
+PASS exact permit rejects changed id
+PASS exact permit rejects changed quantidade
+PASS exact permit rejects changed operador
+PASS exact permit rejects changed etiqueta_gerada
+PASS exact permit rejects changed volume_por_unidade
+CHECKPOINT sql_calls=10900 elapsed=297.5s
+PASS permit binds actor
+PASS permit binds txid
+PASS permit binds action
+PASS permit binds root
+PASS owner fixture exact permit positive reaches tenant and volume guards
+PASS post-permit normalizer changed organization_id aborts exactly
+PASS post-permit normalizer changed quantidade aborts exactly
+PASS post-permit normalizer changed volume_por_unidade aborts exactly
+PASS post-permit normalizer changed operador aborts exactly
+PASS post-permit normalizer changed etiqueta_gerada aborts exactly
+PASS consumed one-shot permit cannot authorize another insert
+PASS reserved/free exact units volume actor and nullable reservation fields preserved
+PASS independent canonical stock batch and exact replay preserve installed contract
+PASS existing role gate waits without replica bypass
+PASS existing tenant gate waits without replica bypass
+PASS enabled SaaS gate refuses contention with exact 55P03 without replica bypass
+PASS enabled CQ gate refuses contention with exact 55P03 without replica bypass
+PASS enabled new CQ gate refuses contention with exact 55P03 without replica bypass
+PASS enabled root gate refuses contention with exact 55P03 without replica bypass
+PASS business prelock released then envase completes under enabled gate
+PASS real inverse-prelock DML returns 55P03 without deadlock or partial envase
+PASS canonical approval during held envase gate refuses 55P03 without writes
+PASS canonical approval positive under added gates
+PASS canonical scheduling during held envase gate refuses 55P03 without writes
+PASS canonical scheduling positive under added gates
+PASS canonical scheduling replay under added gates
+PASS canonical lot generation during held envase gate refuses 55P03 without writes
+PASS canonical lot generation positive under added gates
+PASS canonical CQ send during held envase gate refuses 55P03 without writes
+PASS canonical send CQ positive under added gates
+PASS canonical CQ recording during held envase gate refuses 55P03 without writes
+PASS canonical rejected CQ records under added gates without invented reference
+PASS canonical CQ replay under added gates preserves history
+PASS rejected canonical CQ cannot authorize envase
+PASS second canonical approval for approved CQ chain
+PASS second canonical programming for approved CQ chain
+PASS second canonical lot creates authoritative event
+PASS second canonical CQ send creates private receipt
+PASS approved CQ canonical positive resolves actual synthetic reference
+PASS full canonical approval programming lot approved CQ envase chain under enabled gates
+PASS all fourteen financial/fiscal/outbox existing full-row snapshots unchanged
+PASS canonical generate/sign/attach and exact attachment replay preserved
+PASS foreign FSF proof stays closed
+CHECKPOINT sql_calls=11000 elapsed=310.5s
+PASS canonical group and observed cancellation replay preserved under added gates
+PASS separate exact release installs only canonical authenticated grant after legacy closure
+PASS release rerun rejects changed exact catalog
+PASS deny-only rollback closes canonical writer
+PASS rollback preserves full-row historical snapshots

@@ -1,0 +1,22 @@
+{
+  "scope": "local_disposable_only",
+  "hosted_operations": false,
+  "failure": "ENVASE_RELEASE_DRIFT",
+  "failed_source": "scripts/stock-envase-recovery-20261027/isolated/release.sql.review",
+  "failed_source_sha256": "3dd3d226c3437389b54ad31a26769c7a0f5218ff3876fa4259003389403c5493",
+  "failed_source_kind": "pre_matrix_denial_stub",
+  "failed_source_errors": ["ENVASE_RELEASE_DRIFT", "ENVASE_RELEASE_REVIEW_AND_CONCURRENCY_REQUIRED"],
+  "expected_release_preflight_sha256": "0b3e5f48162211e7db913d0555875be7b0bdc512e599a1f3863e5f0531a40ebd",
+  "expected_release_postflight_sha256": "a84a79c99a5d261a6416c6f6a46d6877981e2dbd882df7e3f9ce90a1010a1dd3",
+  "root_cause": "ENVASE_TARGETED=1 returns before write_release(); assemble.write() overwrote release.sql.review with the pre-matrix denial stub, while release-preflight/postflight retained the reviewed release states.",
+  "compatibility_review": "Only generator/harness artifact separation was required. Candidate SQL, exact catalog states, ACLs, grants and guards remained unchanged.",
+  "correction": "write the denial to release-stub.sql.review and make the targeted test consume that file; preserve release.sql.review exclusively for write_release().",
+  "proof": {
+    "full_isolated_matrix": "119/119 PASS, exit 0",
+    "targeted_rerun": "21/21 PASS, exit 0",
+    "reviewed_release_before_after": "byte-identical, cmp exit 0",
+    "reviewed_release_sha256": "ea8083ea5a1f31e29b8ef289021b6c3fedad104bd6044b2cf0b25aef799ba93b",
+    "confirmation_composition": "123/123 PASS, exit 0 with the same pinned release"
+  },
+  "remaining_not_run": ["chemicals", "fertilizers", "kg_g_whole_package", "physical_L_presentation", "hosted_JWT_RLS_Storage"]
+}

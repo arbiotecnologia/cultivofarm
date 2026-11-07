@@ -1,0 +1,38 @@
+{
+  "kind": "LOCAL_DISPOSABLE_PHYSICAL_COMPONENTS_NOT_HOSTED_E2E",
+  "hosted_operations": false,
+  "publication": false,
+  "real_invoice_or_receivable": false,
+  "subagents": false,
+  "b3_or_b4_modified": false,
+  "candidate_sql_or_catalog_pins_modified": false,
+  "grants_or_guards_weakened": false,
+  "tests": {
+    "envase_full": {"passed": 119, "failed": 0, "exit_code": 0, "stderr_bytes": 0},
+    "envase_targeted": {"passed": 21, "failed": 0, "exit_code": 0, "stderr_bytes": 0},
+    "release_byte_comparison": {"exit_code": 0, "unchanged": true},
+    "delivery_confirmation_send_cancel": {"passed": 123, "failed": 0, "exit_code": 0, "stderr_bytes": 0},
+    "b4_reconciled": {"passed": 63, "failed": 0, "rerun_in_this_step": false}
+  },
+  "release": {
+    "path": "scripts/stock-envase-recovery-20261027/isolated/release.sql.review",
+    "before_targeted_sha256": "ea8083ea5a1f31e29b8ef289021b6c3fedad104bd6044b2cf0b25aef799ba93b",
+    "after_targeted_sha256": "ea8083ea5a1f31e29b8ef289021b6c3fedad104bd6044b2cf0b25aef799ba93b",
+    "preflight_sha256": "0b3e5f48162211e7db913d0555875be7b0bdc512e599a1f3863e5f0531a40ebd",
+    "postflight_sha256": "a84a79c99a5d261a6416c6f6a46d6877981e2dbd882df7e3f9ce90a1010a1dd3",
+    "stub_path": "scripts/stock-envase-recovery-20261027/isolated/release-stub.sql.review",
+    "stub_sha256": "3dd3d226c3437389b54ad31a26769c7a0f5218ff3876fa4259003389403c5493"
+  },
+  "coverage": {
+    "executed": ["biologico_ml", "CQ_estoque_pronto_entrega", "expedicao_em_rota_confirmacao_cancelamento", "tenant_isolation", "observed_lock_revocation", "concurrency", "CAS", "idempotent_replay", "deny_only_rollback"],
+    "not_run": ["quimicos_fisicos", "fertilizantes_fisicos", "kg_g_fisicos", "embalagem_inteira_fisica", "apresentacao_L_fisica", "JWT_RLS_Storage_PostgREST_browser_real", "NF_cobranca_real"],
+    "weight_freight_only_validated": false
+  },
+  "adjustment_candidate": {
+    "separate_package": "scripts/b2b-downstream-audit-20261107",
+    "candidate_md5": "55996e9496ffb123504adaeaa502c81f",
+    "local_checks": "29/29",
+    "active": false
+  },
+  "build_observed": "build OK 2026-11-07T16:27:24Z; harness sem exit code numerico"
+}

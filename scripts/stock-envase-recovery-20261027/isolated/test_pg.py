@@ -56,7 +56,7 @@ def run():
     reject('rerun refuses changed exact state',inst,'P0001')
     def cap(): return f"SELECT public.rpc_envase_capability_v1('{T.L2}','{T.O2}','{T.PP2}','manual');"
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is False; ok('capability unavailable while canonical writer ACL closed')
-    reject('unqualified release stub denies before matrix generates reviewed release',(H/'release.sql.review').read_text(),'42501')
+    reject('unqualified release stub denies before matrix generates reviewed release',(H/'release-stub.sql.review').read_text(),'42501')
     sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;') # disposable only
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('local-only grant permits in-scope production actor capability')
     z=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;")

@@ -43,8 +43,8 @@ Somente a cópia em `/tmp` substitui o pin do leitor de escopo pela costura sint
 | Reconciliação B4 útil sobre B3 atual | **63/63**, exit 0 | `b4/evidence-b4-b3.json` | Componente local, adaptador NF sem rede; não E2E/JWT/RLS |
 | Price, calendário, crédito, títulos, pagamentos/estorno | **338/338**, exit 0 | `evidence/price/` | Componente com Auth/settings/NF/contabilidade sintéticos; não E2E |
 | Cobrança por entrega e escopo | **47/47**, exit 0 | `evidence/delivery-billing/` | Candidato histórico inativo; stubs e schema reduzido |
-| Envase/CQ/estoque/pronto_entrega | **21 PASS**, exit 0, `ENVASE_TARGETED=1` | `evidence/envase-stock/` | Recorte, não matriz completa; liberação real não testada |
-| Expedição/comprovante/confirmação/cancelamento | **exit 1 antes da matriz** | `evidence/delivery-confirmation/` | `ENVASE_RELEASE_DRIFT`; somente restore inicial passou |
+| Envase/CQ/estoque/pronto_entrega | **119/119 matriz completa + 21/21 recorte**, exits 0 | `physical/evidence/envase-full/`; `physical/evidence/envase-targeted/` | PostgreSQL descartável; liberação real/JWT/RLS não testados |
+| Expedição/em rota/comprovante/confirmação/cancelamento | **123/123**, exit 0 | `physical/evidence/confirmation/`; `confirmation/test-results.json` | Componente local; biológico ml, sem químicos/fertilizantes |
 | UI B3, quatro arquivos documentados | **67/67**, exit 0 | `evidence/ui-b3/results-67.json` | Auth/transporte sintéticos |
 | Typecheck | exit 0 | `evidence/typecheck/` | — |
 | Build automático | `build OK` no harness | `/tmp/observability/build-errors.log` | sem código numérico fornecido pelo harness |
@@ -57,7 +57,7 @@ Não houve suíte completa. O primeiro arquivo UI isolado também foi executado 
 - **Faturamento parcial/NF autorizada → recebível:** o harness histórico com overloads superados não foi executado. A reconciliação isolada `b4/` extraiu somente os componentes úteis sobre o B3 atual e passou **63/63**: parciais, replay, residual+exposição, baixa, substituição intermediária de centavos, concorrência, gates e rollback. O candidato continua inativo; NF é fixture local sem rede e não há certificação de cobrança real.
 - **Recebível idempotente:** Price testou geração/replay, crédito total, pagamento e estorno por componentes existentes. Cobrança por entrega testou replay com mesmo ID, categoria RECEITA ativa, método ativo, escopo, concorrência e revogação.
 - **Estoque/envase:** a composição capturada executou CQ → estoque → `pronto_entrega`, com permissões fechadas antes do grant sintético, estrangeiro negado e sentinelas downstream preservadas.
-- **Expedição/em rota/confirmação/cancelamento:** a bateria não passou da composição por `ENVASE_RELEASE_DRIFT`. Nenhuma transição física dessa bateria é alegada nesta execução; resultados históricos não substituem esse resultado.
+- **Expedição/em rota/confirmação/cancelamento:** após separar o stub de bloqueio do release revisado e corrigir somente a criação do cache descartável, a composição passou **123/123**. Cobriu envio independente, Enviar→Confirmar sem segunda baixa, CAS, replay/idempotência, isolamento de tenant, revogações sob lock observado, corridas de envio/confirmação/cancelamento, cancelamento e rollback deny-only. O release original de envase ficou byte-idêntico antes/depois do recorte; detalhes em `physical/README.md`.
 - **Fiscal/comunicação:** nenhum emissor real, transmissão, cobrança, documento ou envio. Referências/NF/contabilidade dos harnesses são adaptadores/fixtures locais sem rede.
 
 ## 4. Unidades, produtos e calendário
@@ -71,9 +71,8 @@ Não houve suíte completa. O primeiro arquivo UI isolado também foi executado 
 ## 5. Riscos pendentes / próxima revisão
 
 1. Confrontar a função LIVE, hashes/ACL/gatilhos e só então revisar o delta do ajuste; não aplicar os arquivos desta pasta automaticamente.
-2. Reconciliar `ENVASE_RELEASE_DRIFT` na composição descartável antes de repetir expedição/confirmação/cancelamento. Não se alterou SQL antigo para esconder o drift.
-3. Revisar o candidato B4 reconciliado em `b4/` contra LIVE e suas costuras antes de qualquer decisão de instalação. A bateria local passou 63/63, mas a cobrança real após NF autorizada segue não certificada.
-4. Cobrir químicos/fertilizantes kg/g e cenários L/ml na cadeia física sem criar cadastros paralelos.
-5. JWT/RLS/Storage/PostgREST/browser real, contabilidade, emissão fiscal, recebíveis e envios continuam NOT_RUN e fechados.
+2. Revisar o candidato B4 reconciliado em `b4/` contra LIVE e suas costuras antes de qualquer decisão de instalação. A bateria local passou 63/63, mas a cobrança real após NF autorizada segue não certificada.
+3. Cobrir químicos/fertilizantes kg/g e cenários L/ml na cadeia física sem criar cadastros paralelos. **Continua NOT_RUN nesta rodada**; os 123 PASS são da composição biológica ml e não foram reinterpretados como essas apresentações.
+4. JWT/RLS/Storage/PostgREST/browser real, contabilidade, emissão fiscal, recebíveis e envios continuam NOT_RUN e fechados.
 
 `matrix.csv` apresenta o recorte cenário/resultado/evidência/risco. `evidence/summary.json` e `evidence/SHA256SUMS` consolidam códigos de saída e hashes. Todo PASS acima é local e sintético, nunca homologação do fluxo real completo.
