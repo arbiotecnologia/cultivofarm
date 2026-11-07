@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /tmp/probe
+
+ ✓ block55.probe.ts (2 tests) 55029ms
+   ✓ sync block 55s  55021ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:27:48
+   Duration  64.45s (transform 198ms, setup 0ms, collect 92ms, tests 55.03s, environment 2ms, prepare 2.65s)
+
+JSON report written to /tmp/probe/block55.json
