@@ -1,0 +1,132 @@
+PASS boot B3 com gatilhos reais
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+PASS condição B3 fictícia publicada
+PASS piloto B3 restrito ao parceiro fictício
+PASS componente B4 executado somente no PG descartável
+PASS stub operacional restrito ao harness
+PASS fixture 1: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN
+PASS fixture 2: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 3: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 4: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 5: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 6: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 7: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 8: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 9: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 10: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 11: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 12: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 13: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 14: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 15: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 16: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture 17: pedido fictício criado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS 1 UN = 25 kg em NF parcial
+PASS 1 UN = 25 kg em NF parcial: quantidade de pedido normalizada
+PASS 1 UN = 25 kg em NF parcial: conteúdo fiscal normalizado sem alterar preço
+PASS 1 UN = 25 kg em NF parcial: payload fiscal original preservado
+PASS 0,5 UN é fração de embalagem inteira
+PASS 0,5 UN é fração de embalagem inteira: nenhum título/alocação
+PASS 12,5 kg também é fração de embalagem inteira
+PASS 12,5 kg também é fração de embalagem inteira: nenhum título/alocação
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: quantidade de pedido normalizada
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: conteúdo fiscal normalizado sem alterar preço
+PASS 25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes: payload fiscal original preservado
+PASS 50 kg = 2 embalagens, nunca 50 embalagens
+PASS 50 kg = 2 embalagens, nunca 50 embalagens: quantidade de pedido normalizada
+PASS 50 kg = 2 embalagens, nunca 50 embalagens: conteúdo fiscal normalizado sem alterar preço
+PASS 50 kg = 2 embalagens, nunca 50 embalagens: payload fiscal original preservado
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens: quantidade de pedido normalizada
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens: conteúdo fiscal normalizado sem alterar preço
+PASS 50.000 g = 2 embalagens, nunca 50.000 embalagens: payload fiscal original preservado
+PASS 50 UN com apenas 50 kg tributáveis é divergente
+PASS 50 UN com apenas 50 kg tributáveis é divergente: nenhum título/alocação
+PASS 1 UN com 50 kg tributáveis é divergente
+PASS 1 UN com 50 kg tributáveis é divergente: nenhum título/alocação
+PASS peso não converte em litros
+PASS peso não converte em litros: nenhum título/alocação
+PASS unidade tributável em litros diverge do conteúdo em kg
+PASS unidade tributável em litros diverge do conteúdo em kg: nenhum título/alocação
+PASS quantidade sem código de unidade falha fechado
+PASS quantidade sem código de unidade falha fechado: nenhum título/alocação
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis: quantidade de pedido normalizada
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis: conteúdo fiscal normalizado sem alterar preço
+PASS 1 L = 1 unidade líquida; 1.000 ml tributáveis: payload fiscal original preservado
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável: quantidade de pedido normalizada
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável: conteúdo fiscal normalizado sem alterar preço
+PASS 1.000 ml = 1 unidade líquida; 1 L tributável: payload fiscal original preservado
+PASS 500 ml podem ser meia unidade líquida não wholepack
+PASS 500 ml podem ser meia unidade líquida não wholepack: quantidade de pedido normalizada
+PASS 500 ml podem ser meia unidade líquida não wholepack: conteúdo fiscal normalizado sem alterar preço
+PASS 500 ml podem ser meia unidade líquida não wholepack: payload fiscal original preservado
+PASS kg não converte em volume líquido
+PASS kg não converte em volume líquido: nenhum título/alocação
+PASS duas NFs de 25 kg consomem exatamente duas embalagens
+PASS saldo anterior usa quantidade normalizada, não 25 kg brutos
+PASS replay da NF de 25 kg preserva o mesmo título
+PASS terceira embalagem além das duas vendidas é negada
+FAIL execução sem exceção de harness :: RuntimeError("ERROR:  operator does not exist: bigint || bigint\nLINE 1: ... origin_id='51fa0ee0-2106-4bbc-a1f3-475ddb37895c')||(SELECT ...\n                                                             ^\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\n")
