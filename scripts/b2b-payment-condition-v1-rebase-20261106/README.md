@@ -65,7 +65,7 @@ e rollback. A fixture interna tem UMA configuração fictícia VALIDADA; ao remo
 Costuras declaradas: as do harness B2, `payment_methods`/`financial_categories` mínimas, leitor de termos com portas mínimas,
 pins de colunas trocados só na cópia temporária. A injeção transitória ocorre só no PG descartável e o corpo REAL de crédito
 é restaurado byte a byte e conferido por md5.
- 
+
 ## Limitações abertas
 - Datas estimadas (referência = data do pedido/resposta), sem dia útil Paracatu-MG; vencimento definitivo e calendário ficam no B4.
 - Revogar um parceiro numa versão é definitivo para ela; liberar de novo exige nova versão.
