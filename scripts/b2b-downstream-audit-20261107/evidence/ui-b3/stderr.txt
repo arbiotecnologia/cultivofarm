@@ -1,0 +1,1 @@
+$ vitest run src/test/comercial/paymentTermsRead.test.tsx "--reporter=json" "--outputFile=scripts/b2b-downstream-audit-20261107/evidence/ui-b3/results.json"
