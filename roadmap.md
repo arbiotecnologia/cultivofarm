@@ -1,3 +1,9 @@
+## 07/11 16:38 — Achado LIVE de escopo vendedor no ajuste B2B
+- [ ] Rebaixar a evidência 60/60: ela não prova elegibilidade do administrador vendedor nem produção; o positivo superadmin e o vínculo sintético organização-parceiro não sustentam implantação.
+- [ ] Confrontar as capturas reais `b2b_phase1_partner_visible`/`b2b_actor_scope`/`platform_actor_access_ready` com os novos MD5/semântica LIVE; não inventar stubs nem presumir `commercial_owner_organization_id` como escopo.
+- [ ] Refazer a matriz com vendedor versus comprador explícitos: positivo interno somente por caminho dono vendedor comprovado, FSF/comprador sem papel/C2 pending negados e revogações preservadas; marcar NOT_RUN/BLOCKED o que exigir fonte ou fixture real ausente.
+- [ ] Consolidar artefatos pequenos separados para revisão, mantendo o candidato INATIVO/NÃO APROVADO, sem hosted, publicação, instalação ou delegação.
+
 ## 07/11 16:29 — Revisão independente 31430566 do ajuste B2B
 - [x] Substituir as costuras mínimas de `has_role`/`b2b_phase1_order_visible` pelos corpos reais capturados e por 14 dependências de Auth/escopo/SaaS; manter os 38 gatilhos reais e todas as contenções. Evidência antiga 29/29 preservada apenas como histórico.
 - [x] Pinar wrappers e funções privadas, owners e ACLs no PRE/POST/rollback, sem grants novos nem localização de pinos em `/tmp`; pedido ausente/NULL nega como `b2b_phase1_scope_denied`, sem `payment_terms_not_defined` permissivo.
