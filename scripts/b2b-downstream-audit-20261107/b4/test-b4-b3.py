@@ -383,7 +383,7 @@ WHERE s.partner_id='{B3.P}';""")
 
         local_limit("0")
         check("crédito: zero é configuração válida, não limite_nao_definido", config_block() == "<NULL>", config_block())
-        zero_idle, zero_idle_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")
+        zero_idle, zero_idle_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_ZERO}',0,NULL)")
         check("crédito: limite zero sem exposição positiva não é NO_LIMIT_DEFINED", zero_idle is not None and zero_idle["credit_limit"] == 0 and zero_idle["reason_code"] == "OK", zero_idle_error or zero_idle)
         zero_positive, zero_positive_error = server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{P_ZERO}',1,NULL)")
         check("crédito: limite zero bloqueia exposição positiva como limite excedido", zero_positive is not None and zero_positive["reason_code"] == "LIMIT_EXCEEDED_BLOCK", zero_positive_error or zero_positive)
