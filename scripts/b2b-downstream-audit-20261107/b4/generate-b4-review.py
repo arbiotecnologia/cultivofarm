@@ -311,6 +311,7 @@ def build():
     if captured_index["definition"] != reported_index["definition"]:
         raise SystemExit("B4_REPORTED_LIVE_INDEX_MISMATCH")
     ar_triggers = ar["triggers"]
+    ar_constraints = sorted(ar["constraints"], key=lambda x: x["name"])
     baseline_schema = {
         "source": str(MONEY.relative_to(ROOT)) + "#accounts_receivable",
         "owner": next((x.get("owner") for x in CAP.get("relations", []) if x.get("schema") == "public" and x.get("name") == "accounts_receivable"), "postgres"),
