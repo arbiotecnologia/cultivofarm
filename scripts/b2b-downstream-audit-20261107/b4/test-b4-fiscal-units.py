@@ -195,7 +195,7 @@ def main():
         check("replay da NF de 25 kg preserva o mesmo título", replay is not None and replay.get("replayed") and replay.get("receivable_id") == (first or {}).get("receivable_id"), replay_error or replay)
         document(split_c, split_order, item(split_item, 1, "UN", 25, "KG"))
         T.deny("terceira embalagem além das duas vendidas é negada", allocate(split_c), "FISCAL_QUANTITY_OVERALLOCATED")
-        final_count = B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{split_order}')||(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{split_order}')").stdout.strip()
+        final_count = B3.psql(f"SELECT (SELECT count(*)::text FROM public.accounts_receivable WHERE origin_id='{split_order}')||(SELECT count(*)::text FROM platform_private.b2b_document_allocations WHERE order_id='{split_order}')").stdout.strip()
         check("replay e excesso não duplicam título nem alocação", final_count == "22", final_count)
 
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
