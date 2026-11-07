@@ -18,7 +18,7 @@ NAMES = [
 
 def main():
     B.restore_checkpoint()
-    values = ",".join("(" + B.q(n) + ")" for n in NAMES)
+    values = ",".join("('" + n.replace("'", "''") + "')" for n in NAMES)
     rows = json.loads(B.last(f"""
       SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',r.rolname,'acl',coalesce(p.proacl::text,'')::text) ORDER BY v.signature),'[]'::jsonb)
       FROM (VALUES {values}) v(signature)
