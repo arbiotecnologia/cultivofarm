@@ -40,6 +40,7 @@ Somente a cópia em `/tmp` substitui o pin do leitor de escopo pela costura sint
 
 | Componente | Resultado atual | Evidência | Limite |
 |---|---:|---|---|
+| Reconciliação B4 útil sobre B3 atual | **63/63**, exit 0 | `b4/evidence-b4-b3.json` | Componente local, adaptador NF sem rede; não E2E/JWT/RLS |
 | Price, calendário, crédito, títulos, pagamentos/estorno | **338/338**, exit 0 | `evidence/price/` | Componente com Auth/settings/NF/contabilidade sintéticos; não E2E |
 | Cobrança por entrega e escopo | **47/47**, exit 0 | `evidence/delivery-billing/` | Candidato histórico inativo; stubs e schema reduzido |
 | Envase/CQ/estoque/pronto_entrega | **21 PASS**, exit 0, `ENVASE_TARGETED=1` | `evidence/envase-stock/` | Recorte, não matriz completa; liberação real não testada |
@@ -53,7 +54,7 @@ Não houve suíte completa. O primeiro arquivo UI isolado também foi executado 
 ## 3. Mapa de contratos e contenções
 
 - **Pedido/cotação/aprovações:** B3 publicado é marco histórico informado; suas 226 provas PG anteriores não foram repetidas. O ajuste candidato desta pasta é separado e não altera B3, Price, escolha, snapshots ou crédito.
-- **Faturamento parcial/NF autorizada → recebível:** o pacote histórico `financial-price-generator-20261029/integration` tem componentes de documentos autorizados, alocações parciais append-only e replay, mas seu harness ainda instala overloads create/simulate superados pelo B3. Ele **não foi reexecutado** e não é apresentado como integração vigente.
+- **Faturamento parcial/NF autorizada → recebível:** o harness histórico com overloads superados não foi executado. A reconciliação isolada `b4/` extraiu somente os componentes úteis sobre o B3 atual e passou **63/63**: parciais, replay, residual+exposição, baixa, substituição intermediária de centavos, concorrência, gates e rollback. O candidato continua inativo; NF é fixture local sem rede e não há certificação de cobrança real.
 - **Recebível idempotente:** Price testou geração/replay, crédito total, pagamento e estorno por componentes existentes. Cobrança por entrega testou replay com mesmo ID, categoria RECEITA ativa, método ativo, escopo, concorrência e revogação.
 - **Estoque/envase:** a composição capturada executou CQ → estoque → `pronto_entrega`, com permissões fechadas antes do grant sintético, estrangeiro negado e sentinelas downstream preservadas.
 - **Expedição/em rota/confirmação/cancelamento:** a bateria não passou da composição por `ENVASE_RELEASE_DRIFT`. Nenhuma transição física dessa bateria é alegada nesta execução; resultados históricos não substituem esse resultado.
@@ -71,7 +72,7 @@ Não houve suíte completa. O primeiro arquivo UI isolado também foi executado 
 
 1. Confrontar a função LIVE, hashes/ACL/gatilhos e só então revisar o delta do ajuste; não aplicar os arquivos desta pasta automaticamente.
 2. Reconciliar `ENVASE_RELEASE_DRIFT` na composição descartável antes de repetir expedição/confirmação/cancelamento. Não se alterou SQL antigo para esconder o drift.
-3. Rebasear o harness fiscal parcial para remover overloads superados antes de testar documentos autorizados/parciais na composição B3 atual. A cobrança real após NF autorizada segue não certificada.
+3. Revisar o candidato B4 reconciliado em `b4/` contra LIVE e suas costuras antes de qualquer decisão de instalação. A bateria local passou 63/63, mas a cobrança real após NF autorizada segue não certificada.
 4. Cobrir químicos/fertilizantes kg/g e cenários L/ml na cadeia física sem criar cadastros paralelos.
 5. JWT/RLS/Storage/PostgREST/browser real, contabilidade, emissão fiscal, recebíveis e envios continuam NOT_RUN e fechados.
 

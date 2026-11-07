@@ -1,0 +1,31 @@
+{
+  "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
+  "passed": 63,
+  "total": 63,
+  "test_exit_code": 0,
+  "generator_exit_code": 0,
+  "hosted": "NOT_RUN",
+  "jwt_rls_storage": "NOT_RUN",
+  "real_b3_trigger_count": 32,
+  "build": "build OK no harness; sem exit code numérico",
+  "files": {
+    "generate-b4.py": "dbc93ef50bd98f0e312af0d5f5c2d2c3b6b9aca3144f8497c2fcfbfa3d0272a6",
+    "test-b4-b3.py": "3b2ed828f10f7189abf1bbc9a92aeca3ef33641ff928513f25bd25e3f8797d29",
+    "b4-candidate.sql.review": "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894",
+    "01-pre.sql.readonly": "ca33e2415b88e54ffa6f6cc95d64a6f7a145f2ec18efd3dd1939c8c07d0135c5",
+    "02-install.sql.review": "c90617fddc85e0f2c556a792ebc9d5ce102e0231f66eb6c654c829a53617cf34",
+    "03-post.sql.readonly": "3a420e021cab3b77825531fd12c56f345b44debc443fe1b1d0775b4fa35b5989",
+    "04-rollback-deny.sql.review": "b1356310b97bf7c874651f61576e7b24a66f0281fc98bae7a3e83e7c4e9b1fdf",
+    "b4-pins.json": "217054fe859ee84443c96be0ea0eabe85b85c5d974bcdc0022ce59dc800e3e99",
+    "SHA256SUMS": "0499284b8cd02c9bb39cfa33cc3fdbd45758534e9cc616b8d3ea49dd60c1861f",
+    "evidence-b4-b3.json": "b30c48dbd7c0c77a0bcdb849fff95a16298daedb9a2be2939fe04a31c93d329f",
+    "generate.stdout.txt": "2a59e6f6d8a07f86a2e1c2a2968baafdade7f535aa98005225f9184d68af5870",
+    "generate.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "generate.exitcode": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+    "test.stdout.txt": "c526527a8f241e8e0ebf8c501d1a4477e34c7cb8683124da2bd07d815f88bb3d",
+    "test.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test.exitcode": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+    "README.md": "4bbc24bbfc31c1801e05a7cbdf3e52abd6706e4478584c4c0730ba3476ac0b58",
+    "build.txt": "94f0da54325b510e0af9e9e2fba23e82e5276b4e39b19a55097dab71e9992cc2"
+  }
+}
