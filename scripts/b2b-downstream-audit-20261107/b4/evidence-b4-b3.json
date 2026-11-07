@@ -162,7 +162,7 @@
     {
       "name": "baixa parcial local no ledger capturado",
       "ok": false,
-      "detail": "ERROR:  syntax error at or near \";\"\nLINE 1: ...00092\", \"idempotency_key\": \"TESTE-B4-PAY-1\"}'::jsonb)::text;\n                                                                      ^"
+      "detail": "ERROR:  Valor excede o saldo da parcela (saldo: 34.54).\nCONTEXT:  PL/pgSQL function rpc_register_receivable_payment(uuid,jsonb) line 88 at RAISE"
     },
     {
       "name": "baixa reduz somente título, não residual do pedido",

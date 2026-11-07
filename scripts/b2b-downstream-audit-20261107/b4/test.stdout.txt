@@ -37,9 +37,8 @@ PASS replay não duplica alocação
 PASS datas finais partem da emissão e calendário selado
 PASS juros financiados não são somados duas vezes
 PASS projeção financeira usa ator e tenant autorizados
-FAIL baixa parcial local no ledger capturado :: ERROR:  syntax error at or near ";"
-LINE 1: ...00092", "idempotency_key": "TESTE-B4-PAY-1"}'::jsonb)::text;
-                                                                      ^
+FAIL baixa parcial local no ledger capturado :: ERROR:  Valor excede o saldo da parcela (saldo: 34.54).
+CONTEXT:  PL/pgSQL function rpc_register_receivable_payment(uuid,jsonb) line 88 at RAISE
 FAIL baixa reduz somente título, não residual do pedido :: 
 PASS três documentos independentes fecham quantidade e residual
 PASS três títulos, um por documento
