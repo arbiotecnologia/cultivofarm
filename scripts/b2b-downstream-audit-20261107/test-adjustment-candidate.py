@@ -167,6 +167,9 @@ def main():
         psql(REAL_AUTH_SCHEMA)
         for reg in LOAD_ORDER:
             meta = pins["dependencies"][reg]
+            # Os stubs têm parâmetros com nomes diferentes; trigger functions permanecem no lugar.
+            if reg not in ("public._saas_trg_require_feature()", "platform_private.c2_accounting_pending_guard()"):
+                psql(f"DROP FUNCTION IF EXISTS {reg};")
             psql(generated[meta["capture"]].rstrip() + ";\n")
             apply_captured_acl(reg, meta["acl"])
         actual_dependencies = {}
