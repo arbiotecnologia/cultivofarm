@@ -256,6 +256,27 @@ it("Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas 
   expect(await submitBtn()).toBeEnabled();
 });
 
+it("crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "simulate_b2b_payment_condition_secure"
+    ? Promise.resolve({ data: null, error: { code: "PT409", message: "CREDIT_SETTINGS_INCOMPLETE" } }) : base(n, a));
+  await toPayment();
+  await pickTestPix();
+  expect(await screen.findByText("Condição financeira indisponível.")).toBeInTheDocument();
+  expect(await submitBtn()).toBeDisabled();
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+});
+
+it("resposta com credit null não é aceita como apta: erro visível e envio bloqueado", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "b2b_list_payment_condition_options_secure" ? boletoOptions(a ?? {})
+    : n === "simulate_b2b_payment_condition_secure" ? Promise.resolve({ data: { ...priceReply([10], 10)(a ?? {}).data, credit: null }, error: null }) : base(n, a));
+  await toPayment();
+  fireEvent.click(await screen.findByRole("radio", { name: /Boleto/ }));
+  expect(await screen.findByTestId("b2b-simulation-error")).toBeInTheDocument();
+  expect(await submitBtn()).toBeDisabled();
+});
+
 it("Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado", async () => {
   const base = wrapped();
   state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "b2b_list_payment_condition_options_secure" ? boletoOptions(a ?? {})
