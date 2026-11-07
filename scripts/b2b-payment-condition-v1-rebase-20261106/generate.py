@@ -850,6 +850,7 @@ def build(pins=LIVE_PINS, cols=LIVE_COLS, fn_md5=None, deny_md5=None):
     md = fn_md5 or {}
     pre = ("-- 01 PRE (somente leitura). Ref canônico swzpzcwiasxmjutrmvkm conferido FORA do SQL antes de rodar.\nDO $$ BEGIN\n"
            + pins_block("PRE", pins, cols) + ABSENT + "  RAISE NOTICE 'PRE_OK';\nEND $$;\n")
+    post_pins = {k: v for k, v in pins.items() if k != QUOTE_SIG}
     inst = ("-- 02 INSTALL (REVISÁVEL; NÃO APLICAR sem autorização). B2B_PAYMENT_CONDITION_V1 rebaseado sobre create LIVE c34e7404.\n"
             "-- Não altera corpos LIVE, planos, meios, categorias, PB-001036 ou configurações; nenhuma empresa fica ativada.\n"
             "BEGIN;\nSET LOCAL lock_timeout = '3s';\nDO $$ BEGIN\n" + pins_block("INSTALL", pins, cols) + ABSENT + "END $$;\n"
