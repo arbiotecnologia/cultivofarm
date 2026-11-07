@@ -44,6 +44,8 @@ UMIXC = "20000000-0000-0000-0000-000000000032"
 
 LOAD_ORDER = [
     "platform_private.platform_actor_access_ready(uuid)",
+    "platform_private.h15_actor_organization()",
+    "public.h15_actor_organization()",
     "platform_private.entitlements_for_user(uuid)",
     "platform_private.has_role(uuid,public.app_role)",
     "public.has_role(uuid,public.app_role)",
