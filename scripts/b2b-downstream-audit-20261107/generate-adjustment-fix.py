@@ -182,7 +182,7 @@ def decision_candidate_body(kind):
     body = delta(body, "  v_numero text;\nBEGIN", "  v_numero text;\n  v_origin jsonb;\nBEGIN", kind + " snapshot de origem")
     body = delta(
         body,
-        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
+        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN\n    RAISE EXCEPTION 'payment_terms_not_defined';\n  END IF;",
         "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n"
         "    INTO v_terms_id, v_created_by, v_numero, v_origin\n"
         "  FROM public.partner_orders po\n"
