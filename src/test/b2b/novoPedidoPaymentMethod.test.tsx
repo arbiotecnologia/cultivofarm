@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { withPaymentMethod, pickTestPix, TEST_PIX, TEST_CONTRACT, condEnvelope } from "@/test/helpers/b2bPaymentMethodMock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -251,6 +251,10 @@ it("Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas 
   await toPayment();
   fireEvent.click(await screen.findByRole("radio", { name: /Boleto/ }));
   expect((await screen.findAllByText(/1\.036,22/)).length).toBeGreaterThan(0);
+  const card = screen.getByRole("button", { name: /À vista/ });
+  expect(card).toHaveTextContent("3 parcelas");
+  expect(card).toHaveTextContent("1,8% a.m.");
+  expect(card).not.toHaveTextContent("Pagamento único");
   fireEvent.click(screen.getByText(/Parcelas estimadas/));
   expect(await screen.findByText("R$ 345,42")).toBeInTheDocument();
   expect(await submitBtn()).toBeEnabled();
@@ -276,9 +280,94 @@ it("Price em parcela única: tela aceita taxa explícita e mostra 1018, principa
   expect((await screen.findAllByText(/1\.018,00/)).length).toBeGreaterThan(0);
   expect((await screen.findAllByText(/R\$ 18,00/)).length).toBeGreaterThan(0);
   expect((await screen.findAllByText(/1\.000,00/)).length).toBeGreaterThan(0);
+  expect(screen.getByRole("button", { name: /À vista/ })).toHaveTextContent("Pagamento único de R$ 1.018,00");
+  expect(screen.getByRole("button", { name: /À vista/ })).toHaveTextContent("1,8% a.m.");
   fireEvent.click(screen.getByText(/Parcelas estimadas/));
   expect((await screen.findAllByText("R$ 1.018,00")).length).toBeGreaterThan(0);
   expect(await submitBtn()).toBeEnabled();
+});
+
+it("plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de versão/meio aposenta economia anterior", async () => {
+  const base = wrapped();
+  let finish: ((value: unknown) => void) | undefined;
+  const choices = [
+    { ...BOLETO, payment_deadline_days: 1, installment_count: 3, monthly_rate: 1.8 },
+    { ...BOLETO, payment_condition_version: 2, payment_deadline_days: 1, installment_count: 1, monthly_rate: 1.8 },
+    { ...TEST_PIX, installment_count: 1, monthly_rate: 0 },
+  ];
+  const reply = async (a: Record<string, unknown>) => {
+    const choice = a.p_payment_choice as typeof BOLETO;
+    const option = choices.find((o) => o.payment_method === choice.payment_method && o.payment_condition_version === choice.payment_condition_version);
+    if (!option) throw new Error("Unexpected choice");
+    const rows = option.installment_count === 3 ? [6.22, 6.22, 6.21] : [choice.payment_method === "pix" ? 18 : 18.32];
+    const final = rows.reduce((sum, n) => sum + Math.round(n * 100), 0) / 100;
+    const r = await priceReply(rows, final)(a);
+    return { ...r, data: { ...r.data, payment_choice: choice, installment_count: option.installment_count,
+      // Keep the legacy plan 1x even in the ACK: the condition owns the new economics.
+      payment_plan: { ...r.data.payment_plan, installment_count: 1 },
+      payment_condition: { ...r.data.payment_condition, installment_count: option.installment_count,
+        monthly_rate: option.monthly_rate, deadline_days: choice.payment_deadline_days,
+        payment_method_name: choice.payment_method === "pix" ? "Pix" : "Boleto" },
+      amounts: { table_amount: 20, discount_amount: 2, net_amount_after_discount: 18,
+        financial_interest_amount: Math.round((final - 18) * 100) / 100, final_amount: final },
+    } };
+  };
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => {
+    if (n === "b2b_list_payment_condition_options_secure") return response({ contract: TEST_CONTRACT,
+      partner_id: a?.p_partner_id, payment_plan_id: a?.p_payment_plan_id, mode: "required", due_basis: "nf_issue",
+      options: choices.map((o) => ({ ...o, available: true, payment_method_name: o.payment_method === "pix" ? "Pix" : "Boleto" })) });
+    if (n === "simulate_b2b_payment_condition_secure") {
+      const choice = a?.p_payment_choice as typeof BOLETO;
+      if (choice.payment_method === "pix" || choice.payment_condition_version === 2)
+        return new Promise((resolve) => { finish = resolve; });
+      return reply(a ?? {});
+    }
+    return base(n, a);
+  });
+  await toPayment();
+  await screen.findByRole("radio", { name: /Boleto · 3x/ });
+  const card = screen.getByRole("button", { name: /À vista/ });
+  expect(card).not.toHaveTextContent("Pagamento único");
+  expect(card).not.toHaveTextContent("3 parcelas");
+  fireEvent.click(screen.getByRole("radio", { name: /Boleto · 3x/ }));
+  await waitFor(() => expect(card).toHaveTextContent("3 parcelas: R$ 6,22 / R$ 6,22 / R$ 6,21"));
+  expect(card).toHaveTextContent("1,8% a.m.");
+  expect(card).not.toHaveTextContent("Pagamento único");
+  expect((await screen.findAllByText(/18,65/)).length).toBeGreaterThan(0);
+  expect(screen.getByText(/\+ R\$ 0,65/)).toBeInTheDocument();
+  fireEvent.click(screen.getByText(/Parcelas estimadas/));
+  expect(screen.getAllByText("R$ 6,22")).toHaveLength(2);
+  expect(screen.getByText("R$ 6,21")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("radio", { name: /Boleto · 1x/ }));
+  await waitFor(() => expect(card).toHaveTextContent("Calculando condição"));
+  expect(card).not.toHaveTextContent("3 parcelas");
+  expect(screen.queryByText(/Parcelas estimadas/)).toBeNull();
+  expect(screen.queryByText(/18,65/)).toBeNull();
+  expect(await submitBtn()).toBeDisabled();
+  const versionFinish = finish;
+  if (!versionFinish) throw new Error("Missing version response");
+  const versionArgs = calls("simulate_b2b_payment_condition_secure").at(-1);
+  if (!versionArgs) throw new Error("Missing version request");
+  await act(async () => versionFinish(await reply(versionArgs)));
+  await waitFor(() => expect(card).toHaveTextContent("Pagamento único de R$ 18,32"));
+  expect(card).toHaveTextContent("1,8% a.m.");
+  expect(screen.getByText(/Parcelas estimadas · Boleto \(1\)/)).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("radio", { name: /Pix/ }));
+  await waitFor(() => expect(card).toHaveTextContent("Calculando condição"));
+  expect(card).not.toHaveTextContent("18,32");
+  expect(within(card).queryByText(/Juros:/)).toBeNull();
+  expect(screen.queryByText(/Parcelas estimadas/)).toBeNull();
+  expect(await submitBtn()).toBeDisabled();
+  const methodFinish = finish;
+  const methodArgs = calls("simulate_b2b_payment_condition_secure").at(-1);
+  if (!methodFinish || !methodArgs) throw new Error("Missing method request/response");
+  await act(async () => methodFinish(await reply(methodArgs)));
+  await waitFor(() => expect(card).toHaveTextContent("Pagamento único de R$ 18,00"));
+  expect(screen.getByText(/Parcelas estimadas · Pix \(1\)/)).toBeInTheDocument();
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+  expect(calls("create_partner_order_secure")).toHaveLength(0);
 });
 
 it("crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado", async () => {
