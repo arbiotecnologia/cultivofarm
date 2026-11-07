@@ -283,10 +283,15 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("PRE confirma writers/índice e ausência de todos os overloads da projeção", pre.returncode == 0 and "PRE_OK" in (pre.stdout + pre.stderr), (pre.stdout + pre.stderr)[-1200:])
         install = runfile(H / "02-install.sql.review")
         if install.returncode != 0 and "B4_POST_BODY:" in install.stderr:
+            # Diagnóstico fora do aceite: a transação oficial já fez rollback.
+            diagnostic_install = runfile(H / "b4-candidate.sql.review")
+            if diagnostic_install.returncode != 0:
+                raise RuntimeError("diagnóstico do corpo falhou: " + diagnostic_install.stderr[-900:])
             function_objects = [x for x in json.loads((H / "b4-object-manifest.json").read_text())["objects"] if x["kind"] == "function"]
             values = ",".join("('" + x["candidate"]["signature"] + "','" + x["candidate"]["body_md5"] + "')" for x in function_objects)
-            mismatch_sql = "SELECT x.sig||'|'||x.expected||'|'||coalesce(md5(pg_get_functiondef(x.sig::regprocedure)),'MISSING') FROM (VALUES " + values + ") x(sig,expected) WHERE md5(pg_get_functiondef(x.sig::regprocedure)) IS DISTINCT FROM x.expected ORDER BY x.sig"
-            print("POST_FUNCTION_HASH_DEBUG " + B3.psql(mismatch_sql).stdout, flush=True)
+            mismatch_sql = "SELECT x.sig||'|'||x.expected||'|'||coalesce(md5(pg_get_functiondef(x.sig::regprocedure)),'MISSING') FROM (VALUES " + values + ") x(sig,expected) WHERE to_regprocedure(x.sig) IS NULL OR md5(pg_get_functiondef(x.sig::regprocedure)) IS DISTINCT FROM x.expected ORDER BY x.sig"
+            print("POST_FUNCTION_HASH_DEBUG\n" + B3.psql(mismatch_sql).stdout, flush=True)
+            raise RuntimeError("instalação oficial falhou; diagnóstico de hashes concluído fora do aceite")
         check("instalação descartável cria projeção nova e passa PRE+POST íntegros", install.returncode == 0, install.stderr[-1400:])
         post = runfile(H / "03-post.sql.readonly")
         check("POST confirma exatamente um overload owner-only e metadata completa", post.returncode == 0 and "POST_OK" in (post.stdout + post.stderr), (post.stdout + post.stderr)[-1200:])
