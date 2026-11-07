@@ -345,7 +345,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012000, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, origem_inesperada, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012000, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, origem_inesperada, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -362,7 +362,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012001, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, null).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012001, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, null).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -379,7 +379,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012002, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, null, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012002, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, null, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -396,7 +396,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012003, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, null, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012003, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, null, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -413,7 +413,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012004, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, null, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012004, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, null, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -430,7 +430,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012005, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, null, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012005, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, null, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -447,7 +447,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012006, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, null, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012006, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, null, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -464,7 +464,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012007, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, 50, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012007, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, 50, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -481,7 +481,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012008, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 49, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012008, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 49, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -498,7 +498,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012009, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, null, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012009, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, null, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -515,7 +515,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012100, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, origem_inesperada, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012100, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, origem_inesperada, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -532,7 +532,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012101, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, null).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012101, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, null).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -549,7 +549,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012102, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, null, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012102, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, null, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -566,7 +566,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012103, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, null, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012103, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, null, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -583,7 +583,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012104, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, null, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012104, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, null, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -600,7 +600,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012105, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, null, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012105, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, null, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -617,7 +617,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012106, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, null, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012106, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, null, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -634,7 +634,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012107, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, 50, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012107, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, 50, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -651,7 +651,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012108, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 49, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012108, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, unidade, 25.0, kg, 49, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     },
@@ -668,7 +668,7 @@
       },
       "check": {
         "returncode": 3,
-        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012109, 10000000-0000-4000-8000-000000005011, fee6ceb6-9755-4b65-853c-dc75e5e93af4, 2, null, 2028-12-31, disponivel, 2026-11-07 18:48:24.347332+00, 2026-11-07 18:48:24.347332+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, null, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
+        "stderr": "ERROR:  23514: new row for relation \"estoque_produto\" violates check constraint \"finished_product_unit_contract\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000012109, 10000000-0000-4000-8000-000000005011, 6bfbd1fd-98c6-4bf1-a097-8b437d3d4e00, 2, null, 2028-12-31, disponivel, 2026-11-07 19:00:33.569374+00, 2026-11-07 19:00:33.569374+00, null, null, null, 1, null, null, null, null, null, null, null, null, null, compra_produto_acabado_revenda, null, 25.0, kg, 50.0, 10000000-0000-4000-8000-000000005012, 1).\nSCHEMA NAME:  public\nTABLE NAME:  estoque_produto\nCONSTRAINT NAME:  finished_product_unit_contract\nLOCATION:  ExecConstraints, execMain.c:2079\n",
         "denied": true
       }
     }
