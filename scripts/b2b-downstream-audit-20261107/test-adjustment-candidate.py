@@ -248,7 +248,8 @@ def main():
         expected_candidate_md5 = pins["candidate_md5"]
         check("candidato executado tem o MD5 gerado", candidate_md5 == expected_candidate_md5, {"actual": candidate_md5, "expected": expected_candidate_md5})
         helper_actual = psql(f"SELECT md5(pg_get_functiondef('{G.HELPER_SIG}'::regprocedure))").stdout.strip()
-        helper_closed = psql(f"""SELECT NOT has_function_privilege('PUBLIC','{G.HELPER_SIG}','EXECUTE')
+        helper_closed = psql(f"""SELECT NOT EXISTS(SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a
+                                                     WHERE p.oid='{G.HELPER_SIG}'::regprocedure AND a.grantee=0)
                                       AND NOT has_function_privilege('anon','{G.HELPER_SIG}','EXECUTE')
                                       AND NOT has_function_privilege('authenticated','{G.HELPER_SIG}','EXECUTE')
                                       AND NOT has_function_privilege('service_role','{G.HELPER_SIG}','EXECUTE')""").stdout.strip()
