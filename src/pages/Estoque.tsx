@@ -280,13 +280,34 @@ export default function Estoque() {
     return arr;
   }, [estoques, sortBy]);
 
+  const biologicalEntryForm = (
+    <div className="form-spacing-mobile pt-2">
+      <div className="space-y-1.5 sm:space-y-1">
+        <Label>Lote (aprovado)</Label>
+        <Select value={form.lote_id} onValueChange={v => { setForm(f => ({ ...f, lote_id: v })); }}>
+          <SelectTrigger><SelectValue placeholder={lotes.length ? "Selecione o lote" : "Nenhum lote envasado disponível"} /></SelectTrigger>
+          <SelectContent>
+            {lotes.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum lote envasado e disponível para entrada.</div>}
+            {lotes.map(l => <SelectItem key={l.id} value={l.id}>{l.codigo_lote}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5 sm:space-y-1"><Label>Quantidade (un)</Label><Input type="number" value={form.quantidade} onChange={e => setForm(f => ({ ...f, quantidade: e.target.value }))} /></div>
+        <div className="space-y-1.5 sm:space-y-1"><Label>Volume Total (L)</Label><Input type="number" value={form.volume_total} onChange={e => setForm(f => ({ ...f, volume_total: e.target.value }))} /></div>
+      </div>
+      <div className="space-y-1.5 sm:space-y-1"><Label>Validade</Label><Input type="date" value={form.validade} onChange={e => setForm(f => ({ ...f, validade: e.target.value }))} /></div>
+      <Button className="w-full h-12 sm:h-10 font-bold" onClick={() => createMutation.mutate()} disabled={!form.lote_id}>Registrar Entrada</Button>
+    </div>
+  );
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Estoque"
         description="Controle de produtos acabados"
         action={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(value) => { setOpen(value); if (!value) setEntryMode("envase"); }}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-bold sm:font-medium shadow-md">
                 <Plus className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />Entrada no Estoque
@@ -294,24 +315,18 @@ export default function Estoque() {
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
               <DialogHeader><DialogTitle>Nova Entrada</DialogTitle></DialogHeader>
-              <div className="form-spacing-mobile pt-2">
-                <div className="space-y-1.5 sm:space-y-1">
-                  <Label>Lote (aprovado)</Label>
-                  <Select value={form.lote_id} onValueChange={v => { setForm(f => ({ ...f, lote_id: v })); }}>
-                    <SelectTrigger><SelectValue placeholder={lotes.length ? "Selecione o lote" : "Nenhum lote envasado disponível"} /></SelectTrigger>
-                    <SelectContent>
-                      {lotes.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum lote envasado e disponível para entrada.</div>}
-                      {lotes.map(l => <SelectItem key={l.id} value={l.id}>{l.codigo_lote}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5 sm:space-y-1"><Label>Quantidade (un)</Label><Input type="number" value={form.quantidade} onChange={e => setForm(f => ({ ...f, quantidade: e.target.value }))} /></div>
-                  <div className="space-y-1.5 sm:space-y-1"><Label>Volume Total (L)</Label><Input type="number" value={form.volume_total} onChange={e => setForm(f => ({ ...f, volume_total: e.target.value }))} /></div>
-                </div>
-                <div className="space-y-1.5 sm:space-y-1"><Label>Validade</Label><Input type="date" value={form.validade} onChange={e => setForm(f => ({ ...f, validade: e.target.value }))} /></div>
-                <Button className="w-full h-12 sm:h-10 font-bold" onClick={() => createMutation.mutate()} disabled={!form.lote_id}>Registrar Entrada</Button>
-              </div>
+              {purchaseAvailable ? (
+                <Tabs value={entryMode} onValueChange={(value) => setEntryMode(value as "envase" | "revenda")}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="envase">Envase biológico</TabsTrigger>
+                    <TabsTrigger value="revenda">Compra para revenda</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="envase">{biologicalEntryForm}</TabsContent>
+                  <TabsContent value="revenda">
+                    <FinishedProductPurchaseEntryForm onSuccess={() => { setOpen(false); setEntryMode("envase"); }} />
+                  </TabsContent>
+                </Tabs>
+              ) : biologicalEntryForm}
             </DialogContent>
           </Dialog>
         }
