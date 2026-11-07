@@ -650,6 +650,125 @@ def build_sim():
     return s + ";\n"
 
 
+def build_quote(rollback=False):
+    """Mesma RPC LIVE: sem snapshot = legado; com snapshot = Price/condição. Rollback nega só o ramo ativado."""
+    s = live("quote")
+    s = delta(s, "  v_partner_user record; v_credit jsonb; v_new_status partner_order_status;\n",
+              "  v_partner_user record; v_credit jsonb; v_new_status partner_order_status;\n"
+              "  v_cond_snapshot platform_private.b2b_order_condition_snapshots; v_has_condition boolean := false;\n"
+              "  v_req_fp text; v_result jsonb; v_choice jsonb; v_cond jsonb; v_cond2 jsonb; v_rows jsonb; v_cart jsonb; v_hash text;\n", "Q1 declarações")
+    s = delta(s, "  -- locks em ordem deterministica: (1) pedido/cotacao\n",
+              "  SELECT encode(sha256(convert_to(jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','order_id',p_order_id,\n"
+              "    'lines',COALESCE((SELECT jsonb_agg(jsonb_build_object('item_id',l->>'item_id','unit_price',NULLIF(btrim(l->>'unit_price'),'')) ORDER BY l->>'item_id')\n"
+              "      FROM jsonb_array_elements(p_lines) l),'[]'::jsonb),'first_due',p_first_due_date,'installments',p_installment_count,\n"
+              "    'motivo',NULLIF(btrim(p_motivo),''))::text,'UTF8')),'hex') INTO v_req_fp;\n"
+              "  -- locks em ordem deterministica: (1) pedido/cotacao\n", "Q2 fingerprint idempotente")
+    s = delta(s, "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n  IF v_order.status <> 'aguardando_cotacao'::partner_order_status THEN\n",
+              "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n"
+              "  SELECT * INTO v_cond_snapshot FROM platform_private.b2b_order_condition_snapshots x WHERE x.order_id=p_order_id;\n"
+              "  v_has_condition := FOUND;\n"
+              "  IF v_has_condition AND " + ("true" if rollback else "false") + " THEN\n"
+              "    RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';\n"
+              "  END IF;\n"
+              + ("  IF v_has_condition THEN\n"
+              "    SELECT r.result INTO v_result FROM platform_private.b2b_quote_response_receipts r WHERE r.order_id=p_order_id;\n"
+              "    IF FOUND THEN\n"
+              "      IF (SELECT r.request_hash FROM platform_private.b2b_quote_response_receipts r WHERE r.order_id=p_order_id) IS DISTINCT FROM v_req_fp THEN\n"
+              "        RAISE EXCEPTION 'quote_idempotency_conflict' USING ERRCODE='PT409';\n"
+              "      END IF;\n"
+              "      RETURN v_result;\n"
+              "    END IF;\n"
+              "    IF p_first_due_date IS NOT NULL OR p_installment_count IS NOT NULL THEN\n"
+              "      RAISE EXCEPTION 'payment_condition_quote_client_terms' USING ERRCODE='PT409';\n"
+              "    END IF;\n"
+              "  END IF;\n" if not rollback else "")
+              + "  IF v_order.status <> 'aguardando_cotacao'::partner_order_status THEN\n", "Q3 replay/rollback antes do status")
+    if rollback:
+        return s + ";\n"
+    s = delta(s, "  IF v_plan.active = false THEN RAISE EXCEPTION 'plan_inactive'; END IF;\n",
+              "  IF v_plan.active = false THEN RAISE EXCEPTION 'plan_inactive'; END IF;\n"
+              "  IF v_has_condition THEN\n"
+              "    v_choice := platform_private.b2b_choice(v_cond_snapshot.choice);\n"
+              "    v_cond := platform_private.b2b_resolve_condition(v_order.partner_id,v_plan.id,v_choice,true);\n"
+              "  END IF;\n", "Q4 condição atual sob travas")
+    s = delta(s, "  SELECT COALESCE(SUM(subtotal),0)::numeric(14,2) INTO v_table\n",
+              "  IF v_has_condition THEN\n"
+              "    SELECT jsonb_build_object('quote_required','false','lines',jsonb_agg(jsonb_build_object(\n"
+              "      'item_tipo',CASE WHEN i.produto_id IS NOT NULL THEN 'produto' ELSE 'microrganismo' END,\n"
+              "      'item_id',COALESCE(i.produto_id,i.microrganismo_id),'unidade_medida',i.unit_type_snapshot,\n"
+              "      'volume_ml',i.volume_ml_snapshot,'quantidade',i.quantidade,'pricing_mode','fixed_item_price',\n"
+              "      'price_source','quote_manual','rule_id','','final_unit_price',i.preco_unitario_final_snapshot,\n"
+              "      'line_final_amount',i.subtotal) ORDER BY i.id)) INTO v_cart FROM public.partner_order_items i WHERE i.order_id=p_order_id;\n"
+              "    v_cond2 := platform_private.b2b_resolve_condition(v_order.partner_id,v_plan.id,v_choice,false);\n"
+              "    IF v_cond2 IS DISTINCT FROM v_cond OR NOT public.b2b_phase1_order_visible(p_order_id)\n"
+              "       OR NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN\n"
+              "      RAISE EXCEPTION 'payment_condition_stale' USING ERRCODE='PT409';\n"
+              "    END IF;\n"
+              "  END IF;\n"
+              "  SELECT COALESCE(SUM(subtotal),0)::numeric(14,2) INTO v_table\n", "Q5 reautorização após itens + carrinho canônico")
+    s = delta(s, "  v_final := public.fn_b2b_apply_interest(v_net, v_plan.interest_type,\n               v_plan.monthly_interest_percent, v_plan.months_count);\n",
+              "  IF v_has_condition THEN\n"
+              "    v_installments := (v_cond->>'installment_count')::integer;\n"
+              "    v_rows := platform_private.b2b_schedule(v_net,(v_cond->>'monthly_rate')::numeric,v_installments,current_date,(v_cond->>'deadline_days')::integer);\n"
+              "    SELECT round(sum((r->>'amount')::numeric),2) INTO v_final FROM jsonb_array_elements(v_rows) r;\n"
+              "  ELSE\n"
+              "    v_final := public.fn_b2b_apply_interest(v_net, v_plan.interest_type,v_plan.monthly_interest_percent,v_plan.months_count);\n"
+              "  END IF;\n", "Q6 UMA economia Price")
+    s = delta(s, "  v_installments := GREATEST(COALESCE(p_installment_count, v_plan.installment_count, 1), 1);\n",
+              "  v_installments := CASE WHEN v_has_condition THEN (v_cond->>'installment_count')::integer ELSE GREATEST(COALESCE(p_installment_count,v_plan.installment_count,1),1) END;\n", "Q7 parcelas da escolha")
+    s = delta(s, "  v_first_due := COALESCE(p_first_due_date, current_date + v_plan.max_days);\n",
+              "  v_first_due := CASE WHEN v_has_condition THEN (v_rows->0->>'due_date')::date ELSE COALESCE(p_first_due_date,current_date+v_plan.max_days) END;\n", "Q8 data estimada")
+    s = delta(s, "  v_credit := public.fn_b2b_credit_exposure(v_order.partner_id, v_final, p_order_id);\n",
+              "  v_credit := CASE WHEN v_has_condition THEN platform_private.b2b_credit_checked(v_order.partner_id,v_final,p_order_id)\n"
+              "                   ELSE public.fn_b2b_credit_exposure(v_order.partner_id,v_final,p_order_id) END;\n", "Q9 crédito explícito")
+    s = delta(s, "    0, v_plan.monthly_interest_percent, v_plan.months_count,\n",
+              "    0, CASE WHEN v_has_condition THEN (v_cond->>'monthly_rate')::numeric ELSE v_plan.monthly_interest_percent END,\n"
+              "    CASE WHEN v_has_condition THEN v_installments ELSE v_plan.months_count END,\n", "Q10 termos da condição")
+    s = block(s, "  IF v_installments = 1 THEN\n    INSERT INTO public.partner_order_payment_schedule(", "  END IF;\n\n  UPDATE public.partner_orders SET",
+              "  IF v_has_condition THEN\n"
+              "    INSERT INTO public.partner_order_payment_schedule(partner_order_id,payment_terms_id,installment_number,due_date,amount,principal_amount,interest_amount)\n"
+              "    SELECT p_order_id,v_terms_id,(r->>'installment_number')::integer,(r->>'due_date')::date,(r->>'amount')::numeric,\n"
+              "      (r->>'principal_amount')::numeric,(r->>'interest_amount')::numeric FROM jsonb_array_elements(v_rows) r;\n"
+              "  ELSIF v_installments = 1 THEN\n    INSERT INTO public.partner_order_payment_schedule(\n"
+              "      partner_order_id, payment_terms_id, installment_number, due_date,\n"
+              "      amount, principal_amount, interest_amount)\n"
+              "    VALUES (p_order_id, v_terms_id, 1, v_first_due, v_final, v_net, v_interest);\n"
+              "  ELSE\n"
+              "    v_inst := ROUND(v_final / v_installments, 2);\n"
+              "    FOR i IN 1..v_installments LOOP\n"
+              "      IF i < v_installments THEN v_amount_i := v_inst; ELSE v_amount_i := ROUND(v_final - v_accum,2); END IF;\n"
+              "      v_accum := v_accum + v_amount_i;\n"
+              "      v_principal_i := ROUND(v_amount_i * (v_net / NULLIF(v_final,0)), 2);\n"
+              "      v_interest_i  := ROUND(v_amount_i - v_principal_i, 2);\n"
+              "      v_due_i := v_first_due + ((i-1)*30);\n"
+              "      INSERT INTO public.partner_order_payment_schedule(partner_order_id,payment_terms_id,installment_number,due_date,amount,principal_amount,interest_amount)\n"
+              "      VALUES (p_order_id,v_terms_id,i,v_due_i,v_amount_i,v_principal_i,v_interest_i);\n"
+              "    END LOOP;\n"
+              "  END IF;\n\n  UPDATE public.partner_orders SET", "Q11 cronograma único")
+    s = delta(s, "  SELECT status::text INTO v_final_status FROM public.partner_orders WHERE id = p_order_id;\n",
+              "  IF v_has_condition THEN\n"
+              "    v_hash := platform_private.b2b_condition_hash(public.fn_b2b_cart_hash(v_order.partner_id,v_plan.id,v_cart,v_final),v_choice,v_cond,v_final);\n"
+              "    INSERT INTO platform_private.b2b_order_condition_quote_snapshots(order_id,organization_id,partner_id,actor_id,plan_id,choice,condition,\n"
+              "      request_hash,rows,principal,financed_interest,financed_total,payment_terms_id,cart_hash,payment_method_name,estimated_reference_date,condition_version,condition_method)\n"
+              "    VALUES(p_order_id,(v_cond->>'organization_id')::uuid,v_order.partner_id,v_uid,v_plan.id,v_choice,v_cond,v_req_fp,v_rows,v_net,v_interest,v_final,\n"
+              "      v_terms_id,v_hash,v_cond->>'payment_method_name',current_date,(v_cond->>'version')::integer,v_cond->>'method');\n"
+              "  END IF;\n"
+              "  SELECT status::text INTO v_final_status FROM public.partner_orders WHERE id = p_order_id;\n", "Q12 snapshot econômico append-only")
+    s = delta(s, "  RETURN jsonb_build_object(\n",
+              "  v_result := jsonb_build_object(\n", "Q13 resultado para recibo")
+    s = delta(s, "    'financial_approval_status', v_fin_status);\nEND $function$",
+              "    'financial_approval_status', v_fin_status);\n"
+              "  IF v_has_condition THEN\n"
+              "    v_result := v_result || jsonb_build_object('payment_condition_contract','B2B_PAYMENT_CONDITION_V1','payment_choice',v_choice,\n"
+              "      'cart_hash',v_hash,'schedule',v_rows,'total',v_final,'payment_condition',jsonb_build_object('payment_method_name',v_cond->>'payment_method_name',\n"
+              "      'installment_count',v_installments,'monthly_rate',(v_cond->>'monthly_rate')::numeric,'deadline_days',(v_cond->>'deadline_days')::integer,\n"
+              "      'due_basis','nf_issue','estimated',true));\n"
+              "    INSERT INTO platform_private.b2b_quote_response_receipts(order_id,request_hash,actor_id,result) VALUES(p_order_id,v_req_fp,v_uid,v_result);\n"
+              "  END IF;\n"
+              "  RETURN v_result;\nEND $function$", "Q14 recibo + ACK condicionado")
+    return s + ";\n"
+
+
 DENY_SIGS = {
     "publish": "public.b2b_payment_condition_publish(p_plan_id uuid, p_method text, p_payment_method_id uuid, p_category_id uuid, p_deadline_days integer, p_installment_count integer, p_monthly_rate numeric, p_expected_version integer)",
     "retire": "public.b2b_payment_condition_retire(p_plan_id uuid, p_method text, p_expected_version integer)",
