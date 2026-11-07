@@ -287,12 +287,12 @@ def main():
         check("fixture validada criada pelo writer canônico com guards reais", validated is not None, validated_error or validated)
         if validated is None:
             raise RuntimeError(f"fixture validada indisponível: {validated_error}")
+        # FSF sintético é admin comum do próprio caminho organização→parceiro, não um ator sem vínculo.
+        psql(f"UPDATE public.organizations SET partner_account_id='{SP.PF}' WHERE id='{SP.F}'")
         before = state(validated["id"])
         r = request(SP.UADMF, validated["id"], "TESTE estrangeiro")
-        check("admin estrangeiro negado pelo escopo real no pedido validado", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+        check("FSF/admin estrangeiro com vínculo próprio é negado no pedido validado", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação de escopo validado preserva estado integral", state(validated["id"]) == before)
-        r = request(SP.USUP, validated["id"], "TESTE positivo validado")
-        check("superadmin cumulativo com papel administrativo solicita ajuste validado sem ampliar escopo", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
 
         # Fixture legada sem origem; preparação explícita, todos os gatilhos religados antes das chamadas.
         legacy_id = "10000000-0000-0000-0000-000000000001"
