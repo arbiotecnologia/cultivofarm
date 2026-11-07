@@ -334,7 +334,7 @@ def build():
     baseline_schema["indexes_md5"] = md5_text("^".join(f"{x['name']}|{x['definition']}|{'t' if x['valid'] else 'f'}" for x in ar_indexes))
     baseline_schema["triggers_md5"] = md5_text("^".join(f"{x['name']}|{x['definition']}|{x['enabled']}" for x in ar_triggers))
     constraint_query = "SELECT md5(string_agg(c.conname||'|'||pg_get_constraintdef(c.oid),'^' ORDER BY c.conname)) FROM pg_constraint c WHERE c.conrelid='public.accounts_receivable'::regclass"
-    index_query = "SELECT md5(string_agg(c.relname||'|'||pg_get_indexdef(c.oid)||'|'||i.indisvalid::text,'^' ORDER BY c.relname)) FROM pg_class c JOIN pg_index i ON i.indexrelid=c.oid WHERE i.indrelid='public.accounts_receivable'::regclass"
+    index_query = "SELECT md5(string_agg(c.relname||'|'||pg_get_indexdef(c.oid)||'|'||CASE WHEN i.indisvalid THEN 't' ELSE 'f' END,'^' ORDER BY c.relname)) FROM pg_class c JOIN pg_index i ON i.indexrelid=c.oid WHERE i.indrelid='public.accounts_receivable'::regclass"
     trigger_query = "SELECT md5(string_agg(t.tgname||'|'||pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text,'^' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.accounts_receivable'::regclass AND NOT t.tgisinternal"
     post_columns = ar["columns"] + [{"name": "b2b_document_id", "type": "uuid", "default": None, "notnull": False}]
     post_columns_md5 = md5_text("^".join("|".join([c["name"], c["type"], c.get("default") or "", "NO" if c["notnull"] else "YES"]) for c in post_columns))
