@@ -17,6 +17,9 @@ NAMES = [
     "public.fn_sync_os_classica_downstream()",
     "platform_private.envase_insert_guard_v1()",
     "platform_private.envase_insert_final_v1()",
+    "platform_private.guard_manual_lot_write_v1()",
+    "platform_private.trg_lab_lot_biological_only()",
+    "public.validate_estoque_entrada()",
 ]
 
 def main():
