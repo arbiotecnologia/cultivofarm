@@ -367,6 +367,7 @@ def build():
                                   (trigger_query, baseline_schema["triggers_md5"], "B4_PRE_TRIGGERS")]:
         pre += digest_guard(query, expected, code)
     pre += absence_guard([SIGS[name] for name in new_names], "function", "B4_PRE_UNEXPECTED_EXISTING_FUNCTION")
+    pre += projection_overload_guard(0, "B4_PRE_PROJECTION_ANY_OVERLOAD_EXISTS")
     pre += absence_guard(NEW_TABLES + [NEW_VIEW, NEW_INDEX], "relation", "B4_PRE_UNEXPECTED_EXISTING_RELATION")
     pre += absence_guard([], "trigger", "B4_PRE_UNEXPECTED_EXISTING_TRIGGER")
     pre += "DO $guard$ BEGIN\n IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='b2b_document_id') THEN RAISE EXCEPTION 'B4_PRE_UNEXPECTED_COLUMN' USING ERRCODE='42501'; END IF;\nEND $guard$;"
