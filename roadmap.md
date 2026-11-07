@@ -1,7 +1,7 @@
 ## 07/11 17:37 — Entrada de revenda reconciliada com guards LIVE informados
 - [x] Registrar os fatos READONLY informados pelo auditor: `validate_estoque_entrada` MD5 `9e24938a…24e9`, retorno antecipado de reservas e `estoque_produto_catalog_tenant_guard` MD5 `874c9ca8…8efc` derivando tenant do lote; nenhuma leitura/escrita hosted nesta etapa.
-- [ ] Reconciliar a compra com o guard de tenant real capturado, sem alterar esse guard nem afrouxar a entrada biológica; entrada agregada de compra com `quantidade_reservada=NULL` e divisões somente pelo contexto canônico de reserva.
-- [ ] Testar em PostgreSQL descartável API privada/permissões, tenant produto/microrganismo, lote do fornecedor, idempotência, tentativa de usar reserva como atalho, fluxo físico, legado e rollback deny-only; preservar evidências anteriores e gerar novos pins/hashes.
+- [x] Reconciliar a compra com o guard de tenant real capturado, sem regravá-lo nem afrouxar a entrada biológica; MD5 locais coincidem com os dois fatos relatados. Entrada agregada de compra com `quantidade_reservada=NULL` e divisões somente pelo contexto canônico de reserva; lote do fornecedor obrigatório e incluído no fingerprint/snapshots.
+- [x] PostgreSQL descartável: compra/API/guards/downstream/rollback **49/49**, reprodução original 17/17 e legado biológico 6/6, exits 0. Atalho de reserva e cross-tenant produto/micro negados; API sem EXECUTE de cliente, candidato gate-off e rollback preservando histórico. Evidência anterior 37/37 arquivada em `history/pre-live-entry-guards/`; novo SHA256 `96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e`.
 - [ ] Auditor: conferir independentemente corpos/owners/ACLs/trigger/relações LIVE e homologar ARBio/JWT/RLS/Storage/PostgREST/browser. Candidato continua INATIVO/BLOQUEADO/NÃO APROVADO, sem grants de cliente, fiscal, cobranças, envios ou publicação.
 
 ## 07/11 17:25 — Compra de produto acabado para revenda (decisão humana)
