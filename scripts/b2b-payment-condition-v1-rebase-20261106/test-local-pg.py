@@ -143,7 +143,7 @@ def quote_completeness(label, order_id, foreign_item, positive=True):
     # Delete only inside a rolled-back local transaction, with ALL installed guards enabled.
     # Verify zero rows before dispatch so an inconsistent fixture cannot masquerade as empty_cart.
     before = quote_state(order_id)
-    r = psql(f"BEGIN; DELETE FROM public.partner_order_items WHERE order_id='{order_id}';\n"
+    r = psql(f"BEGIN; SELECT set_config('request.jwt.claim.sub','{UADM}',true); DELETE FROM public.partner_order_items WHERE order_id='{order_id}';\n"
              f"DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.partner_order_items WHERE order_id='{order_id}') THEN RAISE EXCEPTION 'fixture_not_empty'; END IF; END $$;\n"
              + session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{order_id}','{js(lines)}'::jsonb,NULL,NULL,NULL);"), check=False)
     check(f"{label}: carrinho vazio consistente negado com guards ativos", r.returncode != 0 and "empty_cart" in r.stderr, r.stderr[-350:])
@@ -152,7 +152,7 @@ def quote_completeness(label, order_id, foreign_item, positive=True):
         j, e = respond(UADM, order_id, lines)
         state = quote_state(order_id)
         check(f"{label}: resposta completa positiva persiste ambos subtotais 100 e principal 200",
-              j and Decimal(str(j["net_amount"])) == Decimal("200")
+              j and Decimal(str(j["net_amount_after_discount"])) == Decimal("200")
               and all(Decimal(str(i["subtotal"])) == Decimal("100") for i in json.loads(state["items"]))
               and len(json.loads(state["terms"])) == 1 and len(json.loads(state["schedule"])) >= 1, e or j)
         check(f"{label}: terms.first_due_date igual à primeira data do schedule",
