@@ -377,10 +377,43 @@ def main():
         check("pedido misto: snapshots de embalagem inteira + líquido preservados", j and Decimal(str(j["total"])) == Decimal("162.90") and it.startswith("L:1") and "SC25:1" in it, e or it)
         denied("preço client-side ignorado: hash não confere", create(UB, PLD, [dict(L(1), preco_unitario=0.01)], "x" * 64, "TESTE-CLI", PIX), "price_changed")
         denied("vencimento/parcelas do cliente não existem no contrato", out(as_user(UB, f"SELECT public.create_partner_order_condition_secure('{P}',NULL,'[]'::jsonb,NULL,'{PLD}','x','k',NULL,3)::text;")), "does not exist")
-        j, e = sim(UB, PLQ, [L(1)], PIX); hq = j and j["cart_hash"]
-        j, e = create(UB, PLQ, [L(1)], hq, "TESTE-COT-1", PIX); oq = j and j["id"]
+        j, e = sim(UB, PLQ, [L(1)], BOL); hq = j and j["cart_hash"]
+        j, e = create(UB, PLQ, [L(1)], hq, "TESTE-COT-1", BOL); oq = j and j["id"]
         st = psql(f"SELECT status||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT quote::text||':'||coalesce(financed_total::text,'null') FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{oq}') FROM public.partner_orders WHERE id='{oq}'").stdout.strip() if oq else ""
         check("cotação: aguardando_cotacao, sem termos, snapshot de escolha sem valor", st == "aguardando_cotacao:0:true:null", e or st)
+        qi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq}'").stdout.strip() if oq else ""
+        qlines = [{"item_id": qi, "unit_price": 1000}]
+        denied("cotação: comprador não responde pela condição", respond(UB, oq, qlines), "forbidden_quote_response")
+        denied("cotação: admin de outro vendedor não responde", respond(UADMF, oq, qlines), "b2b_phase1_scope_denied")
+        # Revogação REAL de papel enquanto a resposta espera o advisory de crédito: tudo é desfeito.
+        res = parallel([f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{P}',0)); SELECT pg_sleep(1.2); COMMIT;",
+                        session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{oq}','{js(qlines)}'::jsonb,NULL,NULL,NULL);"),
+                        f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador';"], [0,0.3,0.7])
+        check("cotação: revogação do vendedor durante espera nega e restaura itens/termos",
+              res[1].returncode != 0 and "forbidden" in res[1].stderr
+              and psql(f"SELECT subtotal||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}') FROM public.partner_order_items WHERE id='{qi}'").stdout.strip() == "0.00:0", res[1].stderr[-250:])
+        psql(f"INSERT INTO public.user_roles VALUES ('{UADM}','administrador')")
+        j, e = respond(UADM, oq, qlines)
+        check("cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
+              j and Decimal(str(j["final_amount"])) == Decimal("1036.22") and Decimal(str(j["total"])) == Decimal("1036.22")
+              and j["payment_condition_contract"] == "B2B_PAYMENT_CONDITION_V1" and j["payment_choice"] == BOL
+              and rows_of(j["schedule"]) == exp and j["payment_condition"]["estimated"] is True, e or j)
+        check("cotação: pedido/termos/cronograma/snapshot econômico compartilham UMA economia",
+              psql(f"SELECT (SELECT final_amount_with_interest FROM public.partner_orders WHERE id='{oq}')||':'||(SELECT final_amount FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT financed_total FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{oq}')").stdout.strip() == "1036.22:1036.22:1036.22")
+        check("cotação: escolha inicial permanece imutável e resposta é append-only",
+              psql(f"SELECT (SELECT quote::text||':'||coalesce(financed_total::text,'null') FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{oq}')||':'||(SELECT count(*) FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{oq}')").stdout.strip() == "true:null:1")
+        nterms = psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}'").stdout.strip()
+        nnotes = psql(f"SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo='pedido_b2b_cotacao_respondida' AND link='/portal-parceiro/pedidos'").stdout.strip()
+        j2, e = respond(UADM, oq, qlines)
+        check("cotação idempotente: replay idêntico devolve o MESMO recibo/ACK sem duplicar",
+              j2 == j and psql(f"SELECT (SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{oq}')").stdout.strip() == "1:1"
+              and psql(f"SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo='pedido_b2b_cotacao_respondida' AND link='/portal-parceiro/pedidos'").stdout.strip() == nnotes, e or j2)
+        denied("cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia",
+               respond(UADM, oq, [{"item_id": qi, "unit_price": 999}]), "quote_idempotency_conflict")
+        check("cotação: conflito não altera termos", psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}'").stdout.strip() == nterms)
+        j, e = sim(UB, PLQ, [L(1)], BOL); hq2 = j and j["cart_hash"]
+        j, e = create(UB, PLQ, [L(1)], hq2, "TESTE-COT-ROLLBACK", BOL); oq_pending = j and j["id"]
+        check("segunda cotação sintética fica pendente para prova de rollback", j and j["status"] == "aguardando_cotacao", e or j)
         psql(f"INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES (gen_random_uuid(),'{P}',2050,'block',false,0) ON CONFLICT (partner_id) DO UPDATE SET credit_limit=2050, credit_limit_action='block'")
         expo = json.loads(psql(f"SELECT public.fn_b2b_credit_exposure('{P}',0,NULL)::text").stdout.strip())
         room = Decimal(str(expo["credit_limit"])) - Decimal(str(expo["exposicao_projetada"]))
