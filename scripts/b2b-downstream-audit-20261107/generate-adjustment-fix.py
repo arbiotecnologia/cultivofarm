@@ -378,7 +378,13 @@ COMMIT;
         "role_md5": ROLE_MD5,
         "private_role_md5": PRIVATE_ROLE_MD5,
         "accounting_guard_md5": ACCOUNTING_GUARD_MD5,
-        "candidate_md5": candidate_md5,
+        "candidate_md5": candidate_md5s["request"],
+        "decision_candidates": {
+            kind: {"signature": DECISION_SOURCES[kind]["signature"], "baseline_md5": baseline_md5s[kind], "candidate_md5": candidate_md5s[kind],
+                   "owner": captured(DECISION_SOURCES[kind]["source"], baseline_md5s[kind])["owner"],
+                   "acl": captured(DECISION_SOURCES[kind]["source"], baseline_md5s[kind])["acl"]}
+            for kind in DECISION_SOURCES
+        },
         "contract": CONTRACT,
         "temporary_pin_substitution": False,
         "dependencies": dependencies,
