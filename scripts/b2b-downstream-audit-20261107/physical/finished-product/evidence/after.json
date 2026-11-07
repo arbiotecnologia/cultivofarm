@@ -11,7 +11,7 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL candidate PRE/install failed\nERROR:  42703: column v.owner_organization_id does not exist\nLINE 4: ...c.lotes l ON l.id=s.lote_id AND l.organization_id=v.owner_or...\n                                                             ^\nLOCATION:  errorMissingColumn, parse_relation.c:3721\n",
+      "name": "FAIL candidate PRE/install failed\nERROR:  42601: syntax error at or near \"CREATE\"\nLINE 119: CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_...\n          ^\nLOCATION:  scanner_yyerror, scan.l:1248\n",
       "status": "PASS"
     }
   ],
