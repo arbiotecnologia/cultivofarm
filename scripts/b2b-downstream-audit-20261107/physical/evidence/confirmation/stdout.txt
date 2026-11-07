@@ -1,0 +1,237 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=4.6s
+CHECKPOINT sql_calls=100 elapsed=7.4s
+CHECKPOINT sql_calls=200 elapsed=10.4s
+CHECKPOINT sql_calls=300 elapsed=13.4s
+CHECKPOINT sql_calls=400 elapsed=16.1s
+CHECKPOINT sql_calls=500 elapsed=18.8s
+CHECKPOINT sql_calls=600 elapsed=21.7s
+CHECKPOINT sql_calls=700 elapsed=24.6s
+CHECKPOINT sql_calls=800 elapsed=27.4s
+CHECKPOINT sql_calls=900 elapsed=30.2s
+CHECKPOINT sql_calls=1000 elapsed=32.8s
+CHECKPOINT sql_calls=1100 elapsed=35.3s
+CHECKPOINT sql_calls=1200 elapsed=37.8s
+CHECKPOINT sql_calls=1300 elapsed=40.3s
+CHECKPOINT sql_calls=1400 elapsed=43.1s
+CHECKPOINT sql_calls=1500 elapsed=46.2s
+CHECKPOINT sql_calls=1600 elapsed=49.1s
+CHECKPOINT sql_calls=1700 elapsed=52.0s
+CHECKPOINT sql_calls=1800 elapsed=55.0s
+CHECKPOINT sql_calls=1900 elapsed=57.4s
+CHECKPOINT sql_calls=2000 elapsed=60.1s
+CHECKPOINT sql_calls=2100 elapsed=62.7s
+CHECKPOINT sql_calls=2200 elapsed=65.3s
+CHECKPOINT sql_calls=2300 elapsed=67.8s
+CHECKPOINT sql_calls=2400 elapsed=70.4s
+CHECKPOINT sql_calls=2500 elapsed=73.1s
+CHECKPOINT sql_calls=2600 elapsed=75.5s
+CHECKPOINT sql_calls=2700 elapsed=78.1s
+CHECKPOINT sql_calls=2800 elapsed=80.7s
+CHECKPOINT sql_calls=2900 elapsed=83.3s
+CHECKPOINT sql_calls=3000 elapsed=85.7s
+CHECKPOINT sql_calls=3100 elapsed=88.0s
+CHECKPOINT sql_calls=3200 elapsed=90.2s
+CHECKPOINT sql_calls=3300 elapsed=92.5s
+CHECKPOINT sql_calls=3400 elapsed=94.8s
+CHECKPOINT sql_calls=3500 elapsed=97.7s
+CHECKPOINT sql_calls=3600 elapsed=100.4s
+CHECKPOINT sql_calls=3700 elapsed=102.9s
+CHECKPOINT sql_calls=3800 elapsed=105.4s
+CHECKPOINT sql_calls=3900 elapsed=108.3s
+CHECKPOINT sql_calls=4000 elapsed=110.8s
+CHECKPOINT sql_calls=4100 elapsed=113.0s
+CHECKPOINT sql_calls=4200 elapsed=115.3s
+CHECKPOINT sql_calls=4300 elapsed=117.5s
+CHECKPOINT sql_calls=4400 elapsed=119.9s
+CHECKPOINT sql_calls=4500 elapsed=122.2s
+CHECKPOINT sql_calls=4600 elapsed=124.5s
+CHECKPOINT sql_calls=4700 elapsed=126.7s
+CHECKPOINT sql_calls=4800 elapsed=128.6s
+CHECKPOINT sql_calls=4900 elapsed=130.6s
+CHECKPOINT sql_calls=5000 elapsed=132.9s
+CHECKPOINT sql_calls=5100 elapsed=135.1s
+CHECKPOINT sql_calls=5200 elapsed=136.8s
+CHECKPOINT sql_calls=5300 elapsed=138.8s
+CHECKPOINT sql_calls=5400 elapsed=140.7s
+CHECKPOINT sql_calls=5500 elapsed=142.6s
+CHECKPOINT sql_calls=5600 elapsed=144.4s
+CHECKPOINT sql_calls=5700 elapsed=146.2s
+CHECKPOINT sql_calls=5800 elapsed=148.1s
+CHECKPOINT sql_calls=5900 elapsed=150.1s
+CHECKPOINT sql_calls=6000 elapsed=152.3s
+CHECKPOINT sql_calls=6100 elapsed=154.6s
+CHECKPOINT sql_calls=6200 elapsed=156.9s
+CHECKPOINT sql_calls=6300 elapsed=159.5s
+CHECKPOINT sql_calls=6400 elapsed=161.8s
+CHECKPOINT sql_calls=6500 elapsed=164.2s
+CHECKPOINT sql_calls=6600 elapsed=167.0s
+CHECKPOINT sql_calls=6700 elapsed=170.0s
+CHECKPOINT sql_calls=6800 elapsed=173.1s
+CHECKPOINT sql_calls=6900 elapsed=176.3s
+CHECKPOINT sql_calls=7000 elapsed=179.4s
+CHECKPOINT sql_calls=7100 elapsed=182.5s
+CHECKPOINT sql_calls=7200 elapsed=185.6s
+CHECKPOINT sql_calls=7300 elapsed=188.6s
+CHECKPOINT sql_calls=7400 elapsed=191.9s
+CHECKPOINT sql_calls=7500 elapsed=195.4s
+CHECKPOINT sql_calls=7600 elapsed=198.0s
+CHECKPOINT sql_calls=7700 elapsed=201.0s
+CHECKPOINT sql_calls=7800 elapsed=204.0s
+CHECKPOINT sql_calls=7900 elapsed=207.0s
+CHECKPOINT sql_calls=8000 elapsed=209.8s
+CHECKPOINT sql_calls=8100 elapsed=212.8s
+CHECKPOINT sql_calls=8200 elapsed=215.6s
+CHECKPOINT sql_calls=8300 elapsed=218.6s
+CHECKPOINT sql_calls=8400 elapsed=221.0s
+CHECKPOINT sql_calls=8500 elapsed=223.6s
+CHECKPOINT sql_calls=8600 elapsed=226.1s
+CHECKPOINT sql_calls=8700 elapsed=228.6s
+CHECKPOINT sql_calls=8800 elapsed=231.2s
+CHECKPOINT sql_calls=8900 elapsed=233.6s
+CHECKPOINT sql_calls=9000 elapsed=236.0s
+CHECKPOINT sql_calls=9100 elapsed=238.7s
+CHECKPOINT sql_calls=9200 elapsed=241.9s
+CHECKPOINT sql_calls=9300 elapsed=245.1s
+CHECKPOINT sql_calls=9400 elapsed=248.0s
+CHECKPOINT sql_calls=9500 elapsed=251.1s
+CHECKPOINT sql_calls=9600 elapsed=253.7s
+CHECKPOINT sql_calls=9700 elapsed=256.4s
+CHECKPOINT sql_calls=9800 elapsed=259.1s
+CHECKPOINT sql_calls=9900 elapsed=261.9s
+CHECKPOINT sql_calls=10000 elapsed=264.8s
+CHECKPOINT sql_calls=10100 elapsed=267.8s
+CHECKPOINT sql_calls=10200 elapsed=270.4s
+CHECKPOINT sql_calls=10300 elapsed=272.9s
+CHECKPOINT sql_calls=10400 elapsed=275.6s
+CHECKPOINT sql_calls=10500 elapsed=278.4s
+CHECKPOINT sql_calls=10600 elapsed=281.3s
+PASS full captured restore without unresolved objects; disposable socket verified
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+PASS captured old writer signs reused form and exact replay preserves divergent delivery hash
+PASS exact install PRE POST commits writer closed
+PASS closed writer refuses authenticated
+PASS review release stays NO-GO without remaining matrix
+PASS disposable harness-only activation exact state; review release remains closed
+PASS foreign actor cannot recover legacy sign hash
+PASS legacy recovery denies arbitrary old delivery hash
+PASS legacy recovery denies arbitrary signed proof hash
+CHECKPOINT sql_calls=10700 elapsed=290.5s
+PASS legacy recovery denies different token
+PASS legacy recovery denies different receiver
+PASS legacy recovery denies different proof path
+PASS legacy recovery denies foreign storage owner
+PASS legacy recovery denies missing object
+PASS legacy recovery denies confirmed proof
+PASS legacy recovery denies cancelled delivery
+PASS legacy recovery denies confirmed delivery
+PASS legacy recovery inactive actor during lock denied
+PASS legacy recovery tenant change during lock denied
+PASS legacy recovery role revoked during lock denied
+PASS legacy recovery denies object owner changed DURING observed storage lock
+PASS validated legacy replay recovers only delivery hash revision preserving proof receipts stock downstream
+PASS second recovered legacy replay immutable no writes
+PASS old writer then delta then validated replay then physical confirmation succeeds
+PASS terminal delivery cannot be recovered by legacy replay
+PASS capability binds observed OS canonical proof and CAS revision
+PASS foreign FSF denies without mutations
+PASS canonical attach then physical confirmation advances transactionally
+PASS first physical success preserves existing financial fiscal outbox stock and ledger full content
+PASS exact replay preserves all snapshots
+PASS same key changed receiver conflicts
+PASS inactive actor cannot replay
+PASS repeatable read explicitly unsupported
+PASS serializable explicitly unsupported
+PASS reused form digital token/hash synchronized atomically
+PASS singleton absent explicitly PT503
+PASS missing CAS denied before writes
+PASS stale CAS denied
+PASS tampered canonical hash denied
+PASS missing storage object denied
+PASS financial payload rejected
+PASS foreign object owner rejects canonical digital proof
+PASS profile revoked DURING observed lock denies confirmation
+CHECKPOINT sql_calls=10800 elapsed=299.7s
+PASS role revoked DURING observed lock denies confirmation
+PASS tenant changed DURING observed lock denies confirmation
+PASS SaaS revoked DURING observed gate lock denies confirmation
+PASS canonical digital signature then physical confirmation positive
+PASS digital confirmation replay no duplicate ledger event receipt
+PASS actual corrupted ledger os_id rejects replay
+PASS actual corrupted ledger lote_id rejects replay
+PASS actual corrupted ledger os_tipo rejects replay
+PASS actual corrupted ledger referencia_tipo rejects replay
+PASS restored ledger lineage exact replay no writes
+PASS multiple lots same programming forbidden by canonical unique index
+PASS proof coverage-0 exact replay
+PASS proof coverage-1 exact replay
+PASS proof coverage-2 exact replay
+PASS multi-item coverage leaves 6000ml demand open 0
+PASS multi-item coverage leaves 6000ml demand open 1
+PASS cancelled delivery cannot cover remaining demand
+PASS canonical cancellation and reversed reservation leave 2000ml demand uncovered
+PASS same OS second product programming forbidden by canonical unique constraint
+PASS different product never covers programming or replay
+CHECKPOINT sql_calls=10900 elapsed=309.7s
+PASS cancellation and reversed reservation preserve financial fiscal outbox sentinels
+PASS second product separate OS finalizes 2000ml without covering first OS missing 2000ml
+PASS sign wins observed lock; stale confirmation PT409 with exact snapshots
+PASS confirmation wins observed lock; sign denied 42501 scope with exact snapshots
+PASS attach wins observed lock; stale confirmation PT409 with exact snapshots
+PASS confirmation wins observed lock; attach denied 42501 scope with exact snapshots
+PASS partial envase demand remains open
+PASS proof multi-new-digital exact replay
+CHECKPOINT sql_calls=11000 elapsed=320.3s
+PASS proof multi-attach exact replay
+PASS first item cannot finalize with pending independent stock delivery
+PASS second item after OS entregue completes 5000ml demand independently
+PASS first partial ACK replay remains exact after second item finalization
+PASS multi-item physical confirmation no finance fiscal outbox changes
+PASS canonical cancellation wins observed race and confirmation rolls back
+PASS confirmed physical delivery cannot ordinary cancel
+PASS all fourteen existing financial fiscal outbox sentinels full content unchanged
+PASS deny rollback keeps canonical writer closed
+PASS rollback preserves physical proof stock ledger and receipts history
+PASS independent send install exact PRE POST closed
+PASS send writer initially closed
+PASS foreign tenant send denied
+PASS send absent CAS denied
+PASS send stale CAS denied
+PASS exact send capability available only after disposable grant
+PASS send changes only delivery status revision receipt; no stock ledger proof downstream effects
+PASS send exact replay no writes
+PASS send same key changed CAS conflicts
+PASS send inactive actor after lock denied
+PASS send role revoked after lock denied
+PASS send tenant changed after lock denied
+PASS send SaaS revoked after gate lock denied
+CHECKPOINT sql_calls=11100 elapsed=329.4s
+PASS canonical Enviar then Confirmar without second stock ledger dispatch
+PASS observed send winner send loser PT409 snapshot unchanged
+PASS observed cancel winner send loser PT409 snapshot unchanged
+PASS proof seq-proof-0-0 exact replay
+PASS proof seq-proof-0-1 exact replay
+PASS first of two sent items confirms partial OS entregue mode 0
+PASS separated B send after A confirmation preserves stock proof OS downstream
+PASS send replay denies OS finalizada
+PASS send capability closed for OS finalizada
+PASS send replay denies OS aberta
+PASS send capability closed for OS aberta
+PASS send replay denies invalid lineage in partial OS
+PASS sequential two sends two confirmations finalize 4000ml without second ledger stock mutation mode 0
+PASS terminal confirmed item send replay denied
+CHECKPOINT sql_calls=11200 elapsed=339.7s
+PASS proof seq-proof-1-0 exact replay
+PASS proof seq-proof-1-1 exact replay
+PASS first of two sent items confirms partial OS entregue mode 1
+PASS in-route B replay after A confirmation preserves stock proof OS downstream
+PASS send replay denies OS finalizada
+PASS send capability closed for OS finalizada
+PASS send replay denies OS aberta
+PASS send capability closed for OS aberta
+PASS send replay denies invalid lineage in partial OS
+PASS sequential two sends two confirmations finalize 4000ml without second ledger stock mutation mode 1
+PASS terminal confirmed item send replay denied
+PASS send deny-only rollback no regrant
