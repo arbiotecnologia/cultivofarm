@@ -8,4 +8,22 @@ PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
 PASS B3 01-pre.sql.readonly
 PASS B3 02-install.sql.review
 PASS B3 03-post.sql.readonly
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  column "client_id" of relation "partner_accounts" already exists\n')
+PASS publicação B3 usada pelo B4
+PASS publicação B3 usada pelo B4
+PASS piloto B3 restrito ao parceiro fictício
+FAIL cotação B3 criada sem título :: ERROR:  C2_EXTERNAL_CLIENT_DENIED
+CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 14 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 21 at PERFORM
+SQL statement "INSERT INTO public.partner_orders(
+    partner_id, status, subtotal, desconto_total, total, observacoes, created_by,
+    requested_delivery_date, ready_for_production, payment_plan_id, payment_condition_status,
+    credit_block_reason
+  ) VALUES (
+    p_partner_id, v_status, 0, 0, 0, NULLIF(p_observacoes,''), v_uid,
+    p_requested_delivery_date, false, p_payment_plan_id,
+    CASE WHEN v_quote THEN 'quote_required' ELSE 'defined' END,
+    v_block_reason
+  ) RETURNING id, numero"
+PL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 223 at SQL statement
+FAIL execução sem exceção de harness :: RuntimeError('ERROR:  invalid input syntax for type uuid: "None"\nLINE 1: ...ECT id FROM public.partner_order_items WHERE order_id=\'None\'\n                                                                 ^\n')

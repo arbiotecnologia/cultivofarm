@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 10,
-  "total": 11,
+  "passed": 13,
+  "total": 15,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -44,9 +44,26 @@
       "ok": true
     },
     {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "cotação B3 criada sem título",
+      "ok": false,
+      "detail": "ERROR:  C2_EXTERNAL_CLIENT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 14 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 21 at PERFORM\nSQL statement \"INSERT INTO public.partner_orders(\n    partner_id, status, subtotal, desconto_total, total, observacoes, created_by,\n    requested_delivery_date, ready_for_production, payment_plan_id, payment_condition_status,\n    credit_block_reason\n  ) VALUES (\n    p_partner_id, v_status, 0, 0, 0, NULLIF(p_observacoes,''), v_uid,\n    p_requested_delivery_date, false, p_payment_plan_id,\n    CASE WHEN v_quote THEN 'quote_required' ELSE 'defined' END,\n    v_block_reason\n  ) RETURNING id, numero\"\nPL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 223 at SQL statement"
+    },
+    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  column \"client_id\" of relation \"partner_accounts\" already exists\\n')"
+      "detail": "RuntimeError('ERROR:  invalid input syntax for type uuid: \"None\"\\nLINE 1: ...ECT id FROM public.partner_order_items WHERE order_id=\\'None\\'\\n                                                                 ^\\n')"
     }
   ],
   "hosted": "NOT_RUN",
