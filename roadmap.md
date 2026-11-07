@@ -1,8 +1,8 @@
 ## 07/11 — B3 revisão independente 2140b058 (somente local/PG descartável)
-- [ ] Reautorizar papel, perfil, tenant, vínculo, origem e visibilidade após locks/esperas antes de devolver replay de cotação; provar revogação com recibo existente.
-- [ ] Padronizar a ordem crédito/versão entre quote e create e exercitar três sessões create/config_publish/quote sem relaxar guards.
-- [ ] Restringir a comparação de limite com zero ao novo ramo ativado/piloto; provar FSF legado não ativado inalterado e AR Bio externo com guard real de origem.
-- [ ] Preservar artefatos da suíte existente, sem duplicá-la; executar somente regressões focadas do delta, sem produção/publicação/cobrança.
+- [x] Reautorizar papel, perfil, tenant, vínculo, origem e visibilidade após locks/esperas antes de devolver replay de cotação; revogações com recibo existente negadas.
+- [x] Padronizar versão antes de crédito entre quote/create; três fluxos create/config_publish/quote sob espera forçada sem 40P01 e sem relaxar guards.
+- [x] Zero limita só v_has_condition; FSF legado com zero segue apto e AR Bio externo passa com guards reais de origem; PG descartável 185/185.
+- [x] Artefatos da suíte preservados sem duplicá-la; somente regressão focada do delta, sem produção/publicação/cobrança.
 
 ## 07/11 — B3 parcela única com taxa explícita (somente local/PG descartável)
 - [x] Permitir taxa explícita em 1 parcela somente para boleto/promissória/cartão de crédito; dinheiro/Pix/débito continuam únicos e sem juros.

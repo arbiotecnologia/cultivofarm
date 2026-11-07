@@ -38,6 +38,8 @@ create:  advisory b2b_idem (LIVE) -> reautorização LIVE -> replay
          -> versão FOR SHARE -> atribuição FOR SHARE -> plano FOR SHARE -> atribuição comercial FOR SHARE
          -> payment_methods FOR SHARE -> financial_categories FOR SHARE -> releitura do vendedor
          -> b2b_packaging_lock (LIVE) -> advisory b2b_credit (LIVE) -> resolve sem trava (igual ao primeiro) -> INSERT
+quote:   advisory b2b_quote -> pedido FOR UPDATE -> reautorização completa ANTES de replay
+         -> versão/atribuições/plano/meio/categoria FOR SHARE -> advisory b2b_credit -> itens -> reautorização
 publish/retire/assign: advisory b2bcond:<org>:<plano>:<meio> -> reautorização -> versão vigente FOR UPDATE -> CAS
 ativação: advisory b2bcond_act:<org> -> reautorização -> linha FOR UPDATE -> CAS
 ```
@@ -55,11 +57,15 @@ indisponibilidade sem enviar.
 
 A resposta da cotação usa a MESMA RPC LIVE. Com snapshot da condição, reautoriza o vendedor, revalida versão/atribuição,
 recalcula uma única economia Price e grava snapshot econômico + recibo append-only. Replay idêntico devolve o mesmo ACK;
-payload divergente é `quote_idempotency_conflict`. Sem snapshot, o comportamento legado permanece. O rollback nega apenas
-o ramo com condição e não bloqueia cotação legada de empresa não ativada.
+payload divergente é `quote_idempotency_conflict`. Antes de devolver um recibo já existente, origem, papel, perfil, tenant,
+vínculo e visibilidade são revalidados depois do advisory + row lock. Origem externa/interna usa sua guarda REAL respectiva;
+não há stub permissivo nem promoção de origem ausente. A ordem versão→crédito é igual à do create.
+
+Sem snapshot, o comportamento legado permanece, inclusive a comparação original `credit_limit > 0`: zero só limita no ramo
+`v_has_condition`. O rollback nega apenas o ramo com condição e não bloqueia cotação legada de empresa não ativada.
 
 ## Evidência (PG descartável, não é prova hospedada)
-`test-local-pg.py` → `evidence-local-pg.json`: **172/172**, incluindo NULL/zero/negativo/NaN/erro transitório, limite entre
+`test-local-pg.py` → `evidence-local-pg.json`: **185/185**, incluindo NULL/zero/negativo/NaN/erro transitório, limite entre
 1000 e 1036,22 e no limite exato, cotação/idempotência/revogação, create interno positivo com fixture isolada e guards REAIS,
 rollback e o oráculo de parcela única em publicação/resolução/simulação/create/leitor/persistência. UI montada: **29/29** em
 `evidence/review-194331e/single-rate-focused.json`. A fixture interna tem UMA configuração fictícia VALIDADA; ao removê-la, a mesma guarda volta a negar
