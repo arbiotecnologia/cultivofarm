@@ -67,7 +67,8 @@ export default function Estoque() {
   const { data: estoques = [] } = useQuery({
     queryKey: ["estoque_produto"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Campos candidatos de revenda ainda ausentes dos tipos gerados; o parser normaliza abaixo.
+      const { data, error } = await (supabase as any)
         .from("estoque_produto")
         .select("id, status, created_at, quantidade, validade, lote_id, produto_id, microrganismo_id, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo, embalagem_id, embalagem_versao, reservado_para_cliente_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote, programacao_id), produtos(nome), microrganismos(nome, nome_cientifico)")
         .order("created_at", { ascending: false })

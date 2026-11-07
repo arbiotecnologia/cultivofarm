@@ -125,7 +125,7 @@ export function ReservaDialog({ open, onOpenChange, item, preset, onReserved }: 
   const { data: latestStock } = useQuery({
     queryKey: ["estoque-item-atual", item?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("estoque_produto")
         .select("quantidade, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo")
         .eq("id", item.id)

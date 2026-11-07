@@ -25,7 +25,7 @@ export function ProducaoResumoTab() {
       const loteIds = (lotes ?? []).map((lot) => lot.id);
       let estoques: any[] = [];
       if (loteIds.length) {
-        const { data: rows, error } = await supabase
+        const { data: rows, error } = await (supabase as any)
           .from("estoque_produto")
           .select("lote_id, quantidade, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo, validade, reservado_para_os_id, quantidade_reservada, expedido_em, status")
           .in("lote_id", loteIds)
