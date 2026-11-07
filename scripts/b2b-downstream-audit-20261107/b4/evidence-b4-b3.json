@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 19,
-  "total": 29,
+  "passed": 10,
+  "total": 11,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -44,90 +44,9 @@
       "ok": true
     },
     {
-      "name": "publicação B3 usada pelo B4",
-      "ok": true
-    },
-    {
-      "name": "publicação B3 usada pelo B4",
-      "ok": true
-    },
-    {
-      "name": "piloto B3 restrito ao parceiro fictício",
-      "ok": true
-    },
-    {
-      "name": "cotação B3 criada sem título",
-      "ok": true
-    },
-    {
-      "name": "resposta de cotação B3 com centavos",
-      "ok": true
-    },
-    {
-      "name": "aprovação comercial canônica do pedido",
-      "ok": false,
-      "detail": "                 ^\nQUERY:  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id)               FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 42 at SQL statement\nSQL statement \"UPDATE public.partner_orders\n     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),\n         approval_notes = NULLIF(p_approval_notes,''),\n         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),\n         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()\n   WHERE id = p_order_id AND status = v_prev\"\nPL/pgSQL function approve_partner_order(uuid,text,date) line 68 at SQL statement\n"
-    },
-    {
-      "name": "aprovação canônica dos termos",
-      "ok": true
-    },
-    {
-      "name": "pedido aprovado e economicamente selado",
-      "ok": false,
-      "detail": "em_analise_comercial|approved|false"
-    },
-    {
-      "name": "aprovação comercial canônica do pedido",
-      "ok": false,
-      "detail": "                 ^\nQUERY:  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id)               FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 42 at SQL statement\nSQL statement \"UPDATE public.partner_orders\n     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),\n         approval_notes = NULLIF(p_approval_notes,''),\n         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),\n         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()\n   WHERE id = p_order_id AND status = v_prev\"\nPL/pgSQL function approve_partner_order(uuid,text,date) line 68 at SQL statement\n"
-    },
-    {
-      "name": "aprovação canônica dos termos",
-      "ok": true
-    },
-    {
-      "name": "pedido aprovado e economicamente selado",
-      "ok": false,
-      "detail": "em_analise_comercial|approved|false"
-    },
-    {
-      "name": "fixture contábil pendente separada",
-      "ok": true
-    },
-    {
-      "name": "B4 01-pre.sql.readonly",
-      "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:20: ERROR:  function \"public.generate_b2b_receivable_secure(uuid)\" does not exist\nLINE 1: md5(pg_get_functiondef('public.generate_b2b_receivable_secur...\n                               ^\nQUERY:  md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521'\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at IF\n"
-    },
-    {
-      "name": "B4 02-install.sql.review",
-      "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:22: ERROR:  function \"public.generate_b2b_receivable_secure(uuid)\" does not exist\nLINE 1: md5(pg_get_functiondef('public.generate_b2b_receivable_secur...\n                               ^\nQUERY:  md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521'\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at IF\n"
-    },
-    {
-      "name": "B4 03-post.sql.readonly",
-      "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/03-post.sql.readonly:10: ERROR:  B4_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE\n"
-    },
-    {
-      "name": "rerun aborta pelo pin da baseline, sem reinstalar",
-      "ok": false,
-      "detail": "psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:22: ERROR:  function \"public.generate_b2b_receivable_secure(uuid)\" does not exist\nLINE 1: md5(pg_get_functiondef('public.generate_b2b_receivable_secur...\n                               ^\nQUERY:  md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521'\nCONTEXT:  PL/pgSQL function inline_code_block line 2 at IF\n"
-    },
-    {
-      "name": "38 gatilhos reais do pedido continuam habilitados",
-      "ok": false,
-      "detail": ""
-    },
-    {
-      "name": "B3 create/simulate antigos não foram restaurados nem alterados",
-      "ok": true
-    },
-    {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  function \"public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)\" does not exist\\n')"
+      "detail": "RuntimeError('ERROR:  relation \"public.entregas\" does not exist\\nCONTEXT:  compilation of PL/pgSQL function \"fn_generate_receivable_from_entrega\" near line 4\\n')"
     }
   ],
   "hosted": "NOT_RUN",
