@@ -114,6 +114,51 @@ def respond(uid, order_id, lines, motivo=None):
     return call(uid, f"public.respond_b2b_order_quote_secure('{order_id}','{js(lines)}'::jsonb,NULL,NULL,{('NULL' if motivo is None else repr(motivo))})")
 
 
+def quote_state(order_id):
+    """Full persistent state, including global notifications: denied commands must change nothing."""
+    tables = [("order", "public.partner_orders", f"id='{order_id}'"),
+              ("items", "public.partner_order_items", f"order_id='{order_id}'"),
+              ("terms", "public.partner_order_payment_terms", f"partner_order_id='{order_id}'"),
+              ("schedule", "public.partner_order_payment_schedule", f"partner_order_id='{order_id}'"),
+              ("snapshot", "platform_private.b2b_order_condition_snapshots", f"order_id='{order_id}'"),
+              ("quote_snapshot", "platform_private.b2b_order_condition_quote_snapshots", f"order_id='{order_id}'"),
+              ("receipt", "platform_private.b2b_quote_response_receipts", f"order_id='{order_id}'"),
+              ("notifications", "public.notificacoes_operacionais", "true")]
+    return {name: psql(f"SELECT COALESCE(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]'::jsonb)::text FROM {table} t WHERE {where}").stdout.strip()
+            for name, table, where in tables}
+
+
+def quote_completeness(label, order_id, foreign_item, positive=True):
+    ids = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{order_id}' ORDER BY id").stdout.strip().splitlines()
+    check(f"{label}: fixture REAL contém dois itens", len(ids) == 2, ids)
+    if len(ids) != 2:
+        return
+    lines = [{"item_id": item, "unit_price": 100} for item in ids]
+    for case, payload, token in (("parcial 1/2", lines[:1], "quote_incomplete"),
+                                 ("duplicados", [lines[0], lines[0]], "quote_duplicate_line"),
+                                 ("item de outro pedido", [lines[0], {"item_id": foreign_item, "unit_price": 100}], "quote_item_not_found")):
+        before = quote_state(order_id)
+        denied(f"{label}: {case} negado", respond(UADM, order_id, payload), token)
+        check(f"{label}: {case} preserva subtotais/status/terms/schedule/snapshots/receipt/notificações", quote_state(order_id) == before)
+    # Delete only inside a rolled-back local transaction, with ALL installed guards enabled.
+    # Verify zero rows before dispatch so an inconsistent fixture cannot masquerade as empty_cart.
+    before = quote_state(order_id)
+    r = psql(f"BEGIN; DELETE FROM public.partner_order_items WHERE order_id='{order_id}';\n"
+             f"DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.partner_order_items WHERE order_id='{order_id}') THEN RAISE EXCEPTION 'fixture_not_empty'; END IF; END $$;\n"
+             + session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{order_id}','{js(lines)}'::jsonb,NULL,NULL,NULL);"), check=False)
+    check(f"{label}: carrinho vazio consistente negado com guards ativos", r.returncode != 0 and "empty_cart" in r.stderr, r.stderr[-350:])
+    check(f"{label}: fixture vazia revertida sem efeitos", quote_state(order_id) == before)
+    if positive:
+        j, e = respond(UADM, order_id, lines)
+        state = quote_state(order_id)
+        check(f"{label}: resposta completa positiva persiste ambos subtotais 100 e principal 200",
+              j and Decimal(str(j["net_amount"])) == Decimal("200")
+              and all(Decimal(str(i["subtotal"])) == Decimal("100") for i in json.loads(state["items"]))
+              and len(json.loads(state["terms"])) == 1 and len(json.loads(state["schedule"])) >= 1, e or j)
+        check(f"{label}: terms.first_due_date igual à primeira data do schedule",
+              j and json.loads(state["terms"])[0]["first_due_date"] == min(r["due_date"] for r in json.loads(state["schedule"])), e or state)
+
+
 def price(principal, n, rate, due_days, base):
     """Price independente (Decimal, centavos ROUND_HALF_UP; última parcela absorve o resíduo do principal)."""
     c = Decimal("0.01"); bal = Decimal(str(principal)).quantize(c); i = Decimal(str(rate)) / 100
@@ -461,6 +506,28 @@ def main():
         st = psql(f"SELECT status||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT quote::text||':'||coalesce(financed_total::text,'null') FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{oq}') FROM public.partner_orders WHERE id='{oq}'").stdout.strip() if oq else ""
         check("cotação: aguardando_cotacao, sem termos, snapshot de escolha sem valor", st == "aguardando_cotacao:0:true:null", e or st)
         qi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq}'").stdout.strip() if oq else ""
+        # Regression missing in 185/185: actual two-item orders, not a stub or SQL-text assertion.
+        jmulti, emulti = sim(UB, PLQ, [L(1), S(1)], BOL)
+        jmulti, emulti = create(UB, PLQ, [L(1), S(1)], jmulti["cart_hash"] if jmulti else "x", "TESTE-COMP-NEW", BOL)
+        if jmulti:
+            multi_id = jmulti["id"]
+            before_due = quote_state(multi_id)
+            psql(f"UPDATE public.commercial_payment_plans SET max_days=29 WHERE id='{PLQ}'")
+            denied("prazo 30 > max_days 29: resolução recusa explicitamente, sem clamp", sim(UB, PLQ, [L(1), S(1)], BOL), "payment_condition_deadline_exceeds_plan")
+            lines_due = json.loads(psql(f"SELECT jsonb_agg(jsonb_build_object('item_id',id,'unit_price',100)) FROM public.partner_order_items WHERE order_id='{multi_id}'").stdout.strip())
+            denied("prazo incoerente: quote recusa antes de persistir terms/schedule", respond(UADM, multi_id, lines_due), "payment_condition_deadline_exceeds_plan")
+            check("prazo incoerente: todos os registros da cotação preservados", quote_state(multi_id) == before_due)
+            psql(f"UPDATE public.commercial_payment_plans SET max_days=30 WHERE id='{PLQ}'")
+            quote_completeness("INSTALL novo", multi_id, qi)
+        else:
+            check("fixture cotação novo de dois itens criada", False, emulti)
+        legacy_multi, legacy_error = out(legacy(UB, PLQ, [L(1), S(1)], "TESTE-COMP-LEG"))
+        rollback_multi, rollback_error = out(legacy(UB, PLQ, [L(1), S(1)], "TESTE-COMP-RB"))
+        if legacy_multi:
+            quote_completeness("INSTALL legado", legacy_multi["id"], qi)
+        else:
+            check("fixture cotação legada de dois itens criada", False, legacy_error)
+        check("fixture rollback legada de dois itens criada", rollback_multi is not None, rollback_error)
         qlines = [{"item_id": qi, "unit_price": 1000}]
         denied("cotação: comprador externo não responde; guarda REAL de proprietário nega", respond(UB, oq, qlines), "C2_EXTERNAL_OWNER_DENIED")
         denied("cotação: admin de outro vendedor negado pela guarda REAL de origem", respond(UADMF, oq, qlines), "C2_EXTERNAL_OWNER_DENIED")
@@ -719,6 +786,13 @@ BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;"""
         r = runf(work / "bad-rb.sql")
         check("04 com pin divergente aborta sem mudar nada", r.returncode != 0 and md5_of(g["PUB"]["read"]) == fm["install"]["read"], r.stderr[-200:])
         r = runf(work / "04-rollback-deny.sql.review"); check("04 rollback deny-only", r.returncode == 0, r.stderr[-300:])
+        if rollback_multi:
+            quote_completeness("ROLLBACK legado", rollback_multi["id"], qi)
+        if jmulti:
+            before = quote_state(jmulti["id"])
+            denied("ROLLBACK novo: cotação com dois itens permanece deny-only",
+                   respond(UADM, jmulti["id"], lines_due), "b2b_payment_condition_rolled_back")
+            check("ROLLBACK novo: deny preserva todos os registros", quote_state(jmulti["id"]) == before)
         denied("após rollback: opções negadas", call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"), "permission denied")
         qi_pending = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq_pending}'").stdout.strip()
         denied("após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado",
