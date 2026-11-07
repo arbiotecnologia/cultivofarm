@@ -1,14 +1,17 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.8s
+CHECKPOINT sql_calls=1 elapsed=2.2s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS função real de entrada exige envase quando não há writer de produto acabado
+PASS quimico: pedido/OS → reserva canônica de 2 embalagens sem envase
 FAIL execução terminou no ponto concreto Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 193, in main
-    reject("produto acabado sem envase não tem entrada canônica aberta", direct, "23514", "não possui registro de envase")
-    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 205, in main
+    reject(item["name"] + ": entrega sem unidade de conteúdo é fechada antes da baixa",
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           T.actor() + group(item["os"], reserved, 2, "finished-group-" + item["name"]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           "23514", "COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 74, in reject
-    raise AssertionError(name + " :: " + result.stdout[-1000:] + result.stderr[-2000:])
-AssertionError: produto acabado sem envase não tem entrada canônica aberta :: ERROR:  42501: ESTQ_TENANT_FORBIDDEN
-CONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE
-LOCATIO
-RESULT 2 / 3 exit 1
+    raise AssertionError(name + " :: " + result.stdout
+RESULT 4 / 5 exit 1

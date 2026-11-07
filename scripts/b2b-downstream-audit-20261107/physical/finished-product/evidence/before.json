@@ -3,8 +3,8 @@
   "phase": "before",
   "status": "FAIL",
   "exit_code": 1,
-  "passed": 2,
-  "total": 3,
+  "passed": 4,
+  "total": 5,
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -16,20 +16,36 @@
       "status": "PASS"
     },
     {
+      "name": "função real de entrada exige envase quando não há writer de produto acabado",
+      "status": "PASS",
+      "detail": "não possui registro de envase"
+    },
+    {
+      "name": "quimico: pedido/OS → reserva canônica de 2 embalagens sem envase",
+      "status": "PASS",
+      "detail": "10000000-0000-4000-8000-000000001122"
+    },
+    {
       "name": "execução terminou no ponto concreto",
       "status": "FAIL",
-      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 193, in main\n    reject(\"produto acabado sem envase não tem entrada canônica aberta\", direct, \"23514\", \"não possui registro de envase\")\n    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 74, in reject\n    raise AssertionError(name + \" :: \" + result.stdout[-1000:] + result.stderr[-2000:])\nAssertionError: produto acabado sem envase não tem entrada canônica aberta :: ERROR:  42501: ESTQ_TENANT_FORBIDDEN\nCONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
+      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 205, in main\n    reject(item[\"name\"] + \": entrega sem unidade de conteúdo é fechada antes da baixa\",\n    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n           T.actor() + group(item[\"os\"], reserved, 2, \"finished-group-\" + item[\"name\"]),\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n           \"23514\", \"COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 74, in reject\n    raise AssertionError(name + \" :: \" + result.stdout[-1000:] + result.stderr[-2000:])\nAssertionError: quimico: entrega sem unidade de conteúdo é fechada antes da baixa :: ERROR:  P0001: COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO\nCONTEXT:  PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 89 at RAISE\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 105 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
     }
   ],
   "raw": [
     {
-      "name": "produto acabado sem envase não tem entrada canônica aberta",
+      "name": "função real de entrada exige envase quando não há writer de produto acabado",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ESTQ_TENANT_FORBIDDEN\nCONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  23514: Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.\nCONTEXT:  PL/pgSQL function validate_estoque_entrada() line 10 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "name": "quimico: entrega sem unidade de conteúdo é fechada antes da baixa",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO\nCONTEXT:  PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 89 at RAISE\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 105 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
-  "elapsed_seconds": 9.363,
+  "elapsed_seconds": 10.161,
   "synthetic_seams": [
     "Auth por claims/GUC locais, sem JWT/RLS/PostgREST/Storage real",
     "fixtures upstream com session_replication_role=replica; writers testados com triggers habilitados",
