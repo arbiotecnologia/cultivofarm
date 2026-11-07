@@ -24,6 +24,7 @@ import { formatOS } from "@/lib/osLabel";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { z } from "zod";
 import { toast } from "sonner";
+import { formatStockContent, isValidStockQuantity, requiresWholePacks } from "@/lib/estoque/stockUnits";
 
 export interface ReservaPreset {
   cliente_id?: string;
@@ -126,7 +127,7 @@ export function ReservaDialog({ open, onOpenChange, item, preset, onReserved }: 
     queryFn: async () => {
       const { data } = await supabase
         .from("estoque_produto")
-        .select("quantidade")
+        .select("quantidade, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo")
         .eq("id", item.id)
         .single();
       return data;
@@ -135,7 +136,8 @@ export function ReservaDialog({ open, onOpenChange, item, preset, onReserved }: 
     refetchInterval: 5000,
   });
 
-  const saldoDisponivel = latestStock?.quantidade ?? item?.quantidade ?? 0;
+  const saldoDisponivel = Number(latestStock?.quantidade ?? item?.quantidade ?? 0);
+  const currentStock = { ...item, ...latestStock };
 
   useEffect(() => {
     if (open) {
@@ -315,13 +317,10 @@ export function ReservaDialog({ open, onOpenChange, item, preset, onReserved }: 
     try {
       const qtyToReserve = Number(form.quantidade_reservada);
 
-      if (isNaN(qtyToReserve) || qtyToReserve <= 0) {
-        toast.error("Informe uma quantidade válida maior que zero");
-        return;
-      }
-
-      if (qtyToReserve > saldoDisponivel) {
-        toast.error(`Quantidade superior ao saldo disponível (${saldoDisponivel})`);
+      if (!isValidStockQuantity(currentStock, qtyToReserve, saldoDisponivel)) {
+        toast.error(requiresWholePacks(currentStock) && !Number.isInteger(qtyToReserve)
+          ? "A revenda exige um número inteiro de embalagens"
+          : `Informe uma quantidade válida entre zero e o saldo disponível (${saldoDisponivel})`);
         return;
       }
 
@@ -610,12 +609,13 @@ export function ReservaDialog({ open, onOpenChange, item, preset, onReserved }: 
             <Label className="flex justify-between items-center">
               <span>Quantidade a reservar</span>
               <span className={`text-xs ${saldoDisponivel <= 0 ? "text-destructive font-bold" : "text-muted-foreground"}`}>
-                disponível: {saldoDisponivel}
+                disponível: {saldoDisponivel} · {formatStockContent(currentStock, saldoDisponivel)}
               </span>
             </Label>
             <Input
               type="number"
               min={1}
+              step={requiresWholePacks(currentStock) ? 1 : "any"}
               max={saldoDisponivel}
               value={form.quantidade_reservada}
               onChange={(e) => setForm((f) => ({ ...f, quantidade_reservada: e.target.value }))}
