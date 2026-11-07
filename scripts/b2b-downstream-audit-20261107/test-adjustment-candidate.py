@@ -313,7 +313,7 @@ def main():
         check("negação contábil preserva pedido/termos/auditoria/notificações", state(pending["id"]) == before)
         for kind in ("approve", "reject"):
             before_decision = state(pending["id"])
-            r = decision(SP.USUP, kind, pending["id"], "TESTE pendência contábil")
+            r = decision(SP.UADM, kind, pending["id"], "TESTE pendência contábil")
             check(f"{kind}: pendência contábil é negada antes de qualquer decisão", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
             check(f"{kind}: pendência contábil preserva estado integral", state(pending["id"]) == before_decision)
 
