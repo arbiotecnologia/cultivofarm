@@ -541,8 +541,27 @@ BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;"""
         hi = sim(SP.UADM, PLD, [L(1)], CASH2)
         j, e = create(SP.UADM, PLD, [L(1)], hi[0]["cart_hash"] if hi[0] else "x", "TESTE-INT-1", CASH2)
         check("piloto: ator interno de A simula com condição (mesma verdade monetária)", hi[0] and Decimal(str(hi[0]["final_amount"])) == Decimal("0.90"), hi[1])
-        check("ator interno: barreira LIVE de origem interna preservada nos dois caminhos", r.returncode != 0 and j is None
+        check("sem emitente válido: barreira LIVE de origem interna preservada nos dois caminhos", r.returncode != 0 and j is None
               and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in e_leg and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in (e or ""), (e_leg, e))
+        guard_before = md5_of("platform_private.b2b_internal_order_snapshot_guard()")
+        # Fixture isolada coerente: UMA configuração ativa VALIDADA, contabilidade validada e identidade jurídica fictícia.
+        psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)
+                 VALUES ('{A}',true,'VALIDATED',now(),'AR Bio TESTE LOCAL','00000000000191',7)""")
+        hi_pos = sim(SP.UADM, PLD, [L(1)], CASH2)
+        j, e = create(SP.UADM, PLD, [L(1)], hi_pos[0]["cart_hash"] if hi_pos[0] else "x", "TESTE-INT-POS", CASH2)
+        origin = psql(f"SELECT internal_origin_snapshot FROM public.partner_orders o JOIN public.partner_order_idempotency i ON i.order_id=o.id WHERE i.idempotency_key='TESTE-INT-POS'").stdout.strip() if j else ""
+        check("POSITIVO INTERNO com guards REAIS: create REAL grava em análise e servidor sela origem validada",
+              j and Decimal(str(j["total"])) == Decimal("0.90") and origin
+              and json.loads(origin)["organization_id"] == A and json.loads(origin)["issuer_legal_name"] == "AR Bio TESTE LOCAL"
+              and json.loads(origin)["company_configuration_version"] == 7 and json.loads(origin)["actor_user_id"] == SP.UADM, e or origin)
+        check("positivo interno não libera operação/cobrança/fiscal",
+              j and psql(f"SELECT status||':'||ready_for_production||':'||receivable_generated FROM public.partner_orders WHERE id='{j['id']}'").stdout.strip() == "em_analise_comercial:false:false")
+        check("guarda de origem REAL não foi alterada para obter PASS", md5_of("platform_private.b2b_internal_order_snapshot_guard()") == guard_before)
+        psql(f"DELETE FROM public.company_fiscal_settings WHERE organization_id='{A}'")
+        hi_neg = sim(SP.UADM, PLD, [L(1)], CASH2)
+        j, e = create(SP.UADM, PLD, [L(1)], hi_neg[0]["cart_hash"] if hi_neg[0] else "x", "TESTE-INT-NEG", CASH2)
+        denied("controle: removida a fixture válida, MESMA guarda volta a negar emitente ambíguo", (j, e), "B2B_INTERNAL_ISSUER_AMBIGUOUS")
+        check("controle negativo interno sem idempotência", idem("TESTE-INT-NEG") == "0")
         r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F1", partner=PF); check("piloto de A não afeta comprador de F (papel FSF)", r.returncode == 0, r.stderr[-200:])
         r = psql("BEGIN; ALTER TABLE platform_private.b2b_order_condition_snapshots DISABLE TRIGGER immutable_update_delete;\n"
                  + session(UB, f"SELECT {create_sql(P, PLD, [S(2)], sim(UB, PLD, [S(2)], CASH2)[0]['cart_hash'], 'TESTE-DEF2', CASH2)};\nRESET ROLE;\n")
