@@ -347,7 +347,7 @@ it("plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de ver
   expect(await submitBtn()).toBeDisabled();
   const versionFinish = finish;
   if (!versionFinish) throw new Error("Missing version response");
-  const versionArgs = calls("simulate_b2b_payment_condition_secure").at(-1);
+  const versionArgs = calls("simulate_b2b_payment_condition_secure").slice(-1)[0];
   if (!versionArgs) throw new Error("Missing version request");
   await act(async () => versionFinish(await reply(versionArgs)));
   await waitFor(() => expect(card).toHaveTextContent("Pagamento único de R$ 18,32"));
@@ -361,7 +361,7 @@ it("plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de ver
   expect(screen.queryByText(/Parcelas estimadas/)).toBeNull();
   expect(await submitBtn()).toBeDisabled();
   const methodFinish = finish;
-  const methodArgs = calls("simulate_b2b_payment_condition_secure").at(-1);
+  const methodArgs = calls("simulate_b2b_payment_condition_secure").slice(-1)[0];
   if (!methodFinish || !methodArgs) throw new Error("Missing method request/response");
   await act(async () => methodFinish(await reply(methodArgs)));
   await waitFor(() => expect(card).toHaveTextContent("Pagamento único de R$ 18,00"));
