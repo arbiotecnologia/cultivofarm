@@ -1,3 +1,10 @@
+## 07/11 15:10 — Painel financeiro vendedor B3 (sem SQL/dados/publicação)
+- [x] Ler snapshot V1 pelo leitor existente; sinalizar datas estimadas na emissão da NF e juros Price, preservando legado.
+- [x] Bloquear decisões financeiras em accounting_pending, inclusive diálogo já aberto; fontes versionadas revelam possível lacuna ajuste pending→pending, estado LIVE não verificado e SQL intacto.
+- [x] 57/57 testes montados/focados, incluindo os 31 anteriores, exit 0; TXT/JSON e build automático preservados. Typecheck separado NOT_RUN; fullsuite não repetida.
+- [ ] Reteste visual autenticado vendedor/FSF e confirmação dos guards LIVE dependem do auditor; sessão externa não disponível ao agente, sem pedir login.
+- Nomes UUID continuam adiados; prazo 1 dia é fixture, não alteração de plano real. Sessões reais ficam com auditor.
+
 ## 07/11 — Resumo da condição B3 na prévia (sem produção/publicação)
 - [x] 14:29 — Auditor confirmou prévia real teste4 em 07673d20 após segunda recarga, valores corretos e nenhum novo pedido (PB001037 já existente). Corrigida preservação: *.log ignorado convertido byte a byte em .txt, resultados/exitcode/hashes em JSON e txt; build OK sem código numérico capturado, typecheck separado NÃO executado. Nenhuma suíte repetida; vendedor/FSF seguem com auditor.
 - [x] Cartão usa escolha/ACK V1 e parcelas exatas (6,22/6,22/6,21), não média; 1x com taxa e troca meio/versão testados. Legado preservado; 31/31 focados e reteste final 16/16, build automático OK. Typecheck separado não observado (execução manual vedada pelo ambiente); sessão externa não disponível ao agente, sem solicitar login nem alegar E2E real.
