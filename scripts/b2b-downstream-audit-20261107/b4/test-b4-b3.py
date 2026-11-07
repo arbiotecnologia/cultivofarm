@@ -264,6 +264,53 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         deny("cliente não invoca alocador privado", B3.out(B3.as_user(B3.UADM, f"SELECT platform_private.b2b_allocate_document('{DOCS[0]}')::text;")), "permission denied")
         # Costura SOMENTE do harness: adaptador fictício sem rede, após provar a negação real.
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
+        check("stub operacional existe só no harness depois da negação real", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
+
+        # Impacto dos fences compartilhados: títulos não B2B preservam seus caminhos;
+        # origem monetária desconhecida continua indisponível, sem backfill.
+        category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
+        unlinked_customer = B3.u(302)
+        B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}')")
+        def manual_title(title_id, customer_id, amount):
+            return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
+              (id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
+              VALUES('{title_id}','{B3.A}','MANUAL','{customer_id}','TESTE SHARED NAO B2B','{category_id}','{amount}','2026-10-01','2026-11-03',1,'OPEN','{B3.M_BOL}','{B3.UFIN}');""")
+        plain_title = B3.u(340)
+        plain_result = manual_title(plain_title, unlinked_customer, "7.00")
+        check("shared fence preserva título MANUAL não B2B sem devedor parceiro", plain_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip() == "1", plain_result.stderr[-900:])
+        deny("projeção de origem legada desconhecida permanece fail-closed", server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
+        partner_title = B3.u(341)
+        partner_result = manual_title(partner_title, CUSTOMER, "8.00")
+        check("shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado", partner_result.returncode == 0 and B3.psql(f"SELECT partner_id FROM public.accounts_receivable WHERE id='{partner_title}'").stdout.strip() == str(B3.P), partner_result.stderr[-1200:])
+
+        # Pedido INTERNO sintético separado: os gatilhos são pausados apenas para montar
+        # a fixture e religados antes de qualquer chamada; nenhuma contenção é removida.
+        internal_order = B3.u(350)
+        internal_terms = B3.u(351)
+        internal_item = B3.u(352)
+        internal_doc = B3.u(353)
+        B3.psql(f"""BEGIN;
+          ALTER TABLE public.partner_orders DISABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_payment_terms DISABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_items DISABLE TRIGGER USER;
+          INSERT INTO public.partner_orders SELECT (jsonb_populate_record(NULL::public.partner_orders,
+            to_jsonb(o)||jsonb_build_object('id','{internal_order}'::uuid,'payment_terms_id','{internal_terms}'::uuid,
+              'c2_external_origin_snapshot',NULL::jsonb,'internal_origin_snapshot','{{\"fixture\":\"INTERNAL_SYNTHETIC\"}}'::jsonb))).*
+            FROM public.partner_orders o WHERE o.id='{direct_order}';
+          INSERT INTO public.partner_order_payment_terms SELECT (jsonb_populate_record(NULL::public.partner_order_payment_terms,
+            to_jsonb(t)||jsonb_build_object('id','{internal_terms}'::uuid,'partner_order_id','{internal_order}'::uuid))).*
+            FROM public.partner_order_payment_terms t WHERE t.partner_order_id='{direct_order}';
+          INSERT INTO public.partner_order_items SELECT (jsonb_populate_record(NULL::public.partner_order_items,
+            to_jsonb(i)||jsonb_build_object('id','{internal_item}'::uuid,'order_id','{internal_order}'::uuid))).*
+            FROM public.partner_order_items i WHERE i.order_id='{direct_order}';
+          ALTER TABLE public.partner_orders ENABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_payment_terms ENABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_items ENABLE TRIGGER USER;
+        COMMIT;""")
+        document(internal_doc, internal_order, internal_item, 1)
+        deny("pedido interno não autorizado pelo downstream B4 é contido", allocate(B3.UADM, internal_doc), "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED")
+        check("contenção interna não cria título nem alocação", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{internal_order}')+(SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{internal_order}')").stdout.strip() == "0")
+        deny("writer integral antigo também permanece fechado para pedido interno", call(B3.UADM, f"public.generate_b2b_receivable_secure('{internal_order}')"), "B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED")
 
         before = exposure()
         data, error = allocate(B3.UADM, DOCS[0])
