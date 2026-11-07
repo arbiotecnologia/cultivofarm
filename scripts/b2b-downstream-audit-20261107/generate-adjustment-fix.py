@@ -16,6 +16,10 @@ ROLE_MD5 = "4d90e93d521a4819d9085f28d742030f"
 PRIVATE_ROLE_MD5 = "c5af5b55de6d79da9b73a33948746ae2"
 ACCOUNTING_GUARD_MD5 = "669b19490a7a9700f0158db4b31885ad"
 CONTRACT = "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1"
+SELLER_CONTRACT = "B2B_SELLER_FINANCIAL_TEAM_V1"
+HELPER_SIG = "platform_private.b2b_seller_financial_scope_error(uuid,uuid)"
+HELPER_OWNER = "postgres"
+HELPER_ACL = "{postgres=X/postgres}"
 DECISION_SOURCES = {
     "request": {"source": REQUEST_SOURCE, "signature": SIG, "md5": BASE_MD5},
     "approve": {
