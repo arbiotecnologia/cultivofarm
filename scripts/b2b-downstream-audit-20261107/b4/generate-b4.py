@@ -60,11 +60,22 @@ def normalize_function(src):
 
 
 def fn(src, name, label=None):
-    pattern = rf"CREATE OR REPLACE FUNCTION {re.escape(name)}\(.*?\nEND \$function\$;"
+    pattern = rf"CREATE OR REPLACE FUNCTION {re.escape(name)}\(.*?\nEND \$function\$\n;"
     found = re.findall(pattern, src, re.S)
     if len(found) != 1:
         raise SystemExit(f"FUNCTION {label or name}: ocorrências={len(found)}")
     return found[0]
+
+
+def md5_def(src):
+    text = src.rstrip()
+    if text.endswith(";"):
+        text = text[:-1]
+    return hashlib.md5(text.encode()).hexdigest()
+
+
+def sql_literal(text):
+    return "'" + text.replace("'", "''") + "'"
 
 
 def assertions(pins, code):
