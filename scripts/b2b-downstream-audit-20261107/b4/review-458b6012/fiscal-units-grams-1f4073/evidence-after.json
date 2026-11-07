@@ -2,9 +2,9 @@
   "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
   "phase": "after",
   "candidate_sha256": "4bcd32e33bba7ed1dc2e8a8b0a91a825bced0d6efd8433d54fd1ed9a2422a465",
-  "status": "REGRESSION_FAIL",
+  "status": "PASS",
   "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
-  "passed": 176,
+  "passed": 177,
   "total": 177,
   "checks": [
     {
@@ -116,9 +116,8 @@
       "ok": true
     },
     {
-      "name": "pedido REAL de 2 UN congela 0,500 kg por embalagem e preço total R$180",
-      "ok": false,
-      "detail": "{'unit': 'unidade', 'volume': None, 'quantity': 2.0, 'content_kg': 0.5, 'unit_price': 90.0, 'order_total': 186.52, 'display_unit': 'g'}"
+      "name": "pedido REAL de 2 UN congela 0,500 kg, preço comercial R$180 e juros B3 separados",
+      "ok": true
     },
     {
       "name": "frete dimensional do pedido de 500 g permanece 1 kg",

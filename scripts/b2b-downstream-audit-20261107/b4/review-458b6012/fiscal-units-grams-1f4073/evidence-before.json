@@ -4,7 +4,7 @@
   "candidate_sha256": "b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47",
   "status": "REGRESSION_FAIL",
   "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
-  "passed": 162,
+  "passed": 163,
   "total": 168,
   "checks": [
     {
@@ -116,9 +116,8 @@
       "ok": true
     },
     {
-      "name": "pedido REAL de 2 UN congela 0,500 kg por embalagem e preço total R$180",
-      "ok": false,
-      "detail": "{'unit': 'unidade', 'volume': None, 'quantity': 2.0, 'content_kg': 0.5, 'unit_price': 90.0, 'order_total': 186.52, 'display_unit': 'g'}"
+      "name": "pedido REAL de 2 UN congela 0,500 kg, preço comercial R$180 e juros B3 separados",
+      "ok": true
     },
     {
       "name": "frete dimensional do pedido de 500 g permanece 1 kg",
@@ -482,7 +481,7 @@
     {
       "name": "500 g: 1 UN com 0,5 g tributáveis deve negar",
       "ok": false,
-      "detail": "{'success': True, 'replayed': False, 'residual': 93.26, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000604', 'receivable_id': '0fd38d8c-aa35-4125-88e7-7ed17c03bed9', 'financed_interest': 3.26}"
+      "detail": "{'success': True, 'replayed': False, 'residual': 93.26, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000604', 'receivable_id': '11987fc0-50b6-4cb8-8a5d-ed2c9828fe6f', 'financed_interest': 3.26}"
     },
     {
       "name": "500 g: 1 UN com 0,5 g tributáveis deve negar: nenhum título/alocação",

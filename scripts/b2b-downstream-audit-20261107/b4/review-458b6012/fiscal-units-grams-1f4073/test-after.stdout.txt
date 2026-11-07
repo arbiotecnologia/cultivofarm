@@ -25,7 +25,7 @@ PASS fixture 2: pedido fictício criado
 PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
-FAIL pedido REAL de 2 UN congela 0,500 kg por embalagem e preço total R$180 :: {'unit': 'unidade', 'volume': None, 'quantity': 2.0, 'content_kg': 0.5, 'unit_price': 90.0, 'order_total': 186.52, 'display_unit': 'g'}
+PASS pedido REAL de 2 UN congela 0,500 kg, preço comercial R$180 e juros B3 separados
 PASS frete dimensional do pedido de 500 g permanece 1 kg
 PASS fixture 3: pedido fictício criado
 PASS aprovação comercial canônica do pedido

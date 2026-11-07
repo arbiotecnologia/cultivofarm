@@ -25,7 +25,7 @@ PASS fixture 2: pedido fictício criado
 PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
-FAIL pedido REAL de 2 UN congela 0,500 kg por embalagem e preço total R$180 :: {'unit': 'unidade', 'volume': None, 'quantity': 2.0, 'content_kg': 0.5, 'unit_price': 90.0, 'order_total': 186.52, 'display_unit': 'g'}
+PASS pedido REAL de 2 UN congela 0,500 kg, preço comercial R$180 e juros B3 separados
 PASS frete dimensional do pedido de 500 g permanece 1 kg
 PASS fixture 3: pedido fictício criado
 PASS aprovação comercial canônica do pedido
@@ -118,7 +118,7 @@ FAIL 500 g: NF parcial 1 UN = 0,5 kg :: ERROR:  FISCAL_QUANTITY_UNIT_DIVERGENCE
 CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 79 at RAISE
 FAIL 500 g: 500 g comerciais = 1 embalagem :: ERROR:  FISCAL_QUANTITY_OVERALLOCATED
 CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 86 at RAISE
-FAIL 500 g: 1 UN com 0,5 g tributáveis deve negar :: {'success': True, 'replayed': False, 'residual': 93.26, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000604', 'receivable_id': '0fd38d8c-aa35-4125-88e7-7ed17c03bed9', 'financed_interest': 3.26}
+FAIL 500 g: 1 UN com 0,5 g tributáveis deve negar :: {'success': True, 'replayed': False, 'residual': 93.26, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000604', 'receivable_id': '11987fc0-50b6-4cb8-8a5d-ed2c9828fe6f', 'financed_interest': 3.26}
 FAIL 500 g: 1 UN com 0,5 g tributáveis deve negar: nenhum título/alocação :: before=0, after=2
 PASS 1 UN = 25 kg em NF parcial
 PASS 1 UN = 25 kg em NF parcial: quantidade de pedido normalizada
