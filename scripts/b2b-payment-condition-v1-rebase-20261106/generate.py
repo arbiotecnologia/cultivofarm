@@ -443,7 +443,7 @@ END $function$;
 
 -- Opções no pedido (comprador do parceiro ou ator interno do vendedor). mode=legacy: empresa não ativada (contrato atual).
 CREATE FUNCTION public.b2b_list_payment_condition_options_secure(p_partner_id uuid, p_payment_plan_id uuid)
- RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+ RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $function$
 DECLARE v_seller uuid; v_opts jsonb := '[]'::jsonb; c record; r jsonb; v_reason text;
 BEGIN
   IF auth.uid() IS NULL OR p_payment_plan_id IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;

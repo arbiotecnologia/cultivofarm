@@ -1,0 +1,88 @@
+-- 04 ROLLBACK deny-only: RPCs novos passam a negar; gatilho, ativações, versões, snapshots e histórico PERMANECEM.
+-- Empresas não ativadas seguem o contrato atual; empresas já ativadas ficam bloqueadas (nega, nunca reabre fallback).
+BEGIN;
+DO $$ BEGIN
+END $$;
+CREATE OR REPLACE FUNCTION public.b2b_payment_condition_publish(p_plan_id uuid, p_method text, p_payment_method_id uuid, p_category_id uuid, p_deadline_days integer, p_installment_count integer, p_monthly_rate numeric, p_expected_version integer)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.b2b_payment_condition_retire(p_plan_id uuid, p_method text, p_expected_version integer)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.b2b_payment_condition_assign(p_partner_id uuid, p_plan_id uuid, p_method text, p_version integer, p_enabled boolean)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.b2b_payment_condition_activation_set(p_mode text, p_pilot_partner_ids uuid[], p_expected_version integer)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.b2b_payment_condition_config_list()
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.b2b_list_payment_condition_options_secure(p_partner_id uuid, p_payment_plan_id uuid)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.simulate_b2b_payment_condition_secure(p_partner_id uuid, p_payment_plan_id uuid, p_items jsonb, p_payment_choice jsonb)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.create_partner_order_condition_secure(p_partner_id uuid, p_observacoes text, p_items jsonb, p_requested_delivery_date date, p_payment_plan_id uuid, p_expected_cart_hash text, p_idempotency_key text, p_payment_choice jsonb)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+CREATE OR REPLACE FUNCTION public.get_partner_order_payment_condition_secure(p_order_id uuid)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  RAISE EXCEPTION 'b2b_payment_condition_rolled_back' USING ERRCODE='42501';
+END $function$;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_retire(uuid,text,integer) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_activation_set(text,uuid[],integer) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_config_list() FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.b2b_list_payment_condition_options_secure(uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.get_partner_order_payment_condition_secure(uuid) FROM PUBLIC, anon, authenticated, service_role;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.b2b_payment_condition_retire(uuid,text,integer)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.b2b_payment_condition_retire(uuid,text,integer)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.b2b_payment_condition_activation_set(text,uuid[],integer)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.b2b_payment_condition_activation_set(text,uuid[],integer)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.b2b_payment_condition_config_list()'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.b2b_payment_condition_config_list()'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.b2b_list_payment_condition_options_secure(uuid,uuid)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.b2b_list_payment_condition_options_secure(uuid,uuid)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='public.get_partner_order_payment_condition_secure(uuid)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: EXECUTE indevido em public.get_partner_order_payment_condition_secure(uuid)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_choice(jsonb)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_choice(jsonb)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_schedule(numeric,numeric,integer,date,integer)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_schedule(numeric,numeric,integer,date,integer)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_condition_seller(uuid)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_condition_seller(uuid)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_condition_hash(text,jsonb,jsonb,numeric)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_condition_hash(text,jsonb,jsonb,numeric)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_condition_mode(uuid)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_condition_mode(uuid)'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_condition_required_check()'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_condition_required_check()'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_condition_immutable()'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_condition_immutable()'; END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) a WHERE p.oid='platform_private.b2b_condition_cfg_actor(boolean)'::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee IN (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid, 'service_role'::regrole::oid)) THEN RAISE EXCEPTION 'ROLLBACK_POST: helper privado exposto platform_private.b2b_condition_cfg_actor(boolean)'; END IF;
+  IF has_table_privilege('authenticated', 'platform_private.b2b_condition_versions', 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon', 'platform_private.b2b_condition_versions', 'SELECT') OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='platform_private.b2b_condition_versions'::regclass) THEN RAISE EXCEPTION 'ROLLBACK_POST: tabela b2b_condition_versions exposta'; END IF;
+  IF has_table_privilege('authenticated', 'platform_private.b2b_condition_assignments', 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon', 'platform_private.b2b_condition_assignments', 'SELECT') OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='platform_private.b2b_condition_assignments'::regclass) THEN RAISE EXCEPTION 'ROLLBACK_POST: tabela b2b_condition_assignments exposta'; END IF;
+  IF has_table_privilege('authenticated', 'platform_private.b2b_order_condition_snapshots', 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon', 'platform_private.b2b_order_condition_snapshots', 'SELECT') OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='platform_private.b2b_order_condition_snapshots'::regclass) THEN RAISE EXCEPTION 'ROLLBACK_POST: tabela b2b_order_condition_snapshots exposta'; END IF;
+  IF has_table_privilege('authenticated', 'platform_private.b2b_condition_retirements', 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon', 'platform_private.b2b_condition_retirements', 'SELECT') OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='platform_private.b2b_condition_retirements'::regclass) THEN RAISE EXCEPTION 'ROLLBACK_POST: tabela b2b_condition_retirements exposta'; END IF;
+  IF has_table_privilege('authenticated', 'platform_private.b2b_condition_assignment_revocations', 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon', 'platform_private.b2b_condition_assignment_revocations', 'SELECT') OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='platform_private.b2b_condition_assignment_revocations'::regclass) THEN RAISE EXCEPTION 'ROLLBACK_POST: tabela b2b_condition_assignment_revocations exposta'; END IF;
+  IF has_table_privilege('authenticated', 'platform_private.b2b_condition_activation', 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon', 'platform_private.b2b_condition_activation', 'SELECT') OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='platform_private.b2b_condition_activation'::regclass) THEN RAISE EXCEPTION 'ROLLBACK_POST: tabela b2b_condition_activation exposta'; END IF;
+  IF has_table_privilege('authenticated', 'platform_private.b2b_condition_activation_history', 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('anon', 'platform_private.b2b_condition_activation_history', 'SELECT') OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='platform_private.b2b_condition_activation_history'::regclass) THEN RAISE EXCEPTION 'ROLLBACK_POST: tabela b2b_condition_activation_history exposta'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='b2b_payment_condition_required' AND tgdeferrable AND tginitdeferred AND tgenabled='O') THEN RAISE EXCEPTION 'ROLLBACK_POST: trigger de exigência ausente'; END IF;
+END $$;
+COMMIT;
