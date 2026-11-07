@@ -12,7 +12,7 @@
   "role_md5": "4d90e93d521a4819d9085f28d742030f",
   "private_role_md5": "c5af5b55de6d79da9b73a33948746ae2",
   "accounting_guard_md5": "669b19490a7a9700f0158db4b31885ad",
-  "candidate_md5": "1698b9355688d0068246292cbe652a79",
+  "candidate_md5": "2f28a6e87a8f72ea54cafd0bfd852219",
   "seller_scope_contract": "B2B_SELLER_FINANCIAL_TEAM_V1",
   "seller_scope_helper": {
     "signature": "platform_private.b2b_seller_financial_scope_error(uuid,uuid)",
@@ -27,21 +27,21 @@
     "request": {
       "signature": "public.request_b2b_payment_terms_adjustment_secure(uuid,text)",
       "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
-      "candidate_md5": "1698b9355688d0068246292cbe652a79",
+      "candidate_md5": "2f28a6e87a8f72ea54cafd0bfd852219",
       "owner": "postgres",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
     },
     "approve": {
       "signature": "public.approve_b2b_payment_terms_secure(uuid,text)",
       "baseline_md5": "a61daa8542058bdbf239903d655c2a1b",
-      "candidate_md5": "20fa5eee63ab89fe56cf46b4f9fe01a2",
+      "candidate_md5": "4cf1c4ccdb2d1acec705c11bd0cfdfd0",
       "owner": "postgres",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
     },
     "reject": {
       "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
       "baseline_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
-      "candidate_md5": "b1ee789f30e5612a4cd1c27f9dda578f",
+      "candidate_md5": "99cdc4eb7b286e75d1ce14332c42bf29",
       "owner": "postgres",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
     }

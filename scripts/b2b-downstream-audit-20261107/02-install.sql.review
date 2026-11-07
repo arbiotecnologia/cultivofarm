@@ -158,6 +158,24 @@ BEGIN
   FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501'; END IF;
 
+  -- O FOR UPDATE dos termos também pode esperar. Reler pedido+termos e repetir
+  -- toda a autorização depois dessa espera, sem confiar no escopo anterior.
+  SELECT po.partner_id, po.c2_external_origin_snapshot
+    INTO v_partner_id, v_origin
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id AND po.payment_terms_id=v_terms_id;
+  IF NOT FOUND OR NOT EXISTS (
+    SELECT 1 FROM public.partner_order_payment_terms pt
+    WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
+  ) THEN
+    RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501';
+  END IF;
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+
 
   UPDATE public.partner_order_payment_terms
      SET approval_status = 'pending',
@@ -232,6 +250,24 @@ BEGIN
   WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
   FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501'; END IF;
+
+  -- O FOR UPDATE dos termos também pode esperar. Reler pedido+termos e repetir
+  -- toda a autorização depois dessa espera, sem confiar no escopo anterior.
+  SELECT po.partner_id, po.c2_external_origin_snapshot
+    INTO v_partner_id, v_origin
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id AND po.payment_terms_id=v_terms_id;
+  IF NOT FOUND OR NOT EXISTS (
+    SELECT 1 FROM public.partner_order_payment_terms pt
+    WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
+  ) THEN
+    RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501';
+  END IF;
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
 
 
   UPDATE public.partner_order_payment_terms
@@ -314,6 +350,24 @@ BEGIN
   FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501'; END IF;
 
+  -- O FOR UPDATE dos termos também pode esperar. Reler pedido+termos e repetir
+  -- toda a autorização depois dessa espera, sem confiar no escopo anterior.
+  SELECT po.partner_id, po.c2_external_origin_snapshot
+    INTO v_partner_id, v_origin
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id AND po.payment_terms_id=v_terms_id;
+  IF NOT FOUND OR NOT EXISTS (
+    SELECT 1 FROM public.partner_order_payment_terms pt
+    WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
+  ) THEN
+    RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501';
+  END IF;
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+
 
   UPDATE public.partner_order_payment_terms
      SET approval_status = 'rejected',
@@ -351,9 +405,9 @@ DO $guard$
 DECLARE d record;
 BEGIN
   FOR d IN SELECT * FROM (VALUES
-    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '1698b9355688d0068246292cbe652a79', 'postgres', '04e771375e06113da45adc7fa45d56af'),
-    ('public.approve_b2b_payment_terms_secure(uuid,text)', '20fa5eee63ab89fe56cf46b4f9fe01a2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
-    ('public.reject_b2b_payment_terms_secure(uuid,text)', 'b1ee789f30e5612a4cd1c27f9dda578f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '2f28a6e87a8f72ea54cafd0bfd852219', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.approve_b2b_payment_terms_secure(uuid,text)', '4cf1c4ccdb2d1acec705c11bd0cfdfd0', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.reject_b2b_payment_terms_secure(uuid,text)', '99cdc4eb7b286e75d1ce14332c42bf29', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.h15_actor_organization()', '64e10608403238a41a9baf92857ca881', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('public.h15_actor_organization()', '55edafec08bcc84a00f1526c14334a2c', 'postgres', '04e771375e06113da45adc7fa45d56af'),
