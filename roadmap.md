@@ -1,3 +1,7 @@
+## 07/11 — Cotação incompleta e coerência do vencimento (somente local)
+- [x] Restaurar count pelo gerador; parcial/duplicado/estrangeiro/vazio negados com estado integral preservado; positivos completos em INSTALL novo/legado e rollback legado; rollback novo deny-only.
+- [x] Prazo 30 > max_days 29 negado em resolução/create/quote sem clamp; terms/schedule coerentes no positivo. Pins regenerados; PG 226/226, UI 23/23, tipos exit 0 e build OK; evidências duráveis, sem produção/publicação.
+
 ## 07/11 — Timeout onTaskUpdate da suíte (infraestrutura de teste)
 - [x] Causa comprovada: execFileSync > 60 s em dois testes PG bloqueava o RPC do worker; sonda 65/55 s e foco pré-correção exit 1 preservados.
 - [x] Correção: execFile assíncrono (asserções inalteradas), pool forks removido, guarda estática; foco exit 0 e suíte completa exit 0 sem unhandled.

@@ -96,6 +96,23 @@ inalteradas) e adicionar guarda estática, foco 12/13 exit 0 sem unhandled e su�
 testes, 6 ignorados, 0 erros, exit 0. B3 PG 185/185; typecheck 0.
 
 ## Limitações abertas
+### Achado bloqueante: contagem de itens e vencimento (07/11)
+O delta Q4 consumia a âncora `SELECT count(*) INTO v_count_items` sem repô-la, deixando comparações com NULL.
+O gerador agora a repõe após versão→crédito e antes das guardas de vazio/duplicidade/completude; SQL gerado não foi editado à mão.
+Rollback já conservava a contagem original e foi retestado com pedidos de dois itens, sem reabrir o ramo condicionado.
+
+Bateria final **226/226**, exit 0: pedidos reais sintéticos de dois itens em INSTALL novo/legado e rollback legado;
+1/2 retorna `quote_incomplete`, duplicados `quote_duplicate_line`, item estrangeiro `quote_item_not_found`, vazio
+`empty_cart` com todos os triggers ativos. Cada negação compara integralmente pedido/itens/termos/cronograma/snapshots/
+recibo/notificações; positivos completos persistem principal 200 e ambos subtotais 100. Rollback novo permanece deny-only.
+
+Não foi inventada regra de prazo: publicação e resolução já recusavam `deadline_days > max_days`. Fixture publicada com
+30 dias e plano posteriormente reduzido a 29 prova `payment_condition_deadline_exceeds_plan` em resolução/create/quote,
+sem persistência nem clamp. Com max_days restaurado a 30, termos e primeira data do cronograma coincidem.
+UI B3 **23/23**, exit 0; tipos exit 0; build observado OK. Não houve nova suíte completa, nem aprovação para implantação.
+Artefatos incluindo tentativa inicial com erro de fixture em `evidence/review-quote-completeness-20261107/`;
+01–04 regenerados e comparados byte a byte com o gerador e os pins finais. O PRE mantém os pins LIVE, sem captura remota.
+
 - Datas estimadas (referência = data do pedido/resposta), sem dia útil Paracatu-MG; vencimento definitivo e calendário ficam no B4.
 - Revogar um parceiro numa versão é definitivo para ela; liberar de novo exige nova versão.
 - Cópia frontend adiada da candidata (`scope-audit-20261103/deferred/source/`) não foi importada; a UI atual cobre o fluxo.

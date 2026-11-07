@@ -1,0 +1,14 @@
+{
+  "scope": "LOCAL_ONLY_NO_HOSTED_OPERATIONS",
+  "cause": "Q4 block replacement consumed item count SELECT and left v_count_items NULL",
+  "fix": "generate.py restores item count after version/credit locks; rollback original count retained",
+  "pg": {"passed": 226, "total": 226, "exit": 0},
+  "ui": {"passed": 23, "failed": 0, "exit": 0},
+  "typecheck_exit": 0,
+  "build": "observability build OK 2026-11-07T13:18:11Z",
+  "deadline": "Existing deadline_days <= max_days rule: 30/29 denied in resolve/create/quote, coherent positive 30/30",
+  "first_attempt": "fixture authorization and response-key errors preserved in first.stdout/stderr/exitcode; not claimed passing",
+  "full_suite": "Not rerun for this SQL/test-only delta; previous full result is historical",
+  "generated_files": "01-04 byte-identical to final generator output; LIVE PRE pins unchanged",
+  "release": "NOT_APPROVED_FOR_DEPLOYMENT; no JWT/RLS/PostgREST hosted proof"
+}

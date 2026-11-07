@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 185,
-  "total": 185,
+  "passed": 226,
+  "total": 226,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -366,6 +366,118 @@
       "ok": true
     },
     {
+      "name": "prazo 30 > max_days 29: resolução recusa explicitamente, sem clamp",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: create recusa sem novo pedido",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: nenhuma idempotência de create persistida",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: quote recusa antes de persistir terms/schedule",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: todos os registros da cotação preservados",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: fixture REAL contém dois itens",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: parcial 1/2 negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: parcial 1/2 preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: duplicados negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: duplicados preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: item de outro pedido negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: item de outro pedido preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: carrinho vazio consistente negado com guards ativos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: fixture vazia revertida sem efeitos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: resposta completa positiva persiste ambos subtotais 100 e principal 200",
+      "ok": true
+    },
+    {
+      "name": "INSTALL novo: terms.first_due_date igual à primeira data do schedule",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: fixture REAL contém dois itens",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: parcial 1/2 negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: parcial 1/2 preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: duplicados negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: duplicados preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: item de outro pedido negado",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: item de outro pedido preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: carrinho vazio consistente negado com guards ativos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: fixture vazia revertida sem efeitos",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: resposta completa positiva persiste ambos subtotais 100 e principal 200",
+      "ok": true
+    },
+    {
+      "name": "INSTALL legado: terms.first_due_date igual à primeira data do schedule",
+      "ok": true
+    },
+    {
+      "name": "fixture rollback legada de dois itens criada",
+      "ok": true
+    },
+    {
       "name": "cotação: comprador externo não responde; guarda REAL de proprietário nega",
       "ok": true
     },
@@ -715,6 +827,58 @@
     },
     {
       "name": "04 rollback deny-only",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: fixture REAL contém dois itens",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: parcial 1/2 negado",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: parcial 1/2 preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: duplicados negado",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: duplicados preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: item de outro pedido negado",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: item de outro pedido preserva subtotais/status/terms/schedule/snapshots/receipt/notificações",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: carrinho vazio consistente negado com guards ativos",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: fixture vazia revertida sem efeitos",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: resposta completa positiva persiste ambos subtotais 100 e principal 200",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK legado: terms.first_due_date igual à primeira data do schedule",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK novo: cotação com dois itens permanece deny-only",
+      "ok": true
+    },
+    {
+      "name": "ROLLBACK novo: deny preserva todos os registros",
       "ok": true
     },
     {
