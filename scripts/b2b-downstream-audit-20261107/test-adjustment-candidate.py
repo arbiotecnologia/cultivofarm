@@ -449,6 +449,20 @@ def main():
             "feature restaurada pelo resolvedor real de entitlements",
             psql(f"SELECT public._saas_user_has_feature('{SP.UADM}','pedidos_b2b')").stdout.strip() == "t",
         )
+        during_lock(
+            "approve com papel administrativo revogado",
+            f"DELETE FROM public.user_roles WHERE user_id='{SP.UADM}' AND role='administrador'",
+            "unauthorized",
+            f"INSERT INTO public.user_roles VALUES ('{SP.UADM}','administrador')",
+            "approve",
+        )
+        during_lock(
+            "reject com vínculo vendedor revogado",
+            f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'",
+            "b2b_phase1_scope_denied",
+            f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'",
+            "reject",
+        )
 
         # Controles positivos SINTÉTICOS apenas no legado: o externo validado foi negado pelo guard real.
         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
