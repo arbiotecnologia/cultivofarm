@@ -289,7 +289,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
             print("POST_FUNCTION_HASH_DEBUG " + B3.psql(mismatch_sql).stdout, flush=True)
         check("instalação descartável cria projeção nova e passa PRE+POST íntegros", install.returncode == 0, install.stderr[-1400:])
         post = runfile(H / "03-post.sql.readonly")
-        check("POST confirma exatamente um overload owner-only e metadata completa", post.returncode == 0 and "POST_OK" in post.stderr, post.stderr[-1200:])
+        check("POST confirma exatamente um overload owner-only e metadata completa", post.returncode == 0 and "POST_OK" in (post.stdout + post.stderr), (post.stdout + post.stderr)[-1200:])
         check("instalação não habilita a dependência fiscal/contábil", B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure) LIKE '%B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN%'").stdout.strip() == "t")
         real_dependencies = B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)").stdout
         rerun = runfile(H / "02-install.sql.review")
