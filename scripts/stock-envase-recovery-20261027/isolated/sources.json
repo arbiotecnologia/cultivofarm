@@ -37,7 +37,7 @@
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/assemble.py",
-    "sha256": "c2c125dd5be34c01df16856d79bf43e70d511e0fb23c060592f1d4afc9943743"
+    "sha256": "6fa62b4ee0b812ac5595e1fbc34e8dcf7420c2f80b2332e0493506aa61e55ab0"
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/cooperation.py",
@@ -61,7 +61,7 @@
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/test_pg.py",
-    "sha256": "b93cdf1a3a2707a794490d3ce29eebab0d08c6f224d74275e193cc406e0656cd"
+    "sha256": "998e340b68d97807d37888f94d9e7b89517a67bb0addd460a8599ccbe37bd8ea"
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/upstream.py",

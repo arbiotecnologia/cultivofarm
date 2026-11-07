@@ -83,6 +83,398 @@
     {
       "test": "exact pre-trigger tenant payload accepted; every row permit consumed",
       "status": "PASS"
+    },
+    {
+      "test": "transition ticket consumed and OS ready",
+      "status": "PASS"
+    },
+    {
+      "test": "endpoint capability remains available for exact replay after OS ready",
+      "status": "PASS"
+    },
+    {
+      "test": "exact replay same result with zero full-row mutations",
+      "status": "PASS"
+    },
+    {
+      "test": "operator substitution conflicts",
+      "status": "PASS"
+    },
+    {
+      "test": "partial reason substitution conflicts",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy receipt without fingerprint denied unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "fresh key on ready OS denied",
+      "status": "PASS"
+    },
+    {
+      "test": "inactive same actor cannot replay",
+      "status": "PASS"
+    },
+    {
+      "test": "ledger injected failure rolls back all envase writes",
+      "status": "PASS"
+    },
+    {
+      "test": "ledger failure preserved full envase/stock/receipt/event/lot/CQ snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "observed same-key wait: one write and one replay",
+      "status": "PASS"
+    },
+    {
+      "test": "active profile revoked during observed lote lock wait: 42501 and no envase",
+      "status": "PASS"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "REPEATABLE READ explicitly unsupported without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "SERIALIZABLE explicitly unsupported without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "READ COMMITTED partial reserves 2000ml with 3000ml pending",
+      "status": "PASS"
+    },
+    {
+      "test": "production cannot override partial",
+      "status": "PASS"
+    },
+    {
+      "test": "manager override requires reason",
+      "status": "PASS"
+    },
+    {
+      "test": "manager reasoned override completes without finance",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed gate wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed os wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed programacao wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed lote wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed gate wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed os wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed programacao wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed lote wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed gate wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed os wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed programacao wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed lote wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "item N failure rolls back prior item stock ledger receipt",
+      "status": "PASS"
+    },
+    {
+      "test": "lock timeout rolls back whole receipt and stock",
+      "status": "PASS"
+    },
+    {
+      "test": "existing reserved stock foreign root cannot cover own OS",
+      "status": "PASS"
+    },
+    {
+      "test": "real unique index prevents second manufacturing lot root",
+      "status": "PASS"
+    },
+    {
+      "test": "owner indirect envase without permit denied",
+      "status": "PASS"
+    },
+    {
+      "test": "owner indirect stock without permit denied",
+      "status": "PASS"
+    },
+    {
+      "test": "client cannot mint private permit",
+      "status": "PASS"
+    },
+    {
+      "test": "all one-shot private permits consumed or rolled back",
+      "status": "PASS"
+    },
+    {
+      "test": "demand changed during observed wait uses fresh 5000ml context",
+      "status": "PASS"
+    },
+    {
+      "test": "installed canonical motor split preserved with private parent context",
+      "status": "PASS"
+    },
+    {
+      "test": "historical clock fixture exact replay after validity expired has zero writes",
+      "status": "PASS"
+    },
+    {
+      "test": "exact permit rejects changed organization_id",
+      "status": "PASS"
+    },
+    {
+      "test": "exact permit rejects changed lote_id",
+      "status": "PASS"
+    },
+    {
+      "test": "exact permit rejects changed id",
+      "status": "PASS"
+    },
+    {
+      "test": "exact permit rejects changed quantidade",
+      "status": "PASS"
+    },
+    {
+      "test": "exact permit rejects changed operador",
+      "status": "PASS"
+    },
+    {
+      "test": "exact permit rejects changed etiqueta_gerada",
+      "status": "PASS"
+    },
+    {
+      "test": "exact permit rejects changed volume_por_unidade",
+      "status": "PASS"
+    },
+    {
+      "test": "permit binds actor",
+      "status": "PASS"
+    },
+    {
+      "test": "permit binds txid",
+      "status": "PASS"
+    },
+    {
+      "test": "permit binds action",
+      "status": "PASS"
+    },
+    {
+      "test": "permit binds root",
+      "status": "PASS"
+    },
+    {
+      "test": "owner fixture exact permit positive reaches tenant and volume guards",
+      "status": "PASS"
+    },
+    {
+      "test": "post-permit normalizer changed organization_id aborts exactly",
+      "status": "PASS"
+    },
+    {
+      "test": "post-permit normalizer changed quantidade aborts exactly",
+      "status": "PASS"
+    },
+    {
+      "test": "post-permit normalizer changed volume_por_unidade aborts exactly",
+      "status": "PASS"
+    },
+    {
+      "test": "post-permit normalizer changed operador aborts exactly",
+      "status": "PASS"
+    },
+    {
+      "test": "post-permit normalizer changed etiqueta_gerada aborts exactly",
+      "status": "PASS"
+    },
+    {
+      "test": "consumed one-shot permit cannot authorize another insert",
+      "status": "PASS"
+    },
+    {
+      "test": "reserved/free exact units volume actor and nullable reservation fields preserved",
+      "status": "PASS"
+    },
+    {
+      "test": "independent canonical stock batch and exact replay preserve installed contract",
+      "status": "PASS"
+    },
+    {
+      "test": "existing role gate waits without replica bypass",
+      "status": "PASS"
+    },
+    {
+      "test": "existing tenant gate waits without replica bypass",
+      "status": "PASS"
+    },
+    {
+      "test": "enabled SaaS gate refuses contention with exact 55P03 without replica bypass",
+      "status": "PASS"
+    },
+    {
+      "test": "enabled CQ gate refuses contention with exact 55P03 without replica bypass",
+      "status": "PASS"
+    },
+    {
+      "test": "enabled new CQ gate refuses contention with exact 55P03 without replica bypass",
+      "status": "PASS"
+    },
+    {
+      "test": "enabled root gate refuses contention with exact 55P03 without replica bypass",
+      "status": "PASS"
+    },
+    {
+      "test": "business prelock released then envase completes under enabled gate",
+      "status": "PASS"
+    },
+    {
+      "test": "real inverse-prelock DML returns 55P03 without deadlock or partial envase",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical approval during held envase gate refuses 55P03 without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical approval positive under added gates",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical scheduling during held envase gate refuses 55P03 without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical scheduling positive under added gates",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical scheduling replay under added gates",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical lot generation during held envase gate refuses 55P03 without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical lot generation positive under added gates",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical CQ send during held envase gate refuses 55P03 without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical send CQ positive under added gates",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical CQ recording during held envase gate refuses 55P03 without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical rejected CQ records under added gates without invented reference",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical CQ replay under added gates preserves history",
+      "status": "PASS"
+    },
+    {
+      "test": "rejected canonical CQ cannot authorize envase",
+      "status": "PASS"
+    },
+    {
+      "test": "second canonical approval for approved CQ chain",
+      "status": "PASS"
+    },
+    {
+      "test": "second canonical programming for approved CQ chain",
+      "status": "PASS"
+    },
+    {
+      "test": "second canonical lot creates authoritative event",
+      "status": "PASS"
+    },
+    {
+      "test": "second canonical CQ send creates private receipt",
+      "status": "PASS"
+    },
+    {
+      "test": "approved CQ canonical positive resolves actual synthetic reference",
+      "status": "PASS"
+    },
+    {
+      "test": "full canonical approval programming lot approved CQ envase chain under enabled gates",
+      "status": "PASS"
+    },
+    {
+      "test": "all fourteen financial/fiscal/outbox existing full-row snapshots unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical generate/sign/attach and exact attachment replay preserved",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign FSF proof stays closed",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical group and observed cancellation replay preserved under added gates",
+      "status": "PASS"
+    },
+    {
+      "test": "separate exact release installs only canonical authenticated grant after legacy closure",
+      "status": "PASS"
+    },
+    {
+      "test": "release rerun rejects changed exact catalog",
+      "status": "PASS"
+    },
+    {
+      "test": "deny-only rollback closes canonical writer",
+      "status": "PASS"
+    },
+    {
+      "test": "rollback preserves full-row historical snapshots",
+      "status": "PASS"
     }
   ],
   "raw": [
@@ -151,8 +543,322 @@
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  PT503: STOCK_GATE_UNAVAILABLE\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 23 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "operator substitution conflicts",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: COCKPIT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 59 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "partial reason substitution conflicts",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: COCKPIT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 59 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy receipt without fingerprint denied unchanged",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 58 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "fresh key on ready OS denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_FRESH_STATE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 76 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "inactive same actor cannot replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 4 at assignment\nSQL statement \"SELECT platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem)\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 21 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "ledger injected failure rolls back all envase writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: LOCAL_LEDGER_FAIL\nCONTEXT:  PL/pgSQL function local_fail_envase_ledger() line 1 at RAISE\nSQL statement \"INSERT INTO public.estoque_movimentacoes\n      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,\n       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n       volume_anterior, volume_posterior, unidade, direcao,\n       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,\n       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)\n    VALUES (\n      NEW.id,\n      COALESCE(v_ctx->>'acao', 'entrada'),\n      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,\n      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),\n      0, COALESCE(NEW.quantidade, 0),\n      0, COALESCE(NEW.quantidade_reservada, 0),\n      0, COALESCE(NEW.volume_total, 0),\n      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',\n      COALESCE(v_ctx->>'origem', 'trigger'),\n      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,\n      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',\n      (v_ctx->>'movimentacao_origem_id')::uuid,\n      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n      v_meta\n    )\"\nPL/pgSQL function log_estoque_movimentacao() line 29 at SQL statement\nSQL statement \"INSERT INTO public.estoque_produto (id,\n        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,\n        validade, status, reservado_para_os_id, reservado_para_os_tipo,\n        reservado_para_cliente_id, reservado_para_partner_order_id,\n        quantidade_reservada, reservado_por, reservado_em\n      ) VALUES (\n        v_estoque_id,v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,\n        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,\n        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,\n        v_reservadas, v_uid, now()\n      ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 172 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_FRESH_STATE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 76 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_EXIGE_CQ_APROVADO\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 108 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "REPEATABLE READ explicitly unsupported without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: ENVASE_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "SERIALIZABLE explicitly unsupported without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: ENVASE_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "production cannot override partial",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_PARCIAL_SEM_ALCADA\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 213 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "manager override requires reason",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_PARCIAL_SEM_MOTIVO\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 215 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "item N failure rolls back prior item stock ledger receipt",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ITEM_N_FAIL\nCONTEXT:  PL/pgSQL function local_item_n() line 1 at RAISE\nSQL statement \"INSERT INTO public.envase (id,lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, organization_id)\n    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''), v_org)\n    RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 159 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "lock timeout rolls back whole receipt and stock",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  55P03: canceling statement due to lock timeout\nCONTEXT:  while locking tuple (0,25) in relation \"lotes\"\nSQL statement \"SELECT coalesce(volume_produzido, 0), status::text, produto_id, microrganismo_id, programacao_id\n                                                                                  FROM public.lotes WHERE id = p_lote_id FOR UPDATE\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 83 at SQL statement\nLOCATION:  ProcessInterrupts, postgres.c:3401\n"
+    },
+    {
+      "test": "existing reserved stock foreign root cannot cover own OS",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_RESERVATION_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 118 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "real unique index prevents second manufacturing lot root",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23505: duplicate key value violates unique constraint \"idx_lotes_programacao_id_unique\"\nDETAIL:  Key (programacao_id)=(10000000-0000-4000-8000-000000002601) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  lotes\nCONSTRAINT NAME:  idx_lotes_programacao_id_unique\nLOCATION:  _bt_check_unique, nbtinsert.c:673\n"
+    },
+    {
+      "test": "owner indirect envase without permit denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "owner indirect stock without permit denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "client cannot mint private permit",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for table envase_insert_permits_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "exact permit rejects changed organization_id",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "exact permit rejects changed lote_id",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "exact permit rejects changed id",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "exact permit rejects changed quantidade",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "exact permit rejects changed operador",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "exact permit rejects changed etiqueta_gerada",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "exact permit rejects changed volume_por_unidade",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "permit binds actor",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "permit binds txid",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "permit binds action",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "permit binds root",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 10 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed organization_id aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: tenant_scope_violation\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed quantidade aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_FINAL_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_final_v1() line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed volume_por_unidade aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_FINAL_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_final_v1() line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed operador aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_FINAL_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_final_v1() line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed etiqueta_gerada aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_FINAL_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_final_v1() line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "consumed one-shot permit cannot authorize another insert",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_INSERT_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "cooperation role",
+      "stdout": "",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "test": "cooperation tenant",
+      "stdout": "",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "test": "cooperation SaaS",
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:5259\n",
+      "returncode": 3
+    },
+    {
+      "test": "cooperation CQ",
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:5259\n",
+      "returncode": 3
+    },
+    {
+      "test": "cooperation new CQ",
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:5259\n",
+      "returncode": 3
+    },
+    {
+      "test": "cooperation root",
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:5259\n",
+      "returncode": 3
+    },
+    {
+      "test": "inverse prelock actual DML",
+      "holder_stdout": "1\n",
+      "holder_stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:5259\n",
+      "worker_stdout": "{\"avanco\": {\"replay\": false, \"status\": \"pronto_entrega\", \"success\": true, \"status_anterior\": \"em_cq\"}, \"estado\": \"completed\", \"replay\": false, \"envases\": 1, \"message\": \"Envase e estoque registrados em transa\u00e7\u00e3o \u00fanica.\", \"success\": true, \"pendente_os_ml\": 0, \"volume_livre_ml\": 0, \"entradas_estoque\": 1, \"saldo_restante_ml\": 98000, \"volume_reservado_ml\": 2000}\n",
+      "worker_stderr": "",
+      "worker_returncode": 0
+    },
+    {
+      "test": "canonical approval during held envase gate refuses 55P03 without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nSQL statement \"UPDATE public.ordens_servico SET status='aprovada' WHERE id=p_os_id\"\nPL/pgSQL function public.rpc_aprovar_os_v1(uuid,text) line 12 at SQL statement\nLOCATION:  heap_lock_tuple, heapam.c:5259\n"
+    },
+    {
+      "test": "canonical scheduling during held envase gate refuses 55P03 without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nSQL statement \"UPDATE public.ordens_servico SET status='programada',data_programada=p_data_programada WHERE id=p_os_id\"\nPL/pgSQL function public.rpc_programar_os_v1(uuid,text,date) line 70 at SQL statement\nLOCATION:  heap_lock_tuple, heapam.c:5259\n"
+    },
+    {
+      "test": "canonical lot generation during held envase gate refuses 55P03 without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nSQL statement \"INSERT INTO public.lotes(id,programacao_id,codigo_lote,produto_id,microrganismo_id,volume_produzido,data_producao,responsavel_producao,tanque,observacoes_tecnicas,organization_id)\n   VALUES(v_id,p_programacao_id,v_codigo,v_pp.produto_id,v_pp.microrganismo_id,v_volume,CURRENT_DATE,v_resp,v_tanque,v_obs,v_org) RETURNING id\"\nPL/pgSQL function public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb) line 111 at SQL statement\nLOCATION:  heap_lock_tuple, heapam.c:5259\n"
+    },
+    {
+      "test": "canonical CQ send during held envase gate refuses 55P03 without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nSQL statement \"UPDATE public.ordens_servico SET status='em_cq' WHERE id=os.id\"\nPL/pgSQL function platform_private.manual_cq_v1(uuid,uuid,jsonb) line 126 at SQL statement\nPL/pgSQL function public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) line 4 at RETURN\nLOCATION:  heap_lock_tuple, heapam.c:5259\n"
+    },
+    {
+      "test": "canonical CQ recording during held envase gate refuses 55P03 without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nSQL statement \"INSERT INTO public.controle_qualidade(id,lote_id,ph,concentracao,aparencia,odor,contaminacao,responsavel,responsavel_id,resultado,organization_id)\n  VALUES(cqid,lot.id,v_ph,concentration,payload->>'aparencia',payload->>'odor',payload->>'contaminacao','DADOS FICTICIOS SEM VALOR COMERCIAL',profileid,outcome::public.resultado_cq,org)\"\nPL/pgSQL function platform_private.manual_cq_v1(uuid,uuid,jsonb) line 133 at SQL statement\nPL/pgSQL function public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) line 4 at RETURN\nLOCATION:  heap_lock_tuple, heapam.c:5259\n"
+    },
+    {
+      "test": "rejected canonical CQ cannot authorize envase",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_LOTE_REPROVADO_BLOQUEIA_ENVASE\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 102 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "foreign FSF proof stays closed",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 11 at RAISE\nSQL function \"rpc_entrega_formulario_gerar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "release rerun rejects changed exact catalog",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: ENVASE_RELEASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "deny-only rollback closes canonical writer",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 277.106,
+  "elapsed_seconds": 312.215,
   "exit_code": 0
 }
