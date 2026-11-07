@@ -454,7 +454,7 @@ SELECT 'POST_OK' AS status;
     )
     deny_conditions += (
         f"\n  IF has_function_privilege('authenticated', '{HELPER_SIG}', 'EXECUTE') OR has_function_privilege('anon', '{HELPER_SIG}', 'EXECUTE') "
-        f"OR has_function_privilege('service_role', '{HELPER_SIG}', 'EXECUTE') OR has_function_privilege('PUBLIC', '{HELPER_SIG}', 'EXECUTE') "
+        f"OR has_function_privilege('service_role', '{HELPER_SIG}', 'EXECUTE') OR EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid='{HELPER_SIG}'::regprocedure AND a.grantee=0) "
         "THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_NOT_CLOSED'; END IF;"
         f"\n  IF md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)) <> '{helper_md5}' THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_BODY_CHANGED'; END IF;"
     )
