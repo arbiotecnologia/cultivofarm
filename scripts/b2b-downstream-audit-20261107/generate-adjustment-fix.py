@@ -411,7 +411,8 @@ def build():
     candidate_md5s = {kind: hashlib.md5(body.encode()).hexdigest() for kind, body in candidates.items()}
     baseline_md5s = {kind: meta["md5"] for kind, meta in DECISION_SOURCES.items()}
     helper = seller_helper_body()
-    helper_md5 = hashlib.md5(helper.encode()).hexdigest()
+    # pg_get_functiondef inclui a quebra de linha final após o delimitador.
+    helper_md5 = hashlib.md5((helper + "\n").encode()).hexdigest()
     pre = (
         "-- READ ONLY. Capturas LOCAIS; o auditor deve confrontar corpos, owners e ACLs LIVE antes de qualquer uso.\n"
         f"{assertions(baseline_md5s)}\n{helper_absence_assertion()}\nSELECT 'PRE_OK' AS status;\n"
