@@ -266,7 +266,7 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
         match = re.findall(rf"CREATE (?:OR REPLACE )?FUNCTION {re.escape(name)}\(.*?\nEND \$\$;", body, re.S)
         if len(match) != 1:
             raise SystemExit(f"CANDIDATE_PIN_FUNCTION {name}: {len(match)}")
-        normalized = normalize_function(match[0])
+        normalized = canonical_function(match[0])
         body = body.replace(match[0], normalized, 1)
         sig = name + {"platform_private.b2b_allocate_document": "(uuid)", "platform_private.b2b_order_residual": "(uuid)",
                       "platform_private.b4_schedule_from_nf": "(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)"}[name]
