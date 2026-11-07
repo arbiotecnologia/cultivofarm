@@ -234,7 +234,8 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
                 check("diagnóstico dos pinos após falha de instalação", False, {"diagnostic_exit": diagnostic.returncode, "expected": expected, "actual": actual, "stderr": diagnostic.stderr[-500:]})
         rerun = runfile(H / "02-install.sql.review")
         check("rerun aborta pelo pin da baseline, sem reinstalar", rerun.returncode != 0 and "B4_INSTALL_PRE_DRIFT" in rerun.stderr, rerun.stderr[-500:])
-        check("38 gatilhos reais do pedido continuam habilitados", B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip() == "38")
+        trigger_count = B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip()
+        check("38 gatilhos reais do pedido continuam habilitados", trigger_count == "38", trigger_count)
         check("B3 create/simulate antigos não foram restaurados nem alterados", B3.md5_of(B3.CREATE_SIG) == G["LIVE_PINS"][B3.CREATE_SIG] and B3.md5_of(B3.SIM_SIG) == G["LIVE_PINS"][B3.SIM_SIG]
               and B3.psql("SELECT to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text,jsonb)') IS NULL").stdout.strip() == "t")
         check("autorização fiscal continua service-only e sem integração de recebível", B3.psql("SELECT has_function_privilege('authenticated','public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)','EXECUTE')").stdout.strip() == "f"
