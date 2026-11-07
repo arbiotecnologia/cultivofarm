@@ -1,3 +1,12 @@
+## 07/11 16:45 — Revisão independente B4 458b6012 e decisões financeiras
+- [x] Inventariar 54 alterações B4 com funções compartilhadas, índice, gatilhos, tabela/35 colunas/16 constraints/13 índices/9 gatilhos, owners e ACLs. Manifesto estático 42/42, exit 0; PRE/install/POST/rollback fail-closed e sem sobrescrever desconhecido.
+- [x] Bloquear instalação por baseline LIVE não capturada de `rpc_receivable_money_projection_v1(uuid,integer,integer)`; corpos antigos homônimos não foram promovidos a baseline. Instalação e rollback não concluíram no harness e não causaram revogação parcial.
+- [x] Separar instalação de operação: `b2b_integration_dependencies` permanece real/always-deny; stub existe só no harness depois da negação real. Nenhum GRANT ou writer ampliado.
+- [x] Medir fences compartilhados em PostgreSQL descartável: 73/73, exit 0, separados dos 63 históricos e dos 42 estáticos. MANUAL sem/com parceiro foi criado; MANUAL de parceiro sem origem monetária bloqueou exposição com `MONEY_ORIGIN_UNPROVEN`. Pedido interno ficou contido sem título/alocação. Não é E2E real.
+- [x] Revisar request/approve/reject com corpos capturados, mesmo escopo vendedor, lock e reautorização: 134/134, exit 0, 38 gatilhos reais ativos. FSF, comprador, pending contábil e externo validado permaneceram negados; positivos somente legado sintético; rollback deny-only fechou os três.
+- [x] Preservar reconciliação física/Auth e entregar artefatos separados, JSON/TXT/exit codes/hashes; nenhum hosted/publicação/delegação ou aprovação de implantação.
+- [ ] Auditor: capturar/conferir LIVE a projeção e demais baselines, revisar o impacto em títulos manuais e só então reavaliar instalação. Elegibilidade ARBio e JWT/RLS/Storage/NF/cobrança reais permanecem NOT_RUN; tudo continua INATIVO/NÃO APROVADO.
+
 ## 07/11 16:38 — Achado LIVE de escopo vendedor no ajuste B2B
 - [x] Rebaixar a evidência 60/60 a histórico: ela não prova elegibilidade do administrador vendedor nem produção; o positivo superadmin foi removido da matriz atual e script/evidência antigos ficaram preservados separadamente.
 - [x] Confirmar que as capturas locais executadas de `b2b_phase1_partner_visible`, `b2b_actor_scope` e `platform_actor_access_ready` têm exatamente os MD5 relatados LIVE `915f516e…`, `c3f29977…` e `048249c0…`; nenhum stub novo. Isso não é nova leitura LIVE, e as demais fontes continuam pendentes de conferência.

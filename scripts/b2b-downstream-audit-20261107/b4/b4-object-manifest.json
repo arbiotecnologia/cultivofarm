@@ -1,0 +1,1721 @@
+{
+  "review": "458b6012",
+  "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "historical_candidate_sha256": "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894",
+  "candidate_sha256": "d9a2089559c8e388316b9bb17cb4939b8215b500e58f94bbdbd8cd10ae67ccb7",
+  "object_count": 54,
+  "objects": [
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_allocate_document(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_allocate_document(uuid)",
+        "body_md5": "95a81488cc743ba6ed9ce6c2741e4b91",
+        "definition_sha256": "5eecd3db8d09722cdae19f7c7513ac900029f412fd264621d17dce85ff5e8684",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_allocation_money_row(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_allocation_money_row(uuid)",
+        "body_md5": "c41dc00a22c7cc4f494cce9ac69bfae6",
+        "definition_sha256": "e8fe31fc62ac8bf1d4dd0ad5b8030ae07e59efca78acb44d3d3a15f6656870fc",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_cancellation_fence()",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_cancellation_fence()",
+        "body_md5": "09cc54398ceeed2b11d7baaa2c1255e1",
+        "definition_sha256": "8a1c31081892957e060fbeaa32812290d12abc58d2093d9fadc4a0b30397dbf5",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_credit_balances(uuid,uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_credit_balances(uuid,uuid)",
+        "body_md5": "53c290771f25d48bd3a08d7bd954d6c6",
+        "definition_sha256": "e6fd3bf0855016f898a551733aa664d38ac6815e2bbc3df030630fe3f21cf200",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_credit_config_block(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_credit_config_block(uuid)",
+        "body_md5": "1b9e3870ef3f944c11e8b094885dc195",
+        "definition_sha256": "81c0f895e8da82f877e13c28ddaab8a6d4e04039e73ca7f0cc68051229b0a4f7",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_debtor_partner(uuid,uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_debtor_partner(uuid,uuid)",
+        "body_md5": "2a0390b9cf3e2dfb84c8d6933fd4029f",
+        "definition_sha256": "59628d74448d97fb7fe1b9b588fbd9236efa499efbaf67b797d79137f48f1597",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_integration_actor(uuid,boolean)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_integration_actor(uuid,boolean)",
+        "body_md5": "c6c25ebcb29ba64adafb0bc42295d3b6",
+        "definition_sha256": "7a6ddc0efdb047099f72c33a1e829fd98e277cbc7f0a3433e9a53f2cc80c6b3b",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_integration_dependencies()",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_integration_dependencies()",
+        "body_md5": "605e722506de23bfd69c890c4123d4b6",
+        "definition_sha256": "58a6654001c8b1860b04d770da79a02d545e08870625c6a146633b2fbb822e0d",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_legacy_money_row(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_legacy_money_row(uuid)",
+        "body_md5": "57c3763d01f16d8f63bff65814239dd0",
+        "definition_sha256": "07016dd06e8e8067ce99b8ec4fabd5b9cebf5044683242e7adb482db1707368c",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_order_residual(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_order_residual(uuid)",
+        "body_md5": "ffd5b7695bd51e1ef2913f2759d0821c",
+        "definition_sha256": "99f6f4ae7121f4236ff1c773e17614c1ebbe33f01a3354eda3eb20fa02da03cf",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_proven_money_row(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_proven_money_row(uuid)",
+        "body_md5": "85ffe4a63e365b6907eaf0957865f3ef",
+        "definition_sha256": "3aa0cc35983d79c06c27f9fcfb5af1ec274df3bc03a89abcd97d6fccde4f72b6",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_reverse_allocation(uuid,uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_reverse_allocation(uuid,uuid)",
+        "body_md5": "e8f483d839da20cb49dd86af5b5047aa",
+        "definition_sha256": "eefef2c034b7f6a828cd99ebd8f28d7c842605e54eb0a223dd3b15c5663d7cf6",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_shared_receivable_credit_guard()",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_shared_receivable_credit_guard()",
+        "body_md5": "dbcf1a2b836bebe5175dcfa6cd0bab83",
+        "definition_sha256": "7f9c34be1f091de9f1ecd330e5c56c203e8eab37872a6e88955cee98d2e4d82f",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b2b_title_insert_fence()",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b2b_title_insert_fence()",
+        "body_md5": "39d8b85a715722b4a976db4e2fd21167",
+        "definition_sha256": "65983673a7537ebffec14ff8f97e0528fe862298fc0d48081ce3ce3e856581fb",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b4_assert_order_eligible(uuid)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b4_assert_order_eligible(uuid)",
+        "body_md5": "1155fd3d213192f7f8ef1489fe95b3af",
+        "definition_sha256": "56c6908d55337d35b891b9047f4be7276cc71fd9202939728ea11ebf4bb21cd7",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)",
+        "body_md5": "af9e7e4f05742ab42f2d2b30e8faf560",
+        "definition_sha256": "13536827fdbd8e38aa5e25459c0ad74aa83bf78633f9714c2ecf494b0eabb0ac",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.price_adjusted_due(date,platform_private.holiday_calendars)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.price_adjusted_due(date,platform_private.holiday_calendars)",
+        "body_md5": "41d8c08797118e69f435e7b355b28ea6",
+        "definition_sha256": "2903da551f0bef984bc18b4d368e7986fca590509614642ad76decfdb25fd5fe",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.price_calendar_load(text,text)",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.price_calendar_load(text,text)",
+        "body_md5": "e68759899b50efd93579f5bca2da9940",
+        "definition_sha256": "79b136dc358c6aa1c7e933b287ae5ef15af55e6a2c25410c5c8b08f16f9bc55f",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.price_immutable()",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.price_immutable()",
+        "body_md5": "d001f9720ad2c42c6d1d62c210e043dd",
+        "definition_sha256": "08aa7f7b9ddd3f0807f33ba973d1464c6fa896a92d050f76aba11b9260018a9a",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "platform_private.price_pinned_calendar()",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "signature": "platform_private.price_pinned_calendar()",
+        "body_md5": "2c96486a431bc06abf9d42bb756e60e4",
+        "definition_sha256": "ef095b6b7a47cdc959adcab000fbdcfd189aa5491d7b44e9c1935a3dffaff4f5",
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "operation": "REPLACE",
+      "baseline": {
+        "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
+        "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#fn_b2b_credit_exposure(uuid,numeric,uuid)",
+        "body_md5": "213ac31f3a30816ead75365b0d1fed18",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}"
+      },
+      "candidate": {
+        "signature": "public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+        "body_md5": "cafd0ca7233b7b1db79d9f4990fbff1a",
+        "definition_sha256": "bce932be5b7bda60aa4126c6eb4d4853309b792ee92655748fa14ce1114dbf20",
+        "owner": "postgres",
+        "acl": "BASELINE_PRESERVED"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "public.fn_generate_receivable_installments()",
+      "operation": "REPLACE",
+      "baseline": {
+        "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
+        "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#fn_generate_receivable_installments()",
+        "body_md5": "f632f15c9f46cb9889082fc533a27ea1",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}"
+      },
+      "candidate": {
+        "signature": "public.fn_generate_receivable_installments()",
+        "body_md5": "4fa47b35665c13d3c9f0ce15262dd98c",
+        "definition_sha256": "b7f23626db951b6d8b0218a81b33c48eed03e99feac0a6dd2302e01ec65e49b3",
+        "owner": "postgres",
+        "acl": "BASELINE_PRESERVED"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "public.generate_b2b_receivable_secure_impl(uuid)",
+      "operation": "REPLACE",
+      "baseline": {
+        "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
+        "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#generate_b2b_receivable_secure_impl(uuid)",
+        "body_md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}"
+      },
+      "candidate": {
+        "signature": "public.generate_b2b_receivable_secure_impl(uuid)",
+        "body_md5": "3a4ca7fcd75f9fd3a183b6917fe05cd2",
+        "definition_sha256": "6ec137e529249a36421f171603429b4775b36b6e966a5599ad8c735795be3472",
+        "owner": "postgres",
+        "acl": "BASELINE_PRESERVED"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+      "operation": "REPLACE",
+      "baseline": {
+        "status": "MISSING_BLOCKS_INSTALL",
+        "source": null,
+        "body_md5": null,
+        "owner": null,
+        "acl": null
+      },
+      "candidate": {
+        "signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+        "body_md5": "64607d04d66831252f7d7b0e6371ff42",
+        "definition_sha256": "357d0e1686b0c780e4bd238491196e43a26d4a8eaca1b37a5b0a07e836e2ba24",
+        "owner": "postgres",
+        "acl": "BASELINE_PRESERVED"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "public.rpc_register_receivable_payment(uuid,jsonb)",
+      "operation": "REPLACE",
+      "baseline": {
+        "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
+        "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#rpc_register_receivable_payment(uuid,jsonb)",
+        "body_md5": "db41f7e2cfcb196ef64536f62746f365",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+      },
+      "candidate": {
+        "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
+        "body_md5": "98f577574e8b1889416d59cbfb00c437",
+        "definition_sha256": "c5664767d7365c530ab87f6ae88bfdad72db6c957b7225c6d97cf4548a242799",
+        "owner": "postgres",
+        "acl": "BASELINE_PRESERVED"
+      }
+    },
+    {
+      "kind": "function",
+      "object": "public.tg_auto_b2b_receivable()",
+      "operation": "REPLACE",
+      "baseline": {
+        "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
+        "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#tg_auto_b2b_receivable()",
+        "body_md5": "0f679538fe394924b140e54938a3bb9e",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}"
+      },
+      "candidate": {
+        "signature": "public.tg_auto_b2b_receivable()",
+        "body_md5": "d179755ea3701a723338d08283d42fe5",
+        "definition_sha256": "eae4cd349af1d7bc0d7032e75a2e2706c84f272f3ee2b16cc1354c4a2b0bfd37",
+        "owner": "postgres",
+        "acl": "BASELINE_PRESERVED"
+      }
+    },
+    {
+      "kind": "table",
+      "object": "platform_private.holiday_calendars",
+      "operation": "CREATE_WITH_RLS_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY",
+        "rls": true
+      }
+    },
+    {
+      "kind": "table",
+      "object": "platform_private.price_schedule_snapshots",
+      "operation": "CREATE_WITH_RLS_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY",
+        "rls": true
+      }
+    },
+    {
+      "kind": "table",
+      "object": "platform_private.b2b_authorized_documents",
+      "operation": "CREATE_WITH_RLS_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY",
+        "rls": true
+      }
+    },
+    {
+      "kind": "table",
+      "object": "platform_private.b2b_document_allocations",
+      "operation": "CREATE_WITH_RLS_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY",
+        "rls": true
+      }
+    },
+    {
+      "kind": "table",
+      "object": "platform_private.b2b_allocation_reversals",
+      "operation": "CREATE_WITH_RLS_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY",
+        "rls": true
+      }
+    },
+    {
+      "kind": "table",
+      "object": "platform_private.b2b_title_permits",
+      "operation": "CREATE_WITH_RLS_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY",
+        "rls": true
+      }
+    },
+    {
+      "kind": "table",
+      "object": "platform_private.b2b_cancellation_attestations",
+      "operation": "CREATE_WITH_RLS_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY",
+        "rls": true
+      }
+    },
+    {
+      "kind": "view",
+      "object": "platform_private.b4_order_condition_snapshots",
+      "operation": "CREATE_OWNER_ONLY",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "owner": "postgres",
+        "acl": "OWNER_ONLY"
+      }
+    },
+    {
+      "kind": "column+foreign_key",
+      "object": "public.accounts_receivable.b2b_document_id",
+      "operation": "ADD",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED",
+        "table_schema": {
+          "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#accounts_receivable",
+          "owner": "postgres",
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "rls": true,
+          "force_rls": false,
+          "columns": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "default": "gen_random_uuid()",
+              "notnull": true
+            },
+            {
+              "name": "origin_type",
+              "type": "text",
+              "default": null,
+              "notnull": true
+            },
+            {
+              "name": "origin_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "customer_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "default": null,
+              "notnull": true
+            },
+            {
+              "name": "category_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": true
+            },
+            {
+              "name": "cost_center_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "total_amount",
+              "type": "numeric(14,2)",
+              "default": null,
+              "notnull": true
+            },
+            {
+              "name": "issue_date",
+              "type": "date",
+              "default": "CURRENT_DATE",
+              "notnull": true
+            },
+            {
+              "name": "first_due_date",
+              "type": "date",
+              "default": null,
+              "notnull": true
+            },
+            {
+              "name": "installment_count",
+              "type": "integer",
+              "default": "1",
+              "notnull": true
+            },
+            {
+              "name": "status",
+              "type": "text",
+              "default": "'OPEN'::text",
+              "notnull": true
+            },
+            {
+              "name": "fiscal_invoice_required",
+              "type": "boolean",
+              "default": "false",
+              "notnull": true
+            },
+            {
+              "name": "fiscal_invoice_status",
+              "type": "text",
+              "default": "'NOT_REQUIRED'::text",
+              "notnull": true
+            },
+            {
+              "name": "notes",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "created_by",
+              "type": "uuid",
+              "default": null,
+              "notnull": true
+            },
+            {
+              "name": "created_at",
+              "type": "timestamp with time zone",
+              "default": "now()",
+              "notnull": true
+            },
+            {
+              "name": "updated_at",
+              "type": "timestamp with time zone",
+              "default": "now()",
+              "notnull": true
+            },
+            {
+              "name": "payment_method_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "fiscal_invoice_number",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "fiscal_access_key",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "fiscal_issue_date",
+              "type": "date",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "recurring_template_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "reference_month",
+              "type": "date",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "auto_generated",
+              "type": "boolean",
+              "default": "false",
+              "notnull": true
+            },
+            {
+              "name": "partner_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "external_payment_id",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "payment_gateway",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "pix_qr_code",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "pix_copia_cola",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "boleto_url",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "fiscal_requirement_source",
+              "type": "text",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "fiscal_policy_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "fiscal_exemption_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            },
+            {
+              "name": "organization_id",
+              "type": "uuid",
+              "default": null,
+              "notnull": false
+            }
+          ],
+          "constraints": [
+            {
+              "name": "accounts_receivable_category_id_fkey",
+              "definition": "FOREIGN KEY (category_id) REFERENCES financial_categories(id)"
+            },
+            {
+              "name": "accounts_receivable_cost_center_id_fkey",
+              "definition": "FOREIGN KEY (cost_center_id) REFERENCES financial_cost_centers(id)"
+            },
+            {
+              "name": "accounts_receivable_created_by_fkey",
+              "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+            },
+            {
+              "name": "accounts_receivable_customer_id_fkey",
+              "definition": "FOREIGN KEY (customer_id) REFERENCES clientes(id)"
+            },
+            {
+              "name": "accounts_receivable_fiscal_exemption_id_fkey",
+              "definition": "FOREIGN KEY (fiscal_exemption_id) REFERENCES fiscal_requirement_exemptions(id)"
+            },
+            {
+              "name": "accounts_receivable_fiscal_invoice_status_check",
+              "definition": "CHECK ((fiscal_invoice_status = ANY (ARRAY['NOT_REQUIRED'::text, 'PENDING'::text, 'ISSUED'::text, 'CANCELED'::text, 'PENDING_PARAMETRIZATION'::text, 'EXEMPT'::text])))"
+            },
+            {
+              "name": "accounts_receivable_installment_count_check",
+              "definition": "CHECK ((installment_count >= 1))"
+            },
+            {
+              "name": "accounts_receivable_organization_id_fkey",
+              "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+            },
+            {
+              "name": "accounts_receivable_origin_type_check",
+              "definition": "CHECK ((origin_type = ANY (ARRAY['DELIVERY'::text, 'SERVICE'::text, 'MANUAL'::text, 'RECURRING'::text, 'CONTRACT'::text, 'B2B_ORDER'::text])))"
+            },
+            {
+              "name": "accounts_receivable_partner_id_fkey",
+              "definition": "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id)"
+            },
+            {
+              "name": "accounts_receivable_payment_method_id_fkey",
+              "definition": "FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)"
+            },
+            {
+              "name": "accounts_receivable_pkey",
+              "definition": "PRIMARY KEY (id)"
+            },
+            {
+              "name": "accounts_receivable_recurring_template_id_fkey",
+              "definition": "FOREIGN KEY (recurring_template_id) REFERENCES recurring_financial_templates(id)"
+            },
+            {
+              "name": "accounts_receivable_status_check",
+              "definition": "CHECK ((status = ANY (ARRAY['OPEN'::text, 'PARTIAL'::text, 'PAID'::text, 'CANCELED'::text, 'OVERDUE'::text])))"
+            },
+            {
+              "name": "accounts_receivable_total_amount_check",
+              "definition": "CHECK ((total_amount >= (0)::numeric))"
+            },
+            {
+              "name": "ar_customer_or_partner",
+              "definition": "CHECK (((customer_id IS NOT NULL) OR (partner_id IS NOT NULL)))"
+            }
+          ],
+          "indexes": [
+            {
+              "name": "accounts_receivable_organization_id_idx",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX accounts_receivable_organization_id_idx ON public.accounts_receivable USING btree (organization_id)"
+            },
+            {
+              "name": "accounts_receivable_pkey",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": true,
+              "definition": "CREATE UNIQUE INDEX accounts_receivable_pkey ON public.accounts_receivable USING btree (id)"
+            },
+            {
+              "name": "idx_ar_created_at",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_created_at ON public.accounts_receivable USING btree (created_at DESC)"
+            },
+            {
+              "name": "idx_ar_customer",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_customer ON public.accounts_receivable USING btree (customer_id)"
+            },
+            {
+              "name": "idx_ar_customer_status",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_customer_status ON public.accounts_receivable USING btree (customer_id, status)"
+            },
+            {
+              "name": "idx_ar_issue_date",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_issue_date ON public.accounts_receivable USING btree (issue_date)"
+            },
+            {
+              "name": "idx_ar_origin",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_origin ON public.accounts_receivable USING btree (origin_type, origin_id)"
+            },
+            {
+              "name": "idx_ar_partner_b2b",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_partner_b2b ON public.accounts_receivable USING btree (partner_id) WHERE (origin_type = 'B2B_ORDER'::text)"
+            },
+            {
+              "name": "idx_ar_refmonth",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_refmonth ON public.accounts_receivable USING btree (reference_month)"
+            },
+            {
+              "name": "idx_ar_status",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_status ON public.accounts_receivable USING btree (status)"
+            },
+            {
+              "name": "idx_ar_status_due",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX idx_ar_status_due ON public.accounts_receivable USING btree (status, first_due_date)"
+            },
+            {
+              "name": "ux_ar_one_active_per_b2b_order",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": true,
+              "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
+            },
+            {
+              "name": "ux_ar_one_per_delivery",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": true,
+              "definition": "CREATE UNIQUE INDEX ux_ar_one_per_delivery ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'DELIVERY'::text) AND (status <> 'CANCELED'::text))"
+            }
+          ],
+          "triggers": [
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+              "body": "CREATE OR REPLACE FUNCTION public.d51_5_validate_financial_tenant_links()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_new jsonb := to_jsonb(NEW);\n  v_org uuid;\n  v_parent_id uuid;\nBEGIN\n  BEGIN\n    v_org := NULLIF(v_new->>'organization_id', '')::uuid;\n  EXCEPTION WHEN invalid_text_representation THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_INVALID' USING ERRCODE = '23514';\n  END;\n\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_receivable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'receivable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable ar WHERE ar.id = v_parent_id AND ar.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_payable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'payable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable ap WHERE ap.id = v_parent_id AND ap.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'receivable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable_installments ari WHERE ari.id = v_parent_id AND ari.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'payable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable_installments api WHERE api.id = v_parent_id AND api.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'financial_receipts' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n    v_parent_id := NULLIF(v_new->>'payment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.receivable_payments rp WHERE rp.id = v_parent_id AND rp.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+              "name": "d51_5_validate_tenant_links",
+              "enabled": "O",
+              "function": "d51_5_validate_financial_tenant_links()",
+              "definition": "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()"
+            },
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "d01a740c1e3e02407131d2b9228bf658",
+              "body": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+              "name": "tenant_organization_guard",
+              "enabled": "O",
+              "function": "guard_tenant_organization_id()",
+              "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+            },
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "f632f15c9f46cb9889082fc533a27ea1",
+              "body": "CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  i int;\n  v_context platform_private.financial_initial_installments;\n  v_inst jsonb;\n  v_qtd int := NEW.installment_count;\n  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);\n  v_acc numeric(14,2) := 0;\n  v_amt numeric(14,2);\nBEGIN\n  IF NEW.organization_id IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n  DELETE FROM platform_private.financial_initial_installments\n    WHERE transaction_id=txid_current() AND title_id=NEW.id AND kind='receivable'\n    RETURNING * INTO v_context;\n  IF FOUND THEN\n    IF v_context.actor_id IS DISTINCT FROM auth.uid() OR v_context.organization_id IS DISTINCT FROM NEW.organization_id\n       OR NEW.created_by IS DISTINCT FROM v_context.actor_id OR NEW.origin_type <> 'MANUAL'\n       OR platform_private.h15_actor_organization() IS DISTINCT FROM NEW.organization_id\n       OR NOT public.is_financial_staff(auth.uid()) THEN\n      RAISE EXCEPTION 'FIN_INITIAL_CONTEXT_DENIED' USING ERRCODE='42501';\n    END IF;\n    IF jsonb_array_length(v_context.installments) <> NEW.installment_count\n       OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(v_context.installments) x) IS DISTINCT FROM NEW.total_amount THEN\n      RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514';\n    END IF;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_context.installments) LOOP\n      INSERT INTO public.accounts_receivable_installments(organization_id,receivable_id,installment_number,due_date,original_amount,net_amount,status)\n        VALUES(NEW.organization_id,NEW.id,(v_inst->>'installment_number')::int,(v_inst->>'due_date')::date,\n          (v_inst->>'amount')::numeric,(v_inst->>'amount')::numeric,'OPEN');\n    END LOOP;\n    RETURN NEW;\n  END IF;\n  IF NEW.origin_type='B2B_ORDER' AND EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=NEW.origin_id AND o.c2_external_origin_snapshot IS NOT NULL) THEN\n    INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id,interest_amount)\n    SELECT NEW.id,s.installment_number,s.due_date,s.amount,s.amount,'OPEN',NEW.organization_id,s.interest_amount\n    FROM public.partner_order_payment_schedule s JOIN public.partner_orders o ON o.id=s.partner_order_id AND o.payment_terms_id=s.payment_terms_id\n    WHERE o.id=NEW.origin_id ORDER BY s.installment_number;\n    IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id=NEW.id)<>v_qtd THEN RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514'; END IF;\n    RETURN NEW;\n  END IF;\n  FOR i IN 1..v_qtd LOOP\n    IF i < v_qtd THEN\n      v_amt := v_base;\n      v_acc := v_acc + v_amt;\n    ELSE\n      v_amt := NEW.total_amount - v_acc;\n    END IF;\n    INSERT INTO public.accounts_receivable_installments\n      (receivable_id, installment_number, due_date, original_amount, net_amount, status, organization_id)\n    VALUES\n      (NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN', NEW.organization_id);\n  END LOOP;\n  RETURN NEW;\nEND\n$function$\n",
+              "name": "trg_ar_gen_installments",
+              "enabled": "O",
+              "function": "fn_generate_receivable_installments()",
+              "definition": "CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()"
+            },
+            {
+              "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+              "md5": "b1930ed5bca3be839f783c6202ab8147",
+              "body": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+              "name": "trg_ar_uat",
+              "enabled": "O",
+              "function": "update_updated_at_column()",
+              "definition": "CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+            },
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "46f777c2020ff9a059a80ae6dab4bd12",
+              "body": "CREATE OR REPLACE FUNCTION public.fn_financial_audit()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_old jsonb; v_new jsonb;\nBEGIN\n  IF TG_OP = 'INSERT' THEN v_new := to_jsonb(NEW);\n  ELSIF TG_OP = 'UPDATE' THEN v_old := to_jsonb(OLD); v_new := to_jsonb(NEW);\n  ELSIF TG_OP = 'DELETE' THEN v_old := to_jsonb(OLD);\n  END IF;\n\n  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)\n  VALUES (TG_TABLE_NAME, COALESCE((NEW).id, (OLD).id), TG_OP, v_old, v_new, auth.uid());\n\n  RETURN COALESCE(NEW, OLD);\nEND $function$\n",
+              "name": "trg_audit_ar",
+              "enabled": "O",
+              "function": "fn_financial_audit()",
+              "definition": "CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()"
+            },
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "d9cc5c95f837de9d77cec2159e24bbf9",
+              "body": "CREATE OR REPLACE FUNCTION public.fn_h6_guard_title_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.total_amount IS DISTINCT FROM OLD.total_amount\n     OR NEW.installment_count IS DISTINCT FROM OLD.installment_count\n     OR NEW.origin_type IS DISTINCT FROM OLD.origin_type\n     OR NEW.origin_id IS DISTINCT FROM OLD.origin_id\n     OR NEW.issue_date IS DISTINCT FROM OLD.issue_date\n     OR NEW.first_due_date IS DISTINCT FROM OLD.first_due_date\n     OR NEW.created_by IS DISTINCT FROM OLD.created_by\n     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n    RAISE EXCEPTION 'Snapshot financeiro imutavel: valor, parcelas, origem e datas de emissao nao podem ser alterados.'\n      USING ERRCODE='check_violation';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable'\n     AND (to_jsonb(NEW)->>'payment_method_id') IS DISTINCT FROM (to_jsonb(OLD)->>'payment_method_id') THEN\n    RAISE EXCEPTION 'Condicao/metodo do titulo e imutavel apos a criacao: use o metodo na baixa (receivable_payments).'\n      USING ERRCODE='check_violation';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n",
+              "name": "trg_h6_ar_snapshot",
+              "enabled": "O",
+              "function": "fn_h6_guard_title_snapshot()",
+              "definition": "CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()"
+            },
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "5c07dd23a0c9355c3fe11811004b0381",
+              "body": "CREATE OR REPLACE FUNCTION public.fn_h6d_block_hard_delete()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF public.fn_h6d_hard_delete_allowed() THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'Registro financeiro (%) nao pode ser excluido: cancele pelo fluxo formal (rpc_cancel_accounts_receivable / rpc_cancel_accounts_payable).', TG_TABLE_NAME\n    USING ERRCODE='check_violation';\nEND $function$\n",
+              "name": "trg_h6d_ar_no_delete",
+              "enabled": "O",
+              "function": "fn_h6d_block_hard_delete()",
+              "definition": "CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()"
+            },
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "13ed48832f81cbb35434688ca35fda4b",
+              "body": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usuário ativo e empresa são obrigatórios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+              "name": "trg_saas_gate",
+              "enabled": "O",
+              "function": "_saas_trg_require_feature()",
+              "definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('contas_receber')"
+            },
+            {
+              "acl": "{postgres=X/postgres,service_role=X/postgres}",
+              "md5": "e636fcf74c5e1c7c8037d5a17f525c27",
+              "body": "CREATE OR REPLACE FUNCTION public.tg_sync_b2b_financial_status()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_link record;\n  v_new text;\nBEGIN\n  SELECT * INTO v_link FROM public.partner_order_financial_links WHERE receivable_id = NEW.id;\n  IF NOT FOUND THEN RETURN NEW; END IF;\n\n  v_new := CASE NEW.status\n    WHEN 'PAID' THEN 'recebido'\n    WHEN 'PARTIAL' THEN 'parcial'\n    WHEN 'OVERDUE' THEN 'vencido'\n    WHEN 'CANCELED' THEN 'cancelado'\n    ELSE 'gerado'\n  END;\n\n  UPDATE public.partner_orders SET financial_status = v_new WHERE id = v_link.partner_order_id;\n  UPDATE public.partner_order_financial_links SET financial_status = v_new WHERE id = v_link.id;\n\n  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)\n  VALUES (v_link.partner_order_id, v_link.partner_id, 'financeiro_status_alterado',\n    jsonb_build_object('ar_status', NEW.status, 'novo', v_new));\n\n  RETURN NEW;\nEND $function$\n",
+              "name": "trg_sync_b2b_financial_status",
+              "enabled": "O",
+              "function": "tg_sync_b2b_financial_status()",
+              "definition": "CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()"
+            }
+          ],
+          "columns_md5": "48e56787eb471eac7dbb59d23173961f",
+          "constraints_md5": "22342047ab90371922b30c3e17ed95e1",
+          "indexes_md5": "524434083f330c8c1b66e1712dfb2e0e",
+          "triggers_md5": "cf5ee9c0d72818a3052f36d6b167a365"
+        }
+      },
+      "candidate": {
+        "type": "uuid",
+        "nullable": true,
+        "references": "platform_private.b2b_authorized_documents(id)"
+      }
+    },
+    {
+      "kind": "index",
+      "object": "public.b2b_one_title_per_document",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "unique": true,
+        "valid": true
+      }
+    },
+    {
+      "kind": "index",
+      "object": "public.ux_ar_one_active_per_b2b_order",
+      "operation": "DROP_AND_RECREATE",
+      "baseline": {
+        "status": "CAPTURED_REQUIRES_LIVE_RECHECK",
+        "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json",
+        "definition": {
+          "name": "ux_ar_one_active_per_b2b_order",
+          "table": "accounts_receivable",
+          "valid": true,
+          "unique": true,
+          "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
+        }
+      },
+      "candidate": {
+        "unique": true,
+        "valid": true,
+        "predicate_adds": "b2b_document_id IS NULL"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.holiday_calendars.price_calendar_immutable",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.holiday_calendars.price_calendar_no_truncate",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.price_schedule_snapshots.price_snapshot_immutable",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.price_schedule_snapshots.price_snapshot_no_truncate",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_authorized_documents.immutable_update_delete",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_document_allocations.immutable_update_delete",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_allocation_reversals.immutable_update_delete",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_cancellation_attestations.immutable_update_delete",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_authorized_documents.immutable_truncate",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_document_allocations.immutable_truncate",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_allocation_reversals.immutable_truncate",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_cancellation_attestations.immutable_truncate",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "public.accounts_receivable.zz_b2b_shared_credit_guard",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "public.accounts_receivable.a01_b2b_fiscal_title_fence",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "public.accounts_receivable.a01_b2b_fiscal_title_identity",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger",
+      "object": "platform_private.b2b_cancellation_attestations.cancellation_scope_lock",
+      "operation": "CREATE",
+      "baseline": {
+        "status": "ABSENCE_REQUIRED"
+      },
+      "candidate": {
+        "enabled": "O"
+      }
+    },
+    {
+      "kind": "trigger+shared_table",
+      "object": "public.accounts_receivable.*",
+      "operation": "PRESERVE_BASELINE_AND_ADD_LISTED",
+      "baseline": {
+        "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#accounts_receivable",
+        "owner": "postgres",
+        "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+        "rls": true,
+        "force_rls": false,
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "default": "gen_random_uuid()",
+            "notnull": true
+          },
+          {
+            "name": "origin_type",
+            "type": "text",
+            "default": null,
+            "notnull": true
+          },
+          {
+            "name": "origin_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "customer_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "description",
+            "type": "text",
+            "default": null,
+            "notnull": true
+          },
+          {
+            "name": "category_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": true
+          },
+          {
+            "name": "cost_center_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "total_amount",
+            "type": "numeric(14,2)",
+            "default": null,
+            "notnull": true
+          },
+          {
+            "name": "issue_date",
+            "type": "date",
+            "default": "CURRENT_DATE",
+            "notnull": true
+          },
+          {
+            "name": "first_due_date",
+            "type": "date",
+            "default": null,
+            "notnull": true
+          },
+          {
+            "name": "installment_count",
+            "type": "integer",
+            "default": "1",
+            "notnull": true
+          },
+          {
+            "name": "status",
+            "type": "text",
+            "default": "'OPEN'::text",
+            "notnull": true
+          },
+          {
+            "name": "fiscal_invoice_required",
+            "type": "boolean",
+            "default": "false",
+            "notnull": true
+          },
+          {
+            "name": "fiscal_invoice_status",
+            "type": "text",
+            "default": "'NOT_REQUIRED'::text",
+            "notnull": true
+          },
+          {
+            "name": "notes",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "created_by",
+            "type": "uuid",
+            "default": null,
+            "notnull": true
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "notnull": true
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "default": "now()",
+            "notnull": true
+          },
+          {
+            "name": "payment_method_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "fiscal_invoice_number",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "fiscal_access_key",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "fiscal_issue_date",
+            "type": "date",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "recurring_template_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "reference_month",
+            "type": "date",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "auto_generated",
+            "type": "boolean",
+            "default": "false",
+            "notnull": true
+          },
+          {
+            "name": "partner_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "external_payment_id",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "payment_gateway",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "pix_qr_code",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "pix_copia_cola",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "boleto_url",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "fiscal_requirement_source",
+            "type": "text",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "fiscal_policy_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "fiscal_exemption_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          },
+          {
+            "name": "organization_id",
+            "type": "uuid",
+            "default": null,
+            "notnull": false
+          }
+        ],
+        "constraints": [
+          {
+            "name": "accounts_receivable_category_id_fkey",
+            "definition": "FOREIGN KEY (category_id) REFERENCES financial_categories(id)"
+          },
+          {
+            "name": "accounts_receivable_cost_center_id_fkey",
+            "definition": "FOREIGN KEY (cost_center_id) REFERENCES financial_cost_centers(id)"
+          },
+          {
+            "name": "accounts_receivable_created_by_fkey",
+            "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id)"
+          },
+          {
+            "name": "accounts_receivable_customer_id_fkey",
+            "definition": "FOREIGN KEY (customer_id) REFERENCES clientes(id)"
+          },
+          {
+            "name": "accounts_receivable_fiscal_exemption_id_fkey",
+            "definition": "FOREIGN KEY (fiscal_exemption_id) REFERENCES fiscal_requirement_exemptions(id)"
+          },
+          {
+            "name": "accounts_receivable_fiscal_invoice_status_check",
+            "definition": "CHECK ((fiscal_invoice_status = ANY (ARRAY['NOT_REQUIRED'::text, 'PENDING'::text, 'ISSUED'::text, 'CANCELED'::text, 'PENDING_PARAMETRIZATION'::text, 'EXEMPT'::text])))"
+          },
+          {
+            "name": "accounts_receivable_installment_count_check",
+            "definition": "CHECK ((installment_count >= 1))"
+          },
+          {
+            "name": "accounts_receivable_organization_id_fkey",
+            "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id)"
+          },
+          {
+            "name": "accounts_receivable_origin_type_check",
+            "definition": "CHECK ((origin_type = ANY (ARRAY['DELIVERY'::text, 'SERVICE'::text, 'MANUAL'::text, 'RECURRING'::text, 'CONTRACT'::text, 'B2B_ORDER'::text])))"
+          },
+          {
+            "name": "accounts_receivable_partner_id_fkey",
+            "definition": "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id)"
+          },
+          {
+            "name": "accounts_receivable_payment_method_id_fkey",
+            "definition": "FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)"
+          },
+          {
+            "name": "accounts_receivable_pkey",
+            "definition": "PRIMARY KEY (id)"
+          },
+          {
+            "name": "accounts_receivable_recurring_template_id_fkey",
+            "definition": "FOREIGN KEY (recurring_template_id) REFERENCES recurring_financial_templates(id)"
+          },
+          {
+            "name": "accounts_receivable_status_check",
+            "definition": "CHECK ((status = ANY (ARRAY['OPEN'::text, 'PARTIAL'::text, 'PAID'::text, 'CANCELED'::text, 'OVERDUE'::text])))"
+          },
+          {
+            "name": "accounts_receivable_total_amount_check",
+            "definition": "CHECK ((total_amount >= (0)::numeric))"
+          },
+          {
+            "name": "ar_customer_or_partner",
+            "definition": "CHECK (((customer_id IS NOT NULL) OR (partner_id IS NOT NULL)))"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "accounts_receivable_organization_id_idx",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX accounts_receivable_organization_id_idx ON public.accounts_receivable USING btree (organization_id)"
+          },
+          {
+            "name": "accounts_receivable_pkey",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": true,
+            "definition": "CREATE UNIQUE INDEX accounts_receivable_pkey ON public.accounts_receivable USING btree (id)"
+          },
+          {
+            "name": "idx_ar_created_at",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_created_at ON public.accounts_receivable USING btree (created_at DESC)"
+          },
+          {
+            "name": "idx_ar_customer",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_customer ON public.accounts_receivable USING btree (customer_id)"
+          },
+          {
+            "name": "idx_ar_customer_status",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_customer_status ON public.accounts_receivable USING btree (customer_id, status)"
+          },
+          {
+            "name": "idx_ar_issue_date",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_issue_date ON public.accounts_receivable USING btree (issue_date)"
+          },
+          {
+            "name": "idx_ar_origin",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_origin ON public.accounts_receivable USING btree (origin_type, origin_id)"
+          },
+          {
+            "name": "idx_ar_partner_b2b",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_partner_b2b ON public.accounts_receivable USING btree (partner_id) WHERE (origin_type = 'B2B_ORDER'::text)"
+          },
+          {
+            "name": "idx_ar_refmonth",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_refmonth ON public.accounts_receivable USING btree (reference_month)"
+          },
+          {
+            "name": "idx_ar_status",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_status ON public.accounts_receivable USING btree (status)"
+          },
+          {
+            "name": "idx_ar_status_due",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX idx_ar_status_due ON public.accounts_receivable USING btree (status, first_due_date)"
+          },
+          {
+            "name": "ux_ar_one_active_per_b2b_order",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": true,
+            "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
+          },
+          {
+            "name": "ux_ar_one_per_delivery",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": true,
+            "definition": "CREATE UNIQUE INDEX ux_ar_one_per_delivery ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'DELIVERY'::text) AND (status <> 'CANCELED'::text))"
+          }
+        ],
+        "triggers": [
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+            "body": "CREATE OR REPLACE FUNCTION public.d51_5_validate_financial_tenant_links()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_new jsonb := to_jsonb(NEW);\n  v_org uuid;\n  v_parent_id uuid;\nBEGIN\n  BEGIN\n    v_org := NULLIF(v_new->>'organization_id', '')::uuid;\n  EXCEPTION WHEN invalid_text_representation THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_INVALID' USING ERRCODE = '23514';\n  END;\n\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_receivable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'receivable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable ar WHERE ar.id = v_parent_id AND ar.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_payable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'payable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable ap WHERE ap.id = v_parent_id AND ap.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'receivable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable_installments ari WHERE ari.id = v_parent_id AND ari.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'payable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable_installments api WHERE api.id = v_parent_id AND api.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'financial_receipts' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n    v_parent_id := NULLIF(v_new->>'payment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.receivable_payments rp WHERE rp.id = v_parent_id AND rp.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+            "name": "d51_5_validate_tenant_links",
+            "enabled": "O",
+            "function": "d51_5_validate_financial_tenant_links()",
+            "definition": "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()"
+          },
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "d01a740c1e3e02407131d2b9228bf658",
+            "body": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+            "name": "tenant_organization_guard",
+            "enabled": "O",
+            "function": "guard_tenant_organization_id()",
+            "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+          },
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "f632f15c9f46cb9889082fc533a27ea1",
+            "body": "CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  i int;\n  v_context platform_private.financial_initial_installments;\n  v_inst jsonb;\n  v_qtd int := NEW.installment_count;\n  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);\n  v_acc numeric(14,2) := 0;\n  v_amt numeric(14,2);\nBEGIN\n  IF NEW.organization_id IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n  DELETE FROM platform_private.financial_initial_installments\n    WHERE transaction_id=txid_current() AND title_id=NEW.id AND kind='receivable'\n    RETURNING * INTO v_context;\n  IF FOUND THEN\n    IF v_context.actor_id IS DISTINCT FROM auth.uid() OR v_context.organization_id IS DISTINCT FROM NEW.organization_id\n       OR NEW.created_by IS DISTINCT FROM v_context.actor_id OR NEW.origin_type <> 'MANUAL'\n       OR platform_private.h15_actor_organization() IS DISTINCT FROM NEW.organization_id\n       OR NOT public.is_financial_staff(auth.uid()) THEN\n      RAISE EXCEPTION 'FIN_INITIAL_CONTEXT_DENIED' USING ERRCODE='42501';\n    END IF;\n    IF jsonb_array_length(v_context.installments) <> NEW.installment_count\n       OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(v_context.installments) x) IS DISTINCT FROM NEW.total_amount THEN\n      RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514';\n    END IF;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_context.installments) LOOP\n      INSERT INTO public.accounts_receivable_installments(organization_id,receivable_id,installment_number,due_date,original_amount,net_amount,status)\n        VALUES(NEW.organization_id,NEW.id,(v_inst->>'installment_number')::int,(v_inst->>'due_date')::date,\n          (v_inst->>'amount')::numeric,(v_inst->>'amount')::numeric,'OPEN');\n    END LOOP;\n    RETURN NEW;\n  END IF;\n  IF NEW.origin_type='B2B_ORDER' AND EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=NEW.origin_id AND o.c2_external_origin_snapshot IS NOT NULL) THEN\n    INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id,interest_amount)\n    SELECT NEW.id,s.installment_number,s.due_date,s.amount,s.amount,'OPEN',NEW.organization_id,s.interest_amount\n    FROM public.partner_order_payment_schedule s JOIN public.partner_orders o ON o.id=s.partner_order_id AND o.payment_terms_id=s.payment_terms_id\n    WHERE o.id=NEW.origin_id ORDER BY s.installment_number;\n    IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id=NEW.id)<>v_qtd THEN RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514'; END IF;\n    RETURN NEW;\n  END IF;\n  FOR i IN 1..v_qtd LOOP\n    IF i < v_qtd THEN\n      v_amt := v_base;\n      v_acc := v_acc + v_amt;\n    ELSE\n      v_amt := NEW.total_amount - v_acc;\n    END IF;\n    INSERT INTO public.accounts_receivable_installments\n      (receivable_id, installment_number, due_date, original_amount, net_amount, status, organization_id)\n    VALUES\n      (NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN', NEW.organization_id);\n  END LOOP;\n  RETURN NEW;\nEND\n$function$\n",
+            "name": "trg_ar_gen_installments",
+            "enabled": "O",
+            "function": "fn_generate_receivable_installments()",
+            "definition": "CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()"
+          },
+          {
+            "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+            "md5": "b1930ed5bca3be839f783c6202ab8147",
+            "body": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+            "name": "trg_ar_uat",
+            "enabled": "O",
+            "function": "update_updated_at_column()",
+            "definition": "CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+          },
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "46f777c2020ff9a059a80ae6dab4bd12",
+            "body": "CREATE OR REPLACE FUNCTION public.fn_financial_audit()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_old jsonb; v_new jsonb;\nBEGIN\n  IF TG_OP = 'INSERT' THEN v_new := to_jsonb(NEW);\n  ELSIF TG_OP = 'UPDATE' THEN v_old := to_jsonb(OLD); v_new := to_jsonb(NEW);\n  ELSIF TG_OP = 'DELETE' THEN v_old := to_jsonb(OLD);\n  END IF;\n\n  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)\n  VALUES (TG_TABLE_NAME, COALESCE((NEW).id, (OLD).id), TG_OP, v_old, v_new, auth.uid());\n\n  RETURN COALESCE(NEW, OLD);\nEND $function$\n",
+            "name": "trg_audit_ar",
+            "enabled": "O",
+            "function": "fn_financial_audit()",
+            "definition": "CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()"
+          },
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "d9cc5c95f837de9d77cec2159e24bbf9",
+            "body": "CREATE OR REPLACE FUNCTION public.fn_h6_guard_title_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.total_amount IS DISTINCT FROM OLD.total_amount\n     OR NEW.installment_count IS DISTINCT FROM OLD.installment_count\n     OR NEW.origin_type IS DISTINCT FROM OLD.origin_type\n     OR NEW.origin_id IS DISTINCT FROM OLD.origin_id\n     OR NEW.issue_date IS DISTINCT FROM OLD.issue_date\n     OR NEW.first_due_date IS DISTINCT FROM OLD.first_due_date\n     OR NEW.created_by IS DISTINCT FROM OLD.created_by\n     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n    RAISE EXCEPTION 'Snapshot financeiro imutavel: valor, parcelas, origem e datas de emissao nao podem ser alterados.'\n      USING ERRCODE='check_violation';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable'\n     AND (to_jsonb(NEW)->>'payment_method_id') IS DISTINCT FROM (to_jsonb(OLD)->>'payment_method_id') THEN\n    RAISE EXCEPTION 'Condicao/metodo do titulo e imutavel apos a criacao: use o metodo na baixa (receivable_payments).'\n      USING ERRCODE='check_violation';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n",
+            "name": "trg_h6_ar_snapshot",
+            "enabled": "O",
+            "function": "fn_h6_guard_title_snapshot()",
+            "definition": "CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()"
+          },
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "5c07dd23a0c9355c3fe11811004b0381",
+            "body": "CREATE OR REPLACE FUNCTION public.fn_h6d_block_hard_delete()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF public.fn_h6d_hard_delete_allowed() THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'Registro financeiro (%) nao pode ser excluido: cancele pelo fluxo formal (rpc_cancel_accounts_receivable / rpc_cancel_accounts_payable).', TG_TABLE_NAME\n    USING ERRCODE='check_violation';\nEND $function$\n",
+            "name": "trg_h6d_ar_no_delete",
+            "enabled": "O",
+            "function": "fn_h6d_block_hard_delete()",
+            "definition": "CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()"
+          },
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "13ed48832f81cbb35434688ca35fda4b",
+            "body": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usuário ativo e empresa são obrigatórios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+            "name": "trg_saas_gate",
+            "enabled": "O",
+            "function": "_saas_trg_require_feature()",
+            "definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('contas_receber')"
+          },
+          {
+            "acl": "{postgres=X/postgres,service_role=X/postgres}",
+            "md5": "e636fcf74c5e1c7c8037d5a17f525c27",
+            "body": "CREATE OR REPLACE FUNCTION public.tg_sync_b2b_financial_status()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_link record;\n  v_new text;\nBEGIN\n  SELECT * INTO v_link FROM public.partner_order_financial_links WHERE receivable_id = NEW.id;\n  IF NOT FOUND THEN RETURN NEW; END IF;\n\n  v_new := CASE NEW.status\n    WHEN 'PAID' THEN 'recebido'\n    WHEN 'PARTIAL' THEN 'parcial'\n    WHEN 'OVERDUE' THEN 'vencido'\n    WHEN 'CANCELED' THEN 'cancelado'\n    ELSE 'gerado'\n  END;\n\n  UPDATE public.partner_orders SET financial_status = v_new WHERE id = v_link.partner_order_id;\n  UPDATE public.partner_order_financial_links SET financial_status = v_new WHERE id = v_link.id;\n\n  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)\n  VALUES (v_link.partner_order_id, v_link.partner_id, 'financeiro_status_alterado',\n    jsonb_build_object('ar_status', NEW.status, 'novo', v_new));\n\n  RETURN NEW;\nEND $function$\n",
+            "name": "trg_sync_b2b_financial_status",
+            "enabled": "O",
+            "function": "tg_sync_b2b_financial_status()",
+            "definition": "CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()"
+          }
+        ],
+        "columns_md5": "48e56787eb471eac7dbb59d23173961f",
+        "constraints_md5": "22342047ab90371922b30c3e17ed95e1",
+        "indexes_md5": "524434083f330c8c1b66e1712dfb2e0e",
+        "triggers_md5": "cf5ee9c0d72818a3052f36d6b167a365"
+      },
+      "candidate": {
+        "table_acl": "UNCHANGED",
+        "old_constraints": "UNCHANGED_PLUS_B2B_DOCUMENT_FK"
+      }
+    }
+  ],
+  "duplicate_definitions_in_historical_body": [
+    "platform_private.b2b_shared_receivable_credit_guard"
+  ],
+  "missing_baseline": [
+    "public.rpc_receivable_money_projection_v1(uuid,integer,integer)"
+  ],
+  "dependent_trigger_pins": [
+    {
+      "name": "trg_auto_b2b_receivable",
+      "table": "partner_orders",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_auto_b2b_receivable AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable()"
+    }
+  ],
+  "post_shared_schema_md5": {
+    "columns": "62e9a6d0710abab3dd0f1ce6db4005bd",
+    "constraints": "09ce695b8adddd296478b570c5608125",
+    "indexes": "53e7b38728aa3dcd5190a8287a166b12",
+    "triggers": "24c9dabea0eb679d1d3aff3f231d7b20"
+  },
+  "operation_separation": {
+    "installation_grants_operation": false,
+    "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL",
+    "test_stub_allowed_in_install": false
+  },
+  "shared_impact": "testado separadamente em PG descartável; resultado não autoriza regressão nem instalação",
+  "limitations": [
+    "capturas não são nova leitura LIVE",
+    "POST não é prova JWT/RLS/PostgREST/Storage",
+    "63/63 históricos preservados separadamente e não somados"
+  ]
+}

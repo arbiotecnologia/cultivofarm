@@ -4,6 +4,8 @@ DECLARE d record;
 BEGIN
   FOR d IN SELECT * FROM (VALUES
     ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'f9bf8f543564af480d08e7bebd111b88', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.approve_b2b_payment_terms_secure(uuid,text)', 'a61daa8542058bdbf239903d655c2a1b', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.reject_b2b_payment_terms_secure(uuid,text)', '40777d0cec6a7d8a8d4dfcb3370b08b6', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
     ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
@@ -24,7 +26,7 @@ BEGIN
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
     END IF;
     IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
-      IF d.sig = 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)' THEN
+      IF d.sig IN ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'public.approve_b2b_payment_terms_secure(uuid,text)', 'public.reject_b2b_payment_terms_secure(uuid,text)') THEN
         RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
       END IF;
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;

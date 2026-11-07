@@ -1,6 +1,10 @@
 # Achado LIVE de escopo — 07/11 16:38 UTC
 
-**Status: INATIVO / NÃO APROVADO / NÃO IMPLANTADO.** Esta revisão não autoriza instalação. O SQL candidato não mudou: MD5 `7eb3b5be33552f6bd4eecd56796502ed`.
+**Status: INATIVO / NÃO APROVADO / NÃO IMPLANTADO.** Esta revisão não autoriza instalação. O SQL de request não mudou: MD5 `7eb3b5be33552f6bd4eecd56796502ed`.
+
+## Revisão 458b6012 — request/approve/reject, 134/134
+
+A evidência de escopo 76/76 abaixo é histórica e está preservada em `../historical-76/`; não foi somada. A matriz atual inclui approve/reject com os mesmos guards de escopo, lock, reautorização e pendência contábil. Foram testados pedido ausente, FSF, comprador, C2 pending, externo validado, revogações durante lock, positivos apenas no legado sintético para admin/financeiro/gestor comercial e rollback deny-only dos três writers. Resultado: **134/134, exit 0**, em `decision-candidates.json`, `test-decisions.stdout.txt`, `test-decisions.stderr.txt` e `test-decisions.exitcode`. Nenhum grant ou positivo de produção; continua não aprovado.
 
 ## Capturas confrontadas
 

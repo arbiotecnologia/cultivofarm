@@ -1,48 +1,55 @@
-# Reconciliação B4 útil sobre o B3 atual — somente local
+# Reconciliação B4 útil sobre o B3 atual — revisão 458b6012
 
-**Candidato inativo, revisável e não liberado.** Nenhuma operação hospedada, NF/cobrança/aprovação contábil real, envio, publicação ou subagente. O histórico `301bf597` (134 PG/1327 Vitest relatado) não foi presumido equivalente nem promovido.
+**INATIVO, BLOQUEADO E NÃO APROVADO.** Nenhuma operação hospedada, NF/cobrança/aprovação contábil real, envio, publicação ou subagente. B3 e os 63 testes anteriores não foram reabertos nem promovidos a E2E.
 
-## Comparação de fontes e cadeia estática
+## Baseline e manifesto fail-closed
 
-Os pinos READONLY informados pelo auditor foram confrontados com `scripts/delivery-atomic-hardening-20261030/capture/current.json`. As capturas locais correspondem aos MD5 informados para ajuste/aprovação/rejeição, geradores, gatilho automático, autorização fiscal, eligibility/exposure e capability de envase. Isso **não é uma nova consulta LIVE**.
+`generate-b4-review.py` recompõe o candidato histórico e gera `b4-object-manifest.json`, PRE/install/POST/rollback, pinos e hashes. O manifesto cobre **54 alterações**: funções novas/substituídas, tabelas/view/coluna, FK, constraints, índices, gatilhos, owners e ACLs. Novos objetos exigem ausência; substituições exigem corpo/owner/ACL capturados.
 
-ACL locais conferidas: ajuste/aprovação/rejeição e geradores cliente têm `authenticated EXECUTE`; autorização fiscal, confirmação e engine são service-only na captura. A capability de envase tem MD5 local `f4b804310d5a3db959bf6e2a27f793e0`; UI fechada não foi usada para deduzir exposure.
+As substituições compartilhadas agora pinadas incluem:
 
-`rpc_fiscal_invoice_apply_authorization_v1` recusa `PRODUCTION`, mantém reconciliação pendente e não chama gerador de recebível. `fn_generate_receivable_from_entrega` tem replay por `entrega.receivable_id` antes de guards posteriores e não mostra reautorização pós-lock no corpo capturado; isso ficou como risco de revisão estática, não vulnerabilidade LIVE demonstrada. Nenhum desses writers foi executado.
+- `public.rpc_register_receivable_payment(uuid,jsonb)`;
+- `public.fn_generate_receivable_installments()`;
+- `public.rpc_receivable_money_projection_v1(uuid,integer,integer)`;
+- `public.fn_b2b_credit_exposure(uuid,numeric,uuid)`;
+- `public.generate_b2b_receivable_secure_impl(uuid)`;
+- `public.tg_auto_b2b_receivable()`;
+- `ux_ar_one_active_per_b2b_order` e toda a metadata compartilhada de `accounts_receivable`: 35 colunas, 16 constraints, 13 índices, 9 gatilhos, RLS/owner/ACL;
+- o gatilho dependente `zz_auto_generate_b2b_receivable`.
 
-## Artefatos gerados
+**Bloqueio atual:** não existe captura LIVE identificada de `rpc_receivable_money_projection_v1(uuid,integer,integer)`. Os corpos homônimos em `financial-price-generator-20261029` são candidatos antigos e não foram tratados como baseline. O PRE contém `B4_BASELINE_CAPTURE_REQUIRED`; portanto a instalação não pode sobrescrever essa função desconhecida. O auditor precisa capturar corpo, owner, ACL e assinatura LIVE antes de nova revisão.
 
-`generate-b4.py` extrai componentes das fontes pinadas e gera:
+O histórico tinha três definições de `platform_private.b2b_shared_receivable_credit_guard()`. O gerador usa a definição final efetiva e registra a duplicidade no manifesto; isso não foi ocultado.
 
-- `b4-candidate.sql.review`;
-- `01-pre.sql.readonly`, `02-install.sql.review`, `03-post.sql.readonly`;
-- `04-rollback-deny.sql.review`;
-- `b4-pins.json` e `SHA256SUMS`.
+## Instalação separada de operação
 
-Não há overloads create/simulate antigos, writer Price de emissão, grants cliente para o alocador privado ou alteração do scheduler estimado B3. O scheduler B4 separado calcula datas finais pela emissão da NF com o calendário selado `paracatu-mg-2026-2027-v2`; fora da cobertura falha fechado.
+`02-install.sql.review` contém PRE + corpo + POST em uma transação, sem `GRANT`. Ele **não** substitui `platform_private.b2b_integration_dependencies` por stub. O corpo candidato real dessa dependência permanece sempre deny com `B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN`.
 
-A visão privada B4 combina snapshots não cotados do B3 e o snapshot append-only da resposta de cotação. Elegibilidade canônica, origem e pendência contábil são revalidadas após locks. Rollback é deny-only e preserva documentos, títulos, alocações, reversões e snapshots.
+Na bateria descartável, PRE e instalação falharam fechados e nenhum objeto B4 foi criado. Somente depois disso `b4-candidate.sql.review` foi executado isoladamente como **componente de laboratório**. O stub operacional foi aplicado exclusivamente no harness, após provar a negação real. Isso não é instalação, PRE/POST aprovado ou evidência de produção.
 
-## Bateria final — 63/63, exit 0
+POST e rollback exigem a metadata íntegra. No schema reduzido do harness, o rollback falhou fechado sem revogação parcial e preservou títulos, alocações e snapshots.
 
-Executada por `test-b4-b3.py` em PostgreSQL descartável com B3 atual instalado, seus **32 gatilhos reais carregados** ativos e os writers capturados necessários ao PRE. Os 38 gatilhos pertencem ao pacote separado de ajuste e não foram misturados a esta contagem.
+## Evidências independentes — não somar
 
-Cobertura executada:
+1. **42/42, exit 0 — manifesto estático:** `review-458b6012/evidence-manifest-tests.json` e `test-manifest.*`. Cobre inventário, pinos, owners/ACLs, schema, gatilhos, blocos DO, ausência de GRANT/stub, deny-only e determinismo.
+2. **73/73, exit 0 — componente PostgreSQL descartável:** `review-458b6012/evidence-b4-shared-impact.json` e `test-shared.*`. Inclui o comportamento B4 e os novos impactos compartilhados; não é E2E.
+3. **63/63 históricos:** preservados byte a byte em `review-458b6012/historical-63/`; não somados nem reclassificados.
 
-- cotação B3 real com centavos e pedido direto, ambos aprovados/economicamente selados;
-- gate fiscal/contábil não comprovado fechado antes da costura fictícia; cliente sem EXECUTE no alocador;
-- três documentos parciais independentes, replay idempotente, quantidade/residual e um título por documento;
-- exposição = pedido restante + títulos em aberto, sem dupla contagem; baixa de R$ 10 reduz somente o título;
-- Price sem segundo acréscimo de juros; primeira data final baseada na NF e no calendário;
-- cancelamento pago negado; substituição intermediária não paga com preservação exata dos centavos e histórico;
-- quantidade excedente, tenant estrangeiro (`forbidden_partner`), pendência contábil e writer antigo negados;
-- snapshot B3 não cotado, calendário fora da cobertura, corrida de duas sessões e rollback deny-only;
-- PRE/POST/rerun e pinos de função; create/simulate B3 inalterados e autorização fiscal sem integração de recebível.
+## Impactos compartilhados medidos
 
-Evidências: `evidence-b4-b3.json`, `test.stdout.txt`, `test.stderr.txt`, `test.exitcode`; manifesto e hashes em `evidence-manifest.json` e `evidence-SHA256SUMS`.
+- Título `MANUAL` não B2B sem devedor parceiro foi criado e gerou uma parcela pelo caminho existente.
+- Título `MANUAL` não B2B com cliente vinculado a parceiro e crédito configurado também foi criado e recebeu `partner_id` pelo gatilho capturado.
+- **Efeito fail-closed relevante:** esse título manual de parceiro, sem origem monetária B4 comprovada, fez `fn_b2b_credit_exposure` falhar com `MONEY_ORIGIN_UNPROVEN`. As duas fixtures manuais foram canceladas somente no banco descartável depois da medição. Não se deve liberar o pacote sem reconciliar projeção/origem de títulos manuais e o impacto operacional dessa negação.
+- A projeção de um título legado sem origem conhecida permaneceu `MONEY_ORIGIN_UNPROVEN`, sem backfill.
+- Pedido interno sintético foi negado pelo alocador com `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` e pelo writer integral anterior, sem título/alocação. Gatilhos foram pausados apenas para montar a fixture e religados antes das chamadas.
+- Cotação/pedido B3, parciais, replay, residual, baixa, substituição de centavos, concorrência, calendário e histórico passaram no componente. Isso não prova fluxo real.
 
-## Costuras e limites obrigatórios
+## Pendências para o auditor
 
-Auth usa GUC/roles locais; funções privadas são chamadas por um adaptador servidor local sem `SET ROLE`, separado das provas de negação cliente. `c2_order_partner_recipients` é uma costura sem destinatários usada apenas para concluir a aprovação. Schema financeiro é capturado com FK/RLS externos omitidos. NF autorizada/cancelamento e atestação contábil são fixtures locais sem rede; `b2b_integration_dependencies` só é substituída depois de provar a negação real.
+1. Capturar a baseline LIVE da projeção e reconferir todos os demais corpos/owners/ACLs, tabela/índices/gatilhos antes de instalação.
+2. Revisar o efeito `MONEY_ORIGIN_UNPROVEN` sobre recebíveis manuais de parceiros e decidir uma reconciliação sem inventar origem/backfill ou abrir writers.
+3. Revisar a duplicidade histórica do guard compartilhado e a mudança do índice único em dados reais, com preflight de duplicidades.
+4. Manter instalação e ativação separadas; operação fiscal/contábil/recebível continua fechada.
+5. JWT/RLS/Storage/PostgREST/browser, NF/cobrança reais e homologação continuam NOT_RUN.
 
-**Não é prova JWT/RLS/Storage/PostgREST/browser, emissão fiscal, cobrança real ou E2E de produção.** Revisão LIVE, homologação e decisão de implantação continuam com o auditor. A reconciliação posterior em `../physical/` eliminou o drift de composição e executou 123/123 cenários físicos biológicos ml; isso não altera o B4 nem seus 63/63. Químicos/fertilizantes kg/g e demais apresentações físicas continuam NOT_RUN.
+Auth/GUC, schema reduzido, NF/contabilidade e adaptadores são sintéticos. Nenhum PASS local autoriza implantação.

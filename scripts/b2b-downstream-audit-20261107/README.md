@@ -39,11 +39,17 @@ Cobertura atual: pin divergente do writer/privado, owner/ACL divergentes, PRE/PO
 
 Além dos quatro pinos anteriores, os MD5 LIVE relatados de `b2b_phase1_partner_visible` (`915f516e…`), `b2b_actor_scope` (`c3f29977…`) e `platform_actor_access_ready` (`048249c0…`) correspondem exatamente às capturas locais executadas. Isso não é nova leitura LIVE. As demais dependências/owners/ACLs vêm de captura LOCAL e exigem conferência independente. Detalhes e matriz em `review-31430566/scope-live-1638/`. **Não aprovado nem aplicado; nenhum positivo sintético certifica o admin vendedor ARBio.**
 
+### Revisão 458b6012 das três decisões — 134/134, exit 0
+
+Os 76 testes anteriores foram preservados em `review-31430566/historical-76/` e não somados. Request/approve/reject agora compartilham o mesmo escopo canônico, `FOR UPDATE`, reautorização pós-lock e bloqueio `C2_ACCOUNTING_PENDING`, com owner/ACL preservados e sem grants. FSF, comprador, pedido ausente e pendência contábil foram negados sem efeitos; revogações durante lock também fecharam approve/reject. Nos três papéis internos, positivos ocorreram somente no legado sintético; no externo validado, o guard real de origem negou todos. Rollback deny-only fechou os três writers sem apagar histórico. Evidência atual: `review-31430566/scope-live-1638/decision-candidates.json`; **INATIVO/NÃO APROVADO**.
+
 ## 2. Resultados downstream executados
 
 | Componente | Resultado atual | Evidência | Limite |
 |---|---:|---|---|
-| Reconciliação B4 útil sobre B3 atual | **63/63**, exit 0 | `b4/evidence-b4-b3.json` | Componente local, adaptador NF sem rede; não E2E/JWT/RLS |
+| B4 anterior | **63/63 históricos**, não somados | `b4/review-458b6012/historical-63/` | Não promovido após revisão 458b6012 |
+| Manifesto B4 458b6012 | **42/42**, exit 0 | `b4/review-458b6012/evidence-manifest-tests.json` | 54 objetos; instalação bloqueada por baseline ausente |
+| B4 componente + impactos compartilhados | **73/73**, exit 0 | `b4/review-458b6012/evidence-b4-shared-impact.json` | Não E2E; efeito em MANUAL parceiro exige reconciliação |
 | Price, calendário, crédito, títulos, pagamentos/estorno | **338/338**, exit 0 | `evidence/price/` | Componente com Auth/settings/NF/contabilidade sintéticos; não E2E |
 | Cobrança por entrega e escopo | **47/47**, exit 0 | `evidence/delivery-billing/` | Candidato histórico inativo; stubs e schema reduzido |
 | Envase/CQ/estoque/pronto_entrega | **119/119 matriz completa + 21/21 recorte**, exits 0 | `physical/evidence/envase-full/`; `physical/evidence/envase-targeted/` | PostgreSQL descartável; liberação real/JWT/RLS não testados |
@@ -57,7 +63,7 @@ Não houve suíte completa. O primeiro arquivo UI isolado também foi executado 
 ## 3. Mapa de contratos e contenções
 
 - **Pedido/cotação/aprovações:** B3 publicado é marco histórico informado; suas 226 provas PG anteriores não foram repetidas. O ajuste candidato desta pasta é separado e não altera B3, Price, escolha, snapshots ou crédito.
-- **Faturamento parcial/NF autorizada → recebível:** o harness histórico com overloads superados não foi executado. A reconciliação isolada `b4/` extraiu somente os componentes úteis sobre o B3 atual e passou **63/63**: parciais, replay, residual+exposição, baixa, substituição intermediária de centavos, concorrência, gates e rollback. O candidato continua inativo; NF é fixture local sem rede e não há certificação de cobrança real.
+- **Faturamento parcial/NF autorizada → recebível:** os 63 testes anteriores são históricos. A revisão 458b6012 inventariou 54 alterações e passou 42/42 verificações estáticas e 73/73 no componente descartável, sem somar contagens. A instalação está bloqueada até captura LIVE da projeção monetária. Títulos MANUAL sem/com parceiro foram preservados na criação, mas MANUAL de parceiro sem origem conhecida bloqueou exposição com `MONEY_ORIGIN_UNPROVEN`; pedido interno ficou contido. Instalação não ativa operação: dependência fiscal/contábil continua always-deny. Detalhes em `b4/README.md`.
 - **Recebível idempotente:** Price testou geração/replay, crédito total, pagamento e estorno por componentes existentes. Cobrança por entrega testou replay com mesmo ID, categoria RECEITA ativa, método ativo, escopo, concorrência e revogação.
 - **Estoque/envase:** a composição capturada executou CQ → estoque → `pronto_entrega`, com permissões fechadas antes do grant sintético, estrangeiro negado e sentinelas downstream preservadas.
 - **Expedição/em rota/confirmação/cancelamento:** após separar o stub de bloqueio do release revisado e corrigir somente a criação do cache descartável, a composição passou **123/123**. Cobriu envio independente, Enviar→Confirmar sem segunda baixa, CAS, replay/idempotência, isolamento de tenant, revogações sob lock observado, corridas de envio/confirmação/cancelamento, cancelamento e rollback deny-only. O release original de envase ficou byte-idêntico antes/depois do recorte; detalhes em `physical/README.md`.
@@ -73,9 +79,10 @@ Não houve suíte completa. O primeiro arquivo UI isolado também foi executado 
 
 ## 5. Riscos pendentes / próxima revisão
 
-1. Confrontar a função LIVE, hashes/ACL/gatilhos e só então revisar o delta do ajuste; não aplicar os arquivos desta pasta automaticamente.
-2. Revisar o candidato B4 reconciliado em `b4/` contra LIVE e suas costuras antes de qualquer decisão de instalação. A bateria local passou 63/63, mas a cobrança real após NF autorizada segue não certificada.
-3. Cobrir químicos/fertilizantes kg/g e cenários L/ml na cadeia física sem criar cadastros paralelos. **Continua NOT_RUN nesta rodada**; os 123 PASS são da composição biológica ml e não foram reinterpretados como essas apresentações.
-4. JWT/RLS/Storage/PostgREST/browser real, contabilidade, emissão fiscal, recebíveis e envios continuam NOT_RUN e fechados.
+1. Confrontar LIVE request/approve/reject, hashes/ACL/gatilhos e elegibilidade real do vendedor; os 134 PASS são locais e não autorizam instalação.
+2. Capturar LIVE `rpc_receivable_money_projection_v1(uuid,integer,integer)` e reconferir os 54 objetos B4. Sem isso, PRE/install permanecem bloqueados.
+3. Reconciliar o efeito `MONEY_ORIGIN_UNPROVEN` em títulos MANUAL de parceiro antes de qualquer liberação; não inventar origem/backfill nem abrir writers.
+4. Cobrir químicos/fertilizantes kg/g e cenários L/ml na cadeia física sem criar cadastros paralelos. **Continua NOT_RUN nesta rodada**; os 123 PASS são da composição biológica ml.
+5. JWT/RLS/Storage/PostgREST/browser real, contabilidade, emissão fiscal, recebíveis e envios continuam NOT_RUN e fechados.
 
 `matrix.csv` apresenta o recorte cenário/resultado/evidência/risco. `evidence/summary.json` e `evidence/SHA256SUMS` consolidam códigos de saída e hashes. Todo PASS acima é local e sintético, nunca homologação do fluxo real completo.

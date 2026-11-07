@@ -241,18 +241,17 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         check("fixture contábil pendente separada", B3.psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{pending_order}'").stdout.strip() == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1")
 
         finance_schema()
-        for name, marker in [("01-pre.sql.readonly", "PRE_OK"), ("02-install.sql.review", ""), ("03-post.sql.readonly", "POST_OK")]:
-            result = runfile(H / name)
-            check(f"B4 {name}", result.returncode == 0 and (not marker or marker in result.stdout + result.stderr), (result.stdout + result.stderr)[-1200:])
-            if name == "02-install.sql.review" and result.returncode != 0:
-                diagnostic = runfile(H / "b4-candidate.sql.review")
-                expected = json.loads((H / "b4-pins.json").read_text())["candidate_md5"]
-                actual = {sig: B3.md5_of(sig) for sig in expected}
-                (H / "pin-debug-credit.txt").write_text(B3.psql("SELECT pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)").stdout)
-                (H / "pin-debug-all.json").write_text(json.dumps({sig: B3.psql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)").stdout for sig in expected}, indent=2))
-                check("diagnóstico dos pinos após falha de instalação", False, {"diagnostic_exit": diagnostic.returncode, "expected": expected, "actual": actual, "stderr": diagnostic.stderr[-500:]})
+        pre = runfile(H / "01-pre.sql.readonly")
+        check("PRE revisado falha fechado sobre baseline incompleta", pre.returncode != 0 and "B4_" in pre.stderr, pre.stderr[-1200:])
+        install = runfile(H / "02-install.sql.review")
+        check("instalação não sobrescreve desconhecido nem cria objetos", install.returncode != 0 and B3.psql("SELECT to_regclass('platform_private.b2b_authorized_documents') IS NULL").stdout.strip() == "t", install.stderr[-1200:])
+        # COMPONENTE SOMENTE NO PG DESCARTÁVEL: o pacote instalável continua bloqueado.
+        # Executar o corpo aqui não é PRE/POST nem evidência de instalação/produção.
+        component = runfile(H / "b4-candidate.sql.review")
+        check("corpo B4 executável apenas como componente descartável", component.returncode == 0, component.stderr[-1200:])
         rerun = runfile(H / "02-install.sql.review")
-        check("rerun aborta pelo pin da baseline, sem reinstalar", rerun.returncode != 0 and "B4_INSTALL_PRE_DRIFT" in rerun.stderr, rerun.stderr[-500:])
+        check("rerun continua bloqueado e não reinstala", rerun.returncode != 0 and "B4_" in rerun.stderr, rerun.stderr[-700:])
+        check("instalação não substitui dependência operacional por stub", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
         trigger_count = B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip()
         check("32 gatilhos reais carregados pelo harness B3 continuam habilitados", trigger_count == "32", trigger_count)
         check("B3 create/simulate antigos não foram restaurados nem alterados", B3.md5_of(B3.CREATE_SIG) == G["LIVE_PINS"][B3.CREATE_SIG] and B3.md5_of(B3.SIM_SIG) == G["LIVE_PINS"][B3.SIM_SIG]
@@ -265,6 +264,58 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
         deny("cliente não invoca alocador privado", B3.out(B3.as_user(B3.UADM, f"SELECT platform_private.b2b_allocate_document('{DOCS[0]}')::text;")), "permission denied")
         # Costura SOMENTE do harness: adaptador fictício sem rede, após provar a negação real.
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
+        check("stub operacional existe só no harness depois da negação real", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
+
+        # Impacto dos fences compartilhados: títulos não B2B preservam seus caminhos;
+        # origem monetária desconhecida continua indisponível, sem backfill.
+        category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
+        unlinked_customer = B3.u(302)
+        B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}')")
+        def manual_title(title_id, customer_id, amount):
+            return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
+              (id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
+              VALUES('{title_id}','{B3.A}','MANUAL','{customer_id}','TESTE SHARED NAO B2B','{category_id}','{amount}','2026-10-01','2026-11-03',1,'OPEN','{B3.M_BOL}','{B3.UFIN}');""")
+        plain_title = B3.u(340)
+        plain_result = manual_title(plain_title, unlinked_customer, "7.00")
+        check("shared fence preserva título MANUAL não B2B sem devedor parceiro", plain_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip() == "1", plain_result.stderr[-900:])
+        deny("projeção de origem legada desconhecida permanece fail-closed", server_call(B3.UFIN, f"public.rpc_receivable_money_projection_v1('{plain_title}',0,1000)"), "MONEY_ORIGIN_UNPROVEN")
+        partner_title = B3.u(341)
+        partner_result = manual_title(partner_title, CUSTOMER, "8.00")
+        check("shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado", partner_result.returncode == 0 and B3.psql(f"SELECT partner_id FROM public.accounts_receivable WHERE id='{partner_title}'").stdout.strip() == str(B3.P), partner_result.stderr[-1200:])
+        deny("impacto compartilhado: título manual de parceiro sem origem monetária bloqueia exposição", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)"), "MONEY_ORIGIN_UNPROVEN")
+        # Cleanup exclusivamente da fixture descartável, após medir o impacto; não é rollback de produção.
+        B3.psql(f"""UPDATE public.accounts_receivable_installments SET status='CANCELED' WHERE receivable_id IN ('{plain_title}','{partner_title}');
+                    UPDATE public.accounts_receivable SET status='CANCELED' WHERE id IN ('{plain_title}','{partner_title}');""")
+        check("fixtures MANUAL canceladas após medição não contaminam a bateria seguinte", server_call(B3.UADM, f"public.fn_b2b_credit_exposure('{B3.P}',0,NULL)")[0] is not None)
+
+        # Pedido INTERNO sintético separado: os gatilhos são pausados apenas para montar
+        # a fixture e religados antes de qualquer chamada; nenhuma contenção é removida.
+        internal_order = B3.u(350)
+        internal_terms = B3.u(351)
+        internal_item = B3.u(352)
+        internal_doc = B3.u(353)
+        B3.psql(f"""BEGIN;
+          ALTER TABLE public.partner_orders DISABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_payment_terms DISABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_items DISABLE TRIGGER USER;
+          INSERT INTO public.partner_orders SELECT (jsonb_populate_record(NULL::public.partner_orders,
+            to_jsonb(o)||jsonb_build_object('id','{internal_order}'::uuid,'numero','TESTE-INTERNAL-B4','payment_terms_id','{internal_terms}'::uuid,
+              'c2_external_origin_snapshot',NULL::jsonb,'internal_origin_snapshot','{{\"fixture\":\"INTERNAL_SYNTHETIC\"}}'::jsonb))).*
+            FROM public.partner_orders o WHERE o.id='{direct_order}';
+          INSERT INTO public.partner_order_payment_terms SELECT (jsonb_populate_record(NULL::public.partner_order_payment_terms,
+            to_jsonb(t)||jsonb_build_object('id','{internal_terms}'::uuid,'partner_order_id','{internal_order}'::uuid))).*
+            FROM public.partner_order_payment_terms t WHERE t.partner_order_id='{direct_order}';
+          INSERT INTO public.partner_order_items SELECT (jsonb_populate_record(NULL::public.partner_order_items,
+            to_jsonb(i)||jsonb_build_object('id','{internal_item}'::uuid,'order_id','{internal_order}'::uuid))).*
+            FROM public.partner_order_items i WHERE i.order_id='{direct_order}';
+          ALTER TABLE public.partner_orders ENABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_payment_terms ENABLE TRIGGER USER;
+          ALTER TABLE public.partner_order_items ENABLE TRIGGER USER;
+        COMMIT;""")
+        document(internal_doc, internal_order, internal_item, 1)
+        deny("pedido interno não autorizado pelo downstream B4 é contido", allocate(B3.UADM, internal_doc), "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED")
+        check("contenção interna não cria título nem alocação", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{internal_order}')+(SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{internal_order}')").stdout.strip() == "0")
+        deny("writer integral antigo também permanece fechado para pedido interno", call(B3.UADM, f"public.generate_b2b_receivable_secure('{internal_order}')"), "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED")
 
         before = exposure()
         data, error = allocate(B3.UADM, DOCS[0])
@@ -336,10 +387,10 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
 
         allocations_before = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
         rollback = runfile(H / "04-rollback-deny.sql.review")
-        check("rollback deny-only conclui", rollback.returncode == 0, rollback.stderr[-700:])
-        check("rollback preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
+        check("rollback exige POST completo e falha fechado sem baseline íntegra", rollback.returncode != 0 and "B4_" in rollback.stderr, rollback.stderr[-900:])
+        check("rollback bloqueado preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
               and B3.psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip() >= "3")
-        check("rollback fecha writer manual e projeção ao cliente", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE') OR has_function_privilege('authenticated','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE')").stdout.strip() == "f")
+        check("rollback bloqueado não faz revogação parcial", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE')").stdout.strip() == "t")
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
     except Exception as exc:
         check("execução sem exceção de harness", False, repr(exc))
@@ -347,14 +398,22 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
     finally:
         subprocess.run(B3.SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         evidence = {
-            "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
+            "kind": "DISPOSABLE_B4_REVIEW_458B6012_COMPONENTS_INSTALL_BLOCKED_NOT_HOSTED_E2E",
+            "review": "458b6012",
+            "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+            "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
+            "object_manifest": "b4-object-manifest.json",
+            "installation": "BLOCKED_BY_PRE; candidate body executed separately only as disposable component",
+            "shared_impact_scope": ["MANUAL não B2B sem parceiro", "MANUAL não B2B com parceiro", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
             "passed": sum(c["ok"] for c in CHECKS), "total": len(CHECKS), "checks": CHECKS,
             "hosted": "NOT_RUN", "jwt_rls_storage": "NOT_RUN",
             "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
             "b3_overloads_restored": False,
             "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência",
         }
-        (H / "evidence-b4-b3.json").write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
+        evidence_path = H / "review-458b6012/evidence-b4-shared-impact.json"
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_path.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
     return result_code
 
 

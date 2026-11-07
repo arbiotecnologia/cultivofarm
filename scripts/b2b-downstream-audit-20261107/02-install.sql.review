@@ -8,6 +8,8 @@ DECLARE d record;
 BEGIN
   FOR d IN SELECT * FROM (VALUES
     ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'f9bf8f543564af480d08e7bebd111b88', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.approve_b2b_payment_terms_secure(uuid,text)', 'a61daa8542058bdbf239903d655c2a1b', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.reject_b2b_payment_terms_secure(uuid,text)', '40777d0cec6a7d8a8d4dfcb3370b08b6', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
     ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
@@ -28,7 +30,7 @@ BEGIN
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
     END IF;
     IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
-      IF d.sig = 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)' THEN
+      IF d.sig IN ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'public.approve_b2b_payment_terms_secure(uuid,text)', 'public.reject_b2b_payment_terms_secure(uuid,text)') THEN
         RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
       END IF;
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;
@@ -127,11 +129,170 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.approve_b2b_payment_terms_secure(p_partner_order_id uuid, p_notes text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_terms_id uuid;
+  v_created_by uuid;
+  v_numero text;
+  v_origin jsonb;
+BEGIN
+
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot
+    INTO v_terms_id, v_created_by, v_numero, v_origin
+  FROM public.partner_orders po
+  WHERE po.id = p_partner_order_id
+  FOR UPDATE;
+
+  -- Ausência/estrangeiro/ausência após espera compartilham a mesma negação.
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  -- Papel, perfil, vínculo, escopo e feature são revalidados depois do lock.
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  -- Nenhuma decisão avança enquanto a conciliação contábil estiver pendente.
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;
+
+  UPDATE public.partner_order_payment_terms
+     SET approval_status = 'approved',
+         approved_by = v_uid,
+         approved_at = now(),
+         approval_notes = COALESCE(p_notes, approval_notes),
+         updated_at = now()
+   WHERE id = v_terms_id;
+
+  UPDATE public.partner_orders
+     SET financial_approval_status = 'approved',
+         payment_condition_status = 'approved',
+         updated_at = now()
+   WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
+  VALUES (p_partner_order_id, 'payment_terms_approved', v_uid,
+          jsonb_build_object('notes', p_notes));
+
+  -- Notifica comercial (criador)
+  IF v_created_by IS NOT NULL THEN
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_created_by, 'b2b_payment_terms',
+            'Condição financeira aprovada',
+            format('Pedido %s teve a condição de pagamento aprovada.', COALESCE(v_numero,'B2B')),
+            '/comercial/pedidos-b2b');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'status', 'approved');
+END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_terms_id uuid;
+  v_created_by uuid;
+  v_numero text;
+  v_origin jsonb;
+BEGIN
+
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF p_reason IS NULL OR btrim(p_reason) = '' THEN
+    RAISE EXCEPTION 'reason_required';
+  END IF;
+
+  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot
+    INTO v_terms_id, v_created_by, v_numero, v_origin
+  FROM public.partner_orders po
+  WHERE po.id = p_partner_order_id
+  FOR UPDATE;
+
+  -- Ausência/estrangeiro/ausência após espera compartilham a mesma negação.
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  -- Papel, perfil, vínculo, escopo e feature são revalidados depois do lock.
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  -- Nenhuma decisão avança enquanto a conciliação contábil estiver pendente.
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;
+
+  UPDATE public.partner_order_payment_terms
+     SET approval_status = 'rejected',
+         approved_by = v_uid,
+         approved_at = now(),
+         approval_notes = p_reason,
+         updated_at = now()
+   WHERE id = v_terms_id;
+
+  UPDATE public.partner_orders
+     SET financial_approval_status = 'rejected',
+         payment_condition_status = 'rejected',
+         updated_at = now()
+   WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
+  VALUES (p_partner_order_id, 'payment_terms_rejected', v_uid,
+          jsonb_build_object('reason', p_reason));
+
+  IF v_created_by IS NOT NULL THEN
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_created_by, 'b2b_payment_terms',
+            'Condição financeira reprovada',
+            format('Pedido %s teve a condição de pagamento reprovada: %s',
+                   COALESCE(v_numero,'B2B'), p_reason),
+            '/comercial/pedidos-b2b');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'status', 'rejected');
+END;
+$function$
+;
+
 DO $guard$
 DECLARE d record;
 BEGIN
   FOR d IN SELECT * FROM (VALUES
     ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '7eb3b5be33552f6bd4eecd56796502ed', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.approve_b2b_payment_terms_secure(uuid,text)', '9e9b3cb27dd669d6d5f7575e6ecb2ac7', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.reject_b2b_payment_terms_secure(uuid,text)', 'ff2ca3bf69aae9e51348df03c1373037', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
     ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
@@ -152,7 +313,7 @@ BEGIN
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
     END IF;
     IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
-      IF d.sig = 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)' THEN
+      IF d.sig IN ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'public.approve_b2b_payment_terms_secure(uuid,text)', 'public.reject_b2b_payment_terms_secure(uuid,text)') THEN
         RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
       END IF;
       RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;

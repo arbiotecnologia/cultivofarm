@@ -1,0 +1,21 @@
+-- READONLY; pinos LIVE relatados pelo auditor + B3 instalado localmente pinado.
+DO $guard$ BEGIN
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.generate_b2b_receivable_secure(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure))<>'1bdac7fae6d702fb42d3a30539e9c9c3' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.generate_b2b_receivable_secure_impl(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure))<>'0f679538fe394924b140e54938a3bb9e' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.tg_auto_b2b_receivable()'; END IF;
+ IF md5(pg_get_functiondef('public.fn_generate_receivable_from_entrega(uuid,jsonb)'::regprocedure))<>'670ea34d37c4c4fd6612031ad763a3a7' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.fn_generate_receivable_from_entrega(uuid,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)'::regprocedure))<>'9c94985d80502c8aea8bfb5da3abdecd' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_order_billing_eligibility(uuid)'::regprocedure))<>'db977875e15ea49ce10fb3e5388d7dfb' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.fn_b2b_order_billing_eligibility(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))<>'213ac31f3a30816ead75365b0d1fed18' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'::regprocedure))<>'5d410cdba3c34298389302fb91d2fb16' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_retire(uuid,text,integer)'::regprocedure))<>'c90717e0ed75e7cfeaefa0b7628a3643' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_retire(uuid,text,integer)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'::regprocedure))<>'58c003869c6c6159a78fd3009296476a' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_activation_set(text,uuid[],integer)'::regprocedure))<>'9efe4e6eb5afe29d8e3d9f3ef7077863' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_activation_set(text,uuid[],integer)'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_payment_condition_config_list()'::regprocedure))<>'561fa25917c7d3938faa82b1aa7d61de' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_payment_condition_config_list()'; END IF;
+ IF md5(pg_get_functiondef('public.b2b_list_payment_condition_options_secure(uuid,uuid)'::regprocedure))<>'8a7f29c199e77e653966ebdb8a4b3ed3' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.b2b_list_payment_condition_options_secure(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)'::regprocedure))<>'06ea0933992a05a0d2a7fb78c6881bcf' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)'::regprocedure))<>'e86385fefb25c68d9dd4d0fef6619f27' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.get_partner_order_payment_condition_secure(uuid)'::regprocedure))<>'7ffe3bbbefd040bab1b3ce1bce8069a7' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.get_partner_order_payment_condition_secure(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'::regprocedure))<>'e7cb6a6c7fd3a305a54e62184dacd9be' THEN RAISE EXCEPTION 'B4_PRE_DRIFT:public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'; END IF;
+END $guard$;
+SELECT 'PRE_OK' AS status;

@@ -36,7 +36,7 @@ B = load("b3h_candidate", B3_DIR / "test-local-pg.py")
 G = load("adjustment_generator", HERE / "generate-adjustment-fix.py")
 SP = B.SP
 SP.PORT = "55472"
-EVIDENCE = HERE / "review-31430566/scope-live-1638/adjustment-candidate.json"
+EVIDENCE = HERE / "review-31430566/scope-live-1638/decision-candidates.json"
 UFIN, UGC = B.UFIN, B.UGC
 UCUMUL = "20000000-0000-0000-0000-000000000031"
 
@@ -197,6 +197,12 @@ def main():
         request_capture = generated["captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql"]
         psql(request_capture.rstrip() + ";\n")
         apply_captured_acl(G.SIG, pins["request_acl"])
+        for kind in ("approve", "reject"):
+            meta = pins["decision_candidates"][kind]
+            name = meta["signature"].split("(")[0]
+            capture_name = f"captured/{name}.{meta['baseline_md5'][:8]}.local-20261030.sql"
+            psql(generated[capture_name].rstrip() + ";\n")
+            apply_captured_acl(meta["signature"], meta["acl"])
 
         r = runfile(HERE / "01-pre.sql.readonly")
         check("01 PRE_OK com corpos/owners/ACLs reais, sem localização", r.returncode == 0 and "PRE_OK" in r.stdout, r.stderr)
@@ -230,6 +236,10 @@ def main():
         candidate_md5 = psql(f"SELECT md5(pg_get_functiondef('{G.SIG}'::regprocedure))").stdout.strip()
         expected_candidate_md5 = pins["candidate_md5"]
         check("candidato executado tem o MD5 gerado", candidate_md5 == expected_candidate_md5, {"actual": candidate_md5, "expected": expected_candidate_md5})
+        for kind in ("approve", "reject"):
+            meta = pins["decision_candidates"][kind]
+            actual = psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip()
+            check(f"candidato {kind} executado tem owner/ACL preservados e MD5 gerado", actual == meta["candidate_md5"], {"actual": actual, "expected": meta["candidate_md5"]})
         r = runfile(HERE / "03-post.sql.readonly")
         check("03 POST_OK confirma wrappers, privados, owners e ACLs", r.returncode == 0 and "POST_OK" in r.stdout, r.stderr)
         r = runfile(HERE / "02-install.sql.review")
@@ -258,12 +268,23 @@ def main():
             target = "NULL::uuid" if order_id is None else f"'{order_id}'"
             return SP.as_user(uid, f"SELECT public.request_b2b_payment_terms_adjustment_secure({target},'{note}')::text;")
 
+        def decision(uid, kind, order_id, note):
+            if kind not in ("approve", "reject"):
+                raise ValueError(kind)
+            target = "NULL::uuid" if order_id is None else f"'{order_id}'"
+            return SP.as_user(uid, f"SELECT public.{kind}_b2b_payment_terms_secure({target},'{note}')::text;")
+
         before = state(MISSING_ORDER)
         r = request(SP.UADM, MISSING_ORDER, "TESTE pedido ausente")
         check("pedido inexistente nega como escopo, sem payment_terms_not_defined permissivo", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr and "payment_terms_not_defined" not in r.stderr, r.stderr)
         check("pedido inexistente não produz efeitos nem oráculo de dados", state(MISSING_ORDER) == before)
         r = request(SP.UADM, None, "TESTE pedido nulo")
         check("pedido NULL também é negado fail-closed", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+        for kind in ("approve", "reject"):
+            before_decision = state(MISSING_ORDER)
+            r = decision(SP.UADM, kind, MISSING_ORDER, "TESTE pedido ausente")
+            check(f"{kind}: pedido inexistente não revela payment_terms_not_defined", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr and "payment_terms_not_defined" not in r.stderr, r.stderr)
+            check(f"{kind}: pedido inexistente não produz efeitos", state(MISSING_ORDER) == before_decision)
 
         # Pendência contábil: pedido externo REAL e financial/terms já pending.
         psql(f"UPDATE public.commercial_payment_plans SET requires_financial_approval=true WHERE id='{SP.PLD}'")
@@ -275,6 +296,11 @@ def main():
         r = request(SP.USUP, pending["id"], "TESTE negado")
         check("C2_ACCOUNTING_PENDING nega pending→pending", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
         check("negação contábil preserva pedido/termos/auditoria/notificações", state(pending["id"]) == before)
+        for kind in ("approve", "reject"):
+            before_decision = state(pending["id"])
+            r = decision(SP.USUP, kind, pending["id"], "TESTE pendência contábil")
+            check(f"{kind}: pendência contábil é negada antes de qualquer decisão", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
+            check(f"{kind}: pendência contábil preserva estado integral", state(pending["id"]) == before_decision)
 
         # Origem externa validada: escopo nega antes do gatilho de origem.
         settings_id = "10000000-0000-0000-0000-000000000003"
@@ -290,6 +316,11 @@ def main():
         r = request(SP.UADMF, validated["id"], "TESTE estrangeiro")
         check("FSF/admin estrangeiro com vínculo próprio é negado no pedido validado", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação de escopo validado preserva estado integral", state(validated["id"]) == before)
+        for kind in ("approve", "reject"):
+            before_decision = state(validated["id"])
+            r = decision(SP.UADMF, kind, validated["id"], "TESTE estrangeiro")
+            check(f"{kind}: FSF/admin estrangeiro continua negado", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+            check(f"{kind}: negação estrangeira preserva estado integral", state(validated["id"]) == before_decision)
 
         # Fixture legada sem origem; preparação explícita, todos os gatilhos religados antes das chamadas.
         legacy_id = "10000000-0000-0000-0000-000000000001"
@@ -308,6 +339,11 @@ def main():
         r = request(SP.UADMF, legacy_id, "TESTE legado estrangeiro")
         check("FSF/admin estrangeiro negado no legado sem snapshot pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação legada preserva estado integral", state(legacy_id) == before)
+        for kind in ("approve", "reject"):
+            before_decision = state(legacy_id)
+            r = decision(SP.UADMF, kind, legacy_id, "TESTE legado estrangeiro")
+            check(f"{kind}: FSF negado no legado pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+            check(f"{kind}: negação FSF no legado preserva estado", state(legacy_id) == before_decision)
         r = request(UCUMUL, legacy_id, "TESTE cumulativo sem vínculo da organização")
         check("admin+parceiro com apenas partner_users único não vira positivo interno", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
         check("negação do caminho partner_users para admin cumulativo preserva estado", state(legacy_id) == before)
@@ -338,8 +374,13 @@ def main():
             r = request(uid, validated["id"], "TESTE validado interno " + label)
             check(f"{label}: escopo não basta; guard real nega ajuste no externo validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
             check(f"{label}: negação de origem no validado preserva estado integral", state(validated["id"]) == before_validated)
+            for kind in ("approve", "reject"):
+                before_decision = state(validated["id"])
+                r = decision(uid, kind, validated["id"], "TESTE validado interno " + label)
+                check(f"{kind}/{label}: guard real de origem também nega decisão no validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
+                check(f"{kind}/{label}: negação de origem preserva estado integral", state(validated["id"]) == before_decision)
 
-        def during_lock(label, mutation, token, restore):
+        def during_lock(label, mutation, token, restore, kind="request"):
             before = state(legacy_id)
             blocker_result = {}
             caller_result = {}
@@ -349,7 +390,7 @@ def main():
 
             def caller():
                 time.sleep(0.25)
-                caller_result["r"] = request(SP.UADM, legacy_id, "TESTE " + label)
+                caller_result["r"] = request(SP.UADM, legacy_id, "TESTE " + label) if kind == "request" else decision(SP.UADM, kind, legacy_id, "TESTE " + label)
 
             first = threading.Thread(target=blocker)
             second = threading.Thread(target=caller)
@@ -408,13 +449,43 @@ def main():
             "feature restaurada pelo resolvedor real de entitlements",
             psql(f"SELECT public._saas_user_has_feature('{SP.UADM}','pedidos_b2b')").stdout.strip() == "t",
         )
+        during_lock(
+            "approve com papel administrativo revogado",
+            f"DELETE FROM public.user_roles WHERE user_id='{SP.UADM}' AND role='administrador'",
+            "unauthorized",
+            f"INSERT INTO public.user_roles VALUES ('{SP.UADM}','administrador')",
+            "approve",
+        )
+        during_lock(
+            "reject com vínculo vendedor revogado",
+            f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'",
+            "b2b_phase1_scope_denied",
+            f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'",
+            "reject",
+        )
 
         # Controles positivos SINTÉTICOS apenas no legado: o externo validado foi negado pelo guard real.
         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
             r = request(uid, legacy_id, "TESTE positivo legado " + label)
             check(f"controle sintético {label}: caminho dono vendedor solicita ajuste no legado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
+        for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
+            r = request(uid, legacy_id, "TESTE prepara approve " + label)
+            check(f"{label}: prepara approve somente no legado sintético", r.returncode == 0, r.stderr)
+            r = decision(uid, "approve", legacy_id, "TESTE approve legado " + label)
+            check(f"approve/{label}: positivo sintético no caminho dono vendedor", r.returncode == 0 and '"approved"' in r.stdout, r.stderr)
+            check(f"approve/{label}: estados financeiro e condição aprovados", psql(f"SELECT o.financial_approval_status='approved' AND t.approval_status='approved' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id WHERE o.id='{legacy_id}'").stdout.strip() == "t")
+            r = request(uid, legacy_id, "TESTE prepara reject " + label)
+            check(f"{label}: prepara reject somente no legado sintético", r.returncode == 0, r.stderr)
+            r = decision(uid, "reject", legacy_id, "TESTE motivo ficticio " + label)
+            check(f"reject/{label}: positivo sintético no caminho dono vendedor", r.returncode == 0 and '"rejected"' in r.stdout, r.stderr)
+            check(f"reject/{label}: estados financeiro e condição rejeitados", psql(f"SELECT o.financial_approval_status='rejected' AND t.approval_status='rejected' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id WHERE o.id='{legacy_id}'").stdout.strip() == "t")
         r = request(SP.UB, legacy_id, "TESTE comprador")
         check("comprador sem papel financeiro continua negado", r.returncode != 0 and "unauthorized" in r.stderr, r.stderr)
+        for kind in ("approve", "reject"):
+            before_decision = state(legacy_id)
+            r = decision(SP.UB, kind, legacy_id, "TESTE comprador")
+            check(f"{kind}: comprador sem papel financeiro continua negado", r.returncode != 0 and "unauthorized" in r.stderr, r.stderr)
+            check(f"{kind}: negação do comprador preserva estado", state(legacy_id) == before_decision)
 
         # Rollback restritivo: pin errado não altera; correto só revoga cliente.
         bad_rb = work / "bad-rollback.sql"
@@ -427,6 +498,10 @@ def main():
         after_rb = state(legacy_id)
         r = request(SP.UADM, legacy_id, "TESTE apos rollback")
         check("rollback nega EXECUTE ao cliente sem restaurar corpo vulnerável", r.returncode != 0 and "permission denied" in r.stderr and psql(f"SELECT md5(pg_get_functiondef('{G.SIG}'::regprocedure))").stdout.strip() == expected_candidate_md5, r.stderr)
+        for kind in ("approve", "reject"):
+            meta = pins["decision_candidates"][kind]
+            r = decision(SP.UADM, kind, legacy_id, "TESTE apos rollback")
+            check(f"rollback fecha {kind} sem restaurar corpo anterior", r.returncode != 0 and "permission denied" in r.stderr and psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip() == meta["candidate_md5"], r.stderr)
         check("rollback não apaga nem reescreve histórico", state(legacy_id) == after_rb)
         check("TODOS os 38 gatilhos continuam habilitados no fim", triggers_ok())
         check("B3 não foi instalado nem modificado nesta bateria", psql("SELECT to_regclass('platform_private.b2b_condition_versions') IS NULL").stdout.strip() == "t")
@@ -448,7 +523,10 @@ def main():
             },
             "baseline_md5": G.BASE_MD5,
             "candidate_md5": expected_candidate_md5,
-            "candidate_sql_changed_in_scope_review": False,
+            "request_candidate_sql_changed_in_scope_review": False,
+            "decision_review": "458b6012",
+            "decision_candidates": pins["decision_candidates"],
+            "historical_76_evidence": "review-31430566/historical-76/adjustment-candidate.json",
             "supersedes_candidate_md5": "55996e9496ffb123504adaeaa502c81f",
             "historical_minimal_evidence": "evidence/adjustment-candidate-minimal-29.json",
             "historical_60_evidence": "review-31430566/historical-60/adjustment-candidate.json",

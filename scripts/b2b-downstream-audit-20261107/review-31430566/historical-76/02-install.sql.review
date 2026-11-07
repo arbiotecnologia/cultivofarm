@@ -1,0 +1,178 @@
+-- CANDIDATO INATIVO. Não aplicar sem revisão e preflight LIVE independente.
+-- CREATE OR REPLACE preserva owner/ACL; nenhuma concessão de privilégio é executada.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+SET LOCAL statement_timeout = '30s';
+DO $guard$
+DECLARE d record;
+BEGIN
+  FOR d IN SELECT * FROM (VALUES
+    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'f9bf8f543564af480d08e7bebd111b88', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.has_role(uuid,public.app_role)', '4d90e93d521a4819d9085f28d742030f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.is_platform_superadmin(uuid)', '3dfe79d976821244d9b7a7f893d765f2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.is_valid_b2b_partner_user(uuid,uuid)', '0bb0dea04be8ca84c66db7ca6329876c', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.b2b_actor_scope(uuid)', 'c3f2997746f24bc2efd15db5c0ccc862', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.b2b_phase1_partner_visible(uuid,boolean)', '915f516e605af7cc14584e2e762a2661', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.b2b_phase1_partner_visible(uuid,boolean)', '6b3defc01a66040146562c60ad224f03', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.b2b_phase1_order_visible(uuid)', '8504f07fbc3a7975accf919f386d00eb', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.b2b_phase1_order_visible(uuid)', '8812508716f279a88e3d5a31b15621d8', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public._saas_user_has_feature(uuid,text)', '501dd958e117d2df8a4d38f6bcbeed04', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('public._saas_trg_require_feature()', '13ed48832f81cbb35434688ca35fda4b', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.c2_accounting_pending_guard()', '669b19490a7a9700f0158db4b31885ad', 'postgres', 'aae127bcdd4f7096876d7094c14eabd1')
+  ) AS x(sig, body_md5, owner, acl_md5)
+  LOOP
+    IF to_regprocedure(d.sig) IS NULL THEN
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
+    END IF;
+    IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
+      IF d.sig = 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)' THEN
+        RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
+      END IF;
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;
+    END IF;
+    IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN
+      RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: %', d.sig;
+    END IF;
+    IF (
+      SELECT md5(string_agg(v.entry, '|' ORDER BY v.entry))
+      FROM (
+        SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END
+          || '=' || a.privilege_type || CASE WHEN a.is_grantable THEN '*' ELSE '' END
+          || '/' || a.grantor::regrole::text AS entry
+        FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f',p.proowner))) a
+        WHERE p.oid=d.sig::regprocedure
+      ) v
+    ) IS DISTINCT FROM d.acl_md5 THEN
+      RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT: %', d.sig;
+    END IF;
+  END LOOP;
+END
+$guard$;
+
+CREATE OR REPLACE FUNCTION public.request_b2b_payment_terms_adjustment_secure(p_partner_order_id uuid, p_notes text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_terms_id uuid;
+  v_created_by uuid;
+  v_numero text;
+  v_origin jsonb;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF p_notes IS NULL OR btrim(p_notes) = '' THEN
+    RAISE EXCEPTION 'notes_required';
+  END IF;
+
+  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot
+    INTO v_terms_id, v_created_by, v_numero, v_origin
+  FROM public.partner_orders po
+  WHERE po.id = p_partner_order_id
+  FOR UPDATE;
+
+  -- Pedido ausente, estrangeiro ou removido durante a espera segue a mesma negação, sem oráculo.
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  -- Revalida depois da espera pelo lock: papel/perfil/vínculo/escopo podem ter sido revogados.
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  -- O gatilho contábil protege mudanças de financial_approval_status; pending→pending também é decisão proibida.
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;
+
+  UPDATE public.partner_order_payment_terms
+     SET approval_status = 'pending',
+         approval_notes = p_notes,
+         updated_at = now()
+   WHERE id = v_terms_id;
+
+  UPDATE public.partner_orders
+     SET financial_approval_status = 'pending',
+         payment_condition_status = 'adjustment_requested',
+         updated_at = now()
+   WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
+  VALUES (p_partner_order_id, 'payment_terms_adjustment_requested', v_uid,
+          jsonb_build_object('notes', p_notes));
+
+  IF v_created_by IS NOT NULL THEN
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_created_by, 'b2b_payment_terms',
+            'Ajuste na condição solicitado',
+            format('Pedido %s precisa de ajuste na condição de pagamento: %s',
+                   COALESCE(v_numero,'B2B'), p_notes),
+            '/comercial/pedidos-b2b');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'status', 'adjustment_requested');
+END;
+$function$
+;
+
+DO $guard$
+DECLARE d record;
+BEGIN
+  FOR d IN SELECT * FROM (VALUES
+    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '7eb3b5be33552f6bd4eecd56796502ed', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.has_role(uuid,public.app_role)', '4d90e93d521a4819d9085f28d742030f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.is_platform_superadmin(uuid)', '3dfe79d976821244d9b7a7f893d765f2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.is_valid_b2b_partner_user(uuid,uuid)', '0bb0dea04be8ca84c66db7ca6329876c', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.b2b_actor_scope(uuid)', 'c3f2997746f24bc2efd15db5c0ccc862', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.b2b_phase1_partner_visible(uuid,boolean)', '915f516e605af7cc14584e2e762a2661', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.b2b_phase1_partner_visible(uuid,boolean)', '6b3defc01a66040146562c60ad224f03', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.b2b_phase1_order_visible(uuid)', '8504f07fbc3a7975accf919f386d00eb', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.b2b_phase1_order_visible(uuid)', '8812508716f279a88e3d5a31b15621d8', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public._saas_user_has_feature(uuid,text)', '501dd958e117d2df8a4d38f6bcbeed04', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('public._saas_trg_require_feature()', '13ed48832f81cbb35434688ca35fda4b', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
+    ('platform_private.c2_accounting_pending_guard()', '669b19490a7a9700f0158db4b31885ad', 'postgres', 'aae127bcdd4f7096876d7094c14eabd1')
+  ) AS x(sig, body_md5, owner, acl_md5)
+  LOOP
+    IF to_regprocedure(d.sig) IS NULL THEN
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_MISSING: %', d.sig;
+    END IF;
+    IF md5(pg_get_functiondef(d.sig::regprocedure)) IS DISTINCT FROM d.body_md5 THEN
+      IF d.sig = 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)' THEN
+        RAISE EXCEPTION 'ADJUSTMENT_FUNCTION_PIN_DRIFT';
+      END IF;
+      RAISE EXCEPTION 'ADJUSTMENT_DEPENDENCY_PIN_DRIFT: %', d.sig;
+    END IF;
+    IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid=d.sig::regprocedure) IS DISTINCT FROM d.owner THEN
+      RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: %', d.sig;
+    END IF;
+    IF (
+      SELECT md5(string_agg(v.entry, '|' ORDER BY v.entry))
+      FROM (
+        SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END
+          || '=' || a.privilege_type || CASE WHEN a.is_grantable THEN '*' ELSE '' END
+          || '/' || a.grantor::regrole::text AS entry
+        FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f',p.proowner))) a
+        WHERE p.oid=d.sig::regprocedure
+      ) v
+    ) IS DISTINCT FROM d.acl_md5 THEN
+      RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT: %', d.sig;
+    END IF;
+  END LOOP;
+END
+$guard$;
+COMMIT;

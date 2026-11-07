@@ -1,0 +1,325 @@
+{
+  "kind": "DISPOSABLE_B4_REVIEW_458B6012_COMPONENTS_INSTALL_BLOCKED_NOT_HOSTED_E2E",
+  "review": "458b6012",
+  "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+  "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
+  "object_manifest": "b4-object-manifest.json",
+  "installation": "BLOCKED_BY_PRE; candidate body executed separately only as disposable component",
+  "shared_impact_scope": [
+    "MANUAL não B2B sem parceiro",
+    "MANUAL não B2B com parceiro",
+    "origem monetária legada desconhecida",
+    "pedido interno sintético",
+    "writer integral antigo"
+  ],
+  "passed": 73,
+  "total": 73,
+  "checks": [
+    {
+      "name": "boot B2/B3 com gatilhos reais",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "B3 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B3 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "cotação B3 criada sem título",
+      "ok": true
+    },
+    {
+      "name": "resposta de cotação B3 com centavos",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture contábil pendente separada",
+      "ok": true
+    },
+    {
+      "name": "PRE revisado falha fechado sobre baseline incompleta",
+      "ok": true
+    },
+    {
+      "name": "instalação não sobrescreve desconhecido nem cria objetos",
+      "ok": true
+    },
+    {
+      "name": "corpo B4 executável apenas como componente descartável",
+      "ok": true
+    },
+    {
+      "name": "rerun continua bloqueado e não reinstala",
+      "ok": true
+    },
+    {
+      "name": "instalação não substitui dependência operacional por stub",
+      "ok": true
+    },
+    {
+      "name": "32 gatilhos reais carregados pelo harness B3 continuam habilitados",
+      "ok": true
+    },
+    {
+      "name": "B3 create/simulate antigos não foram restaurados nem alterados",
+      "ok": true
+    },
+    {
+      "name": "autorização fiscal continua service-only e sem integração de recebível",
+      "ok": true
+    },
+    {
+      "name": "gate fiscal/contábil não comprovado permanece fechado",
+      "ok": true
+    },
+    {
+      "name": "cliente não invoca alocador privado",
+      "ok": true
+    },
+    {
+      "name": "stub operacional existe só no harness depois da negação real",
+      "ok": true
+    },
+    {
+      "name": "shared fence preserva título MANUAL não B2B sem devedor parceiro",
+      "ok": true
+    },
+    {
+      "name": "projeção de origem legada desconhecida permanece fail-closed",
+      "ok": true
+    },
+    {
+      "name": "shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado",
+      "ok": true
+    },
+    {
+      "name": "impacto compartilhado: título manual de parceiro sem origem monetária bloqueia exposição",
+      "ok": true
+    },
+    {
+      "name": "fixtures MANUAL canceladas após medição não contaminam a bateria seguinte",
+      "ok": true
+    },
+    {
+      "name": "pedido interno não autorizado pelo downstream B4 é contido",
+      "ok": true
+    },
+    {
+      "name": "contenção interna não cria título nem alocação",
+      "ok": true
+    },
+    {
+      "name": "writer integral antigo também permanece fechado para pedido interno",
+      "ok": true
+    },
+    {
+      "name": "primeira NF parcial autorizada fictícia gera título",
+      "ok": true
+    },
+    {
+      "name": "conversão não duplica exposição",
+      "ok": true
+    },
+    {
+      "name": "residual = pedido restante + títulos sem dupla contagem",
+      "ok": true
+    },
+    {
+      "name": "replay da mesma autorização devolve mesmo título",
+      "ok": true
+    },
+    {
+      "name": "replay não duplica alocação",
+      "ok": true
+    },
+    {
+      "name": "datas finais partem da emissão e calendário selado",
+      "ok": true
+    },
+    {
+      "name": "juros financiados não são somados duas vezes",
+      "ok": true
+    },
+    {
+      "name": "projeção financeira usa ator e tenant autorizados",
+      "ok": true
+    },
+    {
+      "name": "baixa parcial local no ledger capturado",
+      "ok": true
+    },
+    {
+      "name": "baixa reduz somente título, não residual do pedido",
+      "ok": true
+    },
+    {
+      "name": "três documentos independentes fecham quantidade e residual",
+      "ok": true
+    },
+    {
+      "name": "três títulos, um por documento",
+      "ok": true
+    },
+    {
+      "name": "crédito após parciais preserva total menos baixa",
+      "ok": true
+    },
+    {
+      "name": "cancelamento de NF paga exige reconciliação",
+      "ok": true
+    },
+    {
+      "name": "cancelamento pago negado preserva histórico e saldo",
+      "ok": true
+    },
+    {
+      "name": "atestação fictícia de cancelamento passa pela guarda com ator",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária cancela somente título não pago",
+      "ok": true
+    },
+    {
+      "name": "cancelamento restaura exatamente principal+juros do documento",
+      "ok": true
+    },
+    {
+      "name": "documento substituto consome residual sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária preserva centavos por item",
+      "ok": true
+    },
+    {
+      "name": "histórico do título cancelado permanece",
+      "ok": true
+    },
+    {
+      "name": "quantidade acima do pedido negada",
+      "ok": true
+    },
+    {
+      "name": "tenant estrangeiro não faz replay nem lê recibo",
+      "ok": true
+    },
+    {
+      "name": "pendência contábil bloqueia antes de qualquer título",
+      "ok": true
+    },
+    {
+      "name": "writer B2B anterior continua negado após instalação",
+      "ok": true
+    },
+    {
+      "name": "snapshot B3 não cotado também aloca",
+      "ok": true
+    },
+    {
+      "name": "fora da cobertura do calendário falha fechado",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: somente uma consome o saldo final",
+      "ok": true
+    },
+    {
+      "name": "corrida não duplica título nem residual",
+      "ok": true
+    },
+    {
+      "name": "rollback exige POST completo e falha fechado sem baseline íntegra",
+      "ok": true
+    },
+    {
+      "name": "rollback bloqueado preserva alocações, títulos e snapshots",
+      "ok": true
+    },
+    {
+      "name": "rollback bloqueado não faz revogação parcial",
+      "ok": true
+    }
+  ],
+  "hosted": "NOT_RUN",
+  "jwt_rls_storage": "NOT_RUN",
+  "synthetic_seams": [
+    "Auth por GUC/roles locais",
+    "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente",
+    "schema financeiro capturado com FK/RLS externos omitidos",
+    "company_fiscal_settings fictícia VALIDATED",
+    "autorização/cancelamento fiscal privado fictício sem rede",
+    "b2b_integration_dependencies substituída somente após prova de negação",
+    "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação",
+    "entregas mínima para o fence"
+  ],
+  "b3_overloads_restored": false,
+  "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência"
+}
