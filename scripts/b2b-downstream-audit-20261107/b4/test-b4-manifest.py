@@ -78,8 +78,14 @@ def main():
     check("coluna/FK novas exigem ausência e têm pós-condição", table["baseline"]["status"] == "ABSENCE_REQUIRED" and table["candidate"]["references"] == "platform_private.b2b_authorized_documents(id)" and "B4_PRE_UNEXPECTED_COLUMN" in pre)
 
     check("baixa não B2B sem parceiro usa matemática legada", "v_interest:=v_inst.interest_amount; v_financed:=0;" in body and "v_inst.original_amount + (v_interest-v_financed)" in body)
-    check("prova obrigatória limitada a B2B ou parceiro", "IF v_origin.origin_type='B2B_ORDER' OR v_origin.partner_id IS NOT NULL THEN" in body)
+    check("prova obrigatória cobre B2B ou devedor resolvido inclusive partner_id NULL", "v_debtor:=platform_private.b2b_receivable_partner_scope(v_origin.id);" in body and "IF v_origin.origin_type='B2B_ORDER' OR v_debtor IS NOT NULL THEN" in body)
     check("origem desconhecida de parceiro continua explicitamente bloqueada", "MONEY_ORIGIN_UNPROVEN" in body and "IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN'" in body)
+    scope_object = "platform_private.b2b_receivable_partner_scope(uuid)"
+    check("resolvedor de escopo é função nova owner-only", scope_object in by_object and by_object[scope_object]["operation"] == "CREATE" and by_object[scope_object]["candidate"]["acl"] == "OWNER_ONLY")
+    check("crédito inclui cliente ligado sem UNION nem dupla contagem", "a.partner_id=p_partner OR EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=p_partner AND pa.client_id=a.customer_id" in body and "debtor:=platform_private.b2b_receivable_partner_scope(i.receivable_id);" in body)
+    check("ambiguidade, conflito e owner têm negações explícitas", all(token in body for token in ["CREDIT_PARTNER_LINK_AMBIGUOUS", "CREDIT_PARTNER_CONFLICT", "CREDIT_PARTNER_OWNER_MISMATCH"]))
+    check("não há backfill dos cinco títulos nem cancelamento LIVE", "UPDATE public.accounts_receivable SET partner_id" not in body and manifest["reported_manual_null_live_readonly"]["manual_titles"]["cancel_or_backfill_authorized"] is False)
+    check("forma LIVE relatada 4 OPEN/1 OVERDUE permanece bloqueio de aprovação", manifest["reported_manual_null_live_readonly"]["manual_titles"]["status_counts"] == {"OPEN": 4, "OVERDUE": 1} and manifest["status"].startswith("INACTIVE_BLOCKED"))
     check("crédito usa prova monetária interna no tenant vendedor", "row:=platform_private.b2b_proven_money_row_internal(i.id,org);" in body)
     check("residual legado não usa projeção do ator comprador", "PERFORM platform_private.b2b_proven_money_row_internal(i.id,org)" in body and "PERFORM public.rpc_receivable_money_projection_v1(l.receivable_id" not in body)
     check("projeção pública conserva guard de ator, papel e tenant", "RETURN platform_private.b2b_proven_money_row_internal(p_id,org);" in body and "public.is_financial_staff(auth.uid()) IS NOT TRUE" in body)
