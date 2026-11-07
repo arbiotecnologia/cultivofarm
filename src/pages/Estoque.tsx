@@ -30,6 +30,9 @@ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secon
   expedido: { label: "Expedido", variant: "outline" },
 };
 
+const uniqueIds = (values: unknown[]): string[] =>
+  Array.from(new Set(values.filter((value): value is string => typeof value === "string" && value.length > 0)));
+
 const itemNome = (e: any) => {
   if (e?.produtos?.nome) return e.produtos.nome;
   const m = e?.microrganismos;
@@ -66,7 +69,7 @@ export default function Estoque() {
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
-      const ids = Array.from(new Set((data || []).map((e: any) => e.reservado_para_cliente_id).filter(Boolean)));
+      const ids = uniqueIds((data || []).map((e: any) => e.reservado_para_cliente_id));
       let map: Record<string, string> = {};
       if (ids.length) {
         const { data: cs } = await supabase.from("clientes").select("id, nome").in("id", ids);
@@ -74,8 +77,8 @@ export default function Estoque() {
       }
 
       // Enriquece com info amigável da OS (fazenda/talhão/data)
-      const osPadraoIds = Array.from(new Set((data || []).filter((e: any) => e.reservado_para_os_id && e.reservado_para_os_tipo === "padrao").map((e: any) => e.reservado_para_os_id)));
-      const osOnfarmIds = Array.from(new Set((data || []).filter((e: any) => e.reservado_para_os_id && e.reservado_para_os_tipo === "onfarm").map((e: any) => e.reservado_para_os_id)));
+      const osPadraoIds = uniqueIds((data || []).filter((e: any) => e.reservado_para_os_tipo === "padrao").map((e: any) => e.reservado_para_os_id));
+      const osOnfarmIds = uniqueIds((data || []).filter((e: any) => e.reservado_para_os_tipo === "onfarm").map((e: any) => e.reservado_para_os_id));
       const osMap: Record<string, { tipoLabel: string; fazenda?: string; talhao?: string; data?: string | null; titular?: string }> = {};
       if (osPadraoIds.length) {
         const { data: os } = await supabase
@@ -102,7 +105,7 @@ export default function Estoque() {
       }
 
       // Busca data_envase mais recente por lote
-      const loteIds = Array.from(new Set((data || []).map((e: any) => e.lote_id).filter(Boolean)));
+      const loteIds = uniqueIds((data || []).map((e: any) => e.lote_id));
       const envaseMap: Record<string, string> = {};
       if (loteIds.length) {
         const { data: envs } = await supabase
