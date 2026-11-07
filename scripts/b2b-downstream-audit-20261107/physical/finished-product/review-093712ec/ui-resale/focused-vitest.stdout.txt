@@ -1,0 +1,14 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/lib/estoque/finishedProductPurchase.test.ts (15 tests) 26ms
+ ✓ src/components/estoque/FinishedProductPurchaseEntrySection.test.tsx (3 tests) 166ms
+ ✓ src/components/cockpit/reservaCalc.test.ts (45 tests) 21ms
+ ✓ src/lib/estoque/productionSummary.test.ts (2 tests) 16ms
+ ✓ src/lib/estoque/stockUnits.test.ts (6 tests) 7ms
+
+ Test Files  5 passed (5)
+      Tests  71 passed (71)
+   Start at  19:03:21
+   Duration  5.56s (transform 226ms, setup 849ms, collect 777ms, tests 236ms, environment 5.06s, prepare 932ms)
+

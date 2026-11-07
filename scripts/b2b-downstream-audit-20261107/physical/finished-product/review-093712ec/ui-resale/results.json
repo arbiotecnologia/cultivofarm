@@ -1,0 +1,17 @@
+{
+  "status": "PASS_LOCAL_INACTIVE_NOT_APPROVED",
+  "candidate_sha256": "597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef",
+  "focused_vitest": {"passed": 71, "total": 71, "exit_code": 0},
+  "legacy_cockpit_stock_vitest": {"passed": 214, "total": 214, "exit_code": 0},
+  "delivery_vitest": {"passed": 22, "total": 22, "exit_code": 0},
+  "physical_postgres": {"passed": 58, "total": 58, "exit_code": 0},
+  "null_contract": {"passed": 51, "total": 51, "exit_code": 0},
+  "layers": {"passed": 16, "total": 16, "exit_code": 0},
+  "legacy_biological": {"passed": 6, "total": 6, "exit_code": 0},
+  "artifact_review": {"passed": 39, "total": 39, "exit_code": 0},
+  "preview_build": "OK",
+  "hosted": false,
+  "published": false,
+  "authenticated_browser_or_real_jwt_rls_storage_postgrest": false,
+  "fiscal_receivable_collection_or_external_delivery": false
+}

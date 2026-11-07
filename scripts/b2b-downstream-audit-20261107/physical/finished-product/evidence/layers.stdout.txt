@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.0s
+CHECKPOINT sql_calls=1 elapsed=3.1s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS ausência das duas dependências downstream simulada somente no PG descartável
@@ -7,7 +7,7 @@ PASS pacote completo falha fechado na primeira dependência ausente
 PASS PRE do pacote completo não cria objetos antes da dependência ausente
 PASS camada de entrada instala sem presumir confirmação/envio
 PASS camada de entrada não cria nem remove pins das dependências ausentes
-PASS POST da entrada confirma seus nove corpos, novos helpers e gate fechado
+PASS POST da entrada confirma seus onze corpos, novos helpers e gate fechado
 PASS camada downstream continua bloqueada enquanto a dependência não existe
 PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
 PASS compra canônica funciona na camada de entrada sem downstream
