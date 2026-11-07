@@ -3,8 +3,8 @@
   "phase": "before",
   "status": "FAIL",
   "exit_code": 1,
-  "passed": 1,
-  "total": 2,
+  "passed": 2,
+  "total": 3,
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -12,13 +12,24 @@
       "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
     },
     {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
       "name": "execução terminou no ponto concreto",
       "status": "FAIL",
-      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 174, in main\n    restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 102, in restore_checkpoint\n    raise AssertionError(\"INSTALLER_PIN_FAILED \" + installer.name + \"\\n\" + loaded.stdout[-3000:] + loaded.stderr[-8000:])\nAssertionError: INSTALLER_PIN_FAILED install.sql.review\nERROR:  P0001: CONFIRM_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
+      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 193, in main\n    reject(\"produto acabado sem envase não tem entrada canônica aberta\", direct, \"23514\", \"não possui registro de envase\")\n    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 74, in reject\n    raise AssertionError(name + \" :: \" + result.stdout[-1000:] + result.stderr[-2000:])\nAssertionError: produto acabado sem envase não tem entrada canônica aberta :: ERROR:  42501: ESTQ_TENANT_FORBIDDEN\nCONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n"
     }
   ],
-  "raw": [],
-  "elapsed_seconds": 8.435,
+  "raw": [
+    {
+      "name": "produto acabado sem envase não tem entrada canônica aberta",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ESTQ_TENANT_FORBIDDEN\nCONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    }
+  ],
+  "elapsed_seconds": 9.363,
   "synthetic_seams": [
     "Auth por claims/GUC locais, sem JWT/RLS/PostgREST/Storage real",
     "fixtures upstream com session_replication_role=replica; writers testados com triggers habilitados",

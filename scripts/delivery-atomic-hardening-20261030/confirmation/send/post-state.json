@@ -6111,7 +6111,7 @@
       "cf_user_guards_v1",
       "acquire_gate",
       "",
-      "b0dd9a14d5fd799a40df0975baf4c5a6",
+      "1f26021e202b2177be5cbca74499f012",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -6135,7 +6135,7 @@
       "cf_user_guards_v1",
       "advance_stamp",
       "",
-      "ce295ff5799d306ad81578047cd9bff5",
+      "92d2bd6c79feb239cf2977990360c674",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -6147,7 +6147,7 @@
       "cf_user_guards_v1",
       "block_truncate",
       "",
-      "a919901eb1e045461a5bc6e4da178624",
+      "2120d930ff5da74fb667bd71c3053fc4",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -6159,7 +6159,7 @@
       "cf_user_guards_v1",
       "require_admin",
       "",
-      "ec8e7077521cdee212be924bfb400e8a",
+      "e541bc5f3b48e82ea4b993de5c19a199",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -6183,7 +6183,7 @@
       "cf_user_guards_v1",
       "touch_related_profiles",
       "",
-      "e5911c3801be399f9de57e038b390e79",
+      "7700e70682c0f5aa137ff7087c1a9ba5",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -8860,7 +8860,7 @@
       "platform_private",
       "storage2_salvar_aplicacao_legacy_closed",
       "p_aplicacao_id uuid, p_payload jsonb, p_rectify_id uuid, p_evidencias jsonb, p_evidencias_manter uuid[]",
-      "bd546d19ae6598ba0db5837b83ef398d",
+      "65cd58dad523aa5f41e8a5be901ad574",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -10444,7 +10444,7 @@
       "public",
       "can_user_create_aplicacao_for_cliente",
       "_cliente_id uuid",
-      "b83a0bc8906b5e9f68ac6b7c9338d703",
+      "dd9ad175717f7d3fea557327776b04e1",
       "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
       "postgres",
       [
@@ -13288,7 +13288,7 @@
       "public",
       "gerar_codigo_lote",
       "_ano integer",
-      "194703302cf0400c10d6d0dda2468d5d",
+      "5e36250e5dd4b19f314e7243240ebba2",
       "{postgres=X/postgres,service_role=X/postgres}",
       "postgres",
       [
@@ -17047,7 +17047,7 @@
       "public",
       "rpc_cockpit_cancelar_reserva_v1",
       "p_item_id uuid, p_os_id uuid, p_origem text, p_motivo text",
-      "b30eb1df9094e4dace1d071b11b6af41",
+      "3169e56ce8a9e5e1177d0f9d4ae2d02d",
       "{postgres=X/postgres,service_role=X/postgres}",
       "postgres",
       [
@@ -17289,7 +17289,7 @@
       "public",
       "rpc_create_financial_title",
       "p_kind text, p_payload jsonb",
-      "0778b876b300e08d53f1cf7790394fc5",
+      "ad44e55861f9389c241c3b8245e1f6c8",
       "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
       "postgres",
       [
@@ -17628,7 +17628,7 @@
       "rpc_entrega_confirmar_manual_v1",
       "p_entrega uuid, p_observed timestamp with time zone, p_request_key text, p_recebedor jsonb",
       "9d9912290a11853e30d980d7fbf8ea1e",
-      "{postgres=X/postgres,authenticated=X/postgres}",
+      "{postgres=X/postgres}",
       "postgres",
       [
         "search_path=\"\""
@@ -19224,7 +19224,7 @@
       "public",
       "rpc_register_payable_payment",
       "p_installment_id uuid, p_payload jsonb",
-      "1c9d66132c125d97b72ac7948565b210",
+      "59b38bf833ace1bcf846ac689fc5db2a",
       "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
       "postgres",
       [
@@ -19236,7 +19236,7 @@
       "public",
       "rpc_register_receivable_payment",
       "p_installment_id uuid, p_payload jsonb",
-      "db41f7e2cfcb196ef64536f62746f365",
+      "2f238ac7871ed569adee240c372027eb",
       "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
       "postgres",
       [
@@ -19706,7 +19706,7 @@
       "public",
       "rpc_set_payable_allocations",
       "p_payable_id uuid, p_allocations jsonb, p_reason text, p_expected_version integer, p_request_key uuid",
-      "1eb80d619e3fa08e5d5cc781868eca68",
+      "a3c457bb17c6afe6c662ce6c31daebf5",
       "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
       "postgres",
       [
@@ -22001,7 +22001,7 @@
     ],
     [
       "platform_private.envase_insert_permits_v1",
-      "{postgres=arwdDxtm/postgres}",
+      null,
       false,
       false,
       "postgres"
