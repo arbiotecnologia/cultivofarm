@@ -66,6 +66,7 @@
     "02-install.sql.review",
     "03-post.sql.readonly",
     "04-rollback-deny.sql.review",
+    "SHA256SUMS",
     "adjustment-pins.json",
     "candidate/platform_private.b2b_seller_financial_scope_error.sql.review",
     "candidate/public.approve_b2b_payment_terms_secure.sql.review",
