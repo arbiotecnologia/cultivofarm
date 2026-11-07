@@ -21,7 +21,7 @@
       "candidate_sql_changed": false,
       "catalog_pins_changed": false,
       "grants_or_guards_changed": false,
-      "proof": "pending confirmation rerun"
+      "proof": "confirmation rerun 123/123 PASS, exit 0"
     }
   ]
 }

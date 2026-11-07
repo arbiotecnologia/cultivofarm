@@ -1,8 +1,9 @@
 ## 07/11 16:05 — Reconciliação física local sobre a base atual
-- [ ] Diagnosticar `ENVASE_RELEASE_DRIFT` por dependência/fonte e estado, sem remover ou afrouxar pins/guards; corrigir somente a composição/candidato compatível.
-- [ ] Rerodar confirmação física, expedição/cancelamento e isolamento/concorrência/idempotência em PostgreSQL descartável, incluindo biológicos, químicos e fertilizantes kg/g/embalagem inteira, com peso somente frete.
-- [ ] Preservar a reconciliação B4 63/63 sobre o B3 atual, sem criadores antigos; fiscal permanece exclusivamente simulado local e sem efeitos reais.
-- [ ] Entregar artefatos, pins, diffs, hashes, evidências/exit codes e caminho mínimo separado do ajuste de condições; nenhuma operação hospedada, publicação, NF/cobrança real, envio ou delegação.
+- [x] Diagnosticar `ENVASE_RELEASE_DRIFT`: o recorte `ENVASE_TARGETED=1` sobrescrevia o release revisado com o stub pré-matriz. Stub separado em `release-stub.sql.review`; nenhum pino, guard, grant ou SQL candidato alterado. Cache `/tmp` ausente também corrigido somente no harness.
+- [x] Rerodar envase/estoque e confirmação física em PostgreSQL descartável: matriz completa 119/119, recorte 21/21 com release SHA256 inalterado, e expedição/em rota/confirmação/cancelamento/isolamento/concorrência/idempotência 123/123, exits 0.
+- [x] Preservar a reconciliação B4 63/63 sobre o B3 atual, sem criadores antigos; fiscal permanece exclusivamente simulado local e sem efeitos reais.
+- [x] Entregar artefatos, pins, diffs, hashes, evidências/exit codes e caminho mínimo separado do ajuste de condições; nenhuma operação hospedada, publicação, NF/cobrança real, envio ou delegação.
+- [ ] Químicos/fertilizantes kg/g/embalagem inteira e apresentações L no downstream físico: NOT_RUN nesta rodada; os 123 PASS são biológico ml. Falta validar fixture canônica compatível sem cadastro paralelo e sem reinterpretar volume/peso; peso somente frete permanece requisito aberto.
 
 ## 07/11 15:46 — Reconciliação local dos pinos LIVE e B4 útil
 - [x] Registrar como relato READONLY do auditor os pinos LIVE de ajuste/aprovação/rejeição, geradores de recebível, gatilho automático, autorização fiscal e capabilities de envase/confirmação; correspondências encontradas somente nas capturas locais, sem deduzir exposure pela UI fechada.
