@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 23,
-  "total": 25,
+  "passed": 42,
+  "total": 47,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -97,13 +97,104 @@
     },
     {
       "name": "B4 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B4 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "rerun aborta pelo pin da baseline, sem reinstalar",
+      "ok": true
+    },
+    {
+      "name": "32 gatilhos reais carregados pelo harness B3 continuam habilitados",
+      "ok": true
+    },
+    {
+      "name": "B3 create/simulate antigos não foram restaurados nem alterados",
+      "ok": true
+    },
+    {
+      "name": "autorização fiscal continua service-only e sem integração de recebível",
+      "ok": true
+    },
+    {
+      "name": "gate fiscal/contábil não comprovado permanece fechado",
+      "ok": true
+    },
+    {
+      "name": "cliente não invoca alocador privado",
+      "ok": true
+    },
+    {
+      "name": "primeira NF parcial autorizada fictícia gera título",
+      "ok": true
+    },
+    {
+      "name": "conversão não duplica exposição",
+      "ok": true
+    },
+    {
+      "name": "residual = pedido restante + títulos sem dupla contagem",
+      "ok": true
+    },
+    {
+      "name": "replay da mesma autorização devolve mesmo título",
+      "ok": true
+    },
+    {
+      "name": "replay não duplica alocação",
+      "ok": true
+    },
+    {
+      "name": "datas finais partem da emissão e calendário selado",
+      "ok": true
+    },
+    {
+      "name": "juros financiados não são somados duas vezes",
+      "ok": true
+    },
+    {
+      "name": "projeção financeira usa ator e tenant autorizados",
+      "ok": true
+    },
+    {
+      "name": "baixa parcial local no ledger capturado",
       "ok": false,
-      "detail": "paracatu-mg-2026-2027-v2\npsql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:243: ERROR:  syntax error at or near \"CREATE\"\nLINE 24: CREATE FUNCTION platform_private.b2b_credit_config_block(p_p...\n         ^\n"
+      "detail": "ERROR:  syntax error at or near \";\"\nLINE 1: ...00092\", \"idempotency_key\": \"TESTE-B4-PAY-1\"}'::jsonb)::text;\n                                                                      ^"
+    },
+    {
+      "name": "baixa reduz somente título, não residual do pedido",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "três documentos independentes fecham quantidade e residual",
+      "ok": true
+    },
+    {
+      "name": "três títulos, um por documento",
+      "ok": true
+    },
+    {
+      "name": "crédito após parciais preserva total menos baixa",
+      "ok": false,
+      "detail": "1348.15"
+    },
+    {
+      "name": "cancelamento de NF paga exige reconciliação",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_CANCELLATION_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_reverse_allocation(uuid,uuid) line 27 at RAISE"
+    },
+    {
+      "name": "cancelamento pago negado preserva histórico e saldo",
+      "ok": true
     },
     {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  function \"platform_private.b2b_allocate_document(uuid)\" does not exist\\nLINE 1: SELECT md5(pg_get_functiondef(\\'platform_private.b2b_allocate...\\n                                      ^\\n')"
+      "detail": "RuntimeError('ERROR:  B2B_ACTOR_DENIED\\nCONTEXT:  PL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 5 at RAISE\\nPL/pgSQL function platform_private.b2b_cancellation_fence() line 5 at assignment\\n')"
     }
   ],
   "hosted": "NOT_RUN",

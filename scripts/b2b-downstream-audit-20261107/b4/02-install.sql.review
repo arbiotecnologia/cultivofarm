@@ -230,7 +230,7 @@ BEGIN
  END LOOP;
  IF bal<>0 THEN RAISE EXCEPTION 'SCHEDULE_RESIDUAL' USING ERRCODE='23514'; END IF;
  RETURN rows;
-END $function$
+END $function$;
 
 CREATE FUNCTION platform_private.b2b_credit_config_block(p_partner uuid) RETURNS text
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
@@ -480,7 +480,7 @@ BEGIN
  SELECT coalesce(sum(x.principal+x.financed_interest),0) INTO allocated FROM platform_private.b2b_document_allocations x WHERE x.order_id=p_order AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=x.document_id);
  IF allocated>total THEN RAISE EXCEPTION 'CREDIT_OVERALLOCATED' USING ERRCODE='23514'; END IF;
  RETURN total-allocated;
-END $function$
+END $function$;
 
 CREATE FUNCTION platform_private.b2b_credit_balances(p_partner uuid,p_exclude uuid DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
@@ -594,7 +594,7 @@ BEGIN
  IF EXISTS(SELECT 1 FROM platform_private.b2b_title_permits WHERE transaction_id=txid_current() AND title_id=tid) THEN RAISE EXCEPTION 'B2B_TITLE_PERMIT_NOT_CONSUMED' USING ERRCODE='23514'; END IF;
  INSERT INTO platform_private.b2b_document_allocations(document_id,organization_id,order_id,partner_id,receivable_id,source_digest,principal,financed_interest,items,item_money,rows) VALUES(d.id,org,d.order_id,d.partner_id,tid,d.source_digest,principal,financing,d.items,accepted,rows);
  RETURN jsonb_build_object('success',true,'document_id',d.id,'receivable_id',tid,'principal',principal,'financed_interest',financing,'residual',platform_private.b2b_order_residual(d.order_id),'replayed',false);
-END $function$
+END $function$;
 
 CREATE FUNCTION platform_private.b2b_reverse_allocation(p_document uuid,p_replacement uuid DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
@@ -689,7 +689,7 @@ BEGIN
     'tem_vencidos', v_overdue > 0,
     'reason_code', v_reason
   );
-END $function$
+END $function$;
 CREATE OR REPLACE FUNCTION public.rpc_register_receivable_payment(p_installment_id uuid, p_payload jsonb)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -817,7 +817,7 @@ BEGIN
       'idempotency_key', v_idem, 'request_fingerprint', v_fp), v_uid);
 
   RETURN v_payment_id;
-END $function$
+END $function$;
 CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1094,13 +1094,13 @@ CREATE OR REPLACE FUNCTION public.tg_auto_b2b_receivable()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$ BEGIN RETURN NEW; END $function$
+AS $function$ BEGIN RETURN NEW; END $function$;
 CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$ BEGIN RAISE EXCEPTION 'B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED' USING ERRCODE='42501'; END $function$
+AS $function$ BEGIN RAISE EXCEPTION 'B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED' USING ERRCODE='42501'; END $function$;
 
 REVOKE ALL ON FUNCTION platform_private.b2b_title_insert_fence(),public.generate_b2b_receivable_secure_impl(uuid),public.tg_auto_b2b_receivable() FROM PUBLIC,anon,authenticated,service_role;
 
