@@ -1,31 +1,34 @@
 {
-  "review": "458b6012+4097d4e2",
+  "review": "458b6012+4097d4e2+manual-null-1813",
   "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "hosted": "NOT_RUN",
   "object_manifest": "../b4-object-manifest.json",
-  "object_count": 55,
+  "object_count": 56,
   "missing_baseline": [],
   "projection_absence": "USER_REPORTED_READONLY_ALL_OVERLOADS_ABSENT; PRE_0_POST_1_OWNER_ONLY",
-  "candidate_sha256": "3b7bd7f1756fb73036ca4a80e3a38aeb5041f0e72dfe208e419b9819a5e64b98",
+  "candidate_sha256": "b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47",
+  "before_reproduction": {"passed": 86, "total": 100, "failed": 14, "exit_code": 1, "path": "manual-null-1813/before/"},
   "independent_results_not_added": {
-    "static_manifest": {"passed": 53, "total": 53, "exit_code": 0},
-    "disposable_component": {"passed": 79, "total": 79, "exit_code": 0},
+    "static_manifest": {"passed": 59, "total": 59, "exit_code": 0},
+    "disposable_component": {"passed": 100, "total": 100, "exit_code": 0},
     "fiscal_units_retest": {"passed": 132, "total": 132, "exit_code": 0},
     "historical": {"passed": 63, "total": 63, "added": false, "path": "historical-63/evidence-b4-b3.json"}
   },
   "shared_impact": {
+    "reported_live_shape": "5 MANUAL ACTIVE: 4 OPEN/1 OVERDUE; partner_id NULL; customer linked to active partner of same owner; USER_REPORTED_READONLY",
+    "before": "OPEN/OVERDUE omitted; payment and simulation allowed; ambiguity/conflicts not explicitly reconciled",
+    "after": "UNIQUE_LINK_MONEY_ORIGIN_UNPROVEN; AMBIGUOUS/CONFLICT/OWNER_MISMATCH explicit; no backfill/double count",
     "manual_without_partner": "LEGACY_INSTALLMENT_AND_PAYMENT_PRESERVED",
-    "manual_with_partner": "EXPOSURE_AND_PAYMENT_MONEY_ORIGIN_UNPROVEN; NEW_SIMULATION_DENIED_NO_ORDER",
-    "current_orders": "UNCHANGED_IN_DISPOSABLE_FIXTURES; LIVE_IMPACT_NOT_MEASURED",
+    "current_orders": "UNCHANGED_IN_DISPOSABLE_FIXTURES; LIVE_EFFECT_NOT_EXECUTED",
     "internal_order": "DENIED_NO_TITLE_NO_ALLOCATION",
-    "fixtures_cleanup": "DISPOSABLE_ONLY_AFTER_MEASUREMENT"
+    "fixtures_cleanup": "DISPOSABLE_ONLY_AFTER_MEASUREMENT; FIVE_LIVE_TITLES_UNTOUCHED"
   },
   "operation_separation": "INSTALL_HAS_NO_OPERATION_STUB; REAL DEPENDENCY ALWAYS DENY",
-  "current_evidence": "live-absence-4097d4e2/",
+  "current_evidence": "manual-null-1813/",
   "pending": [
-    "impacto READONLY nos dados LIVE e preflight de duplicidades do índice",
-    "reconciliação de MANUAL parceiro sem origem inventada/backfill",
+    "revisão independente do bloqueio projetado para os cinco títulos LIVE e demais impactos READONLY",
+    "reconciliação de MANUAL parceiro sem origem inventada/backfill/cancelamento",
     "conferência LIVE independente de corpos/owners/ACLs/relações",
     "JWT/RLS/Storage/PostgREST/browser/NF/cobrança/homologação NOT_RUN"
   ]

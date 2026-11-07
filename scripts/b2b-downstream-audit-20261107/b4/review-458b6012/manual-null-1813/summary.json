@@ -1,0 +1,68 @@
+{
+  "review": "458b6012+4097d4e2+manual-null-1813",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "hosted_writes": false,
+  "reported_live_shape": {
+    "source": "USER_REPORTED_READONLY_NOT_AGENT_QUERY",
+    "seller": "AR Bio",
+    "active_manual_titles": 5,
+    "statuses": {"OPEN": 4, "OVERDUE": 1},
+    "partner_id": null,
+    "customer_links": "active partner_accounts with the same seller owner organization",
+    "origin_proven": false,
+    "titles_changed_or_canceled": false
+  },
+  "before": {
+    "candidate_sha256": "3b7bd7f1756fb73036ca4a80e3a38aeb5041f0e72dfe208e419b9819a5e64b98",
+    "passed": 86,
+    "total": 100,
+    "failed": 14,
+    "exit_code": 1,
+    "evidence": "before/evidence-b4-shared-impact.json",
+    "confirmed": [
+      "partner_id NULL + cliente único foi omitido: saldo_em_aberto=0 e saldo_vencido=0",
+      "baixa e nova simulação foram permitidas sem origem monetária comprovada",
+      "OVERDUE permaneceu omitido após cancelar apenas os quatro OPEN locais",
+      "múltiplos parceiros no mesmo cliente não foram detectados",
+      "conflitos partner_id/customer_id/owner não tiveram erro específico e puderam ser ignorados"
+    ]
+  },
+  "candidate": {
+    "sha256": "b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47",
+    "install_sha256": "c5b6bbb709d4b2606bb5e79ef04ffd00823b977923c5070dbe703214b93988a3",
+    "object_count": 56,
+    "new_private_function": "platform_private.b2b_receivable_partner_scope(uuid)",
+    "new_function_acl": "OWNER_ONLY_NO_PUBLIC_ANON_AUTHENTICATED_SERVICE_ROLE_EXECUTE",
+    "changes": [
+      "crédito considera partner_id ou cliente ativo do mesmo owner em um único SELECT com OR, sem UNION e sem dupla contagem",
+      "baixa usa o mesmo resolvedor mesmo quando partner_id é NULL",
+      "CREDIT_PARTNER_LINK_AMBIGUOUS para múltiplos parceiros no mesmo cliente",
+      "CREDIT_PARTNER_CONFLICT para partner_id divergente do cliente resolvido",
+      "CREDIT_PARTNER_OWNER_MISMATCH para parceiro inativo ou de outro owner",
+      "MONEY_ORIGIN_UNPROVEN após escopo válido sem origem monetária comprovada",
+      "MANUAL não B2B sem parceiro preserva parcela e baixa legadas"
+    ],
+    "backfill": false,
+    "history_deleted": false,
+    "grants_added": false,
+    "operation_dependency": "REAL_ALWAYS_DENY_RETAINED; harness stub only after proving denial",
+    "rollback": "DENY_ONLY_PRE_POST_PASS"
+  },
+  "independent_results_not_added": {
+    "static_manifest": {"passed": 59, "total": 59, "exit_code": 0, "evidence": "evidence-manifest-tests.json"},
+    "disposable_component": {"passed": 100, "total": 100, "exit_code": 0, "evidence": "evidence-b4-shared-impact.json"},
+    "fiscal_units_retest": {"passed": 132, "total": 132, "exit_code": 0, "evidence": "evidence-fiscal-units.json"},
+    "historical_63": {"added": false, "path": "../historical-63/evidence-b4-b3.json"}
+  },
+  "projected_live_effect_not_executed": "Para títulos MANUAL com escopo de parceiro e origem desconhecida, incluindo a forma relatada dos cinco títulos, exposição/baixa/simulação ficam explicitamente bloqueados até reconciliação revisada; nenhum efeito LIVE foi executado ou medido pelo agente.",
+  "seller_team_candidate": "SEPARATE_UNCHANGED_NOT_MERGED",
+  "pending": [
+    "revisão independente do resolvedor e da decisão de bloqueio para os cinco títulos LIVE",
+    "preflight READONLY de outros títulos, ambiguidades, conflitos, owners e duplicidades antes de qualquer release",
+    "reconciliação de origem sem backfill inventado, cancelamento ou exclusão histórica",
+    "conferência LIVE de corpos, owners, ACLs, triggers, relações e ausência da projeção",
+    "JWT/RLS/Storage/PostgREST/browser e homologação real NOT_RUN"
+  ]
+}
