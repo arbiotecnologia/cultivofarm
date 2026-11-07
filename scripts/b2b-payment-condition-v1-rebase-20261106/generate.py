@@ -284,7 +284,10 @@ BEGIN
   IF p_amount IS NULL OR p_amount < 0 OR p_amount::text IN ('NaN','Infinity','-Infinity') THEN
     RAISE EXCEPTION 'CREDIT_CALCULATION_INVALID' USING ERRCODE='22023';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=p_partner_id AND s.active IS TRUE) THEN
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=p_partner_id AND s.active IS TRUE
+     AND s.credit_limit IS NOT NULL AND s.credit_limit >= 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')
+     AND s.overdue_tolerance_days IS NOT NULL AND s.overdue_tolerance_days >= 0 AND s.block_if_overdue IS NOT NULL
+     AND s.credit_limit_action IN ('block','approval_required')) THEN
     RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='PT409';
   END IF;
   v := public.fn_b2b_credit_exposure(p_partner_id,p_amount,p_exclude_order_id);
