@@ -3,17 +3,22 @@
   "phase": "before",
   "status": "FAIL",
   "exit_code": 1,
-  "passed": 0,
-  "total": 1,
+  "passed": 1,
+  "total": 2,
   "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
+    },
     {
       "name": "execução terminou no ponto concreto",
       "status": "FAIL",
-      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 172, in main\n    restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 97, in restore_checkpoint\n    sql(cached.read_text())\n    ~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 53, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  role \"supabase_realtime_admin\" does not exist\n\n"
+      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 172, in main\n    restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 99, in restore_checkpoint\n    sql((CONF / \"install.sql.review\").read_text())\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 53, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  CONFIRM_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\n\n"
     }
   ],
   "raw": [],
-  "elapsed_seconds": 6.902,
+  "elapsed_seconds": 6.301,
   "synthetic_seams": [
     "Auth por claims/GUC locais, sem JWT/RLS/PostgREST/Storage real",
     "fixtures upstream com session_replication_role=replica; writers testados com triggers habilitados",
