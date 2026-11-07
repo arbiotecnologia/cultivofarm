@@ -409,9 +409,10 @@ def main():
             psql(f"SELECT public._saas_user_has_feature('{SP.UADM}','pedidos_b2b')").stdout.strip() == "t",
         )
 
-        # Controle positivo legado no escopo efetivamente autorizado, sem alterar economia/snapshots.
-        r = request(SP.UADM, legacy_id, "TESTE positivo legado")
-        check("mesmo tenant ainda solicita ajuste no legado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
+        # Controles positivos SINTÉTICOS apenas no legado: o externo validado foi negado pelo guard real.
+        for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
+            r = request(uid, legacy_id, "TESTE positivo legado " + label)
+            check(f"controle sintético {label}: caminho dono vendedor solicita ajuste no legado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
         r = request(SP.UB, legacy_id, "TESTE comprador")
         check("comprador sem papel financeiro continua negado", r.returncode != 0 and "unauthorized" in r.stderr, r.stderr)
 
