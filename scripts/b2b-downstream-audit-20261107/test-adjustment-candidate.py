@@ -468,8 +468,24 @@ def main():
         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
             r = request(uid, legacy_id, "TESTE positivo legado " + label)
             check(f"controle sintético {label}: caminho dono vendedor solicita ajuste no legado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
+        for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
+            r = request(uid, legacy_id, "TESTE prepara approve " + label)
+            check(f"{label}: prepara approve somente no legado sintético", r.returncode == 0, r.stderr)
+            r = decision(uid, "approve", legacy_id, "TESTE approve legado " + label)
+            check(f"approve/{label}: positivo sintético no caminho dono vendedor", r.returncode == 0 and '"approved"' in r.stdout, r.stderr)
+            check(f"approve/{label}: estados financeiro e condição aprovados", psql(f"SELECT o.financial_approval_status='approved' AND t.approval_status='approved' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id WHERE o.id='{legacy_id}'").stdout.strip() == "t")
+            r = request(uid, legacy_id, "TESTE prepara reject " + label)
+            check(f"{label}: prepara reject somente no legado sintético", r.returncode == 0, r.stderr)
+            r = decision(uid, "reject", legacy_id, "TESTE motivo ficticio " + label)
+            check(f"reject/{label}: positivo sintético no caminho dono vendedor", r.returncode == 0 and '"rejected"' in r.stdout, r.stderr)
+            check(f"reject/{label}: estados financeiro e condição rejeitados", psql(f"SELECT o.financial_approval_status='rejected' AND t.approval_status='rejected' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id WHERE o.id='{legacy_id}'").stdout.strip() == "t")
         r = request(SP.UB, legacy_id, "TESTE comprador")
         check("comprador sem papel financeiro continua negado", r.returncode != 0 and "unauthorized" in r.stderr, r.stderr)
+        for kind in ("approve", "reject"):
+            before_decision = state(legacy_id)
+            r = decision(SP.UB, kind, legacy_id, "TESTE comprador")
+            check(f"{kind}: comprador sem papel financeiro continua negado", r.returncode != 0 and "unauthorized" in r.stderr, r.stderr)
+            check(f"{kind}: negação do comprador preserva estado", state(legacy_id) == before_decision)
 
         # Rollback restritivo: pin errado não altera; correto só revoga cliente.
         bad_rb = work / "bad-rollback.sql"
