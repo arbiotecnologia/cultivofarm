@@ -1,0 +1,29 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/comercial/meiosPagamentoTab.test.tsx (8 tests) 1213ms
+   ✓ nova versão envia CAS da versão vigente; conflito mantém o rascunho, mostra motivo e não tenta de novo  472ms
+ ✓ src/test/b2b/simulationState.test.ts (6 tests) 13ms
+ ✓ src/test/b2b/novoPedidoPaymentMethod.test.tsx (15 tests) 15139ms
+   ✓ sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio  1447ms
+   ✓ meio escolhido: simulação e criação levam meio/versão/prazo; cliente não envia parcelas nem vencimento; datas rotuladas como estimadas  1169ms
+   ✓ falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por clique  1075ms
+   ✓ leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio  1035ms
+   ✓ outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado  954ms
+   ✓ empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global  934ms
+   ✓ resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)  871ms
+   ✓ promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)  747ms
+   ✓ Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas  892ms
+   ✓ Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18  917ms
+   ✓ crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado  1069ms
+   ✓ resposta com credit null não é aceita como apta: erro visível e envio bloqueado  847ms
+   ✓ Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado  847ms
+   ✓ ACK com total diferente da simulação não é sucesso (sem navegação)  1096ms
+   ✓ ACK com outro meio/versão não é tratado como sucesso (sem navegação)  1235ms
+
+ Test Files  3 passed (3)
+      Tests  29 passed (29)
+   Start at  05:18:26
+   Duration  20.55s (transform 1.60s, setup 594ms, collect 3.88s, tests 16.37s, environment 3.82s, prepare 742ms)
+
+JSON report written to /tmp/b3-review194331e/single-rate-focused.json

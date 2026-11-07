@@ -1,7 +1,7 @@
 ## 07/11 — B3 parcela única com taxa explícita (somente local/PG descartável)
-- [ ] Permitir taxa explícita em 1 parcela somente para boleto/promissória/cartão de crédito; dinheiro/Pix/débito continuam únicos e sem juros.
-- [ ] Provar o oráculo sintético 1000 a 1,8%: n1 = 1018,00 (principal 1000/juros 18) e n3 = 345,40/345,40/345,42 em publicação, resolução, simulação, create, UI e persistência.
-- [ ] Preservar pacote não aplicado/publicado, produção informada, PB-001036, B4/fiscal, SMTP e automações; nenhuma taxa/default remoto.
+- [x] Permitir taxa explícita em 1 parcela somente para boleto/promissória/cartão de crédito; dinheiro/Pix/débito continuam únicos e sem juros.
+- [x] Provar o oráculo sintético 1000 a 1,8%: n1 = 1018,00 (principal 1000/juros 18) e n3 = 345,40/345,40/345,42 em publicação, resolução, simulação, create, UI e persistência; PG 172/172 e UI 29/29.
+- [x] Preservar pacote não aplicado/publicado, produção informada, PB-001036, B4/fiscal, SMTP e automações; nenhuma taxa/default remoto.
 
 ## 07/11 — B3 revisão 194331e (somente local/PG descartável)
 - [ ] Limite numérico explícito fail-closed em simulação/criação, com cadastro e pedido em análise preservados e UI indisponível.
