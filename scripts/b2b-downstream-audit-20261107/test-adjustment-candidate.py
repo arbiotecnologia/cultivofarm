@@ -163,11 +163,16 @@ def main():
             all((HERE / name).read_text() == text for name, text in generated.items()),
         )
         review_files = [generated[n] for n in ("01-pre.sql.readonly", "02-install.sql.review", "03-post.sql.readonly", "04-rollback-deny.sql.review")]
-        check("nenhum artefato executa GRANT ou substitui pin temporário", pins["temporary_pin_substitution"] is False and all("GRANT " not in text for text in review_files))
+        helper_artifact = generated["candidate/platform_private.b2b_seller_financial_scope_error.sql.review"]
+        check("nenhum artefato executa GRANT ou substitui pin temporário", pins["temporary_pin_substitution"] is False and all("GRANT " not in text for text in review_files + [helper_artifact]))
         check(
             "todos os pinos públicos/privados estão no PRE/POST/install/rollback",
             all(meta["md5"] in text and meta["owner"] in text and meta["acl_md5"] in text for text in review_files for meta in pins["dependencies"].values()),
         )
+        helper_pin = pins["seller_scope_helper"]
+        check("helper vendedor novo tem manifesto de corpo/owner/ACL e nenhum EXECUTE de cliente",
+              helper_pin["client_execute"] is False and helper_pin["owner"] == "postgres"
+              and all(helper_pin["candidate_md5"] in text and helper_pin["acl_md5"] in text for text in review_files[1:]))
 
         def runfile(path):
             return subprocess.run(
