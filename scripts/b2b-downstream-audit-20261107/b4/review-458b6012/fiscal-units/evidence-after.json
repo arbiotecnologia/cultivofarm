@@ -1,7 +1,7 @@
 {
   "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
   "phase": "after",
-  "candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd",
+  "candidate_sha256": "3b7bd7f1756fb73036ca4a80e3a38aeb5041f0e72dfe208e419b9819a5e64b98",
   "status": "PASS",
   "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
   "passed": 132,
