@@ -1,7 +1,8 @@
 ## 07/11 17:25 — Compra de produto acabado para revenda (decisão humana)
-- [ ] Integrar a origem COMPRA DE PRODUTO ACABADO PARA REVENDA à cobertura física local: compra/entrada canônica de estoque→reserva→expedição→entrega/cancelamento, sem bioreator ou fabricação própria.
-- [ ] Preservar embalagem/apresentação única e venda inteira; kg/g somente conteúdo/peso para frete, sem peso→litros; L/ml conforme produto. Manter B2B, fiscal, cobranças, comunicação e demais gates fechados.
-- [ ] Testar em PostgreSQL descartável com fixtures fictícias, pins/PRE/POST/rollback e evidências separadas; preservar Auth, instalador B4 e normalização fiscal em andamento, sem hosted/publicação/envios reais/delegação.
+- [x] Integrar a origem COMPRA DE PRODUTO ACABADO PARA REVENDA à cobertura física local: entrada privada idempotente resolve catálogo por empresa e cria lote/estoque/ledger sem bioreator, programação, CQ ou envase; fluxo completo até expedição/entrega/cancelamento em OS manual fictícia.
+- [x] Preservar embalagem/apresentação única e venda inteira; kg/g derivados do peso da embalagem somente como conteúdo/frete, sem peso→litros; L/ml derivados do volume cadastrado. B2B permanece `DELIVERY_SCOPE_DENIED`; fiscal, cobranças e comunicação fechados.
+- [x] Testar em PostgreSQL descartável: antes 17/17, compra+downstream+concorrência+revogação+rollback **37/37**, legado biológico 6/6, exits 0. Candidato com 11 funções pinadas, PRE/POST/rollback e SHA256 `af71a57593d263a0fd4a1ea4341d62cb3e44e2edbaa6a9cf64d495df3f90e89f`; Auth, instalador B4 e normalização fiscal preservados, sem hosted/publicação/envios reais/delegação.
+- [ ] Auditor: conferir baseline LIVE dos corpos/owners/ACLs/relações/catálogo e homologar dados ARBio/JWT/RLS/Storage/PostgREST/browser. Entrada privada sem grant/caller/UI; instalação e operação continuam BLOQUEADAS/NÃO APROVADAS.
 
 ## 07/11 17:05 — Cobertura física de químicos/fertilizantes e apresentação L
 - [x] Rastrear os caminhos canônicos e reproduzir 17/17: reserva por quantidade funciona, mas 50 kg viravam 50.000 ml; envio/confirmação exigiam programação de produção e a confirmação tentava acionar fabricação laboratorial. B2B aprovado permaneceu negado por `DELIVERY_SCOPE_DENIED`.
