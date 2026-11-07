@@ -816,6 +816,13 @@
           ],
           "indexes": [
             {
+              "name": "accounts_receivable_organization_id_idx",
+              "table": "accounts_receivable",
+              "valid": true,
+              "unique": false,
+              "definition": "CREATE INDEX accounts_receivable_organization_id_idx ON public.accounts_receivable USING btree (organization_id)"
+            },
+            {
               "name": "accounts_receivable_pkey",
               "table": "accounts_receivable",
               "valid": true,
@@ -898,13 +905,6 @@
               "valid": true,
               "unique": true,
               "definition": "CREATE UNIQUE INDEX ux_ar_one_per_delivery ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'DELIVERY'::text) AND (status <> 'CANCELED'::text))"
-            },
-            {
-              "name": "accounts_receivable_organization_id_idx",
-              "table": "accounts_receivable",
-              "valid": true,
-              "unique": false,
-              "definition": "CREATE INDEX accounts_receivable_organization_id_idx ON public.accounts_receivable USING btree (organization_id)"
             }
           ],
           "triggers": [
@@ -992,7 +992,7 @@
           ],
           "columns_md5": "48e56787eb471eac7dbb59d23173961f",
           "constraints_md5": "22342047ab90371922b30c3e17ed95e1",
-          "indexes_md5": "00c5df4781ef51fef8933f63df0e8f8c",
+          "indexes_md5": "524434083f330c8c1b66e1712dfb2e0e",
           "triggers_md5": "cf5ee9c0d72818a3052f36d6b167a365"
         }
       },
@@ -1501,6 +1501,13 @@
         ],
         "indexes": [
           {
+            "name": "accounts_receivable_organization_id_idx",
+            "table": "accounts_receivable",
+            "valid": true,
+            "unique": false,
+            "definition": "CREATE INDEX accounts_receivable_organization_id_idx ON public.accounts_receivable USING btree (organization_id)"
+          },
+          {
             "name": "accounts_receivable_pkey",
             "table": "accounts_receivable",
             "valid": true,
@@ -1583,13 +1590,6 @@
             "valid": true,
             "unique": true,
             "definition": "CREATE UNIQUE INDEX ux_ar_one_per_delivery ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'DELIVERY'::text) AND (status <> 'CANCELED'::text))"
-          },
-          {
-            "name": "accounts_receivable_organization_id_idx",
-            "table": "accounts_receivable",
-            "valid": true,
-            "unique": false,
-            "definition": "CREATE INDEX accounts_receivable_organization_id_idx ON public.accounts_receivable USING btree (organization_id)"
           }
         ],
         "triggers": [
@@ -1677,7 +1677,7 @@
         ],
         "columns_md5": "48e56787eb471eac7dbb59d23173961f",
         "constraints_md5": "22342047ab90371922b30c3e17ed95e1",
-        "indexes_md5": "00c5df4781ef51fef8933f63df0e8f8c",
+        "indexes_md5": "524434083f330c8c1b66e1712dfb2e0e",
         "triggers_md5": "cf5ee9c0d72818a3052f36d6b167a365"
       },
       "candidate": {
@@ -1692,6 +1692,21 @@
   "missing_baseline": [
     "public.rpc_receivable_money_projection_v1(uuid,integer,integer)"
   ],
+  "dependent_trigger_pins": [
+    {
+      "name": "trg_auto_b2b_receivable",
+      "table": "partner_orders",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_auto_b2b_receivable AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable()"
+    }
+  ],
+  "post_shared_schema_md5": {
+    "columns": "62e9a6d0710abab3dd0f1ce6db4005bd",
+    "constraints": "09ce695b8adddd296478b570c5608125",
+    "indexes": "53e7b38728aa3dcd5190a8287a166b12",
+    "triggers": "24c9dabea0eb679d1d3aff3f231d7b20"
+  },
   "operation_separation": {
     "installation_grants_operation": false,
     "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL",
