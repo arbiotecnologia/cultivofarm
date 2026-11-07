@@ -233,7 +233,7 @@ def absence_guard(names, kind, code):
         checks.append(f" IF {test} THEN RAISE EXCEPTION '{code}:{name}' USING ERRCODE='42501'; END IF;")
     for name, tables in NEW_TRIGGERS.items() if kind == "trigger" else []:
         for table in tables.split("|"):
-            checks.append(f" IF EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='{name}' AND tgrelid='{table}'::regclass AND NOT tgisinternal) THEN RAISE EXCEPTION '{code}:{table}.{name}' USING ERRCODE='42501'; END IF;")
+            checks.append(f" IF to_regclass('{table}') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='{name}' AND tgrelid=to_regclass('{table}') AND NOT tgisinternal) THEN RAISE EXCEPTION '{code}:{table}.{name}' USING ERRCODE='42501'; END IF;")
     return "DO $guard$ BEGIN\n" + "\n".join(checks) + "\nEND $guard$;"
 
 
