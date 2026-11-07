@@ -715,7 +715,7 @@ CREATE OR REPLACE FUNCTION public.rpc_register_receivable_payment(p_installment_
  SET search_path TO 'public'
 AS $function$
 DECLARE
-  v_proven jsonb;
+  v_proven jsonb; v_origin public.accounts_receivable%ROWTYPE; v_interest numeric; v_financed numeric;
   v_uid uuid := auth.uid();
   v_org uuid := platform_private.h15_actor_organization();
   v_inst public.accounts_receivable_installments%ROWTYPE;
@@ -756,8 +756,17 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;
 
   IF auth.uid() IS DISTINCT FROM v_uid OR public.h15_actor_organization() IS DISTINCT FROM v_org OR public.is_financial_staff(v_uid) IS NOT TRUE THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
-  SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;
-  IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+  SELECT * INTO v_origin FROM public.accounts_receivable WHERE id=v_inst.receivable_id AND organization_id=v_org;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  IF v_origin.origin_type='B2B_ORDER' OR v_origin.partner_id IS NOT NULL THEN
+   SELECT r INTO v_proven FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text;
+   IF v_proven IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_UNPROVEN' USING ERRCODE='23514'; END IF;
+   v_interest:=(v_proven->>'interest_amount')::numeric;
+   v_financed:=(v_proven->>'financed_interest_amount')::numeric;
+  ELSE
+   -- Caminho capturado para MANUAL não B2B sem parceiro; não é prova de origem B4.
+   v_interest:=v_inst.interest_amount; v_financed:=0;
+  END IF;
   SELECT id, request_fingerprint INTO v_existing FROM public.receivable_payments
    WHERE installment_id = p_installment_id AND idempotency_key = v_idem;
   IF v_existing.id IS NOT NULL THEN
@@ -798,7 +807,7 @@ BEGIN
     RAISE EXCEPTION 'Conta bancária inválida ou inativa.' USING ERRCODE='check_violation';
   END IF;
 
-  v_saldo := v_inst.original_amount + ((v_proven->>'interest_amount')::numeric-(v_proven->>'financed_interest_amount')::numeric) + COALESCE(v_inst.penalty_amount,0) - COALESCE(v_inst.discount_amount,0) - COALESCE(v_inst.received_amount,0) + v_int + v_pen - v_disc;
+  v_saldo := v_inst.original_amount + (v_interest-v_financed) + COALESCE(v_inst.penalty_amount,0) - COALESCE(v_inst.discount_amount,0) - COALESCE(v_inst.received_amount,0) + v_int + v_pen - v_disc;
   IF v_amount - v_saldo > 0.005 THEN
     RAISE EXCEPTION 'Valor excede o saldo da parcela (saldo: %).', v_saldo USING ERRCODE='check_violation';
   END IF;
@@ -1127,4 +1136,4 @@ REVOKE ALL ON FUNCTION platform_private.b2b_title_insert_fence(),public.generate
 REVOKE ALL ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) FROM PUBLIC,anon,authenticated,service_role;
 
 -- Revisão 458b6012: nenhuma função nova herda EXECUTE implícito de PUBLIC.
-REVOKE ALL ON FUNCTION platform_private.b2b_allocate_document(uuid),platform_private.b2b_allocation_money_row(uuid),platform_private.b2b_cancellation_fence(),platform_private.b2b_credit_balances(uuid,uuid),platform_private.b2b_credit_config_block(uuid),platform_private.b2b_debtor_partner(uuid,uuid),platform_private.b2b_integration_actor(uuid,boolean),platform_private.b2b_integration_dependencies(),platform_private.b2b_legacy_money_row(uuid),platform_private.b2b_order_residual(uuid),platform_private.b2b_proven_money_row(uuid),platform_private.b2b_reverse_allocation(uuid,uuid),platform_private.b2b_shared_receivable_credit_guard(),platform_private.b2b_title_insert_fence(),platform_private.b4_assert_order_eligible(uuid),platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars),platform_private.price_adjusted_due(date,platform_private.holiday_calendars),platform_private.price_calendar_load(text,text),platform_private.price_immutable(),platform_private.price_pinned_calendar() FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_allocate_document(uuid),platform_private.b2b_allocation_money_row(uuid),platform_private.b2b_cancellation_fence(),platform_private.b2b_credit_balances(uuid,uuid),platform_private.b2b_credit_config_block(uuid),platform_private.b2b_debtor_partner(uuid,uuid),platform_private.b2b_integration_actor(uuid,boolean),platform_private.b2b_integration_dependencies(),platform_private.b2b_legacy_money_row(uuid),platform_private.b2b_order_residual(uuid),platform_private.b2b_proven_money_row(uuid),platform_private.b2b_reverse_allocation(uuid,uuid),platform_private.b2b_shared_receivable_credit_guard(),platform_private.b2b_title_insert_fence(),platform_private.b4_assert_order_eligible(uuid),platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars),platform_private.price_adjusted_due(date,platform_private.holiday_calendars),platform_private.price_calendar_load(text,text),platform_private.price_immutable(),platform_private.price_pinned_calendar(),public.rpc_receivable_money_projection_v1(uuid,integer,integer) FROM PUBLIC,anon,authenticated,service_role;

@@ -1,10 +1,10 @@
 {
-  "review": "458b6012",
-  "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+  "review": "458b6012+4097d4e2",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "canonical_ref": "swzpzcwiasxmjutrmvkm",
   "hosted": "NOT_RUN",
   "historical_candidate_sha256": "f51d3ea73838d1b5bd8ed0ad82c30bb174a52f993e389913926182ff6dafc894",
-  "candidate_sha256": "14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd",
+  "candidate_sha256": "4641ac21f93af52ada05dc28040f83d3267e5942b2f981fd2b237cc437ab43dc",
   "object_count": 54,
   "objects": [
     {
@@ -367,10 +367,10 @@
     {
       "kind": "function",
       "object": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
-      "operation": "REPLACE",
+      "operation": "CREATE",
       "baseline": {
-        "status": "MISSING_BLOCKS_INSTALL",
-        "source": null,
+        "status": "ABSENCE_CONFIRMED_BY_AUDITOR_READONLY",
+        "source": "live-readonly-4097d4e2.json#projection",
         "body_md5": null,
         "owner": null,
         "acl": null
@@ -380,7 +380,7 @@
         "body_md5": "64607d04d66831252f7d7b0e6371ff42",
         "definition_sha256": "357d0e1686b0c780e4bd238491196e43a26d4a8eaca1b37a5b0a07e836e2ba24",
         "owner": "postgres",
-        "acl": "BASELINE_PRESERVED"
+        "acl": "OWNER_ONLY"
       }
     },
     {
@@ -396,8 +396,8 @@
       },
       "candidate": {
         "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
-        "body_md5": "98f577574e8b1889416d59cbfb00c437",
-        "definition_sha256": "c5664767d7365c530ab87f6ae88bfdad72db6c957b7225c6d97cf4548a242799",
+        "body_md5": "ceabe6ed0d1862256e891552d2c81cbe",
+        "definition_sha256": "e3894dc5fe03c26a35bc4e230f640571c77a7c1cb524a70d31f7ea9d98404c88",
         "owner": "postgres",
         "acl": "BASELINE_PRESERVED"
       }
@@ -1689,9 +1689,57 @@
   "duplicate_definitions_in_historical_body": [
     "platform_private.b2b_shared_receivable_credit_guard"
   ],
-  "missing_baseline": [
-    "public.rpc_receivable_money_projection_v1(uuid,integer,integer)"
-  ],
+  "missing_baseline": [],
+  "projection_absence": {
+    "name": "public.rpc_receivable_money_projection_v1",
+    "candidate_signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+    "pg_proc_overloads": 0,
+    "absence_required_before_install": true,
+    "baseline_body_md5": null
+  },
+  "reported_live_readonly": {
+    "kind": "USER_REPORTED_LIVE_READONLY_FACTS_NOT_AGENT_QUERY",
+    "review": "4097d4e2",
+    "reported_at_utc": "2026-11-07T17:56:00Z",
+    "canonical_ref": "swzpzcwiasxmjutrmvkm",
+    "hosted_write": false,
+    "projection": {
+      "name": "public.rpc_receivable_money_projection_v1",
+      "candidate_signature": "public.rpc_receivable_money_projection_v1(uuid,integer,integer)",
+      "pg_proc_overloads": 0,
+      "absence_required_before_install": true,
+      "baseline_body_md5": null
+    },
+    "functions": {
+      "public.fn_generate_receivable_installments()": {
+        "body_md5": "f632f15c9f46cb9889082fc533a27ea1",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}"
+      },
+      "public.rpc_register_receivable_payment(uuid,jsonb)": {
+        "body_md5": "db41f7e2cfcb196ef64536f62746f365",
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+      }
+    },
+    "index": {
+      "name": "ux_ar_one_active_per_b2b_order",
+      "definition": "CREATE UNIQUE INDEX ux_ar_one_active_per_b2b_order ON public.accounts_receivable USING btree (origin_id) WHERE ((origin_type = 'B2B_ORDER'::text) AND (status <> 'CANCELED'::text))"
+    },
+    "auth_dependencies": {
+      "evidence": "dffd",
+      "count": 14,
+      "status": "AUTH_DEPENDENCIES_PRE_OK_NO_WRITE",
+      "seller_scope_approved": false
+    },
+    "manual_origin_rule": {
+      "forge_provenance": false,
+      "delete_history": false,
+      "non_b2b_without_partner": "PRESERVE_LEGACY_INSTALLMENTS_AND_PAYMENT",
+      "partner_affecting_unknown_origin": "EXPLICIT_MONEY_ORIGIN_UNPROVEN_BLOCK",
+      "current_order_live_impact": "REQUIRES_INDEPENDENT_DATA_PREFLIGHT_BEFORE_RELEASE"
+    }
+  },
   "dependent_trigger_pins": [
     {
       "name": "trg_auto_b2b_receivable",
@@ -1712,10 +1760,11 @@
     "b2b_integration_dependencies": "REAL_ALWAYS_DENY_RETAINED_IN_INSTALL",
     "test_stub_allowed_in_install": false
   },
-  "shared_impact": "testado separadamente em PG descartável; resultado não autoriza regressão nem instalação",
+  "shared_impact": "MANUAL não B2B sem parceiro preserva parcelas/baixa; origem desconhecida que afeta parceiro bloqueia exposição/baixa; impacto em dados LIVE ainda exige preflight",
   "limitations": [
-    "capturas não são nova leitura LIVE",
+    "fatos LIVE 4097d4e2 foram relatados pelo auditor, não lidos pelo agente",
     "POST não é prova JWT/RLS/PostgREST/Storage",
-    "63/63 históricos preservados separadamente e não somados"
+    "63/63 históricos preservados separadamente e não somados",
+    "impacto em pedidos/títulos LIVE permanece NOT_RUN e bloqueia release"
   ]
 }
