@@ -326,7 +326,7 @@ def build():
     column_query = "SELECT md5(string_agg(c.column_name||'|'||format_type(a.atttypid,a.atttypmod)||'|'||coalesce(c.column_default,'')||'|'||c.is_nullable,'^' ORDER BY c.ordinal_position)) FROM information_schema.columns c JOIN pg_attribute a ON a.attrelid='public.accounts_receivable'::regclass AND a.attname=c.column_name WHERE c.table_schema='public' AND c.table_name='accounts_receivable'"
     # rows_digest usa True/False; a consulta SQL produz YES/NO para is_nullable.
     baseline_schema["columns_md5"] = md5_text("^".join("|".join([c["name"], c["type"], c.get("default") or "", "NO" if c["notnull"] else "YES"]) for c in ar["columns"]))
-    baseline_schema["constraints_md5"] = md5_text("^".join(f"{c['name']}|{c['definition']}" for c in ar["constraints"]))
+    baseline_schema["constraints_md5"] = md5_text("^".join(f"{c['name']}|{c['definition']}" for c in ar_constraints))
     ar_indexes = sorted(ar_indexes, key=lambda x: x["name"])
     ar_triggers = sorted(ar_triggers, key=lambda x: x["name"])
     baseline_schema["indexes"] = ar_indexes
