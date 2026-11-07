@@ -1,4 +1,4 @@
-67/71
+76/76
 PASS gerador determinístico: capturas/candidato/01–04/pins byte a byte 
 PASS nenhum artefato executa GRANT ou substitui pin temporário 
 PASS todos os pinos públicos/privados estão no PRE/POST/install/rollback 
@@ -17,10 +17,10 @@ PASS corpo real capturado executado: public._saas_user_has_feature(uuid,text) {'
 PASS corpo real capturado executado: public._saas_trg_require_feature() {'actual': '13ed48832f81cbb35434688ca35fda4b', 'expected': '13ed48832f81cbb35434688ca35fda4b'}
 PASS corpo real capturado executado: platform_private.c2_accounting_pending_guard() {'actual': '669b19490a7a9700f0158db4b31885ad', 'expected': '669b19490a7a9700f0158db4b31885ad'}
 PASS 01 PRE_OK com corpos/owners/ACLs reais, sem localização 
-PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-qbbxpun5/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE
 
-PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
+PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-qbbxpun5/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
 CONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE
 
 PASS owner divergente de núcleo privado é detectado psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:49: ERROR:  ADJUSTMENT_OWNER_DRIFT: platform_private.has_role(uuid,public.app_role)
@@ -44,12 +44,12 @@ PASS pedido inexistente não produz efeitos nem oráculo de dados
 PASS pedido NULL também é negado fail-closed ERROR:  b2b_phase1_scope_denied
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
 
-PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '2e2bbf76-3eb0-4f50-9b74-f56ba01ecb2b', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '9a2beb9d-693b-4605-b648-a82c2971896e', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '5a07ad1e-eb9d-422a-ac24-e0d5527ae435', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': 'c748fe57-56db-40f8-a008-dd2edc568fe6', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS C2_ACCOUNTING_PENDING nega pending→pending ERROR:  C2_ACCOUNTING_PENDING
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 37 at RAISE
 
 PASS negação contábil preserva pedido/termos/auditoria/notificações 
-PASS fixture validada criada pelo writer canônico com guards reais {'id': '6ab14017-49f1-4d7e-a0e8-24ec49ee9b2f', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'bcfdd9a1-cda3-414b-8902-3c6dea9db46c', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture validada criada pelo writer canônico com guards reais {'id': 'e08a0f2b-8bb2-4e56-8006-39f319115503', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '229e4a21-76f9-4d04-8bbc-c09f2a8f8ca9', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS FSF/admin estrangeiro com vínculo próprio é negado no pedido validado ERROR:  b2b_phase1_scope_denied
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 10 at RAISE
 
@@ -65,8 +65,8 @@ CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,tex
 PASS negação do caminho partner_users para admin cumulativo preserva estado 
 PASS fixture do positivo interno tem caminho organização→parceiro→dono vendedor coerente t
 PASS positivos internos não dependem de superadmin nem papel externo t
-FAIL escopo real admite o caminho interno sintético e preserva a negação FSF ('true\n', '', 'false\n', '')
-FAIL controle sintético administrador: caminho dono vendedor solicita ajuste validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
+PASS escopo real admite o caminho interno sintético e preserva a negação FSF ('true\n', '', 'false\n', '')
+PASS administrador: escopo não basta; guard real nega ajuste no externo validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
 CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE
 SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
 PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
@@ -77,7 +77,8 @@ SQL statement "UPDATE public.partner_order_payment_terms
    WHERE id = v_terms_id"
 PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement
 
-FAIL controle sintético financeiro: caminho dono vendedor solicita ajuste validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
+PASS administrador: negação de origem no validado preserva estado integral 
+PASS financeiro: escopo não basta; guard real nega ajuste no externo validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
 CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE
 SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
 PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
@@ -88,7 +89,8 @@ SQL statement "UPDATE public.partner_order_payment_terms
    WHERE id = v_terms_id"
 PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement
 
-FAIL controle sintético gestor_comercial: caminho dono vendedor solicita ajuste validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
+PASS financeiro: negação de origem no validado preserva estado integral 
+PASS gestor_comercial: escopo não basta; guard real nega ajuste no externo validado ERROR:  C2_EXTERNAL_ORIGIN_DENIED
 CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE
 SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
 PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
@@ -99,6 +101,7 @@ SQL statement "UPDATE public.partner_order_payment_terms
    WHERE id = v_terms_id"
 PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement
 
+PASS gestor_comercial: negação de origem no validado preserva estado integral 
 PASS revogação durante lock: papel administrativo é negada ERROR:  unauthorized
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 33 at RAISE
 
@@ -134,11 +137,13 @@ PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 47
 
 PASS revogação durante lock: feature pedidos_b2b revogada preserva todo o estado 
 PASS feature restaurada pelo resolvedor real de entitlements 
-PASS mesmo tenant ainda solicita ajuste no legado 
+PASS controle sintético administrador: caminho dono vendedor solicita ajuste no legado 
+PASS controle sintético financeiro: caminho dono vendedor solicita ajuste no legado 
+PASS controle sintético gestor_comercial: caminho dono vendedor solicita ajuste no legado 
 PASS comprador sem papel financeiro continua negado ERROR:  unauthorized
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 14 at RAISE
 
-PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-qbbxpun5/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE
 
 PASS 04 rollback deny-only conclui 

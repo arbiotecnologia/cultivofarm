@@ -28,7 +28,9 @@
       "gestor_comercial"
     ],
     "superadmin_used": false,
-    "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS"
+    "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS",
+    "legacy_only": true,
+    "external_validated": "DENIED_BY_REAL_C2_EXTERNAL_ORIGIN_DENIED_FOR_ALL_THREE_ROLES"
   },
   "partner_users_semantics": "caminho externo capturado; admin+parceiro sem organizations.partner_account_id foi negado e não promovido a vendedor",
   "dependencies": {
@@ -172,8 +174,8 @@
     "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
     "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted"
   ],
-  "passed": 67,
-  "total": 71,
+  "passed": 76,
+  "total": 76,
   "checks": [
     {
       "name": "gerador determinístico: capturas/candidato/01–04/pins byte a byte",
@@ -265,12 +267,12 @@
     {
       "name": "pin divergente do writer aborta sem trocar a função",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-qbbxpun5/bad-install.sql:53: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
     },
     {
       "name": "pin privado divergente aborta antes da troca",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-qbbxpun5/bad-private-install.sql:53: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)\nCONTEXT:  PL/pgSQL function inline_code_block line 29 at RAISE\n"
     },
     {
       "name": "owner divergente de núcleo privado é detectado",
@@ -328,7 +330,7 @@
     {
       "name": "fixture de pendência criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': '2e2bbf76-3eb0-4f50-9b74-f56ba01ecb2b', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '9a2beb9d-693b-4605-b648-a82c2971896e', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': '5a07ad1e-eb9d-422a-ac24-e0d5527ae435', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': 'c748fe57-56db-40f8-a008-dd2edc568fe6', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "C2_ACCOUNTING_PENDING nega pending→pending",
@@ -342,7 +344,7 @@
     {
       "name": "fixture validada criada pelo writer canônico com guards reais",
       "ok": true,
-      "detail": "{'id': '6ab14017-49f1-4d7e-a0e8-24ec49ee9b2f', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'bcfdd9a1-cda3-414b-8902-3c6dea9db46c', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
+      "detail": "{'id': 'e08a0f2b-8bb2-4e56-8006-39f319115503', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '229e4a21-76f9-4d04-8bbc-c09f2a8f8ca9', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}"
     },
     {
       "name": "FSF/admin estrangeiro com vínculo próprio é negado no pedido validado",
@@ -387,23 +389,35 @@
     },
     {
       "name": "escopo real admite o caminho interno sintético e preserva a negação FSF",
-      "ok": false,
+      "ok": true,
       "detail": "('true\\n', '', 'false\\n', '')"
     },
     {
-      "name": "controle sintético administrador: caminho dono vendedor solicita ajuste validado",
-      "ok": false,
+      "name": "administrador: escopo não basta; guard real nega ajuste no externo validado",
+      "ok": true,
       "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement\n"
     },
     {
-      "name": "controle sintético financeiro: caminho dono vendedor solicita ajuste validado",
-      "ok": false,
+      "name": "administrador: negação de origem no validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "financeiro: escopo não basta; guard real nega ajuste no externo validado",
+      "ok": true,
       "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement\n"
     },
     {
-      "name": "controle sintético gestor_comercial: caminho dono vendedor solicita ajuste validado",
-      "ok": false,
+      "name": "financeiro: negação de origem no validado preserva estado integral",
+      "ok": true
+    },
+    {
+      "name": "gestor_comercial: escopo não basta; guard real nega ajuste no externo validado",
+      "ok": true,
       "detail": "ERROR:  C2_EXTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)\"\nPL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM\nSQL statement \"UPDATE public.partner_order_payment_terms\n     SET approval_status = 'pending',\n         approval_notes = p_notes,\n         updated_at = now()\n   WHERE id = v_terms_id\"\nPL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 41 at SQL statement\n"
+    },
+    {
+      "name": "gestor_comercial: negação de origem no validado preserva estado integral",
+      "ok": true
     },
     {
       "name": "revogação durante lock: papel administrativo é negada",
@@ -473,7 +487,17 @@
       "ok": true
     },
     {
-      "name": "mesmo tenant ainda solicita ajuste no legado",
+      "name": "controle sintético administrador: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "controle sintético financeiro: caminho dono vendedor solicita ajuste no legado",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "controle sintético gestor_comercial: caminho dono vendedor solicita ajuste no legado",
       "ok": true,
       "detail": ""
     },
@@ -485,7 +509,7 @@
     {
       "name": "rollback com pin divergente aborta sem revogar",
       "ok": true,
-      "detail": "psql:/tmp/b2b-adjustment-review-1i4fjbke/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
+      "detail": "psql:/tmp/b2b-adjustment-review-qbbxpun5/bad-rollback.sql:51: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 27 at RAISE\n"
     },
     {
       "name": "04 rollback deny-only conclui",
