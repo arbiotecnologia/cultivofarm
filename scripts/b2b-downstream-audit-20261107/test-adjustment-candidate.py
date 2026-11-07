@@ -308,8 +308,8 @@ def main():
         if pending is None:
             raise RuntimeError(f"fixture pendente indisponível: {pending_error}")
         before = state(pending["id"])
-        r = request(SP.USUP, pending["id"], "TESTE negado")
-        check("C2_ACCOUNTING_PENDING nega pending→pending", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
+        r = request(SP.UADM, pending["id"], "TESTE negado")
+        check("C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
         check("negação contábil preserva pedido/termos/auditoria/notificações", state(pending["id"]) == before)
         for kind in ("approve", "reject"):
             before_decision = state(pending["id"])
