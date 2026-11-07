@@ -576,6 +576,8 @@ def main():
             r = decision(SP.UADM, kind, legacy_id, "TESTE apos rollback")
             check(f"rollback fecha {kind} sem restaurar corpo anterior", r.returncode != 0 and "permission denied" in r.stderr and psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip() == meta["candidate_md5"], r.stderr)
         check("rollback não apaga nem reescreve histórico", state(legacy_id) == after_rb)
+        helper_after_rb = SP.as_user(SP.UADM, f"SELECT {G.HELPER_SIG}('{SP.UADM}','{SP.P}')")
+        check("rollback mantém helper sem EXECUTE de cliente", helper_after_rb.returncode != 0 and "permission denied" in helper_after_rb.stderr, helper_after_rb.stderr)
         check("TODOS os 38 gatilhos continuam habilitados no fim", triggers_ok())
         check("B3 não foi instalado nem modificado nesta bateria", psql("SELECT to_regclass('platform_private.b2b_condition_versions') IS NULL").stdout.strip() == "t")
 
