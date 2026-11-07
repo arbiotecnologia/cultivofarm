@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 85537ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  85534ms
+ ✓ src/test/saas/c2-final-integrated-manual-postgres.test.ts (1 test) 119614ms
+   ✓ integrates reconciled origin, receipt lock order and the LIVE manual installments correction  119612ms
+ ✓ src/test/saas/c2-order-concurrency-postgres.test.ts (1 test) 140834ms
+   ✓ serializes canonical orders and billing with two real local PostgreSQL connections  140832ms
+ ✓ src/test/saas/c2-current-base-reconciliation-postgres.test.ts (2 tests) 132973ms
+   ✓ propagates current financial tenants and rolls back full failed POST commands  77616ms
+   ✓ keeps current-base downstream containment and refuses independent deadlock certification  55355ms
