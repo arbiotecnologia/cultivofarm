@@ -8,4 +8,59 @@ PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
 PASS B3 01-pre.sql.readonly
 PASS B3 02-install.sql.review
 PASS B3 03-post.sql.readonly
-FAIL execução sem exceção de harness :: RuntimeError('NOTICE:  column "client_id" of relation "partner_accounts" already exists, skipping\nNOTICE:  relation "clientes" already exists, skipping\nERROR:  column "nome" of relation "clientes" does not exist\nLINE 1: INSERT INTO public.clientes(id,nome,codigo_cliente,organizat...\n                                       ^\n')
+PASS publicação B3 usada pelo B4
+PASS publicação B3 usada pelo B4
+PASS piloto B3 restrito ao parceiro fictício
+PASS cotação B3 criada sem título
+PASS resposta de cotação B3 com centavos
+FAIL aprovação comercial canônica do pedido ::                  ^
+QUERY:  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id)               FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id
+CONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 42 at SQL statement
+SQL statement "UPDATE public.partner_orders
+     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),
+         approval_notes = NULLIF(p_approval_notes,''),
+         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),
+         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()
+   WHERE id = p_order_id AND status = v_prev"
+PL/pgSQL function approve_partner_order(uuid,text,date) line 68 at SQL statement
+
+PASS aprovação canônica dos termos
+FAIL pedido aprovado e economicamente selado :: em_analise_comercial|approved|false
+FAIL aprovação comercial canônica do pedido ::                  ^
+QUERY:  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id)               FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id
+CONTEXT:  PL/pgSQL function platform_private.b2b_internal_order_snapshot_guard() line 42 at SQL statement
+SQL statement "UPDATE public.partner_orders
+     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),
+         approval_notes = NULLIF(p_approval_notes,''),
+         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),
+         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()
+   WHERE id = p_order_id AND status = v_prev"
+PL/pgSQL function approve_partner_order(uuid,text,date) line 68 at SQL statement
+
+PASS aprovação canônica dos termos
+FAIL pedido aprovado e economicamente selado :: em_analise_comercial|approved|false
+PASS fixture contábil pendente separada
+FAIL B4 01-pre.sql.readonly :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly:20: ERROR:  function "public.generate_b2b_receivable_secure(uuid)" does not exist
+LINE 1: md5(pg_get_functiondef('public.generate_b2b_receivable_secur...
+                               ^
+QUERY:  md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521'
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at IF
+
+FAIL B4 02-install.sql.review :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:22: ERROR:  function "public.generate_b2b_receivable_secure(uuid)" does not exist
+LINE 1: md5(pg_get_functiondef('public.generate_b2b_receivable_secur...
+                               ^
+QUERY:  md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521'
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at IF
+
+FAIL B4 03-post.sql.readonly :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/03-post.sql.readonly:10: ERROR:  B4_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
+
+FAIL rerun aborta pelo pin da baseline, sem reinstalar :: psql:/dev-server/scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review:22: ERROR:  function "public.generate_b2b_receivable_secure(uuid)" does not exist
+LINE 1: md5(pg_get_functiondef('public.generate_b2b_receivable_secur...
+                               ^
+QUERY:  md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))<>'c49cc7ccedbcb28cba9b816b7e47c521'
+CONTEXT:  PL/pgSQL function inline_code_block line 2 at IF
+
+FAIL 38 gatilhos reais do pedido continuam habilitados :: 
+PASS B3 create/simulate antigos não foram restaurados nem alterados
+FAIL execução sem exceção de harness :: RuntimeError('ERROR:  function "public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)" does not exist\n')
