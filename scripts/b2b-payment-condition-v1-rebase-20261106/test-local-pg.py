@@ -388,7 +388,48 @@ def main():
         j, e = sim(UB, P3, [L(1000)], BOL); hp = j and j["cart_hash"]
         check("crédito: simulação avisa excesso com o total Price (não o líquido)", j and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j and j["warnings"])
         denied("crédito real: create bloqueado pelo total Price", create(UB, P3, [L(1000)], hp, "TESTE-CRED-1", BOL), "credit_limit_exceeded")
-        psql(f"DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'")
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=1000000 WHERE partner_id='{P}'")
+
+        # ---------- limite NUMÉRICO EXPLÍCITO: parceiro isolado, exposição anterior zero ----------
+        def pc_limit(value):
+            psql(f"UPDATE public.partner_financial_settings SET credit_limit={value} WHERE partner_id='{PC}'")
+        pc_limit("1018.11")
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
+        check("limite 1018,11 (entre principal 1000 e Price 1036,22): simulação avisa, nunca usa principal para liberar",
+              j and Decimal(str(j["credit"]["credit_limit"])) == Decimal("1018.11") and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j)
+        denied("limite 1018,11: create bloqueado pelo total 1036,22 e nada gravado", create(UBC, P3, [L(1000)], j[0]["cart_hash"] if j else "x", "TESTE-PC-BETWEEN", BOL, partner=PC), "credit_limit_exceeded")
+        check("limite entre valores: falha atômica sem idempotência", idem("TESTE-PC-BETWEEN") == "0")
+        pc_limit("NULL")
+        denied("limite NULL: simulação indisponível (não vira apto)", sim(UBC, P3, [L(1000)], BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+        denied("limite NULL: create indisponível e sem pedido", create(UBC, P3, [L(1000)], "x", "TESTE-PC-NULL", BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+        check("limite NULL: falha atômica", idem("TESTE-PC-NULL") == "0")
+        pc_limit("0")
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
+        check("zero EXPLÍCITO é limite zero (não ausente nem ilimitado): simulação informa excesso",
+              j and Decimal(str(j["credit"]["credit_limit"])) == 0 and j["credit"]["credit_checked"] is True
+              and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j)
+        denied("zero explícito: create excede limite, não CREDIT_SETTINGS_INCOMPLETE", create(UBC, P3, [L(1000)], j[0]["cart_hash"] if j else "x", "TESTE-PC-ZERO", BOL, partner=PC), "credit_limit_exceeded")
+        for label, value, key in (("negativo", "-1", "NEG"), ("NaN", "'NaN'::numeric", "NAN")):
+            pc_limit(value)
+            denied(f"limite {label}: simulação bloqueada", sim(UBC, P3, [L(1000)], BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+            denied(f"limite {label}: create bloqueado atomicamente", create(UBC, P3, [L(1000)], "x", f"TESTE-PC-{key}", BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+            check(f"limite {label}: nenhuma idempotência gravada", idem(f"TESTE-PC-{key}") == "0")
+        pc_limit("1036.22")
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC); h_transient = j and j["cart_hash"]
+        real_credit = RX._cap("credit", "public.fn_b2b_credit_exposure")
+        psql("""CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;""")
+        denied("erro transitório: simulação ABORTA (não devolve credit NULL)", sim(UBC, P3, [L(1000)], BOL, partner=PC), "credit_transient_TESTE")
+        denied("erro transitório: create não grava nem libera operação", create(UBC, P3, [L(1000)], h_transient or "x", "TESTE-PC-TRANSIENT", BOL, partner=PC), "credit_transient_TESTE")
+        check("erro transitório: falha atômica", idem("TESTE-PC-TRANSIENT") == "0")
+        psql(real_credit)
+        psql("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;")
+        check("função REAL de crédito restaurada byte a byte após injeção transitória", md5_of("public.fn_b2b_credit_exposure(uuid,numeric,uuid)") == g["LIVE_PINS"]["public.fn_b2b_credit_exposure(uuid,numeric,uuid)"])
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
+        check("limite exatamente 1036,22: simulação apta com o MESMO total Price", j and Decimal(str(j["final_amount"])) == Decimal("1036.22")
+              and not any("excede o limite" in w for w in j["warnings"]), e or j)
+        j, e = create(UBC, P3, [L(1000)], j[0]["cart_hash"] if j else "x", "TESTE-PC-EXACT", BOL, partner=PC)
+        check("limite exatamente 1036,22: create positivo no limite, sem folga inventada", j and Decimal(str(j["total"])) == Decimal("1036.22"), e or j)
 
         # ---------- negativas / stale ----------
         denied("sem escolha: payment_choice_required (sem fallback Pix)", sim(UB, PLD, [L(1)], None), "payment_choice_required")
