@@ -137,6 +137,10 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
         cols = [f"{c['name']} {c['type']}" + (" DEFAULT " + c["default"] if c["default"] else "") + (" NOT NULL" if c["notnull"] else "") for c in table["columns"]]
         constraints = [f"CONSTRAINT {c['name']} {c['definition']}" for c in table["constraints"] if not c["definition"].startswith("FOREIGN KEY")]
         B3.psql(f"CREATE TABLE public.{name} (" + ",".join(cols + constraints) + ")")
+    # Metadata LIVE de accounts_receivable: ACL ampla por papel + RLS obrigatória.
+    # As policies não são promovidas a prova; os writers testados são definer/owner.
+    B3.psql("""GRANT ALL PRIVILEGES ON TABLE public.accounts_receivable TO anon,authenticated,service_role;
+ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;""")
     for index in live["indexes"]:
         if index["unique"] and not index["name"].endswith("_pkey"):
             exists = B3.psql(f"SELECT to_regclass('{index['name']}') IS NOT NULL").stdout.strip()
