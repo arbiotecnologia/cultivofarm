@@ -598,8 +598,8 @@ def main():
             "decision_review": "02c23d82",
             "decision_candidates": pins["decision_candidates"],
             "seller_scope_helper": helper_pin,
-            "historical_134_evidence": "review-31430566/historical-134/adjustment-candidate.json",
-            "supersedes_candidate_md5": pins.get("superseded_candidate_md5"),
+            "historical_134_evidence": "review-31430566/historical-134/decision-candidates.json",
+            "supersedes_request_candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
             "positive_internal_seller": {
                 "classification": "DISPOSABLE_COMPONENT_PASS_NOT_HOSTED_PROOF",
                 "path": "partner_accounts.commercial_owner_organization_id=ator.organização; organizations.partner_account_id NULL; zero partner_users",
