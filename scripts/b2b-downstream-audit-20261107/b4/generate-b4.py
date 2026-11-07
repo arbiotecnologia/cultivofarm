@@ -211,9 +211,6 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
 
     # Crédito/pagamento/gerador/shared guard extraídos SEM os overloads create/simulate históricos.
     credit = fn(deltas, "public.fn_b2b_credit_exposure")
-    origin = delta(origin, "row:=platform_private.b2b_proven_money_row(i.id);",
-                   "row:=platform_private.b2b_proven_money_row_internal(i.id,org);",
-                   "seller-scoped internal money proof")
     payment = fn(deltas, "public.rpc_register_receivable_payment")
     # Revisão 4097d4e2: a baixa MANUAL não B2B sem parceiro conserva exatamente
     # a matemática legada. Somente origem B2B ou título que afeta parceiro exige
