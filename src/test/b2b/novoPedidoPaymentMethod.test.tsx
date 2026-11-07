@@ -237,7 +237,7 @@ function priceReply(rows: number[], final: number) {
     payment_condition_contract: TEST_CONTRACT, payment_choice: BOLETO,
     payment_condition: { payment_method_name: "Boleto", installment_count: 3, monthly_rate: 1.8, deadline_days: 30, due_basis: "nf_issue", estimated: true },
     schedule: rows.map((amount, i) => ({ installment_number: i + 1, due_date: `2027-0${i + 1}-05`, amount, principal_amount: amount, interest_amount: 0 })),
-    warnings: [], credit: null }, error: null });
+    warnings: [], credit: { credit_limit: 1000000, exposicao_projetada: final, credit_checked: true } }, error: null });
 }
 function boletoOptions(a: Record<string, unknown>) {
   return abortable(Promise.resolve({ data: { contract: TEST_CONTRACT, partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,
@@ -254,6 +254,27 @@ it("Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas 
   fireEvent.click(screen.getByText(/Parcelas estimadas/));
   expect(await screen.findByText("R$ 345,42")).toBeInTheDocument();
   expect(await submitBtn()).toBeEnabled();
+});
+
+it("crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "simulate_b2b_payment_condition_secure"
+    ? Promise.resolve({ data: null, error: { code: "PT409", message: "CREDIT_SETTINGS_INCOMPLETE" } }) : base(n, a));
+  await toPayment();
+  await pickTestPix();
+  expect(await screen.findByText("Condição financeira indisponível.")).toBeInTheDocument();
+  expect(await submitBtn()).toBeDisabled();
+  expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+});
+
+it("resposta com credit null não é aceita como apta: erro visível e envio bloqueado", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "b2b_list_payment_condition_options_secure" ? boletoOptions(a ?? {})
+    : n === "simulate_b2b_payment_condition_secure" ? priceReply([10, 0, 0], 10)(a ?? {}).then((r) => ({ ...r, data: { ...r.data, credit: null } })) : base(n, a));
+  await toPayment();
+  fireEvent.click(await screen.findByRole("radio", { name: /Boleto/ }));
+  expect(await screen.findByTestId("b2b-simulation-error")).toBeInTheDocument();
+  expect(await submitBtn()).toBeDisabled();
 });
 
 it("Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado", async () => {

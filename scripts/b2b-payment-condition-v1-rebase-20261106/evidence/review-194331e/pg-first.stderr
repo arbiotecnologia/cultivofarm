@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py", line 619, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py", line 266, in main
+    fm["install"] = {k: md5_of(s) for k, s in g["PUB"].items()}
+                        ~~~~~~^^^
+  File "/dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py", line 222, in md5_of
+    return psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))").stdout.strip()
+           ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  function "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)" does not exist
+LINE 1: SELECT md5(pg_get_functiondef('public.b2b_payment_condition_...
+                                      ^
+

@@ -17,9 +17,10 @@ de 10 argumentos da candidata, estiverem presentes.
 | `b2b_condition_assignments`, `b2b_condition_retirements` | candidata (verbatim) | + colunas de autoria/data |
 | `b2b_order_condition_snapshots` | candidata | N1 cotação (sem valores), termos, hash, nome do meio, estimado/base NF; N2 FK para a versão |
 | `b2b_choice` | candidata (verbatim) | — |
-| `b2b_resolve_condition` | candidata | R0 parâmetro de trava; R2 vendedor canônico + travas + releitura; R3 revogação por parceiro; R4 versão obsoleta, meio ativo, categoria RECEITA ativa, plano sem juros próprios, prazo ≤ plano, atribuição comercial publicada; R5 remove dependência do pacote de crédito não instalado; R6 retorno reduzido |
+| `b2b_resolve_condition` | candidata | R0 parâmetro de trava; R2 vendedor canônico + travas + releitura; R3 revogação por parceiro; R4 versão obsoleta, meio ativo, categoria RECEITA ativa, plano sem juros próprios, prazo ≤ plano, atribuição comercial publicada; R5 crédito explícito validado no helper próprio; R6 retorno reduzido |
 | `b2b_schedule` (Price) | candidata | P0 sem calendário; P1 datas nominais marcadas estimadas; P2 parcela única sem juros |
-| create / simulate com escolha | **LIVE** c34e7404 / 37d4f45e | C0–C13 / S0–S10 (generate.py), sem capturas antigas de catálogo/embalagem |
+| create / simulate com escolha | **LIVE** c34e7404 / 37d4f45e | C0–C13 / S0–S10 (generate.py), sem capturas antigas de catálogo/embalagem; crédito sem COALESCE/EXCEPTION OTHERS |
+| resposta de cotação | **LIVE** e57d3a64 | Mesma RPC: ramo condicionado recalcula Price, snapshot/recibo append-only, idempotência e reautorização; legado fora da ativação preservado |
 | ativação por empresa, revogação por parceiro, escritores, leitor de opções/pedido, gatilho deferido | novos | — |
 | gate fiscal, documentos, títulos, permits, calendário Paracatu | **fora (B4)** | continua fechado |
 
@@ -44,14 +45,30 @@ Motor Comercial B2B → Meios de pagamento: administrador/financeiro publicam ve
 servidor, taxa explícita), aposentam e liberam/revogam por parceiro; só administrador liga piloto/obrigatória; gestor
 comercial consulta. No pedido, o comprador escolhe entre versões vigentes liberadas; envio exige ACK com a mesma escolha.
 
+## Crédito explícito e cotação (revisão 194331e)
+`platform_private.b2b_credit_checked` exige configuração ativa completa e limite numérico finito ≥0. NULL/ausente, negativo,
+NaN/Infinity, configuração inválida e erro transitório abortam; zero explícito permanece zero e qualquer exposição positiva
+o excede. A comparação usa o total Price, não o principal. A UI recusa `credit:null`/ausência de `credit_checked` e informa
+indisponibilidade sem enviar.
+
+A resposta da cotação usa a MESMA RPC LIVE. Com snapshot da condição, reautoriza o vendedor, revalida versão/atribuição,
+recalcula uma única economia Price e grava snapshot econômico + recibo append-only. Replay idêntico devolve o mesmo ACK;
+payload divergente é `quote_idempotency_conflict`. Sem snapshot, o comportamento legado permanece. O rollback nega apenas
+o ramo com condição e não bloqueia cotação legada de empresa não ativada.
+
 ## Evidência (PG descartável, não é prova hospedada)
-`test-local-pg.py` → `evidence-local-pg.json`. Costuras declaradas: as do harness B2, `payment_methods`/`financial_categories`
-mínimas, leitor de termos com portas mínimas, pins de colunas trocados só na cópia temporária.
+`test-local-pg.py` → `evidence-local-pg.json`: **159/159**, incluindo NULL/zero/negativo/NaN/erro transitório, limite entre
+1000 e 1036,22 e no limite exato, cotação/idempotência/revogação, create interno positivo com fixture isolada e guards REAIS,
+e rollback. A fixture interna tem UMA configuração fictícia VALIDADA; ao removê-la, a mesma guarda volta a negar
+`B2B_INTERNAL_ISSUER_AMBIGUOUS`. Nenhuma guarda foi desligada para o positivo.
+
+Costuras declaradas: as do harness B2, `payment_methods`/`financial_categories` mínimas, leitor de termos com portas mínimas,
+pins de colunas trocados só na cópia temporária. A injeção transitória ocorre só no PG descartável e o corpo REAL de crédito
+é restaurado byte a byte e conferido por md5.
 
 ## Limitações abertas
-- Datas estimadas (referência = data do pedido), sem dia útil Paracatu-MG; vencimento definitivo e calendário ficam no B4.
-- Caminho interno barrado pela guarda LIVE de origem interna nos dois contratos; positiva interna não demonstrada.
-- Resposta de cotação (LIVE) não recalcula pela condição; em empresa ativada o pedido de cotação guarda só a escolha.
+- Datas estimadas (referência = data do pedido/resposta), sem dia útil Paracatu-MG; vencimento definitivo e calendário ficam no B4.
 - Revogar um parceiro numa versão é definitivo para ela; liberar de novo exige nova versão.
 - Cópia frontend adiada da candidata (`scope-audit-20261103/deferred/source/`) não foi importada; a UI atual cobre o fluxo.
-- Sem JWT/RLS/PostgREST/navegador autenticado.
+- Sem JWT/RLS/PostgREST/navegador autenticado. Positivo interno é componente sintético, não E2E nem autorização de operação.
+- Nenhuma cobrança, documento fiscal, aprovação ou operação posterior foi executada; PB-001036/teste4 intocados.

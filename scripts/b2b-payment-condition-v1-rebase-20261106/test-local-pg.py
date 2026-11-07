@@ -28,6 +28,7 @@ u = SP.u
 A, F, P, PO, PF = SP.A, SP.F, SP.P, SP.PO, SP.PF
 UB, UT, UB2, UADM, UADMF, UINACT = SP.UB, SP.UT, SP.UB2, SP.UADM, SP.UADMF, SP.UINACT
 UFIN, UGC = u(29), u(30)
+PC, UBC = u(85), u(86)  # parceiro/comprador sintéticos isolados para fronteiras de crédito
 PLD, PLQ = SP.PLD, SP.PLQ
 P3, PINT, PNA, P3B = u(81), u(82), u(83), u(84)
 M_PIX, M_BOL, M_CASH, M_OFF, M_PROM, M_DEB = u(91), u(92), u(93), u(94), u(95), u(96)
@@ -108,6 +109,10 @@ def legacy(uid, plan, items, key, partner=P):
     return as_user(uid, f"SELECT public.create_partner_order_secure('{partner}',NULL,'{js(items)}'::jsonb,NULL,'{plan}',NULL,NULL,'{h}','{key}')::text;")
 
 
+def respond(uid, order_id, lines, motivo=None):
+    return call(uid, f"public.respond_b2b_order_quote_secure('{order_id}','{js(lines)}'::jsonb,NULL,NULL,{('NULL' if motivo is None else repr(motivo))})")
+
+
 def price(principal, n, rate, due_days, base):
     """Price independente (Decimal, centavos ROUND_HALF_UP; última parcela absorve o resíduo do principal)."""
     c = Decimal("0.01"); bal = Decimal(str(principal)).quantize(c); i = Decimal(str(rate)) / 100
@@ -156,9 +161,14 @@ BEGIN
   RETURN '{{}}'::jsonb;
 END $$;
 REVOKE ALL ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) TO authenticated;
-INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true);
-INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial');
-INSERT INTO platform_private.seam_entitlements VALUES ('{UFIN}','pedidos_b2b'),('{UGC}','pedidos_b2b'),('{UFIN}','catalogo_precos'),('{UGC}','catalogo_precos');
+INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true),('{UBC}','{A}',true);
+INSERT INTO public.partner_accounts VALUES ('{PC}',true,NULL,'{A}');
+INSERT INTO public.partner_users VALUES ('{UBC}','{PC}');
+INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial'),('{UBC}','parceiro_b2b');
+INSERT INTO platform_private.seam_entitlements VALUES ('{UFIN}','pedidos_b2b'),('{UGC}','pedidos_b2b'),('{UFIN}','catalogo_precos'),('{UGC}','catalogo_precos'),
+  ('{UBC}','pedidos_b2b'),('{UBC}','catalogo_precos');
+INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES
+  (gen_random_uuid(),'{P}',1000000,'block',false,0),(gen_random_uuid(),'{PF}',1000000,'block',false,0),(gen_random_uuid(),'{PC}',1018.11,'block',false,0);
 INSERT INTO public.payment_methods VALUES ('{M_PIX}','Pix TESTE',true),('{M_BOL}','Boleto TESTE',true),('{M_CASH}','Dinheiro TESTE',true),
   ('{M_OFF}','Inativo TESTE',false),('{M_PROM}','Promissória TESTE',true),('{M_DEB}','Débito TESTE',true);
 INSERT INTO public.financial_categories(id,name,type,active) VALUES ('{CAT}','Receita B2B TESTE','RECEITA',true),('{CAT_D}','Despesa TESTE','DESPESA',true),
@@ -171,7 +181,8 @@ INSERT INTO public.commercial_payment_plans(id,active,pricing_mode,discount_perc
   ('{PNA}',true,'discount_from_base',0,0,1,'simple',1,30,NULL,false,false,false,'TESTE não publicado','TN');
 INSERT INTO public.commercial_payment_plan_assignments VALUES
   ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLD}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
-  ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLQ}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{PC}',NULL,CURRENT_DATE-1,NULL),
   ('published','{P3B}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PINT}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
   ('draft','{PNA}','partner','{P}',NULL,CURRENT_DATE-1,NULL);
 """
@@ -253,10 +264,13 @@ def main():
         r = runf(work / "01-pre.sql.readonly"); check("01 PRE_OK", r.returncode == 0 and "PRE_OK" in r.stderr, r.stderr[-300:])
         r = runf(work / "02-install.sql.review"); check("02 install", r.returncode == 0, r.stderr[-600:])
         fm["install"] = {k: md5_of(s) for k, s in g["PUB"].items()}
+        fm["install"]["quote"] = md5_of(g["QUOTE_SIG"])
         write(fm["install"])
         r = runf(work / "03-post.sql.readonly"); check("03 POST_OK", r.returncode == 0 and "POST_OK" in r.stderr, r.stderr[-300:])
         r = runf(work / "02-install.sql.review"); check("rerun do install recusado", r.returncode != 0)
-        check("corpos LIVE originais intactos após install", md5_of(CREATE_SIG) == g["LIVE_PINS"][CREATE_SIG] and md5_of(SIM_SIG) == g["LIVE_PINS"][SIM_SIG])
+        check("create/simulate LIVE originais intactos; somente a resposta de cotação ganhou o ramo condicionado",
+              md5_of(CREATE_SIG) == g["LIVE_PINS"][CREATE_SIG] and md5_of(SIM_SIG) == g["LIVE_PINS"][SIM_SIG]
+              and md5_of(g["QUOTE_SIG"]) != g["LIVE_PINS"][g["QUOTE_SIG"]])
         check("sem dois contratos: nenhum objeto rev.2 B2B_PAYMENT_METHOD_V1 nem create antigo de 10 argumentos",
               psql("SELECT (to_regclass('public.b2b_payment_method_configs') IS NULL AND to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text,jsonb)') IS NULL)::text").stdout.strip() == "true")
 
@@ -268,6 +282,7 @@ def main():
         j, e = publish(UADM, PLD, "pix", M_PIX, 5, 1, 0, 0); check("admin A publica Pix v1 (5 dias)", j and j["condition"]["version"] == 1, e)
         j, e = publish(UFIN, P3, "boleto", M_BOL, 30, 3, "1.8", 0); check("financeiro A publica boleto 3x Price 1,8% em 30 dias", j and j["condition"]["deadline_days"] == 30, e)
         publish(UADM, PLD, "dinheiro", M_CASH, 0, 1, 0, 0); publish(UADM, PLQ, "pix", M_PIX, 5, 1, 0, 0); publish(UADM, P3, "pix", M_PIX, 5, 1, 0, 0)
+        publish(UADM, PLQ, "boleto", M_BOL, 30, 3, "1.8", 0)
         j, e = publish(UADM, P3B, "promissoria", M_PROM, 30, 3, 0, 0); check("promissória personalizável: 3x taxa explícita 0", j and j["condition"]["method"] == "promissoria", e)
         j, e = publish(UADM, P3B, "cartao_credito", M_PROM, 30, 2, "2.5", 0); check("cartão de crédito personalizável: 2x 2,5%", j and j["condition"]["installment_count"] == 2, e)
         j, e = publish(UADM, P3B, "cartao_debito", M_DEB, 1, 1, 0, 0); check("débito: parcela única com 1 dia", j and j["condition"]["installment_count"] == 1, e)
@@ -284,8 +299,9 @@ def main():
         for nm, uid in (("comprador", UB), ("técnico", UT), ("gestor comercial (só leitura)", UGC), ("superadmin", SP.USUP)):
             denied(f"{nm} não configura", publish(uid, PNA, "pix", M_PIX, 5, 1, 0, 0), "forbidden")
         j, e = publish(UADMF, PLD, "pix", M_PIX, 2, 1, 0, 0); check("admin F publica a própria versão (isolada)", j and j["condition"]["organization_id"] == F, e)
-        for plan, m in ((PLD, "pix"), (PLD, "dinheiro"), (PLQ, "pix"), (P3, "boleto"), (P3, "pix"), (P3B, "promissoria")):
+        for plan, m in ((PLD, "pix"), (PLD, "dinheiro"), (PLQ, "pix"), (PLQ, "boleto"), (P3, "boleto"), (P3, "pix"), (P3B, "promissoria")):
             assign(UADM, P, plan, m, 1)
+        assign(UADM, PC, P3, "boleto", 1)
         j, e = assign(UADMF, PF, PLD, "pix", 1); check("admin F atribui ao próprio parceiro", j and j["enabled"], e)
         denied("admin A não atribui parceiro de F", assign(UADM, PF, PLD, "pix", 1), "forbidden_partner")
         denied("admin F não atribui parceiro de A", assign(UADMF, P, PLD, "pix", 1), "forbidden_partner")
@@ -361,10 +377,43 @@ def main():
         check("pedido misto: snapshots de embalagem inteira + líquido preservados", j and Decimal(str(j["total"])) == Decimal("162.90") and it.startswith("L:1") and "SC25:1" in it, e or it)
         denied("preço client-side ignorado: hash não confere", create(UB, PLD, [dict(L(1), preco_unitario=0.01)], "x" * 64, "TESTE-CLI", PIX), "price_changed")
         denied("vencimento/parcelas do cliente não existem no contrato", out(as_user(UB, f"SELECT public.create_partner_order_condition_secure('{P}',NULL,'[]'::jsonb,NULL,'{PLD}','x','k',NULL,3)::text;")), "does not exist")
-        j, e = sim(UB, PLQ, [L(1)], PIX); hq = j and j["cart_hash"]
-        j, e = create(UB, PLQ, [L(1)], hq, "TESTE-COT-1", PIX); oq = j and j["id"]
+        j, e = sim(UB, PLQ, [L(1)], BOL); hq = j and j["cart_hash"]
+        j, e = create(UB, PLQ, [L(1)], hq, "TESTE-COT-1", BOL); oq = j and j["id"]
         st = psql(f"SELECT status||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT quote::text||':'||coalesce(financed_total::text,'null') FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{oq}') FROM public.partner_orders WHERE id='{oq}'").stdout.strip() if oq else ""
         check("cotação: aguardando_cotacao, sem termos, snapshot de escolha sem valor", st == "aguardando_cotacao:0:true:null", e or st)
+        qi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq}'").stdout.strip() if oq else ""
+        qlines = [{"item_id": qi, "unit_price": 1000}]
+        denied("cotação: comprador não responde pela condição", respond(UB, oq, qlines), "forbidden_quote_response")
+        denied("cotação: admin de outro vendedor não responde", respond(UADMF, oq, qlines), "b2b_phase1_scope_denied")
+        # Revogação REAL de papel enquanto a resposta espera o advisory de crédito: tudo é desfeito.
+        res = parallel([f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{P}',0)); SELECT pg_sleep(1.2); COMMIT;",
+                        session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{oq}','{js(qlines)}'::jsonb,NULL,NULL,NULL);"),
+                        f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador';"], [0,0.3,0.7])
+        check("cotação: revogação do vendedor durante espera nega e restaura itens/termos",
+              res[1].returncode != 0 and "forbidden" in res[1].stderr
+              and psql(f"SELECT subtotal||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}') FROM public.partner_order_items WHERE id='{qi}'").stdout.strip() == "0.00:0", res[1].stderr[-250:])
+        psql(f"INSERT INTO public.user_roles VALUES ('{UADM}','administrador')")
+        j, e = respond(UADM, oq, qlines)
+        check("cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
+              j and Decimal(str(j["final_amount"])) == Decimal("1036.22") and Decimal(str(j["total"])) == Decimal("1036.22")
+              and j["payment_condition_contract"] == "B2B_PAYMENT_CONDITION_V1" and j["payment_choice"] == BOL
+              and rows_of(j["schedule"]) == exp and j["payment_condition"]["estimated"] is True, e or j)
+        check("cotação: pedido/termos/cronograma/snapshot econômico compartilham UMA economia",
+              psql(f"SELECT (SELECT final_amount_with_interest FROM public.partner_orders WHERE id='{oq}')||':'||(SELECT final_amount FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT financed_total FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{oq}')").stdout.strip() == "1036.22:1036.22:1036.22")
+        check("cotação: escolha inicial permanece imutável e resposta é append-only",
+              psql(f"SELECT (SELECT quote::text||':'||coalesce(financed_total::text,'null') FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{oq}')||':'||(SELECT count(*) FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{oq}')").stdout.strip() == "true:null:1")
+        nterms = psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}'").stdout.strip()
+        nnotes = psql(f"SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo='pedido_b2b_cotacao_respondida' AND link='/portal-parceiro/pedidos'").stdout.strip()
+        j2, e = respond(UADM, oq, qlines)
+        check("cotação idempotente: replay idêntico devolve o MESMO recibo/ACK sem duplicar",
+              j2 == j and psql(f"SELECT (SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{oq}')").stdout.strip() == "1:1"
+              and psql(f"SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo='pedido_b2b_cotacao_respondida' AND link='/portal-parceiro/pedidos'").stdout.strip() == nnotes, e or j2)
+        denied("cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia",
+               respond(UADM, oq, [{"item_id": qi, "unit_price": 999}]), "quote_idempotency_conflict")
+        check("cotação: conflito não altera termos", psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}'").stdout.strip() == nterms)
+        j, e = sim(UB, PLQ, [L(1)], BOL); hq2 = j and j["cart_hash"]
+        j, e = create(UB, PLQ, [L(1)], hq2, "TESTE-COT-ROLLBACK", BOL); oq_pending = j and j["id"]
+        check("segunda cotação sintética fica pendente para prova de rollback", j and j["status"] == "aguardando_cotacao", e or j)
         psql(f"INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES (gen_random_uuid(),'{P}',2050,'block',false,0) ON CONFLICT (partner_id) DO UPDATE SET credit_limit=2050, credit_limit_action='block'")
         expo = json.loads(psql(f"SELECT public.fn_b2b_credit_exposure('{P}',0,NULL)::text").stdout.strip())
         room = Decimal(str(expo["credit_limit"])) - Decimal(str(expo["exposicao_projetada"]))
@@ -372,7 +421,48 @@ def main():
         j, e = sim(UB, P3, [L(1000)], BOL); hp = j and j["cart_hash"]
         check("crédito: simulação avisa excesso com o total Price (não o líquido)", j and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j and j["warnings"])
         denied("crédito real: create bloqueado pelo total Price", create(UB, P3, [L(1000)], hp, "TESTE-CRED-1", BOL), "credit_limit_exceeded")
-        psql(f"DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'")
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=1000000 WHERE partner_id='{P}'")
+
+        # ---------- limite NUMÉRICO EXPLÍCITO: parceiro isolado, exposição anterior zero ----------
+        def pc_limit(value):
+            psql(f"UPDATE public.partner_financial_settings SET credit_limit={value} WHERE partner_id='{PC}'")
+        pc_limit("1018.11")
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
+        check("limite 1018,11 (entre principal 1000 e Price 1036,22): simulação avisa, nunca usa principal para liberar",
+              j and Decimal(str(j["credit"]["credit_limit"])) == Decimal("1018.11") and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j)
+        denied("limite 1018,11: create bloqueado pelo total 1036,22 e nada gravado", create(UBC, P3, [L(1000)], j["cart_hash"] if j else "x", "TESTE-PC-BETWEEN", BOL, partner=PC), "credit_limit_exceeded")
+        check("limite entre valores: falha atômica sem idempotência", idem("TESTE-PC-BETWEEN") == "0")
+        pc_limit("NULL")
+        denied("limite NULL: simulação indisponível (não vira apto)", sim(UBC, P3, [L(1000)], BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+        denied("limite NULL: create indisponível e sem pedido", create(UBC, P3, [L(1000)], "x", "TESTE-PC-NULL", BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+        check("limite NULL: falha atômica", idem("TESTE-PC-NULL") == "0")
+        pc_limit("0")
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
+        check("zero EXPLÍCITO é limite zero (não ausente nem ilimitado): simulação informa excesso",
+              j and Decimal(str(j["credit"]["credit_limit"])) == 0 and j["credit"]["credit_checked"] is True
+              and "Pedido excede o limite de crédito projetado" in j["warnings"], e or j)
+        denied("zero explícito: create excede limite, não CREDIT_SETTINGS_INCOMPLETE", create(UBC, P3, [L(1000)], j["cart_hash"] if j else "x", "TESTE-PC-ZERO", BOL, partner=PC), "credit_limit_exceeded")
+        for label, value, key in (("negativo", "-1", "NEG"), ("NaN", "'NaN'::numeric", "NAN")):
+            pc_limit(value)
+            denied(f"limite {label}: simulação bloqueada", sim(UBC, P3, [L(1000)], BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+            denied(f"limite {label}: create bloqueado atomicamente", create(UBC, P3, [L(1000)], "x", f"TESTE-PC-{key}", BOL, partner=PC), "CREDIT_SETTINGS_INCOMPLETE")
+            check(f"limite {label}: nenhuma idempotência gravada", idem(f"TESTE-PC-{key}") == "0")
+        pc_limit("1036.22")
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC); h_transient = j and j["cart_hash"]
+        real_credit = RX._cap("credit", "public.fn_b2b_credit_exposure")
+        psql("""CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(p_partner_id uuid,p_new_order_amount numeric DEFAULT 0,p_exclude_order_id uuid DEFAULT NULL) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;""")
+        denied("erro transitório: simulação ABORTA (não devolve credit NULL)", sim(UBC, P3, [L(1000)], BOL, partner=PC), "credit_transient_TESTE")
+        denied("erro transitório: create não grava nem libera operação", create(UBC, P3, [L(1000)], h_transient or "x", "TESTE-PC-TRANSIENT", BOL, partner=PC), "credit_transient_TESTE")
+        check("erro transitório: falha atômica", idem("TESTE-PC-TRANSIENT") == "0")
+        psql(real_credit)
+        psql("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) TO service_role;")
+        check("função REAL de crédito restaurada byte a byte após injeção transitória", md5_of("public.fn_b2b_credit_exposure(uuid,numeric,uuid)") == g["LIVE_PINS"]["public.fn_b2b_credit_exposure(uuid,numeric,uuid)"])
+        j, e = sim(UBC, P3, [L(1000)], BOL, partner=PC)
+        check("limite exatamente 1036,22: simulação apta com o MESMO total Price", j and Decimal(str(j["final_amount"])) == Decimal("1036.22")
+              and not any("excede o limite" in w for w in j["warnings"]), e or j)
+        j, e = create(UBC, P3, [L(1000)], j["cart_hash"] if j else "x", "TESTE-PC-EXACT", BOL, partner=PC)
+        check("limite exatamente 1036,22: create positivo no limite, sem folga inventada", j and Decimal(str(j["total"])) == Decimal("1036.22"), e or j)
 
         # ---------- negativas / stale ----------
         denied("sem escolha: payment_choice_required (sem fallback Pix)", sim(UB, PLD, [L(1)], None), "payment_choice_required")
@@ -451,8 +541,27 @@ def main():
         hi = sim(SP.UADM, PLD, [L(1)], CASH2)
         j, e = create(SP.UADM, PLD, [L(1)], hi[0]["cart_hash"] if hi[0] else "x", "TESTE-INT-1", CASH2)
         check("piloto: ator interno de A simula com condição (mesma verdade monetária)", hi[0] and Decimal(str(hi[0]["final_amount"])) == Decimal("0.90"), hi[1])
-        check("ator interno: barreira LIVE de origem interna preservada nos dois caminhos", r.returncode != 0 and j is None
+        check("sem emitente válido: barreira LIVE de origem interna preservada nos dois caminhos", r.returncode != 0 and j is None
               and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in e_leg and "B2B_INTERNAL_ISSUER_AMBIGUOUS" in (e or ""), (e_leg, e))
+        guard_before = md5_of("platform_private.b2b_internal_order_snapshot_guard()")
+        # Fixture isolada coerente: UMA configuração ativa VALIDADA, contabilidade validada e identidade jurídica fictícia.
+        psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)
+                 VALUES ('{A}',true,'VALIDATED',now(),'AR Bio TESTE LOCAL','00000000000191',7)""")
+        hi_pos = sim(SP.UADM, PLD, [L(1)], CASH2)
+        j, e = create(SP.UADM, PLD, [L(1)], hi_pos[0]["cart_hash"] if hi_pos[0] else "x", "TESTE-INT-POS", CASH2)
+        origin = psql(f"SELECT internal_origin_snapshot FROM public.partner_orders o JOIN public.partner_order_idempotency i ON i.order_id=o.id WHERE i.idempotency_key='TESTE-INT-POS'").stdout.strip() if j else ""
+        check("POSITIVO INTERNO com guards REAIS: create REAL grava em análise e servidor sela origem validada",
+              j and Decimal(str(j["total"])) == Decimal("0.90") and origin
+              and json.loads(origin)["organization_id"] == A and json.loads(origin)["issuer_legal_name"] == "AR Bio TESTE LOCAL"
+              and json.loads(origin)["company_configuration_version"] == 7 and json.loads(origin)["actor_user_id"] == SP.UADM, e or origin)
+        check("positivo interno não libera operação/cobrança/fiscal",
+              j and psql(f"SELECT status||':'||ready_for_production||':'||receivable_generated FROM public.partner_orders WHERE id='{j['id']}'").stdout.strip() == "em_analise_comercial:false:false")
+        check("guarda de origem REAL não foi alterada para obter PASS", md5_of("platform_private.b2b_internal_order_snapshot_guard()") == guard_before)
+        psql(f"DELETE FROM public.company_fiscal_settings WHERE organization_id='{A}'")
+        hi_neg = sim(SP.UADM, PLD, [L(1)], CASH2)
+        j, e = create(SP.UADM, PLD, [L(1)], hi_neg[0]["cart_hash"] if hi_neg[0] else "x", "TESTE-INT-NEG", CASH2)
+        denied("controle: removida a fixture válida, MESMA guarda volta a negar emitente ambíguo", (j, e), "B2B_INTERNAL_ISSUER_AMBIGUOUS")
+        check("controle negativo interno sem idempotência", idem("TESTE-INT-NEG") == "0")
         r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F1", partner=PF); check("piloto de A não afeta comprador de F (papel FSF)", r.returncode == 0, r.stderr[-200:])
         r = psql("BEGIN; ALTER TABLE platform_private.b2b_order_condition_snapshots DISABLE TRIGGER immutable_update_delete;\n"
                  + session(UB, f"SELECT {create_sql(P, PLD, [S(2)], sim(UB, PLD, [S(2)], CASH2)[0]['cart_hash'], 'TESTE-DEF2', CASH2)};\nRESET ROLE;\n")
@@ -462,6 +571,8 @@ def main():
         check("comprador lê condição/parcelas do pedido (mesmo total, estimado)", j and j["present"] and Decimal(str(j["payment_condition"]["financed_total"])) == Decimal("1036.22")
               and j["payment_condition"]["estimated"] is True, e or j)
         denied("admin F não lê pedido de A", call(UADMF, f"public.get_partner_order_payment_condition_secure('{oid}')"), "forbidden")
+        rfq = legacy(UB2, PLQ, [SF(1)], "TESTE-LEG-FQ", partner=PF); jfq, efq = out(rfq)
+        check("cotação LEGADA de F pronta para controle de rollback", jfq and jfq["status"] == "aguardando_cotacao", efq or jfq)
         check("PB-001036/teste4 fora do escopo: nenhum pedido real no PG descartável", psql("SELECT count(*) FROM public.partner_orders WHERE numero='PB-001036'").stdout.strip() == "0")
 
         # ---------- rollback deny-only transacional ----------
@@ -472,12 +583,21 @@ def main():
         check("04 com pin divergente aborta sem mudar nada", r.returncode != 0 and md5_of(g["PUB"]["read"]) == fm["install"]["read"], r.stderr[-200:])
         r = runf(work / "04-rollback-deny.sql.review"); check("04 rollback deny-only", r.returncode == 0, r.stderr[-300:])
         denied("após rollback: opções negadas", call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"), "permission denied")
+        qi_pending = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq_pending}'").stdout.strip()
+        denied("após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado",
+               respond(UADM, oq_pending, [{"item_id": qi_pending, "unit_price": 1000}]), "b2b_payment_condition_rolled_back")
+        check("rollback da cotação é atômico", psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq_pending}'").stdout.strip() == "0")
+        if jfq:
+            qfi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{jfq['id']}'").stdout.strip()
+            j, e = respond(UADMF, jfq["id"], [{"item_id": qfi, "unit_price": 90}])
+            check("após rollback: cotação LEGADA de empresa não ativada (papel FSF) continua funcionando", j and Decimal(str(j["final_amount"])) == Decimal("90.00"), e or j)
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-2")
         check("após rollback: empresa ativada continua bloqueada (nunca reabre fallback)", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr)
         r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F2", partner=PF); check("após rollback: empresa não ativada segue contrato atual", r.returncode == 0, r.stderr[-200:])
         check("após rollback: snapshots/versões preservados", int(psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip()) >= 3
               and int(psql("SELECT count(*) FROM platform_private.b2b_condition_versions").stdout.strip()) >= 10)
         fm["deny"] = {k: md5_of(s) for k, s in g["PUB"].items()}
+        fm["deny"]["quote"] = md5_of(g["QUOTE_SIG"])
         (HERE / "fn-md5.json").write_text(json.dumps(fm, indent=2) + "\n")
     except Exception:
         for c in CHECKS:

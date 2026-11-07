@@ -27,6 +27,19 @@ describe("falha da simulação", () => {
     expect(f.title).toMatch(/Não foi possível calcular/);
     expect(f.detail).toMatch(/Nenhum valor foi aplicado/);
   });
+  it("configuração de crédito incompleta informa indisponibilidade e bloqueia operação", () => {
+    const f = describeSimulationFailure("k", { code: "PT409", message: "CREDIT_SETTINGS_INCOMPLETE" });
+    expect(f.title).toBe("Condição financeira indisponível.");
+    expect(f.detail).toMatch(/limite de crédito explícito/);
+    expect(f.detail).toMatch(/pedido não pode ser enviado/);
+    expect(f.retryable).toBe(false);
+  });
+  it("erro de cálculo financeiro não vira apto nem credit null", () => {
+    const f = describeSimulationFailure("k", { code: "22023", message: "CREDIT_CALCULATION_INVALID" });
+    expect(f.title).toBe("Condição financeira indisponível.");
+    expect(f.detail).toMatch(/Nenhum valor foi aplicado/);
+    expect(f.retryable).toBe(false);
+  });
   it("erro desconhecido nunca inventa valor", () => {
     const f = describeSimulationFailure("k", new Error("boom"));
     expect(f.detail).toMatch(/Nenhum valor foi aplicado/);

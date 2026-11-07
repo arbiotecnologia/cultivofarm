@@ -47,6 +47,10 @@ export function mapQuoteError(message: string): string {
   if (msg.includes("below_minimum_order_amount")) return "Valor abaixo do mínimo exigido pela condição de pagamento.";
   if (msg.includes("invalid_installment_count")) return "Número de parcelas inválido.";
   if (msg.includes("invalid_due_date")) return "Data do primeiro vencimento inválida.";
+  if (msg.includes("CREDIT_SETTINGS_INCOMPLETE") || msg.includes("CREDIT_CALCULATION_INVALID")) return "Condição financeira indisponível: configure um limite explícito e um cálculo de crédito íntegro.";
+  if (msg.includes("payment_condition_stale") || msg.includes("payment_condition_unavailable")) return "A condição escolhida foi alterada ou revogada. A cotação não foi registrada.";
+  if (msg.includes("quote_idempotency_conflict")) return "Esta cotação já foi respondida com outros dados. Nenhuma alteração foi feita.";
+  if (msg.includes("b2b_payment_condition_rolled_back")) return "A resposta por condição de pagamento está temporariamente indisponível.";
   if (msg.includes("plan_inactive")) return "A condição de pagamento do pedido está inativa.";
   if (msg.includes("payment_plan_required")) return "O pedido não possui condição de pagamento definida.";
   if (msg.includes("empty_cart")) return "O pedido não possui itens.";

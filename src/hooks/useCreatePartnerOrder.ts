@@ -262,6 +262,10 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       else if (msg.includes("idempotency_conflict")) toast.error("O carrinho mudou depois do envio. Refaça a simulação e confirme novamente.");
       else if (msg.includes("idempotency_key_required") || msg.includes("invalid_idempotency_key")) toast.error("Falha ao identificar o checkout. Recarregue a página e tente novamente.");
       else if (msg.includes("credit_limit_exceeded")) toast.error("Pedido excede o limite de crédito disponível do parceiro.");
+      else if (msg.includes("CREDIT_SETTINGS_INCOMPLETE") || msg.includes("CREDIT_CALCULATION_INVALID"))
+        toast.error("Condição financeira indisponível: o limite explícito ou o cálculo de crédito não está íntegro. O pedido não foi enviado.");
+      else if (msg.includes("payment_condition_stale") || msg.includes("payment_condition_unavailable"))
+        toast.error("A condição de pagamento foi alterada ou revogada. Escolha novamente; nenhum pedido foi enviado.");
       else if (msg.includes("C2_ACCOUNTING_PENDING")) toast.error("Contabilidade da empresa pendente: esta etapa está bloqueada até a validação.");
       else if (msg.includes("forbidden_financial_terms")) toast.error("Seu perfil técnico não tem acesso a condições financeiras.");
 

@@ -26,7 +26,8 @@ function augmentSim(data: unknown) {
   // Uma verdade monetária (como o servidor): 1 parcela Pix = final_amount; datas marcadas como estimadas.
   const schedule = d.quote_required ? [] : [{ installment_number: 1, due_date: d.schedule?.[0]?.due_date ?? "2027-01-05",
     amount: final, principal_amount: final, interest_amount: 0, estimated: true }];
-  return { ...d, final_amount: final, schedule, installment_count: 1, ...condEnvelope(), due_basis: "nf_issue", schedule_estimated: true };
+  return { ...d, final_amount: final, schedule, installment_count: 1, ...condEnvelope(), due_basis: "nf_issue", schedule_estimated: true,
+    credit: d.credit ?? { credit_limit: 1000000, exposicao_projetada: final, credit_checked: true } };
 }
 
 /** `via` (ex.: o próprio mock rpc) registra também a chamada delegada com o nome legado. */
