@@ -49,7 +49,7 @@ def purchase(item, quantity, key, internal=True, actor=None):
     call = f"""SELECT platform_private.finished_product_purchase_entry_v1(
       '{item['product']}','{item['packaging']}','LOTE-{key}',{quantity},
       'COMPRA-{key}','FORNECEDOR FICTICIO {key}','{key}','2028-12-31');"""
-    prefix = f"RESET ROLE; SET request.jwt.claim.sub='{actor}';" if internal else B.T.actor(actor)
+    prefix = f"RESET ROLE; SET request.jwt.claim.sub='{actor}'; SET request.jwt.claims='{{\"sub\":\"{actor}\",\"iat\":1}}';" if internal else B.T.actor(actor)
     return prefix + call
 
 
