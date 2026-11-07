@@ -461,10 +461,28 @@ def main():
             f"UPDATE public.profiles SET senha_provisoria=false WHERE user_id='{SP.UADM}'",
         )
         during_lock(
-            "vínculo organização-parceiro do vendedor removido",
-            f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'",
+            "dono comercial vendedor revogado",
+            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.F}' WHERE id='{SP.P}'",
             "b2b_phase1_scope_denied",
-            f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'",
+            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.A}' WHERE id='{SP.P}'",
+        )
+        during_lock(
+            "organização vendedora inativada",
+            f"UPDATE public.organizations SET ativo=false,status='inativa' WHERE id='{SP.A}'",
+            "b2b_phase1_scope_denied",
+            f"UPDATE public.organizations SET ativo=true,status='ativa' WHERE id='{SP.A}'",
+        )
+        during_lock(
+            "parceiro vendedor inativado",
+            f"UPDATE public.partner_accounts SET ativo=false WHERE id='{SP.P}'",
+            "b2b_phase1_scope_denied",
+            f"UPDATE public.partner_accounts SET ativo=true WHERE id='{SP.P}'",
+        )
+        during_lock(
+            "papel B2B misto concedido durante o lock",
+            f"INSERT INTO public.user_roles VALUES ('{SP.UADM}','parceiro_b2b')",
+            "unauthorized",
+            f"DELETE FROM public.user_roles WHERE user_id='{SP.UADM}' AND role='parceiro_b2b'",
         )
         during_lock(
             "convite administrativo em processing",
