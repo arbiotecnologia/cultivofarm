@@ -147,6 +147,8 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
     # As policies não são promovidas a prova; os writers testados são definer/owner.
     B3.psql("""GRANT ALL PRIVILEGES ON TABLE public.accounts_receivable TO anon,authenticated,service_role;
 ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;""")
+    B3.psql(f"""INSERT INTO platform_private.seam_entitlements VALUES
+('{B3.UADM}','contas_receber'),('{B3.UFIN}','contas_receber');""")
     for index in live["indexes"]:
         if not index["name"].endswith("_pkey"):
             exists = B3.psql(f"SELECT to_regclass('{index['name']}') IS NOT NULL").stdout.strip()
