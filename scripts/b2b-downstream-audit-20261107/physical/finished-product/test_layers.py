@@ -58,7 +58,9 @@ def main():
         B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;")
 
         # Recompõe as dependências a partir dos corpos capturados no início, sem buscar hosted.
-        B.sql(original[CONFIRM] + ";\n" + original[SEND] + ";")
+        B.sql(original[CONFIRM] + ";\n" + original[SEND] + ";\n" +
+              f"REVOKE ALL ON FUNCTION {CONFIRM} FROM PUBLIC;GRANT EXECUTE ON FUNCTION {CONFIRM} TO postgres;" +
+              f"REVOKE ALL ON FUNCTION {SEND} FROM PUBLIC;GRANT EXECUTE ON FUNCTION {SEND} TO postgres;")
         baseline = json.loads((HERE / "baseline.json").read_text())
         expected = {x["signature"]: x["md5"] for x in baseline["functions"]}
         for signature in (CONFIRM, SEND):
