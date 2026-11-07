@@ -49,10 +49,11 @@ def main():
             observed = (B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{item['os']}';"), B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{reserved}';"))
             grouped = json.loads(B.last(B.group(item["os"], reserved, 2, "after-group-" + key, observed)))
             delivery = grouped["itens"][0]["entrega_id"]
-            expected_ml = "NULL" if unit in ("kg", "g") else str(per_unit * 2)
+            delivered_ml = per_unit * 2 * (1000 if unit == "l" else 1)
+            expected_ml = "NULL" if unit in ("kg", "g") else str(delivered_ml)
             actual = json.loads(B.last(f"SELECT jsonb_build_object('qty',quantidade_entregue,'content',quantidade_conteudo,'unit',unidade_conteudo,'ml',volume_entregue_ml,'origin',origem_estoque) FROM public.entregas WHERE id='{delivery}';"))
             assert actual["qty"] == 2 and actual["content"] == per_unit * 2 and actual["unit"] == unit and actual["origin"] == "produto_acabado"
-            assert (actual["ml"] is None if unit in ("kg", "g") else actual["ml"] == per_unit * 2)
+            assert (actual["ml"] is None if unit in ("kg", "g") else actual["ml"] == delivered_ml), actual
             assert B.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE referencia_tipo='entrega' AND referencia_id='{delivery}' AND acao='expedicao';") == "1"
             B.ok(f"{group} {unit}: pedido/OS → reserva → baixa; 2 UN = {per_unit * 2} {unit}; volume_ml={expected_ml}", actual)
             replay = json.loads(B.last(B.group(item["os"], reserved, 2, "after-group-" + key, observed)))
