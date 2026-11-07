@@ -76,6 +76,7 @@ def prepare_checkpoint(cached):
  sentinels.seed(sys.modules[__name__]);ok('existing full-row downstream sentinels seeded in disposable fixture only')
  sql("INSERT INTO storage.buckets(id,name,public) VALUES('entrega-documentos','entrega-documentos',false) ON CONFLICT DO NOTHING;")
  cmd=pg.psql();cmd[0]='pg_dump';cmd=[cmd[0],'-h',str(pg.root),'-p',str(pg.PORT),'-U','postgres','--clean','--if-exists','postgres']
+ cached.parent.mkdir(parents=True,exist_ok=True)
  cached.write_text(subprocess.run(cmd,capture_output=True,text=True,check=True,timeout=40).stdout)
 def run_matrix():
  legacy=legacy_signed_fixture()
