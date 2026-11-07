@@ -214,6 +214,22 @@ CREATE TABLE platform_private.b2b_condition_activation_history (
  organization_id uuid NOT NULL, version integer NOT NULL, snapshot jsonb NOT NULL, actor_id uuid NOT NULL,
  recorded_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (organization_id, version)
 );
+-- A escolha inicial da cotação permanece imutável. A resposta cria UM segundo snapshot econômico append-only.
+CREATE TABLE platform_private.b2b_order_condition_quote_snapshots (
+ order_id uuid PRIMARY KEY REFERENCES public.partner_orders(id), organization_id uuid NOT NULL, partner_id uuid NOT NULL,
+ actor_id uuid NOT NULL, plan_id uuid NOT NULL, choice jsonb NOT NULL, condition jsonb NOT NULL, request_hash text NOT NULL,
+ rows jsonb NOT NULL, principal numeric NOT NULL, financed_interest numeric NOT NULL, financed_total numeric NOT NULL,
+ payment_terms_id uuid NOT NULL, cart_hash text NOT NULL, payment_method_name text NOT NULL,
+ estimated boolean NOT NULL DEFAULT true CHECK(estimated), due_basis text NOT NULL DEFAULT 'nf_issue' CHECK(due_basis='nf_issue'),
+ estimated_reference_date date NOT NULL, condition_version int NOT NULL, condition_method text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ CHECK(principal>0 AND financed_interest>=0 AND financed_total=principal+financed_interest),
+ FOREIGN KEY(organization_id,plan_id,condition_version,condition_method) REFERENCES platform_private.b2b_condition_versions(organization_id,plan_id,version,method)
+);
+CREATE TABLE platform_private.b2b_quote_response_receipts (
+ order_id uuid PRIMARY KEY REFERENCES public.partner_orders(id), request_hash text NOT NULL CHECK(request_hash ~ '^[0-9a-f]{64}$'),
+ actor_id uuid NOT NULL, result jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
 ALTER TABLE platform_private.b2b_condition_retirements ADD COLUMN retired_by uuid, ADD COLUMN retired_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE platform_private.b2b_condition_assignments ADD COLUMN assigned_by uuid, ADD COLUMN assigned_at timestamptz NOT NULL DEFAULT now();
 
@@ -221,12 +237,13 @@ CREATE FUNCTION platform_private.b2b_condition_immutable() RETURNS trigger LANGU
 BEGIN RAISE EXCEPTION 'B2B_CONDITION_RECORD_IMMUTABLE' USING ERRCODE='42501'; END $$;
 DO $$ DECLARE t text; BEGIN
  FOREACH t IN ARRAY ARRAY['b2b_condition_versions','b2b_condition_assignments','b2b_order_condition_snapshots','b2b_condition_retirements',
-                          'b2b_condition_assignment_revocations','b2b_condition_activation_history'] LOOP
+                          'b2b_condition_assignment_revocations','b2b_condition_activation_history','b2b_order_condition_quote_snapshots','b2b_quote_response_receipts'] LOOP
   EXECUTE format('CREATE TRIGGER immutable_update_delete BEFORE UPDATE OR DELETE ON platform_private.%I FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_immutable()',t);
   EXECUTE format('CREATE TRIGGER immutable_truncate BEFORE TRUNCATE ON platform_private.%I FOR EACH STATEMENT EXECUTE FUNCTION platform_private.b2b_condition_immutable()',t);
  END LOOP;
  FOREACH t IN ARRAY ARRAY['b2b_condition_versions','b2b_condition_assignments','b2b_order_condition_snapshots','b2b_condition_retirements',
-                          'b2b_condition_assignment_revocations','b2b_condition_activation','b2b_condition_activation_history'] LOOP
+                          'b2b_condition_assignment_revocations','b2b_condition_activation','b2b_condition_activation_history',
+                          'b2b_order_condition_quote_snapshots','b2b_quote_response_receipts'] LOOP
   EXECUTE format('ALTER TABLE platform_private.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('REVOKE ALL ON platform_private.%I FROM PUBLIC,anon,authenticated,service_role',t);
  END LOOP;
@@ -257,6 +274,39 @@ CREATE FUNCTION platform_private.b2b_condition_hash(p_base text, p_choice jsonb,
       'payment_method_id',p_cond->'payment_method_id','category_id',p_cond->'category_id'),
     'total',to_char(round(p_total,2),'FM9999999999990.00'))::text,'UTF8')),'hex')
 $function$;
+
+-- Limite explícito e cálculo íntegro: ausência/NULL/negativo/NaN/Infinity/configuração incompleta negam.
+-- Zero é um limite VÁLIDO (nunca ilimitado); qualquer exposição positiva o excede. Erros transitórios propagam, sem EXCEPTION OTHERS.
+CREATE FUNCTION platform_private.b2b_credit_checked(p_partner_id uuid, p_amount numeric, p_exclude_order_id uuid)
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE v jsonb; v_limit numeric; v_projected numeric; v_tolerance integer;
+BEGIN
+  IF p_amount IS NULL OR p_amount < 0 OR p_amount::text IN ('NaN','Infinity','-Infinity') THEN
+    RAISE EXCEPTION 'CREDIT_CALCULATION_INVALID' USING ERRCODE='22023';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=p_partner_id AND s.active IS TRUE) THEN
+    RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='PT409';
+  END IF;
+  v := public.fn_b2b_credit_exposure(p_partner_id,p_amount,p_exclude_order_id);
+  IF v IS NULL OR v->>'partner_id' IS DISTINCT FROM p_partner_id::text
+     OR jsonb_typeof(v->'credit_limit') IS DISTINCT FROM 'number'
+     OR jsonb_typeof(v->'exposicao_projetada') IS DISTINCT FROM 'number'
+     OR jsonb_typeof(v->'block_if_overdue') IS DISTINCT FROM 'boolean'
+     OR jsonb_typeof(v->'overdue_tolerance_days') IS DISTINCT FROM 'number'
+     OR v->>'credit_limit_action' NOT IN ('block','approval_required') THEN
+    RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='PT409';
+  END IF;
+  v_limit := (v->>'credit_limit')::numeric;
+  v_projected := (v->>'exposicao_projetada')::numeric;
+  v_tolerance := (v->>'overdue_tolerance_days')::integer;
+  IF v_limit < 0 OR v_limit::text IN ('NaN','Infinity','-Infinity') OR v_tolerance < 0 THEN
+    RAISE EXCEPTION 'CREDIT_SETTINGS_INCOMPLETE' USING ERRCODE='PT409';
+  END IF;
+  IF v_projected < 0 OR v_projected::text IN ('NaN','Infinity','-Infinity') THEN
+    RAISE EXCEPTION 'CREDIT_CALCULATION_INVALID' USING ERRCODE='22023';
+  END IF;
+  RETURN v || jsonb_build_object('credit_checked',true);
+END $function$;
 
 CREATE FUNCTION platform_private.b2b_condition_mode(p_partner_id uuid)
  RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
