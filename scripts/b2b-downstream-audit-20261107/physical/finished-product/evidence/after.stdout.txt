@@ -1,9 +1,23 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=1.9s
+CHECKPOINT sql_calls=1 elapsed=2.1s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
-PASS FAIL candidate PRE/install failed
-ERROR:  42710: trigger "a01_envase_insert_permit" for relation "envase" already exists
-LOCATION:  CreateTriggerFiringOn, trigger.c:765
+PASS candidato instalado com todos os PRE pins e sem novos grants
+PASS instalação permanece operacionalmente desligada
+PASS gate fechado nega reserva de produto acabado
+PASS quimico kg: pedido/OS → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL
+PASS quimico kg: envio/confirmação/replays idempotentes sem segunda baixa
+PASS fertilizante g: pedido/OS → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL
+PASS fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa
+PASS quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000
+PASS quimico l: envio/confirmação/replays idempotentes sem segunda baixa
+PASS fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
+CHECKPOINT sql_calls=100 elapsed=12.8s
+PASS fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa
+PASS FAIL ERROR:  DELIVERY_MERGE_LEDGER_DENIED
+CONTEXT:  PL/pgSQL function platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) line 28 at RAISE
+SQL statement "SELECT platform_private.delivery_merge_split_20261030(p_item_id,v_ctx,p_payload)"
+PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 126 at PERFORM
+PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 43 at assignment
 
-RESULT 3 / 3 exit 1
+RESULT 14 / 14 exit 1

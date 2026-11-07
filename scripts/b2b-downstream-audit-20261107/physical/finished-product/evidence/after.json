@@ -11,7 +11,80 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL candidate PRE/install failed\nERROR:  42710: trigger \"a01_envase_insert_permit\" for relation \"envase\" already exists\nLOCATION:  CreateTriggerFiringOn, trigger.c:765\n",
+      "name": "candidato instalado com todos os PRE pins e sem novos grants",
+      "status": "PASS"
+    },
+    {
+      "name": "instalação permanece operacionalmente desligada",
+      "status": "PASS"
+    },
+    {
+      "name": "gate fechado nega reserva de produto acabado",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_STOCK_CONTRACT_DENIED"
+    },
+    {
+      "name": "quimico kg: pedido/OS → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "kg",
+        "origin": "produto_acabado",
+        "content": 50
+      }
+    },
+    {
+      "name": "quimico kg: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante g: pedido/OS → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "g",
+        "origin": "produto_acabado",
+        "content": 50000
+      }
+    },
+    {
+      "name": "fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000",
+      "status": "PASS",
+      "detail": {
+        "ml": 2000.0,
+        "qty": 2,
+        "unit": "l",
+        "origin": "produto_acabado",
+        "content": 2
+      }
+    },
+    {
+      "name": "quimico l: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000",
+      "status": "PASS",
+      "detail": {
+        "ml": 1000.0,
+        "qty": 2,
+        "unit": "ml",
+        "origin": "produto_acabado",
+        "content": 1000
+      }
+    },
+    {
+      "name": "fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL ERROR:  DELIVERY_MERGE_LEDGER_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) line 28 at RAISE\nSQL statement \"SELECT platform_private.delivery_merge_split_20261030(p_item_id,v_ctx,p_payload)\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 126 at PERFORM\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 43 at assignment\n",
       "status": "PASS"
     }
   ],
