@@ -1,0 +1,3 @@
+FAIL 02 install psql:/tmp/b2bcond-w-z6xf4ahv/02-install.sql.review:1421: ERROR:  INSTALL_POST: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) divergente
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+

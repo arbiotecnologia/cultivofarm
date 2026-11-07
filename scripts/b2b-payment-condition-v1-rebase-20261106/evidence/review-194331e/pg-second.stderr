@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py", line 619, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py", line 453, in main
+            psql("""CREATE OR REPLACE FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+            ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;""")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  cannot change name of input parameter "p_partner_id"
+HINT:  Use DROP FUNCTION fn_b2b_credit_exposure(uuid,numeric,uuid) first.
+

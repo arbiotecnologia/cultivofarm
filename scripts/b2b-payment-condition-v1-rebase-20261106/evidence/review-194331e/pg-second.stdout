@@ -1,0 +1,22 @@
+FAIL cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida ERROR:  column i.produto_id does not exist
+LINE 2:       'item_tipo',CASE WHEN i.produto_id IS NOT NULL THEN 'p...
+                                    ^
+HINT:  Perhaps you meant to reference the column "i.product_id".
+QUERY:  SELECT jsonb_build_object('quote_required','false','lines',jsonb_agg(jsonb_build_object(
+      'item_tipo',CASE WHEN i.produto_id IS NOT NULL THEN 'produto' ELSE 'microrganis
+FAIL cotação: pedido/termos/cronograma/snapshot econômico compartilham UMA economia 
+FAIL cotação: escolha inicial permanece imutável e resposta é append-only 
+FAIL cotação idempotente: replay idêntico devolve o MESMO recibo/ACK sem duplicar ERROR:  column i.produto_id does not exist
+LINE 2:       'item_tipo',CASE WHEN i.produto_id IS NOT NULL THEN 'p...
+                                    ^
+HINT:  Perhaps you meant to reference the column "i.product_id".
+QUERY:  SELECT jsonb_build_object('quote_required','false','lines',jsonb_agg(jsonb_build_object(
+      'item_tipo',CASE WHEN i.produto_id IS NOT NULL THEN 'produto' ELSE 'microrganis
+FAIL cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia esperado 'quote_idempotency_conflict'; obtido ERROR:  column i.produto_id does not exist
+LINE 2:       'item_tipo',CASE WHEN i.produto_id IS NOT NULL THEN 'p...
+                                    ^
+HINT:  Perhaps you meant to reference the column "i.product_id".
+QUERY:  SELECT jsonb_build_object('quote_required','false','lines',jsonb_agg(jsonb_build_object(
+      'item_tipo',CASE WHEN i.produto_i
+FAIL zero EXPLÍCITO é limite zero (não ausente nem ilimitado): simulação informa excesso {'items': [{'nome': 'Biológico líquido TESTE', 'codigo': 'LIQ-1', 'item_id': '00000000-0000-0000-0000-000000000031', 'rule_id': None, 'item_tipo': 'produto', 'volume_ml': 1000.0, 'base_price': 1.0, 'quantidade': 1000.0, 'reason_code': 'OK', 'min_quantity': 0.0, 'price_source': 'catalog_volume_price', 'pricing_mode': 'discount_from_base', 'quote_required': False, 'unidade_medida': 'unidade', 'condi
+FAIL zero explícito: create excede limite, não CREDIT_SETTINGS_INCOMPLETE esperado 'credit_limit_exceeded'; obtido {'id': 'f66d671e-849c-455b-9293-7921169a5510', 'total': 1036.22, 'numero': 'PB-000007', 'status': 'em_analise_comercial', 'schedule': [{'amount': 345.4, 'due_date': '2026-12-07', 'estimated': True, 'interest_amount': 18.0, 'nominal_due_date': '2026-12-07', 'principal_amount': 327.4, 'installment_number': 1, 'business_day_adjusted': False}, {'amount': 345.4,
