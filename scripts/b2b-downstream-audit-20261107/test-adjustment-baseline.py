@@ -89,8 +89,10 @@ def main():
                  ALTER TABLE public.partner_orders DISABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms DISABLE TRIGGER USER;
                  INSERT INTO public.partner_orders(id,partner_id,status,total,created_by,payment_terms_id,requires_financial_approval,financial_approval_status,payment_condition_status)
                  VALUES ('{legacy_id}','{SP.P}','em_analise_comercial',100,'{SP.UB}','{terms_id}',true,'pending','pending');
-                 INSERT INTO public.partner_order_payment_terms(id,partner_order_id,payment_plan_id,approval_status,final_amount)
-                 VALUES ('{terms_id}','{legacy_id}','{SP.PLD}','pending',100);
+                 INSERT INTO public.partner_order_payment_terms
+                 SELECT (jsonb_populate_record(NULL::public.partner_order_payment_terms,
+                       to_jsonb(src)||jsonb_build_object('id','{terms_id}'::uuid,'partner_order_id','{legacy_id}'::uuid,'approval_status','pending'))).*
+                 FROM public.partner_order_payment_terms src WHERE src.partner_order_id='{validated['id']}';
                  ALTER TABLE public.partner_orders ENABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms ENABLE TRIGGER USER; COMMIT;""")
         rows_before_legacy_call = psql("SELECT t.tgname||'|'||c.relnamespace::regnamespace::text||'.'||c.relname||'|'||t.tgenabled::text FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid WHERE NOT t.tgisinternal ORDER BY 1").stdout.strip().splitlines()
         actual_before_legacy = {(r.split("|")[0], r.split("|")[1]): r.split("|")[2] for r in rows_before_legacy_call}
