@@ -514,10 +514,24 @@ def main():
             "approve",
         )
         during_lock(
-            "reject com vínculo vendedor revogado",
-            f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'",
+            "reject com dono comercial revogado",
+            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.F}' WHERE id='{SP.P}'",
             "b2b_phase1_scope_denied",
-            f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'",
+            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.A}' WHERE id='{SP.P}'",
+            "reject",
+        )
+        during_lock(
+            "approve com organização inativada",
+            f"UPDATE public.organizations SET ativo=false,status='inativa' WHERE id='{SP.A}'",
+            "b2b_phase1_scope_denied",
+            f"UPDATE public.organizations SET ativo=true,status='ativa' WHERE id='{SP.A}'",
+            "approve",
+        )
+        during_lock(
+            "reject com feature revogada",
+            f"UPDATE public.saas_plan_version_features SET enabled=false WHERE plan_version_id='{PLAN_VERSION}' AND feature_id='{FEATURE_ORDER}'",
+            "saas_feature_not_entitled",
+            f"UPDATE public.saas_plan_version_features SET enabled=true WHERE plan_version_id='{PLAN_VERSION}' AND feature_id='{FEATURE_ORDER}'",
             "reject",
         )
 
