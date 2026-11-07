@@ -36,7 +36,7 @@ B = load("b3h_candidate", B3_DIR / "test-local-pg.py")
 G = load("adjustment_generator", HERE / "generate-adjustment-fix.py")
 SP = B.SP
 SP.PORT = "55472"
-EVIDENCE = HERE / "review-31430566/scope-live-1638/adjustment-candidate.json"
+EVIDENCE = HERE / "review-31430566/scope-live-1638/decision-candidates.json"
 UFIN, UGC = B.UFIN, B.UGC
 UCUMUL = "20000000-0000-0000-0000-000000000031"
 
@@ -197,6 +197,12 @@ def main():
         request_capture = generated["captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql"]
         psql(request_capture.rstrip() + ";\n")
         apply_captured_acl(G.SIG, pins["request_acl"])
+        for kind in ("approve", "reject"):
+            meta = pins["decision_candidates"][kind]
+            name = meta["signature"].split("(")[0]
+            capture_name = f"captured/{name}.{meta['baseline_md5'][:8]}.local-20261030.sql"
+            psql(generated[capture_name].rstrip() + ";\n")
+            apply_captured_acl(meta["signature"], meta["acl"])
 
         r = runfile(HERE / "01-pre.sql.readonly")
         check("01 PRE_OK com corpos/owners/ACLs reais, sem localização", r.returncode == 0 and "PRE_OK" in r.stdout, r.stderr)
@@ -230,6 +236,10 @@ def main():
         candidate_md5 = psql(f"SELECT md5(pg_get_functiondef('{G.SIG}'::regprocedure))").stdout.strip()
         expected_candidate_md5 = pins["candidate_md5"]
         check("candidato executado tem o MD5 gerado", candidate_md5 == expected_candidate_md5, {"actual": candidate_md5, "expected": expected_candidate_md5})
+        for kind in ("approve", "reject"):
+            meta = pins["decision_candidates"][kind]
+            actual = psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip()
+            check(f"candidato {kind} executado tem owner/ACL preservados e MD5 gerado", actual == meta["candidate_md5"], {"actual": actual, "expected": meta["candidate_md5"]})
         r = runfile(HERE / "03-post.sql.readonly")
         check("03 POST_OK confirma wrappers, privados, owners e ACLs", r.returncode == 0 and "POST_OK" in r.stdout, r.stderr)
         r = runfile(HERE / "02-install.sql.review")
