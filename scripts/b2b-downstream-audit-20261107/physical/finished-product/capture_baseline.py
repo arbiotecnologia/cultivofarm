@@ -54,7 +54,7 @@ def main():
       FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('estoque_produto','entregas')
       AND column_name IN ('origem_estoque','unidade_comercial','conteudo_por_unidade','unidade_conteudo','quantidade_conteudo','embalagem_id','embalagem_versao');
     """))
-    out = {"source": "disposable_captured_composition", "hosted": False, "functions": rows, "relations": relations, "existing_candidate_columns": columns}
+    out = {"source": "disposable_captured_composition_with_current_catalog_schema_seam", "hosted": False, "functions": rows, "relations": relations, "catalog_columns": catalog_columns, "catalog_constraints": catalog_constraints, "existing_candidate_columns": columns}
     (HERE / "baseline.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({"functions": len(rows), "relations": len(relations), "candidate_columns_already_present": len(columns)}))
 
