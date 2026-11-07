@@ -580,6 +580,8 @@ def build_create():
               "  v_credit := platform_private.b2b_credit_checked(p_partner_id, 0, NULL); -- b2bcond: limite explícito, erro propaga\n", "C5a crédito inicial íntegro")
     s = delta(s, "    v_credit := public.fn_b2b_credit_exposure(p_partner_id, v_final, NULL);\n",
               "    v_credit := platform_private.b2b_credit_checked(p_partner_id, v_final, NULL); -- b2bcond: nunca COALESCE limite para liberar\n", "C5b crédito Price íntegro")
+    s = delta(s, "    IF COALESCE((v_credit->>'credit_limit')::numeric,0) > 0\n       AND (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN\n",
+              "    IF (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN -- b2bcond: zero explícito também limita\n", "C5c zero explícito não é ignorado")
     s = delta(s, "    v_installments := GREATEST(COALESCE(p_installment_count, v_plan.installment_count, 1), 1);\n  END IF;\n",
               "    v_installments := GREATEST(COALESCE(p_installment_count, v_plan.installment_count, 1), 1);\n  END IF;\n"
               "  v_installments := (v_cond->>'installment_count')::integer; -- b2bcond: parcelas da versão aprovada\n", "C6 parcelas")
@@ -634,6 +636,8 @@ def build_sim():
               "  BEGIN\n    v_credit := platform_private.b2b_credit_checked(p_partner_id, v_final, NULL); -- b2bcond: crédito nunca vira NULL silencioso\n", "S3a crédito íntegro")
     s = delta(s, "  EXCEPTION WHEN OTHERS THEN v_credit := NULL; END;\n",
               "  END; -- b2bcond: erro transitório ou cálculo inválido ABORTA; UI informa indisponibilidade\n", "S3b sem EXCEPTION OTHERS")
+    s = delta(s, "    IF COALESCE((v_credit->>'credit_limit')::numeric,0) > 0\n       AND (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN\n",
+              "    IF (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN -- b2bcond: zero explícito também limita\n", "S3c zero explícito não é ignorado")
     s = delta(s, "  v_interest := ROUND(v_final - v_net, 2);\n",
               "  v_installments := (v_cond->>'installment_count')::integer;\n" + SCHED + "  v_interest := ROUND(v_final - v_net, 2);\n", "S3 total pelas parcelas")
     s = delta(s, "  v_first_due := COALESCE(p_first_due_date, current_date + v_plan.max_days);\n",
@@ -697,8 +701,8 @@ def build_quote(rollback=False):
     s = delta(s, "  SELECT COALESCE(SUM(subtotal),0)::numeric(14,2) INTO v_table\n",
               "  IF v_has_condition THEN\n"
               "    SELECT jsonb_build_object('quote_required','false','lines',jsonb_agg(jsonb_build_object(\n"
-              "      'item_tipo',CASE WHEN i.produto_id IS NOT NULL THEN 'produto' ELSE 'microrganismo' END,\n"
-              "      'item_id',COALESCE(i.produto_id,i.microrganismo_id),'unidade_medida',i.unit_type_snapshot,\n"
+              "      'item_tipo',CASE WHEN i.product_id IS NOT NULL THEN 'produto' ELSE 'microrganismo' END,\n"
+              "      'item_id',COALESCE(i.product_id,i.microrganismo_id),'unidade_medida',i.unit_type_snapshot,\n"
               "      'volume_ml',i.volume_ml_snapshot,'quantidade',i.quantidade,'pricing_mode','fixed_item_price',\n"
               "      'price_source','quote_manual','rule_id','','final_unit_price',i.preco_unitario_final_snapshot,\n"
               "      'line_final_amount',i.subtotal) ORDER BY i.id)) INTO v_cart FROM public.partner_order_items i WHERE i.order_id=p_order_id;\n"
@@ -724,6 +728,8 @@ def build_quote(rollback=False):
     s = delta(s, "  v_credit := public.fn_b2b_credit_exposure(v_order.partner_id, v_final, p_order_id);\n",
               "  v_credit := CASE WHEN v_has_condition THEN platform_private.b2b_credit_checked(v_order.partner_id,v_final,p_order_id)\n"
               "                   ELSE public.fn_b2b_credit_exposure(v_order.partner_id,v_final,p_order_id) END;\n", "Q9 crédito explícito")
+    s = delta(s, "  IF COALESCE((v_credit->>'credit_limit')::numeric,0) > 0\n     AND (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN\n",
+              "  IF (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN -- b2bcond: zero explícito também limita\n", "Q9b zero explícito não é ignorado")
     s = delta(s, "    0, v_plan.monthly_interest_percent, v_plan.months_count,\n",
               "    0, CASE WHEN v_has_condition THEN (v_cond->>'monthly_rate')::numeric ELSE v_plan.monthly_interest_percent END,\n"
               "    CASE WHEN v_has_condition THEN v_installments ELSE v_plan.months_count END,\n", "Q10 termos da condição")
