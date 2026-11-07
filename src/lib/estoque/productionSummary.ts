@@ -81,7 +81,7 @@ export function buildProductionSummary(lotes: ProductionLot[], estoques: Product
   for (const lot of legacyLotes) {
     const bucket = porLote.get(lot.id) ?? legacyBucket();
     const produzidoL = (Number(lot.volume_produzido) || 0) / 1000;
-    const lotRow = { lote_id: lot.id, codigo_lote: lot.codigo_lote, produzidoL, ...bucket };
+    const lotRow = { lote_id: lot.id, codigo_lote: lot.codigo_lote, ...bucket, produzidoL };
     const id = lot.microrganismo_id || lot.produto_id;
     if (!id) continue;
     const type = lot.microrganismo_id ? "microrganismo" as const : "produto" as const;
