@@ -112,7 +112,7 @@
     {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  function \"platform_private.b2b_allocate_document(uuid)\" does not exist\\n')"
+      "detail": "RuntimeError('instalação oficial falhou; diagnóstico de hashes concluído fora do aceite')"
     }
   ],
   "hosted": "NOT_RUN",

@@ -20,5 +20,13 @@ PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
 PASS fixture contábil pendente separada
-FAIL PRE confirma writers/índice e ausência de todos os overloads da projeção :: 
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  function "platform_private.b2b_allocate_document(uuid)" does not exist\n')
+PASS PRE confirma writers/índice e ausência de todos os overloads da projeção
+POST_FUNCTION_HASH_DEBUG
+platform_private.b2b_credit_balances(uuid,uuid)|53c290771f25d48bd3a08d7bd954d6c6|30fb90665f7b1382dbed9b3a51d3eaeb
+platform_private.b2b_credit_config_block(uuid)|1b9e3870ef3f944c11e8b094885dc195|4a2cd7347536582746625ad572ad327f
+platform_private.b2b_debtor_partner(uuid,uuid)|2a0390b9cf3e2dfb84c8d6933fd4029f|19d096e643067fc3c73d0a0a1546d0ea
+platform_private.b2b_reverse_allocation(uuid,uuid)|e8f483d839da20cb49dd86af5b5047aa|a8fa031cd834bf6525222dc7cc1f330a
+platform_private.b4_assert_order_eligible(uuid)|1155fd3d213192f7f8ef1489fe95b3af|b0e81f44de310fc38ae9ea3cdebd628b
+public.rpc_receivable_money_projection_v1(uuid,integer,integer)|64607d04d66831252f7d7b0e6371ff42|7c5d3fa0a4c9516ab1c40b058a529578
+
+FAIL execução sem exceção de harness :: RuntimeError('instalação oficial falhou; diagnóstico de hashes concluído fora do aceite')
