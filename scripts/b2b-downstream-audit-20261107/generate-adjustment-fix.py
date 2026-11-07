@@ -16,6 +16,19 @@ ROLE_MD5 = "4d90e93d521a4819d9085f28d742030f"
 PRIVATE_ROLE_MD5 = "c5af5b55de6d79da9b73a33948746ae2"
 ACCOUNTING_GUARD_MD5 = "669b19490a7a9700f0158db4b31885ad"
 CONTRACT = "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1"
+DECISION_SOURCES = {
+    "request": {"source": REQUEST_SOURCE, "signature": SIG, "md5": BASE_MD5},
+    "approve": {
+        "source": "public.approve_b2b_payment_terms_secure(p_partner_order_id uuid, p_notes text)",
+        "signature": "public.approve_b2b_payment_terms_secure(uuid,text)",
+        "md5": "a61daa8542058bdbf239903d655c2a1b",
+    },
+    "reject": {
+        "source": "public.reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)",
+        "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
+        "md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
+    },
+}
 
 # regprocedure -> (assinatura na captura, md5 conferido, arquivo local gerado).
 DEPENDENCIES = {
