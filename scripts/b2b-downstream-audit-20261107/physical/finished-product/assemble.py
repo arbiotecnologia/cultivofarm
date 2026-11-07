@@ -321,13 +321,21 @@ BEGIN
   RAISE EXCEPTION 'FINISHED_PRODUCT_GATE_CLOSED' USING ERRCODE='42501';
  END IF;
  SELECT * INTO v_prev FROM public.estoque_movimentacoes WHERE idempotency_key=p_idempotency_key LIMIT 1;
- IF FOUND THEN
+  IF FOUND THEN
   IF v_prev.usuario_id IS DISTINCT FROM v_uid OR v_prev.request_fingerprint IS DISTINCT FROM v_fp
    OR v_prev.acao IS DISTINCT FROM 'entrada' OR v_prev.origem IS DISTINCT FROM 'finished_product_purchase_entry_v1'
+   OR v_prev.metadata->>'produto_id' IS DISTINCT FROM p_produto_id::text
+   OR v_prev.metadata->>'embalagem_id' IS DISTINCT FROM p_embalagem_id::text
+   OR v_prev.metadata->>'unidade_conteudo' IS NULL OR v_prev.metadata->>'conteudo_por_unidade' IS NULL
+   OR v_prev.metadata->>'quantidade_conteudo' IS NULL OR v_prev.metadata->>'embalagem_versao' IS NULL
    OR NOT EXISTS(SELECT 1 FROM public.estoque_produto s JOIN public.lotes l ON l.id=s.lote_id WHERE s.id=v_prev.estoque_produto_id AND l.id=v_prev.lote_id AND l.organization_id=v_org AND s.origem_estoque='compra_produto_acabado_revenda') THEN
    RAISE EXCEPTION 'FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT' USING ERRCODE='23505';
   END IF;
-  RETURN jsonb_build_object('ok',true,'replay',true,'lote_id',v_prev.lote_id,'estoque_produto_id',v_prev.estoque_produto_id,'movimentacao_id',v_prev.id);
+  RETURN jsonb_build_object('ok',true,'replay',true,'lote_id',v_prev.lote_id,'estoque_produto_id',v_prev.estoque_produto_id,'movimentacao_id',v_prev.id,
+   'origem_estoque','compra_produto_acabado_revenda','unidade_conteudo',v_prev.metadata->>'unidade_conteudo',
+   'conteudo_por_unidade',(v_prev.metadata->>'conteudo_por_unidade')::numeric,
+   'quantidade_conteudo',(v_prev.metadata->>'quantidade_conteudo')::numeric,
+   'embalagem_versao',(v_prev.metadata->>'embalagem_versao')::integer);
  END IF;
  SELECT * INTO v_product FROM public.produtos WHERE id=p_produto_id FOR SHARE;
  IF NOT FOUND OR v_product.owner_organization_id IS DISTINCT FROM v_org OR v_product.ativo IS NOT TRUE
@@ -389,6 +397,32 @@ EXCEPTION WHEN OTHERS THEN
  PERFORM platform_private.stock_motor_context_set(NULL); PERFORM public.fn_estoque_ctx_close(); RAISE;
 END;$purchase$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION public.rpc_finished_product_purchase_capability_v1()
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid; v_available boolean:=false;
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'FINISHED_PRODUCT_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ BEGIN
+  v_org:=platform_private.stock_motor_actor('entrada');
+ EXCEPTION WHEN insufficient_privilege THEN
+  RETURN jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','available',false,'reason','ACTOR_DENIED');
+ END;
+ v_available:=EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE);
+ RETURN jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','available',v_available);
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_finished_product_purchase_capability_v1() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_capability_v1() TO authenticated;
+
+CREATE FUNCTION public.rpc_finished_product_purchase_entry_v1(
+ p_produto_id uuid,p_embalagem_id uuid,p_lote_fornecedor text,p_quantidade numeric,
+ p_compra_referencia text,p_fornecedor_nome text,p_idempotency_key text,p_validade date DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$
+BEGIN
+ RETURN platform_private.finished_product_purchase_entry_v1(p_produto_id,p_embalagem_id,p_lote_fornecedor,p_quantidade,p_compra_referencia,p_fornecedor_nome,p_idempotency_key,p_validade);
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) TO authenticated;
 """
     bodies = [ddl, purchase, reservar, criar, merge, confirm, send, sync, lot_guard, lab_guard, entry_validate, entry_guard, entry_final]
     downstream_signatures = {
@@ -415,7 +449,7 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
             blocks.append(f"DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname={lit(con['table'])} AND x.conname={lit(con['name'])} AND pg_get_constraintdef(x.oid)={lit(con['definition'])}) THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT {con['table']}.{con['name']}';END IF;END$$;")
         return blocks
 
-    absence_pre = "DO $$BEGIN IF to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL OR to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL THEN RAISE EXCEPTION 'FINISHED_PRE_OBJECT_ALREADY_EXISTS';END IF;END$$;"
+    absence_pre = "DO $$BEGIN IF to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL OR to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL OR to_regprocedure('public.rpc_finished_product_purchase_capability_v1()') IS NOT NULL OR to_regprocedure('public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL THEN RAISE EXCEPTION 'FINISHED_PRE_OBJECT_ALREADY_EXISTS';END IF;END$$;"
     header = "-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."
     pre = [header]
     for entry in BASE["functions"]:
@@ -455,7 +489,7 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
             post_blocks[signature] = f"-- POST_RUNTIME_REQUIRED_DEPENDENCY {signature}"
     for entry in BASE.get("dependency_triggers", []):
         post_blocks["trigger:" + entry["name"]] = trigger_pin(entry)
-    new_signatures = ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]
+    new_signatures = ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)", "public.rpc_finished_product_purchase_capability_v1()", "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]
     for signature in new_signatures:
         if signature in post_by_signature:
             post_blocks[signature] = function_pin(post_by_signature[signature])
@@ -484,8 +518,8 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
     (HERE / "postflight.sql.review").write_text("\n".join(post) + "\n" + gate_closed + "\n")
     (HERE / "postflight-foundation.sql.review").write_text("\n".join(foundation_post) + "\n" + gate_closed + "\n")
     (HERE / "postflight-downstream.sql.review").write_text("\n".join(downstream_post) + "\n" + gate_closed + "\n")
-    (HERE / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
-    manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": [], "layers": {"foundation": {"changed_functions": [x["signature"] for x in foundation_entries], "requires_delivery_confirmation_or_send": False}, "downstream": {"changed_functions": [x["signature"] for x in downstream_entries], "requires_delivery_confirmation_or_send": True, "requires_foundation_postflight": True}}, "reported_live_state": {"delivery_confirm_apply_v1": "ABSENT", "delivery_send_apply_v1": "ABSENT", "other_six_bodies_owners_acls": "REPORTED_MATCH_REMAINING_PRE_PINS_RETAINED"}, "files": {}}
+    (HERE / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
+    manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": ["public.rpc_finished_product_purchase_capability_v1():authenticated", "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date):authenticated"], "layers": {"foundation": {"changed_functions": [x["signature"] for x in foundation_entries], "requires_delivery_confirmation_or_send": False}, "downstream": {"changed_functions": [x["signature"] for x in downstream_entries], "requires_delivery_confirmation_or_send": True, "requires_foundation_postflight": True}}, "reported_live_state": {"delivery_confirm_apply_v1": "ABSENT", "delivery_send_apply_v1": "ABSENT", "other_six_bodies_owners_acls": "REPORTED_MATCH_REMAINING_PRE_PINS_RETAINED"}, "files": {}}
     for name in ["baseline.json", "candidate.sql.review", "candidate-foundation.sql.review", "candidate-downstream.sql.review", "install.sql.review", "install-foundation.sql.review", "install-downstream.sql.review", "postflight.sql.review", "postflight-foundation.sql.review", "postflight-downstream.sql.review", "rollback.sql.review"]:
         data = (HERE / name).read_bytes(); manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
     (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
