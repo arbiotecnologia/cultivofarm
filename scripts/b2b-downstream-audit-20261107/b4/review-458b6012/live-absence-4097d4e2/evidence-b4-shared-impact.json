@@ -14,7 +14,7 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 22,
+  "passed": 23,
   "total": 24,
   "checks": [
     {
@@ -107,8 +107,7 @@
     },
     {
       "name": "PRE confirma writers/índice e ausência de todos os overloads da projeção",
-      "ok": false,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "execução sem exceção de harness",
