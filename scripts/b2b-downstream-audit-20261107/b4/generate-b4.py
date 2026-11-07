@@ -241,6 +241,48 @@ REVOKE ALL ON platform_private.b2b_title_permits FROM PUBLIC,anon,authenticated,
     debtor = extract(shared, "CREATE FUNCTION platform_private.b2b_debtor_partner", "END $$;\n", "debtor partner")
     shared_trigger = "CREATE TRIGGER zz_b2b_shared_credit_guard BEFORE INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_shared_receivable_credit_guard();\n"
 
+    # Revisão 4097d4e2: crédito do comprador resolve dinheiro no tenant vendedor.
+    # A projeção pública mantém ator+papel+tenant; somente o núcleo privado recebe
+    # a organização já autorizada pelo integration_actor, sem grant de cliente.
+    proven_block = extract(origin, "CREATE FUNCTION platform_private.b2b_proven_money_row",
+                           "REVOKE ALL ON FUNCTION platform_private.b2b_proven_money_row(uuid) FROM PUBLIC,anon,authenticated,service_role;\n",
+                           "actor-bound money resolver")
+    proven_function = proven_block.split("REVOKE ALL ON FUNCTION", 1)[0]
+    internal_money = delta(proven_function,
+        "CREATE FUNCTION platform_private.b2b_proven_money_row(p_id uuid) RETURNS jsonb",
+        "CREATE FUNCTION platform_private.b2b_proven_money_row_internal(p_id uuid,p_org uuid) RETURNS jsonb",
+        "internal money resolver signature")
+    internal_money = delta(internal_money,
+        "DECLARE org uuid:=public.h15_actor_organization(); i public.accounts_receivable_installments; row jsonb; r jsonb;",
+        "DECLARE org uuid:=p_org; i public.accounts_receivable_installments; row jsonb; r jsonb;",
+        "internal money resolver organization")
+    internal_money = delta(internal_money,
+        " IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;",
+        " IF org IS NULL THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;",
+        "internal money resolver boundary")
+    actor_money = """CREATE FUNCTION platform_private.b2b_proven_money_row(p_id uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid:=public.h15_actor_organization();
+BEGIN
+ IF auth.uid() IS NULL OR org IS NULL OR public.is_financial_staff(auth.uid()) IS NOT TRUE THEN RAISE EXCEPTION 'MONEY_ORIGIN_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.b2b_proven_money_row_internal(p_id,org);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_proven_money_row(uuid),platform_private.b2b_proven_money_row_internal(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+"""
+    origin = origin.replace(proven_block, internal_money + actor_money)
+    origin = delta(origin,
+        " org uuid:=public.h15_actor_organization(); sealed jsonb; sch jsonb; terms jsonb; audit jsonb;",
+        " org uuid; sealed jsonb; sch jsonb; terms jsonb; audit jsonb;",
+        "legacy money organization declaration")
+    origin = delta(origin,
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=org;\n SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=org;",
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;\n org:=i.organization_id;\n SELECT * INTO a FROM public.accounts_receivable WHERE id=i.receivable_id AND organization_id=org;",
+        "legacy money organization resolution")
+    origin = delta(origin,
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id AND organization_id=public.h15_actor_organization();",
+        " SELECT * INTO i FROM public.accounts_receivable_installments WHERE id=p_id;",
+        "allocation money organization resolution")
+
     # Elegibilidade canônica e gates de origem/contabilidade, revalidados depois das esperas.
     eligible = """CREATE OR REPLACE FUNCTION platform_private.b4_assert_order_eligible(p_order uuid) RETURNS void
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
