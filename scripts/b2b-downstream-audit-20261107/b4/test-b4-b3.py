@@ -186,7 +186,7 @@ def main():
         install_b3(work)
         B3.psql("""CREATE TABLE IF NOT EXISTS public.entregas(id uuid PRIMARY KEY,partner_order_id uuid);CREATE TABLE IF NOT EXISTS public.fiscal_invoices(id uuid);
 CREATE FUNCTION platform_private.c2_order_partner_recipients(uuid) RETURNS SETOF uuid LANGUAGE sql AS $$SELECT NULL::uuid WHERE FALSE$$;""")
-        for name in ["approve_b2b_payment_terms_secure", "approve_partner_order", "fn_b2b_order_priceable", "fn_b2b_order_billing_eligibility", "is_financial_staff",
+        for name in ["approve_b2b_payment_terms_secure", "approve_partner_order", "fn_b2b_order_priceable", "fn_b2b_order_billing_eligibility", "is_financial_staff", "fn_authz_uid_scope_ok",
                      "generate_b2b_receivable_secure", "generate_b2b_receivable_secure_impl", "tg_auto_b2b_receivable",
                      "fn_generate_receivable_from_entrega", "rpc_fiscal_invoice_apply_authorization_v1"]:
             function = captured_function(name)
@@ -244,6 +244,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
                 expected = json.loads((H / "b4-pins.json").read_text())["candidate_md5"]
                 actual = {sig: B3.md5_of(sig) for sig in expected}
                 (H / "pin-debug-credit.txt").write_text(B3.psql("SELECT pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)").stdout)
+                (H / "pin-debug-all.json").write_text(json.dumps({sig: B3.psql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)").stdout for sig in expected}, indent=2))
                 check("diagnóstico dos pinos após falha de instalação", False, {"diagnostic_exit": diagnostic.returncode, "expected": expected, "actual": actual, "stderr": diagnostic.stderr[-500:]})
         rerun = runfile(H / "02-install.sql.review")
         check("rerun aborta pelo pin da baseline, sem reinstalar", rerun.returncode != 0 and "B4_INSTALL_PRE_DRIFT" in rerun.stderr, rerun.stderr[-500:])

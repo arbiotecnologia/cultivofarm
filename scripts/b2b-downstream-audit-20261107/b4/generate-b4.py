@@ -85,6 +85,8 @@ def md5_def(src):
         text = text[:-1].rstrip()
     # pg_get_functiondef omite VOLATILE (default) e termina o texto com uma quebra de linha.
     text = text.replace("\n VOLATILE SECURITY DEFINER\n", "\n SECURITY DEFINER\n")
+    text = re.sub(r"SET search_path\s*=\s*", "SET search_path TO ", text)
+    text = re.sub(r"SET search_path='([^']*)'", r"SET search_path TO '\1'", text)
     return hashlib.md5((text + "\n").encode()).hexdigest()
 
 
