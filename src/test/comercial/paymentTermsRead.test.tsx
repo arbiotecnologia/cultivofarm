@@ -3,16 +3,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 // Transporte stub local: nenhuma chamada hospedada. Hook e componente reais.
-const s = vi.hoisted(() => ({ actor: "u-a", tenant: "t-a", epoch: 0, rpc: vi.fn(), table: vi.fn(), writes: vi.fn() }));
+const s = vi.hoisted(() => ({ actor: "u-a", tenant: "t-a", epoch: 0, rpc: vi.fn(), condition: vi.fn(), table: vi.fn(), writes: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
   user: { id: s.actor }, profile: { user_id: s.actor, organization_id: s.tenant, ativo: true, senha_provisoria: false },
   roles: ["administrador"], role: "administrador", loading: false, authzReady: true, authzEpoch: s.epoch, checkAuthzAccess: () => true,
 }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
-  rpc: (...a: unknown[]) => { const p = s.rpc(...a); return Object.assign(p, { abortSignal: () => p }); },
+  rpc: (...a: unknown[]) => { const p = a[0] === "get_partner_order_payment_condition_secure" ? s.condition(...a) : s.rpc(...a); return Object.assign(p, { abortSignal: () => p }); },
   from: (...a: unknown[]) => s.table(...a),
 } }));
 import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection";
+import { parseOrderPaymentCondition } from "@/hooks/usePaymentTermsApproval";
+import { isAccountingPending, ACCOUNTING_PENDING_CONTRACT } from "@/lib/orderAccountingState";
 
 const ORDER = "a16fb134-6ae6-4952-8b13-d6098eda52fd";
 const terms = (final = 18.9) => ({ id: "t1", partner_order_id: ORDER, payment_plan_id: "p", plan_name_snapshot: "TESTE 10%", plan_code_snapshot: "T10",
@@ -27,13 +29,16 @@ function legacy(row: unknown) {
   const q: any = { select: () => q, eq: () => q, abortSignal: () => q, maybeSingle: () => Promise.resolve({ data: row, error: null }) };
   s.table.mockReturnValue(q);
 }
-function mount() {
+function mount(canApprove = false, initialPending = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const tree = () => <QueryClientProvider client={client}><PaymentTermsSection partnerOrderId={ORDER} canApprove={false} /></QueryClientProvider>;
-  const v = render(tree()); return { update: () => v.rerender(tree()) };
+  let pending = initialPending;
+  const tree = () => <QueryClientProvider client={client}><PaymentTermsSection partnerOrderId={ORDER} canApprove={canApprove} accountingPending={pending} /></QueryClientProvider>;
+  const v = render(tree()); return { update: () => v.rerender(tree()), setPending: (value: boolean) => { pending = value; v.rerender(tree()); } };
 }
 const NO_TERMS = /Sem condição de pagamento registrada/;
-beforeEach(() => { Object.assign(s, { actor: "u-a", tenant: "t-a", epoch: 0 }); vi.clearAllMocks(); });
+beforeEach(() => { Object.assign(s, { actor: "u-a", tenant: "t-a", epoch: 0 }); vi.clearAllMocks();
+  s.condition.mockImplementation(() => ok({ contract: "B2B_PAYMENT_CONDITION_V1", order_id: ORDER, present: false, payment_condition: null }));
+});
 afterEach(cleanup);
 
 it("presente pelo leitor canônico: mostra plano e valor final, sem chamar tabela direta", async () => {
@@ -96,4 +101,61 @@ it("revogação/época na mesma identidade descarta o resultado exibido", async 
   s.epoch += 1; m.update();
   await waitFor(() => expect(screen.queryByText(/55,55/)).toBeNull());
   expect(s.writes).not.toHaveBeenCalled();
+});
+
+const v1 = () => ({ contract: "B2B_PAYMENT_CONDITION_V1", order_id: ORDER, present: true, payment_condition: {
+  due_basis: "nf_issue", estimated: true, payment_method_name: "Boleto", installment_count: 3, monthly_rate: 1.8,
+} });
+const decisionCases = [
+  ["Aprovar", "approve_b2b_payment_terms_secure"],
+  ["Reprovar", "reject_b2b_payment_terms_secure"],
+  ["Solicitar ajuste", "request_b2b_payment_terms_adjustment_secure"],
+] as const;
+
+it("snapshot V1 conserva base NF, estimativa e taxa/parcelas explícitas sem usar plano legado", () => {
+  expect(parseOrderPaymentCondition(v1(), ORDER)).toMatchObject({ due_basis: "nf_issue", estimated: true, installment_count: 3, monthly_rate: 1.8 });
+  expect(parseOrderPaymentCondition({ ...v1(), payment_condition: { ...v1().payment_condition, installment_count: 1 } }, ORDER)?.monthly_rate).toBe(1.8);
+});
+it.each(["estimated", "due_basis", "installment_count", "monthly_rate"])("snapshot V1 inválido em %s é recusado", (key) => {
+  expect(() => parseOrderPaymentCondition({ ...v1(), payment_condition: { ...v1().payment_condition, [key]: null } }, ORDER)).toThrow();
+});
+it.each(decisionCases)("pendência fiscal V1 bloqueia %s antes do dispatch", async (label) => {
+  s.rpc.mockImplementation(() => reply(terms())); s.condition.mockImplementation(() => ok(v1()));
+  const pending = isAccountingPending({ c2_external_origin_snapshot: { contract: ACCOUNTING_PENDING_CONTRACT, accounting_validated: false } });
+  expect(pending).toBe(true);
+  mount(true, pending);
+  const button = await screen.findByRole("button", { name: label });
+  await waitFor(() => expect(button).toBeDisabled()); fireEvent.click(button);
+  expect(s.rpc.mock.calls.map(c => c[0])).toEqual(["get_partner_order_payment_terms_secure"]);
+});
+it.each(decisionCases)("sem pendência e autorizado: %s preserva chamada canônica", async (label, endpoint) => {
+  s.rpc.mockImplementation((name) => name === "get_partner_order_payment_terms_secure" ? reply(terms()) : ok(null));
+  s.condition.mockImplementation(() => ok(v1())); mount(true);
+  const button = await screen.findByRole("button", { name: label });
+  await waitFor(() => expect(button).toBeEnabled()); fireEvent.click(button);
+  if (label !== "Aprovar") {
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Revisão autorizada" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+  }
+  await waitFor(() => expect(s.rpc).toHaveBeenCalledWith(endpoint, expect.objectContaining({ p_partner_order_id: ORDER })));
+  expect(s.rpc.mock.calls.filter(c => c[0] === endpoint)).toHaveLength(1);
+});
+it("legado autorizado preserva aprovação sem inventar snapshot V1", async () => {
+  s.rpc.mockImplementation((name) => name === "get_partner_order_payment_terms_secure" ? reply(terms()) : ok(null));
+  mount(true); const button = await screen.findByRole("button", { name: "Aprovar" });
+  await waitFor(() => expect(button).toBeEnabled()); fireEvent.click(button);
+  await waitFor(() => expect(s.rpc).toHaveBeenCalledWith("approve_b2b_payment_terms_secure", { p_partner_order_id: ORDER, p_notes: null }));
+});
+it("pendência bloqueia confirmação de ajuste aberto antes da atualização do pedido", async () => {
+  s.rpc.mockImplementation(() => reply(terms())); s.condition.mockImplementation(() => ok(v1())); const m = mount(true);
+  const button = await screen.findByRole("button", { name: "Solicitar ajuste" });
+  await waitFor(() => expect(button).toBeEnabled()); fireEvent.click(button);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Revisão" } }); m.setPending(true);
+  const confirm = screen.getByRole("button", { name: "Confirmar" }); expect(confirm).toBeDisabled(); fireEvent.click(confirm);
+  expect(s.rpc.mock.calls.map(c => c[0])).toEqual(["get_partner_order_payment_terms_secure"]);
+});
+it("erro do leitor de snapshot não permite decisão com termos carregados", async () => {
+  s.rpc.mockImplementation(() => reply(terms())); s.condition.mockImplementation(() => fail("42501", "forbidden")); mount(true);
+  const button = await screen.findByRole("button", { name: "Aprovar" }); await waitFor(() => expect(button).toBeDisabled());
+  fireEvent.click(button); expect(s.rpc.mock.calls.map(c => c[0])).toEqual(["get_partner_order_payment_terms_secure"]);
 });
