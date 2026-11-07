@@ -21,6 +21,12 @@
       "signature": "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
     },
     {
+      "acl": "{postgres=X/postgres}",
+      "md5": "c150d00c4e0258ddcf4f7e2f86f53170",
+      "owner": "postgres",
+      "signature": "platform_private.envase_insert_guard_v1()"
+    },
+    {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",
       "md5": "06e64b76968f91e19f03b24363ac610a",
       "owner": "postgres",

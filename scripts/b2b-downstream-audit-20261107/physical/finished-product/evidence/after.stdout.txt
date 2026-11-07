@@ -1,40 +1,9 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=1.8s
+CHECKPOINT sql_calls=1 elapsed=1.9s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
-PASS candidato instalado com os cinco PRE pins e sem novos grants
-PASS instalação permanece operacionalmente desligada
-PASS gate fechado nega reserva de produto acabado
-PASS quimico kg: pedido/OS → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL
-PASS quimico kg: envio/confirmação/replays idempotentes sem segunda baixa
-PASS fertilizante g: pedido/OS → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL
-PASS fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa
-PASS quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000
-PASS quimico l: envio/confirmação/replays idempotentes sem segunda baixa
-PASS fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
-CHECKPOINT sql_calls=100 elapsed=11.4s
-PASS fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa
-PASS FAIL ERROR:  ENVASE_INSERT_CLOSED
-CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 29 at RAISE
-SQL statement "INSERT INTO public.estoque_produto (
-      produto_id, lote_id, microrganismo_id, envase_id,
-      quantidade, volume_total, validade, status,
-      reservado_para_os_id, reservado_para_os_tipo,
-      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,
-      quantidade_reservada, observacao_reserva,
-      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
-    ) VALUES (
-      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,
-      p_qty, v_volume_reservado, v_item.validade, 'reservado',
-      p_os_id, p_os_tipo,
-      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,
-      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,
-      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,
-      p_qty, p_observacao,
-      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao
-    ) RETURNING id"
-PL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement
-PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment
-PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment
+PASS FAIL candidate PRE/install failed
+ERROR:  42710: trigger "a01_envase_insert_permit" for relation "envase" already exists
+LOCATION:  CreateTriggerFiringOn, trigger.c:765
 
-RESULT 14 / 14 exit 1
+RESULT 3 / 3 exit 1
