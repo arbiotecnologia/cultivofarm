@@ -36,7 +36,7 @@
       "status": "PASS"
     },
     {
-      "name": "POST da entrada confirma seus nove corpos, novos helpers e gate fechado",
+      "name": "POST da entrada confirma seus onze corpos, novos helpers e gate fechado",
       "status": "PASS"
     },
     {
@@ -48,8 +48,8 @@
       "name": "compra canônica funciona na camada de entrada sem downstream",
       "status": "PASS",
       "detail": {
-        "stock": "21d1e7ce-41ed-4e1f-8216-5102813d7b7d",
-        "lot": "04838be2-8f15-44a4-bf2a-8b8c1bc101f9"
+        "stock": "b0f92155-2e56-4605-8158-cafc57d81fb4",
+        "lot": "b1e5fd40-9f6a-45d5-8076-b8d52678d648"
       }
     },
     {

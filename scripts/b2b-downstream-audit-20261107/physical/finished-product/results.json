@@ -58,6 +58,7 @@
   "ui": {
     "focused_vitest": {"passed": 71, "total": 71, "exit_code": 0},
     "legacy_cockpit_stock_vitest": {"passed": 214, "total": 214, "exit_code": 0},
+    "delivery_dialog_vitest": {"passed": 22, "total": 22, "exit_code": 0},
     "preview_build": "OK",
     "capability_fail_closed_and_form_not_mounted": true,
     "authenticated_hosted_or_browser_e2e": false
