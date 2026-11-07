@@ -1,0 +1,54 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 648, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 246, in main
+    raise RuntimeError("02-install falhou: " + r.stderr)
+RuntimeError: 02-install falhou: psql:/dev-server/scripts/b2b-downstream-audit-20261107/02-install.sql.review:427: WARNING:  HELPER_ACTUAL_BODY=CREATE OR REPLACE FUNCTION platform_private.b2b_seller_financial_scope_error(_uid uuid, _partner uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_org uuid;
+BEGIN
+  IF _uid IS NULL OR auth.uid() IS DISTINCT FROM _uid OR _partner IS NULL THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF NOT platform_private.platform_actor_access_ready(_uid) THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF public.is_platform_superadmin(_uid) OR EXISTS (
+    SELECT 1 FROM public.user_roles r
+    WHERE r.user_id=_uid AND r.role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin')
+  ) THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF NOT (platform_private.has_role(_uid,'administrador'::public.app_role)
+       OR platform_private.has_role(_uid,'financeiro'::public.app_role)
+       OR platform_private.has_role(_uid,'gestor_comercial'::public.app_role)) THEN
+    RETURN 'unauthorized';
+  END IF;
+  v_org := public.h15_actor_organization();
+  IF v_org IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa'
+  ) THEN
+    RETURN 'b2b_phase1_scope_denied';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.partner_accounts pa
+    WHERE pa.id=_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+      AND pa.commercial_owner_organization_id=v_org
+  ) THEN
+    RETURN 'b2b_phase1_scope_denied';
+  END IF;
+  IF NOT public._saas_user_has_feature(_uid,'pedidos_b2b') THEN
+    RETURN 'saas_feature_not_entitled';
+  END IF;
+  RETURN NULL;
+END
+$function$
+
+psql:/dev-server/scripts/b2b-downstream-audit-20261107/02-install.sql.review:427: ERROR:  ADJUSTMENT_HELPER_PIN_DRIFT: actual=c46617ec2a1320c9c05e3da33af8a350 expected=9e111e584803d1ed3cb14f74e823095e
+CONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE
+
