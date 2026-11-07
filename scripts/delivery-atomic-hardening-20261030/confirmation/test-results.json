@@ -5,12 +5,24 @@
       "status": "PASS"
     },
     {
+      "test": "reported applied composition including isolated install closure release restored without regeneration",
+      "status": "PASS"
+    },
+    {
+      "test": "all ten real downstream tables have EXISTING nonempty sentinels before envase",
+      "status": "PASS"
+    },
+    {
+      "test": "existing full-row downstream sentinels seeded in disposable fixture only",
+      "status": "PASS"
+    },
+    {
       "test": "execution",
       "status": "FAIL",
-      "error": "ERROR:  ENVASE_RELEASE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\n"
+      "error": "[Errno 2] No such file or directory: '/tmp/delivery-confirmation/applied-fixture.sql'"
     }
   ],
   "raw": [],
   "exit_code": 1,
-  "elapsed_seconds": 270.73391197600006
+  "elapsed_seconds": 273.083110261
 }
