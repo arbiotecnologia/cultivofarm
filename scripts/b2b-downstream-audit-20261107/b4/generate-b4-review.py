@@ -241,6 +241,15 @@ def absence_guard(names, kind, code):
     return "DO $guard$ BEGIN\n" + "\n".join(checks) + "\nEND $guard$;"
 
 
+def projection_overload_guard(expected, code):
+    # A ausência/presença é medida pelo nome no catálogo, não por uma assinatura.
+    return f"""DO $guard$ BEGIN
+ IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+     WHERE n.nspname='public' AND p.proname='rpc_receivable_money_projection_v1')<>{expected}
+ THEN RAISE EXCEPTION '{code}' USING ERRCODE='42501'; END IF;
+END $guard$;"""
+
+
 def new_relation_post_guard():
     lines = []
     for relation in NEW_TABLES + [NEW_VIEW]:
