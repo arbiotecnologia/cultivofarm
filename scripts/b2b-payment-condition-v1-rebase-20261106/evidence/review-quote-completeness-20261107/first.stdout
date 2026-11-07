@@ -1,0 +1,5 @@
+FAIL INSTALL novo: carrinho vazio consistente negado com guards ativos ERROR:  auth_required
+CONTEXT:  PL/pgSQL function platform_private.c2_external_origin_assert(jsonb,uuid,uuid) line 4 at RAISE
+SQL statement "SELECT platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id)"
+PL/pgSQL function platform_private.b2b_internal_child_snapshot_guard() line 13 at PERFORM
+

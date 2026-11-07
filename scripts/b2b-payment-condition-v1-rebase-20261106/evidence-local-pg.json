@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 224,
-  "total": 224,
+  "passed": 226,
+  "total": 226,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -367,6 +367,14 @@
     },
     {
       "name": "prazo 30 > max_days 29: resolução recusa explicitamente, sem clamp",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: create recusa sem novo pedido",
+      "ok": true
+    },
+    {
+      "name": "prazo incoerente: nenhuma idempotência de create persistida",
       "ok": true
     },
     {
