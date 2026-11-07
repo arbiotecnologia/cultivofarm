@@ -93,10 +93,14 @@ def captured_function(name):
 def approve_order(order_id):
     result = B3.as_user(B3.UADM, f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
     check("aprovação comercial canônica do pedido", result.returncode == 0, result.stderr[-900:])
-    result = B3.as_user(B3.UADM, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL)::text;")
-    check("aprovação canônica dos termos", result.returncode == 0, result.stderr[-700:])
+    financial = B3.psql(f"SELECT financial_approval_status FROM public.partner_orders WHERE id='{order_id}'").stdout.strip()
+    if financial == "pending":
+        result = B3.as_user(B3.UADM, f"SELECT public.approve_b2b_payment_terms_secure('{order_id}',NULL)::text;")
+        check("aprovação canônica dos termos exigida pelo plano", result.returncode == 0, result.stderr[-700:])
+    else:
+        check("plano sem aprovação financeira adicional preserva not_required", financial == "not_required", financial)
     state = B3.psql(f"SELECT status||'|'||financial_approval_status||'|'||(internal_economic_snapshot IS NOT NULL) FROM public.partner_orders WHERE id='{order_id}'").stdout.strip()
-    check("pedido aprovado e economicamente selado", state == "aprovado|approved|true", state)
+    check("pedido aprovado e economicamente selado", state in {"aprovado|approved|true", "aprovado|not_required|true"}, state)
 
 
 def finance_schema():
