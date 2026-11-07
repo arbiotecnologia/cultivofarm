@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Captura baseline da composição local; nunca conecta ao hosted."""
+import importlib.util
 import json
 from pathlib import Path
-import test_pg as B
 
 HERE = Path(__file__).resolve().parent
+spec = importlib.util.spec_from_file_location("finished_before", HERE / "test_pg.py")
+B = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(B)
 NAMES = [
     "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
