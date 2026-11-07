@@ -1,0 +1,20 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.1s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS função real de entrada exige envase quando não há writer de produto acabado
+PASS quimico: pedido/OS → reserva canônica de 2 embalagens sem envase
+PASS quimico: entrega sem unidade de conteúdo é fechada antes da baixa
+PASS quimico: nenhuma entrega/movimento de expedição após a negação
+PASS fertilizante: pedido/OS → reserva canônica de 2 embalagens sem envase
+PASS fertilizante: entrega sem unidade de conteúdo é fechada antes da baixa
+PASS fertilizante: nenhuma entrega/movimento de expedição após a negação
+PASS REPRODUZIDO: 50 kg em volume_total viram 50.000 ml; peso não é unidade válida
+PASS apresentação L: pedido/OS → reserva → baixa com 2 UN e 2.000 ml
+PASS apresentação L acabada: envio exige programação de produção inexistente
+PASS apresentação L acabada: confirmação também não aceita lineage sem produção
+PASS apresentação L: cancelamento canônico recompõe estoque sem efeitos fiscais/financeiros
+PASS reserva B2B usa vínculos canônicos próprios sem abrir entrega
+PASS pedido B2B aprovado permanece contido no agrupamento físico
+PASS gate B2B não foi aberto nem substituído pela prova manual
+RESULT 17 / 17 exit 0

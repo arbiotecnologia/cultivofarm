@@ -8,7 +8,7 @@ Químicos e fertilizantes ARBio entram por **COMPRA DE PRODUTO ACABADO PARA REVE
 
 `catálogo por empresa → compra/entrada privada de estoque → lote sem fabricação → reserva → expedição/em rota → comprovante fictício → entrega`, com cancelamento, replays e rollback.
 
-Não há bioreator, `programacao_producao`, CQ ou envase nesses caminhos. O candidato anterior, baseado em estoque montado por fixture, foi preservado em `history/pre-purchase-decision/` e não é mais o candidato atual.
+Não há bioreator, `programacao_producao`, CQ ou envase nesses caminhos. Os candidatos anteriores ficaram preservados em `history/pre-purchase-decision/` e `history/pre-live-entry-guards/`.
 
 ## Entrada canônica implementada
 
@@ -17,12 +17,20 @@ Não há bioreator, `programacao_producao`, CQ ou envase nesses caminhos. O cand
 - deriva ator e empresa no servidor e reautoriza após locks/esperas;
 - exige o gate privado habilitado, papel/recursos de estoque existentes e catálogo ativo do mesmo tenant;
 - resolve no servidor a apresentação em `product_sale_units`, `product_packagings` e `catalogo_volumes`; o chamador não informa unidade, conteúdo ou versão;
+- exige lote do fornecedor, referência da compra, fornecedor e chave de idempotência; o lote do fornecedor e o fornecedor entram no fingerprint e nos snapshots já existentes, sem novo cadastro paralelo;
 - usa tickets específicos no mecanismo `platform_private.authz_tickets` já existente e o contexto transacional canônico do motor de estoque;
-- cria `lotes` e `estoque_produto` com `programacao_id/volume_produzido/envase/CQ` ausentes e origem `compra_produto_acabado_revenda`;
-- registra fornecedor e referência de compra no lote e no ledger, sem preço, contas a pagar, documento fiscal ou cobrança;
-- exige exatamente um movimento `entrada`, com fingerprint e chave de idempotência; replay retorna os mesmos IDs e payload divergente conflita.
+- cria `lotes` e `estoque_produto` com `programacao_id/volume_produzido/envase/CQ` ausentes, origem `compra_produto_acabado_revenda` e **`quantidade_reservada=NULL`**;
+- registra fornecedor, lote do fornecedor e referência de compra no lote e no ledger, sem preço, contas a pagar, documento fiscal ou cobrança;
+- exige exatamente um movimento `entrada`; replay retorna os mesmos IDs e divergência de quantidade, fornecedor ou lote do fornecedor conflita.
 
-Os guards reais de lote, item biológico, entrada, tenant, imagem de estoque e ledger foram integrados, não desligados. Nenhum grant novo foi adicionado. `catalog_foundation.py` apenas reconcilia a captura física antiga com o schema de catálogo atual já usado pelo B3; é costura sintética local, não instalação LIVE nem writer Owned.
+## Guards LIVE informados e composição
+
+Os fatos READONLY relatados pelo auditor estão em `live-entry-guards-20261107T1737Z.json`; não são uma nova leitura hosted do agente.
+
+- `public.validate_estoque_entrada()`: MD5 relatado `9e24938a8d716a02ba023c9fb7ce24e9`, igual à captura descartável. O candidato preserva o retorno legado de reservas, mas exige contexto canônico de reserva quando a origem é compra. Uma entrada de compra disfarçada com `quantidade_reservada` preenchida é negada; a entrada agregada de compra exige ticket e snapshot, sem envase. Para itens sem origem de compra, a exigência original de envase permanece.
+- `platform_private.estoque_produto_catalog_tenant_guard()`: MD5 relatado `874c9ca8b5b4e307cf995a0197f98efc`, igual à captura descartável após remover divergência de indentação. O corpo é dependência **imutável**, não é regravado pelo candidato. O trigger `a000_estoque_produto_catalog_tenant_guard` é pinado por definição, estado e tipo; produto e microrganismo de outro tenant são negados pelo tenant derivado do lote.
+
+Os guards reais de lote, item biológico, entrada, tenant, imagem de estoque e ledger permanecem habilitados nos writers testados. A sonda isolada da função de entrada é identificada separadamente e não substitui a prova da composição. Nenhum grant novo foi adicionado. `catalog_foundation.py` apenas reconcilia a captura física antiga com o schema de catálogo atual; é costura sintética local, não instalação LIVE nem writer Owned.
 
 ## Unidades e embalagem
 
@@ -33,29 +41,31 @@ Cada compra recebe uma única embalagem/apresentação e quantidade inteira. Par
 - 2×1 L = **2 L**, `volume_entregue_ml=2000`;
 - 2×500 ml = **1.000 ml**, `volume_entregue_ml=1000`.
 
-Peso é conteúdo para freight/logística e nunca é convertido em volume. A parcial de 2 de 3 sacos de 25 kg faz split, cancelamento e merge para **75 kg**; 0,5 embalagem é negada na compra e na reserva. Não há segunda baixa em envio, confirmação ou replays.
+Peso é conteúdo para frete/logística e nunca é convertido em volume. A parcial de 2 de 3 sacos de 25 kg faz split, cancelamento e merge para **75 kg**; 0,5 embalagem é negada na compra e na reserva. Não há segunda baixa em envio, confirmação ou replays.
 
-## Objetos e pinos
+## Objetos, pinos e rollback
 
-`install.sql.review` pina corpo, owner e ACL de **11 funções** compartilhadas, owner/ACL de 9 relações, colunas e constraints das dependências de catálogo, além da ausência prévia dos objetos novos. O candidato altera reserva/split, entrega, merge de cancelamento, lineage de envio/confirmação, sync laboratorial, guards de lote/entrada e guards de imagem de envase.
+`install.sql.review` pina corpo, owner e ACL de **11 funções alteradas**, mais **1 função e 1 trigger imutáveis de tenant**, owner/ACL de 10 relações, colunas e constraints das dependências de catálogo, além da ausência prévia dos objetos novos. O candidato altera somente as 11 funções já inventariadas; o guard de tenant não é regravado.
 
-`postflight.sql.review` contém hashes normalizados medidos das 11 funções alteradas e das 3 funções privadas novas, e exige gate fechado. `rollback.sql.review` é deny-only: desliga a operação e revoga writers sem apagar dados, colunas, corpos ou histórico. O POST de instalação não é reaplicado após o rollback porque a revogação intencional muda o ACL.
+`postflight.sql.review` contém hashes normalizados medidos das 11 funções alteradas, das 3 funções privadas novas e da dependência imutável, além do trigger e do gate fechado. `rollback.sql.review` é deny-only: desliga a operação e revoga writers sem apagar dados, colunas, corpos ou histórico. O POST de instalação não é reaplicado após o rollback porque a revogação intencional muda o ACL.
 
-## Resultados finais
+## Resultados atuais
 
 | Escopo | Resultado | Evidência |
 |---|---:|---|
 | Reprodução original: peso→ml, lineage de fabricação e B2B fechado | 17/17, exit 0 | `evidence/before.json`, stdout e exitcode |
-| Compra/entrada, kg/g/L/ml, whole-pack, reserva/baixa/envio/entrega/cancelamento, replays, concorrência, revogação e rollback | **37/37, exit 0** | `evidence/after.json`, stdout e exitcode |
+| Compra, API/guards, kg/g/L/ml, whole-pack, atalho de reserva, tenant produto/micro, downstream, replays, concorrência, revogação e rollback | **49/49, exit 0** | `evidence/after.json`, stdout e exitcode |
 | Legado biológico com candidato instalado e gate desligado | 6/6, exit 0 | `evidence/legacy-candidate.json`, stdout e exitcode |
+| Revisão repetível dos artefatos, pins, grants e resultados | 23/23, exit 0 | `evidence/review.json`, stdout e exitcode |
 
-Candidato SHA256: `af71a57593d263a0fd4a1ea4341d62cb3e44e2edbaa6a9cf64d495df3f90e89f`.
+Candidato SHA256: `96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e`.
+A bateria anterior 37/37 está preservada em `history/pre-live-entry-guards/` e não é somada à atual.
 
 ## Bloqueios e limites
 
-1. **Baseline LIVE independente ausente:** os 11 corpos/owners/ACLs, relações e o schema/constraints de catálogo precisam ser conferidos pelo auditor. A costura local não prova que a produção tem os mesmos pinos.
+1. **Conferência LIVE independente pendente:** os MD5 dos dois guards foram relatados pelo auditor e reproduzidos localmente; owners/ACLs/trigger/relações, os demais corpos e o schema de catálogo ainda exigem conferência independente. A costura local não prova paridade integral com produção.
 2. **Sem exposição ao aplicativo:** a entrada privada não tem grant nem UI/caller liberado. Os positivos usam chamada interna privilegiada e claims sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser.
-3. **Dados reais não homologados:** produtos, embalagens, fornecedores, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
+3. **Dados reais não homologados:** produtos, embalagens, fornecedores, lotes, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
 4. **B2B/OnFarm permanece fechado** com `DELIVERY_SCOPE_DENIED`. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real.
 5. Nenhum efeito fiscal, financeiro, contábil, SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG, NF e recebíveis continuam fora deste pacote.
 

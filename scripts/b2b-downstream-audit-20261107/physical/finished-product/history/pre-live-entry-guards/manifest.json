@@ -1,0 +1,62 @@
+{
+  "status": "INACTIVE_NOT_APPROVED",
+  "hosted": false,
+  "operation_default": false,
+  "changed_functions": [
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+    "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "platform_private.envase_insert_final_v1()",
+    "platform_private.envase_insert_guard_v1()",
+    "platform_private.guard_manual_lot_write_v1()",
+    "platform_private.trg_lab_lot_biological_only()",
+    "public.fn_sync_os_classica_downstream()",
+    "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+    "public.validate_estoque_entrada()"
+  ],
+  "new_objects": [
+    "platform_private.finished_product_gate_v1",
+    "platform_private.finished_product_stock_valid_v1",
+    "platform_private.finished_product_delivery_valid_v1",
+    "platform_private.finished_product_purchase_entry_v1"
+  ],
+  "catalog_dependencies": [
+    "public.produtos.owner_organization_id",
+    "public.product_sale_units",
+    "public.product_packagings",
+    "public.catalogo_volumes"
+  ],
+  "new_columns": [
+    "origem_estoque",
+    "unidade_comercial",
+    "conteudo_por_unidade",
+    "unidade_conteudo",
+    "quantidade_conteudo",
+    "embalagem_id",
+    "embalagem_versao"
+  ],
+  "new_grants": [],
+  "files": {
+    "baseline.json": {
+      "sha256": "641d1f295c1256bfdab2781d0d7e380c9f3907ad78d974e85662d0f3e67d3df2",
+      "bytes": 9379
+    },
+    "candidate.sql.review": {
+      "sha256": "af71a57593d263a0fd4a1ea4341d62cb3e44e2edbaa6a9cf64d495df3f90e89f",
+      "bytes": 69331
+    },
+    "install.sql.review": {
+      "sha256": "6cb740b66db5bab7d2a16d15433233620975c9a9843e9fb49c2a1681efe49b6a",
+      "bytes": 96440
+    },
+    "postflight.sql.review": {
+      "sha256": "7c92b0f2c2d001cb1460aa27729e4f48b90c632acf191ff401a38b772fa2097d",
+      "bytes": 11317
+    },
+    "rollback.sql.review": {
+      "sha256": "9520cc30f3167045cdfb1a45c992ddd943b367409a2fa8666fa418db41a66644",
+      "bytes": 414
+    }
+  }
+}

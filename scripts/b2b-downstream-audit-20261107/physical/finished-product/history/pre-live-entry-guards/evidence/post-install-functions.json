@@ -1,0 +1,89 @@
+{
+  "source": "disposable_post_install",
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "96344fea5616fda485be977a3d2d2a35",
+      "owner": "postgres",
+      "signature": "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "d81d459b64ae1e99025a47e12464d5a7",
+      "owner": "postgres",
+      "signature": "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "a33f2997a1d6c2422ecbf1ee578ad79a",
+      "owner": "postgres",
+      "signature": "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "04602f0308123537c2a7e033ab307963",
+      "owner": "postgres",
+      "signature": "platform_private.envase_insert_final_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "d47d5f1f71c8c2ba16dc775ede4b34ae",
+      "owner": "postgres",
+      "signature": "platform_private.envase_insert_guard_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "f934fb8f77d060e45b53c33d504f1ca5",
+      "owner": "postgres",
+      "signature": "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "1157534613dfa372d1553566f7133890",
+      "owner": "postgres",
+      "signature": "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "fa220b300712ffb778e34fba2abb856d",
+      "owner": "postgres",
+      "signature": "platform_private.finished_product_stock_valid_v1(public.estoque_produto)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "38b85646f8ad5fd478524bd4cf7e0216",
+      "owner": "postgres",
+      "signature": "platform_private.guard_manual_lot_write_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "35f3f59c5413651a6560f34397caf88e",
+      "owner": "postgres",
+      "signature": "platform_private.trg_lab_lot_biological_only()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "7e3da111b2b79691a217dea2c48e7448",
+      "owner": "postgres",
+      "signature": "public.fn_sync_os_classica_downstream()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "2703147f9cb900f3a82f3a2ed3c349ad",
+      "owner": "postgres",
+      "signature": "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "2449af7f8cb1263345aad1cfe54a9cd6",
+      "owner": "postgres",
+      "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "818c4b7bdc7ccf9976b675b374faf21d",
+      "owner": "postgres",
+      "signature": "public.validate_estoque_entrada()"
+    }
+  ]
+}

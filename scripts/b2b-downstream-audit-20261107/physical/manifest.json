@@ -93,12 +93,20 @@
   "finished_product": {
     "path": "finished-product/",
     "status": "INACTIVE_BLOCKED_NOT_APPROVED",
-    "candidate_sha256": "af71a57593d263a0fd4a1ea4341d62cb3e44e2edbaa6a9cf64d495df3f90e89f",
+    "candidate_sha256": "96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e",
     "purchase_origin": "compra_produto_acabado_revenda",
     "tests": {
       "before": "17/17",
-      "after": "37/37",
-      "legacy_candidate": "6/6"
+      "after": "49/49",
+      "legacy_candidate": "6/6",
+      "artifact_review": "23/23"
+    },
+    "live_reported_entry_guards": {
+      "source": "finished-product/live-entry-guards-20261107T1737Z.json",
+      "validate_estoque_entrada_md5": "9e24938a8d716a02ba023c9fb7ce24e9",
+      "tenant_guard_md5": "874c9ca8b5b4e307cf995a0197f98efc",
+      "disposable_md5_match": true,
+      "tenant_guard_changed": false
     }
   }
 }
