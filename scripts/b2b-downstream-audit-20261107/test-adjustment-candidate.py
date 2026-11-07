@@ -280,6 +280,11 @@ def main():
         check("pedido inexistente não produz efeitos nem oráculo de dados", state(MISSING_ORDER) == before)
         r = request(SP.UADM, None, "TESTE pedido nulo")
         check("pedido NULL também é negado fail-closed", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+        for kind in ("approve", "reject"):
+            before_decision = state(MISSING_ORDER)
+            r = decision(SP.UADM, kind, MISSING_ORDER, "TESTE pedido ausente")
+            check(f"{kind}: pedido inexistente não revela payment_terms_not_defined", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr and "payment_terms_not_defined" not in r.stderr, r.stderr)
+            check(f"{kind}: pedido inexistente não produz efeitos", state(MISSING_ORDER) == before_decision)
 
         # Pendência contábil: pedido externo REAL e financial/terms já pending.
         psql(f"UPDATE public.commercial_payment_plans SET requires_financial_approval=true WHERE id='{SP.PLD}'")
