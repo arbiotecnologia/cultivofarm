@@ -20,10 +20,10 @@ PASS corpo real capturado executado: public._saas_user_has_feature(uuid,text) {'
 PASS corpo real capturado executado: public._saas_trg_require_feature() {'actual': '13ed48832f81cbb35434688ca35fda4b', 'expected': '13ed48832f81cbb35434688ca35fda4b'}
 PASS corpo real capturado executado: platform_private.c2_accounting_pending_guard() {'actual': '669b19490a7a9700f0158db4b31885ad', 'expected': '669b19490a7a9700f0158db4b31885ad'}
 PASS 01 PRE_OK com corpos/owners/ACLs reais, sem localização 
-PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS pin divergente do writer aborta sem trocar a função psql:/tmp/b2b-adjustment-review-1uawbk6v/bad-install.sql:57: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE
 
-PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
+PASS pin privado divergente aborta antes da troca psql:/tmp/b2b-adjustment-review-1uawbk6v/bad-private-install.sql:57: ERROR:  ADJUSTMENT_DEPENDENCY_PIN_DRIFT: platform_private.b2b_phase1_order_visible(uuid)
 CONTEXT:  PL/pgSQL function inline_code_block line 33 at RAISE
 
 PASS owner divergente de núcleo privado é detectado psql:/dev-server/scripts/b2b-downstream-audit-20261107/01-pre.sql.readonly:53: ERROR:  ADJUSTMENT_OWNER_DRIFT: platform_private.has_role(uuid,public.app_role)
@@ -60,7 +60,7 @@ PASS reject: pedido inexistente não revela payment_terms_not_defined ERROR:  b2
 CONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 16 at RAISE
 
 PASS reject: pedido inexistente não produz efeitos 
-PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '17bdc5e3-0c22-4086-80c0-24246ffa7484', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '4a7c57a1-9232-4ff9-9aa6-f6b86ba01ef0', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture de pendência criada pelo writer canônico com guards reais {'id': '14bf0728-b1cc-4772-ac7d-f9c9f157a8cb', 'total': 0.9, 'numero': 'PB-000001', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-PENDING-CANDIDATE', 'payment_terms_id': '0fd3945b-86bc-4633-8d6e-e3bc7f79253c', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível ERROR:  C2_ACCOUNTING_PENDING
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 34 at RAISE
 
@@ -73,7 +73,7 @@ PASS reject: pendência contábil é negada antes de qualquer decisão ERROR:  C
 CONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 34 at RAISE
 
 PASS reject: pendência contábil preserva estado integral 
-PASS fixture validada criada pelo writer canônico com guards reais {'id': '17f3d79f-3562-4b37-adc2-5fa5d1882a1b', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': 'b04e09d4-438f-4f02-b72b-5ef56b14695e', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
+PASS fixture validada criada pelo writer canônico com guards reais {'id': 'f7e30d79-b1cf-4289-ae72-9cb8582f5f65', 'total': 0.9, 'numero': 'PB-000002', 'status': 'em_analise_comercial', 'subtotal': 1.0, 'cart_hash': '05b7f07ff1f8a1e02f3d620b7435c58f804b2bb0f173cc6a147b61f1451219c8', 'final_amount': 0.9, 'pricing_mode': 'discount_from_base', 'table_amount': 1.0, 'desconto_total': 0.1, 'quote_required': False, 'discount_amount': 0.1, 'idempotency_key': 'TESTE-AJUSTE-VALIDATED-CANDIDATE', 'payment_terms_id': '3315d061-d9e0-4ef4-868f-7cce95a28f01', 'credit_reason_code': 'OK', 'credit_block_reason': None, 'financial_approval_status': 'pending', 'financial_interest_amount': 0.0, 'net_amount_after_discount': 0.9, 'requires_financial_approval': True}
 PASS FSF/admin estrangeiro com vínculo próprio é negado no pedido validado ERROR:  b2b_phase1_scope_denied
 CONTEXT:  PL/pgSQL function request_b2b_payment_terms_adjustment_secure(uuid,text) line 18 at RAISE
 
@@ -272,7 +272,7 @@ PASS reject: comprador sem papel financeiro continua negado ERROR:  unauthorized
 CONTEXT:  PL/pgSQL function reject_b2b_payment_terms_secure(uuid,text) line 18 at RAISE
 
 PASS reject: negação do comprador preserva estado 
-PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-0gp6ovi9/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
+PASS rollback com pin divergente aborta sem revogar psql:/tmp/b2b-adjustment-review-1uawbk6v/bad-rollback.sql:55: ERROR:  ADJUSTMENT_FUNCTION_PIN_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 31 at RAISE
 
 PASS 04 rollback deny-only conclui 
