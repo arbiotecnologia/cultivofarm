@@ -49,12 +49,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "d38d2cd6-48ad-4e04-90ea-96954f703faf",
+        "lote_id": "e960a65a-31d1-421c-b1b1-3e6fc3aa1264",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "340c4585-31c7-4186-9d42-33a03d19e4d3",
+        "movimentacao_id": "2113aa74-4193-44be-8531-541a3aab4463",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "af9a74df-9762-4dec-8c92-38ba247967ec",
+        "estoque_produto_id": "b43f3b11-214b-4761-ba03-ab90c94df160",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -80,12 +80,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "ceb8cc93-8467-4baf-8608-4f29361a30ac",
+        "lote_id": "d16d3316-ea46-4825-ad09-71a9b3ccd351",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "4b1717df-6fad-4cea-8599-ecb89a6dd854",
+        "movimentacao_id": "7e966628-760b-4d16-947e-526de973513b",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "25880bf2-0924-4253-b7be-d549359ee31c",
+        "estoque_produto_id": "21c68f16-4964-4cfb-bc8f-ebfd17eb9936",
         "quantidade_conteudo": 50000.0,
         "conteudo_por_unidade": 25000.0
       }
@@ -111,12 +111,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "f337a009-eb8c-43cd-929d-e097fdc5d64b",
+        "lote_id": "a3cfe77c-0717-4f31-999d-07f7992c6329",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "fad608fd-efc9-4d9c-bec4-84daa9a09db2",
+        "movimentacao_id": "6fb03ce1-00ae-47fc-9be9-a8b05ec6e131",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "1dcb03e2-8f96-41fd-b37c-dffc1246eef3",
+        "estoque_produto_id": "e18db7b9-46c2-496f-afb7-ee9c25578fb4",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -142,12 +142,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "f0774e3f-9b07-4c44-9462-c55620112bc2",
+        "lote_id": "40baa72f-8b6d-448d-840d-76bcf40bfc3d",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "712ccf0a-5a4d-436c-93fe-01025cac8d3e",
+        "movimentacao_id": "386170be-5906-4886-a4a8-36644e318276",
         "embalagem_versao": 1,
         "unidade_conteudo": "ml",
-        "estoque_produto_id": "ed46fdd2-49c6-4230-9340-2507cb529936",
+        "estoque_produto_id": "c862663a-d0bf-485a-a46b-f3a0b85adab0",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -182,12 +182,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "c2ea7d4b-50bd-4da0-a80e-d013a18f270d",
+        "lote_id": "9064b250-5239-4f2b-9776-5d9d91fc7d93",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "06cb456d-cb90-4f0c-83e0-1c601dc37632",
+        "movimentacao_id": "085a0023-6eb1-440e-9e8c-43e19f2307d8",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "2367ba0b-7dfd-4b89-a3e3-f0a6dc315dca",
+        "estoque_produto_id": "e8539536-95e8-41ad-8e8b-c8c1d68d52a4",
         "quantidade_conteudo": 75.0,
         "conteudo_por_unidade": 25.0
       }
@@ -202,12 +202,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "8a636b25-4347-4869-b995-4cee643ef889",
+        "lote_id": "6b230aa9-b17a-4d18-9a40-3147386829fa",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "72294b27-5c19-4270-943a-aab646fa5bcd",
+        "movimentacao_id": "045244cc-df72-4b7f-9ce9-46b1ea86df81",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "529e6712-5172-47a2-a57b-824a9e7f7eae",
+        "estoque_produto_id": "f62deb74-0d2f-4898-8ffb-9d7850179d05",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -228,12 +228,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "59a996f1-57d5-4dc0-a46b-13152ed3154b",
+        "lote_id": "11bd8007-5ad9-4aaa-ac62-97518b2242ba",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "fb8dcc70-b4f7-42c7-9565-6d70b8bdfb94",
+        "movimentacao_id": "f55e89a7-5d10-4854-805d-95eac7464af4",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "ea66c9ca-9c74-4739-bf47-ba1c2851e8b6",
+        "estoque_produto_id": "c69963f7-15c1-4905-ba03-7b5a0fd7b90e",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }

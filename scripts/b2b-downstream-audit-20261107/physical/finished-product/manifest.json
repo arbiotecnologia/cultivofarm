@@ -51,8 +51,8 @@
       "bytes": 96440
     },
     "postflight.sql.review": {
-      "sha256": "2a4001396c1a6dd4895ee0c16a99496b8cbe354da41015b85491c7eec5214543",
-      "bytes": 2323
+      "sha256": "7c92b0f2c2d001cb1460aa27729e4f48b90c632acf191ff401a38b772fa2097d",
+      "bytes": 11317
     },
     "rollback.sql.review": {
       "sha256": "9520cc30f3167045cdfb1a45c992ddd943b367409a2fa8666fa418db41a66644",

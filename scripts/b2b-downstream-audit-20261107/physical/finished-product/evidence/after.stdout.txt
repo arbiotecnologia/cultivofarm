@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.1s
+CHECKPOINT sql_calls=1 elapsed=2.5s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -19,7 +19,7 @@ PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou e
 PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
-CHECKPOINT sql_calls=100 elapsed=15.8s
+CHECKPOINT sql_calls=100 elapsed=15.6s
 PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
 PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
