@@ -593,14 +593,15 @@ WHERE s.partner_id='{B3.P}';""")
     finally:
         subprocess.run(B3.SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         evidence = {
-            "kind": "DISPOSABLE_B4_REVIEW_MANUAL_NULL_1813_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
-            "review": "458b6012+4097d4e2+manual-null-1813",
+            "kind": "DISPOSABLE_B4_FINAL_CREDIT_TERMS_1833_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
+            "review": "458b6012+4097d4e2+manual-null-1813+fiscal-units-grams-1f4073+final-credit-terms-1833",
             "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
             "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
             "object_manifest": "b4-object-manifest.json",
             "live_facts": ["USER_REPORTED_READONLY_4097D4E2", "USER_REPORTED_READONLY_MANUAL_NULL_1813; cinco títulos não lidos nem alterados pelo agente"],
             "installation": "DISPOSABLE_PRE_INSTALL_POST_PASS; operation dependency remains real always-deny until harness-only stub",
-            "shared_impact_scope": ["cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE", "múltiplos parceiros no mesmo cliente", "conflito partner_id/customer_id/owner", "MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
+            "credit_limit_zero_review": {"zero": "VALID_LIMIT_ZERO_POSITIVE_EXPOSURE_LIMIT_EXCEEDED", "null_negative_nan": "CREDIT_SETTINGS_INCOMPLETE", "live_settings_changed": False},
+            "shared_impact_scope": ["credit_limit zero/NULL/negativo/NaN em parceiro isolado sem exposição", "cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE", "múltiplos parceiros no mesmo cliente", "conflito partner_id/customer_id/owner", "MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
             "passed": sum(c["ok"] for c in CHECKS), "total": len(CHECKS), "checks": CHECKS,
             "hosted": "NOT_RUN", "jwt_rls_storage": "NOT_RUN",
             "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "títulos históricos criados antes do trigger candidato com os nove gatilhos capturados ativos; nenhum backfill", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],

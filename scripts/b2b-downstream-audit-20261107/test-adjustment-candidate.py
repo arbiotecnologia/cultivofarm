@@ -638,7 +638,7 @@ ROLLBACK;
 
         report = {
             "kind": "DISPOSABLE_PG_CANDIDATE_REAL_AUTH_SCOPING_ALL_REAL_TRIGGERS_NOT_HOSTED_PROOF",
-            "review": "02c23d82",
+            "review": "final-credit-terms-1833",
             "status": "INACTIVE_NOT_APPROVED",
             "source": str(G.SOURCE.relative_to(ROOT)),
             "live_source_still_requires_auditor_confirmation": True,
@@ -654,7 +654,9 @@ ROLLBACK;
             "baseline_md5": G.BASE_MD5,
             "candidate_md5": expected_candidate_md5,
             "request_candidate_sql_changed_in_seller_scope_review": True,
-            "decision_review": "02c23d82",
+            "decision_review": "final-credit-terms-1833",
+            "post_terms_lock_revalidation": "request/approve/reject releem pedido+termos, pertencimento, escopo e C2 após FOR UPDATE dos termos; revogação em duas sessões com ROLLBACK explícito",
+            "historical_175_evidence": "review-31430566/seller-team-1744/decision-candidates.json",
             "decision_candidates": pins["decision_candidates"],
             "seller_scope_helper": helper_pin,
             "historical_134_evidence": "review-31430566/scope-live-1638/decision-candidates.json",
