@@ -144,13 +144,13 @@ def prove(delivery_id, key):
     assert attached["success"] is True
 
 
-def confirm(delivery_id, key):
-    observed = last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery_id}';")
+def confirm(delivery_id, key, observed=None):
+    observed = observed or last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery_id}';")
     return T.actor() + f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery_id}','{observed}','finished-confirm-{key}','{{\"nome\":\"LOCAL\"}}'::jsonb);"
 
 
-def send(delivery_id, key):
-    observed = last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery_id}';")
+def send(delivery_id, key, observed=None):
+    observed = observed or last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery_id}';")
     return T.actor() + f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery_id}','{observed}','finished-send-{key}');"
 
 

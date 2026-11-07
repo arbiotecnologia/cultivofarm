@@ -57,14 +57,16 @@ def main():
             B.ok(f"{group} {unit}: pedido/OS → reserva → baixa; 2 UN = {per_unit * 2} {unit}; volume_ml={expected_ml}", actual)
             replay = json.loads(B.last(B.group(item["os"], reserved, 2, "after-group-" + key, observed)))
             assert replay["replay"] is True
-            sent = json.loads(B.last(B.send(delivery, "after-send-" + key)))
+            observed_send = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
+            sent = json.loads(B.last(B.send(delivery, "after-send-" + key, observed_send)))
             assert sent["success"] is True and sent["status"] == "em_rota"
-            sent_replay = json.loads(B.last(B.send(delivery, "after-send-" + key)))
+            sent_replay = json.loads(B.last(B.send(delivery, "after-send-" + key, observed_send)))
             assert sent_replay["replay"] is True
             B.prove(delivery, "after-proof-" + key)
-            confirmed = json.loads(B.last(B.confirm(delivery, "after-confirm-" + key)))
+            observed_confirm = B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
+            confirmed = json.loads(B.last(B.confirm(delivery, "after-confirm-" + key, observed_confirm)))
             assert confirmed["success"] is True and confirmed["status"] == "entregue"
-            confirmed_replay = json.loads(B.last(B.confirm(delivery, "after-confirm-" + key)))
+            confirmed_replay = json.loads(B.last(B.confirm(delivery, "after-confirm-" + key, observed_confirm)))
             assert confirmed_replay["replay"] is True
             assert B.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE referencia_tipo='entrega' AND referencia_id='{delivery}' AND acao='expedicao';") == "1"
             B.ok(f"{group} {unit}: envio/confirmação/replays idempotentes sem segunda baixa")
