@@ -155,7 +155,7 @@ def main():
         B3.psql(f"""INSERT INTO public.produtos VALUES
         ('{G_PRODUCT}','Fertilizante 500 g TESTE','G500-TESTE',true,true,'{B3.A}',NULL,NULL,NULL,NULL,false);
         INSERT INTO public.product_sale_units(product_id,owner_organization_id,unidade_conteudo,forma_fisica,version)
-        VALUES ('{G_PRODUCT}','{B3.A}','g','solido',1),('{B3.LIQ}','{B3.A}','ml','liquido',1);""")
+        VALUES ('{G_PRODUCT}','{B3.A}','g','solido',1),('{B3.SP.LIQ}','{B3.A}','ml','liquido',1);""")
         offer, offer_error = admin_writer(
             f"SELECT public.solid_pack_offer_save_v1('{G_PRODUCT}',NULL,'SC500G','Fertilizante 500 g TESTE',0.500,NULL,'TESTE-B4-G-OFFER-0001')::text;")
         check("writer REAL cria apresentação de 500 g recebendo 0,500 kg", offer is not None and offer.get("packaging_id"), offer_error or offer)
@@ -171,7 +171,7 @@ def main():
             f"SELECT public.solid_pack_price_set_v1('{packaging_id}',9000,current_date,NULL,'TESTE-B4-G-PRICE-00001')::text;")
         check("writer REAL define preço da embalagem sem preço por peso", price is not None and price.get("preco_centavos") == 9000, price_error or price)
         liquid_pack, liquid_pack_error = admin_writer(
-            f"SELECT public.solid_pack_offer_save_v1('{B3.LIQ}',NULL,'LIQPACK','Pack líquido proibido TESTE',1,NULL,'TESTE-B4-LIQ-PACK-0001')::text;")
+            f"SELECT public.solid_pack_offer_save_v1('{B3.SP.LIQ}',NULL,'LIQPACK','Pack líquido proibido TESTE',1,NULL,'TESTE-B4-LIQ-PACK-0001')::text;")
         check("writer REAL nega whole-pack para produto líquido", liquid_pack is None and "PACK_PRODUCT_NOT_SOLID" in (liquid_pack_error or ""), liquid_pack_error or liquid_pack)
         gram_line = {"item_id": G_PRODUCT, "item_tipo": "produto", "packaging_id": packaging_id, "quantidade": 2}
 
