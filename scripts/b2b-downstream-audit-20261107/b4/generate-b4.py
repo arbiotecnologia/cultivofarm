@@ -83,7 +83,9 @@ def md5_def(src):
     text = src.rstrip()
     if text.endswith(";"):
         text = text[:-1].rstrip()
-    return hashlib.md5(text.encode()).hexdigest()
+    # pg_get_functiondef omite VOLATILE (default) e termina o texto com uma quebra de linha.
+    text = text.replace("\n VOLATILE SECURITY DEFINER\n", "\n SECURITY DEFINER\n")
+    return hashlib.md5((text + "\n").encode()).hexdigest()
 
 
 def sql_literal(text):
