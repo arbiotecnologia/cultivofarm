@@ -331,6 +331,11 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
             post.append(function_pin(entry, measured["md5"]))
         else:
             post.append(f"-- POST_RUNTIME_REQUIRED {entry['signature']} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}")
+    for signature in ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]:
+        if signature in post_by_signature:
+            post.append(function_pin(post_by_signature[signature]))
+        else:
+            post.append(f"-- POST_RUNTIME_REQUIRED_NEW_OBJECT {signature}")
     (HERE / "candidate.sql.review").write_text(candidate)
     (HERE / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
     (HERE / "postflight.sql.review").write_text("\n".join(post) + "\nDO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;\n")
