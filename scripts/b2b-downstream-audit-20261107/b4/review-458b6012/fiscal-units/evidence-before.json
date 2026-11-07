@@ -4,8 +4,8 @@
   "candidate_sha256": "d9a2089559c8e388316b9bb17cb4939b8215b500e58f94bbdbd8cd10ae67ccb7",
   "status": "REGRESSION_FAIL",
   "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
-  "passed": 25,
-  "total": 29,
+  "passed": 87,
+  "total": 108,
   "checks": [
     {
       "name": "boot B3 com gatilhos reais",
@@ -84,7 +84,231 @@
       "ok": true
     },
     {
+      "name": "fixture 2: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
       "name": "fixture 3: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 4: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 5: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 6: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 7: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 8: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 9: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 10: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 11: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 12: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 13: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 14: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 15: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture 16: pedido fictício criado",
       "ok": true
     },
     {
@@ -106,26 +330,135 @@
     {
       "name": "1 UN = 25 kg em NF parcial: quantidade de pedido normalizada",
       "ok": false,
-      "detail": "{'item_id': '05dad9ff-2925-4f1d-80b4-7ee1d8e2007f', 'quantity': 1, 'principal': 180.0, 'financed_interest': 6.52}"
+      "detail": "{'item_id': 'e878af2c-3cdf-4356-8e12-e5f5abbcd640', 'quantity': 1, 'principal': 180.0, 'financed_interest': 6.52}"
     },
     {
       "name": "1 UN = 25 kg em NF parcial: conteúdo fiscal normalizado sem alterar preço",
       "ok": false,
-      "detail": "{'item_id': '05dad9ff-2925-4f1d-80b4-7ee1d8e2007f', 'quantity': 1, 'principal': 180.0, 'financed_interest': 6.52}"
+      "detail": "{'item_id': 'e878af2c-3cdf-4356-8e12-e5f5abbcd640', 'quantity': 1, 'principal': 180.0, 'financed_interest': 6.52}"
     },
     {
       "name": "1 UN = 25 kg em NF parcial: payload fiscal original preservado",
       "ok": true
     },
     {
-      "name": "fixture 5: pedido fictício criado",
+      "name": "0,5 UN é fração de embalagem inteira",
       "ok": false,
-      "detail": "ERROR:  MONEY_ORIGIN_ACCESS_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment\nPL/pgSQL function platform_private.b2b_credit_checked(uuid,numeric,uuid) line 13 at assignment\nPL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 130 at assignment"
+      "detail": "{'success': True, 'replayed': False, 'residual': 279.78, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000602', 'receivable_id': '049c9fcb-c519-454e-b98d-cd090290fbad', 'financed_interest': 3.26}"
     },
     {
-      "name": "execução sem exceção de harness",
+      "name": "0,5 UN é fração de embalagem inteira: nenhum título/alocação",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  invalid input syntax for type uuid: \"None\"\\nLINE 1: ...id FROM public.partner_order_items WHERE order_id=\\'None\\' ORD...\\n                                                             ^\\n')"
+      "detail": "before=0, after=2"
+    },
+    {
+      "name": "12,5 kg também é fração de embalagem inteira",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "12,5 kg também é fração de embalagem inteira: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "25 kg = 1 embalagem; 25.000 g tributáveis são equivalentes",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "50 kg = 2 embalagens, nunca 50 embalagens",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "50.000 g = 2 embalagens, nunca 50.000 embalagens",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "50 UN com apenas 50 kg tributáveis é divergente",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "50 UN com apenas 50 kg tributáveis é divergente: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "1 UN com 50 kg tributáveis é divergente",
+      "ok": false,
+      "detail": "{'success': True, 'replayed': False, 'residual': 186.52, 'principal': 180.0, 'document_id': '00000000-0000-0000-0000-000000000608', 'receivable_id': 'cee3ad14-b270-49b4-bce3-c6d7d885c113', 'financed_interest': 6.52}"
+    },
+    {
+      "name": "1 UN com 50 kg tributáveis é divergente: nenhum título/alocação",
+      "ok": false,
+      "detail": "before=0, after=2"
+    },
+    {
+      "name": "peso não converte em litros",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "peso não converte em litros: nenhum título/alocação",
+      "ok": true
+    },
+    {
+      "name": "unidade tributável em litros diverge do conteúdo em kg",
+      "ok": false,
+      "detail": "{'success': True, 'replayed': False, 'residual': 186.52, 'principal': 180.0, 'document_id': '00000000-0000-0000-0000-000000000610', 'receivable_id': '0ade4c4a-4765-4429-9d5f-8a12f0f0065a', 'financed_interest': 6.52}"
+    },
+    {
+      "name": "unidade tributável em litros diverge do conteúdo em kg: nenhum título/alocação",
+      "ok": false,
+      "detail": "before=0, after=2"
+    },
+    {
+      "name": "quantidade sem código de unidade falha fechado",
+      "ok": false,
+      "detail": "{'success': True, 'replayed': False, 'residual': 186.52, 'principal': 180.0, 'document_id': '00000000-0000-0000-0000-000000000611', 'receivable_id': '2392b730-7234-486c-8e65-821b97a239e9', 'financed_interest': 6.52}"
+    },
+    {
+      "name": "quantidade sem código de unidade falha fechado: nenhum título/alocação",
+      "ok": false,
+      "detail": "before=0, after=2"
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis",
+      "ok": true
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: quantidade de pedido normalizada",
+      "ok": false,
+      "detail": "{'item_id': '56bcbfab-0794-46e1-801d-9357f1ab3373', 'quantity': 1, 'principal': 1.0, 'financed_interest': 0.04}"
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: conteúdo fiscal normalizado sem alterar preço",
+      "ok": false,
+      "detail": "{'item_id': '56bcbfab-0794-46e1-801d-9357f1ab3373', 'quantity': 1, 'principal': 1.0, 'financed_interest': 0.04}"
+    },
+    {
+      "name": "1 L = 1 unidade líquida; 1.000 ml tributáveis: payload fiscal original preservado",
+      "ok": true
+    },
+    {
+      "name": "1.000 ml = 1 unidade líquida; 1 L tributável",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "500 ml podem ser meia unidade líquida não wholepack",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "kg não converte em volume líquido",
+      "ok": false,
+      "detail": "ERROR:  FISCAL_QUANTITY_OVERALLOCATED\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 46 at RAISE"
+    },
+    {
+      "name": "kg não converte em volume líquido: nenhum título/alocação",
+      "ok": true
     }
   ],
   "hosted": "NOT_RUN",
