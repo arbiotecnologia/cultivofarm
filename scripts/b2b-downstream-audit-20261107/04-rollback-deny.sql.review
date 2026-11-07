@@ -1,14 +1,16 @@
--- ROLLBACK DENY-ONLY: não restaura corpos sem lock/reautorização/contabilidade.
+-- ROLLBACK DENY-ONLY: não restaura corpos nem vínculos antigos.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 DO $guard$
 DECLARE d record;
 BEGIN
   FOR d IN SELECT * FROM (VALUES
-    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '7eb3b5be33552f6bd4eecd56796502ed', 'postgres', '04e771375e06113da45adc7fa45d56af'),
-    ('public.approve_b2b_payment_terms_secure(uuid,text)', '9e9b3cb27dd669d6d5f7575e6ecb2ac7', 'postgres', '04e771375e06113da45adc7fa45d56af'),
-    ('public.reject_b2b_payment_terms_secure(uuid,text)', 'ff2ca3bf69aae9e51348df03c1373037', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.request_b2b_payment_terms_adjustment_secure(uuid,text)', '1698b9355688d0068246292cbe652a79', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.approve_b2b_payment_terms_secure(uuid,text)', '20fa5eee63ab89fe56cf46b4f9fe01a2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.reject_b2b_payment_terms_secure(uuid,text)', 'b1ee789f30e5612a4cd1c27f9dda578f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.h15_actor_organization()', '64e10608403238a41a9baf92857ca881', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.h15_actor_organization()', '55edafec08bcc84a00f1526c14334a2c', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
     ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('public.has_role(uuid,public.app_role)', '4d90e93d521a4819d9085f28d742030f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
@@ -51,20 +53,48 @@ BEGIN
   END LOOP;
 END
 $guard$;
+DO $helper_pin$
+DECLARE actual_acl text;
+BEGIN
+  IF to_regprocedure('platform_private.b2b_seller_financial_scope_error(uuid,uuid)') IS NULL THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_MISSING';
+  END IF;
+  IF md5(pg_get_functiondef('platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'c46617ec2a1320c9c05e3da33af8a350' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_PIN_DRIFT: actual=% expected=%', md5(pg_get_functiondef('platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure)), 'c46617ec2a1320c9c05e3da33af8a350';
+  END IF;
+  IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure) IS DISTINCT FROM 'postgres' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: platform_private.b2b_seller_financial_scope_error(uuid,uuid)';
+  END IF;
+  SELECT md5(string_agg(v.entry, '|' ORDER BY v.entry)) INTO actual_acl
+  FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END
+      || '=' || a.privilege_type || CASE WHEN a.is_grantable THEN '*' ELSE '' END
+      || '/' || a.grantor::regrole::text AS entry
+    FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f',p.proowner))) a
+    WHERE p.oid='platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure
+  ) v;
+  IF actual_acl IS DISTINCT FROM 'aae127bcdd4f7096876d7094c14eabd1' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT: platform_private.b2b_seller_financial_scope_error(uuid,uuid)';
+  END IF;
+END
+$helper_pin$;
 REVOKE ALL ON FUNCTION public.request_b2b_payment_terms_adjustment_secure(uuid,text) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.request_b2b_payment_terms_adjustment_secure(uuid,text) FROM authenticated;
 REVOKE ALL ON FUNCTION public.approve_b2b_payment_terms_secure(uuid,text) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.approve_b2b_payment_terms_secure(uuid,text) FROM authenticated;
 REVOKE ALL ON FUNCTION public.reject_b2b_payment_terms_secure(uuid,text) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.reject_b2b_payment_terms_secure(uuid,text) FROM authenticated;
+REVOKE ALL ON FUNCTION platform_private.b2b_seller_financial_scope_error(uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
 DO $deny$
 BEGIN
   IF has_function_privilege('authenticated', 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'EXECUTE') OR has_function_privilege('anon', 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'EXECUTE') OR NOT has_function_privilege('service_role', 'public.request_b2b_payment_terms_adjustment_secure(uuid,text)', 'EXECUTE') THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED'; END IF;
-  IF md5(pg_get_functiondef('public.request_b2b_payment_terms_adjustment_secure(uuid,text)'::regprocedure)) <> '7eb3b5be33552f6bd4eecd56796502ed' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;
+  IF md5(pg_get_functiondef('public.request_b2b_payment_terms_adjustment_secure(uuid,text)'::regprocedure)) <> '1698b9355688d0068246292cbe652a79' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;
   IF has_function_privilege('authenticated', 'public.approve_b2b_payment_terms_secure(uuid,text)', 'EXECUTE') OR has_function_privilege('anon', 'public.approve_b2b_payment_terms_secure(uuid,text)', 'EXECUTE') OR NOT has_function_privilege('service_role', 'public.approve_b2b_payment_terms_secure(uuid,text)', 'EXECUTE') THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED'; END IF;
-  IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) <> '9e9b3cb27dd669d6d5f7575e6ecb2ac7' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;
+  IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) <> '20fa5eee63ab89fe56cf46b4f9fe01a2' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;
   IF has_function_privilege('authenticated', 'public.reject_b2b_payment_terms_secure(uuid,text)', 'EXECUTE') OR has_function_privilege('anon', 'public.reject_b2b_payment_terms_secure(uuid,text)', 'EXECUTE') OR NOT has_function_privilege('service_role', 'public.reject_b2b_payment_terms_secure(uuid,text)', 'EXECUTE') THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_NOT_CLOSED'; END IF;
-  IF md5(pg_get_functiondef('public.reject_b2b_payment_terms_secure(uuid,text)'::regprocedure)) <> 'ff2ca3bf69aae9e51348df03c1373037' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;
+  IF md5(pg_get_functiondef('public.reject_b2b_payment_terms_secure(uuid,text)'::regprocedure)) <> 'b1ee789f30e5612a4cd1c27f9dda578f' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;
+  IF has_function_privilege('authenticated', 'platform_private.b2b_seller_financial_scope_error(uuid,uuid)', 'EXECUTE') OR has_function_privilege('anon', 'platform_private.b2b_seller_financial_scope_error(uuid,uuid)', 'EXECUTE') OR has_function_privilege('service_role', 'platform_private.b2b_seller_financial_scope_error(uuid,uuid)', 'EXECUTE') OR EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid='platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure AND a.grantee=0) THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_NOT_CLOSED'; END IF;
+  IF md5(pg_get_functiondef('platform_private.b2b_seller_financial_scope_error(uuid,uuid)'::regprocedure)) <> 'c46617ec2a1320c9c05e3da33af8a350' THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_BODY_CHANGED'; END IF;
 END
 $deny$;
 COMMIT;

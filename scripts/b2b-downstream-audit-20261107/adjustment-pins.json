@@ -1,5 +1,5 @@
 {
-  "review": "31430566",
+  "review": "02c23d82",
   "status": "INACTIVE_NOT_APPROVED",
   "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
   "source_md5": "f9bf8f543564af480d08e7bebd111b88",
@@ -7,29 +7,41 @@
   "request_acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
   "scope_md5": "8812508716f279a88e3d5a31b15621d8",
   "private_scope_md5": "8504f07fbc3a7975accf919f386d00eb",
+  "legacy_buyer_pins_retained_for_baseline_only": true,
+  "buyer_reader_modified": false,
   "role_md5": "4d90e93d521a4819d9085f28d742030f",
   "private_role_md5": "c5af5b55de6d79da9b73a33948746ae2",
   "accounting_guard_md5": "669b19490a7a9700f0158db4b31885ad",
-  "candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+  "candidate_md5": "1698b9355688d0068246292cbe652a79",
+  "seller_scope_contract": "B2B_SELLER_FINANCIAL_TEAM_V1",
+  "seller_scope_helper": {
+    "signature": "platform_private.b2b_seller_financial_scope_error(uuid,uuid)",
+    "candidate_md5": "c46617ec2a1320c9c05e3da33af8a350",
+    "owner": "postgres",
+    "acl": "{postgres=X/postgres}",
+    "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+    "capture": "candidate/platform_private.b2b_seller_financial_scope_error.sql.review",
+    "client_execute": false
+  },
   "decision_candidates": {
     "request": {
       "signature": "public.request_b2b_payment_terms_adjustment_secure(uuid,text)",
       "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
-      "candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+      "candidate_md5": "1698b9355688d0068246292cbe652a79",
       "owner": "postgres",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
     },
     "approve": {
       "signature": "public.approve_b2b_payment_terms_secure(uuid,text)",
       "baseline_md5": "a61daa8542058bdbf239903d655c2a1b",
-      "candidate_md5": "9e9b3cb27dd669d6d5f7575e6ecb2ac7",
+      "candidate_md5": "20fa5eee63ab89fe56cf46b4f9fe01a2",
       "owner": "postgres",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
     },
     "reject": {
       "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
       "baseline_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
-      "candidate_md5": "ff2ca3bf69aae9e51348df03c1373037",
+      "candidate_md5": "b1ee789f30e5612a4cd1c27f9dda578f",
       "owner": "postgres",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
     }
@@ -44,6 +56,22 @@
       "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
       "acl_md5": "04e771375e06113da45adc7fa45d56af",
       "capture": "captured/auth-scoping/platform_private.platform_actor_access_ready.048249c0.sql"
+    },
+    "platform_private.h15_actor_organization()": {
+      "source_signature": "platform_private.h15_actor_organization()",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/platform_private.h15_actor_organization.64e10608.sql"
+    },
+    "public.h15_actor_organization()": {
+      "source_signature": "public.h15_actor_organization()",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "acl_md5": "04e771375e06113da45adc7fa45d56af",
+      "capture": "captured/auth-scoping/public.h15_actor_organization.55edafec.sql"
     },
     "platform_private.entitlements_for_user(uuid)": {
       "source_signature": "platform_private.entitlements_for_user(_uid uuid)",

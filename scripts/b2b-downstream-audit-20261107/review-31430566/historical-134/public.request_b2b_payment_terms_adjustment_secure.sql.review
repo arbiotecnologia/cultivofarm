@@ -1,0 +1,74 @@
+CREATE OR REPLACE FUNCTION public.request_b2b_payment_terms_adjustment_secure(p_partner_order_id uuid, p_notes text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_terms_id uuid;
+  v_created_by uuid;
+  v_numero text;
+  v_origin jsonb;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF p_notes IS NULL OR btrim(p_notes) = '' THEN
+    RAISE EXCEPTION 'notes_required';
+  END IF;
+
+  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot
+    INTO v_terms_id, v_created_by, v_numero, v_origin
+  FROM public.partner_orders po
+  WHERE po.id = p_partner_order_id
+  FOR UPDATE;
+
+  -- Pedido ausente, estrangeiro ou removido durante a espera segue a mesma negação, sem oráculo.
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  -- Revalida depois da espera pelo lock: papel/perfil/vínculo/escopo podem ter sido revogados.
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador')
+       OR public.has_role(v_uid,'financeiro')
+       OR public.has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  -- O gatilho contábil protege mudanças de financial_approval_status; pending→pending também é decisão proibida.
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;
+
+  UPDATE public.partner_order_payment_terms
+     SET approval_status = 'pending',
+         approval_notes = p_notes,
+         updated_at = now()
+   WHERE id = v_terms_id;
+
+  UPDATE public.partner_orders
+     SET financial_approval_status = 'pending',
+         payment_condition_status = 'adjustment_requested',
+         updated_at = now()
+   WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
+  VALUES (p_partner_order_id, 'payment_terms_adjustment_requested', v_uid,
+          jsonb_build_object('notes', p_notes));
+
+  IF v_created_by IS NOT NULL THEN
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_created_by, 'b2b_payment_terms',
+            'Ajuste na condição solicitado',
+            format('Pedido %s precisa de ajuste na condição de pagamento: %s',
+                   COALESCE(v_numero,'B2B'), p_notes),
+            '/comercial/pedidos-b2b');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'status', 'adjustment_requested');
+END;
+$function$
+

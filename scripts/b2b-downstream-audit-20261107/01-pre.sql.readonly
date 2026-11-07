@@ -7,6 +7,8 @@ BEGIN
     ('public.approve_b2b_payment_terms_secure(uuid,text)', 'a61daa8542058bdbf239903d655c2a1b', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('public.reject_b2b_payment_terms_secure(uuid,text)', '40777d0cec6a7d8a8d4dfcb3370b08b6', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.platform_actor_access_ready(uuid)', '048249c0c2106c3761e26eacb8d0de84', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('platform_private.h15_actor_organization()', '64e10608403238a41a9baf92857ca881', 'postgres', '04e771375e06113da45adc7fa45d56af'),
+    ('public.h15_actor_organization()', '55edafec08bcc84a00f1526c14334a2c', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('platform_private.entitlements_for_user(uuid)', '7f4ec7facaebbdf35444dd490fdebe56', 'postgres', '578c00048ab38c285e229e11ff6211ec'),
     ('platform_private.has_role(uuid,public.app_role)', 'c5af5b55de6d79da9b73a33948746ae2', 'postgres', '04e771375e06113da45adc7fa45d56af'),
     ('public.has_role(uuid,public.app_role)', '4d90e93d521a4819d9085f28d742030f', 'postgres', '04e771375e06113da45adc7fa45d56af'),
@@ -49,4 +51,11 @@ BEGIN
   END LOOP;
 END
 $guard$;
+DO $helper_absent$
+BEGIN
+  IF to_regprocedure('platform_private.b2b_seller_financial_scope_error(uuid,uuid)') IS NOT NULL THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_ALREADY_EXISTS';
+  END IF;
+END
+$helper_absent$;
 SELECT 'PRE_OK' AS status;

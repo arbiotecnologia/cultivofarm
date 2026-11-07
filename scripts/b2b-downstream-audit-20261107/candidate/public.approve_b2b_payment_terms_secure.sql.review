@@ -10,38 +10,38 @@ DECLARE
   v_created_by uuid;
   v_numero text;
   v_origin jsonb;
+  v_partner_id uuid;
+  v_scope_error text;
 BEGIN
-
-  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
-  IF v_uid IS NULL THEN
-    RAISE EXCEPTION 'unauthorized';
-  END IF;
-  IF NOT (public.has_role(v_uid,'administrador')
-       OR public.has_role(v_uid,'financeiro')
-       OR public.has_role(v_uid,'gestor_comercial')) THEN
-    RAISE EXCEPTION 'unauthorized';
-  END IF;
-
-  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot
-    INTO v_terms_id, v_created_by, v_numero, v_origin
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
+  -- Pré-validação sem lock: pedido ausente e estrangeiro compartilham a negação.
+  SELECT po.partner_id INTO v_partner_id
   FROM public.partner_orders po
-  WHERE po.id = p_partner_order_id
+  WHERE po.id=p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot, po.partner_id
+    INTO v_terms_id, v_created_by, v_numero, v_origin, v_partner_id
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id
   FOR UPDATE;
 
-  -- Ausência/estrangeiro/ausência após espera compartilham a mesma negação.
   IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
-  -- Papel, perfil, vínculo, escopo e feature são revalidados depois do lock.
-  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
-  IF NOT (public.has_role(v_uid,'administrador')
-       OR public.has_role(v_uid,'financeiro')
-       OR public.has_role(v_uid,'gestor_comercial')) THEN
-    RAISE EXCEPTION 'unauthorized';
-  END IF;
-  -- Nenhuma decisão avança enquanto a conciliação contábil estiver pendente.
+  -- Reautorização depois da espera: perfil, organização, papéis, readiness, owner e feature.
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
   IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
     RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
   END IF;
   IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;
+
+  SELECT pt.id INTO v_terms_id
+  FROM public.partner_order_payment_terms pt
+  WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501'; END IF;
+
 
   UPDATE public.partner_order_payment_terms
      SET approval_status = 'approved',
@@ -49,13 +49,13 @@ BEGIN
          approved_at = now(),
          approval_notes = COALESCE(p_notes, approval_notes),
          updated_at = now()
-   WHERE id = v_terms_id;
+   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;
 
   UPDATE public.partner_orders
      SET financial_approval_status = 'approved',
          payment_condition_status = 'approved',
          updated_at = now()
-   WHERE id = p_partner_order_id;
+   WHERE id = p_partner_order_id AND payment_terms_id = v_terms_id;
 
   INSERT INTO public.partner_order_audit_logs(order_id, acao, usuario_id, dados_novos)
   VALUES (p_partner_order_id, 'payment_terms_approved', v_uid,

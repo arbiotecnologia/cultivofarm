@@ -1,0 +1,106 @@
+{
+  "review": "02c23d82",
+  "status": "INACTIVE_NOT_APPROVED",
+  "operation": "LOCAL_DISPOSABLE_POSTGRES_ONLY",
+  "hosted_operations": false,
+  "publication": false,
+  "real_nf_or_receivable": false,
+  "real_jwt_rls_storage_postgrest_browser_proof": false,
+  "changed_writers": [
+    "request",
+    "approve",
+    "reject"
+  ],
+  "seller_scope_helper": {
+    "signature": "platform_private.b2b_seller_financial_scope_error(uuid,uuid)",
+    "candidate_md5": "c46617ec2a1320c9c05e3da33af8a350",
+    "owner": "postgres",
+    "acl": "{postgres=X/postgres}",
+    "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",
+    "capture": "candidate/platform_private.b2b_seller_financial_scope_error.sql.review",
+    "client_execute": false
+  },
+  "decision_candidates": {
+    "request": {
+      "signature": "public.request_b2b_payment_terms_adjustment_secure(uuid,text)",
+      "baseline_md5": "f9bf8f543564af480d08e7bebd111b88",
+      "candidate_md5": "1698b9355688d0068246292cbe652a79",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "approve": {
+      "signature": "public.approve_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "a61daa8542058bdbf239903d655c2a1b",
+      "candidate_md5": "20fa5eee63ab89fe56cf46b4f9fe01a2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    "reject": {
+      "signature": "public.reject_b2b_payment_terms_secure(uuid,text)",
+      "baseline_md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
+      "candidate_md5": "b1ee789f30e5612a4cd1c27f9dda578f",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    }
+  },
+  "passed": 175,
+  "total": 175,
+  "real_triggers_enabled_during_calls": 38,
+  "positive_seller_shape": {
+    "classification": "DISPOSABLE_COMPONENT_PASS_NOT_HOSTED_PROOF",
+    "path": "partner_accounts.commercial_owner_organization_id=ator.organização; organizations.partner_account_id NULL; zero partner_users",
+    "roles": [
+      "administrador",
+      "financeiro",
+      "gestor_comercial"
+    ],
+    "superadmin_used": false,
+    "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS",
+    "legacy_only": false,
+    "external_validated": "REQUEST_APPROVE_REJECT_PASS_FOR_ALL_THREE_ROLES_WITH_REAL_C2_GUARDS",
+    "forbidden_origin_shape_still_denied": true
+  },
+  "package_install_sha256": "dc7fe58de129c0133e2a032c69efc79f300352eedbf88c9120b74def16490035",
+  "package_files": [
+    "01-pre.sql.readonly",
+    "02-install.sql.review",
+    "03-post.sql.readonly",
+    "04-rollback-deny.sql.review",
+    "SHA256SUMS",
+    "adjustment-pins.json",
+    "candidate/platform_private.b2b_seller_financial_scope_error.sql.review",
+    "candidate/public.approve_b2b_payment_terms_secure.sql.review",
+    "candidate/public.reject_b2b_payment_terms_secure.sql.review",
+    "candidate/public.request_b2b_payment_terms_adjustment_secure.sql.review",
+    "captured/auth-scoping/platform_private.b2b_actor_scope.c3f29977.sql",
+    "captured/auth-scoping/platform_private.b2b_phase1_order_visible.8504f07f.sql",
+    "captured/auth-scoping/platform_private.b2b_phase1_partner_visible.915f516e.sql",
+    "captured/auth-scoping/platform_private.c2_accounting_pending_guard.669b1949.sql",
+    "captured/auth-scoping/platform_private.entitlements_for_user.7f4ec7fa.sql",
+    "captured/auth-scoping/platform_private.h15_actor_organization.64e10608.sql",
+    "captured/auth-scoping/platform_private.has_role.c5af5b55.sql",
+    "captured/auth-scoping/platform_private.platform_actor_access_ready.048249c0.sql",
+    "captured/auth-scoping/public._saas_trg_require_feature.13ed4883.sql",
+    "captured/auth-scoping/public._saas_user_has_feature.501dd958.sql",
+    "captured/auth-scoping/public.b2b_phase1_order_visible.88125087.sql",
+    "captured/auth-scoping/public.b2b_phase1_partner_visible.6b3defc0.sql",
+    "captured/auth-scoping/public.h15_actor_organization.55edafec.sql",
+    "captured/auth-scoping/public.has_role.4d90e93d.sql",
+    "captured/auth-scoping/public.is_platform_superadmin.3dfe79d9.sql",
+    "captured/auth-scoping/public.is_valid_b2b_partner_user.0bb0dea0.sql",
+    "captured/public.approve_b2b_payment_terms_secure.a61daa85.local-20261030.sql",
+    "captured/public.reject_b2b_payment_terms_secure.40777d0c.local-20261030.sql",
+    "captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql"
+  ],
+  "evidence": [
+    "decision-candidates.json",
+    "test-output.txt",
+    "test-stderr.txt",
+    "test-exitcode.txt",
+    "key-results.txt"
+  ],
+  "auditor_required": [
+    "Conferir corpos, owners, ACLs e relações LIVE",
+    "Homologar vínculos ARBio e sessões reais antes de qualquer decisão de instalação"
+  ]
+}

@@ -1,0 +1,333 @@
+--- scripts/b2b-downstream-audit-20261107/review-31430566/historical-134/test-adjustment-candidate.py
++++ scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py
+@@ -4,10 +4,11 @@
+ Todos os 38 gatilhos reais ficam ativos nas chamadas. Wrappers, núcleos privados,
+ readiness, escopo, feature e gatilhos de Auth/SaaS usam os corpos capturados, com
+ owner/ACL reproduzidos. O esquema e os dados são sintéticos: não provam JWT/RLS nem
+-elegibilidade de qualquer administrador vendedor hospedado. O positivo interno comum
+-usa exclusivamente organizations.partner_account_id com o owner comercial coerente;
+-partner_users único não é tratado como elevação de admin/financeiro/comercial.
+-A fixture legada pausa gatilhos somente na preparação e os religa antes das RPCs.
++elegibilidade de qualquer administrador vendedor hospedado. O positivo da equipe
++vendedora usa partner_accounts.commercial_owner_organization_id igual à organização
++do ator, com organizations.partner_account_id NULL e zero partner_users. Superadmin
++e papéis externos/cliente mistos são negados. A fixture legada pausa gatilhos somente
++na preparação e os religa antes das RPCs.
+ """
+ import hashlib
+ import importlib.util
+@@ -36,12 +37,15 @@
+ G = load("adjustment_generator", HERE / "generate-adjustment-fix.py")
+ SP = B.SP
+ SP.PORT = "55472"
+-EVIDENCE = HERE / "review-31430566/scope-live-1638/decision-candidates.json"
++EVIDENCE = HERE / "review-31430566/seller-team-1744/decision-candidates.json"
+ UFIN, UGC = B.UFIN, B.UGC
+ UCUMUL = "20000000-0000-0000-0000-000000000031"
++UMIXC = "20000000-0000-0000-0000-000000000032"
+ 
+ LOAD_ORDER = [
+     "platform_private.platform_actor_access_ready(uuid)",
++    "platform_private.h15_actor_organization()",
++    "public.h15_actor_organization()",
+     "platform_private.entitlements_for_user(uuid)",
+     "platform_private.has_role(uuid,public.app_role)",
+     "public.has_role(uuid,public.app_role)",
+@@ -92,13 +96,13 @@
+ UPDATE public.partner_users pu SET tenant_id=pa.commercial_owner_organization_id,
+   valid_from=now()-interval '1 day', revoked_at=NULL
+   FROM public.partner_accounts pa WHERE pa.id=pu.partner_id;
+--- Atores internos comuns: nenhum é superadmin nem recebe papel externo para forçar escopo.
++-- Controles negativos de papéis mistos; nenhum é usado como positivo vendedor.
+ INSERT INTO public.profiles(user_id,organization_id,ativo,senha_provisoria,created_at) VALUES
+-  ('{UCUMUL}','{SP.A}',true,false,now());
++  ('{UCUMUL}','{SP.A}',true,false,now()),
++  ('{UMIXC}','{SP.A}',true,false,now());
+ INSERT INTO public.user_roles VALUES
+-  ('{UCUMUL}','administrador'), ('{UCUMUL}','parceiro_b2b');
+--- Controle negativo: partner_users único não transforma o cumulativo em vendedor interno,
+--- pois is_valid_b2b_partner_user rejeita papel administrativo na composição capturada.
++  ('{UCUMUL}','administrador'), ('{UCUMUL}','parceiro_b2b'),
++  ('{UMIXC}','administrador'), ('{UMIXC}','cliente_produtor');
+ INSERT INTO public.partner_users(user_id,partner_id,tenant_id,valid_from,revoked_at) VALUES
+   ('{UCUMUL}','{SP.P}','{SP.A}',now()-interval '1 day',NULL);
+ 
+@@ -159,11 +163,16 @@
+             all((HERE / name).read_text() == text for name, text in generated.items()),
+         )
+         review_files = [generated[n] for n in ("01-pre.sql.readonly", "02-install.sql.review", "03-post.sql.readonly", "04-rollback-deny.sql.review")]
+-        check("nenhum artefato executa GRANT ou substitui pin temporário", pins["temporary_pin_substitution"] is False and all("GRANT " not in text for text in review_files))
++        helper_artifact = generated["candidate/platform_private.b2b_seller_financial_scope_error.sql.review"]
++        check("nenhum artefato executa GRANT ou substitui pin temporário", pins["temporary_pin_substitution"] is False and all("GRANT " not in text for text in review_files + [helper_artifact]))
+         check(
+             "todos os pinos públicos/privados estão no PRE/POST/install/rollback",
+             all(meta["md5"] in text and meta["owner"] in text and meta["acl_md5"] in text for text in review_files for meta in pins["dependencies"].values()),
+         )
++        helper_pin = pins["seller_scope_helper"]
++        check("helper vendedor novo tem manifesto de corpo/owner/ACL e nenhum EXECUTE de cliente",
++              helper_pin["client_execute"] is False and helper_pin["owner"] == "postgres"
++              and all(helper_pin["candidate_md5"] in text and helper_pin["acl_md5"] in text for text in review_files[1:]))
+ 
+         def runfile(path):
+             return subprocess.run(
+@@ -233,9 +242,20 @@
+ 
+         r = runfile(HERE / "02-install.sql.review")
+         check("02 instala o candidato transacionalmente sem GRANT", r.returncode == 0, r.stderr)
++        if r.returncode != 0:
++            raise RuntimeError("02-install falhou: " + r.stderr)
+         candidate_md5 = psql(f"SELECT md5(pg_get_functiondef('{G.SIG}'::regprocedure))").stdout.strip()
+         expected_candidate_md5 = pins["candidate_md5"]
+         check("candidato executado tem o MD5 gerado", candidate_md5 == expected_candidate_md5, {"actual": candidate_md5, "expected": expected_candidate_md5})
++        helper_actual = psql(f"SELECT md5(pg_get_functiondef('{G.HELPER_SIG}'::regprocedure))").stdout.strip()
++        helper_closed = psql(f"""SELECT NOT EXISTS(SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a
++                                                     WHERE p.oid='{G.HELPER_SIG}'::regprocedure AND a.grantee=0)
++                                      AND NOT has_function_privilege('anon','{G.HELPER_SIG}','EXECUTE')
++                                      AND NOT has_function_privilege('authenticated','{G.HELPER_SIG}','EXECUTE')
++                                      AND NOT has_function_privilege('service_role','{G.HELPER_SIG}','EXECUTE')""").stdout.strip()
++        check("helper vendedor executado tem MD5 gerado e ACL totalmente privada", helper_actual == helper_pin["candidate_md5"] and helper_closed == "t", {"md5": helper_actual, "closed": helper_closed})
++        direct_helper = SP.as_user(SP.UADM, f"SELECT {G.HELPER_SIG.split('(')[0]}('{SP.UADM}','{SP.P}')")
++        check("helper vendedor não pode ser chamado diretamente por authenticated", direct_helper.returncode != 0 and "permission denied" in direct_helper.stderr, direct_helper.stderr)
+         for kind in ("approve", "reject"):
+             meta = pins["decision_candidates"][kind]
+             actual = psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip()
+@@ -293,12 +313,12 @@
+         if pending is None:
+             raise RuntimeError(f"fixture pendente indisponível: {pending_error}")
+         before = state(pending["id"])
+-        r = request(SP.USUP, pending["id"], "TESTE negado")
+-        check("C2_ACCOUNTING_PENDING nega pending→pending", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
++        r = request(SP.UADM, pending["id"], "TESTE negado")
++        check("C2_ACCOUNTING_PENDING nega pending→pending para vendedor elegível", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
+         check("negação contábil preserva pedido/termos/auditoria/notificações", state(pending["id"]) == before)
+         for kind in ("approve", "reject"):
+             before_decision = state(pending["id"])
+-            r = decision(SP.USUP, kind, pending["id"], "TESTE pendência contábil")
++            r = decision(SP.UADM, kind, pending["id"], "TESTE pendência contábil")
+             check(f"{kind}: pendência contábil é negada antes de qualquer decisão", r.returncode != 0 and "C2_ACCOUNTING_PENDING" in r.stderr, r.stderr)
+             check(f"{kind}: pendência contábil preserva estado integral", state(pending["id"]) == before_decision)
+ 
+@@ -344,41 +364,65 @@
+             r = decision(SP.UADMF, kind, legacy_id, "TESTE legado estrangeiro")
+             check(f"{kind}: FSF negado no legado pelo escopo real", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+             check(f"{kind}: negação FSF no legado preserva estado", state(legacy_id) == before_decision)
+-        r = request(UCUMUL, legacy_id, "TESTE cumulativo sem vínculo da organização")
+-        check("admin+parceiro com apenas partner_users único não vira positivo interno", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr, r.stderr)
+-        check("negação do caminho partner_users para admin cumulativo preserva estado", state(legacy_id) == before)
+-
+-        # Positivo INTERNO SINTÉTICO: usa o caminho real organizations.partner_account_id,
+-        # com o parceiro pertencente à mesma organização. Não certifica nenhum admin hospedado.
+-        psql(f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'")
+-        seller_path = psql(f"""SELECT o.partner_account_id=pa.id
++        for uid, label in ((UCUMUL, "administrador+parceiro_b2b"), (UMIXC, "administrador+cliente_produtor"), (SP.USUP, "administrador+superadmin")):
++            for operation in ("request", "approve", "reject"):
++                before_mixed = state(legacy_id)
++                r = request(uid, legacy_id, "TESTE misto " + label) if operation == "request" else decision(uid, operation, legacy_id, "TESTE misto " + label)
++                check(f"{operation}: {label} é negado mesmo no tenant vendedor", r.returncode != 0 and "unauthorized" in r.stderr, r.stderr)
++                check(f"{operation}: mistura {label} preserva estado integral", state(legacy_id) == before_mixed)
++
++        # Positivo da equipe vendedora: owner comercial direto, sem vínculo de comprador.
++        seller_path = psql(f"""SELECT o.partner_account_id IS NULL
+                                       AND pa.commercial_owner_organization_id=o.id
+                                       AND o.ativo AND o.status='ativa'
+                                       AND pa.ativo AND pa.deleted_at IS NULL
++                                      AND NOT EXISTS(SELECT 1 FROM public.partner_users pu
++                                                     WHERE pu.user_id IN ('{SP.UADM}','{UFIN}','{UGC}'))
+                                FROM public.organizations o
+-                               JOIN public.partner_accounts pa ON pa.id=o.partner_account_id
++                               JOIN public.partner_accounts pa ON pa.commercial_owner_organization_id=o.id
+                                WHERE o.id='{SP.A}' AND pa.id='{SP.P}'""").stdout.strip()
+-        check("fixture do positivo interno tem caminho organização→parceiro→dono vendedor coerente", seller_path == "t", seller_path)
++        check("fixture vendedora tem owner direto, organizations.partner_account_id NULL e zero partner_users", seller_path == "t", seller_path)
+         internal_roles = psql(f"""SELECT NOT EXISTS(
+                                       SELECT 1 FROM public.user_roles
+                                       WHERE user_id IN ('{SP.UADM}','{UFIN}','{UGC}')
+                                         AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin')
+                                     )""").stdout.strip()
+-        check("positivos internos não dependem de superadmin nem papel externo", internal_roles == "t", internal_roles)
+-        scope = SP.as_user(SP.UADM, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
+-        foreign_scope = SP.as_user(SP.UADMF, f"SELECT public.b2b_phase1_partner_visible('{SP.P}',false)::text;")
+-        check("escopo real admite o caminho interno sintético e preserva a negação FSF", scope.returncode == 0 and scope.stdout.strip() == "true" and foreign_scope.returncode == 0 and foreign_scope.stdout.strip() == "false", (scope.stdout, scope.stderr, foreign_scope.stdout, foreign_scope.stderr))
++        check("positivos internos não dependem de superadmin nem papel externo/cliente", internal_roles == "t", internal_roles)
+ 
+         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
+-            before_validated = state(validated["id"])
+-            r = request(uid, validated["id"], "TESTE validado interno " + label)
+-            check(f"{label}: escopo não basta; guard real nega ajuste no externo validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
+-            check(f"{label}: negação de origem no validado preserva estado integral", state(validated["id"]) == before_validated)
+-            for kind in ("approve", "reject"):
+-                before_decision = state(validated["id"])
+-                r = decision(uid, kind, validated["id"], "TESTE validado interno " + label)
+-                check(f"{kind}/{label}: guard real de origem também nega decisão no validado", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
+-                check(f"{kind}/{label}: negação de origem preserva estado integral", state(validated["id"]) == before_decision)
++            r = request(uid, validated["id"], "TESTE validado vendedor " + label)
++            check(f"{label}: equipe vendedora solicita ajuste no C2 validado sem vínculo comprador", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
++            r = decision(uid, "approve", validated["id"], "TESTE approve validado " + label)
++            check(f"approve/{label}: positivo C2 validado com guard de origem ativa", r.returncode == 0 and '"approved"' in r.stdout, r.stderr)
++            check(f"approve/{label}: pedido e condição aprovados", psql(f"SELECT o.financial_approval_status='approved' AND t.approval_status='approved' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id AND t.partner_order_id=o.id WHERE o.id='{validated['id']}'").stdout.strip() == "t")
++            r = request(uid, validated["id"], "TESTE prepara reject validado " + label)
++            check(f"{label}: nova solicitação não duplica a condição", r.returncode == 0 and psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{validated['id']}'").stdout.strip() == "1", r.stderr)
++            r = decision(uid, "reject", validated["id"], "TESTE reject validado " + label)
++            check(f"reject/{label}: positivo C2 validado com guard de origem ativa", r.returncode == 0 and '"rejected"' in r.stdout, r.stderr)
++            check(f"reject/{label}: pedido e condição rejeitados", psql(f"SELECT o.financial_approval_status='rejected' AND t.approval_status='rejected' FROM public.partner_orders o JOIN public.partner_order_payment_terms t ON t.id=o.payment_terms_id AND t.partner_order_id=o.id WHERE o.id='{validated['id']}'").stdout.strip() == "t")
++
++        # Controle de que a guarda C2 não foi contornada: o shape proibido por ela continua negado.
++        psql(f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'")
++        before_origin = state(validated["id"])
++        r = request(SP.UADM, validated["id"], "TESTE origem proibida")
++        check("guard C2 real continua negando organizations.partner_account_id no parceiro do pedido", r.returncode != 0 and "C2_EXTERNAL_ORIGIN_DENIED" in r.stderr, r.stderr)
++        check("negação da guarda C2 preserva estado integral", state(validated["id"]) == before_origin)
++        psql(f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'")
++
++        # Integridade pedido↔condição nas três operações, com todos os gatilhos ativos.
++        for operation in ("request", "approve", "reject"):
++            psql(f"UPDATE public.partner_orders SET payment_terms_id=(SELECT payment_terms_id FROM public.partner_orders WHERE id='{validated['id']}') WHERE id='{legacy_id}'")
++            before_mismatch = state(legacy_id)
++            r = request(SP.UADM, legacy_id, "TESTE mismatch") if operation == "request" else decision(SP.UADM, operation, legacy_id, "TESTE mismatch")
++            check(f"{operation}: condição associada a outro pedido é negada", r.returncode != 0 and "payment_terms_order_mismatch" in r.stderr, r.stderr)
++            check(f"{operation}: mismatch não altera pedido/condição/auditoria/notificações", state(legacy_id) == before_mismatch)
++            psql(f"UPDATE public.partner_orders SET payment_terms_id='{terms_id}' WHERE id='{legacy_id}'")
++        psql(f"UPDATE public.partner_orders SET payment_terms_id=NULL WHERE id='{legacy_id}'")
++        before_missing_terms = state(legacy_id)
++        r = request(SP.UADM, legacy_id, "TESTE terms ausente")
++        check("pedido do vendedor sem condição falha fechado", r.returncode != 0 and "payment_terms_not_defined" in r.stderr, r.stderr)
++        check("condição ausente não produz efeitos", state(legacy_id) == before_missing_terms)
++        psql(f"UPDATE public.partner_orders SET payment_terms_id='{terms_id}' WHERE id='{legacy_id}'")
+ 
+         def during_lock(label, mutation, token, restore, kind="request"):
+             before = state(legacy_id)
+@@ -412,7 +456,7 @@
+         during_lock(
+             "perfil inativado",
+             f"UPDATE public.profiles SET ativo=false WHERE user_id='{SP.UADM}'",
+-            "b2b_phase1_scope_denied",
++            "unauthorized",
+             f"UPDATE public.profiles SET ativo=true WHERE user_id='{SP.UADM}'",
+         )
+         during_lock(
+@@ -422,10 +466,28 @@
+             f"UPDATE public.profiles SET senha_provisoria=false WHERE user_id='{SP.UADM}'",
+         )
+         during_lock(
+-            "vínculo organização-parceiro do vendedor removido",
+-            f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'",
++            "dono comercial vendedor revogado",
++            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.F}' WHERE id='{SP.P}'",
+             "b2b_phase1_scope_denied",
+-            f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'",
++            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.A}' WHERE id='{SP.P}'",
++        )
++        during_lock(
++            "organização vendedora inativada",
++            f"UPDATE public.organizations SET ativo=false,status='inativa' WHERE id='{SP.A}'",
++            "b2b_phase1_scope_denied",
++            f"UPDATE public.organizations SET ativo=true,status='ativa' WHERE id='{SP.A}'",
++        )
++        during_lock(
++            "parceiro vendedor inativado",
++            f"UPDATE public.partner_accounts SET ativo=false WHERE id='{SP.P}'",
++            "b2b_phase1_scope_denied",
++            f"UPDATE public.partner_accounts SET ativo=true WHERE id='{SP.P}'",
++        )
++        during_lock(
++            "papel B2B misto concedido durante o lock",
++            f"INSERT INTO public.user_roles VALUES ('{SP.UADM}','parceiro_b2b')",
++            "unauthorized",
++            f"DELETE FROM public.user_roles WHERE user_id='{SP.UADM}' AND role='parceiro_b2b'",
+         )
+         during_lock(
+             "convite administrativo em processing",
+@@ -457,14 +519,28 @@
+             "approve",
+         )
+         during_lock(
+-            "reject com vínculo vendedor revogado",
+-            f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'",
++            "reject com dono comercial revogado",
++            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.F}' WHERE id='{SP.P}'",
+             "b2b_phase1_scope_denied",
+-            f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'",
++            f"UPDATE public.partner_accounts SET commercial_owner_organization_id='{SP.A}' WHERE id='{SP.P}'",
+             "reject",
+         )
+-
+-        # Controles positivos SINTÉTICOS apenas no legado: o externo validado foi negado pelo guard real.
++        during_lock(
++            "approve com organização inativada",
++            f"UPDATE public.organizations SET ativo=false,status='inativa' WHERE id='{SP.A}'",
++            "b2b_phase1_scope_denied",
++            f"UPDATE public.organizations SET ativo=true,status='ativa' WHERE id='{SP.A}'",
++            "approve",
++        )
++        during_lock(
++            "reject com feature revogada",
++            f"UPDATE public.saas_plan_version_features SET enabled=false WHERE plan_version_id='{PLAN_VERSION}' AND feature_id='{FEATURE_ORDER}'",
++            "saas_feature_not_entitled",
++            f"UPDATE public.saas_plan_version_features SET enabled=true WHERE plan_version_id='{PLAN_VERSION}' AND feature_id='{FEATURE_ORDER}'",
++            "reject",
++        )
++
++        # Controles positivos no legado sem snapshot de origem, além do C2 validado acima.
+         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
+             r = request(uid, legacy_id, "TESTE positivo legado " + label)
+             check(f"controle sintético {label}: caminho dono vendedor solicita ajuste no legado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
+@@ -503,12 +579,14 @@
+             r = decision(SP.UADM, kind, legacy_id, "TESTE apos rollback")
+             check(f"rollback fecha {kind} sem restaurar corpo anterior", r.returncode != 0 and "permission denied" in r.stderr and psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip() == meta["candidate_md5"], r.stderr)
+         check("rollback não apaga nem reescreve histórico", state(legacy_id) == after_rb)
++        helper_after_rb = SP.as_user(SP.UADM, f"SELECT {G.HELPER_SIG.split('(')[0]}('{SP.UADM}','{SP.P}')")
++        check("rollback mantém helper sem EXECUTE de cliente", helper_after_rb.returncode != 0 and "permission denied" in helper_after_rb.stderr, helper_after_rb.stderr)
+         check("TODOS os 38 gatilhos continuam habilitados no fim", triggers_ok())
+         check("B3 não foi instalado nem modificado nesta bateria", psql("SELECT to_regclass('platform_private.b2b_condition_versions') IS NULL").stdout.strip() == "t")
+ 
+         report = {
+             "kind": "DISPOSABLE_PG_CANDIDATE_REAL_AUTH_SCOPING_ALL_REAL_TRIGGERS_NOT_HOSTED_PROOF",
+-            "review": "31430566",
++            "review": "02c23d82",
+             "status": "INACTIVE_NOT_APPROVED",
+             "source": str(G.SOURCE.relative_to(ROOT)),
+             "live_source_still_requires_auditor_confirmation": True,
+@@ -523,23 +601,23 @@
+             },
+             "baseline_md5": G.BASE_MD5,
+             "candidate_md5": expected_candidate_md5,
+-            "request_candidate_sql_changed_in_scope_review": False,
+-            "decision_review": "458b6012",
++            "request_candidate_sql_changed_in_seller_scope_review": True,
++            "decision_review": "02c23d82",
+             "decision_candidates": pins["decision_candidates"],
+-            "historical_76_evidence": "review-31430566/historical-76/adjustment-candidate.json",
+-            "supersedes_candidate_md5": "55996e9496ffb123504adaeaa502c81f",
+-            "historical_minimal_evidence": "evidence/adjustment-candidate-minimal-29.json",
+-            "historical_60_evidence": "review-31430566/historical-60/adjustment-candidate.json",
++            "seller_scope_helper": helper_pin,
++            "historical_134_evidence": "review-31430566/scope-live-1638/decision-candidates.json",
++            "supersedes_request_candidate_md5": "7eb3b5be33552f6bd4eecd56796502ed",
+             "positive_internal_seller": {
+-                "classification": "SYNTHETIC_CONTROL_ONLY",
+-                "path": "organizations.partner_account_id com partner_accounts.commercial_owner_organization_id coerente",
++                "classification": "DISPOSABLE_COMPONENT_PASS_NOT_HOSTED_PROOF",
++                "path": "partner_accounts.commercial_owner_organization_id=ator.organização; organizations.partner_account_id NULL; zero partner_users",
+                 "roles": ["administrador", "financeiro", "gestor_comercial"],
+                 "superadmin_used": False,
+                 "production_eligibility": "NOT_RUN_REQUIRES_REAL_SESSION_AND_LIVE_LINKS",
+-                "legacy_only": True,
+-                "external_validated": "DENIED_BY_REAL_C2_EXTERNAL_ORIGIN_DENIED_FOR_ALL_THREE_ROLES"
++                "legacy_only": False,
++                "external_validated": "REQUEST_APPROVE_REJECT_PASS_FOR_ALL_THREE_ROLES_WITH_REAL_C2_GUARDS",
++                "forbidden_origin_shape_still_denied": True
+             },
+-            "partner_users_semantics": "caminho externo capturado; admin+parceiro sem organizations.partner_account_id foi negado e não promovido a vendedor",
++            "partner_users_semantics": "positivo vendedor não usa partner_users; papéis B2B/cliente/superadmin mistos são negados nas três operações",
+             "dependencies": pins["dependencies"],
+             "actual_dependency_md5": actual_dependencies,
+             "temporary_pin_substitution": False,
+@@ -548,7 +626,7 @@
+             "synthetic_seams": [
+                 "Auth por GUC local; auth.jwt sintético apenas para transportar sub/iat ao corpo real de readiness",
+                 "esquema mínimo e fixtures de assinatura/feature; resolvedores e gatilhos SaaS são corpos reais capturados",
+-                "vínculos organizations.partner_account_id e partner_users montados em schema reduzido; positivos são controles sintéticos e não provam vínculo/elegibilidade de admin vendedor hospedado",
++                "owner comercial, organizations.partner_account_id NULL e partner_users montados em schema reduzido; PASS de componente não prova vínculo/elegibilidade hospedados",
+                 "demais dependências de segundo nível B2/B3",
+                 "fixture legada mínima com gatilhos pausados só na preparação e todos religados antes das RPCs",
+                 "sem JWT/RLS/PostgREST/Storage e sem leitura/escrita hosted",

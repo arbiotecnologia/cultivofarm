@@ -16,6 +16,10 @@ ROLE_MD5 = "4d90e93d521a4819d9085f28d742030f"
 PRIVATE_ROLE_MD5 = "c5af5b55de6d79da9b73a33948746ae2"
 ACCOUNTING_GUARD_MD5 = "669b19490a7a9700f0158db4b31885ad"
 CONTRACT = "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1"
+SELLER_CONTRACT = "B2B_SELLER_FINANCIAL_TEAM_V1"
+HELPER_SIG = "platform_private.b2b_seller_financial_scope_error(uuid,uuid)"
+HELPER_OWNER = "postgres"
+HELPER_ACL = "{postgres=X/postgres}"
 DECISION_SOURCES = {
     "request": {"source": REQUEST_SOURCE, "signature": SIG, "md5": BASE_MD5},
     "approve": {
@@ -36,6 +40,16 @@ DEPENDENCIES = {
         "platform_private.platform_actor_access_ready(p_user uuid)",
         "048249c0c2106c3761e26eacb8d0de84",
         "platform_private.platform_actor_access_ready.048249c0.sql",
+    ),
+    "platform_private.h15_actor_organization()": (
+        "platform_private.h15_actor_organization()",
+        "64e10608403238a41a9baf92857ca881",
+        "platform_private.h15_actor_organization.64e10608.sql",
+    ),
+    "public.h15_actor_organization()": (
+        "public.h15_actor_organization()",
+        "55edafec08bcc84a00f1526c14334a2c",
+        "public.h15_actor_organization.55edafec.sql",
     ),
     "platform_private.entitlements_for_user(uuid)": (
         "platform_private.entitlements_for_user(_uid uuid)",
@@ -135,76 +149,141 @@ def source_body():
     return captured(REQUEST_SOURCE, BASE_MD5)["body"]
 
 
-def candidate_body():
-    body = source_body()
-    body = delta(
-        body,
-        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n  IF NOT (public.has_role(v_uid,'administrador')",
-        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n"
-        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  IF NOT (public.has_role(v_uid,'administrador')",
-        "A1 Auth antes do escopo de entrada",
-    )
-    body = delta(
-        body,
-        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
-        "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n"
-        "    INTO v_terms_id, v_created_by, v_numero, v_origin\n"
-        "  FROM public.partner_orders po\n"
-        "  WHERE po.id = p_partner_order_id\n"
-        "  FOR UPDATE;\n\n"
-        "  -- Pedido ausente, estrangeiro ou removido durante a espera segue a mesma negação, sem oráculo.\n"
-        "  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  -- Revalida depois da espera pelo lock: papel/perfil/vínculo/escopo podem ter sido revogados.\n"
-        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  IF NOT (public.has_role(v_uid,'administrador')\n"
-        "       OR public.has_role(v_uid,'financeiro')\n"
-        "       OR public.has_role(v_uid,'gestor_comercial')) THEN\n"
-        "    RAISE EXCEPTION 'unauthorized';\n"
-        "  END IF;\n"
-        "  -- O gatilho contábil protege mudanças de financial_approval_status; pending→pending também é decisão proibida.\n"
-        "  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN\n"
-        "    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';\n"
-        "  END IF;\n"
-        "  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
-        "A2 lock/missing/reautorização/contabilidade",
-    )
-    body = delta(body, "  v_numero text;\nBEGIN", "  v_numero text;\n  v_origin jsonb;\nBEGIN", "A0 snapshot de origem")
-    return body
+def seller_helper_body():
+    """Escopo exclusivo da equipe vendedora; nunca consulta o caminho do comprador."""
+    return """CREATE OR REPLACE FUNCTION platform_private.b2b_seller_financial_scope_error(_uid uuid, _partner uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_org uuid;
+BEGIN
+  IF _uid IS NULL OR auth.uid() IS DISTINCT FROM _uid OR _partner IS NULL THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF NOT platform_private.platform_actor_access_ready(_uid) THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF public.is_platform_superadmin(_uid) OR EXISTS (
+    SELECT 1 FROM public.user_roles r
+    WHERE r.user_id=_uid AND r.role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin')
+  ) THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF NOT (platform_private.has_role(_uid,'administrador'::public.app_role)
+       OR platform_private.has_role(_uid,'financeiro'::public.app_role)
+       OR platform_private.has_role(_uid,'gestor_comercial'::public.app_role)) THEN
+    RETURN 'unauthorized';
+  END IF;
+  v_org := public.h15_actor_organization();
+  IF v_org IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa'
+  ) THEN
+    RETURN 'b2b_phase1_scope_denied';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.partner_accounts pa
+    WHERE pa.id=_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+      AND pa.commercial_owner_organization_id=v_org
+  ) THEN
+    RETURN 'b2b_phase1_scope_denied';
+  END IF;
+  IF NOT public._saas_user_has_feature(_uid,'pedidos_b2b') THEN
+    RETURN 'saas_feature_not_entitled';
+  END IF;
+  RETURN NULL;
+END
+$function$"""
 
 
-def decision_candidate_body(kind):
-    """Approve/reject reutilizam o mesmo escopo canônico, lock e reautorização."""
-    if kind not in ("approve", "reject"):
+def replace_between(src, start_marker, end_marker, replacement, label):
+    if src.count(start_marker) != 1 or src.count(end_marker) != 1:
+        raise SystemExit(f"{label}: marcadores não únicos")
+    start = src.index(start_marker)
+    end = src.index(end_marker, start)
+    if end < start:
+        raise SystemExit(f"{label}: marcadores fora de ordem")
+    return src[:start] + replacement + src[end:]
+
+
+def seller_candidate_body(kind):
+    """Request/approve/reject: escopo vendedor, locks, reautorização e integridade pedido↔terms."""
+    if kind not in DECISION_SOURCES:
         raise SystemExit(f"decisão desconhecida: {kind}")
     meta = DECISION_SOURCES[kind]
     body = captured(meta["source"], meta["md5"])["body"]
-    body = delta(body, "  v_numero text;\nBEGIN", "  v_numero text;\n  v_origin jsonb;\nBEGIN", kind + " snapshot de origem")
     body = delta(
         body,
-        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN\n    RAISE EXCEPTION 'payment_terms_not_defined';\n  END IF;",
-        "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n"
-        "    INTO v_terms_id, v_created_by, v_numero, v_origin\n"
-        "  FROM public.partner_orders po\n"
-        "  WHERE po.id = p_partner_order_id\n"
-        "  FOR UPDATE;\n\n"
-        "  -- Ausência/estrangeiro/ausência após espera compartilham a mesma negação.\n"
-        "  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  -- Papel, perfil, vínculo, escopo e feature são revalidados depois do lock.\n"
-        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  IF NOT (public.has_role(v_uid,'administrador')\n"
-        "       OR public.has_role(v_uid,'financeiro')\n"
-        "       OR public.has_role(v_uid,'gestor_comercial')) THEN\n"
-        "    RAISE EXCEPTION 'unauthorized';\n"
-        "  END IF;\n"
-        "  -- Nenhuma decisão avança enquanto a conciliação contábil estiver pendente.\n"
-        "  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN\n"
-        "    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';\n"
-        "  END IF;\n"
-        "  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
-        kind + " lock/reautorização/contabilidade",
+        "  v_numero text;\nBEGIN",
+        "  v_numero text;\n  v_origin jsonb;\n  v_partner_id uuid;\n  v_scope_error text;\nBEGIN",
+        kind + " variáveis de escopo/origem",
+    )
+    preflight = """BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
+  -- Pré-validação sem lock: pedido ausente e estrangeiro compartilham a negação.
+  SELECT po.partner_id INTO v_partner_id
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+"""
+    end_marker = {
+        "request": "  IF p_notes IS NULL",
+        "approve": "  SELECT po.payment_terms_id",
+        "reject": "  IF p_reason IS NULL",
+    }[kind]
+    body = replace_between(body, "BEGIN\n", end_marker, preflight, kind + " preflight vendedor")
+    postlock = """  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot, po.partner_id
+    INTO v_terms_id, v_created_by, v_numero, v_origin, v_partner_id
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  -- Reautorização depois da espera: perfil, organização, papéis, readiness, owner e feature.
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;
+
+  SELECT pt.id INTO v_terms_id
+  FROM public.partner_order_payment_terms pt
+  WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501'; END IF;
+"""
+    body = replace_between(
+        body,
+        "  SELECT po.payment_terms_id",
+        "\n\n  UPDATE public.partner_order_payment_terms",
+        postlock,
+        kind + " lock/reautorização/integridade",
+    )
+    body = delta(
+        body,
+        "   WHERE id = v_terms_id;",
+        "   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;",
+        kind + " update terms íntegro",
+    )
+    body = delta(
+        body,
+        "   WHERE id = p_partner_order_id;",
+        "   WHERE id = p_partner_order_id AND payment_terms_id = v_terms_id;",
+        kind + " update pedido íntegro",
     )
     return body
+
+
+def candidate_body():
+    return seller_candidate_body("request")
+
+
+def decision_candidate_body(kind):
+    return seller_candidate_body(kind)
 
 
 def acl_entries(acl):
@@ -283,6 +362,45 @@ END
 $guard$;"""
 
 
+def helper_absence_assertion():
+    return f"""DO $helper_absent$
+BEGIN
+  IF to_regprocedure('{HELPER_SIG}') IS NOT NULL THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_ALREADY_EXISTS';
+  END IF;
+END
+$helper_absent$;"""
+
+
+def helper_assertion(expected_md5):
+    acl_digest = acl_md5(HELPER_ACL)
+    return f"""DO $helper_pin$
+DECLARE actual_acl text;
+BEGIN
+  IF to_regprocedure('{HELPER_SIG}') IS NULL THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_MISSING';
+  END IF;
+  IF md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)) IS DISTINCT FROM '{expected_md5}' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_HELPER_PIN_DRIFT: actual=% expected=%', md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)), '{expected_md5}';
+  END IF;
+  IF (SELECT pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid='{HELPER_SIG}'::regprocedure) IS DISTINCT FROM '{HELPER_OWNER}' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_OWNER_DRIFT: {HELPER_SIG}';
+  END IF;
+  SELECT md5(string_agg(v.entry, '|' ORDER BY v.entry)) INTO actual_acl
+  FROM (
+    SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END
+      || '=' || a.privilege_type || CASE WHEN a.is_grantable THEN '*' ELSE '' END
+      || '/' || a.grantor::regrole::text AS entry
+    FROM pg_proc p, aclexplode(COALESCE(p.proacl, acldefault('f',p.proowner))) a
+    WHERE p.oid='{HELPER_SIG}'::regprocedure
+  ) v;
+  IF actual_acl IS DISTINCT FROM '{acl_digest}' THEN
+    RAISE EXCEPTION 'ADJUSTMENT_ACL_DRIFT: {HELPER_SIG}';
+  END IF;
+END
+$helper_pin$;"""
+
+
 def build():
     candidates = {
         "request": candidate_body(),
@@ -291,25 +409,38 @@ def build():
     }
     candidate_md5s = {kind: hashlib.md5(body.encode()).hexdigest() for kind, body in candidates.items()}
     baseline_md5s = {kind: meta["md5"] for kind, meta in DECISION_SOURCES.items()}
+    helper = seller_helper_body()
+    # pg_get_functiondef inclui a quebra de linha final após o delimitador.
+    helper_md5 = hashlib.md5((helper + "\n").encode()).hexdigest()
     pre = (
         "-- READ ONLY. Capturas LOCAIS; o auditor deve confrontar corpos, owners e ACLs LIVE antes de qualquer uso.\n"
-        f"{assertions(baseline_md5s)}\nSELECT 'PRE_OK' AS status;\n"
+        f"{assertions(baseline_md5s)}\n{helper_absence_assertion()}\nSELECT 'PRE_OK' AS status;\n"
     )
     candidate_sql = "\n\n".join(candidates[kind] + ";" for kind in ("request", "approve", "reject"))
+    helper_sql = (
+        helper + ";\n"
+        f"ALTER FUNCTION {HELPER_SIG} OWNER TO {HELPER_OWNER};\n"
+        f"REVOKE ALL ON FUNCTION {HELPER_SIG} FROM PUBLIC, anon, authenticated, service_role;"
+    )
     install = f"""-- CANDIDATO INATIVO. Não aplicar sem revisão e preflight LIVE independente.
--- CREATE OR REPLACE preserva owner/ACL; nenhuma concessão de privilégio é executada.
+-- Os writers preservam owner/ACL; o helper novo é privado e não recebe grants.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 SET LOCAL statement_timeout = '30s';
 {assertions(baseline_md5s)}
+{helper_absence_assertion()}
+
+{helper_sql}
 
 {candidate_sql}
 
 {assertions(candidate_md5s)}
+{helper_assertion(helper_md5)}
 COMMIT;
 """
-    post = f"""-- READ ONLY. Confere corpo, owner e ACL dos writers e de wrappers/núcleos privados.
+    post = f"""-- READ ONLY. Confere corpos, owners e ACLs dos writers, helper e dependências.
 {assertions(candidate_md5s)}
+{helper_assertion(helper_md5)}
 SELECT 'POST_OK' AS status;
 """
     revokes = "\n".join(
@@ -321,11 +452,19 @@ SELECT 'POST_OK' AS status;
         f"  IF md5(pg_get_functiondef('{meta['signature']}'::regprocedure)) <> '{candidate_md5s[kind]}' THEN RAISE EXCEPTION 'ADJUSTMENT_ROLLBACK_BODY_CHANGED'; END IF;"
         for kind, meta in DECISION_SOURCES.items()
     )
-    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura corpos sem lock/reautorização/contabilidade.
+    deny_conditions += (
+        f"\n  IF has_function_privilege('authenticated', '{HELPER_SIG}', 'EXECUTE') OR has_function_privilege('anon', '{HELPER_SIG}', 'EXECUTE') "
+        f"OR has_function_privilege('service_role', '{HELPER_SIG}', 'EXECUTE') OR EXISTS (SELECT 1 FROM pg_proc p, aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid='{HELPER_SIG}'::regprocedure AND a.grantee=0) "
+        "THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_NOT_CLOSED'; END IF;"
+        f"\n  IF md5(pg_get_functiondef('{HELPER_SIG}'::regprocedure)) <> '{helper_md5}' THEN RAISE EXCEPTION 'ADJUSTMENT_HELPER_ROLLBACK_BODY_CHANGED'; END IF;"
+    )
+    rollback = f"""-- ROLLBACK DENY-ONLY: não restaura corpos nem vínculos antigos.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 {assertions(candidate_md5s)}
+{helper_assertion(helper_md5)}
 {revokes}
+REVOKE ALL ON FUNCTION {HELPER_SIG} FROM PUBLIC, anon, authenticated, service_role;
 DO $deny$
 BEGIN
   {deny_conditions}
@@ -335,6 +474,7 @@ COMMIT;
 """
     files = {
         "captured/public.request_b2b_payment_terms_adjustment_secure.f9bf8f54.local-20261030.sql": source_body() + "\n",
+        "candidate/platform_private.b2b_seller_financial_scope_error.sql.review": helper_sql + "\n",
         "candidate/public.request_b2b_payment_terms_adjustment_secure.sql.review": candidates["request"] + "\n",
         "01-pre.sql.readonly": pre,
         "02-install.sql.review": install,
@@ -360,7 +500,7 @@ COMMIT;
             "capture": capture_name,
         }
     files["adjustment-pins.json"] = json.dumps({
-        "review": "31430566",
+        "review": "02c23d82",
         "status": "INACTIVE_NOT_APPROVED",
         "source": str(SOURCE.relative_to(ROOT)),
         "source_md5": BASE_MD5,
@@ -368,10 +508,22 @@ COMMIT;
         "request_acl": captured(REQUEST_SOURCE, BASE_MD5)["acl"],
         "scope_md5": VISIBLE_MD5,
         "private_scope_md5": PRIVATE_VISIBLE_MD5,
+        "legacy_buyer_pins_retained_for_baseline_only": True,
+        "buyer_reader_modified": False,
         "role_md5": ROLE_MD5,
         "private_role_md5": PRIVATE_ROLE_MD5,
         "accounting_guard_md5": ACCOUNTING_GUARD_MD5,
         "candidate_md5": candidate_md5s["request"],
+        "seller_scope_contract": SELLER_CONTRACT,
+        "seller_scope_helper": {
+            "signature": HELPER_SIG,
+            "candidate_md5": helper_md5,
+            "owner": HELPER_OWNER,
+            "acl": HELPER_ACL,
+            "acl_md5": acl_md5(HELPER_ACL),
+            "capture": "candidate/platform_private.b2b_seller_financial_scope_error.sql.review",
+            "client_execute": False,
+        },
         "decision_candidates": {
             kind: {"signature": DECISION_SOURCES[kind]["signature"], "baseline_md5": baseline_md5s[kind], "candidate_md5": candidate_md5s[kind],
                    "owner": captured(DECISION_SOURCES[kind]["source"], baseline_md5s[kind])["owner"],
