@@ -55,3 +55,413 @@ stderr | src/test/entregas/deliverySendPersistMount.test.tsx > Enviar durable re
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/b2b/novoPedidoPaymentMethod.test.tsx > sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/b2b/novoPedidoPaymentMethod.test.tsx > crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado
+Warning: An update to NovoPedido inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at NovoPedido (/dev-server/src/pages/portal-parceiro/NovoPedido.tsx:152:64)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Outlet (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1186:28)
+    at EntitlementOutlet (/dev-server/src/components/guards/EntitlementOutlet.tsx:17:48)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Outlet (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1186:28)
+    at main
+    at div
+    at div
+    at SidebarProvider (/dev-server/src/test/b2b/novoPedidoPaymentMethod.test.tsx:76:29)
+    at PortalParceiroLayout (/dev-server/src/pages/portal-parceiro/PortalParceiroLayout.tsx:69:139)
+    at div
+    at AuthzEpochBoundary (/dev-server/src/components/authz/AuthzEpochBoundary.tsx:25:35)
+    at B2BRouteGuard (/dev-server/src/components/guards/B2BRouteGuard.tsx:31:30)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+    at QueryClientProvider (file:///dev-server/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber preserves modal/draft across identical polls; inactive retry denies and restore is clean
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10284,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10498,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/atendimentos preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10325,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/atendimentos preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/atendimentos preserves modal/draft across identical polls; inactive retry denies and restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > manager_loss pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10415,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > manager_loss pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > consultant_loss pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10493,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > consultant_loss pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > duplicate pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10247,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > duplicate pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > duplicate pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > additional pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10144,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > additional pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > superadmin pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10500,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > superadmin pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > external pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10084,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > external pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > tenant pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10288,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > tenant pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > tenant pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > null pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10242,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > null pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > null pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > provisional pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10091,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > provisional pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > provisional pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > error pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10412,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > error pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > manager_denied pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10425,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > manager_denied pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > manager_denied pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > consultant_denied pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10208,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > consultant_denied pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > consultant_denied pauses without silently adopting cached authority
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber environmental check keeps confirmed view only until deadline; late response cannot reopen
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":14990,"leaseRemainingMs":0,"requestRemainingMs":10}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/registrar environmental check keeps confirmed view only until deadline; late response cannot reopen
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":14990,"leaseRemainingMs":0,"requestRemainingMs":10}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /selecionar-portal environmental check keeps confirmed view only until deadline; late response cannot reopen
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":14990,"leaseRemainingMs":0,"requestRemainingMs":10}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental gestor denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14990,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental gestor denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental consultor_tecnico denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14990,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental consultor_tecnico denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental error denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14990,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental error denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental offline denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"offline","visible":true,"online":false,"rttMs":10,"leaseRemainingMs":14990,"requestRemainingMs":null}
+cultivo-authz-expire {"event":"expire","state":"expired","reason":"offline","visible":true,"online":false,"rttMs":10,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > environmental offline denies, clears drafts/cache and restore stays clean
+cultivo-authz-expire {"event":"expire","state":"expired","reason":"offline","visible":true,"online":false,"rttMs":20,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":3000,"leaseRemainingMs":7355,"requestRemainingMs":12000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /financeiro/receber constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":3000,"leaseRemainingMs":null,"requestRemainingMs":12000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/registrar constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":3000,"leaseRemainingMs":7059,"requestRemainingMs":12000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > /app/registrar constant RTT 3s for 60s keeps draft/modal without pause or epoch; later inactivation still pauses
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":3000,"leaseRemainingMs":null,"requestRemainingMs":12000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > selector offers legitimate choices, both transitions remain authorized, revoke hides selector
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10214,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > selector offers legitimate choices, both transitions remain authorized, revoke hides selector
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > selector offers legitimate choices, both transitions remain authorized, revoke hides selector
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > late preference completion cannot navigate after revocation
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10212,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > late preference completion cannot navigate after revocation
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page > offline fences delayed page data
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"offline","visible":true,"online":false,"rttMs":10,"leaseRemainingMs":14990,"requestRemainingMs":null}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > loss gestor committed after the single server snapshot is observed by the next confirmation (<= lease) and clears
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10209,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > loss gestor committed after the single server snapshot is observed by the next confirmation (<= lease) and clears
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > loss consultor_tecnico committed after the single server snapshot is observed by the next confirmation (<= lease) and clears
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":10303,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > loss consultor_tecnico committed after the single server snapshot is observed by the next confirmation (<= lease) and clears
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > duplicate pair at login is denied by raw server roles, despite legacy normalization
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/managerConsultantOpenSession.integration.test.tsx > paired scope initial boundaries fail closed > duplicate pair at login is denied by raw server roles, despite legacy normalization
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/catalogo/tenant-catalog-owned-flow.test.tsx > culturas próprias na aba existente > criar, ver, reabrir/editar, arquivar, ver arquivado e restaurar sem recarregar
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/catalogo/tenant-catalog-owned-flow.test.tsx > reabrir próprios nas abas Produtos e Microrganismos > produto próprio aparece, reabre com detalhe e persiste edição
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/tenant-catalog-owned-flow.test.tsx > reabrir próprios nas abas Produtos e Microrganismos > produto próprio aparece, reabre com detalhe e persiste edição
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/tenant-catalog-owned-flow.test.tsx > salvamento único de identificação/composição > declaração existente permanece intacta quando só identificação muda
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/tenant-catalog-owned-flow.test.tsx > salvamento único de identificação/composição > declaração existente permanece intacta quando só identificação muda
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED same scope reconfirms modal choices only; free text/cache/bytes never return
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED role change never revives previous draft or prepared bytes
+No role found for user: 00000000-0000-4000-8000-000000000001
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > TOKEN_REFRESHED revoked change never revives previous draft or prepared bytes
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > old in-flight h15 positive cannot restore authority after TOKEN_REFRESHED and current role revocation
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/catalogo/tenant-catalog-owned-flow.test.tsx > salvamento único de identificação/composição > mudança de composição declarativa incompatível recusa tudo antes do produto, sem salvar parcialmente
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > inactive clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > inactive clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > role clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > role clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > denied clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > denied clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > error clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > error clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > offline clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"offline","visible":true,"online":false,"rttMs":20,"leaseRemainingMs":14980,"requestRemainingMs":null}
+cultivo-authz-expire {"event":"expire","state":"expired","reason":"offline","visible":true,"online":false,"rttMs":20,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > offline clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"expired","reason":"offline","visible":true,"online":false,"rttMs":40,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > timeout clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":14980,"leaseRemainingMs":0,"requestRemainingMs":20}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > timeout clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"timeout","visible":true,"online":true,"rttMs":15000,"leaseRemainingMs":null,"requestRemainingMs":0}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > financeiro exclusive environment, fake transport not hosted > late prepared PDF after lease expiry cannot create Blob or restore UI
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":10097,"leaseRemainingMs":0,"requestRemainingMs":4903}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED role change never revives previous draft or prepared bytes
+No role found for user: 00000000-0000-4000-8000-000000000001
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > TOKEN_REFRESHED revoked change never revives previous draft or prepared bytes
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > old in-flight h15 positive cannot restore authority after TOKEN_REFRESHED and current role revocation
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > inactive clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > inactive clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > role clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > role clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > denied clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > denied clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"ineligible","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > error clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":14980,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > error clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"error","visible":true,"online":true,"rttMs":0,"leaseRemainingMs":null,"requestRemainingMs":15000}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > offline clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"offline","visible":true,"online":false,"rttMs":20,"leaseRemainingMs":14980,"requestRemainingMs":null}
+cultivo-authz-expire {"event":"expire","state":"expired","reason":"offline","visible":true,"online":false,"rttMs":20,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > offline clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"expired","reason":"offline","visible":true,"online":false,"rttMs":40,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > timeout clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":14980,"leaseRemainingMs":0,"requestRemainingMs":20}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > timeout clears draft/cache/bytes, denies retry, restore is clean
+cultivo-authz-expire {"event":"expire","state":"pending","reason":"timeout","visible":true,"online":true,"rttMs":15000,"leaseRemainingMs":null,"requestRemainingMs":0}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > administrador exclusive environment, fake transport not hosted > late prepared PDF after lease expiry cannot create Blob or restore UI
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":10028,"leaseRemainingMs":0,"requestRemainingMs":4972}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > suspended monotonic clock, exclusive scopes > financeiro cannot keep prepared bytes past deadline with suspended timers
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":16020,"leaseRemainingMs":-1020,"requestRemainingMs":null}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > suspended monotonic clock, exclusive scopes > administrador cannot keep prepared bytes past deadline with suspended timers
+cultivo-authz-expire {"event":"expire","state":"valid","reason":"timeout","visible":true,"online":true,"rttMs":16020,"leaseRemainingMs":-1020,"requestRemainingMs":null}
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > RTT3s TOKEN_REFRESHED restores non-sensitive item choice/modal, discards area/date and cannot submit
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > RTT3s TOKEN_REFRESHED restores non-sensitive item choice/modal, discards area/date and cannot submit
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > USER_UPDATED destroys opt-in receipt and never reopens modal
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > identity destroys opt-in receipt and never reopens modal
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/config/financialAdminEnvironment.integration.test.tsx > Nova OS real owner with actual AuthProvider, fake transport only > timeout destroys opt-in receipt and never reopens modal
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
