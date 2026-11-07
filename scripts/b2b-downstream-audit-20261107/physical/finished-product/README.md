@@ -56,6 +56,7 @@ Peso é conteúdo para frete/logística e nunca é convertido em volume. A parci
 | Reprodução original: peso→ml, lineage de fabricação e B2B fechado | 17/17, exit 0 | `evidence/before.json`, stdout e exitcode |
 | Compra, API/guards, kg/g/L/ml, whole-pack, atalho de reserva, tenant produto/micro, downstream, replays, concorrência, revogação e rollback | **49/49, exit 0** | `evidence/after.json`, stdout e exitcode |
 | Legado biológico com candidato instalado e gate desligado | 6/6, exit 0 | `evidence/legacy-candidate.json`, stdout e exitcode |
+| Revisão repetível dos artefatos, pins, grants e resultados | 23/23, exit 0 | `evidence/review.json`, stdout e exitcode |
 
 Candidato SHA256: `96598a894025b04b558e308633e6dc6cd87d99f269d4eb20cc0d40dbf1371c7e`.
 A bateria anterior 37/37 está preservada em `history/pre-live-entry-guards/` e não é somada à atual.

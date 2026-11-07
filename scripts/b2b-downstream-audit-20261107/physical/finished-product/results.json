@@ -44,6 +44,7 @@
     "l": "2 embalagens x 1 L = 2 L; volume_entregue_ml 2000",
     "ml": "2 embalagens x 500 ml = 1000 ml; volume_entregue_ml 1000"
   },
+  "artifact_review": {"passed": 23, "total": 23, "exit_code": 0, "evidence": "evidence/review.json"},
   "whole_pack_fraction_denied": true,
   "partial_cancel_merge": "2 de 3 sacos 25 kg; split/cancelamento/merge = 75 kg; sem litros",
   "b2b_delivery_scope": "DELIVERY_SCOPE_DENIED",
