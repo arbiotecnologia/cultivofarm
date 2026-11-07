@@ -619,6 +619,10 @@ def build_sim():
               "  IF v_plan.discount_percent > 40 AND NOT v_is_admin THEN RAISE EXCEPTION 'discount_exceeds_limit'; END IF;\n"
               "  v_choice := platform_private.b2b_choice(p_payment_choice);\n"
               "  v_cond := platform_private.b2b_resolve_condition(p_partner_id, v_plan.id, v_choice, false);\n", "S2 resolve")
+    s = delta(s, "  BEGIN\n    v_credit := public.fn_b2b_credit_exposure(p_partner_id, v_final, NULL);\n",
+              "  BEGIN\n    v_credit := platform_private.b2b_credit_checked(p_partner_id, v_final, NULL); -- b2bcond: crédito nunca vira NULL silencioso\n", "S3a crédito íntegro")
+    s = delta(s, "  EXCEPTION WHEN OTHERS THEN v_credit := NULL; END;\n",
+              "  END; -- b2bcond: erro transitório ou cálculo inválido ABORTA; UI informa indisponibilidade\n", "S3b sem EXCEPTION OTHERS")
     s = delta(s, "  v_interest := ROUND(v_final - v_net, 2);\n",
               "  v_installments := (v_cond->>'installment_count')::integer;\n" + SCHED + "  v_interest := ROUND(v_final - v_net, 2);\n", "S3 total pelas parcelas")
     s = delta(s, "  v_first_due := COALESCE(p_first_due_date, current_date + v_plan.max_days);\n",
