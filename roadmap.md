@@ -1,6 +1,6 @@
 ## 07/11 — Cotação incompleta e coerência do vencimento (somente local)
-- [ ] Restaurar count pelo gerador; provar parcial/duplicado/estrangeiro/vazio e positivo completo em INSTALL e rollback deny-only.
-- [ ] Provar rejeição de prazo acima do plano e igualdade terms/schedule; regenerar pins e executar B3, sem produção/publicação.
+- [x] Restaurar count pelo gerador; parcial/duplicado/estrangeiro/vazio negados com estado integral preservado; positivos completos em INSTALL novo/legado e rollback legado; rollback novo deny-only.
+- [x] Prazo 30 > max_days 29 negado em resolução/create/quote sem clamp; terms/schedule coerentes no positivo. Pins regenerados; PG 226/226, UI 23/23, tipos exit 0 e build OK; evidências duráveis, sem produção/publicação.
 
 ## 07/11 — Timeout onTaskUpdate da suíte (infraestrutura de teste)
 - [x] Causa comprovada: execFileSync > 60 s em dois testes PG bloqueava o RPC do worker; sonda 65/55 s e foco pré-correção exit 1 preservados.
