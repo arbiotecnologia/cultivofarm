@@ -535,7 +535,7 @@ def main():
             "reject",
         )
 
-        # Controles positivos SINTÉTICOS apenas no legado: o externo validado foi negado pelo guard real.
+        # Controles positivos no legado sem snapshot de origem, além do C2 validado acima.
         for uid, label in ((SP.UADM, "administrador"), (UFIN, "financeiro"), (UGC, "gestor_comercial")):
             r = request(uid, legacy_id, "TESTE positivo legado " + label)
             check(f"controle sintético {label}: caminho dono vendedor solicita ajuste no legado", r.returncode == 0 and "adjustment_requested" in r.stdout, r.stderr)
