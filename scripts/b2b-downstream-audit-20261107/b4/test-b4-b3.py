@@ -396,10 +396,6 @@ WHERE s.partner_id='{B3.P}';""")
         B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}')")
         current_orders_before = B3.psql(f"SELECT md5(string_agg(to_jsonb(o)::text,'^' ORDER BY id)) FROM public.partner_orders o WHERE id IN ('{quote_order}','{direct_order}','{pending_order}')").stdout.strip()
         order_count_before = B3.psql("SELECT count(*) FROM public.partner_orders").stdout.strip()
-        def manual_title(title_id, customer_id, amount):
-            return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
-              (id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
-              VALUES('{title_id}','{B3.A}','MANUAL','{customer_id}','TESTE SHARED NAO B2B','{category_id}','{amount}','2026-10-01','2026-11-03',1,'OPEN','{B3.M_BOL}','{B3.UFIN}');""")
         plain_title = B3.u(340)
         plain_result = manual_title(plain_title, unlinked_customer, "7.00")
         check("shared fence preserva título MANUAL não B2B sem devedor parceiro", plain_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{plain_title}'").stdout.strip() == "1", plain_result.stderr[-900:])
