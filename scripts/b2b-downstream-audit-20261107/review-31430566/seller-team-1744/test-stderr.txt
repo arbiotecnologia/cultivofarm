@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 646, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 248, in main
+    helper_actual = psql(f"SELECT md5(pg_get_functiondef('{G.HELPER_SIG}'::regprocedure))").stdout.strip()
+                    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  function "platform_private.b2b_seller_financial_scope_error(uuid,uuid)" does not exist
+LINE 1: SELECT md5(pg_get_functiondef('platform_private.b2b_seller_f...
+                                      ^
+
