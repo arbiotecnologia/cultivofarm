@@ -25,11 +25,13 @@ PRIOR_PINS = {  # sha256 dos arquivos comprovados pelo auditor (14103 / 13768 ca
     "build.py": "0210f7ad35e0d1de14335e70faed99730f591cf63987927d4d266e3c93eb67b8",
 }
 CAP = {"create": HERE / "captured/public.create_partner_order_secure.c34e7404.live-20261106.sql",
-       "sim": HERE / "captured/public.simulate_b2b_payment_plan_secure.37d4f45e.live-20261106.sql"}
+       "sim": HERE / "captured/public.simulate_b2b_payment_plan_secure.37d4f45e.live-20261106.sql",
+       "quote": HERE.parent / "b2b-solid-packaging-order-20261106/captured/public.respond_b2b_order_quote_secure.e57d3a64.live-20261106.sql"}
 
 LIVE_PINS = {
     "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "c34e740473afb7a365d362db854069cb",
     "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee",
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "e57d3a64166b4b49de2d0f3bbbc9d6403b",
     "platform_private.b2b_partner_catalog_reader(uuid)": "bd985484b69c8fa6e63a920eff518369",
     "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881",
     "public.get_partner_order_payment_terms_secure(uuid)": "efb3d18c65088d7d69471fc5aa9ac859",
@@ -58,12 +60,15 @@ PRIV = ["platform_private.b2b_choice(jsonb)",
         "platform_private.b2b_schedule(numeric,numeric,integer,date,integer)",
         "platform_private.b2b_condition_seller(uuid)",
         "platform_private.b2b_condition_hash(text,jsonb,jsonb,numeric)",
+        "platform_private.b2b_credit_checked(uuid,numeric,uuid)",
         "platform_private.b2b_condition_mode(uuid)",
         "platform_private.b2b_condition_required_check()",
         "platform_private.b2b_condition_immutable()",
         "platform_private.b2b_condition_cfg_actor(boolean)"]
 TABLES = ["b2b_condition_versions", "b2b_condition_assignments", "b2b_order_condition_snapshots", "b2b_condition_retirements",
-          "b2b_condition_assignment_revocations", "b2b_condition_activation", "b2b_condition_activation_history"]
+          "b2b_condition_assignment_revocations", "b2b_condition_activation", "b2b_condition_activation_history",
+          "b2b_order_condition_quote_snapshots", "b2b_quote_response_receipts"]
+QUOTE_SIG = "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)"
 
 
 def delta(src, anchor, repl, label):
@@ -96,7 +101,8 @@ def extract(src, start, end, label):
 
 def live(name):
     t = CAP[name].read_text()
-    pin = "c34e740473afb7a365d362db854069cb" if name == "create" else "37d4f45e388ed7b38f6f397b672629ee"
+    pin = {"create": "c34e740473afb7a365d362db854069cb", "sim": "37d4f45e388ed7b38f6f397b672629ee",
+           "quote": "e57d3a64166b4b49de2d0f3bbbc9d6403b"}[name]
     if hashlib.md5(t.encode()).hexdigest() != pin:
         raise SystemExit(f"LIVE_CAPTURE_DRIFT {name}")
     return t.rstrip("\n")
