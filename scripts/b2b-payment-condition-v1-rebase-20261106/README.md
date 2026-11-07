@@ -73,7 +73,8 @@ Suíte concorrente: a base limpa `347baf8`, com os mesmos dois workers, reproduz
 (760 arquivos/10.769 testes aprovados; exit 1). 25 eram a fixture `financialOpenSession` sem resposta para
 `tenant_display_name_v1`; 2 eram timeouts internos `onTaskUpdate` do worker. Somente a fixture foi corrigida, sem mudança
 de runtime, e seu foco passou **26/26**, exit 0 e sem unhandled errors. JSON completo, recorte de erros e exit codes estão
-em `evidence/review-194331e/`; a suíte final é registrada separadamente.
+em `evidence/review-194331e/`. A repetição global foi interrompida por limite de janela após 114 arquivos, exit 143;
+seus logs parciais estão preservados como `final-full-partial.*`, sem JSON completo e sem valor de aprovação.
 
 ## Limitações abertas
 - Datas estimadas (referência = data do pedido/resposta), sem dia útil Paracatu-MG; vencimento definitivo e calendário ficam no B4.
