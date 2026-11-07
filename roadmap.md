@@ -8,6 +8,7 @@
 - [x] Resposta de cotação recalcula uma única economia e snapshot pela condição, com autorização, idempotência e rollback.
 - [x] Demonstrar criação interna positiva com fixtures isoladas e guards reais, sem contornar origem.
 - [ ] Reproduzir os 27 erros na base 347baf8 ou anterior, separar infra/defeito, corrigir o pertinente e guardar JSON/exit codes; base reproduzida 27/27 e fixture 26/26. Suíte final interrompida em 114 arquivos, exit 143, sem JSON completo: pendente de nova janela de execução.
+- [ ] Retomar sem concorrência duplicada a evidência da suíte atual, preservando stdout/stderr/JSON/exit codes e registrando o commit de cada execução; a regressão focada do delta de parcela única permanece evidência separada, não prova de que uma suíte anterior testou o commit novo.
 - [x] Manter datas estimadas e B4/fiscal fechado; entregar evidências e limitações, sem hosted/publicação.
 
 ## 06/11 — Confirmação controlada de publicação de atribuição
