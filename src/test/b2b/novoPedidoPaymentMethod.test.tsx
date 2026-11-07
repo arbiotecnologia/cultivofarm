@@ -270,7 +270,7 @@ it("crédito incompleto: tela informa condição financeira indisponível e envi
 it("resposta com credit null não é aceita como apta: erro visível e envio bloqueado", async () => {
   const base = wrapped();
   state.rpc.mockImplementation((n: string, a?: Record<string, unknown>) => n === "b2b_list_payment_condition_options_secure" ? boletoOptions(a ?? {})
-    : n === "simulate_b2b_payment_condition_secure" ? Promise.resolve({ data: { ...priceReply([10], 10)(a ?? {}).data, credit: null }, error: null }) : base(n, a));
+    : n === "simulate_b2b_payment_condition_secure" ? priceReply([10], 10)(a ?? {}).then((r) => ({ ...r, data: { ...r.data, credit: null } })) : base(n, a));
   await toPayment();
   fireEvent.click(await screen.findByRole("radio", { name: /Boleto/ }));
   expect(await screen.findByTestId("b2b-simulation-error")).toBeInTheDocument();
