@@ -274,6 +274,7 @@ COMMIT;
         "historical_candidate": "301bf597 relatado; não liberado e não presumido byte-equivalente",
         "sources": {str(p.relative_to(ROOT)): pin for p, pin in PINS.items()},
         "live_baseline": LIVE_MD5,
+        "b3_installed_baseline": b3_md5,
         "candidate_md5": candidate_pins,
         "calendar": {"version": calendar["version"], "locality": calendar["locality"], "sha256": calendar["integrity"]["sha256"]},
         "excluded": forbidden,
