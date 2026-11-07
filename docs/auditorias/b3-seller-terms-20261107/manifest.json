@@ -1,0 +1,44 @@
+{
+  "scope": "UI/leitor existente; sem SQL/dados/publicação",
+  "tests_passed": 57,
+  "tests_failed": 0,
+  "success": true,
+  "exit_code": 0,
+  "previous_regressions_included": 31,
+  "separate_typecheck": "NOT_RUN",
+  "full_suite": "NOT_RUN",
+  "automatic_build": {
+    "latest_status": "build OK",
+    "exit_code": null,
+    "source": "/tmp/observability/build-errors.log"
+  },
+  "hosted_guards": "UNVERIFIED; revisão de fontes versionadas apenas",
+  "authenticated_browser": "NOT_RUN; external_unmanaged; auditor continua",
+  "artifacts": [
+    {
+      "path": "README.md",
+      "bytes": 3977,
+      "sha256": "d3d2cfb79ff4788fce48bcdaae88e821525737183e35c4c41de997466cc1a915"
+    },
+    {
+      "path": "automatic-build.txt",
+      "bytes": 224,
+      "sha256": "a063d6d334a23ed6c5f7ebb0284201dcacda1852b59d8080cf10e24ddeee56b4"
+    },
+    {
+      "path": "scoped-exitcode.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "scoped-results.json",
+      "bytes": 17123,
+      "sha256": "7334030eb3b183e08ea535e0225eda48ce2adc9256c36b5131e1574ca80e0883"
+    },
+    {
+      "path": "scoped-tests.txt",
+      "bytes": 1916030,
+      "sha256": "28e69bd2139df04883bf04bc39c34d167601788f7ed1220c26fa4c906ddaad51"
+    }
+  ]
+}
