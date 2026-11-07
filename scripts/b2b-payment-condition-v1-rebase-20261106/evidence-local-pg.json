@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 172,
-  "total": 172,
+  "passed": 185,
+  "total": 185,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -15,6 +15,10 @@
     },
     {
       "name": "estado instalado B2: 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "guardas de origem REAIS carregadas (não stub permissivo)",
       "ok": true
     },
     {
@@ -54,6 +58,10 @@
       "ok": true
     },
     {
+      "name": "ordem de locks padronizada: create e quote resolvem versão antes do advisory de crédito",
+      "ok": true
+    },
+    {
       "name": "02 install",
       "ok": true
     },
@@ -79,6 +87,14 @@
     },
     {
       "name": "sem ativação: outro tenant (papel FSF) segue contrato atual",
+      "ok": true
+    },
+    {
+      "name": "legado FSF não ativado: cotação criada com limite zero como antes",
+      "ok": true
+    },
+    {
+      "name": "legado FSF não ativado: zero NÃO bloqueia resposta (guarda >0 preservada)",
       "ok": true
     },
     {
@@ -350,11 +366,11 @@
       "ok": true
     },
     {
-      "name": "cotação: comprador não responde pela condição",
+      "name": "cotação: comprador externo não responde; guarda REAL de proprietário nega",
       "ok": true
     },
     {
-      "name": "cotação: admin de outro vendedor não responde",
+      "name": "cotação: admin de outro vendedor negado pela guarda REAL de origem",
       "ok": true
     },
     {
@@ -363,6 +379,10 @@
     },
     {
       "name": "cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
+      "ok": true
+    },
+    {
+      "name": "externo comercial AR Bio: resposta permitida com c2_external_origin_assert REAL e guards inalterados",
       "ok": true
     },
     {
@@ -378,6 +398,18 @@
       "ok": true
     },
     {
+      "name": "replay com recibo existente: papel administrador revogado (origem permanece válida via financeiro) durante espera bloqueia devolução do ACK",
+      "ok": true
+    },
+    {
+      "name": "replay com recibo existente: perfil desativado durante espera bloqueia devolução do ACK",
+      "ok": true
+    },
+    {
+      "name": "replay com recibo existente: vínculo perfil/tenant alterado durante espera bloqueia devolução do ACK",
+      "ok": true
+    },
+    {
       "name": "cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia",
       "ok": true
     },
@@ -387,6 +419,14 @@
     },
     {
       "name": "segunda cotação sintética fica pendente para prova de rollback",
+      "ok": true
+    },
+    {
+      "name": "ramo novo v_has_condition: zero explícito bloqueia resposta de cotação AR Bio",
+      "ok": true
+    },
+    {
+      "name": "zero no ramo novo é atômico e preserva cotação pendente",
       "ok": true
     },
     {
@@ -631,6 +671,18 @@
     },
     {
       "name": "controle negativo interno sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "fixture de concorrência: cotação P3 criada pelo create REAL com guards e snapshot",
+      "ok": true
+    },
+    {
+      "name": "três fluxos create/config_publish/quote: nenhum deadlock 40P01 sob espera forçada",
+      "ok": true
+    },
+    {
+      "name": "concorrência: publish CAS cometeu exatamente a v2; create/quote concluíram ou falharam stale, nunca por guarda relaxada",
       "ok": true
     },
     {

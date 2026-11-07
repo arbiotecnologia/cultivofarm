@@ -204,6 +204,9 @@ def boot():
                  "public.create_partner_order_secure", "public.simulate_b2b_payment_plan_secure", "public.respond_b2b_order_quote_secure"):
         psql(SP.cap(name))
     psql(SP.CATALOG_SEAM + SP.REAL_TRIGGERS); psql(SP.RT.real_triggers_sql())
+    # Substituir SOMENTE o stub permissivo pela guarda interna REAL capturada; a externa REAL já veio com os gatilhos.
+    origin_guard = HERE.parent / "owner-orders-20261023/internal-origin-composition-20261023/baseline/platform_private.b2b_internal_assert_origin.sql"
+    psql(origin_guard.read_text().rstrip() + ";\n")
     sp_src = (SPD / "test-local-pg.py").read_text()
     acl = sp_src.split('        psql("""REVOKE ALL ON FUNCTION public.create_partner_order_secure', 1)[1].split('""")', 1)[0]
     psql("REVOKE ALL ON FUNCTION public.create_partner_order_secure" + acl)
@@ -238,6 +241,12 @@ def main():
     tmp = boot(); work = pathlib.Path(tempfile.mkdtemp(prefix="b2bcond-w-")); work.chmod(0o777)
     fm = {}
     try:
+        origin_md5 = {
+            "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)": md5_of("platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)"),
+            "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": md5_of("platform_private.c2_external_origin_assert(jsonb,uuid,uuid)"),
+        }
+        check("guardas de origem REAIS carregadas (não stub permissivo)",
+              origin_md5["platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)"] == "6bbb61aa5899b18d13ac55d4f76f45e1", origin_md5)
         real = {k: v for k, v in g["LIVE_PINS"].items() if "payment_terms_secure" not in k}
         full = {}
         for sig, md in real.items():
@@ -265,6 +274,12 @@ def main():
         check("02 com corpo LIVE divergente aborta sem deixar objetos", r.returncode != 0 and "divergente" in r.stderr and left == "0", (r.stderr[-200:], left))
         write()
         r = runf(work / "01-pre.sql.readonly"); check("01 PRE_OK", r.returncode == 0 and "PRE_OK" in r.stderr, r.stderr[-300:])
+        install_text = (work / "02-install.sql.review").read_text()
+        quote_start = install_text.index("CREATE OR REPLACE FUNCTION public.respond_b2b_order_quote_secure")
+        quote_body = install_text[quote_start:]
+        check("ordem de locks padronizada: create e quote resolvem versão antes do advisory de crédito",
+              install_text.index("v_cond := platform_private.b2b_resolve_condition(p_partner_id") < install_text.index("-- lock deterministico #2: credito do parceiro")
+              and quote_body.index("v_cond := platform_private.b2b_resolve_condition(v_order.partner_id") < quote_body.index("-- (2) credito do parceiro"))
         r = runf(work / "02-install.sql.review"); check("02 install", r.returncode == 0, r.stderr[-600:])
         fm["install"] = {k: md5_of(s) for k, s in g["PUB"].items()}
         fm["install"]["quote"] = md5_of(g["QUOTE_SIG"])
@@ -280,6 +295,16 @@ def main():
         # ---------- sem ativação: contrato atual para todos ----------
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-0"); check("sem ativação: comprador segue contrato atual (nenhum bloqueio global)", r.returncode == 0, r.stderr[-200:])
         r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F0", partner=PF); check("sem ativação: outro tenant (papel FSF) segue contrato atual", r.returncode == 0, r.stderr[-200:])
+        # Controle exato do ramo legado: limite zero continua NO_LIMIT, sem a regra nova de v_has_condition.
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{PF}'")
+        rfq0 = legacy(UB2, PLQ, [SF(1)], "TESTE-LEG-FQ-ZERO", partner=PF); jfq0, efq0 = out(rfq0)
+        check("legado FSF não ativado: cotação criada com limite zero como antes", jfq0 and jfq0["status"] == "aguardando_cotacao", efq0 or jfq0)
+        if jfq0:
+            qfi0 = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{jfq0['id']}'").stdout.strip()
+            j, e = respond(UADMF, jfq0["id"], [{"item_id": qfi0, "unit_price": 90}])
+            check("legado FSF não ativado: zero NÃO bloqueia resposta (guarda >0 preservada)",
+                  j and Decimal(str(j["final_amount"])) == Decimal("90.00") and j["status"] == "em_analise_comercial", e or j)
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=1000000 WHERE partner_id='{PF}'")
 
         # ---------- configuração (vendedor) ----------
         j, e = publish(UADM, PLD, "pix", M_PIX, 5, 1, 0, 0); check("admin A publica Pix v1 (5 dias)", j and j["condition"]["version"] == 1, e)
@@ -437,21 +462,24 @@ def main():
         check("cotação: aguardando_cotacao, sem termos, snapshot de escolha sem valor", st == "aguardando_cotacao:0:true:null", e or st)
         qi = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq}'").stdout.strip() if oq else ""
         qlines = [{"item_id": qi, "unit_price": 1000}]
-        denied("cotação: comprador não responde pela condição", respond(UB, oq, qlines), "forbidden_quote_response")
-        denied("cotação: admin de outro vendedor não responde", respond(UADMF, oq, qlines), "b2b_phase1_scope_denied")
+        denied("cotação: comprador externo não responde; guarda REAL de proprietário nega", respond(UB, oq, qlines), "C2_EXTERNAL_OWNER_DENIED")
+        denied("cotação: admin de outro vendedor negado pela guarda REAL de origem", respond(UADMF, oq, qlines), "C2_EXTERNAL_OWNER_DENIED")
         # Revogação REAL de papel enquanto a resposta espera o advisory de crédito: tudo é desfeito.
         res = parallel([f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{P}',0)); SELECT pg_sleep(1.2); COMMIT;",
                         session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{oq}','{js(qlines)}'::jsonb,NULL,NULL,NULL);"),
-                        f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador';"], [0,0.3,0.7])
+                        f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador'; INSERT INTO public.user_roles VALUES ('{UADM}','financeiro');"], [0,0.3,0.7])
         check("cotação: revogação do vendedor durante espera nega e restaura itens/termos",
               res[1].returncode != 0 and "forbidden" in res[1].stderr
               and psql(f"SELECT subtotal||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}') FROM public.partner_order_items WHERE id='{qi}'").stdout.strip() == "0.00:0", res[1].stderr[-250:])
-        psql(f"INSERT INTO public.user_roles VALUES ('{UADM}','administrador')")
+        psql(f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='financeiro'; INSERT INTO public.user_roles VALUES ('{UADM}','administrador')")
         j, e = respond(UADM, oq, qlines)
         check("cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
               j and Decimal(str(j["final_amount"])) == Decimal("1036.22") and Decimal(str(j["total"])) == Decimal("1036.22")
               and j["payment_condition_contract"] == "B2B_PAYMENT_CONDITION_V1" and j["payment_choice"] == BOL
               and rows_of(j["schedule"]) == exp and j["payment_condition"]["estimated"] is True, e or j)
+        check("externo comercial AR Bio: resposta permitida com c2_external_origin_assert REAL e guards inalterados",
+              j and psql(f"SELECT c2_external_origin_snapshot->>'contract' FROM public.partner_orders WHERE id='{oq}'").stdout.strip().startswith("C2_EXTERNAL_ORDER_")
+              and all(md5_of(sig) == md for sig, md in origin_md5.items()))
         check("cotação: pedido/termos/cronograma/snapshot econômico compartilham UMA economia",
               psql(f"SELECT (SELECT final_amount_with_interest FROM public.partner_orders WHERE id='{oq}')||':'||(SELECT final_amount FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT financed_total FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{oq}')").stdout.strip() == "1036.22:1036.22:1036.22")
         check("cotação: escolha inicial permanece imutável e resposta é append-only",
@@ -462,12 +490,39 @@ def main():
         check("cotação idempotente: replay idêntico devolve o MESMO recibo/ACK sem duplicar",
               j2 == j and psql(f"SELECT (SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{oq}')").stdout.strip() == "1:1"
               and psql(f"SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo='pedido_b2b_cotacao_respondida' AND link='/portal-parceiro/pedidos'").stdout.strip() == nnotes, e or j2)
+        # Recibo JÁ existente: cada revogação ocorre enquanto o replay espera o advisory da cotação.
+        # A autorização inicial passa; a reautorização pós advisory+row lock deve impedir RETURN receipt.result.
+        def replay_revocation(label, mutation, restore, token):
+            res = parallel([f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_quote:{oq}',0)); SELECT pg_sleep(1.2); COMMIT;",
+                            session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{oq}','{js(qlines)}'::jsonb,NULL,NULL,NULL);"),
+                            mutation], [0, 0.25, 0.7])
+            psql(restore)
+            check(f"replay com recibo existente: {label} durante espera bloqueia devolução do ACK",
+                  res[1].returncode != 0 and token in res[1].stderr
+                  and psql(f"SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{oq}'").stdout.strip() == "1",
+                  res[1].stderr[-300:])
+        replay_revocation("papel administrador revogado (origem permanece válida via financeiro)",
+                          f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador'; INSERT INTO public.user_roles VALUES ('{UADM}','financeiro');",
+                          f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='financeiro'; INSERT INTO public.user_roles VALUES ('{UADM}','administrador');", "forbidden_quote_response")
+        replay_revocation("perfil desativado",
+                          f"UPDATE public.profiles SET ativo=false WHERE user_id='{UADM}';",
+                          f"UPDATE public.profiles SET ativo=true WHERE user_id='{UADM}';", "C2_EXTERNAL_OWNER_DENIED")
+        replay_revocation("vínculo perfil/tenant alterado",
+                          f"UPDATE public.profiles SET organization_id='{F}' WHERE user_id='{UADM}';",
+                          f"UPDATE public.profiles SET organization_id='{A}' WHERE user_id='{UADM}';", "C2_EXTERNAL_OWNER_DENIED")
         denied("cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia",
                respond(UADM, oq, [{"item_id": qi, "unit_price": 999}]), "quote_idempotency_conflict")
         check("cotação: conflito não altera termos", psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}'").stdout.strip() == nterms)
         j, e = sim(UB, PLQ, [L(1)], BOL); hq2 = j and j["cart_hash"]
         j, e = create(UB, PLQ, [L(1)], hq2, "TESTE-COT-ROLLBACK", BOL); oq_pending = j and j["id"]
         check("segunda cotação sintética fica pendente para prova de rollback", j and j["status"] == "aguardando_cotacao", e or j)
+        qi_pending_zero = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq_pending}'").stdout.strip() if oq_pending else ""
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'")
+        denied("ramo novo v_has_condition: zero explícito bloqueia resposta de cotação AR Bio",
+               respond(UADM, oq_pending, [{"item_id": qi_pending_zero, "unit_price": 1000}]), "credit_limit_exceeded")
+        check("zero no ramo novo é atômico e preserva cotação pendente",
+              psql(f"SELECT status||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq_pending}') FROM public.partner_orders WHERE id='{oq_pending}'").stdout.strip() == "aguardando_cotacao:0")
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=1000000 WHERE partner_id='{P}'")
         psql(f"INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES (gen_random_uuid(),'{P}',2050,'block',false,0) ON CONFLICT (partner_id) DO UPDATE SET credit_limit=2050, credit_limit_action='block'")
         expo = json.loads(psql(f"SELECT public.fn_b2b_credit_exposure('{P}',0,NULL)::text").stdout.strip())
         room = Decimal(str(expo["credit_limit"])) - Decimal(str(expo["exposicao_projetada"]))
@@ -616,6 +671,34 @@ BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;"""
         j, e = create(SP.UADM, PLD, [L(1)], hi_neg[0]["cart_hash"] if hi_neg[0] else "x", "TESTE-INT-NEG", CASH2)
         denied("controle: removida a fixture válida, MESMA guarda volta a negar emitente ambíguo", (j, e), "B2B_INTERNAL_ISSUER_AMBIGUOUS")
         check("controle negativo interno sem idempotência", idem("TESTE-INT-NEG") == "0")
+
+        # ---------- três fluxos reais: create / config_publish / quote ----------
+        # A cotação é criada pelo create REAL: o plano fica quote_only só durante a fixture e volta antes da resposta.
+        psql(f"UPDATE public.commercial_payment_plans SET pricing_mode='quote_only' WHERE id='{P3}'")
+        j, e = sim(UB, P3, [L(1)], BOL); hq_lock = j and j["cart_hash"]
+        j, e = create(UB, P3, [L(1)], hq_lock, "TESTE-COT-LOCK", BOL); oq_lock = j and j["id"]
+        psql(f"UPDATE public.commercial_payment_plans SET pricing_mode='discount_from_base' WHERE id='{P3}'")
+        check("fixture de concorrência: cotação P3 criada pelo create REAL com guards e snapshot",
+              j and j["status"] == "aguardando_cotacao", e or j)
+        qi_lock = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq_lock}'").stdout.strip() if oq_lock else ""
+        j, e = sim(UB, P3, [S(1)], BOL); h_create_lock = j and j["cart_hash"]
+        # O bloqueador só segura a embalagem para criar uma espera determinística. Na ordem antiga:
+        # create(segura versão)→crédito; quote(segura crédito)→versão; publish→versão = ciclo.
+        # Na ordem nova, create e quote compartilham versão antes do crédito e publish não fecha o ciclo.
+        res = parallel([
+            f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('solid_pack_product:{SP.SOL}',0)); SELECT pg_sleep(1.6); COMMIT;",
+            session(UB, f"SELECT {create_sql(P, P3, [S(1)], h_create_lock, 'TESTE-LOCK-CREATE', BOL)};"),
+            session(UADM, f"BEGIN; SELECT public.b2b_payment_condition_publish('{P3}','boleto','{M_BOL}','{CAT}',30,3,1.8,1); SELECT pg_sleep(0.2); COMMIT;"),
+            session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{oq_lock}','{js([{'item_id': qi_lock, 'unit_price': 1000}])}'::jsonb,NULL,NULL,NULL);")
+        ], [0, 0.2, 0.5, 0.8])
+        lock_errors = [r.stderr for r in res]
+        check("três fluxos create/config_publish/quote: nenhum deadlock 40P01 sob espera forçada",
+              all(r.returncode == 0 for r in (res[0], res[2]))
+              and not any("deadlock detected" in e or "40P01" in e for e in lock_errors)
+              and all(r.returncode == 0 or "payment_condition_stale" in r.stderr for r in (res[1], res[3])), lock_errors)
+        check("concorrência: publish CAS cometeu exatamente a v2; create/quote concluíram ou falharam stale, nunca por guarda relaxada",
+              psql(f"SELECT count(*) FROM platform_private.b2b_condition_versions WHERE organization_id='{A}' AND plan_id='{P3}' AND method='boleto' AND version=2").stdout.strip() == "1"
+              and all(md5_of(sig) == md for sig, md in origin_md5.items()), lock_errors)
         r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F1", partner=PF); check("piloto de A não afeta comprador de F (papel FSF)", r.returncode == 0, r.stderr[-200:])
         r = psql("BEGIN; ALTER TABLE platform_private.b2b_order_condition_snapshots DISABLE TRIGGER immutable_update_delete;\n"
                  + session(UB, f"SELECT {create_sql(P, PLD, [S(2)], sim(UB, PLD, [S(2)], CASH2)[0]['cart_hash'], 'TESTE-DEF2', CASH2)};\nRESET ROLE;\n")

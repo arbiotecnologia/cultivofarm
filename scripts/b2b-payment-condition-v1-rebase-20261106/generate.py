@@ -662,6 +662,17 @@ def build_sim():
 def build_quote(rollback=False):
     """Mesma RPC LIVE: sem snapshot = legado; com snapshot = Price/condição. Rollback nega só o ramo ativado."""
     s = live("quote")
+    s = delta(s, "  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF; PERFORM platform_private.b2b_internal_assert_origin((SELECT internal_origin_snapshot FROM public.partner_orders WHERE id=p_order_id),(SELECT partner_id FROM public.partner_orders WHERE id=p_order_id),(SELECT cliente_id FROM public.partner_orders WHERE id=p_order_id)); IF NOT public.b2b_phase1_order_visible(p_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n",
+              "  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n"
+              "  -- Origem externa e interna usam suas guardas REAIS; NULL/legado não é promovido a origem válida.\n"
+              "  IF (SELECT c2_external_origin_snapshot FROM public.partner_orders WHERE id=p_order_id) IS NOT NULL THEN\n"
+              "    PERFORM platform_private.c2_external_origin_assert((SELECT c2_external_origin_snapshot FROM public.partner_orders WHERE id=p_order_id),\n"
+              "      (SELECT partner_id FROM public.partner_orders WHERE id=p_order_id),(SELECT cliente_id FROM public.partner_orders WHERE id=p_order_id));\n"
+              "  ELSE\n"
+              "    PERFORM platform_private.b2b_internal_assert_origin((SELECT internal_origin_snapshot FROM public.partner_orders WHERE id=p_order_id),\n"
+              "      (SELECT partner_id FROM public.partner_orders WHERE id=p_order_id),(SELECT cliente_id FROM public.partner_orders WHERE id=p_order_id));\n"
+              "  END IF;\n"
+              "  IF NOT public.b2b_phase1_order_visible(p_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n", "Q0 origem externa/interna REAL")
     s = delta(s, "  v_partner_user record; v_credit jsonb; v_new_status partner_order_status;\n",
               "  v_partner_user record; v_credit jsonb; v_new_status partner_order_status;\n"
               "  v_cond_snapshot platform_private.b2b_order_condition_snapshots; v_has_condition boolean := false;\n"
@@ -674,6 +685,16 @@ def build_quote(rollback=False):
               "  -- locks em ordem deterministica: (1) pedido/cotacao\n", "Q2 fingerprint idempotente")
     s = delta(s, "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n  IF v_order.status <> 'aguardando_cotacao'::partner_order_status THEN\n",
               "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n"
+              "  -- Reautorização DEPOIS do advisory + row lock e ANTES de qualquer replay: papel, perfil/tenant/vínculo e origem podem ter mudado na espera.\n"
+              "  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n"
+              "  IF v_order.c2_external_origin_snapshot IS NOT NULL THEN\n"
+              "    PERFORM platform_private.c2_external_origin_assert(v_order.c2_external_origin_snapshot,v_order.partner_id,v_order.cliente_id);\n"
+              "  ELSE\n"
+              "    PERFORM platform_private.b2b_internal_assert_origin(v_order.internal_origin_snapshot,v_order.partner_id,v_order.cliente_id);\n"
+              "  END IF;\n"
+              "  IF NOT public.b2b_phase1_order_visible(p_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
+              "  v_is_admin := has_role(v_uid,'administrador'::app_role); v_is_gestor := has_role(v_uid,'gestor_comercial'::app_role);\n"
+              "  IF NOT (v_is_admin OR v_is_gestor) THEN RAISE EXCEPTION 'forbidden_quote_response' USING ERRCODE='42501'; END IF;\n"
               "  SELECT * INTO v_cond_snapshot FROM platform_private.b2b_order_condition_snapshots x WHERE x.order_id=p_order_id;\n"
               "  v_has_condition := FOUND;\n"
               "  IF v_has_condition AND " + ("true" if rollback else "false") + " THEN\n"
@@ -694,12 +715,17 @@ def build_quote(rollback=False):
               + "  IF v_order.status <> 'aguardando_cotacao'::partner_order_status THEN\n", "Q3 replay/rollback antes do status")
     if rollback:
         return s + ";\n"
-    s = delta(s, "  IF v_plan.active = false THEN RAISE EXCEPTION 'plan_inactive'; END IF;\n",
+    s = block(s, "  -- (2) credito do parceiro\n", "\n\n  SELECT count(*) INTO v_count_items FROM public.partner_order_items WHERE order_id = p_order_id;",
+              "  SELECT * INTO v_plan FROM public.commercial_payment_plans WHERE id = v_order.payment_plan_id;\n"
+              "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF; IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;\n"
               "  IF v_plan.active = false THEN RAISE EXCEPTION 'plan_inactive'; END IF;\n"
+              "  -- Mesma ordem do create: versão/atribuições/plano/meio/categoria FOR SHARE ANTES do advisory de crédito.\n"
               "  IF v_has_condition THEN\n"
               "    v_choice := platform_private.b2b_choice(v_cond_snapshot.choice);\n"
               "    v_cond := platform_private.b2b_resolve_condition(v_order.partner_id,v_plan.id,v_choice,true);\n"
-              "  END IF;\n", "Q4 condição atual sob travas")
+              "  END IF;\n"
+              "  -- (2) credito do parceiro, somente depois da versão (não inverter create/config_publish/quote).\n"
+              "  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_order.partner_id::text, 0));", "Q4 versão antes do crédito")
     s = delta(s, "  SELECT COALESCE(SUM(subtotal),0)::numeric(14,2) INTO v_table\n",
               "  IF v_has_condition THEN\n"
               "    SELECT jsonb_build_object('quote_required','false','lines',jsonb_agg(jsonb_build_object(\n"
@@ -708,10 +734,17 @@ def build_quote(rollback=False):
               "      'volume_ml',i.volume_ml_snapshot,'quantidade',i.quantidade,'pricing_mode','fixed_item_price',\n"
               "      'price_source','quote_manual','rule_id','','final_unit_price',i.preco_unitario_final_snapshot,\n"
               "      'line_final_amount',i.subtotal) ORDER BY i.id)) INTO v_cart FROM public.partner_order_items i WHERE i.order_id=p_order_id;\n"
+              "    IF v_order.c2_external_origin_snapshot IS NOT NULL THEN\n"
+              "      PERFORM platform_private.c2_external_origin_assert(v_order.c2_external_origin_snapshot,v_order.partner_id,v_order.cliente_id);\n"
+              "    ELSE\n"
+              "      PERFORM platform_private.b2b_internal_assert_origin(v_order.internal_origin_snapshot,v_order.partner_id,v_order.cliente_id);\n"
+              "    END IF;\n"
               "    v_cond2 := platform_private.b2b_resolve_condition(v_order.partner_id,v_plan.id,v_choice,false);\n"
-              "    IF v_cond2 IS DISTINCT FROM v_cond OR NOT public.b2b_phase1_order_visible(p_order_id)\n"
-              "       OR NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN\n"
+              "    IF v_cond2 IS DISTINCT FROM v_cond OR NOT public.b2b_phase1_order_visible(p_order_id) THEN\n"
               "      RAISE EXCEPTION 'payment_condition_stale' USING ERRCODE='PT409';\n"
+              "    END IF;\n"
+              "    IF NOT (has_role(v_uid,'administrador'::app_role) OR has_role(v_uid,'gestor_comercial'::app_role)) THEN\n"
+              "      RAISE EXCEPTION 'forbidden_quote_response' USING ERRCODE='42501';\n"
               "    END IF;\n"
               "  END IF;\n"
               "  SELECT COALESCE(SUM(subtotal),0)::numeric(14,2) INTO v_table\n", "Q5 reautorização após itens + carrinho canônico")
@@ -731,7 +764,10 @@ def build_quote(rollback=False):
               "  v_credit := CASE WHEN v_has_condition THEN platform_private.b2b_credit_checked(v_order.partner_id,v_final,p_order_id)\n"
               "                   ELSE public.fn_b2b_credit_exposure(v_order.partner_id,v_final,p_order_id) END;\n", "Q9 crédito explícito")
     s = delta(s, "  IF COALESCE((v_credit->>'credit_limit')::numeric,0) > 0\n     AND (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN\n",
-              "  IF (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN -- b2bcond: zero explícito também limita\n", "Q9b zero explícito não é ignorado")
+              "  IF ((v_has_condition AND (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric)\n"
+              "      OR (NOT v_has_condition AND COALESCE((v_credit->>'credit_limit')::numeric,0) > 0\n"
+              "          AND (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric)) THEN\n"
+              "  -- b2bcond: zero explícito limita SÓ no ramo novo; legado não ativado conserva literalmente a guarda >0.\n", "Q9b zero só no ramo com condição")
     s = delta(s, "    0, v_plan.monthly_interest_percent, v_plan.months_count,\n",
               "    0, CASE WHEN v_has_condition THEN (v_cond->>'monthly_rate')::numeric ELSE v_plan.monthly_interest_percent END,\n"
               "    CASE WHEN v_has_condition THEN v_installments ELSE v_plan.months_count END,\n", "Q10 termos da condição")

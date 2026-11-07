@@ -1,0 +1,4 @@
+184/185
+FAIL cotação: revogação do vendedor durante espera nega e restaura itens/termos ERROR:  payment_condition_stale
+CONTEXT:  PL/pgSQL function respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) line 153 at RAISE
+
