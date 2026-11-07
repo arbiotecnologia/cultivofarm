@@ -149,76 +149,141 @@ def source_body():
     return captured(REQUEST_SOURCE, BASE_MD5)["body"]
 
 
-def candidate_body():
-    body = source_body()
-    body = delta(
-        body,
-        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n  IF NOT (public.has_role(v_uid,'administrador')",
-        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n"
-        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  IF NOT (public.has_role(v_uid,'administrador')",
-        "A1 Auth antes do escopo de entrada",
-    )
-    body = delta(
-        body,
-        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
-        "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n"
-        "    INTO v_terms_id, v_created_by, v_numero, v_origin\n"
-        "  FROM public.partner_orders po\n"
-        "  WHERE po.id = p_partner_order_id\n"
-        "  FOR UPDATE;\n\n"
-        "  -- Pedido ausente, estrangeiro ou removido durante a espera segue a mesma negação, sem oráculo.\n"
-        "  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  -- Revalida depois da espera pelo lock: papel/perfil/vínculo/escopo podem ter sido revogados.\n"
-        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  IF NOT (public.has_role(v_uid,'administrador')\n"
-        "       OR public.has_role(v_uid,'financeiro')\n"
-        "       OR public.has_role(v_uid,'gestor_comercial')) THEN\n"
-        "    RAISE EXCEPTION 'unauthorized';\n"
-        "  END IF;\n"
-        "  -- O gatilho contábil protege mudanças de financial_approval_status; pending→pending também é decisão proibida.\n"
-        "  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN\n"
-        "    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';\n"
-        "  END IF;\n"
-        "  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
-        "A2 lock/missing/reautorização/contabilidade",
-    )
-    body = delta(body, "  v_numero text;\nBEGIN", "  v_numero text;\n  v_origin jsonb;\nBEGIN", "A0 snapshot de origem")
-    return body
+def seller_helper_body():
+    """Escopo exclusivo da equipe vendedora; nunca consulta o caminho do comprador."""
+    return """CREATE OR REPLACE FUNCTION platform_private.b2b_seller_financial_scope_error(_uid uuid, _partner uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_org uuid;
+BEGIN
+  IF _uid IS NULL OR auth.uid() IS DISTINCT FROM _uid OR _partner IS NULL THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF NOT platform_private.platform_actor_access_ready(_uid) THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF public.is_platform_superadmin(_uid) OR EXISTS (
+    SELECT 1 FROM public.user_roles r
+    WHERE r.user_id=_uid AND r.role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin')
+  ) THEN
+    RETURN 'unauthorized';
+  END IF;
+  IF NOT (platform_private.has_role(_uid,'administrador'::public.app_role)
+       OR platform_private.has_role(_uid,'financeiro'::public.app_role)
+       OR platform_private.has_role(_uid,'gestor_comercial'::public.app_role)) THEN
+    RETURN 'unauthorized';
+  END IF;
+  v_org := public.h15_actor_organization();
+  IF v_org IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.organizations o WHERE o.id=v_org AND o.ativo IS TRUE AND o.status='ativa'
+  ) THEN
+    RETURN 'b2b_phase1_scope_denied';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.partner_accounts pa
+    WHERE pa.id=_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+      AND pa.commercial_owner_organization_id=v_org
+  ) THEN
+    RETURN 'b2b_phase1_scope_denied';
+  END IF;
+  IF NOT public._saas_user_has_feature(_uid,'pedidos_b2b') THEN
+    RETURN 'saas_feature_not_entitled';
+  END IF;
+  RETURN NULL;
+END
+$function$"""
 
 
-def decision_candidate_body(kind):
-    """Approve/reject reutilizam o mesmo escopo canônico, lock e reautorização."""
-    if kind not in ("approve", "reject"):
+def replace_between(src, start_marker, end_marker, replacement, label):
+    if src.count(start_marker) != 1 or src.count(end_marker) != 1:
+        raise SystemExit(f"{label}: marcadores não únicos")
+    start = src.index(start_marker)
+    end = src.index(end_marker, start)
+    if end < start:
+        raise SystemExit(f"{label}: marcadores fora de ordem")
+    return src[:start] + replacement + src[end:]
+
+
+def seller_candidate_body(kind):
+    """Request/approve/reject: escopo vendedor, locks, reautorização e integridade pedido↔terms."""
+    if kind not in DECISION_SOURCES:
         raise SystemExit(f"decisão desconhecida: {kind}")
     meta = DECISION_SOURCES[kind]
     body = captured(meta["source"], meta["md5"])["body"]
-    body = delta(body, "  v_numero text;\nBEGIN", "  v_numero text;\n  v_origin jsonb;\nBEGIN", kind + " snapshot de origem")
     body = delta(
         body,
-        "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN\n    RAISE EXCEPTION 'payment_terms_not_defined';\n  END IF;",
-        "  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot\n"
-        "    INTO v_terms_id, v_created_by, v_numero, v_origin\n"
-        "  FROM public.partner_orders po\n"
-        "  WHERE po.id = p_partner_order_id\n"
-        "  FOR UPDATE;\n\n"
-        "  -- Ausência/estrangeiro/ausência após espera compartilham a mesma negação.\n"
-        "  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  -- Papel, perfil, vínculo, escopo e feature são revalidados depois do lock.\n"
-        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n"
-        "  IF NOT (public.has_role(v_uid,'administrador')\n"
-        "       OR public.has_role(v_uid,'financeiro')\n"
-        "       OR public.has_role(v_uid,'gestor_comercial')) THEN\n"
-        "    RAISE EXCEPTION 'unauthorized';\n"
-        "  END IF;\n"
-        "  -- Nenhuma decisão avança enquanto a conciliação contábil estiver pendente.\n"
-        "  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN\n"
-        "    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';\n"
-        "  END IF;\n"
-        "  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
-        kind + " lock/reautorização/contabilidade",
+        "  v_numero text;\nBEGIN",
+        "  v_numero text;\n  v_origin jsonb;\n  v_partner_id uuid;\n  v_scope_error text;\nBEGIN",
+        kind + " variáveis de escopo/origem",
+    )
+    preflight = """BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
+  -- Pré-validação sem lock: pedido ausente e estrangeiro compartilham a negação.
+  SELECT po.partner_id INTO v_partner_id
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+"""
+    end_marker = {
+        "request": "  IF p_notes IS NULL",
+        "approve": "  SELECT po.payment_terms_id",
+        "reject": "  IF p_reason IS NULL",
+    }[kind]
+    body = replace_between(body, "BEGIN\n", end_marker, preflight, kind + " preflight vendedor")
+    postlock = """  SELECT po.payment_terms_id, po.created_by, po.numero, po.c2_external_origin_snapshot, po.partner_id
+    INTO v_terms_id, v_created_by, v_numero, v_origin, v_partner_id
+  FROM public.partner_orders po
+  WHERE po.id=p_partner_order_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  -- Reautorização depois da espera: perfil, organização, papéis, readiness, owner e feature.
+  v_scope_error := platform_private.b2b_seller_financial_scope_error(v_uid,v_partner_id);
+  IF v_scope_error IS NOT NULL THEN RAISE EXCEPTION '%',v_scope_error USING ERRCODE='42501'; END IF;
+  IF v_origin->>'contract' = 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
+    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;
+
+  SELECT pt.id INTO v_terms_id
+  FROM public.partner_order_payment_terms pt
+  WHERE pt.id=v_terms_id AND pt.partner_order_id=p_partner_order_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_order_mismatch' USING ERRCODE='42501'; END IF;
+"""
+    body = replace_between(
+        body,
+        "  SELECT po.payment_terms_id",
+        "\n\n  UPDATE public.partner_order_payment_terms",
+        postlock,
+        kind + " lock/reautorização/integridade",
+    )
+    body = delta(
+        body,
+        "   WHERE id = v_terms_id;",
+        "   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;",
+        kind + " update terms íntegro",
+    )
+    body = delta(
+        body,
+        "   WHERE id = p_partner_order_id;",
+        "   WHERE id = p_partner_order_id AND payment_terms_id = v_terms_id;",
+        kind + " update pedido íntegro",
     )
     return body
+
+
+def candidate_body():
+    return seller_candidate_body("request")
+
+
+def decision_candidate_body(kind):
+    return seller_candidate_body(kind)
 
 
 def acl_entries(acl):
