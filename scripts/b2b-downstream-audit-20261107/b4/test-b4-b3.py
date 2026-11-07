@@ -251,15 +251,15 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
 
         finance_schema()
         pre = runfile(H / "01-pre.sql.readonly")
-        check("PRE revisado falha fechado sobre baseline incompleta", pre.returncode != 0 and "B4_" in pre.stderr, pre.stderr[-1200:])
+        check("PRE confirma writers/índice e ausência de todos os overloads da projeção", pre.returncode == 0 and "PRE_OK" in pre.stderr, pre.stderr[-1200:])
         install = runfile(H / "02-install.sql.review")
-        check("instalação não sobrescreve desconhecido nem cria objetos", install.returncode != 0 and B3.psql("SELECT to_regclass('platform_private.b2b_authorized_documents') IS NULL").stdout.strip() == "t", install.stderr[-1200:])
-        # COMPONENTE SOMENTE NO PG DESCARTÁVEL: o pacote instalável continua bloqueado.
-        # Executar o corpo aqui não é PRE/POST nem evidência de instalação/produção.
-        component = runfile(H / "b4-candidate.sql.review")
-        check("corpo B4 executável apenas como componente descartável", component.returncode == 0, component.stderr[-1200:])
+        check("instalação descartável cria projeção nova e passa PRE+POST íntegros", install.returncode == 0, install.stderr[-1400:])
+        post = runfile(H / "03-post.sql.readonly")
+        check("POST confirma exatamente um overload owner-only e metadata completa", post.returncode == 0 and "POST_OK" in post.stderr, post.stderr[-1200:])
+        check("instalação não habilita a dependência fiscal/contábil", B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()') LIKE '%B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN%'").stdout.strip() == "t")
+        real_dependencies = B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()')").stdout
         rerun = runfile(H / "02-install.sql.review")
-        check("rerun continua bloqueado e não reinstala", rerun.returncode != 0 and "B4_" in rerun.stderr, rerun.stderr[-700:])
+        check("rerun falha fechado ao encontrar overload/objetos já criados", rerun.returncode != 0 and "B4_" in rerun.stderr, rerun.stderr[-700:])
         check("instalação não substitui dependência operacional por stub", "CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies" not in (H / "02-install.sql.review").read_text())
         trigger_count = B3.psql("SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgenabled='O' AND tgrelid IN ('public.partner_orders'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_order_payment_schedule'::regclass)").stdout.strip()
         check("32 gatilhos reais carregados pelo harness B3 continuam habilitados", trigger_count == "32", trigger_count)
