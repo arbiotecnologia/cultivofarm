@@ -149,17 +149,11 @@ def main():
             money = T.sql_json(f"SELECT item_money->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'")
             check(name + ": quantidade de pedido normalizada", Decimal(str(money["order_quantity"])) == Decimal(str(expected_qty)), money)
             check(name + ": conteúdo fiscal normalizado sem alterar preço", Decimal(str(money["normalized_quantity"])) == Decimal(str(expected_normalized)) and money["normalized_unit"] == expected_unit, money)
-            check(name + ": payload fiscal original preservado", B3.psql(f"SELECT items->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'").stdout.strip() == json.dumps(payload, separators=(",", ":")), payload)
+            check(name + ": payload fiscal original preservado", T.sql_json(f"SELECT items->0 FROM platform_private.b2b_document_allocations WHERE document_id='{doc_id}'") == payload, payload)
 
         snapshot_order, snapshot_item = make_order([B3.S(2)])
         snapshot = T.sql_json(f"SELECT jsonb_build_object('quantity',quantidade,'unit',unidade_medida,'content',packaging_peso_liquido_kg_snapshot,'content_unit',packaging_unidade_conteudo_snapshot,'volume',volume_ml) FROM public.partner_order_items WHERE id='{snapshot_item}'")
         check("fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN", snapshot == {"quantity": 2, "unit": "unidade", "content": 25, "content_unit": "kg", "volume": None}, snapshot)
-        fraction_doc = B3.u(599)
-        document(fraction_doc, snapshot_order, item(snapshot_item, 1, "UN", 25, "KG"))
-        T.deny("gate operacional real continua fechado antes do stub de unidades", allocate(fraction_doc), "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN") if False else None
-        # O stub já foi instalado acima; a fixture de referência participa só da prova de snapshot.
-        B3.psql(f"DELETE FROM platform_private.b2b_authorized_documents WHERE id='{fraction_doc}'")
-
         scenario("1 UN = 25 kg em NF parcial", [B3.S(2)], (1, "UN", 25, "KG"), expected_qty=1, expected_normalized=25, expected_unit="kg")
         scenario("0,5 UN é fração de embalagem inteira", [B3.S(2)], (0.5, "UN", 12.5, "KG"), expected_error="FISCAL_WHOLE_PACKAGE_FRACTION")
         scenario("12,5 kg também é fração de embalagem inteira", [B3.S(2)], (12.5, "KG", 12500, "G"), expected_error="FISCAL_WHOLE_PACKAGE_FRACTION")
