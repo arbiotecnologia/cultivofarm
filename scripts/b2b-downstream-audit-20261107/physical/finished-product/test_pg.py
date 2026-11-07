@@ -204,7 +204,7 @@ def main():
             ok(item["name"] + ": pedido/OS → reserva canônica de 2 embalagens sem envase", reserved)
             reject(item["name"] + ": entrega sem unidade de conteúdo é fechada antes da baixa",
                    T.actor() + group(item["os"], reserved, 2, "finished-group-" + item["name"]),
-                   "23514", "COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO")
+                   "P0001", "COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO")
             ok(item["name"] + ": nenhuma entrega/movimento de expedição após a negação",
                last(f"SELECT (SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{item['os']}')=0 AND (SELECT count(*) FROM public.estoque_movimentacoes WHERE referencia_tipo='entrega' AND referencia_id IN (SELECT id FROM public.entregas WHERE ordem_servico_id='{item['os']}'))=0;") == "t")
 
