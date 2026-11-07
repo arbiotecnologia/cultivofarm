@@ -16,6 +16,7 @@ NAMES = [
     "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
     "public.fn_sync_os_classica_downstream()",
     "platform_private.envase_insert_guard_v1()",
+    "platform_private.envase_insert_final_v1()",
 ]
 
 def main():
