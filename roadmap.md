@@ -1,3 +1,8 @@
+## 07/11 17:44 — Escopo específico da equipe vendedora no ajuste B2B
+- [ ] Substituir no candidato request/approve/reject o leitor de comprador por autorização específica da equipe vendedora: organização/perfil ativos, readiness, dono comercial e somente administrador/financeiro/gestor_comercial; sem Superadmin, papéis externos ou vínculo fictício.
+- [ ] Reproduzir o vendedor legítimo com `organizations.partner_account_id=NULL` e zero `partner_users`, preservar C2 origem/contábil e revalidar tenant/papel/perfil/readiness/feature antes e depois dos locks, com integridade pedido↔condição.
+- [ ] Executar PRE/POST/manifesto, replay, revogação, isolamento, concorrência e rollback em PostgreSQL descartável; entregar evidências/hashes separadas e manter candidato INATIVO/NÃO APROVADO, sem hosted/publicação/envios/NF/cobrança/delegação.
+
 ## 07/11 17:37 — Entrada de revenda reconciliada com guards LIVE informados
 - [x] Registrar os fatos READONLY informados pelo auditor: `validate_estoque_entrada` MD5 `9e24938a…24e9`, retorno antecipado de reservas e `estoque_produto_catalog_tenant_guard` MD5 `874c9ca8…8efc` derivando tenant do lote; nenhuma leitura/escrita hosted nesta etapa.
 - [x] Reconciliar a compra com o guard de tenant real capturado, sem regravá-lo nem afrouxar a entrada biológica; MD5 locais coincidem com os dois fatos relatados. Entrada agregada de compra com `quantidade_reservada=NULL` e divisões somente pelo contexto canônico de reserva; lote do fornecedor obrigatório e incluído no fingerprint/snapshots.
