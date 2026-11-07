@@ -35,8 +35,8 @@
     "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "e7cb6a6c7fd3a305a54e62184dacd9be"
   },
   "candidate_md5": {
-    "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "2691d1ea257b1043f884c8f0c85af8a4",
-    "public.rpc_register_receivable_payment(uuid,jsonb)": "a0f9219c8f0531609044d247acd832a5",
+    "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "9bee7ca43f973d13d0c564481510b5f1",
+    "public.rpc_register_receivable_payment(uuid,jsonb)": "e0f8dcee3db59ffc81dee0b2bef6c0a5",
     "public.generate_b2b_receivable_secure_impl(uuid)": "bea5cf67e8797b46d53c785e4c3fb93a",
     "public.tg_auto_b2b_receivable()": "1dc6734bf76e65f86d8c67fc877ad474",
     "platform_private.b2b_allocate_document(uuid)": "24a32cebcf84f6eec4cebc28cb66508e",

@@ -1,0 +1,64 @@
+{
+  "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
+  "passed": 10,
+  "total": 11,
+  "checks": [
+    {
+      "name": "boot B2/B3 com gatilhos reais",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "B3 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B3 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "execução sem exceção de harness",
+      "ok": false,
+      "detail": "RuntimeError('ERROR:  column \"client_id\" of relation \"partner_accounts\" already exists\\n')"
+    }
+  ],
+  "hosted": "NOT_RUN",
+  "jwt_rls_storage": "NOT_RUN",
+  "synthetic_seams": [
+    "Auth por GUC/roles locais",
+    "schema financeiro capturado com FK/RLS externos omitidos",
+    "company_fiscal_settings fictícia VALIDATED",
+    "autorização/cancelamento fiscal privado fictício sem rede",
+    "b2b_integration_dependencies substituída somente após prova de negação",
+    "entregas mínima para o fence"
+  ],
+  "b3_overloads_restored": false,
+  "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência"
+}
