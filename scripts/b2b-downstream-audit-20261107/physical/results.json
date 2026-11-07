@@ -26,7 +26,7 @@
   },
   "coverage": {
     "executed": ["biologico_ml", "CQ_estoque_pronto_entrega", "expedicao_em_rota_confirmacao_cancelamento", "tenant_isolation", "observed_lock_revocation", "concurrency", "CAS", "idempotent_replay", "deny_only_rollback"],
-    "finished_product_followup": {"path": "finished-product/", "before": "17/17", "candidate": "49/49", "legacy_candidate": "6/6", "artifact_review": "23/23", "purchase_entry": "compra_produto_acabado_revenda; catálogo por empresa; lote do fornecedor; estoque/ledger sem fabricação; quantidade_reservada NULL", "live_reported_guard_md5_match": ["validate_estoque_entrada:9e24938a8d716a02ba023c9fb7ce24e9", "estoque_produto_catalog_tenant_guard:874c9ca8b5b4e307cf995a0197f98efc"], "units": ["kg", "g", "L", "ml"], "weight_not_reinterpreted_as_volume": true, "active": false},
+    "finished_product_followup": {"path": "finished-product/", "before": "17/17", "candidate": "49/49", "legacy_candidate": "6/6", "null_contract_before": "27/51 exit 1", "null_contract_after": "51/51", "layered_install": "16/16", "artifact_review": "35/35", "reported_live_missing_downstream_dependencies": ["delivery_confirm_apply_v1", "delivery_send_apply_v1"], "purchase_entry": "compra_produto_acabado_revenda; catálogo por empresa; lote do fornecedor; estoque/ledger sem fabricação; quantidade_reservada NULL", "live_reported_guard_md5_match": ["validate_estoque_entrada:9e24938a8d716a02ba023c9fb7ce24e9", "estoque_produto_catalog_tenant_guard:874c9ca8b5b4e307cf995a0197f98efc"], "units": ["kg", "g", "L", "ml"], "weight_not_reinterpreted_as_volume": true, "active": false},
     "not_run": ["dados_e_baseline_catalogo_B3_LIVE", "frete_real", "JWT_RLS_Storage_PostgREST_browser_real", "NF_cobranca_real"]
   },
   "adjustment_candidate": {
