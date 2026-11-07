@@ -1,0 +1,7 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.6s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS candidato instalado e gate permanece desligado para o legado
+PASS FAIL module 'test_pg' has no attribute 'O2'
+RESULT 4 / 4 exit 1

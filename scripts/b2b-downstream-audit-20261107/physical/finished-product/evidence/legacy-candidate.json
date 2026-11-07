@@ -1,0 +1,25 @@
+{
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "6cbfffc85869616e61bf894bc12beb6e47343ffcda15197bdc4974cad6a5d8ca"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "candidato instalado e gate permanece desligado para o legado",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL module 'test_pg' has no attribute 'O2'",
+      "status": "PASS"
+    }
+  ],
+  "candidate_installed": true,
+  "gate_enabled": false,
+  "hosted": false
+}
