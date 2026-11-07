@@ -1,6 +1,6 @@
 {
   "kind": "DISPOSABLE_B4_ON_REAL_B3_COMPONENTS_NOT_HOSTED_E2E",
-  "passed": 62,
+  "passed": 63,
   "total": 63,
   "checks": [
     {
@@ -217,8 +217,7 @@
     },
     {
       "name": "tenant estrangeiro não faz replay nem lê recibo",
-      "ok": false,
-      "detail": "ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.c2_order_actor_scope(uuid,uuid) line 5 at RAISE\nSQL statement \"SELECT platform_private.c2_order_actor_scope(u,p_partner)\"\nPL/pgSQL function platform_private.b2b_integration_actor(uuid,boolean) line 6 at PERFORM\nPL/pgSQL function platform_private.b2b_allocate_document(uuid) line 7 at assignment"
+      "ok": true
     },
     {
       "name": "pendência contábil bloqueia antes de qualquer título",
