@@ -1,0 +1,42 @@
+{
+  "review": "458b6012",
+  "status": "INACTIVE_BLOCKED_MISSING_CAPTURED_BASELINE_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "object_manifest": "../b4-object-manifest.json",
+  "object_count": 54,
+  "missing_baseline": [
+    "public.rpc_receivable_money_projection_v1(uuid,integer,integer)"
+  ],
+  "independent_results": {
+    "static_manifest": {
+      "passed": 42,
+      "total": 42,
+      "exit_code": 0
+    },
+    "disposable_component": {
+      "passed": 73,
+      "total": 73,
+      "exit_code": 0
+    },
+    "historical": {
+      "passed": 63,
+      "total": 63,
+      "added": false,
+      "path": "historical-63/evidence-b4-b3.json"
+    }
+  },
+  "shared_impact": {
+    "manual_without_partner": "CREATED_ONE_INSTALLMENT",
+    "manual_with_partner": "CREATED_THEN_EXPOSURE_MONEY_ORIGIN_UNPROVEN",
+    "internal_order": "DENIED_NO_TITLE_NO_ALLOCATION",
+    "fixtures_cleanup": "DISPOSABLE_ONLY_AFTER_MEASUREMENT"
+  },
+  "operation_separation": "INSTALL_HAS_NO_OPERATION_STUB; REAL DEPENDENCY ALWAYS DENY",
+  "pending": [
+    "captura LIVE da projeção e demais baselines",
+    "reconciliação de MANUAL parceiro sem origem",
+    "preflight do índice em dados reais",
+    "JWT/RLS/Storage/NF/cobrança/homologação NOT_RUN"
+  ]
+}
