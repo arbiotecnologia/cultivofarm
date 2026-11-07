@@ -242,6 +242,8 @@ def main():
 
         r = runfile(HERE / "02-install.sql.review")
         check("02 instala o candidato transacionalmente sem GRANT", r.returncode == 0, r.stderr)
+        if r.returncode != 0:
+            raise RuntimeError("02-install falhou: " + r.stderr)
         candidate_md5 = psql(f"SELECT md5(pg_get_functiondef('{G.SIG}'::regprocedure))").stdout.strip()
         expected_candidate_md5 = pins["candidate_md5"]
         check("candidato executado tem o MD5 gerado", candidate_md5 == expected_candidate_md5, {"actual": candidate_md5, "expected": expected_candidate_md5})
