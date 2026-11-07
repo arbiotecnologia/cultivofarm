@@ -183,7 +183,7 @@
     {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+      "detail": "JSONDecodeError('Extra data: line 1 column 5 (char 4)')"
     }
   ],
   "hosted": "NOT_RUN",

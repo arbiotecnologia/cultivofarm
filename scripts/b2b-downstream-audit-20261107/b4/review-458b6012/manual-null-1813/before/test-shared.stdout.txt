@@ -37,4 +37,4 @@ PASS cliente não invoca alocador privado
 PASS stub operacional existe só no harness depois da negação real
 PASS instalação não faz backfill dos cinco históricos
 FAIL MANUAL real partner NULL + cliente único não pode ser omitido da exposição :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}
-FAIL execução sem exceção de harness :: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+FAIL execução sem exceção de harness :: JSONDecodeError('Extra data: line 1 column 5 (char 4)')
