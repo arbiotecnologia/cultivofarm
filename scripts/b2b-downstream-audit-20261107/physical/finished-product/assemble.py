@@ -62,7 +62,7 @@ END$$;"""
 
 def build():
     functions = {x["signature"]: x for x in BASE["functions"]}
-    if len(functions) != 6 or BASE["existing_candidate_columns"]:
+    if len(functions) != 7 or BASE["existing_candidate_columns"]:
         raise AssertionError("baseline incompleta ou colunas já presentes")
     reservar = captured("public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)")
     criar = captured("public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)")
@@ -70,6 +70,8 @@ def build():
     confirm = extract((CONF / "candidate.sql.review").read_text(), "platform_private.delivery_confirm_apply_v1")
     send = extract((CONF / "send/candidate.sql.review").read_text(), "platform_private.delivery_send_apply_v1")
     sync = captured("public.fn_sync_os_classica_downstream()")
+    entry_guard = extract((ROOT / "scripts/stock-envase-recovery-20261027/isolated/candidate.sql.review").read_text(), "platform_private.envase_insert_guard_v1")
+    entry_guard = one_replace(entry_guard, "    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade", "    AND NEW.validade IS NOT DISTINCT FROM parent.validade\n    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='produto_acabado' AND platform_private.finished_product_stock_valid_v1(parent) AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))", "entry guard finished split")
     sync = one_replace(sync, "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN", "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL)\n     AND NOT EXISTS(SELECT 1 FROM public.entregas d JOIN public.estoque_produto s ON s.id=d.estoque_produto_id WHERE d.ordem_servico_id=NEW.id AND d.produto_id=NEW.produto_id AND d.status::text<>'cancelada' AND s.origem_estoque='produto_acabado') THEN", "sync finished product")
 
     reservar = one_replace(reservar, "  v_volume_reservado := CASE", """  IF v_item.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_item) THEN
@@ -151,7 +153,7 @@ CREATE FUNCTION platform_private.finished_product_delivery_valid_v1(s public.est
 $$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;
 """
-    bodies = [ddl, reservar, criar, merge, confirm, send, sync]
+    bodies = [ddl, reservar, criar, merge, confirm, send, sync, entry_guard]
     pre = ["-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."]
     for entry in BASE["functions"]:
         pre.append(function_pin(entry))
@@ -160,7 +162,7 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(publi
     candidate = "\n\n".join(bodies) + "\n"
     post = []
     for entry in BASE["functions"]:
-        body = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync}[entry["signature"].split("(", 1)[0]]
+        body = {"public.reservar_estoque_item": reservar, "public.rpc_cockpit_criar_entrega_v1": criar, "platform_private.delivery_merge_split_20261030": merge, "platform_private.delivery_confirm_apply_v1": confirm, "platform_private.delivery_send_apply_v1": send, "public.fn_sync_os_classica_downstream": sync, "platform_private.envase_insert_guard_v1": entry_guard}[entry["signature"].split("(", 1)[0]]
         expected = hashlib.md5(body.encode()).hexdigest()
         # pg_get_functiondef normaliza; POST é medido no PG descartável, não estimado aqui.
         post.append(f"-- POST_RUNTIME_REQUIRED {entry['signature']} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}")

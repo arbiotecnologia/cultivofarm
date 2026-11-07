@@ -35,7 +35,7 @@ def main():
         loaded = B.run_raw((HERE / "install.sql.review").read_text())
         if loaded.returncode != 0:
             raise AssertionError("candidate PRE/install failed\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
-        B.ok("candidato instalado com os cinco PRE pins e sem novos grants")
+        B.ok("candidato instalado com todos os PRE pins e sem novos grants")
         assert B.last("SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton;") == "f"
         B.ok("instalação permanece operacionalmente desligada")
         closed = finished("quimico", "kg", 25)
