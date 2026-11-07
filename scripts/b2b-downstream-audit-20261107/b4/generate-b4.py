@@ -260,14 +260,14 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
                 "public.generate_b2b_receivable_secure_impl(uuid)", "public.tg_auto_b2b_receivable()"]:
         name = sig.split("(", 1)[0]
         source = canonical_function(fn(body, name))
-        body = body.replace(fn(body, name), source, 1)
+        body = body.replace(fn(body, name), source + ";", 1)
         candidate_pins[sig] = md5_def(source)
     for name in ["platform_private.b2b_allocate_document", "platform_private.b2b_order_residual", "platform_private.b4_schedule_from_nf"]:
         match = re.findall(rf"CREATE (?:OR REPLACE )?FUNCTION {re.escape(name)}\(.*?\nEND \$\$;", body, re.S)
         if len(match) != 1:
             raise SystemExit(f"CANDIDATE_PIN_FUNCTION {name}: {len(match)}")
         normalized = canonical_function(match[0])
-        body = body.replace(match[0], normalized, 1)
+        body = body.replace(match[0], normalized + ";", 1)
         sig = name + {"platform_private.b2b_allocate_document": "(uuid)", "platform_private.b2b_order_residual": "(uuid)",
                       "platform_private.b4_schedule_from_nf": "(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)"}[name]
         candidate_pins[sig] = md5_def(normalized)
