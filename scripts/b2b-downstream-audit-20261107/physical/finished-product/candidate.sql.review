@@ -729,7 +729,8 @@ BEGIN
    THEN RETURN NEW; END IF;
   END IF;
 
-  -- Compra de produto acabado para revenda: ticket privado, tenant e catálogo atual.
+  org:=platform_private.h15_actor_organization();
+ -- Compra de produto acabado para revenda: ticket privado, tenant e catálogo atual.
  IF TG_OP='INSERT' AND NEW.programacao_id IS NULL AND NEW.microrganismo_id IS NULL
   AND NEW.produto_id IS NOT NULL AND NEW.volume_produzido IS NULL AND NEW.status::text='aprovado'
   AND org IS NOT NULL AND NEW.organization_id=org AND public.technical_actor_ready(auth.uid()) IS TRUE

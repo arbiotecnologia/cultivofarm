@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.4s
+CHECKPOINT sql_calls=1 elapsed=2.2s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -9,12 +9,11 @@ PASS gate fechado nega compra/entrada interna
 PASS aplicativo não pode forjar ticket de compra
 PASS produto de outro tenant é negado antes de criar lote/estoque
 PASS compra de 0,5 embalagem é negada
-PASS FAIL ERROR:  MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC
-CONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 62 at RAISE
-SQL statement "INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)
- VALUES(v_lote,btrim(p_codigo_lote),p_produto_id,NULL,NULL,'aprovado',v_org,
-  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text)"
-PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 75 at SQL statement
+PASS FAIL ERROR:  ENVASE_INSERT_CLOSED
+CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 30 at RAISE
+SQL statement "INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)
+ VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version)"
+PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 86 at SQL statement
 
 Traceback (most recent call last):
   File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 101, in main
@@ -31,12 +30,11 @@ Traceback (most recent call last):
   File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
     assert r.returncode==0,r.stderr[-3000:]
            ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC
-CONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 62 at RAISE
-SQL statement "INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)
- VALUES(v_lote,btrim(p_codigo_lote),p_produto_id,NULL,NULL,'aprovado',v_org,
-  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text)"
-PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 75 at SQL statement
+AssertionError: ERROR:  ENVASE_INSERT_CLOSED
+CONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 30 at RAISE
+SQL statement "INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)
+ VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version)"
+PL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 86 at SQL statement
 
 
 RESULT 10 / 10 exit 1
