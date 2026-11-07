@@ -54,6 +54,7 @@ SIGS = {
     "platform_private.b4_schedule_from_nf": "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)",
     "platform_private.b2b_credit_config_block": "platform_private.b2b_credit_config_block(uuid)",
     "platform_private.b2b_debtor_partner": "platform_private.b2b_debtor_partner(uuid,uuid)",
+    "platform_private.b2b_receivable_partner_scope": "platform_private.b2b_receivable_partner_scope(uuid)",
     "platform_private.b2b_shared_receivable_credit_guard": "platform_private.b2b_shared_receivable_credit_guard()",
     "platform_private.b4_assert_order_eligible": "platform_private.b4_assert_order_eligible(uuid)",
     "platform_private.b2b_legacy_money_row": "platform_private.b2b_legacy_money_row(uuid)",
