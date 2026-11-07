@@ -121,8 +121,10 @@ def prior_objects():
                 " calendar_version text CHECK(calendar_version IS NULL),",  # calendário Paracatu-MG pendente (B4); datas B3 estimadas
                 "V3 calendário fora do B3")
     ver = delta(ver, " CHECK(method<>'boleto' OR (installment_count<=3 AND deadline_days=30))",
-                " CHECK(method<>'boleto' OR installment_count<=3),\n CHECK(installment_count>1 OR monthly_rate=0),\n created_at timestamptz NOT NULL DEFAULT now()",
-                "V4 boleto ≤3 com prazo personalizável; parcela única sem juros")
+                " CHECK(method<>'boleto' OR installment_count<=3),\n"
+                " CHECK(installment_count>1 OR monthly_rate=0 OR method IN ('boleto','promissoria','cartao_credito')),\n"
+                " created_at timestamptz NOT NULL DEFAULT now()",
+                "V4 boleto ≤3 com prazo personalizável; taxa explícita em n=1 só para boleto/promissória/crédito")
     asg = extract(s, "CREATE TABLE platform_private.b2b_condition_assignments (", "\n);\n", "assignments")
     snap = extract(s, "CREATE TABLE platform_private.b2b_order_condition_snapshots (", "\n);\n", "snapshots")
     snap = delta(snap, " rows jsonb NOT NULL, principal numeric NOT NULL, financed_interest numeric NOT NULL, financed_total numeric NOT NULL,\n CHECK(principal>0 AND financed_interest>=0 AND financed_total=principal+financed_interest)",
@@ -192,8 +194,10 @@ def prior_objects():
                 "(principal numeric,rate numeric,n int,issue date,deadline int)", "P0 sem calendário")
     sch = delta(sch, "'nominal_due_date',nom,'due_date',platform_private.b2b_business_day(nom,cal),'received_amount',0",
                 "'nominal_due_date',nom,'due_date',nom,'estimated',true,'business_day_adjusted',false", "P1 datas estimadas")
+    # A elegibilidade da taxa por meio/parcelas pertence à versão imutável; a Price aceita n=1 com taxa explícita.
+    # Não há taxa/default novo aqui: rate sempre vem da versão resolvida no servidor.
     sch = delta(sch, "OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 THEN",
-                "OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 OR (n=1 AND rate<>0) THEN", "P2 parcela única sem juros")
+                "OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 THEN", "P2 Price admite n=1 com taxa explícita")
     return ver, asg, snap, ret, choice, res, sch
 
 

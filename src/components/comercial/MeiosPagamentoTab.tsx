@@ -136,7 +136,7 @@ export function MeiosPagamentoTab() {
                   <TableCell>{METHOD_KIND_LABEL[c.method]} · {pmName.get(c.payment_method_id) ?? "inativo no cadastro"}</TableCell>
                   <TableCell>{c.deadline_days} dias após a NF</TableCell>
                   <TableCell>{c.installment_count}x</TableCell>
-                  <TableCell>{c.installment_count > 1 ? `${c.monthly_rate}% a.m.` : "—"}</TableCell>
+                  <TableCell>{`${c.monthly_rate.toLocaleString("pt-BR")}% a.m.`}</TableCell>
                   <TableCell><Badge variant={c.retired ? "secondary" : "default"}>{c.retired ? "Aposentada" : "Vigente"}</Badge></TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
