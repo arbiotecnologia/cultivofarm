@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Warehouse, History, XCircle, ArrowUpDown } from "lucide-react";
@@ -20,12 +21,17 @@ import { HistoricoSheet } from "@/components/estoque/HistoricoSheet";
 import { EstoqueBI } from "@/components/estoque/EstoqueBI";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
+import { FinishedProductPurchaseEntrySection } from "@/components/estoque/FinishedProductPurchaseEntrySection";
+import { formatStockContent } from "@/lib/estoque/stockUnits";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   disponivel: { label: "Disponível", variant: "default" },
   reservado: { label: "Reservado", variant: "secondary" },
   expedido: { label: "Expedido", variant: "outline" },
 };
+
+const uniqueIds = (values: unknown[]): string[] =>
+  Array.from(new Set(values.filter((value): value is string => typeof value === "string" && value.length > 0)));
 
 const itemNome = (e: any) => {
   if (e?.produtos?.nome) return e.produtos.nome;
@@ -56,13 +62,14 @@ export default function Estoque() {
   const { data: estoques = [] } = useQuery({
     queryKey: ["estoque_produto"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Campos candidatos de revenda ainda ausentes dos tipos gerados; o parser normaliza abaixo.
+      const { data, error } = await (supabase as any)
         .from("estoque_produto")
-        .select("id, status, created_at, quantidade, validade, lote_id, produto_id, microrganismo_id, volume_total, reservado_para_cliente_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote, programacao_id), produtos(nome), microrganismos(nome, nome_cientifico)")
+        .select("id, status, created_at, quantidade, validade, lote_id, produto_id, microrganismo_id, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo, embalagem_id, embalagem_versao, reservado_para_cliente_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote, programacao_id), produtos(nome), microrganismos(nome, nome_cientifico)")
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
-      const ids = Array.from(new Set((data || []).map((e: any) => e.reservado_para_cliente_id).filter(Boolean)));
+      const ids = uniqueIds((data || []).map((e: any) => e.reservado_para_cliente_id));
       let map: Record<string, string> = {};
       if (ids.length) {
         const { data: cs } = await supabase.from("clientes").select("id, nome").in("id", ids);
@@ -70,8 +77,8 @@ export default function Estoque() {
       }
 
       // Enriquece com info amigável da OS (fazenda/talhão/data)
-      const osPadraoIds = Array.from(new Set((data || []).filter((e: any) => e.reservado_para_os_id && e.reservado_para_os_tipo === "padrao").map((e: any) => e.reservado_para_os_id)));
-      const osOnfarmIds = Array.from(new Set((data || []).filter((e: any) => e.reservado_para_os_id && e.reservado_para_os_tipo === "onfarm").map((e: any) => e.reservado_para_os_id)));
+      const osPadraoIds = uniqueIds((data || []).filter((e: any) => e.reservado_para_os_tipo === "padrao").map((e: any) => e.reservado_para_os_id));
+      const osOnfarmIds = uniqueIds((data || []).filter((e: any) => e.reservado_para_os_tipo === "onfarm").map((e: any) => e.reservado_para_os_id));
       const osMap: Record<string, { tipoLabel: string; fazenda?: string; talhao?: string; data?: string | null; titular?: string }> = {};
       if (osPadraoIds.length) {
         const { data: os } = await supabase
@@ -98,7 +105,7 @@ export default function Estoque() {
       }
 
       // Busca data_envase mais recente por lote
-      const loteIds = Array.from(new Set((data || []).map((e: any) => e.lote_id).filter(Boolean)));
+      const loteIds = uniqueIds((data || []).map((e: any) => e.lote_id));
       const envaseMap: Record<string, string> = {};
       if (loteIds.length) {
         const { data: envs } = await supabase
@@ -269,6 +276,27 @@ export default function Estoque() {
     return arr;
   }, [estoques, sortBy]);
 
+  const biologicalEntryForm = (
+    <div className="form-spacing-mobile pt-2">
+      <div className="space-y-1.5 sm:space-y-1">
+        <Label>Lote (aprovado)</Label>
+        <Select value={form.lote_id} onValueChange={v => { setForm(f => ({ ...f, lote_id: v })); }}>
+          <SelectTrigger><SelectValue placeholder={lotes.length ? "Selecione o lote" : "Nenhum lote envasado disponível"} /></SelectTrigger>
+          <SelectContent>
+            {lotes.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum lote envasado e disponível para entrada.</div>}
+            {lotes.map(l => <SelectItem key={l.id} value={l.id}>{l.codigo_lote}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5 sm:space-y-1"><Label>Quantidade (un)</Label><Input type="number" value={form.quantidade} onChange={e => setForm(f => ({ ...f, quantidade: e.target.value }))} /></div>
+        <div className="space-y-1.5 sm:space-y-1"><Label>Volume Total (L)</Label><Input type="number" value={form.volume_total} onChange={e => setForm(f => ({ ...f, volume_total: e.target.value }))} /></div>
+      </div>
+      <div className="space-y-1.5 sm:space-y-1"><Label>Validade</Label><Input type="date" value={form.validade} onChange={e => setForm(f => ({ ...f, validade: e.target.value }))} /></div>
+      <Button className="w-full h-12 sm:h-10 font-bold" onClick={() => createMutation.mutate()} disabled={!form.lote_id}>Registrar Entrada</Button>
+    </div>
+  );
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
@@ -283,24 +311,11 @@ export default function Estoque() {
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
               <DialogHeader><DialogTitle>Nova Entrada</DialogTitle></DialogHeader>
-              <div className="form-spacing-mobile pt-2">
-                <div className="space-y-1.5 sm:space-y-1">
-                  <Label>Lote (aprovado)</Label>
-                  <Select value={form.lote_id} onValueChange={v => { setForm(f => ({ ...f, lote_id: v })); }}>
-                    <SelectTrigger><SelectValue placeholder={lotes.length ? "Selecione o lote" : "Nenhum lote envasado disponível"} /></SelectTrigger>
-                    <SelectContent>
-                      {lotes.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum lote envasado e disponível para entrada.</div>}
-                      {lotes.map(l => <SelectItem key={l.id} value={l.id}>{l.codigo_lote}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5 sm:space-y-1"><Label>Quantidade (un)</Label><Input type="number" value={form.quantidade} onChange={e => setForm(f => ({ ...f, quantidade: e.target.value }))} /></div>
-                  <div className="space-y-1.5 sm:space-y-1"><Label>Volume Total (L)</Label><Input type="number" value={form.volume_total} onChange={e => setForm(f => ({ ...f, volume_total: e.target.value }))} /></div>
-                </div>
-                <div className="space-y-1.5 sm:space-y-1"><Label>Validade</Label><Input type="date" value={form.validade} onChange={e => setForm(f => ({ ...f, validade: e.target.value }))} /></div>
-                <Button className="w-full h-12 sm:h-10 font-bold" onClick={() => createMutation.mutate()} disabled={!form.lote_id}>Registrar Entrada</Button>
-              </div>
+              <FinishedProductPurchaseEntrySection
+                open={open}
+                biologicalEntry={biologicalEntryForm}
+                onSuccess={() => setOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         }
@@ -343,7 +358,7 @@ export default function Estoque() {
                     status={<Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge>}
                     content={[
                       { label: "Qtd", value: e.quantidade },
-                      { label: "Volume", value: e.volume_total ? `${e.volume_total} L` : "—" },
+                      { label: "Conteúdo", value: formatStockContent(e) },
                       { label: "Envasado em", value: e.data_envase ? formatDateDisplay(e.data_envase) : "—" },
                       { label: "Validade", value: e.validade ? formatDateDisplay(e.validade) : "—" },
                       { label: "Reservado para", value: renderReservadoPara(e) },
@@ -361,7 +376,7 @@ export default function Estoque() {
                   <TableHead>Lote</TableHead>
                   <TableHead>Envasado em</TableHead>
                   <TableHead>Qtd</TableHead>
-                  <TableHead>Volume</TableHead>
+                  <TableHead>Conteúdo</TableHead>
                   <TableHead>Validade</TableHead>
                   <TableHead>Reservado para</TableHead>
                   <TableHead>Status</TableHead>
@@ -377,7 +392,7 @@ export default function Estoque() {
                     <TableCell className="font-mono-data text-xs">{e.lotes?.codigo_lote}</TableCell>
                     <TableCell>{e.data_envase ? formatDateDisplay(e.data_envase) : "—"}</TableCell>
                     <TableCell>{e.quantidade}</TableCell>
-                    <TableCell>{e.volume_total ? `${e.volume_total} L` : "—"}</TableCell>
+                    <TableCell>{formatStockContent(e)}</TableCell>
                     <TableCell>{e.validade ? formatDateDisplay(e.validade) : "—"}</TableCell>
                     <TableCell className="text-xs">{renderReservadoPara(e)}</TableCell>
                     <TableCell><Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge></TableCell>
@@ -420,8 +435,8 @@ export default function Estoque() {
               <span className="font-bold">{cancelarItem?.quantidade} unidades</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-              <span className="text-sm text-muted-foreground">Volume a devolver:</span>
-              <span className="font-bold">{cancelarItem?.volume_total} L</span>
+              <span className="text-sm text-muted-foreground">Conteúdo a devolver:</span>
+              <span className="font-bold">{cancelarItem ? formatStockContent(cancelarItem) : "—"}</span>
             </div>
             <p className="text-sm text-muted-foreground italic">
               Este saldo será reintegrado ao registro disponível do mesmo lote.

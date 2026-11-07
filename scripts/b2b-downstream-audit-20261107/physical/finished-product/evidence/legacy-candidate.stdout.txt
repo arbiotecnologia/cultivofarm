@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.5s
+CHECKPOINT sql_calls=1 elapsed=1.9s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado e gate permanece desligado para o legado

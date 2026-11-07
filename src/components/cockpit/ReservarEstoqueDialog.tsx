@@ -12,7 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, PackageOpen } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
-import { fmtEmb, computeTotals, findInvalidIds, clampQty } from "./reservaCalc";
+import { fmtEmb, computeContentTotals, findInvalidIds, clampQty, requiresWholePacks } from "./reservaCalc";
+import { formatStockContent } from "@/lib/estoque/stockUnits";
 import { toast } from "sonner";
 
 export interface ReservarEstoqueTarget {
@@ -54,9 +55,9 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
     enabled: open && !!target?.lote_id,
     queryFn: async ({ signal }) => {
       if (!target?.lote_id || !target.os_id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("estoque_produto")
-        .select("id, quantidade, volume_total, validade, status, produto_id, microrganismo_id, lote_id, envase_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote), produtos(nome), microrganismos(nome)")
+        .select("id, quantidade, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo, embalagem_id, embalagem_versao, validade, status, produto_id, microrganismo_id, lote_id, envase_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote), produtos(nome), microrganismos(nome)")
         .eq("lote_id", target.lote_id)
         .or(`status.eq.disponivel,and(status.eq.reservado,reservado_para_os_id.eq.${target.os_id})`)
         .order("created_at", { ascending: false })
@@ -100,11 +101,10 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
     [itensDisponiveis, selectedIds]
   );
 
-  const { totalUn: totalUnSel, totalL: totalLSel } = computeTotals(selectedItems as any, qtys);
+  const selectedTotals = computeContentTotals(selectedItems as any, qtys);
+  const lotTotals = computeContentTotals(itens as any, Object.fromEntries(itens.map((item: any) => [item.id, item.quantidade ?? 0])));
 
-  const totalUn = itens.reduce((s: number, i: any) => s + Number(i.quantidade ?? 0), 0);
-  const totalL = itens.reduce((s: number, i: any) => s + Number(i.volume_total ?? 0), 0);
-  const resumoLote = itens.length > 1 ? `${itens.length} embalagens · ${totalUn} un · ${totalL} L` : null;
+  const resumoLote = itens.length > 1 ? `${itens.length} embalagens · ${lotTotals.totalUn} un · ${lotTotals.label}` : null;
 
   const invalidIds = findInvalidIds(selectedItems as any, qtys);
   const hasInvalid = invalidIds.length > 0;
@@ -134,8 +134,8 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
     // valida qty
     for (const it of selectedItems) {
       const q = Number(qtys[it.id] ?? 0);
-      if (!q || q <= 0) {
-        toast.error(`Informe a quantidade para ${fmtEmb(it)}.`);
+      if (!q || q <= 0 || (requiresWholePacks(it) && !Number.isInteger(q))) {
+        toast.error(requiresWholePacks(it) ? `Informe um número inteiro de embalagens para ${fmtEmb(it)}.` : `Informe a quantidade para ${fmtEmb(it)}.`);
         return;
       }
       if (q > Number(it.quantidade ?? 0)) {
@@ -213,7 +213,7 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
               <p className="text-sm font-medium">Este lote já está reservado para esta OS.</p>
               <p className="text-xs text-muted-foreground">
                 Quantidade reservada: <span className="font-semibold text-foreground">{itemJaReservadoParaEstaOS.quantidade}</span>
-                {itemJaReservadoParaEstaOS.volume_total ? ` · ${itemJaReservadoParaEstaOS.volume_total} L` : ""}
+                {` · ${formatStockContent(itemJaReservadoParaEstaOS)}`}
               </p>
               <div className="pt-1">
                 <Button asChild variant="outline" size="sm" className="gap-1.5 h-8">
@@ -279,7 +279,7 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center justify-between">
                             <span>
-                              Volume: <span className="font-semibold text-foreground">{it.volume_total ?? 0} L</span>
+                              Conteúdo: <span className="font-semibold text-foreground">{formatStockContent(it)}</span>
                               {disabled && <span className="ml-2 text-[10px] uppercase">já reservado</span>}
                             </span>
                             <span>Validade {formatDateDisplay(it.validade)}</span>
@@ -296,10 +296,11 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
                                     id={`qty-${it.id}`}
                                     type="number"
                                     min={1}
+                                    step={requiresWholePacks(it) ? 1 : "any"}
                                     max={maxQty}
                                     value={raw}
                                     onChange={(e) => {
-                                      const clamped = clampQty(e.target.value, maxQty);
+                                      const clamped = clampQty(e.target.value, maxQty, requiresWholePacks(it));
                                       setQtys((p) => ({ ...p, [it.id]: clamped }));
                                     }}
                                     className={`h-8 w-24 ${invalid ? "border-destructive text-destructive" : ""}`}
@@ -336,7 +337,7 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
                 <div className="rounded-md bg-muted/30 p-2 text-xs text-muted-foreground flex items-center justify-between">
                   <span>Total selecionado:</span>
                   <span className="font-semibold text-foreground">
-                    {selectedItems.length} {selectedItems.length === 1 ? "embalagem" : "embalagens"} · {totalUnSel} un · {totalLSel.toFixed(totalLSel % 1 ? 2 : 0)} L
+                    {selectedItems.length} {selectedItems.length === 1 ? "embalagem" : "embalagens"} · {selectedTotals.totalUn} un · {selectedTotals.label}
                   </span>
                 </div>
               )}

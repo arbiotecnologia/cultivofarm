@@ -1,5 +1,6 @@
 {
   "source": "disposable_post_install",
+  "candidate_sha256": "597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef",
   "functions": [
     {
       "acl": "{postgres=X/postgres}",
@@ -45,7 +46,7 @@
     },
     {
       "acl": "{postgres=X/postgres}",
-      "md5": "0b7a0b72829ce363ca6d5da2823513a0",
+      "md5": "ff661a26ffa477811a13919d260ebd06",
       "owner": "postgres",
       "signature": "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"
     },
@@ -84,6 +85,18 @@
       "md5": "1e7b2fcf4b7b703fe3d533d01df72eed",
       "owner": "postgres",
       "signature": "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "0b9c8685ede899ef1809b551440db8a9",
+      "owner": "postgres",
+      "signature": "public.rpc_finished_product_purchase_capability_v1()"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "5c7fb9ce8c92bf3d22b70efef5c1ec28",
+      "owner": "postgres",
+      "signature": "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"
     },
     {
       "acl": "{postgres=X/postgres,service_role=X/postgres}",

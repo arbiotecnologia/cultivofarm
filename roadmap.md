@@ -1318,3 +1318,10 @@
 - [x] Reconciliar PRE/POST em camadas: entrada com 9 funções sem presumir confirm/send; downstream com 2 funções e pins explícitos de ausência; 16/16 com dependências simuladamente ausentes e recompostas.
 - [x] Preservar B3/B4 e fila anterior; nenhuma escrita hospedada, publicação, NF, cobrança ou envio.
 - [ ] Instalar/homologar as dependências canônicas de confirmação/envio antes da camada downstream; revisão independente LIVE e provas JWT/RLS/Storage/PostgREST/browser continuam pendentes.
+
+## 07/11 18:52 — UI local de compra de produto acabado para revenda
+- [x] Reproduzir as lacunas de Estoque/Nova Entrada e mapear catálogo, apresentações, reserva e Cockpit sem alterar o envase biológico.
+- [x] Preparar entrada integrada por apresentação existente, lote/validade do fornecedor e embalagens inteiras, com capability/gate servidor fail-closed e idempotência; writer privado continua sem EXECUTE de cliente.
+- [x] Corrigir exibição dimensional kg/g e L/ml, listagem, reservas, resumo Cockpit e preview de entrega sem cadastro paralelo nem peso apresentado como volume.
+- [x] Testar unidade, persistência, autorização, duplicação e regressões: 58/58 físico, 51/51 nulidade, 16/16 camadas, 6/6 legado SQL, 39/39 revisão, 71/71 UI focal, 214/214 Cockpit/estoque e 22/22 entrega; build OK, sem SQL hospedado/publicação/NF/recebível/cobrança/envio.
+- [ ] Manter candidato inativo até revisão independente e implantação/homologação coordenadas de todo o pacote; JWT/RLS/Storage/PostgREST/browser autenticado continuam pendentes.

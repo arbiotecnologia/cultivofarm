@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveDestinatarioFromOS, emptyDestinatario, type DestinatarioSnapshot } from "@/lib/entregaDestinatario";
 import { calcularVolumePreviewMl } from "@/lib/entregas/volumeEstoque";
 import { labelResponsavel } from "@/lib/entregas/modalidade";
+import { addStockContent, formatStockContentTotals, formatStockValue, isFinishedProductStock, requiresWholePacks, stockContentTotal, type StockContentTotals } from "@/lib/estoque/stockUnits";
 
 export type LinhaEntrega = {
   estoque_produto_id: string;
@@ -331,16 +332,27 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
     (acc, l) => acc + (Number(l.quantidade) || 0),
     0,
   );
-  // Preview do volume a partir do item de estoque (volume_total / quantidade).
-  // Não usa o último envase do lote: um lote pode ter várias embalagens.
+  // Litros legados e snapshots de revenda ficam separados; peso nunca vira volume.
   const previewVolume = calcularVolumePreviewMl(
-    itensSelecionados.map((l) => ({ item: l.item, quantidade: l.quantidade })),
+    itensSelecionados.filter((l) => !isFinishedProductStock(l.item)).map((l) => ({ item: l.item, quantidade: l.quantidade })),
   );
+  const purchaseTotals = itensSelecionados.reduce<StockContentTotals>((totals, line) => {
+    if (isFinishedProductStock(line.item)) addStockContent(totals, line.item, Number(line.quantidade));
+    return totals;
+  }, {});
+  const purchasePreview = formatStockContentTotals(purchaseTotals);
+  const previewText = [
+    previewVolume.volumeMl > 0 ? formatStockValue(previewVolume.volumeMl / 1000, "l") : null,
+    purchasePreview !== "—" ? purchasePreview : null,
+  ].filter(Boolean).join(" · ");
+  const previewIndeterminado = previewVolume.indeterminado || itensSelecionados.some((line) =>
+    isFinishedProductStock(line.item) && stockContentTotal(line.item, Number(line.quantidade)) === null);
 
   const linhasComErro = itensSelecionados.filter((l) => {
     const q = Number(l.quantidade) || 0;
     if (q <= 0) return true;
     if (q > l.item._saldo) return true;
+    if (requiresWholePacks(l.item) && !Number.isInteger(q)) return true;
     if (l.item.status === "reservado" && q > l.item._saldo_reserva) return true;
     return false;
   });
@@ -671,11 +683,11 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
                 <div className="flex items-center gap-3">
                   <span className="text-muted-foreground">Total:</span>
                   <span className="font-mono-data font-bold text-primary">{totalUnidades} un</span>
-                  {previewVolume.volumeMl > 0 && (
-                    <span className="font-mono-data text-muted-foreground">≈ {(previewVolume.volumeMl / 1000).toFixed(2)} L</span>
+                  {previewText && (
+                    <span className="font-mono-data text-muted-foreground">≈ {previewText}</span>
                   )}
-                  {previewVolume.indeterminado && (
-                    <span className="text-muted-foreground">Volume será calculado no registro</span>
+                  {previewIndeterminado && (
+                    <span className="text-muted-foreground">Conteúdo será calculado no registro</span>
                   )}
                 </div>
                 {linhasComErro.length > 0 && (
@@ -953,14 +965,14 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
             <div className="text-3xl font-black text-primary font-mono-data">
               {totalUnidades} <span className="text-base font-normal text-muted-foreground">un</span>
             </div>
-            {previewVolume.volumeMl > 0 && (
+            {previewText && (
               <div className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1.5">
-                <Truck className="h-3 w-3" /> ≈ {(previewVolume.volumeMl / 1000).toFixed(2)} L
+                <Truck className="h-3 w-3" /> ≈ {previewText}
               </div>
             )}
-            {previewVolume.indeterminado && (
+            {previewIndeterminado && (
               <div className="text-xs text-muted-foreground mt-1">
-                O volume total será calculado no registro da entrega.
+                O conteúdo total será calculado no registro da entrega.
               </div>
             )}
             <div className="text-[11px] text-muted-foreground mt-1">

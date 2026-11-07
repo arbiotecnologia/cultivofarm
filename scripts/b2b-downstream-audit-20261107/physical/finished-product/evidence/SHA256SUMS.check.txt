@@ -51,3 +51,15 @@ test_legacy_candidate.py: OK
 test_null_contract.py: OK
 test_pg.py: OK
 validate_review.py: OK
+review-093712ec/ui-resale/README.md: OK
+review-093712ec/ui-resale/attempts/post-recapture.stdout.txt: OK
+review-093712ec/ui-resale/attempts/public-wrapper-first.stdout.txt: OK
+review-093712ec/ui-resale/attempts/stale-post-pin.stdout.txt: OK
+review-093712ec/ui-resale/delivery-vitest.exitcode: OK
+review-093712ec/ui-resale/delivery-vitest.stdout.txt: OK
+review-093712ec/ui-resale/focused-vitest.exitcode: OK
+review-093712ec/ui-resale/focused-vitest.stdout.txt: OK
+review-093712ec/ui-resale/frontend-SHA256SUMS: OK
+review-093712ec/ui-resale/legacy-vitest.exitcode: OK
+review-093712ec/ui-resale/legacy-vitest.stdout.txt: OK
+review-093712ec/ui-resale/results.json: OK

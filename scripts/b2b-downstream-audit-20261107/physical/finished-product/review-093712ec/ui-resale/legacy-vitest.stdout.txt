@@ -1,0 +1,44 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/estoque/estoque-fase28b-auditoria.test.ts (15 tests) 31ms
+stderr | src/test/cockpit-laboratorio/consultaOnly.test.tsx > consulta Cockpit efetiva — Auth/transporte simulados > executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/cockpit-laboratorio/cacheScope.test.tsx > Cockpit scopes: real QueryClient, simulated Auth > real Cockpit executes only list RPC and purges legacy caches; never mounts operational children
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/cockpit-laboratorio/cacheScope.test.tsx (18 tests) 456ms
+   ✓ Cockpit scopes: real QueryClient, simulated Auth > real Cockpit executes only list RPC and purges legacy caches; never mounts operational children  314ms
+ ✓ src/test/cockpit-laboratorio/consultaOnly.test.tsx (18 tests) 1639ms
+   ✓ consulta Cockpit efetiva — Auth/transporte simulados > executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts  531ms
+ ✓ src/test/estoque/stock-caller-compatibility.test.ts (12 tests) 26ms
+ ✓ src/test/estoque/motor-estoque-fase28c.test.ts (39 tests) 18ms
+ ✓ src/test/estoque/estoque-contratos-fase28c.test.ts (12 tests) 24ms
+ ✓ src/test/estoque/stock-p1-containment.test.ts (9 tests) 12ms
+ ✓ src/test/estoque/reserva-calc-fase28c.test.ts (17 tests) 11ms
+stderr | src/test/cockpit-laboratorio/refinamentos.test.tsx > refinamentos do Cockpit > mostra o pré-requisito de lote no CQ bloqueado
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/cockpit-laboratorio/refinamentos.test.tsx (7 tests) 523ms
+ ✓ src/test/estoque/catalogo-volumes-fase28c.test.ts (12 tests) 34ms
+ ✓ src/test/cockpit-laboratorio/auditoria.test.ts (9 tests) 45ms
+ ✓ src/test/estoque/stock-motor-hardening.test.ts (5 tests) 8ms
+ ✓ src/test/estoque/stock-numeric-hardening.test.ts (6 tests) 8ms
+ ✓ src/test/estoque/stock-context-hardening.test.ts (5 tests) 10ms
+ ✓ src/test/estoque/stock-batch-hardening.test.ts (5 tests) 9ms
+ ✓ src/test/cockpit/stage-canonico.test.ts (19 tests) 6ms
+ ✓ src/test/cockpit-laboratorio/tenantFencePostgres.test.ts (1 test) 3360ms
+   ✓ Cockpit candidate — isolated PostgreSQL, simulated Auth and reduced schema > filters tenants before counting and denies unsupported roles and revoked links  3358ms
+ ✓ src/test/cockpit-laboratorio/liveSourcePostgres.test.ts (1 test) 3280ms
+   ✓ Cockpit live-source candidate — disposable PostgreSQL, simulated Auth/schema > executes actual candidate bodies without granting reader access  3277ms
+ ✓ src/test/cockpit/readerStatus.test.ts (4 tests) 7ms
+
+ Test Files  19 passed (19)
+      Tests  214 passed (214)
+   Start at  19:01:19
+   Duration  23.85s (transform 1.48s, setup 2.90s, collect 7.07s, tests 9.51s, environment 17.65s, prepare 2.59s)
+

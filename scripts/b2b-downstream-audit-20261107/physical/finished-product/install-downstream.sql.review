@@ -92,9 +92,21 @@ DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_delivery_
 END$$;
 
 DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)');BEGIN
- IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0b7a0b72829ce363ca6d5da2823513a0' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'ff661a26ffa477811a13919d260ebd06' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
  IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
  IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_finished_product_purchase_capability_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0b9c8685ede899ef1809b551440db8a9' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.rpc_finished_product_purchase_capability_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.rpc_finished_product_purchase_capability_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.rpc_finished_product_purchase_capability_v1()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '5c7fb9ce8c92bf3d22b70efef5c1ec28' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
 END$$;
 
 DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;

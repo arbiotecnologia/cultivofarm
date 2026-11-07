@@ -6,7 +6,7 @@
 
 Químicos e fertilizantes ARBio entram por **COMPRA DE PRODUTO ACABADO PARA REVENDA**. O fluxo positivo deste recorte é:
 
-`catálogo por empresa → compra/entrada privada de estoque → lote sem fabricação → reserva → expedição/em rota → comprovante fictício → entrega`, com cancelamento, replays e rollback.
+`catálogo por empresa → UI condicionada à capability → wrapper público → compra/entrada privada de estoque → lote sem fabricação → reserva → expedição/em rota → comprovante fictício → entrega`, com cancelamento, replays e rollback.
 
 Não há bioreator, `programacao_producao`, CQ ou envase nesses caminhos. Os candidatos anteriores ficaram preservados em `history/pre-purchase-decision/` e `history/pre-live-entry-guards/`.
 
@@ -21,7 +21,13 @@ Não há bioreator, `programacao_producao`, CQ ou envase nesses caminhos. Os can
 - usa tickets específicos no mecanismo `platform_private.authz_tickets` já existente e o contexto transacional canônico do motor de estoque;
 - cria `lotes` e `estoque_produto` com `programacao_id/volume_produzido/envase/CQ` ausentes, origem `compra_produto_acabado_revenda` e **`quantidade_reservada=NULL`**;
 - registra fornecedor, lote do fornecedor e referência de compra no lote e no ledger, sem preço, contas a pagar, documento fiscal ou cobrança;
-- exige exatamente um movimento `entrada`; replay retorna os mesmos IDs e divergência de quantidade, fornecedor ou lote do fornecedor conflita.
+- exige exatamente um movimento `entrada`; replay retorna os mesmos IDs, snapshots dimensionais e versão da apresentação, e divergência de quantidade, fornecedor ou lote do fornecedor conflita.
+
+### API candidata e interface fail-closed
+
+`public.rpc_finished_product_purchase_capability_v1()` devolve somente o contrato `FINISHED_PRODUCT_PURCHASE_V1` e disponibilidade derivada de ator/gate. `public.rpc_finished_product_purchase_entry_v1(...)` apenas delega ao writer privado, que repete toda autorização. Somente esses dois wrappers recebem EXECUTE candidato para `authenticated`; `anon`, `service_role`, `PUBLIC` e o writer privado permanecem sem EXECUTE de cliente. A capability não é autoridade nem habilita o gate.
+
+A aba **Compra para revenda** usa o catálogo e as apresentações existentes, sem criar cadastro paralelo nem enviar tenant/conteúdo. Erro, resposta ausente/incompatível ou gate desligado não mostra a aba nem monta o formulário. A entrada envia produto, apresentação, lote do fornecedor, validade, fornecedor, referência, quantidade inteira e chave idempotente; uma tentativa ambígua só pode repetir o mesmo payload. Listagem, reservas, resumo do Cockpit e preview de entrega separam kg/g/L/ml; a disponibilidade de produção continua restrita a lotes com programação.
 
 ## Guards LIVE informados e composição
 
@@ -30,7 +36,7 @@ Os fatos READONLY relatados pelo auditor estão em `live-entry-guards-20261107T1
 - `public.validate_estoque_entrada()`: MD5 relatado `9e24938a8d716a02ba023c9fb7ce24e9`, igual à captura descartável. O candidato preserva o retorno legado de reservas, mas exige contexto canônico de reserva quando a origem é compra. Uma entrada de compra disfarçada com `quantidade_reservada` preenchida é negada; a entrada agregada de compra exige ticket e snapshot, sem envase. Para itens sem origem de compra, a exigência original de envase permanece.
 - `platform_private.estoque_produto_catalog_tenant_guard()`: MD5 relatado `874c9ca8b5b4e307cf995a0197f98efc`, igual à captura descartável após remover divergência de indentação. O corpo é dependência **imutável**, não é regravado pelo candidato. O trigger `a000_estoque_produto_catalog_tenant_guard` é pinado por definição, estado e tipo; produto e microrganismo de outro tenant são negados pelo tenant derivado do lote.
 
-Os guards reais de lote, item biológico, entrada, tenant, imagem de estoque e ledger permanecem habilitados nos writers testados. A sonda isolada da função de entrada é identificada separadamente e não substitui a prova da composição. Nenhum grant novo foi adicionado. `catalog_foundation.py` apenas reconcilia a captura física antiga com o schema de catálogo atual; é costura sintética local, não instalação LIVE nem writer Owned.
+Os guards reais de lote, item biológico, entrada, tenant, imagem de estoque e ledger permanecem habilitados nos writers testados. A sonda isolada da função de entrada é identificada separadamente e não substitui a prova da composição. Os únicos grants novos são os dois EXECUTE `authenticated` dos wrappers documentados; nenhum writer privado ou operação posterior foi aberto. `catalog_foundation.py` apenas reconcilia a captura física antiga com o schema de catálogo atual; é costura sintética local, não instalação LIVE nem writer Owned.
 
 ## Unidades e embalagem
 
@@ -47,23 +53,26 @@ Peso é conteúdo para frete/logística e nunca é convertido em volume. A parci
 
 `install.sql.review` pina corpo, owner e ACL de **11 funções alteradas**, mais **1 função e 1 trigger imutáveis de tenant**, owner/ACL de 10 relações, colunas e constraints das dependências de catálogo, além da ausência prévia dos objetos novos. O candidato altera somente as 11 funções já inventariadas; o guard de tenant não é regravado.
 
-A revisão 093712ec separou a instalação sem remover pins: `install-foundation.sql.review` contém as **9 funções de entrada/estoque** e não menciona nem pressupõe confirmação/envio; `install-downstream.sql.review` contém somente as **2 funções downstream**, exige seus corpos originais e o POST exato da entrada. Se uma dependência está ausente, o PRE downstream falha com `FINISHED_PRE_DEPENDENCY_MISSING`; o pacote completo continua fail-closed no primeiro pin. Os artefatos `candidate-{foundation,downstream}` e `postflight-{foundation,downstream}` acompanham as camadas.
+A revisão 093712ec separou a instalação sem remover pins: `install-foundation.sql.review` contém as **11 funções de entrada/estoque/API** e não menciona nem pressupõe confirmação/envio; `install-downstream.sql.review` contém somente as **2 funções downstream**, exige seus corpos originais e o POST exato da entrada. Se uma dependência está ausente, o PRE downstream falha com `FINISHED_PRE_DEPENDENCY_MISSING`; o pacote completo continua fail-closed no primeiro pin. Os artefatos `candidate-{foundation,downstream}` e `postflight-{foundation,downstream}` acompanham as camadas.
 
-`postflight.sql.review` contém hashes normalizados medidos das 11 funções alteradas, das 3 funções privadas novas e da dependência imutável, além do trigger e do gate fechado. `rollback.sql.review` é deny-only: desliga a operação e revoga writers sem apagar dados, colunas, corpos ou histórico. O POST de instalação não é reaplicado após o rollback porque a revogação intencional muda o ACL.
+`postflight.sql.review` contém hashes normalizados medidos das 11 funções alteradas, das 3 funções privadas e 2 funções públicas novas e da dependência imutável, além do trigger e do gate fechado. A captura POST é reutilizada somente quando seu `candidate_sha256` coincide com o candidato atual; evidência de corpo anterior não pode virar pin da versão nova. `rollback.sql.review` é deny-only: desliga a operação e revoga writers sem apagar dados, colunas, corpos ou histórico. O POST de instalação não é reaplicado após o rollback porque a revogação intencional muda o ACL.
 
 ## Resultados atuais
 
 | Escopo | Resultado | Evidência |
 |---|---:|---|
 | Reprodução original: peso→ml, lineage de fabricação e B2B fechado | 17/17, exit 0 | `evidence/before.json`, stdout e exitcode |
-| Compra, API/guards, kg/g/L/ml, whole-pack, atalho de reserva, tenant produto/micro, downstream, replays, concorrência, revogação e rollback | **49/49, exit 0** | `evidence/after.json`, stdout e exitcode |
+| Capability, wrapper, compra, guards, kg/g/L/ml, whole-pack, tenant, downstream, replay com snapshots, concorrência, revogação e rollback | **58/58, exit 0** | `evidence/after.json`, stdout e exitcode |
 | Legado biológico com candidato instalado e gate desligado | 6/6, exit 0 | `evidence/legacy-candidate.json`, stdout e exitcode |
 | Nulidade antes da correção, gate ligado/desligado e seis callers | **27/51, exit 1 — 24 falhas funcionais** | `review-093712ec/null-layer/before/` |
 | Nulidade depois: CHECK/helpers com nulidade explícita, `IS TRUE`/`IS NOT TRUE` | **51/51, exit 0** | `evidence/null-contract.json`, stdout e exitcode |
 | Camadas com confirm/send ausentes, entrada positiva, recomposição exata e downstream | **16/16, exit 0** | `evidence/layers.json`, stdout e exitcode |
-| Revisão repetível dos artefatos, pins, grants, nulidade, camadas e resultados | **35/35, exit 0** | `evidence/review.json`, stdout e exitcode |
+| Revisão repetível dos artefatos, pins, grants, nulidade, camadas e resultados | **39/39, exit 0** | `evidence/review.json`, stdout e exitcode |
+| UI: unidades, capability, idempotência, resumo e montagem condicional | **71/71, exit 0** | `review-093712ec/ui-resale/focused-vitest.stdout.txt` |
+| Regressões existentes de Cockpit/estoque | **214/214, exit 0** | `review-093712ec/ui-resale/legacy-vitest.stdout.txt` |
+| Regressões do diálogo/contratos de entrega | **22/22, exit 0** | `review-093712ec/ui-resale/delivery-vitest.stdout.txt` |
 
-Candidato SHA256: `962b6cdcf64138b28478a438e51d2a0b67f5b1777d0475e720aba52e905dd9fd`.
+Candidato SHA256: `597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef`. Prévia local: **build OK**.
 A falha inicial de harness por índice único e a falha de recomposição do ACL estão preservadas em `review-093712ec/null-layer/`; não foram apagadas nem contadas como achados funcionais.
 A bateria anterior 37/37 está preservada em `history/pre-live-entry-guards/` e não é somada à atual.
 
@@ -71,7 +80,7 @@ A bateria anterior 37/37 está preservada em `history/pre-live-entry-guards/` e 
 
 1. **Dependências downstream ausentes em LIVE, conforme relato do auditor:** `delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)` e `delivery_send_apply_v1(uuid,timestamptz,text)` precisam ser instaladas por seus pacotes canônicos antes da camada downstream. Os demais seis corpos/owners/ACLs foram relatados como coincidentes; todos os pins permanecem. Nenhuma ausência foi tratada como permissão para criar atalho ou remover verificação.
 2. **Conferência LIVE independente pendente:** os MD5 dos dois guards foram relatados pelo auditor e reproduzidos localmente; owners/ACLs/trigger/relações, os demais corpos e o schema de catálogo ainda exigem conferência independente. A costura local não prova paridade integral com produção.
-3. **Sem exposição ao aplicativo:** a entrada privada não tem grant nem UI/caller liberado. Os positivos usam chamada interna privilegiada e claims sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser.
+3. **Candidato ainda não exposto em produção:** wrappers e UI existem apenas neste pacote local, com gate padrão desligado. Os positivos usam claims e Auth sintéticos no PG descartável; isso não prova JWT, RLS, Storage, PostgREST ou browser autenticado.
 4. **Dados reais não homologados:** produtos, embalagens, fornecedores, lotes, referências de compra e comprovantes são fictícios. A composição real ARBio e a homologação autenticada ficam com o auditor.
 5. **B2B/OnFarm permanece fechado** com `DELIVERY_SCOPE_DENIED`. O fluxo positivo usa OS manual/agronômica fictícia e não certifica pedido B2B real.
 6. Nenhum efeito fiscal, financeiro, contábil, SEFAZ ou de comunicação foi liberado. Calendário Paracatu-MG, NF e recebíveis continuam fora deste pacote.

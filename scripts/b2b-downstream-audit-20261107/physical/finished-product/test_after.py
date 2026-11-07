@@ -14,6 +14,8 @@ NEW_FUNCTIONS = [
     "platform_private.finished_product_stock_valid_v1(public.estoque_produto)",
     "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
     "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)",
+    "public.rpc_finished_product_purchase_capability_v1()",
+    "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)",
 ]
 
 
@@ -56,6 +58,14 @@ def purchase(item, quantity, key, internal=True, actor=None, supplier_lot=None, 
     return prefix + call
 
 
+def public_purchase(item, quantity, key, actor=None, supplier_lot=None):
+    actor = actor or B.T.U
+    supplier_lot = supplier_lot or f"LOTE-{key}"
+    return B.T.actor(actor) + f"SET request.jwt.claims='{{\"sub\":\"{actor}\",\"iat\":1}}';" + f"""SELECT public.rpc_finished_product_purchase_entry_v1(
+      '{item['product']}','{item['packaging']}','{supplier_lot}',{quantity},
+      'COMPRA-{key}','FORNECEDOR FICTICIO {key}','{key}','2028-12-31');"""
+
+
 def finished(group, unit, per_unit, quantity=2):
     item = catalog_item(group, unit, per_unit)
     key = f"purchase-entry-{item['sequence']}"
@@ -80,25 +90,53 @@ def main():
         loaded = B.run_raw((HERE / "install.sql.review").read_text())
         if loaded.returncode != 0:
             raise AssertionError("candidate PRE/install failed\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
-        B.ok("candidato instalado com todos os PRE pins e sem novos grants")
+        B.ok("candidato instalado com todos os PRE pins e grants somente na capability/wrapper públicos")
         baseline = json.loads((HERE / "baseline.json").read_text())
         signatures = [x["signature"] for x in baseline["functions"]] + [x["signature"] for x in baseline["dependency_functions"]] + NEW_FUNCTIONS
         values = ",".join("('" + x.replace("'", "''") + "')" for x in signatures)
         post_functions = json.loads(B.last(f"""SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',r.rolname,'acl',coalesce(p.proacl::text,'')) ORDER BY v.signature),'[]'::jsonb) FROM (VALUES {values}) v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature) JOIN pg_roles r ON r.oid=p.proowner;"""))
         assert len(post_functions) == len(signatures)
-        (RESULTS / "post-install-functions.json").write_text(json.dumps({"source": "disposable_post_install", "functions": post_functions}, ensure_ascii=False, indent=2) + "\n")
+        import hashlib
+        candidate_sha256 = hashlib.sha256((HERE / "candidate.sql.review").read_bytes()).hexdigest()
+        (RESULTS / "post-install-functions.json").write_text(json.dumps({"source": "disposable_post_install", "candidate_sha256": candidate_sha256, "functions": post_functions}, ensure_ascii=False, indent=2) + "\n")
         assert B.last("SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton;") == "f"
         B.ok("instalação permanece operacionalmente desligada")
 
         closed = catalog_item("quimico", "kg", 25)
         B.reject("aplicativo não tem EXECUTE na entrada privada de compra", purchase(closed, 2, "purchase-acl-closed", internal=False), "42501", "permission denied for function finished_product_purchase_entry_v1")
+        B.reject("anon não consulta a capability de compra", "SET ROLE anon;SELECT public.rpc_finished_product_purchase_capability_v1();", "42501", "permission denied for function rpc_finished_product_purchase_capability_v1")
+        closed_capability = json.loads(B.last(B.T.actor() + "SELECT public.rpc_finished_product_purchase_capability_v1();"))
+        assert closed_capability == {"contract": "FINISHED_PRODUCT_PURCHASE_V1", "available": False}
+        B.ok("capability confirma contrato fechado enquanto o gate estiver desligado", closed_capability)
+        B.reject("wrapper público também permanece fechado pelo gate", public_purchase(closed, 2, "purchase-public-gate-closed"), "42501", "FINISHED_PRODUCT_GATE_CLOSED")
         B.reject("gate fechado nega compra/entrada interna", purchase(closed, 2, "purchase-gate-closed"), "42501", "FINISHED_PRODUCT_GATE_CLOSED")
         B.reject("aplicativo não pode forjar ticket de compra", B.T.actor() + "INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'finished_product_purchase_entry_v1',gen_random_uuid());", "42501", "permission denied for table authz_tickets")
         assert B.last("""SELECT NOT has_function_privilege('anon','platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE')
           AND NOT has_function_privilege('authenticated','platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE')
           AND NOT has_function_privilege('service_role','platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE');""") == "t"
         B.ok("API própria permanece sem EXECUTE para anon/authenticated/service_role")
+        assert B.last("""SELECT has_function_privilege('authenticated','public.rpc_finished_product_purchase_capability_v1()','EXECUTE')
+          AND has_function_privilege('authenticated','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE')
+          AND NOT has_function_privilege('anon','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE')
+          AND NOT has_function_privilege('service_role','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE');""") == "t"
+        B.ok("somente capability e wrapper públicos recebem EXECUTE authenticated; anon/service_role ficam fechados")
         B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=true WHERE singleton;")
+        open_capability = json.loads(B.last(B.T.actor() + "SELECT public.rpc_finished_product_purchase_capability_v1();"))
+        assert open_capability == {"contract": "FINISHED_PRODUCT_PURCHASE_V1", "available": True}
+        B.ok("capability positiva exige ator autorizado e gate ligado", open_capability)
+
+        api_item = catalog_item("quimico", "g", 500)
+        api_first = json.loads(B.last(public_purchase(api_item, 2, "purchase-public-api")))
+        assert api_first["ok"] is True and api_first["replay"] is False
+        assert api_first["unidade_conteudo"] == "g" and api_first["conteudo_por_unidade"] == 500 and api_first["quantidade_conteudo"] == 1000
+        assert B.last(f"SELECT quantidade=2 AND volume_total IS NULL AND quantidade_conteudo=1000 AND unidade_conteudo='g' FROM public.estoque_produto WHERE id='{api_first['estoque_produto_id']}';") == "t"
+        B.ok("wrapper público grava 2 UN de 500 g como 1.000 g, sem tenant/conteúdo do cliente", api_first)
+        api_replay = json.loads(B.last(public_purchase(api_item, 2, "purchase-public-api")))
+        assert api_replay["replay"] is True and api_replay["lote_id"] == api_first["lote_id"]
+        assert api_replay["unidade_conteudo"] == "g" and api_replay["quantidade_conteudo"] == 1000
+        assert B.last("SELECT count(*) FROM public.estoque_movimentacoes WHERE idempotency_key='purchase-public-api';") == "1"
+        B.ok("replay pelo wrapper devolve snapshot completo e não duplica lote/estoque/ledger", api_replay)
+        B.reject("wrapper público não permite produto do tenant de outro ator", public_purchase(api_item, 2, "purchase-public-cross-tenant", actor=B.T.V), "42501", "FINISHED_PRODUCT_CATALOG_DENIED")
 
         invalid_lot = catalog_item("quimico", "kg", 25)
         B.reject("lote do fornecedor é obrigatório na API de compra", purchase(invalid_lot, 2, "purchase-empty-supplier-lot", supplier_lot=" "), "22023", "FINISHED_PRODUCT_PURCHASE_PARAMS_INVALID")
@@ -143,6 +181,8 @@ def main():
 
         replayed = json.loads(B.last(purchase(first_item, 2, first_item["purchase_key"])))
         assert replayed["replay"] is True and replayed["estoque_produto_id"] == first_item["stock"]
+        assert replayed["origem_estoque"] == "compra_produto_acabado_revenda" and replayed["unidade_conteudo"] == first_item["unit_lower"]
+        assert replayed["conteudo_por_unidade"] == first_item["per_unit"] and replayed["quantidade_conteudo"] == first_item["per_unit"] * 2
         assert B.last(f"SELECT (SELECT count(*) FROM public.estoque_produto WHERE id='{first_item['stock']}')=1 AND (SELECT count(*) FROM public.estoque_movimentacoes WHERE idempotency_key='{first_item['purchase_key']}')=1;") == "t"
         B.ok("replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada")
         B.reject("mesma chave de compra com quantidade diversa conflita", purchase(first_item, 3, first_item["purchase_key"]), "23505", "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT")
@@ -237,7 +277,8 @@ def main():
         rolled_back = B.run_raw((HERE / "rollback.sql.review").read_text())
         assert rolled_back.returncode == 0, rolled_back.stderr
         B.ok("rollback deny-only executa sem restaurar grants ou apagar objetos")
-        B.reject("compra após rollback permanece fechada", purchase(first_item, 2, "purchase-after-rollback"), "42501", "FINISHED_PRODUCT_GATE_CLOSED")
+        B.reject("compra interna após rollback permanece fechada", purchase(first_item, 2, "purchase-after-rollback"), "42501", "FINISHED_PRODUCT_GATE_CLOSED")
+        B.reject("wrapper público após rollback perde EXECUTE sem reabrir writer", public_purchase(first_item, 2, "purchase-public-after-rollback"), "42501", "permission denied for function rpc_finished_product_purchase_entry_v1")
         assert B.last("SELECT jsonb_build_array((SELECT count(*) FROM public.lotes),(SELECT count(*) FROM public.estoque_produto),(SELECT count(*) FROM public.entregas),(SELECT count(*) FROM public.estoque_movimentacoes))::text;") == historical_counts
         B.ok("rollback preserva compras, estoque, entregas e histórico integralmente")
         # O POST de instalação não é reaplicado após o rollback: a revogação intencional muda o ACL.

@@ -2,12 +2,20 @@ CHECKPOINT initdb local
 CHECKPOINT sql_calls=1 elapsed=2.0s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
-PASS candidato instalado com todos os PRE pins e sem novos grants
+PASS candidato instalado com todos os PRE pins e grants somente na capability/wrapper públicos
 PASS instalação permanece operacionalmente desligada
 PASS aplicativo não tem EXECUTE na entrada privada de compra
+PASS anon não consulta a capability de compra
+PASS capability confirma contrato fechado enquanto o gate estiver desligado
+PASS wrapper público também permanece fechado pelo gate
 PASS gate fechado nega compra/entrada interna
 PASS aplicativo não pode forjar ticket de compra
 PASS API própria permanece sem EXECUTE para anon/authenticated/service_role
+PASS somente capability e wrapper públicos recebem EXECUTE authenticated; anon/service_role ficam fechados
+PASS capability positiva exige ator autorizado e gate ligado
+PASS wrapper público grava 2 UN de 500 g como 1.000 g, sem tenant/conteúdo do cliente
+PASS replay pelo wrapper devolve snapshot completo e não duplica lote/estoque/ledger
+PASS wrapper público não permite produto do tenant de outro ator
 PASS lote do fornecedor é obrigatório na API de compra
 PASS produto de outro tenant é negado antes de criar lote/estoque
 PASS compra de 0,5 embalagem é negada
@@ -19,9 +27,9 @@ PASS fertilizante g: compra → reserva → baixa; 2 UN = 50000 g; volume_ml=NUL
 PASS fertilizante g: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
 PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
+CHECKPOINT sql_calls=100 elapsed=12.0s
 PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
-CHECKPOINT sql_calls=100 elapsed=13.9s
 PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
 PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
@@ -48,6 +56,7 @@ PASS revogação durante espera da compra é revalidada antes de criar lote/esto
 PASS duas compras concorrentes com a mesma chave geram uma única entrada e replay
 PASS POST confirma gate fechado após a bateria
 PASS rollback deny-only executa sem restaurar grants ou apagar objetos
-PASS compra após rollback permanece fechada
+PASS compra interna após rollback permanece fechada
+PASS wrapper público após rollback perde EXECUTE sem reabrir writer
 PASS rollback preserva compras, estoque, entregas e histórico integralmente
-RESULT 49 / 49 exit 0
+RESULT 58 / 58 exit 0

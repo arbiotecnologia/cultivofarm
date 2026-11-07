@@ -46,7 +46,7 @@ def main():
             B.fail("camada de entrada não cria nem remove pins das dependências ausentes", "dependência criada")
         loaded = B.run_raw((HERE / "postflight-foundation.sql.review").read_text())
         if loaded.returncode == 0:
-            B.ok("POST da entrada confirma seus nove corpos, novos helpers e gate fechado")
+            B.ok("POST da entrada confirma seus onze corpos, novos helpers e gate fechado")
         else:
             raise AssertionError("foundation post failed\n" + loaded.stderr[-6000:])
         B.reject("camada downstream continua bloqueada enquanto a dependência não existe",

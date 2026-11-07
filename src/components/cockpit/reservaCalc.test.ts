@@ -4,6 +4,7 @@ import {
   computeTotals,
   findInvalidIds,
   clampQty,
+  computeContentTotals,
   type EstoqueItemLike,
 } from "./reservaCalc";
 
@@ -174,6 +175,27 @@ describe("computeTotals — edge cases", () => {
     const { totalUn, totalL } = computeTotals([small], { b: "10" });
     expect(totalUn).toBe(10);
     expect(totalL).toBe(10);
+  });
+});
+
+describe("revenda por embalagem inteira", () => {
+  const solid: EstoqueItemLike = {
+    id: "solid", quantidade: 2, volume_total: null, origem_estoque: "compra_produto_acabado_revenda",
+    unidade_comercial: "unidade", conteudo_por_unidade: 500, unidade_conteudo: "g", quantidade_conteudo: 1000,
+  };
+  it("formata 2× 500 g sem apresentar peso como litros", () => {
+    expect(fmtEmb(solid)).toBe("2× 500 g");
+  });
+  it("recusa meia embalagem e aceita uma inteira", () => {
+    expect(findInvalidIds([solid], { solid: "0.5" })).toEqual(["solid"]);
+    expect(findInvalidIds([solid], { solid: "1" })).toEqual([]);
+    expect(clampQty("1.5", 2, true)).toBe("1");
+  });
+  it("totais preservam g e mL separados", () => {
+    const liquid = { ...solid, id: "ml", unidade_conteudo: "ml", volume_total: 1 };
+    const totals = computeContentTotals([solid, liquid], { solid: 2, ml: 1 });
+    expect(totals.totalUn).toBe(3);
+    expect(totals.label).toBe("1.000 g · 500 mL");
   });
 });
 

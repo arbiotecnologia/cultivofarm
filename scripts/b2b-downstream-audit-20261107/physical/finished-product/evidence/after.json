@@ -11,7 +11,7 @@
       "status": "PASS"
     },
     {
-      "name": "candidato instalado com todos os PRE pins e sem novos grants",
+      "name": "candidato instalado com todos os PRE pins e grants somente na capability/wrapper públicos",
       "status": "PASS"
     },
     {
@@ -22,6 +22,24 @@
       "name": "aplicativo não tem EXECUTE na entrada privada de compra",
       "status": "PASS",
       "detail": "permission denied for function finished_product_purchase_entry_v1"
+    },
+    {
+      "name": "anon não consulta a capability de compra",
+      "status": "PASS",
+      "detail": "permission denied for function rpc_finished_product_purchase_capability_v1"
+    },
+    {
+      "name": "capability confirma contrato fechado enquanto o gate estiver desligado",
+      "status": "PASS",
+      "detail": {
+        "contract": "FINISHED_PRODUCT_PURCHASE_V1",
+        "available": false
+      }
+    },
+    {
+      "name": "wrapper público também permanece fechado pelo gate",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
     },
     {
       "name": "gate fechado nega compra/entrada interna",
@@ -36,6 +54,55 @@
     {
       "name": "API própria permanece sem EXECUTE para anon/authenticated/service_role",
       "status": "PASS"
+    },
+    {
+      "name": "somente capability e wrapper públicos recebem EXECUTE authenticated; anon/service_role ficam fechados",
+      "status": "PASS"
+    },
+    {
+      "name": "capability positiva exige ator autorizado e gate ligado",
+      "status": "PASS",
+      "detail": {
+        "contract": "FINISHED_PRODUCT_PURCHASE_V1",
+        "available": true
+      }
+    },
+    {
+      "name": "wrapper público grava 2 UN de 500 g como 1.000 g, sem tenant/conteúdo do cliente",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "79b983ab-c32b-4d33-8607-57f522a6f7a0",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "3e8939f3-3423-44d4-acc4-fdb092e671a0",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "g",
+        "estoque_produto_id": "4ee3c558-7556-4104-91ff-6159cbb6eb65",
+        "quantidade_conteudo": 1000.0,
+        "conteudo_por_unidade": 500.0
+      }
+    },
+    {
+      "name": "replay pelo wrapper devolve snapshot completo e não duplica lote/estoque/ledger",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": true,
+        "lote_id": "79b983ab-c32b-4d33-8607-57f522a6f7a0",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "3e8939f3-3423-44d4-acc4-fdb092e671a0",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "g",
+        "estoque_produto_id": "4ee3c558-7556-4104-91ff-6159cbb6eb65",
+        "quantidade_conteudo": 1000.0,
+        "conteudo_por_unidade": 500.0
+      }
+    },
+    {
+      "name": "wrapper público não permite produto do tenant de outro ator",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_CATALOG_DENIED"
     },
     {
       "name": "lote do fornecedor é obrigatório na API de compra",
@@ -58,12 +125,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "58f96a28-604f-4af6-b792-dd034f725b19",
+        "lote_id": "d4d5e50d-0048-41dc-bb34-c3fdabc4c808",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "f916021b-77ae-4c28-8032-0b44fed4d518",
+        "movimentacao_id": "a5964242-0720-4a06-9d8a-d829dc28578f",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "564ac829-b5db-4e0a-bf91-eca4170c9c49",
+        "estoque_produto_id": "c1b9eae0-6149-4970-80ba-d475f9051d27",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -89,12 +156,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "3503eee3-8729-4b2d-808d-036b30059fcc",
+        "lote_id": "157ea72d-c804-4caf-a6de-c3f3c0b57716",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "b15057e9-a904-47f5-b114-329ac9c4039a",
+        "movimentacao_id": "a9620ea1-fb8d-4a7a-a0bf-4f6037e31bd2",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "64ea0b10-af00-42c5-beb5-4dd8170f2a7c",
+        "estoque_produto_id": "15ddf7ed-c1f8-40c3-8e54-01227c66f6eb",
         "quantidade_conteudo": 50000.0,
         "conteudo_por_unidade": 25000.0
       }
@@ -120,12 +187,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "4220b663-9f84-4e8e-8243-c9daa6c88497",
+        "lote_id": "7f062e46-70aa-48e1-91f4-c9ebcb56ff18",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "edfbe697-afc3-4e6a-8d23-81b2bef68033",
+        "movimentacao_id": "39c288fb-103f-42a8-8c43-0a1f2ca0753d",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "2d8381b4-88be-485e-b0af-4bc59ee3dfeb",
+        "estoque_produto_id": "111ae760-3619-4c15-8e3c-19d97c72cc2f",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -151,12 +218,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "c5a92847-d641-4bb7-9b55-610c4eccfcb1",
+        "lote_id": "b7c239fb-008b-4aab-bc3b-b36e3b6f01fb",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "9ff1d91b-57ab-4f3e-a77f-f6abb3a29c2f",
+        "movimentacao_id": "2633bc8a-8c28-49a7-a045-df0ea5c8ce22",
         "embalagem_versao": 1,
         "unidade_conteudo": "ml",
-        "estoque_produto_id": "8d9e5e1c-c964-42c0-b050-fa3b97b2fcd6",
+        "estoque_produto_id": "235ba871-9950-4ddb-a51a-c702481759a1",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -234,12 +301,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "bb848540-f625-4f3b-910e-b21a430bddb9",
+        "lote_id": "7ba233a0-0e48-40fe-b3e1-4cd4cb14a29b",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "7ad32540-4738-4b41-a247-6f461f5e915d",
+        "movimentacao_id": "889083bd-07f5-425f-a07b-07cffff50f20",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "121a5948-5b08-4af1-b4cd-5aad00c8d74f",
+        "estoque_produto_id": "22e1bf12-ca6f-4e17-82f0-93743e1ca4e4",
         "quantidade_conteudo": 75.0,
         "conteudo_por_unidade": 25.0
       }
@@ -258,12 +325,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "83302359-0aad-4f22-ad76-6947e00c278a",
+        "lote_id": "b6536fa7-e5e9-4b48-aa22-21742ddcdf20",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "96dc4625-58b1-4790-aa6b-df43d8a6056e",
+        "movimentacao_id": "b80e716d-b3e1-4fc8-bf2a-c45aff6cbaa4",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "77ade09a-bb69-4f6d-a70e-31eb963b7256",
+        "estoque_produto_id": "70634a03-df92-4b3b-a41a-f9fc576743a9",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -284,12 +351,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "ec352f0d-c77b-4e2e-b2a6-ee309865ba5f",
+        "lote_id": "67ecb5fe-fbf8-4d6b-8969-9be255bad0c5",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "e5346837-8726-4e90-a8eb-6534352bb4a5",
+        "movimentacao_id": "20c1805a-9bb3-48bd-9f51-ae648245f7dc",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "4fee6b8f-27fc-4a31-9a74-ff35cc492223",
+        "estoque_produto_id": "8adfd3eb-0916-4834-9a41-ba95bf055c9d",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -320,9 +387,14 @@
       "status": "PASS"
     },
     {
-      "name": "compra após rollback permanece fechada",
+      "name": "compra interna após rollback permanece fechada",
       "status": "PASS",
       "detail": "FINISHED_PRODUCT_GATE_CLOSED"
+    },
+    {
+      "name": "wrapper público após rollback perde EXECUTE sem reabrir writer",
+      "status": "PASS",
+      "detail": "permission denied for function rpc_finished_product_purchase_entry_v1"
     },
     {
       "name": "rollback preserva compras, estoque, entregas e histórico integralmente",

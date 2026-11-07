@@ -30,7 +30,10 @@ def main():
     check("candidato e resultados têm o mesmo SHA256", candidate_hash == results["candidate_sha256"] == manifest["files"]["candidate.sql.review"]["sha256"])
     check("status continua inativo e não aprovado", results["status"] == "PASS_LOCAL_INACTIVE_BLOCKED_NOT_APPROVED" and manifest["status"] == "INACTIVE_NOT_APPROVED")
     check("nenhuma operação hosted/publicação foi registrada", not results["hosted"] and not results["publication"] and not manifest["hosted"])
-    check("nenhum grant foi adicionado", not manifest["new_grants"] and not re.search(r"(?im)^\s*GRANT\s", candidate))
+    expected_grants = ["public.rpc_finished_product_purchase_capability_v1():authenticated", "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date):authenticated"]
+    check("somente capability e wrapper públicos têm grant authenticated candidato", manifest["new_grants"] == expected_grants and len(re.findall(r"(?im)^\s*GRANT\s", candidate)) == 2)
+    check("writer privado continua sem grant de aplicativo", "GRANT EXECUTE ON FUNCTION platform_private.finished_product_purchase_entry_v1" not in candidate)
+    check("UI possui capability fail-closed e wrapper delega ao writer privado", "rpc_finished_product_purchase_capability_v1" in candidate and "RETURN platform_private.finished_product_purchase_entry_v1" in candidate)
 
     reported = facts["functions"]
     captured = {x["signature"]: x for x in baseline["functions"] + baseline["dependency_functions"]}
@@ -47,8 +50,8 @@ def main():
     check("entrada biológica sem envase permanece fechada", "ELSIF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id)" in candidate)
     check("lote do fornecedor é obrigatório e entra no fingerprint/snapshots", "p_lote_fornecedor text" in candidate and "'supplier_lot'" in candidate and "'lote_fornecedor'" in candidate)
 
-    check("rollback é deny-only e não destrói histórico", "SET enabled=false" in rollback and not re.search(r"(?im)^\s*(DROP|DELETE|TRUNCATE)\s", rollback))
-    for name, expected in (("before", 17), ("after", 49), ("legacy-candidate", 6)):
+    check("rollback é deny-only e não destrói histórico", "SET enabled=false" in rollback and "public.rpc_finished_product_purchase_entry_v1" in rollback and not re.search(r"(?im)^\s*(DROP|DELETE|TRUNCATE)\s", rollback))
+    for name, expected in (("before", 17), ("after", 58), ("legacy-candidate", 6)):
         data = json.loads((EVIDENCE / f"{name}.json").read_text())
         total = data.get("total", len(data.get("checks", [])))
         passed = data.get("passed", sum(x.get("status") == "PASS" for x in data.get("checks", [])))
@@ -69,6 +72,9 @@ def main():
     downstream_install = (HERE / "install-downstream.sql.review").read_text()
     check("entrada não pressupõe downstream e downstream mantém pins explícitos de ausência", "delivery_confirm_apply_v1" not in foundation_install and "delivery_send_apply_v1" not in foundation_install and downstream_install.count("FINISHED_PRE_DEPENDENCY_MISSING") == 2)
     check("manifesto registra as camadas e o estado LIVE relatado sem certificá-lo", manifest.get("layers", {}).get("downstream", {}).get("requires_foundation_postflight") is True and manifest.get("reported_live_state", {}).get("delivery_confirm_apply_v1") == "ABSENT")
+    post_capture = json.loads((EVIDENCE / "post-install-functions.json").read_text())
+    check("captura POST só é reutilizada com o SHA exato do candidato", post_capture.get("candidate_sha256") == candidate_hash and "post_capture_data.get(\"candidate_sha256\") == candidate_source_sha256" in (HERE / "assemble.py").read_text())
+    check("replay devolve snapshots imutáveis do ledger para o ACK da UI", "'conteudo_por_unidade',(v_prev.metadata->>'conteudo_por_unidade')::numeric" in candidate and "'embalagem_versao',(v_prev.metadata->>'embalagem_versao')::integer" in candidate)
     out = {"status": "PASS", "checks": checks, "passed": len(checks), "total": len(checks), "hosted": False, "candidate_sha256": candidate_hash}
     (EVIDENCE / "review.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
     print(f"RESULT {len(checks)}/{len(checks)} exit 0")
