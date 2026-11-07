@@ -251,6 +251,8 @@ def main():
                                       AND NOT has_function_privilege('authenticated','{G.HELPER_SIG}','EXECUTE')
                                       AND NOT has_function_privilege('service_role','{G.HELPER_SIG}','EXECUTE')""").stdout.strip()
         check("helper vendedor executado tem MD5 gerado e ACL totalmente privada", helper_actual == helper_pin["candidate_md5"] and helper_closed == "t", {"md5": helper_actual, "closed": helper_closed})
+        direct_helper = SP.as_user(SP.UADM, f"SELECT {G.HELPER_SIG}('{SP.UADM}','{SP.P}')")
+        check("helper vendedor não pode ser chamado diretamente por authenticated", direct_helper.returncode != 0 and "permission denied" in direct_helper.stderr, direct_helper.stderr)
         for kind in ("approve", "reject"):
             meta = pins["decision_candidates"][kind]
             actual = psql(f"SELECT md5(pg_get_functiondef('{meta['signature']}'::regprocedure))").stdout.strip()
