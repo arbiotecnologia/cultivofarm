@@ -138,7 +138,7 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
     for name in names:
         table = next(t for t in live["tables"] if t["name"] == name)
         cols = [f"{c['name']} {c['type']}" + (" DEFAULT " + c["default"] if c["default"] else "") + (" NOT NULL" if c["notnull"] else "") for c in table["columns"]]
-        constraints = [f"CONSTRAINT {c['name']} {c['definition']}" for c in table["constraints"] if not c["definition"].startswith("FOREIGN KEY")]
+        constraints = [f"CONSTRAINT {c['name']} {c['definition']}" for c in table["constraints"] if name == "accounts_receivable" or not c["definition"].startswith("FOREIGN KEY")]
         B3.psql(f"CREATE TABLE public.{name} (" + ",".join(cols + constraints) + ")")
     # Metadata LIVE de accounts_receivable: ACL ampla por papel + RLS obrigatória.
     # As policies não são promovidas a prova; os writers testados são definer/owner.
