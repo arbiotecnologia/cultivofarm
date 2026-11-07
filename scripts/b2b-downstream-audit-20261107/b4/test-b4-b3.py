@@ -162,7 +162,16 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
 
 
 def document(doc_id, order, item, quantity, issue="2026-10-01", event=None):
-    items = [{"item_id": item, "quantity": quantity}]
+    snapshot = sql_json(f"SELECT jsonb_build_object('packaging_id',packaging_id_snapshot,'content',packaging_peso_liquido_kg_snapshot,'content_unit',packaging_unidade_conteudo_snapshot,'volume',coalesce(volume_ml,volume_ml_snapshot)) FROM public.partner_order_items WHERE id='{item}' AND order_id='{order}'")
+    if snapshot["packaging_id"]:
+        taxable = Decimal(str(quantity)) * Decimal(str(snapshot["content"]))
+        taxable_unit = str(snapshot["content_unit"]).upper()
+    else:
+        taxable = Decimal(str(quantity)) * Decimal(str(snapshot["volume"]))
+        taxable_unit = "ML"
+    items = [{"item_id": item, "quantity": quantity, "commercial_unit": "UN",
+              "taxable_quantity": int(taxable) if taxable == taxable.to_integral_value() else float(taxable),
+              "taxable_unit": taxable_unit}]
     B3.psql(f"INSERT INTO platform_private.b2b_authorized_documents VALUES('{doc_id}','{B3.A}','{B3.P}','{order}','NFE','{issue}','{event or doc_id}','{'a'*64}','{js(items)}'::jsonb,'AUTHORIZED')")
 
 
