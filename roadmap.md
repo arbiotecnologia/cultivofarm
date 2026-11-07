@@ -1,3 +1,10 @@
+## 07/11 15:46 — Reconciliação local dos pinos LIVE e B4 útil
+- [ ] Registrar como relato READONLY do auditor os pinos LIVE de ajuste/aprovação/rejeição, geradores de recebível, gatilho automático, autorização fiscal e capabilities de envase/confirmação; não tratá-los como captura executada pelo agente nem deduzir exposição pela UI fechada.
+- [ ] Comparar fontes/capturas locais, cadeia de guards e origem sem operar o banco hospedado; atualizar o candidato de ajuste somente se os pinos aplicáveis continuarem compatíveis.
+- [ ] Reconciliar apenas o B4 útil com o B3 atual, sem restaurar create/simulate antigos nem reabrir B3; candidato histórico `301bf597` (134 PG/1327 Vitest) permanece histórico e não liberado.
+- [ ] Incorporar à auditoria a referência `CORRECOES-ORIGEM-PARCIAL-SERVIDOR-20261101`: alocação parcial com substituição intermediária de centavos e exposição restante + títulos em aberto, sem inventar regra fiscal/comercial.
+- [ ] Executar somente testes locais/descartáveis aplicáveis, versionar JSON/TXT/exit codes e separar PASS de componente de homologação real; sem delegar, publicar, emitir NF/cobrança, aprovar contabilidade ou habilitar envios.
+
 ## 07/11 15:27 — Auditoria local B2B ARBio até faturamento/entrega
 - [x] Registrar marco histórico sem reabrir B3: base original `e9aede7708f75b8e10761aca573b42905ebf5259` PUBLICADA; reteste ARBio produção PASS, FSF JWT 403 na condição e `[]` em pedidos, comprador Price R$ 18,65 PASS — relatos do auditor, não executados nesta etapa.
 - [x] Prioridade concluída localmente: baseline 14/14 confirmou pending→pending sob contrato contábil e ajuste estrangeiro no legado sem origem; pedido externo validado foi protegido pelo gatilho real de origem. Candidato INATIVO com escopo antes/depois do lock, C2_ACCOUNTING_PENDING e rollback deny-only passou 29/29 com os 38 gatilhos reais ativos, revogação sob espera, positivos no tenant e estado preservado. Fonte LIVE ainda exige conferência do auditor.
