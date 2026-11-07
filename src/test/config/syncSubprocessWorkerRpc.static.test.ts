@@ -26,6 +26,7 @@ function allowances(source: string): number[] {
 
 it("nenhum teste com subprocesso síncrono admite espera acima do timeout RPC do worker", () => {
   const offenders = testFiles(path.resolve(__dirname, ".."))
+    .filter((file) => path.resolve(file) !== path.resolve(__filename))
     .filter((file) => SYNC_CALL.test(readFileSync(file, "utf8")))
     .map((file) => ({ file: path.relative(process.cwd(), file), max: Math.max(0, ...allowances(readFileSync(file, "utf8"))) }))
     .filter(({ max }) => max > WORKER_RPC_TIMEOUT_MS);
