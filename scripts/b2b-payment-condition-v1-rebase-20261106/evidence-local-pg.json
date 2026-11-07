@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 159,
-  "total": 159,
+  "passed": 172,
+  "total": 172,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -102,6 +102,18 @@
       "ok": true
     },
     {
+      "name": "publicação sintética: boleto aceita 1 parcela com taxa explícita 1,8%",
+      "ok": true
+    },
+    {
+      "name": "publicação sintética: promissoria aceita 1 parcela com taxa explícita 1,8%",
+      "ok": true
+    },
+    {
+      "name": "publicação sintética: cartao_credito aceita 1 parcela com taxa explícita 1,8%",
+      "ok": true
+    },
+    {
       "name": "plano com juros próprios recusado (uma fonte de juros)",
       "ok": true
     },
@@ -114,7 +126,15 @@
       "ok": true
     },
     {
-      "name": "parcela única com juros recusada",
+      "name": "dinheiro: parcela única com juros continua recusada",
+      "ok": true
+    },
+    {
+      "name": "pix: parcela única com juros continua recusada",
+      "ok": true
+    },
+    {
+      "name": "cartao_debito: parcela única com juros continua recusada",
       "ok": true
     },
     {
@@ -223,6 +243,38 @@
     },
     {
       "name": "ator interno de F não vê parceiro de A",
+      "ok": true
+    },
+    {
+      "name": "resolução: boleto/promissória/crédito em 1x com 1,8% explícito ficam disponíveis ao comprador",
+      "ok": true
+    },
+    {
+      "name": "oráculo independente n=1: 1000 a 1,8% = 1018,00; principal 1000,00 e juros 18,00",
+      "ok": true
+    },
+    {
+      "name": "simulação boleto n=1: total 1018, principal 1000 e juros 18",
+      "ok": true
+    },
+    {
+      "name": "simulação promissoria n=1: total 1018, principal 1000 e juros 18",
+      "ok": true
+    },
+    {
+      "name": "simulação cartao_credito n=1: total 1018, principal 1000 e juros 18",
+      "ok": true
+    },
+    {
+      "name": "create n=1: ACK total 1018, juros 18, principal 1000 e mesma escolha/hash",
+      "ok": true
+    },
+    {
+      "name": "persistência n=1: pedido/termos/cronograma/snapshot/idempotência = 1018; principal 1000; juros 18; taxa 1,8%",
+      "ok": true
+    },
+    {
+      "name": "leitor persistido n=1 devolve 1018, principal 1000, juros 18 e taxa 1,8%",
       "ok": true
     },
     {
