@@ -111,7 +111,7 @@ def main():
     finally:
         out = {"status": "PASS" if status == 0 else "FAIL", "checks": B.CHECKS, "hosted": False, "real_nf_or_receivable": False}
         (RESULTS / "after.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
-        print(f"RESULT {sum(x['passed'] for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
+        print(f"RESULT {sum(x['ok'] for x in B.CHECKS)} / {len(B.CHECKS)} exit {status}")
     return status
 
 

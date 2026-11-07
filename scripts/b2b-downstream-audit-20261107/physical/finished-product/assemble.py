@@ -32,7 +32,10 @@ def captured(qualified):
         matches = [f for f in CURRENT["functions"] if f["name"] == "rpc_cockpit_criar_entrega_v1" and "p_estoque_produto_id" in f["signature"]]
     if len(matches) != 1:
         raise AssertionError("captured source drift " + qualified)
-    return re.sub(r"^CREATE OR REPLACE FUNCTION", "CREATE OR REPLACE FUNCTION", matches[0]["body"].strip())
+    body = matches[0]["body"].strip()
+    if not body.endswith(";"):
+        body += ";"
+    return body
 
 
 def one_replace(body, old, new, label):
