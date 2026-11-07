@@ -91,8 +91,6 @@ def build():
         if sha(path) != pin:
             raise SystemExit(f"SOURCE_DRIFT {path}: {sha(path)} != {pin}")
     capture = json.loads(CAPTURE.read_text())
-    for f in capture["functions"]:
-        sig = f["name"] + re.sub(r"^[^\(]*", "", f["signature"].split(" ", 1)[-1]) if False else None
     for sig, pin in LIVE_MD5.items():
         name = sig.split("(", 1)[0].split(".")[-1]
         matches = [f for f in capture["functions"] if f["name"] == name]
@@ -134,7 +132,7 @@ CREATE TRIGGER price_snapshot_no_truncate BEFORE TRUNCATE ON platform_private.pr
     canonical = json.dumps({k: calendar[k] for k in fields}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     if hashlib.sha256(canonical.encode()).hexdigest() != calendar["integrity"]["sha256"]:
         raise SystemExit("CALENDAR_SOURCE_INTEGRITY")
-    calendar_sql = "SELECT platform_private.price_calendar_load(" + repr(canonical) + "," + repr(calendar["integrity"]["sha256"]) + ");\n"
+    calendar_sql = "SELECT platform_private.price_calendar_load(" + sql_literal(canonical) + "," + sql_literal(calendar["integrity"]["sha256"]) + ");\n"
 
     # Tabelas B4, sem recriar condições/snapshots B3 e sem endpoint público de ingestão fiscal.
     tables = []
@@ -230,7 +228,7 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
                 "public.generate_b2b_receivable_secure_impl(uuid)", "public.tg_auto_b2b_receivable()"]:
         name = sig.split("(", 1)[0]
         source = fn(body, name)
-        candidate_pins[sig] = hashlib.md5(source.encode()).hexdigest()
+        candidate_pins[sig] = md5_def(source)
     for name in ["platform_private.b2b_allocate_document", "platform_private.b2b_order_residual", "platform_private.b4_schedule_from_nf"]:
         match = re.findall(rf"CREATE FUNCTION {re.escape(name)}\(.*?\nEND \$\$;", body, re.S)
         if len(match) != 1:
@@ -239,7 +237,7 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
         body = body.replace(match[0], normalized, 1)
         sig = name + {"platform_private.b2b_allocate_document": "(uuid)", "platform_private.b2b_order_residual": "(uuid)",
                       "platform_private.b4_schedule_from_nf": "(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)"}[name]
-        candidate_pins[sig] = hashlib.md5(normalized.encode()).hexdigest()
+        candidate_pins[sig] = md5_def(normalized)
 
     pre = "-- READONLY; pinos LIVE relatados pelo auditor + B3 instalado localmente pinado.\n" + assertions(LIVE_MD5, "B4_PRE_DRIFT")
     install = "-- CANDIDATO B4 INATIVO; exige revisão/PRE LIVE; nunca aplicar automaticamente.\nBEGIN;\nSET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='60s';\n" + assertions(LIVE_MD5, "B4_INSTALL_PRE_DRIFT") + body + "\n" + assertions(candidate_pins, "B4_INSTALL_POST_DRIFT") + "COMMIT;\n"
