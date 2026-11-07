@@ -17,24 +17,27 @@ Fonte local identificada: `scripts/delivery-atomic-hardening-20261030/capture/cu
 
 Evidência: `evidence/adjustment-baseline.json`, `evidence-adjustment-baseline-sixth.*`. As tentativas anteriores com erros de harness/fixture foram preservadas.
 
-### Candidato inativo — 29/29, exit 0
+### Candidato inativo — revisão 31430566, 60/60, exit 0
+
+A rodada anterior **29/29** foi preservada em `evidence/adjustment-candidate-minimal-29.json`, mas não é suficiente: usava guards mínimos e localizava um pin em `/tmp`. A revisão atual a substitui e permanece **não aprovada e não aplicada**.
 
 `generate-adjustment-fix.py` gera, sem edição manual dos SQL:
 
 - `01-pre.sql.readonly`, `02-install.sql.review`, `03-post.sql.readonly`, `04-rollback-deny.sql.review`;
-- corpo capturado e corpo candidato separados, pins e `SHA256SUMS`.
+- corpo capturado e candidato separados, 14 capturas reais de Auth/escopo/dependências, pins e `SHA256SUMS`;
+- verificações de corpo, owner e ACL do writer, wrappers e núcleos privados em PRE/POST/rollback, sem nenhum `GRANT` e sem substituição temporária de pinos.
 
 Delta mínimo:
 
-1. mesma porta `b2b_phase1_order_visible` usada por approve/reject/note, antes da primeira escrita;
-2. `SELECT ... FOR UPDATE` do pedido e nova verificação de escopo/papéis depois da espera;
+1. autenticação e mesma porta `b2b_phase1_order_visible` usada por approve/reject/note antes da primeira escrita;
+2. `SELECT ... FOR UPDATE`, negação fail-closed para pedido ausente/NULL e nova verificação de escopo/papéis depois da espera;
 3. negação explícita `C2_ACCOUNTING_PENDING` antes de alterar termos/pedido;
-4. ACL original preservada; nenhum papel, grant, writer ou acesso ampliado;
+4. owner/ACL originais preservados; nenhum papel, grant, writer ou acesso ampliado;
 5. rollback **deny-only**: revoga cliente e mantém o corpo corrigido/histórico, sem restaurar a função vulnerável.
 
-Cobertura: pin divergente, PRE/POST, rerun, 38 gatilhos ativos, negação contábil e estrangeira sem efeitos em pedido/termos/auditoria/notificações, revogação de papel durante o lock, positivos no próprio tenant para pedido validado e legado, comprador negado, rollback com pin inválido/válido e preservação de histórico. Candidato MD5 `55996e9496ffb123504adaeaa502c81f`.
+Cobertura: pin divergente do writer/privado, owner/ACL divergentes, PRE/POST, rerun, 38 gatilhos ativos, C2 pending, estrangeiro validado/legado, pedido ausente/NULL, revogação durante lock de papel, perfil, vínculo organização-parceiro, lease e feature `pedidos_b2b`, positivos sem ampliar escopo, comprador negado e rollback com histórico preservado. Candidato MD5 `7eb3b5be33552f6bd4eecd56796502ed`; evidência `evidence/adjustment-candidate.json` e `evidence-adjustment-candidate-review.*`.
 
-Somente a cópia em `/tmp` substitui o pin do leitor de escopo pela costura sintética do harness. Os artefatos revisáveis conservam o pin da captura LIVE `8812508716f279a88e3d5a31b15621d8`. **Não aprovado nem aplicado.**
+Os quatro pinos principais relatados como LIVE pelo auditor foram reproduzidos nos corpos locais: wrapper/privado de escopo `88125087…`/`8504f07f…` e wrapper/privado de papel `4d90e93d…`/`c5af5b55…`. As demais dependências/owners/ACLs vêm de captura LOCAL e exigem conferência LIVE independente. Detalhes e matriz em `review-31430566/`. **Não aprovado nem aplicado.**
 
 ## 2. Resultados downstream executados
 
