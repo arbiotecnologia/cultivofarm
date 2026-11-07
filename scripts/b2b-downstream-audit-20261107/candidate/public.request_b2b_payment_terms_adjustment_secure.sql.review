@@ -11,8 +11,8 @@ DECLARE
   v_numero text;
   v_origin jsonb;
 BEGIN
-  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
   IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;
+  IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
   IF NOT (public.has_role(v_uid,'administrador')
        OR public.has_role(v_uid,'financeiro')
        OR public.has_role(v_uid,'gestor_comercial')) THEN
@@ -28,6 +28,8 @@ BEGIN
   WHERE po.id = p_partner_order_id
   FOR UPDATE;
 
+  -- Pedido ausente, estrangeiro ou removido durante a espera segue a mesma negação, sem oráculo.
+  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
   -- Revalida depois da espera pelo lock: papel/perfil/vínculo/escopo podem ter sido revogados.
   IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
   IF NOT (public.has_role(v_uid,'administrador')
