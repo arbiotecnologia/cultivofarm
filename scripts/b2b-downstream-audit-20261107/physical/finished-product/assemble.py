@@ -68,6 +68,14 @@ def function_pin(entry, expected=None):
 END$$;"""
 
 
+def trigger_pin(entry):
+    label = f"{entry['schema']}.{entry['table']}.{entry['name']}"
+    return f"""DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname={lit(entry['schema'])} AND c.relname={lit(entry['table'])} AND t.tgname={lit(entry['name'])};
+ IF NOT FOUND OR d IS DISTINCT FROM {lit(entry['definition'])} OR e IS DISTINCT FROM {lit(entry['enabled'])} OR ty IS DISTINCT FROM {int(entry['type'])} THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT {label}';END IF;
+END$$;"""
+
+
 def build():
     functions = {x["signature"]: x for x in BASE["functions"]}
     dependencies = {x["signature"]: x for x in BASE.get("dependency_functions", [])}
@@ -328,8 +336,8 @@ BEGIN
    'embalagem_id',p_embalagem_id,'embalagem_versao',v_version,'unidade_conteudo',v_unit,'conteudo_por_unidade',v_content,'quantidade_conteudo',v_total));
  PERFORM platform_private.stock_motor_context_set(v_ctx);
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_stock);
- INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)
- VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version);
+ INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,validade,quantidade_reservada,status,origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao)
+ VALUES(v_stock,v_lote,p_produto_id,p_quantidade,v_volume_total,p_validade,NULL,'disponivel','compra_produto_acabado_revenda','unidade',v_content,v_unit,v_total,p_embalagem_id,v_version);
  DELETE FROM platform_private.authz_tickets WHERE txid=pg_catalog.txid_current() AND scope='finished_product_purchase_entry_v1' AND target=v_stock;
  PERFORM platform_private.stock_motor_context_set(NULL); PERFORM public.fn_estoque_ctx_close();
  SELECT * INTO v_mov FROM public.estoque_movimentacoes WHERE idempotency_key=p_idempotency_key AND estoque_produto_id=v_stock;
@@ -349,6 +357,10 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
     pre = ["-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor."]
     for entry in BASE["functions"]:
         pre.append(function_pin(entry))
+    for entry in BASE.get("dependency_functions", []):
+        pre.append(function_pin(entry))
+    for entry in BASE.get("dependency_triggers", []):
+        pre.append(trigger_pin(entry))
     for rel in BASE["relations"]:
         schema = rel.get("schema", "public")
         pre.append(f"DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['owner'])} OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname={lit(schema)} AND c.relname={lit(rel['name'])}) IS DISTINCT FROM {lit(rel['acl'])} THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT {schema}.{rel['name']}';END IF;END$$;")
@@ -371,6 +383,16 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
             post.append(function_pin(entry, measured["md5"]))
         else:
             post.append(f"-- POST_RUNTIME_REQUIRED {entry['signature']} source_body_sha256={hashlib.sha256(body.encode()).hexdigest()}")
+    for entry in BASE.get("dependency_functions", []):
+        if entry["signature"] in post_by_signature:
+            measured = post_by_signature[entry["signature"]]
+            if measured["md5"] != entry["md5"] or measured["owner"] != entry["owner"] or measured["acl"] != entry["acl"]:
+                raise AssertionError("POST dependency drift " + entry["signature"])
+            post.append(function_pin(entry))
+        else:
+            post.append(f"-- POST_RUNTIME_REQUIRED_DEPENDENCY {entry['signature']}")
+    for entry in BASE.get("dependency_triggers", []):
+        post.append(trigger_pin(entry))
     for signature in ["platform_private.finished_product_stock_valid_v1(public.estoque_produto)", "platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)", "platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)"]:
         if signature in post_by_signature:
             post.append(function_pin(post_by_signature[signature]))
@@ -380,7 +402,7 @@ REVOKE ALL ON FUNCTION platform_private.finished_product_purchase_entry_v1(uuid,
     (HERE / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
     (HERE / "postflight.sql.review").write_text("\n".join(post) + "\nDO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;\n")
     (HERE / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
-    manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": [], "files": {}}
+    manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": [], "files": {}}
     for name in ["baseline.json", "candidate.sql.review", "install.sql.review", "postflight.sql.review", "rollback.sql.review"]:
         data = (HERE / name).read_bytes(); manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
     (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")

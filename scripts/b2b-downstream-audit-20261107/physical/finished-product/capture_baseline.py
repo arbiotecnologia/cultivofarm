@@ -50,7 +50,7 @@ def main():
     relations = json.loads(B.last("""
       SELECT coalesce(jsonb_agg(jsonb_build_object('schema',n.nspname,'name',c.relname,'owner',r.rolname,'acl',coalesce(c.relacl::text,'')::text) ORDER BY n.nspname,c.relname),'[]'::jsonb)
       FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner
-      WHERE (n.nspname='public' AND c.relname IN ('produtos','lotes','estoque_produto','estoque_movimentacoes','entregas','catalogo_volumes','product_sale_units','product_packagings'))
+      WHERE (n.nspname='public' AND c.relname IN ('produtos','microrganismos','lotes','estoque_produto','estoque_movimentacoes','entregas','catalogo_volumes','product_sale_units','product_packagings'))
          OR (n.nspname='platform_private' AND c.relname='authz_tickets');
     """))
     catalog_columns = json.loads(B.last("""
@@ -63,7 +63,8 @@ def main():
     catalog_constraints = json.loads(B.last("""
       SELECT coalesce(jsonb_agg(jsonb_build_object('table',c.relname,'name',x.conname,'definition',pg_get_constraintdef(x.oid)) ORDER BY c.relname,x.conname),'[]'::jsonb)
       FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE n.nspname='public' AND c.relname IN ('product_sale_units','product_packagings');
+      WHERE n.nspname='public' AND (c.relname IN ('product_sale_units','product_packagings')
+        OR (c.relname IN ('produtos','microrganismos','catalogo_volumes') AND x.conname LIKE '%owner_organization_id%'));
     """))
     columns = json.loads(B.last("""
       SELECT coalesce(jsonb_agg(jsonb_build_object('table',table_name,'column',column_name) ORDER BY table_name,column_name),'[]'::jsonb)
