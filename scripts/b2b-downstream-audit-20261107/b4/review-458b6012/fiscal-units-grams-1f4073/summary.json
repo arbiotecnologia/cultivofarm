@@ -1,0 +1,70 @@
+{
+  "review": "1f4073+458b6012+manual-null-1813",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "hosted_writes": false,
+  "real_documents_or_charges": false,
+  "reported_live_facts_source": "USER_REPORTED_READONLY_NOT_AGENT_QUERY",
+  "before": {
+    "candidate_sha256": "b84ee8bb21321a63711e90e3871f0984423589589d98d556db9d8151b4f0ee47",
+    "passed": 163,
+    "total": 168,
+    "functional_failures": 5,
+    "exit_code": 1,
+    "evidence": "evidence-before.json",
+    "confirmed": [
+      "1 UN/500 g foi negado",
+      "1 UN/0,5 kg foi negado",
+      "500 g comerciais não normalizaram para 1 pack",
+      "1 UN/0,5 g foi aceito indevidamente",
+      "o caso inválido criou título e alocação locais"
+    ]
+  },
+  "candidate": {
+    "sha256": "818da9e4f001494bdc50c2265e3adfa9d04ec3cd421454c3e1a2ce7ca17b6a8b",
+    "install_sha256": "721f97705d6b6d80ac36ebfa8f0a781aa59e5cc33554ffd146099823409f3685",
+    "object_count": 56,
+    "changed_function": "platform_private.b2b_allocate_document(uuid)",
+    "changes": [
+      "packaging_peso_liquido_kg_snapshot é sempre interpretado em kg",
+      "packaging_unidade_conteudo_snapshot='g' é somente unidade de exibição",
+      "1 UN=500 g=0,5 kg normaliza para 1 pack",
+      "1 UN/0,5 g nega FISCAL_QUANTITY_UNIT_DIVERGENCE sem título/alocação",
+      "whole-pack fora de kg/g falha FISCAL_ITEM_UNIT_SNAPSHOT_UNPROVEN",
+      "líquido sem pack continua por volume_ml/volume_ml_snapshot e L↔ml"
+    ],
+    "price_or_price_engine_changed": false,
+    "fractional_pack_enabled": false,
+    "grants_added": false,
+    "backfill": false,
+    "rollback": "DENY_ONLY_PRE_POST_PASS"
+  },
+  "canonical_fixture": {
+    "real_presentation_writer": "public.solid_pack_offer_save_v1",
+    "real_price_writer": "public.solid_pack_price_set_v1",
+    "real_order_writer": "public.create_partner_order_condition_secure",
+    "stored_weight_kg": 0.5,
+    "display_unit": "g",
+    "display_label": "Fertilizante 500 g TESTE · 500 g",
+    "order_quantity_un": 2,
+    "unit_price_brl": 90,
+    "net_commercial_brl": 180,
+    "b3_interest_brl": 6.52,
+    "final_with_interest_brl": 186.52,
+    "freight_total_kg": 1,
+    "liquid_pack_denial": "PACK_PRODUCT_NOT_SOLID",
+    "liquid_without_pack_volume_ml": 1000
+  },
+  "independent_results_not_added": {
+    "fiscal_units_after": {"passed": 177, "total": 177, "exit_code": 0, "evidence": "evidence-after.json"},
+    "shared_b4_final_candidate": {"passed": 100, "total": 100, "exit_code": 0, "evidence": "shared-after/evidence-b4-shared-impact.json"},
+    "static_manifest": {"passed": 59, "total": 59, "exit_code": 0, "evidence": "evidence-manifest-tests.json"}
+  },
+  "pending": [
+    "revisão independente do candidato e do diff dimensional",
+    "impactos READONLY LIVE e reconciliação dos cinco títulos MANUAL sem backfill/cancelamento",
+    "conferência LIVE de corpos, owners, ACLs, triggers e relações",
+    "JWT/RLS/Storage/PostgREST/browser e homologação real NOT_RUN"
+  ]
+}
