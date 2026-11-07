@@ -157,6 +157,10 @@ ALTER TABLE public.accounts_receivable ENABLE ROW LEVEL SECURITY;""")
     for sig in signatures:
         function = next(f for f in live["functions"] if f["signature"] == sig)
         B3.psql(function["body"] + ";")
+    for sig in ["d51_5_validate_financial_tenant_links()", "guard_tenant_organization_id()", "update_updated_at_column()",
+                "fn_h6d_block_hard_delete()", "_saas_trg_require_feature()", "tg_sync_b2b_financial_status()"]:
+        function = next((f for f in live["functions"] if f["signature"] == sig), None)
+        B3.psql((function or captured_function(sig.split("(")[0]))["body"] + ";")
     # O PostgreSQL descartável concede PUBLIC EXECUTE por padrão; reproduzir as
     # ACLs LIVE informadas, sem alterar os pinos ou ampliar o candidato.
     B3.psql("""REVOKE ALL ON FUNCTION public.fn_generate_receivable_installments() FROM PUBLIC,anon,authenticated,service_role;
