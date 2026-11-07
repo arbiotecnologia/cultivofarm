@@ -179,14 +179,7 @@ def decision_candidate_body(kind):
         raise SystemExit(f"decisão desconhecida: {kind}")
     meta = DECISION_SOURCES[kind]
     body = captured(meta["source"], meta["md5"])["body"]
-    body = delta(
-        body,
-        "BEGIN\n  IF NOT public.b2b_phase1_order_visible(p_partner_order_id)",
-        "BEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthorized'; END IF;\n"
-        "  IF NOT public.b2b_phase1_order_visible(p_partner_order_id)",
-        kind + " auth antes do escopo",
-    )
-    body = delta(body, "  v_status text;\nBEGIN", "  v_status text;\n  v_origin jsonb;\nBEGIN", kind + " snapshot de origem")
+    body = delta(body, "  v_numero text;\nBEGIN", "  v_numero text;\n  v_origin jsonb;\nBEGIN", kind + " snapshot de origem")
     body = delta(
         body,
         "  SELECT po.payment_terms_id, po.created_by, po.numero\n    INTO v_terms_id, v_created_by, v_numero\n  FROM public.partner_orders po\n  WHERE po.id = p_partner_order_id;\n\n  IF v_terms_id IS NULL THEN RAISE EXCEPTION 'payment_terms_not_defined'; END IF;",
