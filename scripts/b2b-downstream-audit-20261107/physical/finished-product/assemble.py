@@ -117,13 +117,13 @@ def build():
    AND c.ctx->'metadata'->>'unidade_conteudo'=NEW.unidade_conteudo
    AND (c.ctx->'metadata'->>'conteudo_por_unidade')::numeric=NEW.conteudo_por_unidade
    AND (c.ctx->'metadata'->>'quantidade_conteudo')::numeric=NEW.quantidade_conteudo
-   AND platform_private.finished_product_stock_valid_v1(NEW)
+   AND platform_private.finished_product_stock_valid_v1(NEW) IS TRUE
    AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
   THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED' USING ERRCODE='42501';
  END IF;
  -- Preserve ONLY the installed canonical partial reservation semantics under""", "entry purchase guard")
-    entry_guard = one_replace(entry_guard, "    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade", "    AND NEW.validade IS NOT DISTINCT FROM parent.validade\n    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))", "entry guard finished split")
+    entry_guard = one_replace(entry_guard, "    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade", "    AND NEW.validade IS NOT DISTINCT FROM parent.validade\n    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) IS TRUE AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))", "entry guard finished split")
     sync = one_replace(sync, "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN", "     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL)\n     AND NOT EXISTS(SELECT 1 FROM public.entregas d JOIN public.estoque_produto s ON s.id=d.estoque_produto_id WHERE d.ordem_servico_id=NEW.id AND d.produto_id=NEW.produto_id AND d.status::text<>'cancelada' AND s.origem_estoque='compra_produto_acabado_revenda') THEN", "sync finished product")
 
     lot_guard = one_replace(lot_guard, " -- No JWT/GUC/current_user/service-role escape: only the reviewed insert RPC", """ org:=platform_private.h15_actor_organization();
@@ -159,7 +159,7 @@ def build():
   END IF;""", "purchase reservation shortcut")
     entry_validate = one_replace(entry_validate, "  -- Exigir envase para o lote\n  IF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id) THEN\n    RAISE EXCEPTION 'Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.'\n      USING ERRCODE = 'check_violation';\n  END IF;", """  -- Compra para revenda usa ticket privado e snapshot; demais entradas continuam exigindo envase.
   IF NEW.origem_estoque='compra_produto_acabado_revenda' THEN
-    IF NOT platform_private.finished_product_stock_valid_v1(NEW)
+    IF platform_private.finished_product_stock_valid_v1(NEW) IS NOT TRUE
      OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=pg_catalog.txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id) THEN
       RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_ENTRY_DENIED' USING ERRCODE='42501';
     END IF;
@@ -168,7 +168,7 @@ def build():
       USING ERRCODE = 'check_violation';
   END IF;""", "purchase stock entry guard")
 
-    reservar = one_replace(reservar, "  v_volume_reservado := CASE", """  IF v_item.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_item) THEN
+    reservar = one_replace(reservar, "  v_volume_reservado := CASE", """  IF v_item.origem_estoque IS NOT NULL AND platform_private.finished_product_stock_valid_v1(v_item) IS NOT TRUE THEN
     RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
   END IF;
   IF v_item.unidade_comercial='unidade' AND p_qty<>trunc(p_qty) THEN
@@ -188,7 +188,7 @@ def build():
     RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
   END IF;
   IF v_est.origem_estoque IS NOT NULL THEN
-    IF NOT platform_private.finished_product_stock_valid_v1(v_est) THEN
+    IF platform_private.finished_product_stock_valid_v1(v_est) IS NOT TRUE THEN
       RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
     END IF;
   ELSIF v_est.volume_total IS NULL OR v_est.volume_total <= 0 OR v_est.volume_total::text IN ('NaN','Infinity','-Infinity') THEN
@@ -199,7 +199,7 @@ def build():
     criar = one_replace(criar, "    nullif(p_dados->>'veiculo','')\n  ) RETURNING id INTO v_id;", "    nullif(p_dados->>'veiculo',''),\n    v_est.origem_estoque,v_est.unidade_comercial,v_est.conteudo_por_unidade,v_est.unidade_conteudo,CASE WHEN v_est.origem_estoque='compra_produto_acabado_revenda' THEN p_quantidade*v_est.conteudo_por_unidade ELSE NULL END,v_est.embalagem_id,v_est.embalagem_versao\n  ) RETURNING id INTO v_id;", "entrega insert values")
     criar = one_replace(criar, "    volume_entregue_ml = round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6),", "    volume_entregue_ml = CASE WHEN v_est.origem_estoque='compra_produto_acabado_revenda' AND v_est.unidade_conteudo IN ('kg','g') THEN NULL ELSE round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6) END,", "entrega no weight ml")
 
-    merge = one_replace(merge, " OR v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity')", " OR (v_s.origem_estoque IS NULL AND (v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity'))) OR (v_s.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_s))", "merge source balance")
+    merge = one_replace(merge, " OR v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity')", " OR (v_s.origem_estoque IS NULL AND (v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity'))) OR (v_s.origem_estoque IS NOT NULL AND platform_private.finished_product_stock_valid_v1(v_s) IS NOT TRUE)", "merge source balance")
     merge = one_replace(merge, "v_main.validade IS DISTINCT FROM v_s.validade", "v_main.validade IS DISTINCT FROM v_s.validade OR v_main.origem_estoque IS DISTINCT FROM v_s.origem_estoque OR v_main.unidade_comercial IS DISTINCT FROM v_s.unidade_comercial OR v_main.conteudo_por_unidade IS DISTINCT FROM v_s.conteudo_por_unidade OR v_main.unidade_conteudo IS DISTINCT FROM v_s.unidade_conteudo OR v_main.embalagem_id IS DISTINCT FROM v_s.embalagem_id OR v_main.embalagem_versao IS DISTINCT FROM v_s.embalagem_versao", "merge metadata")
     merge = one_replace(merge, " OR v_main.volume_total IS NULL OR v_main.volume_total<=0 OR v_main.volume_total::text IN ('NaN','Infinity','-Infinity')", " OR (v_main.origem_estoque IS NULL AND (v_main.volume_total IS NULL OR v_main.volume_total<=0 OR v_main.volume_total::text IN ('NaN','Infinity','-Infinity')))", "merge main balance")
     merge = one_replace(merge, "v_total:=v_main.quantidade+v_s.quantidade; v_volume:=v_main.volume_total+v_s.volume_total;", "v_total:=v_main.quantidade+v_s.quantidade; v_volume:=CASE WHEN v_main.volume_total IS NULL AND v_s.volume_total IS NULL THEN NULL ELSE coalesce(v_main.volume_total,0)+coalesce(v_s.volume_total,0) END;", "merge volume sum")
@@ -216,7 +216,7 @@ def build():
         new = f""" IF s.id IS NULL OR l.id IS NULL OR e.lote_id IS DISTINCT FROM l.id
  OR s.produto_id IS DISTINCT FROM l.produto_id OR e.produto_id IS DISTINCT FROM l.produto_id
  OR (s.origem_estoque IS NULL AND (pp.id IS NULL OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL OR pp.produto_id IS DISTINCT FROM l.produto_id))
- OR (s.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_delivery_valid_v1(s,e,l))
+ OR (s.origem_estoque IS NOT NULL AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS NOT TRUE)
  OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
  THEN RAISE EXCEPTION '{error}' USING ERRCODE='42501'; END IF;"""
         changed = one_replace(body, old, new, label + " lineage")
