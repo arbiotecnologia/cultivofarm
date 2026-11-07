@@ -382,10 +382,10 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
 
         allocations_before = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
         rollback = runfile(H / "04-rollback-deny.sql.review")
-        check("rollback deny-only conclui", rollback.returncode == 0, rollback.stderr[-700:])
-        check("rollback preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
+        check("rollback exige POST completo e falha fechado sem baseline íntegra", rollback.returncode != 0 and "B4_" in rollback.stderr, rollback.stderr[-900:])
+        check("rollback bloqueado preserva alocações, títulos e snapshots", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == allocations_before
               and B3.psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip() >= "3")
-        check("rollback fecha writer manual e projeção ao cliente", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE') OR has_function_privilege('authenticated','public.rpc_receivable_money_projection_v1(uuid,integer,integer)','EXECUTE')").stdout.strip() == "f")
+        check("rollback bloqueado não faz revogação parcial", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE')").stdout.strip() == "t")
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
     except Exception as exc:
         check("execução sem exceção de harness", False, repr(exc))
