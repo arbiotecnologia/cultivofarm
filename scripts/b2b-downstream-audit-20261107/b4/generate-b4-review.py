@@ -70,10 +70,10 @@ REPLACED = {
     "public.fn_b2b_credit_exposure",
     "public.rpc_register_receivable_payment",
     "public.fn_generate_receivable_installments",
-    "public.rpc_receivable_money_projection_v1",
     "public.generate_b2b_receivable_secure_impl",
     "public.tg_auto_b2b_receivable",
 }
+PROJECTION = "public.rpc_receivable_money_projection_v1"
 NEW_TABLES = [
     "platform_private.holiday_calendars", "platform_private.price_schedule_snapshots",
     "platform_private.b2b_authorized_documents", "platform_private.b2b_document_allocations",
