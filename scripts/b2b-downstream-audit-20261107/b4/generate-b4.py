@@ -243,6 +243,68 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
     partial = delta(partial, "SELECT * INTO cal FROM platform_private.holiday_calendars WHERE version=s.condition->>'calendar_version';\n rows:=platform_private.b2b_schedule(principal,(s.condition->>'monthly_rate')::numeric,(s.condition->>'installment_count')::int,d.issue_date,(s.choice->>'payment_deadline_days')::int,cal);",
                     "cal:=platform_private.price_pinned_calendar();\n rows:=platform_private.b4_schedule_from_nf(principal,(s.condition->>'monthly_rate')::numeric,(s.condition->>'installment_count')::int,d.issue_date,(s.choice->>'payment_deadline_days')::int,cal);", "NF schedule with sealed calendar")
 
+    # Revisão 458b6012: o documento traz quantidade/unidade comercial e tributável.
+    # A alocação monetária continua em unidades do pedido; kg/g/L/ml só reconciliam
+    # o conteúdo do snapshot. Peso nunca vira volume nem preço por peso.
+    partial = delta(partial,
+        " tid uuid:=gen_random_uuid(); rows jsonb; final numeric; cfg jsonb; cal platform_private.holiday_calendars; customer uuid; category uuid; method_id uuid; item_net numeric; item_financing numeric;",
+        " tid uuid:=gen_random_uuid(); rows jsonb; final numeric; cfg jsonb; cal platform_private.holiday_calendars; customer uuid; category uuid; method_id uuid; item_net numeric; item_financing numeric;\n commercial_unit text; taxable_unit text; content_unit text; content_per_unit numeric; commercial_qty numeric; taxable_qty numeric;\n normalized_commercial numeric; normalized_taxable numeric; wholepack boolean;", "fiscal unit declarations")
+    partial = delta(partial,
+        """  IF jsonb_typeof(it->'quantity') IS DISTINCT FROM 'number' THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  qty:=(it->>'quantity')::numeric;
+  SELECT to_jsonb(i) INTO base FROM public.partner_order_items i WHERE i.id=(it->>'item_id')::uuid AND i.order_id=d.order_id;
+  IF base IS NULL OR qty<=0 OR qty::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;""",
+        """  IF NOT (it ?& ARRAY['item_id','quantity','commercial_unit','taxable_quantity','taxable_unit']) THEN RAISE EXCEPTION 'FISCAL_UNIT_CONTRACT_REQUIRED' USING ERRCODE='23514'; END IF;
+  IF jsonb_typeof(it) IS DISTINCT FROM 'object'
+   OR EXISTS(SELECT 1 FROM jsonb_object_keys(it) k WHERE k NOT IN ('item_id','quantity','commercial_unit','taxable_quantity','taxable_unit'))
+   OR jsonb_typeof(it->'quantity') IS DISTINCT FROM 'number' OR jsonb_typeof(it->'taxable_quantity') IS DISTINCT FROM 'number'
+   OR jsonb_typeof(it->'commercial_unit') IS DISTINCT FROM 'string' OR jsonb_typeof(it->'taxable_unit') IS DISTINCT FROM 'string'
+  THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  commercial_qty:=(it->>'quantity')::numeric; taxable_qty:=(it->>'taxable_quantity')::numeric;
+  commercial_unit:=upper(btrim(it->>'commercial_unit')); taxable_unit:=upper(btrim(it->>'taxable_unit'));
+  SELECT to_jsonb(i) INTO base FROM public.partner_order_items i WHERE i.id=(it->>'item_id')::uuid AND i.order_id=d.order_id;
+  IF base IS NULL OR commercial_qty<=0 OR taxable_qty<=0
+   OR commercial_qty::text IN ('NaN','Infinity','-Infinity') OR taxable_qty::text IN ('NaN','Infinity','-Infinity')
+  THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;
+  wholepack:=NULLIF(base->>'packaging_id_snapshot','') IS NOT NULL;
+  IF wholepack THEN
+   content_unit:=lower(base->>'packaging_unidade_conteudo_snapshot'); content_per_unit:=(base->>'packaging_peso_liquido_kg_snapshot')::numeric;
+  ELSE
+   content_unit:='ml';
+   IF NULLIF(base->>'volume_ml','') IS NOT NULL AND NULLIF(base->>'volume_ml_snapshot','') IS NOT NULL
+    AND (base->>'volume_ml')::numeric IS DISTINCT FROM (base->>'volume_ml_snapshot')::numeric
+   THEN RAISE EXCEPTION 'FISCAL_ITEM_UNIT_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+   content_per_unit:=coalesce(NULLIF(base->>'volume_ml','')::numeric,NULLIF(base->>'volume_ml_snapshot','')::numeric);
+  END IF;
+  IF content_per_unit IS NULL OR content_per_unit<=0 OR content_per_unit::text IN ('NaN','Infinity','-Infinity')
+   OR content_unit NOT IN ('kg','g','ml','l') THEN RAISE EXCEPTION 'FISCAL_ITEM_UNIT_SNAPSHOT_UNPROVEN' USING ERRCODE='23514'; END IF;
+  IF commercial_unit='UN' THEN
+   qty:=commercial_qty; normalized_commercial:=commercial_qty*content_per_unit;
+  ELSE
+   normalized_commercial:=CASE commercial_unit||'>'||content_unit
+    WHEN 'KG>KG' THEN commercial_qty WHEN 'KG>G' THEN commercial_qty*1000 WHEN 'G>KG' THEN commercial_qty/1000 WHEN 'G>G' THEN commercial_qty
+    WHEN 'L>L' THEN commercial_qty WHEN 'L>ML' THEN commercial_qty*1000 WHEN 'ML>L' THEN commercial_qty/1000 WHEN 'ML>ML' THEN commercial_qty ELSE NULL END;
+   IF normalized_commercial IS NULL THEN RAISE EXCEPTION 'FISCAL_UNIT_MISMATCH' USING ERRCODE='23514'; END IF;
+   qty:=normalized_commercial/content_per_unit;
+  END IF;
+  IF taxable_unit='UN' THEN normalized_taxable:=taxable_qty*content_per_unit;
+  ELSE normalized_taxable:=CASE taxable_unit||'>'||content_unit
+   WHEN 'KG>KG' THEN taxable_qty WHEN 'KG>G' THEN taxable_qty*1000 WHEN 'G>KG' THEN taxable_qty/1000 WHEN 'G>G' THEN taxable_qty
+   WHEN 'L>L' THEN taxable_qty WHEN 'L>ML' THEN taxable_qty*1000 WHEN 'ML>L' THEN taxable_qty/1000 WHEN 'ML>ML' THEN taxable_qty ELSE NULL END;
+  END IF;
+  IF normalized_taxable IS NULL THEN RAISE EXCEPTION 'FISCAL_UNIT_MISMATCH' USING ERRCODE='23514'; END IF;
+  IF normalized_commercial IS DISTINCT FROM normalized_taxable THEN RAISE EXCEPTION 'FISCAL_QUANTITY_UNIT_DIVERGENCE' USING ERRCODE='23514'; END IF;
+  IF wholepack AND qty<>trunc(qty) THEN RAISE EXCEPTION 'FISCAL_WHOLE_PACKAGE_FRACTION' USING ERRCODE='23514'; END IF;
+  IF qty<=0 OR qty::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'FISCAL_ITEMS_INVALID' USING ERRCODE='23514'; END IF;""", "fiscal quantity and unit normalization")
+    partial = delta(partial,
+        "SELECT coalesce(sum((j->>'quantity')::numeric),0) INTO previous FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.items) j WHERE a.order_id=d.order_id AND j->>'item_id'=it->>'item_id' AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id);",
+        "SELECT coalesce(sum((j->>'quantity')::numeric),0) INTO previous FROM platform_private.b2b_document_allocations a CROSS JOIN LATERAL jsonb_array_elements(a.item_money) j WHERE a.order_id=d.order_id AND j->>'item_id'=it->>'item_id' AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_allocation_reversals r WHERE r.document_id=a.document_id);",
+        "previous normalized order quantity, never raw fiscal content")
+    partial = delta(partial,
+        "accepted:=accepted||jsonb_build_array(jsonb_build_object('item_id',it->>'item_id','quantity',qty,'principal',pr,'financed_interest',intr));",
+        "accepted:=accepted||jsonb_build_array(jsonb_build_object('item_id',it->>'item_id','quantity',qty,'order_quantity',qty,'normalized_quantity',normalized_commercial,'normalized_unit',content_unit,'commercial_quantity',commercial_qty,'commercial_unit',commercial_unit,'taxable_quantity',taxable_qty,'taxable_unit',taxable_unit,'whole_package',wholepack,'principal',pr,'financed_interest',intr));",
+        "append-only normalized fiscal item receipt")
+
     # Fences B4, mas NENHUMA revogação dos create/simulate LIVE preservados pelo B3.
     fence_title = extract(old_fences, "CREATE FUNCTION platform_private.b2b_title_insert_fence()", "REVOKE ALL ON FUNCTION platform_private.b2b_cancellation_fence() FROM PUBLIC,anon,authenticated,service_role;\n", "title/cancellation fences")
     fence_legacy = extract(old_fences, "-- Approval/delivery/production", "REVOKE ALL ON FUNCTION platform_private.b2b_title_insert_fence(),public.generate_b2b_receivable_secure_impl(uuid),public.tg_auto_b2b_receivable() FROM PUBLIC,anon,authenticated,service_role;\n", "legacy writer deny")
