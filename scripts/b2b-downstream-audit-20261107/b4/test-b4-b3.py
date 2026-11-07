@@ -150,6 +150,12 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
     for sig in signatures:
         function = next(f for f in live["functions"] if f["signature"] == sig)
         B3.psql(function["body"] + ";")
+    # O PostgreSQL descartável concede PUBLIC EXECUTE por padrão; reproduzir as
+    # ACLs LIVE informadas, sem alterar os pinos ou ampliar o candidato.
+    B3.psql("""REVOKE ALL ON FUNCTION public.fn_generate_receivable_installments() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_generate_receivable_installments() TO service_role;
+REVOKE ALL ON FUNCTION public.rpc_register_receivable_payment(uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_register_receivable_payment(uuid,jsonb) TO authenticated,service_role;""")
     included = {"trg_ar_gen_installments", "trg_h6_ar_snapshot", "trg_audit_ar", "trg_h6_ari_snapshot", "trg_h6_rp_append_only",
                 "trg_recalc_ar_inst", "trg_audit_rp", "trg_assign_receipt_metadata", "trg_sync_receipt_aliases"}
     for table in live["tables"]:
