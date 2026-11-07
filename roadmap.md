@@ -1,4 +1,5 @@
 ## 07/11 15:10 — Painel financeiro vendedor B3 (sem SQL/dados/publicação)
+- [ ] Complemento 15:14: revalidar flags atuais nos handlers, fechar/rejeitar diálogo por pendência/ator/pedido, testar cliques antigos e conciliar guards LIVE relatados sem alegar vulnerabilidade legada.
 - [x] Ler snapshot V1 pelo leitor existente; sinalizar datas estimadas na emissão da NF e juros Price, preservando legado.
 - [x] Bloquear decisões financeiras em accounting_pending, inclusive diálogo já aberto; fontes versionadas revelam possível lacuna ajuste pending→pending, estado LIVE não verificado e SQL intacto.
 - [x] 57/57 testes montados/focados, incluindo os 31 anteriores, exit 0; TXT/JSON e build automático preservados. Typecheck separado NOT_RUN; fullsuite não repetida.

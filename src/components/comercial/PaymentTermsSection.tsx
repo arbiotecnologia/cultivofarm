@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import {
   usePartnerOrderPaymentTerms,
   usePartnerOrderPaymentCondition,
@@ -60,7 +61,28 @@ export function PaymentTermsSection({
 
   const [dialog, setDialog] = useState<null | "reject" | "adjust" | "note">(null);
   const [text, setText] = useState("");
-  const decisionsUnavailable = accountingPending || !canApprove || conditionQuery.isError || conditionQuery.data === undefined;
+  const actionScope = useStorageAccessScope(`payment-terms-actions:${partnerOrderId}`);
+  const decisionsUnavailable = accountingPending || !canApprove || !actionScope.ready ||
+    termsQuery.isError || !terms || conditionQuery.isError || conditionQuery.data === undefined;
+  const current = useRef({ orderId: partnerOrderId, scope: actionScope.scope, unavailable: decisionsUnavailable, approved: false });
+  current.current = { orderId: partnerOrderId, scope: actionScope.scope, unavailable: decisionsUnavailable, approved: terms?.approval_status === "approved" };
+  const dialogContext = useRef<null | { orderId: string; scope: string; valid: () => boolean }>(null);
+  const closeDialog = () => { dialogContext.current = null; setDialog(null); setText(""); };
+  const captureAction = () => {
+    const valid = actionScope.capture();
+    return () => valid() && current.current.orderId === partnerOrderId && current.current.scope === actionScope.scope && !current.current.unavailable;
+  };
+  const renderValid = captureAction();
+  const openDialog = (kind: "reject" | "adjust" | "note") => {
+    if (!renderValid() || (kind === "reject" && current.current.approved)) return;
+    dialogContext.current = { orderId: partnerOrderId, scope: actionScope.scope, valid: captureAction() };
+    setDialog(kind);
+  };
+  useEffect(() => {
+    const ctx = dialogContext.current;
+    if (ctx && (!ctx.valid() || ctx.orderId !== partnerOrderId || ctx.scope !== actionScope.scope ||
+        (dialog === "reject" && current.current.approved))) closeDialog();
+  }, [partnerOrderId, actionScope.scope, decisionsUnavailable, terms?.approval_status, dialog]);
 
   if (termsQuery.isError || read?.state === "unverified") {
     return (
@@ -87,9 +109,11 @@ export function PaymentTermsSection({
   }
 
   const submit = () => {
-    if (decisionsUnavailable) return;
+    const ctx = dialogContext.current;
+    if (!renderValid() || !ctx?.valid() || ctx.orderId !== current.current.orderId || ctx.scope !== current.current.scope ||
+        (dialog === "reject" && current.current.approved)) { closeDialog(); return; }
     if (!text.trim()) { toast.error("Informe o texto."); return; }
-    const done = () => { setDialog(null); setText(""); };
+    const done = () => { if (ctx.valid()) closeDialog(); };
     if (dialog === "reject") {
       reject.mutate({ orderId: partnerOrderId, reason: text }, {
         onSuccess: () => { toast.success("Condição reprovada"); done(); },
@@ -153,21 +177,22 @@ export function PaymentTermsSection({
             <div className="flex flex-wrap gap-2 pt-2">
               <Button
                 size="sm"
-                onClick={() => { if (disabled) return; approve.mutate({ orderId: partnerOrderId }, {
-                  onSuccess: () => toast.success("Condição aprovada"),
-                  onError: (e: any) => toast.error(e.message ?? "Erro"),
+                onClick={() => { if (!renderValid() || current.current.approved || approve.isPending) return;
+                  const valid = captureAction(); approve.mutate({ orderId: partnerOrderId }, {
+                  onSuccess: () => { if (valid()) toast.success("Condição aprovada"); },
+                  onError: (e: any) => { if (valid()) toast.error(e.message ?? "Erro"); },
                 }); }}
                 disabled={disabled || approve.isPending}
               >
                 <ShieldCheck className="h-4 w-4 mr-1" /> Aprovar
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => setDialog("reject")} disabled={disabled}>
+              <Button size="sm" variant="destructive" onClick={() => openDialog("reject")} disabled={disabled}>
                 <ShieldAlert className="h-4 w-4 mr-1" /> Reprovar
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setDialog("adjust")} disabled={decisionsUnavailable}>
+              <Button size="sm" variant="outline" onClick={() => openDialog("adjust")} disabled={decisionsUnavailable}>
                 <RefreshCw className="h-4 w-4 mr-1" /> Solicitar ajuste
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setDialog("note")} disabled={decisionsUnavailable}>
+              <Button size="sm" variant="outline" onClick={() => openDialog("note")} disabled={decisionsUnavailable}>
                 <MessageCircle className="h-4 w-4 mr-1" /> Observação/Garantia
               </Button>
             </div>
@@ -175,7 +200,7 @@ export function PaymentTermsSection({
         </CardContent>
       </Card>
 
-      <Dialog open={!!dialog} onOpenChange={(v) => { if (!v) { setDialog(null); setText(""); } }}>
+      <Dialog open={!!dialog} onOpenChange={(v) => { if (!v) closeDialog(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -191,7 +216,7 @@ export function PaymentTermsSection({
             onChange={(e) => setText(e.target.value)}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={closeDialog}>Cancelar</Button>
             <Button onClick={submit} disabled={decisionsUnavailable}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
