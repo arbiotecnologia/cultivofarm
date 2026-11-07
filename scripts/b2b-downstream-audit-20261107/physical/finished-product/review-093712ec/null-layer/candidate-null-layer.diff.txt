@@ -1,0 +1,126 @@
+--- review-093712ec/null-layer/artifacts-before/candidate.sql.review	2026-11-07 18:46:07.079595896 +0000
++++ candidate.sql.review	2026-11-07 18:49:01.196444175 +0000
+@@ -7,18 +7,45 @@
+ ALTER TABLE public.entregas ADD COLUMN origem_estoque text,ADD COLUMN unidade_comercial text,ADD COLUMN conteudo_por_unidade numeric,ADD COLUMN unidade_conteudo text,ADD COLUMN quantidade_conteudo numeric,ADD COLUMN embalagem_id uuid,ADD COLUMN embalagem_versao integer;
+ ALTER TABLE public.estoque_produto ADD CONSTRAINT finished_product_unit_contract CHECK (
+  (origem_estoque IS NULL AND unidade_comercial IS NULL AND conteudo_por_unidade IS NULL AND unidade_conteudo IS NULL AND quantidade_conteudo IS NULL AND embalagem_id IS NULL AND embalagem_versao IS NULL)
+- OR (origem_estoque='compra_produto_acabado_revenda' AND envase_id IS NULL AND unidade_comercial='unidade' AND conteudo_por_unidade>0 AND conteudo_por_unidade::text NOT IN ('NaN','Infinity','-Infinity') AND unidade_conteudo IN ('kg','g','l','ml') AND quantidade=trunc(quantidade) AND (quantidade_reservada IS NULL OR quantidade_reservada=trunc(quantidade_reservada)) AND quantidade_conteudo=quantidade*conteudo_por_unidade AND embalagem_id IS NOT NULL AND embalagem_versao>0 AND ((unidade_conteudo IN ('kg','g') AND volume_total IS NULL) OR (unidade_conteudo='l' AND volume_total=quantidade_conteudo) OR (unidade_conteudo='ml' AND volume_total=quantidade_conteudo/1000)))
++ OR ((origem_estoque='compra_produto_acabado_revenda' AND envase_id IS NULL
++  AND unidade_comercial IS NOT NULL AND unidade_comercial='unidade'
++  AND conteudo_por_unidade IS NOT NULL AND conteudo_por_unidade>0 AND conteudo_por_unidade::text NOT IN ('NaN','Infinity','-Infinity')
++  AND unidade_conteudo IS NOT NULL AND unidade_conteudo IN ('kg','g','l','ml')
++  AND quantidade IS NOT NULL AND quantidade=trunc(quantidade)
++  AND (quantidade_reservada IS NULL OR quantidade_reservada=trunc(quantidade_reservada))
++  AND quantidade_conteudo IS NOT NULL AND quantidade_conteudo=quantidade*conteudo_por_unidade
++  AND embalagem_id IS NOT NULL AND embalagem_versao IS NOT NULL AND embalagem_versao>0
++  AND ((unidade_conteudo IN ('kg','g') AND volume_total IS NULL)
++    OR (unidade_conteudo='l' AND volume_total IS NOT NULL AND volume_total=quantidade_conteudo)
++    OR (unidade_conteudo='ml' AND volume_total IS NOT NULL AND volume_total=quantidade_conteudo/1000))) IS TRUE)
+ );
+ -- A referência de embalagem é snapshot imutável; a composição B3 é dependência de revisão, não simulada por FK no catálogo líquido antigo.
+ CREATE FUNCTION platform_private.finished_product_stock_valid_v1(s public.estoque_produto) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+- SELECT s.origem_estoque='compra_produto_acabado_revenda' AND s.unidade_comercial='unidade' AND s.conteudo_por_unidade>0 AND s.unidade_conteudo IN ('kg','g','l','ml') AND s.quantidade>0 AND s.quantidade=trunc(s.quantidade) AND s.quantidade_conteudo=s.quantidade*s.conteudo_por_unidade AND s.embalagem_id IS NOT NULL AND s.embalagem_versao>0 AND s.envase_id IS NULL
+- AND EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled)
+- AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.id=s.lote_id AND l.produto_id=s.produto_id)
+- AND ((s.unidade_conteudo IN ('kg','g') AND s.volume_total IS NULL) OR (s.unidade_conteudo='l' AND s.volume_total=s.quantidade_conteudo) OR (s.unidade_conteudo='ml' AND s.volume_total=s.quantidade_conteudo/1000));
++ SELECT (s.origem_estoque='compra_produto_acabado_revenda'
++  AND s.unidade_comercial IS NOT NULL AND s.unidade_comercial='unidade'
++  AND s.conteudo_por_unidade IS NOT NULL AND s.conteudo_por_unidade>0
++  AND s.unidade_conteudo IS NOT NULL AND s.unidade_conteudo IN ('kg','g','l','ml')
++  AND s.quantidade IS NOT NULL AND s.quantidade>0 AND s.quantidade=trunc(s.quantidade)
++  AND s.quantidade_conteudo IS NOT NULL AND s.quantidade_conteudo=s.quantidade*s.conteudo_por_unidade
++  AND s.embalagem_id IS NOT NULL AND s.embalagem_versao IS NOT NULL AND s.embalagem_versao>0 AND s.envase_id IS NULL
++  AND EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
++  AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.id=s.lote_id AND l.produto_id=s.produto_id)
++  AND ((s.unidade_conteudo IN ('kg','g') AND s.volume_total IS NULL)
++    OR (s.unidade_conteudo='l' AND s.volume_total IS NOT NULL AND s.volume_total=s.quantidade_conteudo)
++    OR (s.unidade_conteudo='ml' AND s.volume_total IS NOT NULL AND s.volume_total=s.quantidade_conteudo/1000))) IS TRUE;
+ $$;
+ REVOKE ALL ON FUNCTION platform_private.finished_product_stock_valid_v1(public.estoque_produto) FROM PUBLIC,anon,authenticated,service_role;
+ CREATE FUNCTION platform_private.finished_product_delivery_valid_v1(s public.estoque_produto,e public.entregas,l public.lotes) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+- SELECT platform_private.finished_product_stock_valid_v1(s) AND l.programacao_id IS NULL AND e.origem_estoque=s.origem_estoque AND e.unidade_comercial=s.unidade_comercial AND e.conteudo_por_unidade=s.conteudo_por_unidade AND e.unidade_conteudo=s.unidade_conteudo AND e.quantidade_conteudo=s.quantidade_conteudo AND e.embalagem_id=s.embalagem_id AND e.embalagem_versao=s.embalagem_versao AND e.quantidade_entregue=s.quantidade AND ((s.unidade_conteudo IN ('kg','g') AND e.volume_entregue_ml IS NULL) OR (s.unidade_conteudo='l' AND e.volume_entregue_ml=round(s.quantidade_conteudo*1000,6)) OR (s.unidade_conteudo='ml' AND e.volume_entregue_ml=round(s.quantidade_conteudo,6)));
++ SELECT (platform_private.finished_product_stock_valid_v1(s) IS TRUE AND l.id IS NOT NULL AND l.programacao_id IS NULL
++  AND e.origem_estoque=s.origem_estoque AND e.unidade_comercial IS NOT NULL AND e.unidade_comercial=s.unidade_comercial
++  AND e.conteudo_por_unidade IS NOT NULL AND e.conteudo_por_unidade=s.conteudo_por_unidade
++  AND e.unidade_conteudo IS NOT NULL AND e.unidade_conteudo=s.unidade_conteudo
++  AND e.quantidade_conteudo IS NOT NULL AND e.quantidade_conteudo=s.quantidade_conteudo
++  AND e.embalagem_id=s.embalagem_id AND e.embalagem_versao IS NOT NULL AND e.embalagem_versao=s.embalagem_versao
++  AND e.quantidade_entregue=s.quantidade
++  AND ((s.unidade_conteudo IN ('kg','g') AND e.volume_entregue_ml IS NULL)
++    OR (s.unidade_conteudo='l' AND e.volume_entregue_ml IS NOT NULL AND e.volume_entregue_ml=round(s.quantidade_conteudo*1000,6))
++    OR (s.unidade_conteudo='ml' AND e.volume_entregue_ml IS NOT NULL AND e.volume_entregue_ml=round(s.quantidade_conteudo,6)))) IS TRUE;
+ $$;
+ REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;
+ 
+@@ -189,7 +216,7 @@
+       USING ERRCODE = 'check_violation';
+   END IF;
+ 
+-  IF v_item.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_item) THEN
++  IF v_item.origem_estoque IS NOT NULL AND platform_private.finished_product_stock_valid_v1(v_item) IS NOT TRUE THEN
+     RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
+   END IF;
+   IF v_item.unidade_comercial='unidade' AND p_qty<>trunc(p_qty) THEN
+@@ -344,7 +371,7 @@
+     RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
+   END IF;
+   IF v_est.origem_estoque IS NOT NULL THEN
+-    IF NOT platform_private.finished_product_stock_valid_v1(v_est) THEN
++    IF platform_private.finished_product_stock_valid_v1(v_est) IS NOT TRUE THEN
+       RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
+     END IF;
+   ELSIF v_est.volume_total IS NULL OR v_est.volume_total <= 0 OR v_est.volume_total::text IN ('NaN','Infinity','-Infinity') THEN
+@@ -419,7 +446,7 @@
+  THEN RAISE EXCEPTION 'DELIVERY_MERGE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT * INTO v_s FROM public.estoque_produto WHERE id=p_item FOR UPDATE;
+  PERFORM platform_private.stock_motor_item(p_item,'cancelamento_reserva',p_payload);
+- IF v_s.status::text<>'reservado' OR v_s.quantidade IS DISTINCT FROM v_s.quantidade_reservada OR v_s.quantidade IS NULL OR v_s.quantidade<=0 OR v_s.quantidade::text IN ('NaN','Infinity','-Infinity') OR (v_s.origem_estoque IS NULL AND (v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity'))) OR (v_s.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_stock_valid_v1(v_s)) OR NOT EXISTS(SELECT 1 FROM public.entregas WHERE id=v_ent AND organization_id=v_org AND estoque_produto_id=p_item AND quantidade_entregue=v_s.quantidade) THEN RAISE EXCEPTION 'DELIVERY_MERGE_BALANCE_DENIED' USING ERRCODE='PT409'; END IF;
++ IF v_s.status::text<>'reservado' OR v_s.quantidade IS DISTINCT FROM v_s.quantidade_reservada OR v_s.quantidade IS NULL OR v_s.quantidade<=0 OR v_s.quantidade::text IN ('NaN','Infinity','-Infinity') OR (v_s.origem_estoque IS NULL AND (v_s.volume_total IS NULL OR v_s.volume_total<=0 OR v_s.volume_total::text IN ('NaN','Infinity','-Infinity'))) OR (v_s.origem_estoque IS NOT NULL AND platform_private.finished_product_stock_valid_v1(v_s) IS NOT TRUE) OR NOT EXISTS(SELECT 1 FROM public.entregas WHERE id=v_ent AND organization_id=v_org AND estoque_produto_id=p_item AND quantidade_entregue=v_s.quantidade) THEN RAISE EXCEPTION 'DELIVERY_MERGE_BALANCE_DENIED' USING ERRCODE='PT409'; END IF;
+  SELECT * INTO v_main FROM public.estoque_produto WHERE lote_id=v_s.lote_id AND status='disponivel' AND coalesce(quantidade_reservada,0)=0 AND id<>p_item ORDER BY id LIMIT 1 FOR UPDATE;
+  PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+  IF v_main.id IS NULL THEN
+@@ -479,7 +506,7 @@
+  IF s.id IS NULL OR l.id IS NULL OR e.lote_id IS DISTINCT FROM l.id
+  OR s.produto_id IS DISTINCT FROM l.produto_id OR e.produto_id IS DISTINCT FROM l.produto_id
+  OR (s.origem_estoque IS NULL AND (pp.id IS NULL OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL OR pp.produto_id IS DISTINCT FROM l.produto_id))
+- OR (s.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_delivery_valid_v1(s,e,l))
++ OR (s.origem_estoque IS NOT NULL AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS NOT TRUE)
+  OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
+  THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+  PERFORM 1 FROM public.entrega_comprovantes WHERE id=e.comprovante_id FOR UPDATE;
+@@ -586,7 +613,7 @@
+  IF s.id IS NULL OR l.id IS NULL OR e.lote_id IS DISTINCT FROM l.id
+  OR s.produto_id IS DISTINCT FROM l.produto_id OR e.produto_id IS DISTINCT FROM l.produto_id
+  OR (s.origem_estoque IS NULL AND (pp.id IS NULL OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL OR pp.produto_id IS DISTINCT FROM l.produto_id))
+- OR (s.origem_estoque IS NOT NULL AND NOT platform_private.finished_product_delivery_valid_v1(s,e,l))
++ OR (s.origem_estoque IS NOT NULL AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS NOT TRUE)
+  OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
+  THEN RAISE EXCEPTION 'DELIVERY_SEND_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+ 
+@@ -801,7 +828,7 @@
+ 
+   -- Compra para revenda usa ticket privado e snapshot; demais entradas continuam exigindo envase.
+   IF NEW.origem_estoque='compra_produto_acabado_revenda' THEN
+-    IF NOT platform_private.finished_product_stock_valid_v1(NEW)
++    IF platform_private.finished_product_stock_valid_v1(NEW) IS NOT TRUE
+      OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=pg_catalog.txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id) THEN
+       RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_ENTRY_DENIED' USING ERRCODE='42501';
+     END IF;
+@@ -860,7 +887,7 @@
+    AND c.ctx->'metadata'->>'unidade_conteudo'=NEW.unidade_conteudo
+    AND (c.ctx->'metadata'->>'conteudo_por_unidade')::numeric=NEW.conteudo_por_unidade
+    AND (c.ctx->'metadata'->>'quantidade_conteudo')::numeric=NEW.quantidade_conteudo
+-   AND platform_private.finished_product_stock_valid_v1(NEW)
++   AND platform_private.finished_product_stock_valid_v1(NEW) IS TRUE
+    AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='finished_product_purchase_entry_v1' AND t.target=NEW.id)
+   THEN RETURN NEW; END IF;
+   RAISE EXCEPTION 'FINISHED_PRODUCT_PURCHASE_CONTEXT_DENIED' USING ERRCODE='42501';
+@@ -876,7 +903,7 @@
+     AND NEW.quantidade_reservada=NEW.quantidade AND NEW.lote_id=parent.lote_id
+     AND NEW.envase_id IS NOT DISTINCT FROM parent.envase_id AND NEW.produto_id IS NOT DISTINCT FROM parent.produto_id AND NEW.microrganismo_id IS NOT DISTINCT FROM parent.microrganismo_id
+     AND NEW.validade IS NOT DISTINCT FROM parent.validade
+-    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))
++    AND ((parent.origem_estoque IS NULL AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade) OR (parent.origem_estoque='compra_produto_acabado_revenda' AND platform_private.finished_product_stock_valid_v1(parent) IS TRUE AND NEW.origem_estoque=parent.origem_estoque AND NEW.unidade_comercial=parent.unidade_comercial AND NEW.conteudo_por_unidade=parent.conteudo_por_unidade AND NEW.unidade_conteudo=parent.unidade_conteudo AND NEW.quantidade_conteudo=NEW.quantidade*parent.conteudo_por_unidade AND NEW.embalagem_id=parent.embalagem_id AND NEW.embalagem_versao=parent.embalagem_versao AND NEW.volume_total IS NOT DISTINCT FROM (NEW.quantidade*parent.volume_total/parent.quantidade)))
+     AND NEW.reservado_para_os_id::text IS NOT DISTINCT FROM a->>'os_id' AND NEW.reservado_para_os_tipo IS NOT DISTINCT FROM a->>'os_tipo'
+     AND NEW.reservado_para_cliente_id::text IS NOT DISTINCT FROM a->>'cliente_id'
+     AND NEW.reservado_para_partner_id::text IS NOT DISTINCT FROM a->>'partner_id' AND NEW.reservado_para_partner_order_id::text IS NOT DISTINCT FROM a->>'partner_order_id'

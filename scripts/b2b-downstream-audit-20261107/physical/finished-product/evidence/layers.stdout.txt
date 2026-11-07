@@ -1,0 +1,20 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.1s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS ausência das duas dependências downstream simulada somente no PG descartável
+PASS pacote completo falha fechado na primeira dependência ausente
+PASS PRE do pacote completo não cria objetos antes da dependência ausente
+PASS camada de entrada instala sem presumir confirmação/envio
+PASS camada de entrada não cria nem remove pins das dependências ausentes
+PASS POST da entrada confirma seus nove corpos, novos helpers e gate fechado
+PASS camada downstream continua bloqueada enquanto a dependência não existe
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS compra canônica funciona na camada de entrada sem downstream
+PASS dependência reconstituída com o corpo capturado exato: platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)
+PASS dependência reconstituída com o corpo capturado exato: platform_private.delivery_send_apply_v1(uuid,timestamptz,text)
+PASS camada downstream instala somente após dependências e POST da entrada
+PASS POST downstream confirma os dois corpos alterados e gate fechado
+PASS camadas compostas preservam reserva→expedição→entrega sem segunda baixa
+PASS POST completo coincide com a composição das duas camadas
+RESULT 16 / 16 exit 0
