@@ -18,6 +18,8 @@ def extract(text, qualified):
     if not m:
         m = re.search(r"CREATE (?:OR REPLACE )?FUNCTION " + re.escape(qualified) + r"\b.*?END;\s*\$function\$", text, re.S)
     if not m:
+        m = re.search(r"CREATE (?:OR REPLACE )?FUNCTION " + re.escape(qualified) + r"\b.*?END\s*\$entry\$;", text, re.S)
+    if not m:
         raise AssertionError("missing source " + qualified)
     return re.sub(r"^CREATE (?:OR REPLACE )?FUNCTION", "CREATE OR REPLACE FUNCTION", m.group())
 
