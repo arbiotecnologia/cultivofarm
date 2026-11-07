@@ -1,10 +1,11 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.1s
+CHECKPOINT sql_calls=1 elapsed=2.5s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
-PASS FAIL candidate PRE/install failed
-ERROR:  42601: syntax error at or near "CREATE"
-LINE 119: CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_...
-          ^
-LOCATION:  scanner_yyerror, scan.l:1248
+PASS candidato instalado com os cinco PRE pins e sem novos grants
+PASS instalação permanece operacionalmente desligada
+PASS gate fechado nega reserva de produto acabado
+PASS quimico kg: pedido/OS → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL
+PASS FAIL ERROR:  DELIVERY_REPLAY_CONFLICT
+CONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 51 at RAISE
 

@@ -140,7 +140,7 @@ BEGIN
   RETURN v_new_id;
 EXCEPTION WHEN OTHERS THEN PERFORM platform_private.stock_motor_context_set(NULL); PERFORM public.fn_estoque_ctx_close(); RAISE;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb DEFAULT '{}'::jsonb)
  RETURNS jsonb
@@ -299,7 +299,7 @@ BEGIN
 
   RETURN jsonb_build_object('success', true, 'replay', false, 'entrega_id', v_id, 'status', 'separado', 'message', 'Entrega registrada. Confirme a entrega para concluir a OS.');
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION platform_private.delivery_merge_split_20261030(p_item uuid,p_ctx jsonb,p_payload jsonb)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$

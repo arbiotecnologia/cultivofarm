@@ -1,6 +1,6 @@
 -- POST_RUNTIME_REQUIRED platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb) source_body_sha256=ad200c12014f95e7212b252cefd0bb03812de4b291c6f79176dded16d9ec2160
 -- POST_RUNTIME_REQUIRED platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) source_body_sha256=b2af64762c97f9042e393ad17ca65088ddec94a3c4fe42c63875257123c25b94
 -- POST_RUNTIME_REQUIRED platform_private.delivery_send_apply_v1(uuid,timestamptz,text) source_body_sha256=068f6cefd3b09c8b1fe181da1bd72e49fd90933e32301aca864a197a7b6cae1e
--- POST_RUNTIME_REQUIRED public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) source_body_sha256=53562e317fc06346c1b26841553c29fd09dadcbe1048bdb5251daf4e2f9edb7a
--- POST_RUNTIME_REQUIRED public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) source_body_sha256=2d4a51942868dd0c4aa6b60691b23f05cc74770efec737edfda53415ff331eaf
+-- POST_RUNTIME_REQUIRED public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) source_body_sha256=459e2d65589da0cdb74bb97434b295644e52532c2ff432bdc3de4a409b5c9498
+-- POST_RUNTIME_REQUIRED public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) source_body_sha256=b219e37f5d286d8a30186582da62ccec20a72acc918899b38a9b8a7cb3cb2a80
 DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;
