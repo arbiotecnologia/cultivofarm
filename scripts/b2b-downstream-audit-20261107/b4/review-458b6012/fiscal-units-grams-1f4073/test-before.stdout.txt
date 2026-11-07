@@ -118,7 +118,7 @@ FAIL 500 g: NF parcial 1 UN = 0,5 kg :: ERROR:  FISCAL_QUANTITY_UNIT_DIVERGENCE
 CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 79 at RAISE
 FAIL 500 g: 500 g comerciais = 1 embalagem :: ERROR:  FISCAL_QUANTITY_OVERALLOCATED
 CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 86 at RAISE
-FAIL 500 g: 1 UN com 0,5 g tributáveis deve negar :: {'success': True, 'replayed': False, 'residual': 93.26, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000604', 'receivable_id': '11987fc0-50b6-4cb8-8a5d-ed2c9828fe6f', 'financed_interest': 3.26}
+FAIL 500 g: 1 UN com 0,5 g tributáveis deve negar :: {'success': True, 'replayed': False, 'residual': 93.26, 'principal': 90.0, 'document_id': '00000000-0000-0000-0000-000000000604', 'receivable_id': 'e5382635-9eca-411d-b5bb-bf8fc5e77c7b', 'financed_interest': 3.26}
 FAIL 500 g: 1 UN com 0,5 g tributáveis deve negar: nenhum título/alocação :: before=0, after=2
 PASS 1 UN = 25 kg em NF parcial
 PASS 1 UN = 25 kg em NF parcial: quantidade de pedido normalizada

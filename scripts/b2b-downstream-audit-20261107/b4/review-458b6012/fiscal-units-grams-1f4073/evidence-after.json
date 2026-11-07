@@ -1,7 +1,39 @@
 {
   "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
   "phase": "after",
-  "candidate_sha256": "4bcd32e33bba7ed1dc2e8a8b0a91a825bced0d6efd8433d54fd1ed9a2422a465",
+  "candidate_sha256": "818da9e4f001494bdc50c2265e3adfa9d04ec3cd421454c3e1a2ce7ca17b6a8b",
+  "canonical_fixture": {
+    "status": "OBSERVED_IN_DISPOSABLE_PG",
+    "real_writers": [
+      "public.solid_pack_offer_save_v1",
+      "public.solid_pack_price_set_v1",
+      "public.create_partner_order_condition_secure"
+    ],
+    "packaging_id": "da7a59b8-700b-49eb-b03c-dfe6c6995c59",
+    "presentation": {
+      "kg": 0.5,
+      "unit": "g",
+      "label": "Fertilizante 500 g TESTE · 500 g"
+    },
+    "order_snapshot": {
+      "unit": "unidade",
+      "volume": null,
+      "quantity": 2.0,
+      "order_net": 180.0,
+      "content_kg": 0.5,
+      "unit_price": 90.0,
+      "order_final": 186.52,
+      "display_unit": "g",
+      "order_interest": 6.52
+    },
+    "freight_kg": "1.00",
+    "liquid_without_pack": {
+      "volume": 1000.0,
+      "packaging": null,
+      "volume_snapshot": 1000.0
+    },
+    "liquid_pack_denial": "ERROR:  PACK_PRODUCT_NOT_SOLID\nCONTEXT:  PL/pgSQL function public.solid_pack_offer_save_v1(uuid,uuid,text,text,numeric,integer,text) line 21 at RAISE"
+  },
   "status": "PASS",
   "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
   "passed": 177,
