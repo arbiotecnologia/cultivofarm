@@ -404,7 +404,7 @@ def main():
                         session(UB, f"SELECT {create_sql(P, PLD, [L(1)], hc, 'TESTE-W2', CASH)};")], [0, 0.4])
         check("duas sessões: versão aposentada durante a espera -> negada", res[1].returncode != 0 and "payment_condition_unavailable" in res[1].stderr and idem("TESTE-W2") == "0", res[1].stderr[-200:])
         j, e = publish(UADM, PLD, "dinheiro", M_CASH, 0, 1, 0, 1); CASH2 = ch("dinheiro", 2, 0)
-        check("dinheiro v2 após aposentar: atribuição da v1 não ressuscita (aposentada não é copiada? copia ativa)", j and j["condition"]["version"] == 2, e)
+        check("dinheiro v2 publicada após aposentar a v1 (nova versão explícita)", j and j["condition"]["version"] == 2, e)
         assign(UADM, P, PLD, "dinheiro", 2)
         hc = sim(UB, PLD, [L(1)], CASH2)[0]["cart_hash"]
         res = parallel([f"BEGIN; UPDATE public.commercial_payment_plan_assignments SET status='revoked' WHERE plan_id='{PLD}' AND partner_id='{P}'; SELECT pg_sleep(1.2); COMMIT;",
