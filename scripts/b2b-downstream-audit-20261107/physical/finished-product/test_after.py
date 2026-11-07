@@ -187,9 +187,11 @@ def main():
         holder = B.T.session("BEGIN;" + purchase(concurrent, 2, concurrent_key))
         worker = B.T.session(purchase(concurrent, 2, concurrent_key))
         B.T.wait()
-        B.T.finish(holder, "COMMIT;")
+        holder_out, holder_err = B.T.finish(holder, "COMMIT;")
         out, err = B.T.finish(worker)
-        assert not err and '"replay": true' in out, out + err
+        combined = holder_out + "\n" + out
+        assert not holder_err and not err, holder_out + holder_err + out + err
+        assert combined.count('"replay": false') == 1 and combined.count('"replay": true') == 1, combined
         assert B.last("SELECT (SELECT count(*) FROM public.lotes WHERE codigo_lote='LOTE-purchase-concurrent-replay')=1 AND (SELECT count(*) FROM public.estoque_movimentacoes WHERE idempotency_key='purchase-concurrent-replay')=1;") == "t"
         B.ok("duas compras concorrentes com a mesma chave geram uma única entrada e replay")
 
