@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-baseline.py", line 133, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-baseline.py", line 88, in main
+    psql(f"""BEGIN;
+    ~~~~^^^^^^^^^^^
+             ALTER TABLE public.partner_orders DISABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms DISABLE TRIGGER USER;
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+             VALUES ('{terms_id}','{legacy_id}','{SP.PLD}','pending',100);
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             ALTER TABLE public.partner_orders ENABLE TRIGGER USER; ALTER TABLE public.partner_order_payment_terms ENABLE TRIGGER USER; COMMIT;""")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  null value in column "plan_name_snapshot" of relation "partner_order_payment_terms" violates not-null constraint
+DETAIL:  Failing row contains (10000000-0000-0000-0000-000000000002, 10000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000071, null, null, null, null, null, 1, null, compound, 0.00, 0.00, 0.00, 0.00, 100.00, pending, null, null, null, null, 2026-11-07 15:31:19.271183+00, 2026-11-07 15:31:19.271183+00, null, null).
+
