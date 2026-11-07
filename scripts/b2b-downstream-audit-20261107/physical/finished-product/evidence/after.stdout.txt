@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.0s
+CHECKPOINT sql_calls=1 elapsed=2.4s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -21,7 +21,7 @@ PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou e
 PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
-CHECKPOINT sql_calls=100 elapsed=14.9s
+CHECKPOINT sql_calls=100 elapsed=15.3s
 PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
 PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
@@ -46,17 +46,8 @@ PASS B2B permanece fechado mesmo com compra e produto acabado válidos
 PASS nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação
 PASS revogação durante espera da compra é revalidada antes de criar lote/estoque
 PASS duas compras concorrentes com a mesma chave geram uma única entrada e replay
-PASS FAIL ERROR:  P0001: FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_guard_v1()
-CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
-LOCATION:  exec_stmt_raise, pl_exec.c:3911
-
-Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 234, in main
-    assert loaded.returncode == 0, loaded.stderr
-           ^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: ERROR:  P0001: FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_guard_v1()
-CONTEXT:  PL/pgSQL function inline_code_block line 2 at RAISE
-LOCATION:  exec_stmt_raise, pl_exec.c:3911
-
-
-RESULT 46 / 46 exit 1
+PASS POST confirma gate fechado após a bateria
+PASS rollback deny-only executa sem restaurar grants ou apagar objetos
+PASS compra após rollback permanece fechada
+PASS rollback preserva compras, estoque, entregas e histórico integralmente
+RESULT 49 / 49 exit 0
