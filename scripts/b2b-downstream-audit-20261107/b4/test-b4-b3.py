@@ -300,7 +300,7 @@ WHERE s.partner_id='{B3.P}';""")
         finance_schema()
         category_id = B3.psql("SELECT id FROM public.financial_categories WHERE active AND upper(btrim(type))='RECEITA' ORDER BY id LIMIT 1").stdout.strip()
 
-        def manual_title(title_id, customer_id, amount, status="OPEN", due="2026-11-03", partner_id=None):
+        def manual_title(title_id, customer_id, amount, status="OPEN", due="'2026-11-03'", partner_id=None):
             partner_sql = f"'{partner_id}'" if partner_id else "NULL"
             return server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable
               (id,organization_id,origin_type,customer_id,partner_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
