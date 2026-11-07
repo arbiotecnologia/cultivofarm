@@ -36,7 +36,9 @@ B = load("b3h_candidate", B3_DIR / "test-local-pg.py")
 G = load("adjustment_generator", HERE / "generate-adjustment-fix.py")
 SP = B.SP
 SP.PORT = "55472"
-EVIDENCE = HERE / "evidence/adjustment-candidate.json"
+EVIDENCE = HERE / "review-31430566/scope-live-1638/adjustment-candidate.json"
+UFIN, UGC = B.UFIN, B.UGC
+UCUMUL = "20000000-0000-0000-0000-000000000031"
 
 LOAD_ORDER = [
     "platform_private.platform_actor_access_ready(uuid)",
