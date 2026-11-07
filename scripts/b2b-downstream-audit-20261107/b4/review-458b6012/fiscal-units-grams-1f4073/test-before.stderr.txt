@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/b4/test-b4-fiscal-units.py", line 22, in <module>
+    G_PRODUCT = B3.u(400)
+                ^^
+NameError: name 'B3' is not defined
