@@ -16,7 +16,7 @@
   "seller_scope_contract": "B2B_SELLER_FINANCIAL_TEAM_V1",
   "seller_scope_helper": {
     "signature": "platform_private.b2b_seller_financial_scope_error(uuid,uuid)",
-    "candidate_md5": "9e111e584803d1ed3cb14f74e823095e",
+    "candidate_md5": "c46617ec2a1320c9c05e3da33af8a350",
     "owner": "postgres",
     "acl": "{postgres=X/postgres}",
     "acl_md5": "aae127bcdd4f7096876d7094c14eabd1",

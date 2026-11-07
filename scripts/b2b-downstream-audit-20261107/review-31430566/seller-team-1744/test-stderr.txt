@@ -2,8 +2,16 @@ Traceback (most recent call last):
   File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 648, in <module>
     sys.exit(main())
              ~~~~^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 246, in main
-    raise RuntimeError("02-install falhou: " + r.stderr)
-RuntimeError: 02-install falhou: psql:/dev-server/scripts/b2b-downstream-audit-20261107/02-install.sql.review:426: ERROR:  ADJUSTMENT_HELPER_PIN_DRIFT: actual=c46617ec2a1320c9c05e3da33af8a350 expected=9e111e584803d1ed3cb14f74e823095e
-CONTEXT:  PL/pgSQL function inline_code_block line 8 at RAISE
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/test-adjustment-candidate.py", line 251, in main
+    helper_closed = psql(f"""SELECT NOT has_function_privilege('PUBLIC','{G.HELPER_SIG}','EXECUTE')
+                    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                  AND NOT has_function_privilege('anon','{G.HELPER_SIG}','EXECUTE')
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                  AND NOT has_function_privilege('authenticated','{G.HELPER_SIG}','EXECUTE')
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                  AND NOT has_function_privilege('service_role','{G.HELPER_SIG}','EXECUTE')""").stdout.strip()
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-solid-packaging-order-20261106/test-local-pg.py", line 50, in psql
+    raise RuntimeError(r.stderr)
+RuntimeError: ERROR:  role "PUBLIC" does not exist
 
