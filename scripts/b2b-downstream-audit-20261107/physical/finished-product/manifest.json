@@ -1,0 +1,49 @@
+{
+  "status": "INACTIVE_NOT_APPROVED",
+  "hosted": false,
+  "operation_default": false,
+  "changed_functions": [
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+    "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+  ],
+  "new_objects": [
+    "platform_private.finished_product_gate_v1",
+    "platform_private.finished_product_stock_valid_v1",
+    "platform_private.finished_product_delivery_valid_v1"
+  ],
+  "new_columns": [
+    "origem_estoque",
+    "unidade_comercial",
+    "conteudo_por_unidade",
+    "unidade_conteudo",
+    "quantidade_conteudo",
+    "embalagem_id",
+    "embalagem_versao"
+  ],
+  "new_grants": [],
+  "files": {
+    "baseline.json": {
+      "sha256": "43fdd5d177cd62aafb6bdfbebc7e180a1d24c9a1065b86848dbdbe260b4f8429",
+      "bytes": 1808
+    },
+    "candidate.sql.review": {
+      "sha256": "7ff4f5550ee4f787086c66d0ab31093af9513e5aef0f7df18e532103f053f933",
+      "bytes": 43663
+    },
+    "install.sql.review": {
+      "sha256": "1a2758affe2162f5df258973c80c64ebce52edfa1a88e10bcefa512da8494d16",
+      "bytes": 49557
+    },
+    "postflight.sql.review": {
+      "sha256": "d41bbb38700a2b7445ecfa3b5f1d6a2546baa4a6d5da953720a3d8fe859b2e1a",
+      "bytes": 1037
+    },
+    "rollback.sql.review": {
+      "sha256": "be726eba72da3eed65ef94d2b4a3be2dc1015615caf0c11c1635cd0d1df1b2f5",
+      "bytes": 305
+    }
+  }
+}
