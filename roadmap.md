@@ -1,3 +1,8 @@
+## 07/11 18:25 — Revisão 1f4073: snapshot em gramas continua armazenado em kg
+- [ ] Reproduzir com writers reais locais uma apresentação de 500 g gravada como `0,500 kg`, pedido canônico de 2 UN, preço/frete preservados e NF parcial fictícia de 1 UN; líquido sem pack segue por `volume_ml` e writer líquido whole-pack deve negar.
+- [ ] Corrigir somente o candidato B4 por gerador: `packaging_peso_liquido_kg_snapshot` é sempre kg; `packaging_unidade_conteudo_snapshot='g'` é unidade de exibição, não a dimensão do valor armazenado. Aceitar 1 UN=500 g=0,5 kg e negar 1 UN=0,5 g, sem preço por peso, fração, backfill, grants ou operação hospedada.
+- [ ] Rerodar a matriz fiscal focada e as regressões B4 pertinentes, consolidar PRE/POST/diff/JSON/TXT/exits/hashes e manter o candidato INATIVO/BLOQUEADO/NÃO APROVADO. Demais pendências da fila ficam preservadas.
+
 ## 07/11 18:13 — Forma real de títulos MANUAL com `partner_id=NULL`
 - [x] Registrar os cinco títulos ARBio relatados READONLY (4 OPEN/1 OVERDUE, `partner_id=NULL`, clientes ligados a parceiros ativos do mesmo owner) sem alterar/cancelar dados LIVE nem presumir origem monetária.
 - [x] Reproduzir históricos antes do trigger candidato, com os nove gatilhos capturados ativos: antes **86/100, 14 falhas, exit 1**. A forma real omitiu saldo/aberto e atraso (`0/0`), permitiu baixa e simulação; múltiplos parceiros no mesmo cliente e conflitos `partner_id`/`customer_id`/owner não tiveram reconciliação explícita.

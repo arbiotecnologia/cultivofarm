@@ -12,11 +12,14 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 from decimal import Decimal
 
 H = pathlib.Path(__file__).resolve().parent
 ROOT = H.parents[2]
-OUT = H / "review-458b6012" / "fiscal-units"
+OUT = H / "review-458b6012" / "fiscal-units-grams-1f4073"
+PACK = ROOT / "scripts/b2b-solid-packaging-order-20261106"
+G_PRODUCT = B3.u(400)
 
 
 def load(name, path):
