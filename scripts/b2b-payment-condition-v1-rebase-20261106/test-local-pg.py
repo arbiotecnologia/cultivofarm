@@ -490,12 +490,39 @@ def main():
         check("cotação idempotente: replay idêntico devolve o MESMO recibo/ACK sem duplicar",
               j2 == j and psql(f"SELECT (SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}')||':'||(SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{oq}')").stdout.strip() == "1:1"
               and psql(f"SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo='pedido_b2b_cotacao_respondida' AND link='/portal-parceiro/pedidos'").stdout.strip() == nnotes, e or j2)
+        # Recibo JÁ existente: cada revogação ocorre enquanto o replay espera o advisory da cotação.
+        # A autorização inicial passa; a reautorização pós advisory+row lock deve impedir RETURN receipt.result.
+        def replay_revocation(label, mutation, restore, token):
+            res = parallel([f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_quote:{oq}',0)); SELECT pg_sleep(1.2); COMMIT;",
+                            session(UADM, f"SELECT public.respond_b2b_order_quote_secure('{oq}','{js(qlines)}'::jsonb,NULL,NULL,NULL);"),
+                            mutation], [0, 0.25, 0.7])
+            psql(restore)
+            check(f"replay com recibo existente: {label} durante espera bloqueia devolução do ACK",
+                  res[1].returncode != 0 and token in res[1].stderr
+                  and psql(f"SELECT count(*) FROM platform_private.b2b_quote_response_receipts WHERE order_id='{oq}'").stdout.strip() == "1",
+                  res[1].stderr[-300:])
+        replay_revocation("papel revogado",
+                          f"DELETE FROM public.user_roles WHERE user_id='{UADM}' AND role='administrador';",
+                          f"INSERT INTO public.user_roles VALUES ('{UADM}','administrador');", "forbidden_quote_response")
+        replay_revocation("perfil desativado",
+                          f"UPDATE public.profiles SET ativo=false WHERE user_id='{UADM}';",
+                          f"UPDATE public.profiles SET ativo=true WHERE user_id='{UADM}';", "C2_EXTERNAL_OWNER_DENIED")
+        replay_revocation("vínculo perfil/tenant alterado",
+                          f"UPDATE public.profiles SET organization_id='{F}' WHERE user_id='{UADM}';",
+                          f"UPDATE public.profiles SET organization_id='{A}' WHERE user_id='{UADM}';", "C2_EXTERNAL_OWNER_DENIED")
         denied("cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia",
                respond(UADM, oq, [{"item_id": qi, "unit_price": 999}]), "quote_idempotency_conflict")
         check("cotação: conflito não altera termos", psql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq}'").stdout.strip() == nterms)
         j, e = sim(UB, PLQ, [L(1)], BOL); hq2 = j and j["cart_hash"]
         j, e = create(UB, PLQ, [L(1)], hq2, "TESTE-COT-ROLLBACK", BOL); oq_pending = j and j["id"]
         check("segunda cotação sintética fica pendente para prova de rollback", j and j["status"] == "aguardando_cotacao", e or j)
+        qi_pending_zero = psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{oq_pending}'").stdout.strip() if oq_pending else ""
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'")
+        denied("ramo novo v_has_condition: zero explícito bloqueia resposta de cotação AR Bio",
+               respond(UADM, oq_pending, [{"item_id": qi_pending_zero, "unit_price": 1000}]), "credit_limit_exceeded")
+        check("zero no ramo novo é atômico e preserva cotação pendente",
+              psql(f"SELECT status||':'||(SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{oq_pending}') FROM public.partner_orders WHERE id='{oq_pending}'").stdout.strip() == "aguardando_cotacao:0")
+        psql(f"UPDATE public.partner_financial_settings SET credit_limit=1000000 WHERE partner_id='{P}'")
         psql(f"INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES (gen_random_uuid(),'{P}',2050,'block',false,0) ON CONFLICT (partner_id) DO UPDATE SET credit_limit=2050, credit_limit_action='block'")
         expo = json.loads(psql(f"SELECT public.fn_b2b_credit_exposure('{P}',0,NULL)::text").stdout.strip())
         room = Decimal(str(expo["credit_limit"])) - Decimal(str(expo["exposicao_projetada"]))
