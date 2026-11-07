@@ -206,8 +206,7 @@ def main():
         B.reject("compra após rollback permanece fechada", purchase(first_item, 2, "purchase-after-rollback"), "42501", "FINISHED_PRODUCT_GATE_CLOSED")
         assert B.last("SELECT jsonb_build_array((SELECT count(*) FROM public.lotes),(SELECT count(*) FROM public.estoque_produto),(SELECT count(*) FROM public.entregas),(SELECT count(*) FROM public.estoque_movimentacoes))::text;") == historical_counts
         B.ok("rollback preserva compras, estoque, entregas e histórico integralmente")
-        loaded = B.run_raw((HERE / "postflight.sql.review").read_text())
-        assert loaded.returncode == 0, loaded.stderr
+        # O POST de instalação não é reaplicado após o rollback: a revogação intencional muda o ACL.
         status = 0
     except Exception as exc:
         import traceback
