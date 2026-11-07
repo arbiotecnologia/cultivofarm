@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Warehouse, History, XCircle, ArrowUpDown } from "lucide-react";
@@ -20,6 +21,9 @@ import { HistoricoSheet } from "@/components/estoque/HistoricoSheet";
 import { EstoqueBI } from "@/components/estoque/EstoqueBI";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
+import { useFinishedProductPurchaseCapability } from "@/hooks/useFinishedProductPurchase";
+import { FinishedProductPurchaseEntryForm } from "@/components/estoque/FinishedProductPurchaseEntryForm";
+import { formatStockContent } from "@/lib/estoque/stockUnits";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   disponivel: { label: "Disponível", variant: "default" },
@@ -43,6 +47,7 @@ export default function Estoque() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [entryMode, setEntryMode] = useState<"envase" | "revenda">("envase");
   const [form, setForm] = useState({ lote_id: "", produto_id: "", quantidade: "", volume_total: "", validade: "" });
   const { gerarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();
 
@@ -52,13 +57,19 @@ export default function Estoque() {
   
   const [historicoId, setHistoricoId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("recentes");
+  const purchaseCapability = useFinishedProductPurchaseCapability(open);
+  const purchaseAvailable = purchaseCapability.data?.available === true;
+
+  useEffect(() => {
+    if (!purchaseAvailable && entryMode !== "envase") setEntryMode("envase");
+  }, [entryMode, purchaseAvailable]);
 
   const { data: estoques = [] } = useQuery({
     queryKey: ["estoque_produto"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("estoque_produto")
-        .select("id, status, created_at, quantidade, validade, lote_id, produto_id, microrganismo_id, volume_total, reservado_para_cliente_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote, programacao_id), produtos(nome), microrganismos(nome, nome_cientifico)")
+        .select("id, status, created_at, quantidade, validade, lote_id, produto_id, microrganismo_id, volume_total, origem_estoque, unidade_comercial, conteudo_por_unidade, unidade_conteudo, quantidade_conteudo, embalagem_id, embalagem_versao, reservado_para_cliente_id, reservado_para_os_id, reservado_para_os_tipo, lotes(codigo_lote, programacao_id), produtos(nome), microrganismos(nome, nome_cientifico)")
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
@@ -343,7 +354,7 @@ export default function Estoque() {
                     status={<Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge>}
                     content={[
                       { label: "Qtd", value: e.quantidade },
-                      { label: "Volume", value: e.volume_total ? `${e.volume_total} L` : "—" },
+                      { label: "Conteúdo", value: formatStockContent(e) },
                       { label: "Envasado em", value: e.data_envase ? formatDateDisplay(e.data_envase) : "—" },
                       { label: "Validade", value: e.validade ? formatDateDisplay(e.validade) : "—" },
                       { label: "Reservado para", value: renderReservadoPara(e) },
@@ -361,7 +372,7 @@ export default function Estoque() {
                   <TableHead>Lote</TableHead>
                   <TableHead>Envasado em</TableHead>
                   <TableHead>Qtd</TableHead>
-                  <TableHead>Volume</TableHead>
+                  <TableHead>Conteúdo</TableHead>
                   <TableHead>Validade</TableHead>
                   <TableHead>Reservado para</TableHead>
                   <TableHead>Status</TableHead>
@@ -377,7 +388,7 @@ export default function Estoque() {
                     <TableCell className="font-mono-data text-xs">{e.lotes?.codigo_lote}</TableCell>
                     <TableCell>{e.data_envase ? formatDateDisplay(e.data_envase) : "—"}</TableCell>
                     <TableCell>{e.quantidade}</TableCell>
-                    <TableCell>{e.volume_total ? `${e.volume_total} L` : "—"}</TableCell>
+                    <TableCell>{formatStockContent(e)}</TableCell>
                     <TableCell>{e.validade ? formatDateDisplay(e.validade) : "—"}</TableCell>
                     <TableCell className="text-xs">{renderReservadoPara(e)}</TableCell>
                     <TableCell><Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge></TableCell>
@@ -420,8 +431,8 @@ export default function Estoque() {
               <span className="font-bold">{cancelarItem?.quantidade} unidades</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-              <span className="text-sm text-muted-foreground">Volume a devolver:</span>
-              <span className="font-bold">{cancelarItem?.volume_total} L</span>
+              <span className="text-sm text-muted-foreground">Conteúdo a devolver:</span>
+              <span className="font-bold">{cancelarItem ? formatStockContent(cancelarItem) : "—"}</span>
             </div>
             <p className="text-sm text-muted-foreground italic">
               Este saldo será reintegrado ao registro disponível do mesmo lote.
