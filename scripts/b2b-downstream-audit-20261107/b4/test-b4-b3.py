@@ -294,7 +294,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
           ALTER TABLE public.partner_order_payment_terms DISABLE TRIGGER USER;
           ALTER TABLE public.partner_order_items DISABLE TRIGGER USER;
           INSERT INTO public.partner_orders SELECT (jsonb_populate_record(NULL::public.partner_orders,
-            to_jsonb(o)||jsonb_build_object('id','{internal_order}'::uuid,'payment_terms_id','{internal_terms}'::uuid,
+            to_jsonb(o)||jsonb_build_object('id','{internal_order}'::uuid,'numero','TESTE-INTERNAL-B4','payment_terms_id','{internal_terms}'::uuid,
               'c2_external_origin_snapshot',NULL::jsonb,'internal_origin_snapshot','{{\"fixture\":\"INTERNAL_SYNTHETIC\"}}'::jsonb))).*
             FROM public.partner_orders o WHERE o.id='{direct_order}';
           INSERT INTO public.partner_order_payment_terms SELECT (jsonb_populate_record(NULL::public.partner_order_payment_terms,
