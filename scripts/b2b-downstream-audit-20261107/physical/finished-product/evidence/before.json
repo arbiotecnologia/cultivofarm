@@ -1,0 +1,31 @@
+{
+  "kind": "DISPOSABLE_FINISHED_PRODUCT_REPRODUCTION_NOT_HOSTED_E2E",
+  "phase": "before",
+  "status": "FAIL",
+  "exit_code": 1,
+  "passed": 0,
+  "total": 1,
+  "checks": [
+    {
+      "name": "execução terminou no ponto concreto",
+      "status": "FAIL",
+      "detail": "Traceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 172, in main\n    restore_checkpoint()\n    ~~~~~~~~~~~~~~~~~~^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 97, in restore_checkpoint\n    sql(cached.read_text())\n    ~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 53, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  role \"supabase_realtime_admin\" does not exist\n\n"
+    }
+  ],
+  "raw": [],
+  "elapsed_seconds": 6.902,
+  "synthetic_seams": [
+    "Auth por claims/GUC locais, sem JWT/RLS/PostgREST/Storage real",
+    "fixtures upstream com session_replication_role=replica; writers testados com triggers habilitados",
+    "lotes de produto acabado sem bioreator/CQ/envase; sem cadastro paralelo",
+    "ativação de writers exclusivamente no PostgreSQL descartável",
+    "comprovante fictício local; nenhum documento fiscal/cobrança/envio externo"
+  ],
+  "findings": {
+    "finished_stock_entry": "validate_estoque_entrada exige envase; não há entrada canônica aberta para produto acabado neste recorte",
+    "solid_reservation": "reserva por quantidade funciona, mas entrega exige volume_total e não possui unidade de conteúdo",
+    "weight_as_volume": "volume_total=50 em produto kg gera volume_entregue_ml=50000",
+    "liquid_path": "apresentação L usa volume_total em litros e volume_entregue_ml em mililitros",
+    "b2b_group": "DELIVERY_SCOPE_DENIED preservado; nenhum gate B2B aberto"
+  }
+}

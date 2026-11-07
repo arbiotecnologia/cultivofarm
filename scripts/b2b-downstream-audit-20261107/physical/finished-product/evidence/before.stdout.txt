@@ -1,0 +1,19 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.6s
+FAIL execução terminou no ponto concreto Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 172, in main
+    restore_checkpoint()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 97, in restore_checkpoint
+    sql(cached.read_text())
+    ~~~^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 53, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  role "supabase_realtime_admin" does not exist
+
+
+RESULT 0 / 1 exit 1
