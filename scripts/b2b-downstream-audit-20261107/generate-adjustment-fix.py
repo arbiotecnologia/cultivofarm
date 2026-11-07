@@ -243,7 +243,7 @@ def build():
         f"{assertions(BASE_MD5)}\nSELECT 'PRE_OK' AS status;\n"
     )
     install = f"""-- CANDIDATO INATIVO. Não aplicar sem revisão e preflight LIVE independente.
--- CREATE OR REPLACE preserva owner/ACL; nenhum GRANT é executado neste candidato.
+-- CREATE OR REPLACE preserva owner/ACL; nenhuma concessão de privilégio é executada.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 SET LOCAL statement_timeout = '30s';
