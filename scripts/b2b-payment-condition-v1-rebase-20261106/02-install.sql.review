@@ -27,7 +27,7 @@ CREATE TABLE platform_private.b2b_condition_versions (
  PRIMARY KEY(organization_id,plan_id,version,method),
  CHECK(method NOT IN ('dinheiro','pix','cartao_debito') OR (installment_count=1 AND monthly_rate=0)),
  CHECK(method<>'boleto' OR installment_count<=3),
- CHECK(installment_count>1 OR monthly_rate=0),
+ CHECK(installment_count>1 OR monthly_rate=0 OR method IN ('boleto','promissoria','cartao_credito')),
  created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE platform_private.b2b_condition_assignments (
@@ -219,7 +219,7 @@ DECLARE bal numeric; pmt numeric; intr numeric; amort numeric; amount numeric; f
 BEGIN
  IF principal IS NULL OR principal::text IN ('NaN','Infinity','-Infinity') OR principal<=0 OR principal<>round(principal,2)
  OR rate IS NULL OR rate::text IN ('NaN','Infinity','-Infinity') OR rate<0 OR n IS NULL OR n NOT BETWEEN 1 AND 120
- OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 OR (n=1 AND rate<>0) THEN RAISE EXCEPTION 'SCHEDULE_INVALID' USING ERRCODE='23514'; END IF;
+ OR issue IS NULL OR NOT isfinite(issue) OR deadline IS NULL OR deadline<0 THEN RAISE EXCEPTION 'SCHEDULE_INVALID' USING ERRCODE='23514'; END IF;
  bal:=principal; first:=issue+deadline;
  pmt:=round(CASE WHEN rate=0 THEN principal/n ELSE principal*(rate/100)/(1-power(1+rate/100,-n)) END,2);
  FOR k IN 1..n LOOP
