@@ -376,13 +376,25 @@ def main():
             f"UPDATE public.profiles SET ativo=true WHERE user_id='{SP.UADM}'",
         )
         during_lock(
-            "vínculo organização-parceiro removido",
+            "senha provisória reaberta",
+            f"UPDATE public.profiles SET senha_provisoria=true WHERE user_id='{SP.UADM}'",
+            "unauthorized",
+            f"UPDATE public.profiles SET senha_provisoria=false WHERE user_id='{SP.UADM}'",
+        )
+        during_lock(
+            "vínculo organização-parceiro do vendedor removido",
             f"UPDATE public.organizations SET partner_account_id=NULL WHERE id='{SP.A}'",
             "b2b_phase1_scope_denied",
             f"UPDATE public.organizations SET partner_account_id='{SP.P}' WHERE id='{SP.A}'",
         )
         during_lock(
-            "lease de primeiro acesso reaberto",
+            "convite administrativo em processing",
+            f"INSERT INTO public.platform_org_admin_invites(user_id,access_operation_status,access_valid_after) VALUES ('{SP.UADM}','processing',NULL)",
+            "unauthorized",
+            f"DELETE FROM public.platform_org_admin_invites WHERE user_id='{SP.UADM}'",
+        )
+        during_lock(
+            "access_valid_after posterior ao JWT iat",
             f"INSERT INTO public.platform_org_admin_invites(user_id,access_operation_status,access_valid_after) VALUES ('{SP.UADM}','completed',now()+interval '1 hour')",
             "unauthorized",
             f"DELETE FROM public.platform_org_admin_invites WHERE user_id='{SP.UADM}'",
