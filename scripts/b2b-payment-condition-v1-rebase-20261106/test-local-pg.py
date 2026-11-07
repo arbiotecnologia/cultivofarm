@@ -204,7 +204,7 @@ def boot():
                  "public.create_partner_order_secure", "public.simulate_b2b_payment_plan_secure", "public.respond_b2b_order_quote_secure"):
         psql(SP.cap(name))
     psql(SP.CATALOG_SEAM + SP.REAL_TRIGGERS); psql(SP.RT.real_triggers_sql())
-    -- Substituir SOMENTE o stub permissivo pela guarda interna REAL capturada; a externa REAL já veio com os gatilhos.
+    # Substituir SOMENTE o stub permissivo pela guarda interna REAL capturada; a externa REAL já veio com os gatilhos.
     origin_guard = HERE.parent / "owner-orders-20261023/internal-origin-composition-20261023/baseline/platform_private.b2b_internal_assert_origin.sql"
     psql(origin_guard.read_text().rstrip() + ";\n")
     sp_src = (SPD / "test-local-pg.py").read_text()
@@ -295,7 +295,7 @@ def main():
         # ---------- sem ativação: contrato atual para todos ----------
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-0"); check("sem ativação: comprador segue contrato atual (nenhum bloqueio global)", r.returncode == 0, r.stderr[-200:])
         r = legacy(UB2, PLD, [SF(1)], "TESTE-LEG-F0", partner=PF); check("sem ativação: outro tenant (papel FSF) segue contrato atual", r.returncode == 0, r.stderr[-200:])
-        -- Controle exato do ramo legado: limite zero continua NO_LIMIT, sem a regra nova de v_has_condition.
+        # Controle exato do ramo legado: limite zero continua NO_LIMIT, sem a regra nova de v_has_condition.
         psql(f"UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{PF}'")
         rfq0 = legacy(UB2, PLQ, [SF(1)], "TESTE-LEG-FQ-ZERO", partner=PF); jfq0, efq0 = out(rfq0)
         check("legado FSF não ativado: cotação criada com limite zero como antes", jfq0 and jfq0["status"] == "aguardando_cotacao", efq0 or jfq0)
