@@ -352,9 +352,18 @@ def build():
     owner_only = [SIGS[name] for name in new_names] + [SIGS["public.rpc_receivable_money_projection_v1"], SIGS["public.generate_b2b_receivable_secure_impl"], SIGS["public.tg_auto_b2b_receivable"]]
     post += owner_only_function_guard(owner_only, "B4_POST")
     # Corpos das funções owner-only também são pinados, sem exigir uma ACL inexistente.
-    for name in new_names:
+    for name in new_names + ["public.rpc_receivable_money_projection_v1", "public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"]:
         post += digest_guard(f"SELECT md5(pg_get_functiondef('{SIGS[name]}'::regprocedure))", candidate_funcs[name]["body_md5"], "B4_POST_BODY:" + SIGS[name])
     post += relation_acl_guard(baseline_schema["owner"], ar["acl"], "B4_POST")
+    for query, expected, code in [(column_query, post_columns_md5, "B4_POST_COLUMNS"),
+                                  (constraint_query, post_constraints_md5, "B4_POST_CONSTRAINTS"),
+                                  (index_query, post_indexes_md5, "B4_POST_INDEXES"),
+                                  (trigger_query, post_triggers_md5, "B4_POST_TRIGGERS")]:
+        post += digest_guard(query, expected, code)
+    for trigger in auto_triggers:
+        expected = md5_text(trigger["definition"] + "|" + trigger["enabled"])
+        query = f"SELECT md5(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text) FROM pg_trigger t WHERE t.tgname='{trigger['name']}' AND t.tgrelid='{trigger['schema']}.{trigger['table']}'::regclass AND NOT t.tgisinternal"
+        post += digest_guard(query, expected, "B4_POST_AUTO_TRIGGER:" + trigger["name"])
     post += new_relation_post_guard()
     post += "SELECT 'POST_OK' AS status;\n"
 
