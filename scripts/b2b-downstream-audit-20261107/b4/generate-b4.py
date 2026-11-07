@@ -310,8 +310,11 @@ REVOKE ALL ON FUNCTION platform_private.b4_assert_order_eligible(uuid) FROM PUBL
         "residual seller organization declaration")
     partial = delta(partial,
         " SELECT * INTO po FROM public.partner_orders WHERE id=p_order;\n SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;",
-        " SELECT * INTO po FROM public.partner_orders WHERE id=p_order;\n org:=platform_private.b2b_integration_actor(po.partner_id);\n SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;",
+        " SELECT * INTO po FROM public.partner_orders WHERE id=p_order;\n SELECT pa.commercial_owner_organization_id INTO org FROM public.partner_accounts pa WHERE pa.id=po.partner_id;\n IF org IS NULL THEN RAISE EXCEPTION 'CREDIT_ORDER_AMOUNT_UNPROVEN' USING ERRCODE='23514'; END IF;\n SELECT * INTO s FROM platform_private.b4_order_condition_snapshots WHERE order_id=p_order;",
         "residual seller organization resolution")
+    partial = delta(partial, "row:=platform_private.b2b_proven_money_row(i.id);",
+                    "row:=platform_private.b2b_proven_money_row_internal(i.id,org);",
+                    "seller-scoped internal money proof")
     partial = delta(partial,
         "  PERFORM public.rpc_receivable_money_projection_v1(l.receivable_id,0,1000) FROM public.partner_order_financial_links l WHERE l.partner_order_id=p_order;",
         "  PERFORM platform_private.b2b_proven_money_row_internal(i.id,org) FROM public.partner_order_financial_links l JOIN public.accounts_receivable a ON a.id=l.receivable_id JOIN public.accounts_receivable_installments i ON i.receivable_id=a.id WHERE l.partner_order_id=p_order;",
