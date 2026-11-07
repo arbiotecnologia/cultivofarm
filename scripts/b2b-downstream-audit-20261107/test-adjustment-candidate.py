@@ -268,6 +268,12 @@ def main():
             target = "NULL::uuid" if order_id is None else f"'{order_id}'"
             return SP.as_user(uid, f"SELECT public.request_b2b_payment_terms_adjustment_secure({target},'{note}')::text;")
 
+        def decision(uid, kind, order_id, note):
+            if kind not in ("approve", "reject"):
+                raise ValueError(kind)
+            target = "NULL::uuid" if order_id is None else f"'{order_id}'"
+            return SP.as_user(uid, f"SELECT public.{kind}_b2b_payment_terms_secure({target},'{note}')::text;")
+
         before = state(MISSING_ORDER)
         r = request(SP.UADM, MISSING_ORDER, "TESTE pedido ausente")
         check("pedido inexistente nega como escopo, sem payment_terms_not_defined permissivo", r.returncode != 0 and "b2b_phase1_scope_denied" in r.stderr and "payment_terms_not_defined" not in r.stderr, r.stderr)
