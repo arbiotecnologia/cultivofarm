@@ -47,7 +47,7 @@ def main():
 
         trigger_defs = (ROOT / "scripts/b2b-solid-packaging-order-20261106/captured/triggers/_triggerdefs.live-20261106.sql").read_text()
         expected = re.findall(r"CREATE (?:CONSTRAINT )?TRIGGER (\w+) .*? ON (public\.\w+)", trigger_defs)
-        rows = psql("SELECT t.tgname||'|'||c.relnamespace::regnamespace||'.'||c.relname||'|'||t.tgenabled FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid WHERE NOT t.tgisinternal ORDER BY 1").stdout.strip().splitlines()
+        rows = psql("SELECT t.tgname||'|'||c.relnamespace::regnamespace::text||'.'||c.relname||'|'||t.tgenabled::text FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid WHERE NOT t.tgisinternal ORDER BY 1").stdout.strip().splitlines()
         actual = {(r.split("|")[0], r.split("|")[1]): r.split("|")[2] for r in rows}
         missing = [(name, table) for name, table in expected if actual.get((name, table)) in (None, "D")]
         check("TODOS os 38 gatilhos reais capturados estão habilitados", len(expected) == 38 and not missing, {"expected": len(expected), "missing": missing})
