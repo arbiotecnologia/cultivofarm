@@ -1,0 +1,38 @@
+{
+  "issue": "Error: [vitest-worker]: Timeout calling \"onTaskUpdate\"",
+  "vitest": "3.2.4 (pool padrão já é forks; birpc timeout padrão 60000 ms)",
+  "root_cause": "c2-orders-origin-composition-postgres e c2-credit-numeric-postgres usavam execFileSync com duração acima de 60 s (baseline 67,8 s e 66,3 s; foco pré-correção 78,4 s e 73,8 s). A chamada síncrona bloqueia o event loop do worker; o timer de 60 s do RPC onTaskUpdate dispara antes de a resposta do processo principal ser processada. Independe do pool (threads ou forks). c2-order-concurrency e os demais longos já eram assíncronos e não contribuíam.",
+  "probe": {
+    "dir": "probe/",
+    "block65_execFileSync_sleep65": { "exit": 1, "onTaskUpdate_timeouts": 1, "tests_passed": 2 },
+    "block55_execFileSync_sleep55": { "exit": 0, "onTaskUpdate_timeouts": 0, "tests_passed": 2 },
+    "await65_async_execFile_sleep65": { "exit": 0, "onTaskUpdate_timeouts": 0, "tests_passed": 2 }
+  },
+  "focus_pre_fix": {
+    "commit": "c59e80d28442b5f5ac7edb03c747421839c560cf",
+    "files": 7, "tests_passed": 8, "unhandled_errors": 2, "exit": 1,
+    "artifacts": ["focus-pre-fix.json", "focus-pre-fix.stdout", "focus-pre-fix.stderr", "focus-pre-fix.exitcode"]
+  },
+  "fix": [
+    "c2-orders-origin-composition-postgres e c2-credit-numeric-postgres: execFileSync -> await promisify(execFile), mesmos argumentos, timeouts e asserções.",
+    "Mesma conversão preventiva nos cinco testes síncronos com prazo > 60 s (receivableRedGreen, initialInstallments, agronomicOrigin, visitMonitoringPlan, b2b-f2b33a-protocol); asserções inalteradas.",
+    "vitest.config.ts: removido pool: 'forks' (no-op no Vitest 3.2.4 e não resolveu).",
+    "Guarda estática src/test/config/syncSubprocessWorkerRpc.static.test.ts: falha se teste com subprocesso síncrono admitir espera > 60 s."
+  ],
+  "focus_post_fix": {
+    "commit": "5538492d9e427df05b3acb93af99ce7f24e83234",
+    "files": 12, "tests_passed": 13, "unhandled_errors": 0, "exit": 0,
+    "artifacts": ["focus-post-fix.json", "focus-post-fix.stdout", "focus-post-fix.stderr", "focus-post-fix.exitcode"]
+  },
+  "full_post_fix": {
+    "commit": "31a6f54b18dc1ba6d725e12672bd4cc2946438a1",
+    "command": "vitest run --maxWorkers=2 --reporter=default --reporter=json",
+    "started": "2026-11-07T12:43:44Z", "finished": "2026-11-07T13:12:10Z",
+    "files_passed": 762, "tests_passed": 10779, "tests_skipped": 6, "tests_failed": 0,
+    "unhandled_errors": 0, "onTaskUpdate_in_stderr": 0, "exit": 0, "json_success": true,
+    "note": "full-post-fix.stdout parou de ser atualizado às 13:03 e não contém o bloco final de resumo; JSON (13:12), stderr e exitcode estão completos. O resultado vem do JSON e do exit code."
+  },
+  "b3_pg": { "commit": "31a6f54b18dc1ba6d725e12672bd4cc2946438a1", "result": "185/185", "exit": 0 },
+  "typecheck": { "exit": 0 },
+  "scope": "Somente infraestrutura de teste local; sem SQL hospedado, migração, publicação, pedidos, títulos, fiscal ou envios. Não é prova JWT/RLS/PostgREST."
+}

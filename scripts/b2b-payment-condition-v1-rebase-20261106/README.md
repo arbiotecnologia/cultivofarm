@@ -87,6 +87,14 @@ de runtime, e seu foco passou **26/26**, exit 0 e sem unhandled errors. JSON com
 em `evidence/review-194331e/`. A repetição global foi interrompida por limite de janela após 114 arquivos, exit 143;
 seus logs parciais estão preservados como `final-full-partial.*`, sem JSON completo e sem valor de aprovação.
 
+Timeout `onTaskUpdate` (07/11, `evidence/vitest-ontaskupdate-20261107/`): causa comprovada — dois testes PG
+(`c2-orders-origin-composition`, `c2-credit-numeric`) usavam `execFileSync` por mais de 60 s, bloqueando o event loop do
+worker além do timeout RPC de 60 s do Vitest (independe do pool; `forks` já é o padrão no 3.2.4 e foi removido). Sonda mínima:
+bloqueio síncrono 65 s reproduz, 55 s e espera assíncrona 65 s não. Foco pré-correção em `c59e80d` 7 arquivos/8 testes, 2
+unhandled, exit 1; após converter para `execFile` assíncrono (mais cinco testes síncronos de prazo > 60 s, asserções
+inalteradas) e adicionar guarda estática, foco 12/13 exit 0 sem unhandled e suíte completa em `31a6f54` 762 arquivos/10.779
+testes, 6 ignorados, 0 erros, exit 0. B3 PG 185/185; typecheck 0.
+
 ## Limitações abertas
 - Datas estimadas (referência = data do pedido/resposta), sem dia útil Paracatu-MG; vencimento definitivo e calendário ficam no B4.
 - Revogar um parceiro numa versão é definitivo para ela; liberar de novo exige nova versão.

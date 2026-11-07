@@ -1,3 +1,7 @@
+## 07/11 — Timeout onTaskUpdate da suíte (infraestrutura de teste)
+- [x] Causa comprovada: execFileSync > 60 s em dois testes PG bloqueava o RPC do worker; sonda 65/55 s e foco pré-correção exit 1 preservados.
+- [x] Correção: execFile assíncrono (asserções inalteradas), pool forks removido, guarda estática; foco exit 0 e suíte completa exit 0 sem unhandled.
+
 ## 07/11 — B3 revisão independente 2140b058 (somente local/PG descartável)
 - [x] Reautorizar papel, perfil, tenant, vínculo, origem e visibilidade após locks/esperas antes de devolver replay de cotação; revogações com recibo existente negadas.
 - [x] Padronizar versão antes de crédito entre quote/create; três fluxos create/config_publish/quote sob espera forçada sem 40P01 e sem relaxar guards.
