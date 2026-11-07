@@ -232,18 +232,45 @@ ALTER TABLE public.estoque_produto ADD COLUMN origem_estoque text,ADD COLUMN uni
 ALTER TABLE public.entregas ADD COLUMN origem_estoque text,ADD COLUMN unidade_comercial text,ADD COLUMN conteudo_por_unidade numeric,ADD COLUMN unidade_conteudo text,ADD COLUMN quantidade_conteudo numeric,ADD COLUMN embalagem_id uuid,ADD COLUMN embalagem_versao integer;
 ALTER TABLE public.estoque_produto ADD CONSTRAINT finished_product_unit_contract CHECK (
  (origem_estoque IS NULL AND unidade_comercial IS NULL AND conteudo_por_unidade IS NULL AND unidade_conteudo IS NULL AND quantidade_conteudo IS NULL AND embalagem_id IS NULL AND embalagem_versao IS NULL)
- OR (origem_estoque='compra_produto_acabado_revenda' AND envase_id IS NULL AND unidade_comercial='unidade' AND conteudo_por_unidade>0 AND conteudo_por_unidade::text NOT IN ('NaN','Infinity','-Infinity') AND unidade_conteudo IN ('kg','g','l','ml') AND quantidade=trunc(quantidade) AND (quantidade_reservada IS NULL OR quantidade_reservada=trunc(quantidade_reservada)) AND quantidade_conteudo=quantidade*conteudo_por_unidade AND embalagem_id IS NOT NULL AND embalagem_versao>0 AND ((unidade_conteudo IN ('kg','g') AND volume_total IS NULL) OR (unidade_conteudo='l' AND volume_total=quantidade_conteudo) OR (unidade_conteudo='ml' AND volume_total=quantidade_conteudo/1000)))
+ OR ((origem_estoque='compra_produto_acabado_revenda' AND envase_id IS NULL
+  AND unidade_comercial IS NOT NULL AND unidade_comercial='unidade'
+  AND conteudo_por_unidade IS NOT NULL AND conteudo_por_unidade>0 AND conteudo_por_unidade::text NOT IN ('NaN','Infinity','-Infinity')
+  AND unidade_conteudo IS NOT NULL AND unidade_conteudo IN ('kg','g','l','ml')
+  AND quantidade IS NOT NULL AND quantidade=trunc(quantidade)
+  AND (quantidade_reservada IS NULL OR quantidade_reservada=trunc(quantidade_reservada))
+  AND quantidade_conteudo IS NOT NULL AND quantidade_conteudo=quantidade*conteudo_por_unidade
+  AND embalagem_id IS NOT NULL AND embalagem_versao IS NOT NULL AND embalagem_versao>0
+  AND ((unidade_conteudo IN ('kg','g') AND volume_total IS NULL)
+    OR (unidade_conteudo='l' AND volume_total IS NOT NULL AND volume_total=quantidade_conteudo)
+    OR (unidade_conteudo='ml' AND volume_total IS NOT NULL AND volume_total=quantidade_conteudo/1000))) IS TRUE)
 );
 -- A referência de embalagem é snapshot imutável; a composição B3 é dependência de revisão, não simulada por FK no catálogo líquido antigo.
 CREATE FUNCTION platform_private.finished_product_stock_valid_v1(s public.estoque_produto) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
- SELECT s.origem_estoque='compra_produto_acabado_revenda' AND s.unidade_comercial='unidade' AND s.conteudo_por_unidade>0 AND s.unidade_conteudo IN ('kg','g','l','ml') AND s.quantidade>0 AND s.quantidade=trunc(s.quantidade) AND s.quantidade_conteudo=s.quantidade*s.conteudo_por_unidade AND s.embalagem_id IS NOT NULL AND s.embalagem_versao>0 AND s.envase_id IS NULL
- AND EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled)
- AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.id=s.lote_id AND l.produto_id=s.produto_id)
- AND ((s.unidade_conteudo IN ('kg','g') AND s.volume_total IS NULL) OR (s.unidade_conteudo='l' AND s.volume_total=s.quantidade_conteudo) OR (s.unidade_conteudo='ml' AND s.volume_total=s.quantidade_conteudo/1000));
+ SELECT (s.origem_estoque='compra_produto_acabado_revenda'
+  AND s.unidade_comercial IS NOT NULL AND s.unidade_comercial='unidade'
+  AND s.conteudo_por_unidade IS NOT NULL AND s.conteudo_por_unidade>0
+  AND s.unidade_conteudo IS NOT NULL AND s.unidade_conteudo IN ('kg','g','l','ml')
+  AND s.quantidade IS NOT NULL AND s.quantidade>0 AND s.quantidade=trunc(s.quantidade)
+  AND s.quantidade_conteudo IS NOT NULL AND s.quantidade_conteudo=s.quantidade*s.conteudo_por_unidade
+  AND s.embalagem_id IS NOT NULL AND s.embalagem_versao IS NOT NULL AND s.embalagem_versao>0 AND s.envase_id IS NULL
+  AND EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.id=s.lote_id AND l.produto_id=s.produto_id)
+  AND ((s.unidade_conteudo IN ('kg','g') AND s.volume_total IS NULL)
+    OR (s.unidade_conteudo='l' AND s.volume_total IS NOT NULL AND s.volume_total=s.quantidade_conteudo)
+    OR (s.unidade_conteudo='ml' AND s.volume_total IS NOT NULL AND s.volume_total=s.quantidade_conteudo/1000))) IS TRUE;
 $$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_stock_valid_v1(public.estoque_produto) FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION platform_private.finished_product_delivery_valid_v1(s public.estoque_produto,e public.entregas,l public.lotes) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
- SELECT platform_private.finished_product_stock_valid_v1(s) AND l.programacao_id IS NULL AND e.origem_estoque=s.origem_estoque AND e.unidade_comercial=s.unidade_comercial AND e.conteudo_por_unidade=s.conteudo_por_unidade AND e.unidade_conteudo=s.unidade_conteudo AND e.quantidade_conteudo=s.quantidade_conteudo AND e.embalagem_id=s.embalagem_id AND e.embalagem_versao=s.embalagem_versao AND e.quantidade_entregue=s.quantidade AND ((s.unidade_conteudo IN ('kg','g') AND e.volume_entregue_ml IS NULL) OR (s.unidade_conteudo='l' AND e.volume_entregue_ml=round(s.quantidade_conteudo*1000,6)) OR (s.unidade_conteudo='ml' AND e.volume_entregue_ml=round(s.quantidade_conteudo,6)));
+ SELECT (platform_private.finished_product_stock_valid_v1(s) IS TRUE AND l.id IS NOT NULL AND l.programacao_id IS NULL
+  AND e.origem_estoque=s.origem_estoque AND e.unidade_comercial IS NOT NULL AND e.unidade_comercial=s.unidade_comercial
+  AND e.conteudo_por_unidade IS NOT NULL AND e.conteudo_por_unidade=s.conteudo_por_unidade
+  AND e.unidade_conteudo IS NOT NULL AND e.unidade_conteudo=s.unidade_conteudo
+  AND e.quantidade_conteudo IS NOT NULL AND e.quantidade_conteudo=s.quantidade_conteudo
+  AND e.embalagem_id=s.embalagem_id AND e.embalagem_versao IS NOT NULL AND e.embalagem_versao=s.embalagem_versao
+  AND e.quantidade_entregue=s.quantidade
+  AND ((s.unidade_conteudo IN ('kg','g') AND e.volume_entregue_ml IS NULL)
+    OR (s.unidade_conteudo='l' AND e.volume_entregue_ml IS NOT NULL AND e.volume_entregue_ml=round(s.quantidade_conteudo*1000,6))
+    OR (s.unidade_conteudo='ml' AND e.volume_entregue_ml IS NOT NULL AND e.volume_entregue_ml=round(s.quantidade_conteudo,6)))) IS TRUE;
 $$;
 REVOKE ALL ON FUNCTION platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;
 """
