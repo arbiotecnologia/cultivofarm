@@ -1,3 +1,4 @@
+import { PAYMENT_METHOD_CONTRACT, sameChoice, type PaymentMethodChoice } from "@/hooks/useB2BPaymentMethodOptions";
 import { useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supplierLabel } from "@/lib/comercial/supplierName";
@@ -48,10 +49,10 @@ export interface CreateOrderInput {
   first_due_date?: string | null;
   installment_count?: number | null;
   /**
-   * Meio escolhido (B2B_PAYMENT_METHOD_V1): config+versão do vendedor. Quando presente, o envio vai
-   * pelo wrapper com meio; parcelas/vencimento vêm do servidor (estimados, base emissão da NF).
+   * Escolha (B2B_PAYMENT_CONDITION_V1): meio + versão + prazo aprovados pelo vendedor. Quando presente, o envio vai
+   * pelo create com condição; parcelas/vencimento vêm do servidor (estimados, base emissão da NF).
    */
-  payment_method?: { config_id: string; version: number } | null;
+  payment_method?: PaymentMethodChoice | null;
   /**
    * Assinatura da simulação autoritativa devolvida pelo servidor.
    * Obrigatória: sem ela o backend recusa o pedido com `cart_hash_required`.
@@ -140,7 +141,7 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       let response: { data: unknown; error: { message?: string; code?: string } | null };
       try {
         response = input.payment_method ? await supabase.rpc(
-        "create_partner_order_with_method_secure" as any,
+        "create_partner_order_condition_secure" as any,
         {
           p_partner_id: input.partner_id,
           p_observacoes: input.observacoes ?? null,
@@ -149,8 +150,11 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
           p_payment_plan_id: input.payment_plan_id ?? null,
           p_expected_cart_hash: input.expected_cart_hash,
           p_idempotency_key: dispatchKey,
-          p_method_config_id: input.payment_method.config_id,
-          p_method_config_version: input.payment_method.version,
+          p_payment_choice: {
+            payment_method: input.payment_method.payment_method,
+            payment_condition_version: input.payment_method.payment_condition_version,
+            payment_deadline_days: input.payment_method.payment_deadline_days,
+          },
         },
       ) as typeof response : await supabase.rpc(
         "create_partner_order_secure" as any,
@@ -183,9 +187,9 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       if (!current()) throw new Error("Contexto alterado.");
       if (error) throw error;
       if (input.payment_method) {
-        // ACK exato do meio escolhido: pedido gravado sem o mesmo meio/versão nunca é tratado como sucesso.
-        const pm = (data as { payment_method?: { config_id?: unknown; version?: unknown; schedule_estimated?: unknown } } | null)?.payment_method;
-        if (!pm || pm.config_id !== input.payment_method.config_id || pm.version !== input.payment_method.version || pm.schedule_estimated !== true)
+        // ACK exato da escolha: pedido gravado sem o mesmo meio/versão/prazo nunca é tratado como sucesso.
+        const d = data as { payment_condition_contract?: unknown; payment_choice?: PaymentMethodChoice; payment_condition?: { estimated?: unknown } } | null;
+        if (!d || d.payment_condition_contract !== PAYMENT_METHOD_CONTRACT || !sameChoice(d.payment_choice, input.payment_method) || d.payment_condition?.estimated !== true)
           throw new Error("payment_method_ack_unconfirmed");
         // Uma verdade: mesmo hash simulado e soma das parcelas = total = final (centavos).
         const ack = data as { cart_hash?: unknown; total?: unknown; final_amount?: unknown; quote_required?: unknown; schedule?: unknown };

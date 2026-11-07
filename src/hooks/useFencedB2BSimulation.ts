@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { SimulateResult } from "@/hooks/useSimulateB2BPaymentPlan";
 import { describeSimulationFailure, simulationKey, type SimulationFailure } from "@/lib/b2bSimulationState";
+import { PAYMENT_METHOD_CONTRACT, sameChoice, type PaymentMethodChoice } from "@/hooks/useB2BPaymentMethodOptions";
 
 /**
  * Simulação B2B (somente leitura) com estado atômico {key, seq, result|failure}.
@@ -26,11 +27,11 @@ export interface FencedSimulationArgs {
   planId: string | null | undefined;
   items: ReadonlyArray<Record<string, unknown>>;
   /**
-   * B2B_PAYMENT_METHOD_V1: quando `requireMethod`, a chave só existe com meio escolhido e a simulação
-   * vai pelo wrapper com meio (mesma revalidação de config/versão do envio). Meio entra na chave.
+   * B2B_PAYMENT_CONDITION_V1: quando `requireMethod`, a chave só existe com escolha feita e a simulação vai pelo
+   * RPC com condição (mesma revalidação da versão no envio). Meio/versão/prazo entram na chave.
    */
   requireMethod?: boolean;
-  method?: { config_id: string; version: number } | null;
+  method?: PaymentMethodChoice | null;
 }
 
 /**
@@ -38,19 +39,21 @@ export interface FencedSimulationArgs {
  * amounts/final_amount/credit/cart_hash/schedule já incluem o meio (Price quando configurado). Datas são estimadas.
  */
 export type MethodSimulateResult = SimulateResult & {
-  payment_method: { config_id: string; version: number; method_kind: string; payment_method_name: string; due_days: number; installment_count: number };
+  payment_condition_contract: typeof PAYMENT_METHOD_CONTRACT; payment_choice: PaymentMethodChoice;
+  payment_condition: { payment_method_name: string; installment_count: number; monthly_rate: number; deadline_days: number; due_basis: "nf_issue"; estimated: true };
   schedule_estimated: true; due_basis: "nf_issue"; installment_count: number;
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-function validReply(r: unknown, partnerId: string, planId: string, method?: { config_id: string; version: number } | null): r is SimulateResult {
+function validReply(r: unknown, partnerId: string, planId: string, method?: PaymentMethodChoice | null): r is SimulateResult {
   if (!r || typeof r !== "object") return false;
   const x = r as Partial<MethodSimulateResult>;
   const base = x.partner_id === partnerId && x.payment_plan?.id === planId && !!x.amounts &&
     typeof x.amounts.final_amount === "number" && Number.isFinite(x.amounts.final_amount);
   if (!base || !method) return base;
-  const pm = x.payment_method;
-  if (!pm || pm.config_id !== method.config_id || pm.version !== method.version || x.schedule_estimated !== true || x.due_basis !== "nf_issue") return false;
+  const pm = x.payment_condition;
+  if (x.payment_condition_contract !== PAYMENT_METHOD_CONTRACT || !sameChoice(x.payment_choice, method) || !pm || pm.estimated !== true ||
+      x.schedule_estimated !== true || x.due_basis !== "nf_issue" || !Number.isInteger(pm.installment_count)) return false;
   if (x.quote_required) return Array.isArray(x.schedule) && x.schedule.length === 0;
   const sched = x.schedule as Array<{ amount?: unknown; due_date?: unknown }> | undefined;
   if (!Array.isArray(sched) || sched.length !== pm.installment_count || x.installment_count !== pm.installment_count) return false;
@@ -62,7 +65,7 @@ function validReply(r: unknown, partnerId: string, planId: string, method?: { co
 
 export function useFencedB2BSimulation(a: FencedSimulationArgs) {
   const base = simulationKey({ userId: a.userId, organizationId: a.organizationId, partnerId: a.partnerId, planId: a.planId, items: a.items });
-  const methodPart = a.requireMethod ? (a.method ? [a.method.config_id, a.method.version] : null) : [];
+  const methodPart = a.requireMethod ? (a.method ? [a.method.payment_method, a.method.payment_condition_version, a.method.payment_deadline_days] : null) : [];
   const key = a.enabled && base && a.scope.ready && methodPart ? JSON.stringify([base, a.scope.scope, ...(methodPart.length ? [methodPart] : [])]) : null;
   const keyRef = useRef(key);
   keyRef.current = key;
@@ -86,9 +89,10 @@ export function useFencedB2BSimulation(a: FencedSimulationArgs) {
       let outcome: Slot;
       try {
         const { data, error } = requireMethod && method
-          ? await (supabase.rpc as any)("simulate_b2b_payment_plan_with_method_secure", {
+          ? await (supabase.rpc as any)("simulate_b2b_payment_condition_secure", {
               p_partner_id: partnerId, p_payment_plan_id: planId, p_items: items,
-              p_method_config_id: method.config_id, p_method_config_version: method.version,
+              p_payment_choice: { payment_method: method.payment_method, payment_condition_version: method.payment_condition_version,
+                payment_deadline_days: method.payment_deadline_days },
             })
           : await (supabase.rpc as any)("simulate_b2b_payment_plan_secure", {
               p_partner_id: partnerId, p_payment_plan_id: planId, p_items: items, p_first_due_date: null,

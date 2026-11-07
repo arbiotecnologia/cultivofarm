@@ -9,7 +9,7 @@ interface Props {
   /** Nome já resolvido pelo chamador: vendedor autorizado (portal B2B) ou tenant ativo (interno). */
   responsavelNome?: string | null;
   /**
-   * B2B_PAYMENT_METHOD_V1: nome do meio quando o servidor marcou as parcelas como ESTIMADAS. Valores e parcelas vêm
+   * B2B_PAYMENT_CONDITION_V1: nome do meio quando o servidor marcou as parcelas como ESTIMADAS. Valores e parcelas vêm
    * sempre de `simulation` (uma verdade monetária); este rótulo só muda a apresentação das datas.
    */
   estimatedMethodLabel?: string | null;
