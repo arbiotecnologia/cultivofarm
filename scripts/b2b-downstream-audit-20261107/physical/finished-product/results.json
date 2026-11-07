@@ -29,7 +29,7 @@
     "delivery_confirm_apply_v1": "ABSENT",
     "delivery_send_apply_v1": "ABSENT",
     "other_six_bodies_owners_acls": "REPORTED_MATCH; todos os demais PRE pins preservados",
-    "foundation_changed_functions": 9,
+    "foundation_changed_functions": 11,
     "downstream_changed_functions": 2,
     "foundation_requires_confirm_or_send": false,
     "downstream_requires_exact_foundation_post_and_original_dependencies": true
@@ -54,6 +54,13 @@
     "null_contract_before": {"passed": 27, "total": 51, "exit_code": 1, "meaning": "24_falhas_funcionais_de_nulidade_antes_da_correcao"},
     "null_contract_after": {"passed": 51, "total": 51, "exit_code": 0, "meaning": "null_e_dimensoes_fechados_com_gate_on_off_e_seis_callers"},
     "layers": {"passed": 16, "total": 16, "exit_code": 0, "meaning": "entrada_sem_downstream_e_composicao_posterior_com_dependencias_exatas"}
+  },
+  "ui": {
+    "focused_vitest": {"passed": 71, "total": 71, "exit_code": 0},
+    "legacy_cockpit_stock_vitest": {"passed": 214, "total": 214, "exit_code": 0},
+    "preview_build": "OK",
+    "capability_fail_closed_and_form_not_mounted": true,
+    "authenticated_hosted_or_browser_e2e": false
   },
   "units": {
     "kg": "2 embalagens x 25 kg = 50 kg; volume_entregue_ml NULL",
