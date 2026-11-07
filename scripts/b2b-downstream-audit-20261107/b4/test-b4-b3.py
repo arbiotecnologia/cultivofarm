@@ -40,6 +40,13 @@ CHECKS = []
 CUSTOMER = B3.u(301)
 DOCS = [B3.u(310 + i) for i in range(10)]
 BOL = B3.ch("boleto", 1, 30)
+REAL_MANUAL = [B3.u(360 + i) for i in range(5)]
+AMBIGUOUS_TITLE = B3.u(365)
+CONFLICT_TITLE = B3.u(366)
+OWNER_CONFLICT_TITLE = B3.u(367)
+P_AMBIG_A, P_AMBIG_B = B3.u(370), B3.u(371)
+SHARED_CUSTOMER = B3.u(372)
+OTHER_CUSTOMER = B3.u(374)
 
 
 def check(name, ok, detail=""):
