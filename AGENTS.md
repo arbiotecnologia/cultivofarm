@@ -59,7 +59,7 @@
 - Review directories have AGENTS.md; HTTP candidates use atomic INVOKER actor proofs before/after server-only bytes and ZIP final fences; old URLs need independent CDN containment — avoids fanout and bucket-only authority.
 - Envase consultation remounts by canonical session scope; history uses filter/page fences and independent latest-request generations, products use session fences, and realtime callbacks retire on cleanup — prevents stale row adoption without replacing RLS or reopening writers.
 - Required B2B payment cards use scoped choice/validated condition ACK and exact schedule amounts, not legacy plan installments/rates or averages; legacy mode stays unchanged — prevents contradictory summaries.
-- Seller terms reuse the scoped V1 condition reader; accounting-pending parent state fences decisions and open-dialog submission, and reader errors never authorize fallback decisions — prevents misleading availability without changing server authority.
+- Seller terms reuse the scoped V1 condition reader; handlers recheck current flags and the shared authorization monitor, and dialogs retire on actor/resource/epoch or availability changes; V1 contract identifies Price, never rate positivity — prevents stale confirmations without changing server authority.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

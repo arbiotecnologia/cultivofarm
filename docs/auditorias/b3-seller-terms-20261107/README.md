@@ -17,9 +17,15 @@
 - RPCs chamadas: `approve_b2b_payment_terms_secure`, `reject_b2b_payment_terms_secure`, `request_b2b_payment_terms_adjustment_secure` em `src/hooks/usePaymentTermsApproval.ts`.
 - Corpos-base em `supabase/migrations/20260707205529_b186202f-b5b3-4f57-830b-f3cee7ca6bbe.sql` (29–88, 95–157, 164–220): Auth/papéis e alterações dos termos/pedido; sem guard contábil explícito uniforme nos três corpos.
 - Guard em `scripts/owner-orders-20261023/accounting-pending-request-20261024/src/new-functions.sql` (42–58) nega mudança de `financial_approval_status` enquanto snapshot contábil pendente, exceto inicialização específica com ticket privado.
-- **Lacuna potencial:** solicitar ajuste quando status financeiro já é `pending` não é negado por essa cláusula de mudança. Outras condições ainda podem negar; não afirmar que a RPC LIVE permite nem que todos os guards LIVE são suficientes.
+- A leitura isolada da cláusula de mudança não certifica o caso legado ajuste `pending→pending`: triggers child/orderorigin também precisam ser considerados. Não há vulnerabilidade demonstrada; eventual caracterização desse caso fica separada deste delta UI e exige os guards reais em PG descartável.
 - Leitor V1 em `scripts/b2b-payment-condition-v1-rebase-20261106/generate.py` (537–552) usa `PERFORM get_partner_order_payment_terms_secure` antes de ler snapshot privado: mesma porta servidor, sem novo grant.
-- Nenhuma consulta/execução hospedada ocorreu. Estado efetivamente instalado das RPCs/triggers permanece **UNVERIFIED** aqui; eventual revisão independente deve inspecionar os corpos LIVE, sem executar aprovação. A contenção da UI não substitui autorização servidor.
+- Complemento READONLY produção relatado por Renato às 15:14: approve/reject contêm `b2b_phase1_order_visible`; request_adjustment não no corpo, mas há triggers child/orderorigin. `zz_c2_accounting_pending`/`c2_accounting_pending_guard` bloqueia mudança de `financial_approval_status` sob `C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1`. Este é relato do auditor, não consulta executada pelo agente. Nenhuma aprovação hospedada ou alteração SQL foi realizada.
+- A contenção da UI não substitui autorização servidor. Este delta não executa PG nem afirma cobertura dos triggers no caso legado; preserva a conclusão separada como não testada.
+
+## Complemento 15:14 — contexto atual dos handlers
+- Diálogos são fechados e texto descartado quando pendência, permissão, ator/tenant/época ou pedido mudam. Callbacks capturados revalidam flags atuais e o monitor de autorização antes do dispatch; aprovação revalida também status aprovado. Nenhum endpoint novo.
+- Price continua identificado pela presença do snapshot validado **B2B_PAYMENT_CONDITION_V1**, cujo contrato usa o cronograma canônico Price; não depende de `monthly_rate > 0`. Legado não muda.
+- Evidências deste complemento são separadas em `handlers-*.txt/json`; as evidências anteriores não são sobrescritas. Transporte/Auth locais sintéticos, sem prova JWT/RLS/browser autenticado.
 
 ## Prova real informada pelo auditor
 Renato relatou leitura na prévia de PB001037: duas embalagens de 25 kg, tabela 20, desconto 2, líquido 18, juros 0,65, total 18,65 e 3x a 1,8%; aprovação de pedido desabilitada pela pendência fiscal. Não foi execução deste agente. Sessões vendedor/FSF continuam com o auditor; o ambiente do agente informa `external_unmanaged`, sem restauração de sessão autenticada disponível. Não foi pedido login nem realizada aprovação real. Reteste visual autenticado deste delta aguarda o auditor.

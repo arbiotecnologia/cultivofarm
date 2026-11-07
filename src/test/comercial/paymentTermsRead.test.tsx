@@ -3,10 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 // Transporte stub local: nenhuma chamada hospedada. Hook e componente reais.
-const s = vi.hoisted(() => ({ actor: "u-a", tenant: "t-a", epoch: 0, rpc: vi.fn(), condition: vi.fn(), table: vi.fn(), writes: vi.fn() }));
+const s = vi.hoisted(() => ({ actor: "u-a", tenant: "t-a", epoch: 0, ready: true, rpc: vi.fn(), condition: vi.fn(), table: vi.fn(), writes: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
   user: { id: s.actor }, profile: { user_id: s.actor, organization_id: s.tenant, ativo: true, senha_provisoria: false },
-  roles: ["administrador"], role: "administrador", loading: false, authzReady: true, authzEpoch: s.epoch, checkAuthzAccess: () => true,
+  roles: ["administrador"], role: "administrador", loading: false, authzReady: true, authzEpoch: s.epoch, checkAuthzAccess: () => s.ready,
 }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   rpc: (...a: unknown[]) => { const p = a[0] === "get_partner_order_payment_condition_secure" ? s.condition(...a) : s.rpc(...a); return Object.assign(p, { abortSignal: () => p }); },
@@ -32,11 +32,14 @@ function legacy(row: unknown) {
 function mount(canApprove = false, initialPending = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   let pending = initialPending;
-  const tree = () => <QueryClientProvider client={client}><PaymentTermsSection partnerOrderId={ORDER} canApprove={canApprove} accountingPending={pending} /></QueryClientProvider>;
-  const v = render(tree()); return { update: () => v.rerender(tree()), setPending: (value: boolean) => { pending = value; v.rerender(tree()); } };
+  let orderId = ORDER;
+  let allowed = canApprove;
+  const tree = () => <QueryClientProvider client={client}><PaymentTermsSection partnerOrderId={orderId} canApprove={allowed} accountingPending={pending} /></QueryClientProvider>;
+  const v = render(tree()); return { update: () => v.rerender(tree()), setPending: (value: boolean) => { pending = value; v.rerender(tree()); },
+    setOrder: (value: string) => { orderId = value; v.rerender(tree()); }, setAllowed: (value: boolean) => { allowed = value; v.rerender(tree()); } };
 }
 const NO_TERMS = /Sem condição de pagamento registrada/;
-beforeEach(() => { Object.assign(s, { actor: "u-a", tenant: "t-a", epoch: 0 }); vi.clearAllMocks();
+beforeEach(() => { Object.assign(s, { actor: "u-a", tenant: "t-a", epoch: 0, ready: true }); vi.clearAllMocks();
   s.condition.mockImplementation(() => ok({ contract: "B2B_PAYMENT_CONDITION_V1", order_id: ORDER, present: false, payment_condition: null }));
 });
 afterEach(cleanup);
@@ -151,11 +154,44 @@ it("pendência bloqueia confirmação de ajuste aberto antes da atualização do
   const button = await screen.findByRole("button", { name: "Solicitar ajuste" });
   await waitFor(() => expect(button).toBeEnabled()); fireEvent.click(button);
   fireEvent.change(screen.getByRole("textbox"), { target: { value: "Revisão" } }); m.setPending(true);
-  const confirm = screen.getByRole("button", { name: "Confirmar" }); expect(confirm).toBeDisabled(); fireEvent.click(confirm);
+  expect(screen.queryByRole("dialog")).toBeNull();
   expect(s.rpc.mock.calls.map(c => c[0])).toEqual(["get_partner_order_payment_terms_secure"]);
 });
 it("erro do leitor de snapshot não permite decisão com termos carregados", async () => {
   s.rpc.mockImplementation(() => reply(terms())); s.condition.mockImplementation(() => fail("42501", "forbidden")); mount(true);
   const button = await screen.findByRole("button", { name: "Aprovar" }); await waitFor(() => expect(button).toBeDisabled());
   fireEvent.click(button); expect(s.rpc.mock.calls.map(c => c[0])).toEqual(["get_partner_order_payment_terms_secure"]);
+});
+
+// Capture o callback real para reproduzir confirmação/click enfileirado da renderização antiga.
+function clickHandler(element: HTMLElement): () => void {
+  const key = Object.keys(element).find(k => k.startsWith("__reactProps$"));
+  if (!key) throw new Error("React event props missing");
+  const props = (element as unknown as Record<string, { onClick: () => void }>)[key];
+  return props.onClick;
+}
+it.each(["pending", "actor", "tenant", "epoch", "order", "permission"] as const)("diálogo aberto: %s fecha e callback antigo não despacha", async change => {
+  s.rpc.mockImplementation(() => reply(terms())); s.condition.mockImplementation(() => ok(v1())); const m = mount(true);
+  const button = await screen.findByRole("button", { name: "Solicitar ajuste" });
+  await waitFor(() => expect(button).toBeEnabled()); fireEvent.click(button);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Revisão antiga" } });
+  const confirmOld = clickHandler(screen.getByRole("button", { name: "Confirmar" }));
+  if (change === "pending") m.setPending(true);
+  else if (change === "order") m.setOrder("pedido-b");
+  else if (change === "permission") m.setAllowed(false);
+  else { if (change === "actor") s.actor = "u-b"; if (change === "tenant") s.tenant = "t-b"; if (change === "epoch") s.epoch++; m.update(); }
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  act(() => confirmOld());
+  expect(s.rpc.mock.calls.filter(c => c[0] !== "get_partner_order_payment_terms_secure")).toHaveLength(0);
+});
+it.each(["pending", "epoch", "lease", "permission"] as const)("aprovação capturada revalida %s antes do dispatch", async change => {
+  s.rpc.mockImplementation(() => reply(terms())); const m = mount(true);
+  const button = await screen.findByRole("button", { name: "Aprovar" });
+  await waitFor(() => expect(button).toBeEnabled()); const approveOld = clickHandler(button);
+  if (change === "pending") m.setPending(true);
+  else if (change === "permission") m.setAllowed(false);
+  else if (change === "epoch") { s.epoch++; m.update(); }
+  else s.ready = false; // O monitor vence antes da próxima renderização.
+  act(() => approveOld());
+  expect(s.rpc.mock.calls.filter(c => c[0] !== "get_partner_order_payment_terms_secure")).toHaveLength(0);
 });
