@@ -13,6 +13,7 @@ na preparação e os religa antes das RPCs.
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import re
 import subprocess
