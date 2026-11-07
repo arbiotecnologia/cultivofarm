@@ -4,7 +4,9 @@
 
 ## Revisão atual
 
-A evidência vigente está em `review-458b6012/manual-null-1813/`. O manifesto cobre **56 alterações**, incluindo funções, relações, coluna/FK, constraints, índices, gatilhos, owners e ACLs. Novos objetos exigem ausência; substituições exigem corpo/owner/ACL capturados e conferência LIVE independente.
+A evidência vigente é `review-458b6012/final-credit-terms-1833/`. A revisão de limite zero reproduziu **107/112 (cinco falhas)** e terminou **112/112**, com manifesto **61/61** e reteste fiscal **177/177**, exits finais 0 e sem soma entre suítes. `credit_limit=0` é configuração válida de limite zero: exposição positiva usa limite excedido; somente NULL é não definido, e negativo/NaN continuam fechados. O diff contém apenas `b2b_credit_config_block` e `fn_b2b_credit_exposure`; nenhuma configuração LIVE foi alterada.
+
+O manifesto cobre **56 alterações**, incluindo funções, relações, coluna/FK, constraints, índices, gatilhos, owners e ACLs. Novos objetos exigem ausência; substituições exigem corpo/owner/ACL capturados e conferência LIVE independente.
 
 O auditor relatou que `public.rpc_receivable_money_projection_v1` não possui overloads LIVE. Por isso ela é tratada como **CREATE**, sem baseline inventada: o PRE exige zero overloads por `pg_proc`, e o POST exige um overload owner-only. Os MD5/owners/ACLs relatados dos writers e a definição de `ux_ar_one_active_per_b2b_order` foram confrontados com capturas locais.
 
@@ -58,6 +60,6 @@ Price B3, crédito total, snapshots, primeiro vencimento pela NF e calendário s
 5. Manter instalação e operação separadas; fiscal, contabilidade, recebíveis reais e comunicação continuam fechados.
 6. JWT/RLS/Storage/PostgREST/browser e homologação real permanecem NOT_RUN.
 
-Candidato SHA256: `818da9e4f001494bdc50c2265e3adfa9d04ec3cd421454c3e1a2ce7ca17b6a8b`.
-Instalação revisável SHA256: `721f97705d6b6d80ac36ebfa8f0a781aa59e5cc33554ffd146099823409f3685`.
+Candidato SHA256: `7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f`.
+Instalação revisável SHA256: `88e4d394b8719ddd0ddaed3a323a0be8ce89e62c7cc89834c48aaced066ecb5f`.
 Nenhum PASS local autoriza implantação, publicação, emissão, cobrança ou envio.

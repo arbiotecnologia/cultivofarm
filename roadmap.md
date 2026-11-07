@@ -1,7 +1,8 @@
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
-- [ ] Conferir e reproduzir localmente `b2b_credit_config_block`: `credit_limit=0` é limite válido zero e bloqueia exposição positiva; somente NULL é não definido; negativo/NaN permanecem inválidos, sem alterar configuração LIVE.
-- [ ] Revisar request/approve/reject para revalidar ator/escopo e integridade pedido↔condição também após toda espera/lock em `partner_order_payment_terms`, não apenas após `FOR UPDATE` do pedido.
-- [ ] Provar revogação/troca de termos em duas sessões PostgreSQL descartáveis, rollback deny-only e regressões focadas; preservar fila, 38 gatilhos, B3/gates e candidato INATIVO/NÃO APROVADO, sem hosted/publicação/NF/cobrança/envios/delegação.
+- [x] Reproduzir `b2b_credit_config_block`: antes **107/112, cinco falhas de zero, exit 1**. Corrigir somente config/exposição por gerador: zero é limite válido e positivo usa `LIMIT_EXCEEDED_BLOCK/APPROVAL`; NULL/negativo/NaN seguem fechados. Depois **112/112**, manifesto **61/61** e fiscal **177/177**, exits 0 sem soma; configuração LIVE não alterada.
+- [x] Request/approve/reject agora releem pedido+termos, pertencimento, escopo e C2 também depois do `FOR UPDATE` dos termos. Antes **184/187, três falhas, exit 1**; depois **187/187, exit 0**, com duas sessões, rollback explícito, 38 gatilhos reais e rollback deny-only. Tentativa cruzada com ordem inversa de locks deadlockou e ficou separada, sem contá-la como prova pós-espera.
+- [x] Preservar fila, B3/gates e evidências; diffs/hashes/JSON/TXT/exits em `b4/review-458b6012/final-credit-terms-1833/` e `review-31430566/final-credit-terms-1833/`. B4 SHA256 `7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f`; tudo INATIVO/NÃO APROVADO, sem hosted/publicação/NF/cobrança/envios/delegação.
+- [ ] Auditor: revisar os dois diffs, pertencimento pós-espera e semântica zero; conferir LIVE corpos/owners/ACLs/relações e homologar JWT/RLS/Storage/PostgREST/browser. Instalação/operação continuam bloqueadas.
 
 ## 07/11 18:25 — Revisão 1f4073: snapshot em gramas continua armazenado em kg
 - [x] Reproduzir com writers reais locais uma apresentação de 500 g gravada como `0,500 kg`, pedido canônico de 2 UN, preço/frete preservados e NF parcial fictícia de 1 UN; líquido sem pack segue por `volume_ml` e writer líquido whole-pack negou `PACK_PRODUCT_NOT_SOLID`.
