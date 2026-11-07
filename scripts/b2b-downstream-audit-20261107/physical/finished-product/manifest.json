@@ -32,15 +32,15 @@
       "bytes": 2210
     },
     "candidate.sql.review": {
-      "sha256": "26ea17b3c403658c47bdf67219349944380baa922208af7d0f1b5994b193a7bc",
-      "bytes": 49953
+      "sha256": "2b018513470c17b8079f154865214a76f165ddf11ee5d24d08148ca8155e7155",
+      "bytes": 49944
     },
     "install.sql.review": {
-      "sha256": "170395a55ada9402575d46f016619d90a5f76ffe427f55adfec8051fe33a9104",
-      "bytes": 57289
+      "sha256": "87546872d608235a7423aac3444785040e594dca193d65d3a945142cc5bf908c",
+      "bytes": 57280
     },
     "postflight.sql.review": {
-      "sha256": "a3d7056ba026e59b5f18cef29e8263147ce47071f85214e998e3dc964551b68a",
+      "sha256": "4935e6ebf5475ff5b97d70cc0364b198f62848fd8158ba09b6e47d403db0ebe7",
       "bytes": 1337
     },
     "rollback.sql.review": {

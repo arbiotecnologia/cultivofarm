@@ -84,7 +84,16 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL ERROR:  DELIVERY_MERGE_LEDGER_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) line 28 at RAISE\nSQL statement \"SELECT platform_private.delivery_merge_split_20261030(p_item_id,v_ctx,p_payload)\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 126 at PERFORM\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 43 at assignment\n",
+      "name": "parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros",
+      "status": "PASS"
+    },
+    {
+      "name": "0,5 embalagem é negada na reserva whole-pack",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED"
+    },
+    {
+      "name": "FAIL peso não pode ser gravado como volume_total :: ERROR:  42501: ESTQ_TENANT_FORBIDDEN\nCONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
       "status": "PASS"
     }
   ],

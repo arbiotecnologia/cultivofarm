@@ -328,7 +328,7 @@ BEGIN
  UPDATE public.estoque_produto SET status='estornado',quantidade=0,volume_total=CASE WHEN origem_estoque='produto_acabado' AND unidade_conteudo IN ('kg','g') THEN NULL ELSE 0 END,quantidade_conteudo=CASE WHEN origem_estoque IS NOT NULL THEN 0 ELSE quantidade_conteudo END,quantidade_reservada=0,reservado_para_os_id=NULL,reservado_para_os_tipo=NULL,reservado_para_cliente_id=NULL,reservado_para_partner_id=NULL,reservado_para_partner_order_id=NULL WHERE id=p_item;
  UPDATE public.estoque_produto SET quantidade=v_total,volume_total=v_volume,quantidade_conteudo=CASE WHEN v_main.conteudo_por_unidade IS NOT NULL THEN v_total*v_main.conteudo_por_unidade ELSE NULL END WHERE id=v_main.id;
  IF NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=p_item AND idempotency_key=p_ctx->>'idempotency_key' AND saldo_posterior=0 AND acao='cancelamento_reserva')
- OR NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=v_main.id AND metadata->>'operacao_key'=p_ctx->>'idempotency_key' AND saldo_anterior=v_main.quantidade AND saldo_posterior=v_total AND volume_posterior IS NOT DISTINCT FROM v_volume AND acao='cancelamento_reserva')
+ OR NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=v_main.id AND metadata->>'operacao_key'=p_ctx->>'idempotency_key' AND saldo_anterior=v_main.quantidade AND saldo_posterior=v_total AND volume_posterior=coalesce(v_volume,0) AND acao='cancelamento_reserva')
  THEN RAISE EXCEPTION 'DELIVERY_MERGE_LEDGER_DENIED' USING ERRCODE='PT409'; END IF;
 END $$;
 

@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.1s
+CHECKPOINT sql_calls=1 elapsed=2.0s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -12,12 +12,12 @@ PASS fertilizante g: envio/confirmação/replays idempotentes sem segunda baixa
 PASS quimico l: pedido/OS → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: envio/confirmação/replays idempotentes sem segunda baixa
 PASS fertilizante ml: pedido/OS → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
-CHECKPOINT sql_calls=100 elapsed=12.8s
+CHECKPOINT sql_calls=100 elapsed=13.4s
 PASS fertilizante ml: envio/confirmação/replays idempotentes sem segunda baixa
-PASS FAIL ERROR:  DELIVERY_MERGE_LEDGER_DENIED
-CONTEXT:  PL/pgSQL function platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) line 28 at RAISE
-SQL statement "SELECT platform_private.delivery_merge_split_20261030(p_item_id,v_ctx,p_payload)"
-PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 126 at PERFORM
-PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 43 at assignment
+PASS parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros
+PASS 0,5 embalagem é negada na reserva whole-pack
+PASS FAIL peso não pode ser gravado como volume_total :: ERROR:  42501: ESTQ_TENANT_FORBIDDEN
+CONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 8 at RAISE
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
 
-RESULT 14 / 14 exit 1
+RESULT 16 / 16 exit 1
