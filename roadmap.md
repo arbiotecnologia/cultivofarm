@@ -1,3 +1,8 @@
+## 07/11 17:56 — Fatos LIVE 4097d4e2: projeção ausente e origem manual
+- [ ] Tratar `rpc_receivable_money_projection_v1` como criação nova: exigir ausência de TODOS os overloads no PRE/install, sem baseline inventada; pinar os MD5/owners/ACLs LIVE informados dos writers e a definição exata do índice compartilhado.
+- [ ] Separar títulos MANUAL não B2B sem parceiro dos títulos que afetam crédito de parceiro: preservar baixa/parcelas legadas do primeiro, bloquear explicitamente origem não comprovada no segundo e medir o efeito sobre pedidos atuais sem alterar histórico.
+- [ ] Executar PRE/install/POST/rerun/rollback e matrizes focadas em PostgreSQL descartável, com evidências versionadas e hashes; manter candidato INATIVO/NÃO APROVADO, sem hosted write/publicação/cobrança/envio/fiscal/delegação.
+
 ## 07/11 17:44 — Escopo específico da equipe vendedora no ajuste B2B
 - [x] Substituir no candidato request/approve/reject o leitor de comprador por helper privado da equipe vendedora: organização/perfil ativos, readiness, dono comercial, feature e somente administrador/financeiro/gestor_comercial; sem Superadmin, papéis externos/cliente mistos ou vínculo fictício. Leitor comprador, grants, B3 e guards contábeis/origem preservados.
 - [x] Reproduzir o vendedor legítimo com `organizations.partner_account_id=NULL` e zero `partner_users`: positivo C2 validado para os três papéis em request/approve/reject, com revalidação antes/depois dos locks e integridade pedido↔condição. Shape proibido pela guarda C2 segue negado; condição ausente/cruzada falha fechado.
