@@ -135,7 +135,7 @@ CREATE FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) RETU
     for table in ["financial_cost_centers", "fiscal_requirement_exemptions", "recurring_financial_templates"]:
         B3.psql(f"CREATE TABLE IF NOT EXISTS public.{table}(id uuid PRIMARY KEY)")
     B3.psql("CREATE TABLE IF NOT EXISTS auth.users(id uuid PRIMARY KEY,email text)")
-    for uid in [B3.UADM, B3.UFIN, B3.UB, B3.UA, B3.UT]:
+    for uid in [B3.UADM, B3.UFIN, B3.UB, B3.UT]:
         B3.psql(f"INSERT INTO auth.users(id) VALUES('{uid}') ON CONFLICT(id) DO NOTHING")
     names = ["accounts_receivable", "accounts_receivable_installments", "receivable_payments", "financial_receipts", "financial_audit_log"]
     for name in names:
