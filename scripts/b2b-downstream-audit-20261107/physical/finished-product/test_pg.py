@@ -250,7 +250,10 @@ def main():
         UPDATE public.ordens_servico SET origem='b2b',partner_order_id='{order}',partner_order_item_id='{order_item}',cliente_id=NULL,fazenda_id=NULL,talhao_id=NULL WHERE id='{b2b['os']}';
         SET session_replication_role=origin;
         """)
-        reserved = json.loads(last(reserve(b2b["os"], b2b["stock"], 2, "finished-reserve-b2b")))["itens"][0]
+        b2b_items = json.dumps([{"item_id": b2b["stock"], "quantidade": 2}])
+        b2b_data = json.dumps({"partner_id": partner, "partner_order_id": order})
+        reserved = json.loads(last(T.actor() + f"SELECT public.rpc_estoque_reservar_v1('{b2b['os']}','b2b','{b2b_items}'::jsonb,'finished-reserve-b2b','{b2b_data}'::jsonb);"))["itens"][0]
+        ok("reserva B2B usa vínculos canônicos próprios sem abrir entrega", reserved)
         reject("pedido B2B aprovado permanece contido no agrupamento físico",
                T.actor() + group(b2b["os"], reserved, 2, "finished-group-b2b"), "42501", "DELIVERY_SCOPE_DENIED")
         ok("gate B2B não foi aberto nem substituído pela prova manual")
