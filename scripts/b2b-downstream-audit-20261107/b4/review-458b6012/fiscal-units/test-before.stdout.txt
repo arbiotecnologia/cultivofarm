@@ -22,4 +22,13 @@ PASS aprovação comercial canônica do pedido
 PASS plano sem aprovação financeira adicional preserva not_required
 PASS pedido aprovado e economicamente selado
 PASS 1 UN = 25 kg em NF parcial
-FAIL execução sem exceção de harness :: KeyError('order_quantity')
+FAIL 1 UN = 25 kg em NF parcial: quantidade de pedido normalizada :: {'item_id': '05dad9ff-2925-4f1d-80b4-7ee1d8e2007f', 'quantity': 1, 'principal': 180.0, 'financed_interest': 6.52}
+FAIL 1 UN = 25 kg em NF parcial: conteúdo fiscal normalizado sem alterar preço :: {'item_id': '05dad9ff-2925-4f1d-80b4-7ee1d8e2007f', 'quantity': 1, 'principal': 180.0, 'financed_interest': 6.52}
+PASS 1 UN = 25 kg em NF parcial: payload fiscal original preservado
+FAIL fixture 5: pedido fictício criado :: ERROR:  MONEY_ORIGIN_ACCESS_DENIED
+CONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 4 at RAISE
+PL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment
+PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment
+PL/pgSQL function platform_private.b2b_credit_checked(uuid,numeric,uuid) line 13 at assignment
+PL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 130 at assignment
+FAIL execução sem exceção de harness :: RuntimeError('ERROR:  invalid input syntax for type uuid: "None"\nLINE 1: ...id FROM public.partner_order_items WHERE order_id=\'None\' ORD...\n                                                             ^\n')

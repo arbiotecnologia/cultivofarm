@@ -1,0 +1,121 @@
+{
+  "kind": "DISPOSABLE_B4_FISCAL_UNIT_NORMALIZATION_NOT_HOSTED_E2E",
+  "phase": "before",
+  "candidate_sha256": "d9a2089559c8e388316b9bb17cb4939b8215b500e58f94bbdbd8cd10ae67ccb7",
+  "status": "REGRESSION_FAIL",
+  "contract": "B4_FISCAL_ITEM_NORMALIZATION_V1_CANDIDATE_INACTIVE",
+  "passed": 24,
+  "total": 25,
+  "checks": [
+    {
+      "name": "boot B3 com gatilhos reais",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "B3 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B3 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "condição B3 fictícia publicada",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "componente B4 executado somente no PG descartável",
+      "ok": true
+    },
+    {
+      "name": "stub operacional restrito ao harness",
+      "ok": true
+    },
+    {
+      "name": "fixture 1: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture canônica: 2 embalagens inteiras de 25 kg, quantidade comercial 2 UN",
+      "ok": true
+    },
+    {
+      "name": "fixture 3: pedido fictício criado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "1 UN = 25 kg em NF parcial",
+      "ok": true
+    },
+    {
+      "name": "execução sem exceção de harness",
+      "ok": false,
+      "detail": "KeyError('order_quantity')"
+    }
+  ],
+  "hosted": "NOT_RUN",
+  "real_documents_or_charges": false,
+  "synthetic_seams": [
+    "Auth/GUC e roles locais",
+    "documento AUTHORIZED privado fictício sem emissão/rede",
+    "adaptador de dependências stub somente no harness",
+    "schema financeiro reduzido",
+    "nenhuma prova JWT/RLS/PostgREST/Storage/produção"
+  ]
+}
