@@ -15,7 +15,7 @@
       "status": "PASS"
     },
     {
-      "name": "FAIL module 'test_pg' has no attribute 'O2'",
+      "name": "FAIL ERROR:  ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nSQL statement \"INSERT INTO public.estoque_produto (id,\n        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,\n        validade, status, reservado_para_os_id, reservado_para_os_tipo,\n        reservado_para_cliente_id, reservado_para_partner_order_id,\n        quantidade_reservada, reservado_por, reservado_em\n      ) VALUES (\n        v_estoque_id,v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,\n        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,\n        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,\n        v_reservadas, v_uid, now()\n      ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 172 at SQL statement\n",
       "status": "PASS"
     }
   ],
