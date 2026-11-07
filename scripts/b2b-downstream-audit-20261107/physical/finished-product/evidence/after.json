@@ -1,5 +1,5 @@
 {
-  "status": "PASS",
+  "status": "FAIL",
   "checks": [
     {
       "name": "checkpoint descartável da composição capturada restaurado",
@@ -49,12 +49,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "e960a65a-31d1-421c-b1b1-3e6fc3aa1264",
+        "lote_id": "da011857-f4ae-412b-bbe5-b01fe2ad802d",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "2113aa74-4193-44be-8531-541a3aab4463",
+        "movimentacao_id": "081a6cc4-5563-4036-af7b-f3b98065de1a",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "b43f3b11-214b-4761-ba03-ab90c94df160",
+        "estoque_produto_id": "d518f97b-0d11-44a9-97eb-a82d950c4420",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -80,12 +80,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "d16d3316-ea46-4825-ad09-71a9b3ccd351",
+        "lote_id": "2f4911a3-d04b-4851-ad46-723fc5004615",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "7e966628-760b-4d16-947e-526de973513b",
+        "movimentacao_id": "32d4b18d-609e-4408-8fee-9ea5f139ac49",
         "embalagem_versao": 1,
         "unidade_conteudo": "g",
-        "estoque_produto_id": "21c68f16-4964-4cfb-bc8f-ebfd17eb9936",
+        "estoque_produto_id": "15cf5f37-9e48-4415-9d56-a159fcc061d3",
         "quantidade_conteudo": 50000.0,
         "conteudo_por_unidade": 25000.0
       }
@@ -111,12 +111,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "a3cfe77c-0717-4f31-999d-07f7992c6329",
+        "lote_id": "5eb96c38-7004-4701-8a80-7c9ea0ff2576",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "6fb03ce1-00ae-47fc-9be9-a8b05ec6e131",
+        "movimentacao_id": "597fb433-8590-47e8-ac4b-5cc7ae425c66",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "e18db7b9-46c2-496f-afb7-ee9c25578fb4",
+        "estoque_produto_id": "1e53e58d-eebf-4799-b4fe-439619c0574c",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -142,12 +142,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "40baa72f-8b6d-448d-840d-76bcf40bfc3d",
+        "lote_id": "cc655036-9847-4f6d-a804-9c341024e3cd",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "386170be-5906-4886-a4a8-36644e318276",
+        "movimentacao_id": "a539b0a3-c8d2-4c0a-a078-df5c27496b7f",
         "embalagem_versao": 1,
         "unidade_conteudo": "ml",
-        "estoque_produto_id": "c862663a-d0bf-485a-a46b-f3a0b85adab0",
+        "estoque_produto_id": "26f9d2c8-a80f-41be-87da-5871431efcd5",
         "quantidade_conteudo": 1000.0,
         "conteudo_por_unidade": 500.0
       }
@@ -182,12 +182,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "9064b250-5239-4f2b-9776-5d9d91fc7d93",
+        "lote_id": "2a4a54cc-5a59-4593-935d-4de08b488081",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "085a0023-6eb1-440e-9e8c-43e19f2307d8",
+        "movimentacao_id": "bd390eae-c0a1-488a-929d-ce7de588dbae",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "e8539536-95e8-41ad-8e8b-c8c1d68d52a4",
+        "estoque_produto_id": "981570a5-8b6c-4f7c-b5bf-fadba6431131",
         "quantidade_conteudo": 75.0,
         "conteudo_por_unidade": 25.0
       }
@@ -202,12 +202,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "6b230aa9-b17a-4d18-9a40-3147386829fa",
+        "lote_id": "555fdfb6-5c05-4628-b37a-6b444a5d3cc3",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "045244cc-df72-4b7f-9ce9-46b1ea86df81",
+        "movimentacao_id": "d1bdab08-6cc8-4712-950c-61f71a3ff3ef",
         "embalagem_versao": 1,
         "unidade_conteudo": "kg",
-        "estoque_produto_id": "f62deb74-0d2f-4898-8ffb-9d7850179d05",
+        "estoque_produto_id": "45ff43ec-86bd-4450-a534-08e8896cf086",
         "quantidade_conteudo": 50.0,
         "conteudo_por_unidade": 25.0
       }
@@ -228,12 +228,12 @@
       "detail": {
         "ok": true,
         "replay": false,
-        "lote_id": "11bd8007-5ad9-4aaa-ac62-97518b2242ba",
+        "lote_id": "a3fad861-f074-40b3-a16b-1dc28c640d35",
         "origem_estoque": "compra_produto_acabado_revenda",
-        "movimentacao_id": "f55e89a7-5d10-4854-805d-95eac7464af4",
+        "movimentacao_id": "0065a81e-56a7-4d74-afa3-545eee9624d7",
         "embalagem_versao": 1,
         "unidade_conteudo": "l",
-        "estoque_produto_id": "c69963f7-15c1-4905-ba03-7b5a0fd7b90e",
+        "estoque_produto_id": "2f8b163a-f977-4b9a-bb26-00dd6ef9b40d",
         "quantidade_conteudo": 2.0,
         "conteudo_por_unidade": 1.0
       }
@@ -257,6 +257,23 @@
     },
     {
       "name": "POST confirma gate fechado após a bateria",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback deny-only executa sem restaurar grants ou apagar objetos",
+      "status": "PASS"
+    },
+    {
+      "name": "compra após rollback permanece fechada",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
+    },
+    {
+      "name": "rollback preserva compras, estoque, entregas e histórico integralmente",
+      "status": "PASS"
+    },
+    {
+      "name": "FAIL ERROR:  P0001: FINISHED_PRE_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\nTraceback (most recent call last):\n  File \"/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py\", line 210, in main\n    assert loaded.returncode == 0, loaded.stderr\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  P0001: FINISHED_PRE_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n\n",
       "status": "PASS"
     }
   ],

@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.5s
+CHECKPOINT sql_calls=1 elapsed=1.8s
 PASS checkpoint descartável da composição capturada restaurado
 PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
 PASS candidato instalado com todos os PRE pins e sem novos grants
@@ -19,7 +19,7 @@ PASS quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou e
 PASS quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000
 PASS quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
-CHECKPOINT sql_calls=100 elapsed=15.6s
+CHECKPOINT sql_calls=100 elapsed=11.3s
 PASS fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000
 PASS fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa
 PASS replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada
@@ -35,4 +35,20 @@ PASS nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação
 PASS revogação durante espera da compra é revalidada antes de criar lote/estoque
 PASS duas compras concorrentes com a mesma chave geram uma única entrada e replay
 PASS POST confirma gate fechado após a bateria
-RESULT 34 / 34 exit 0
+PASS rollback deny-only executa sem restaurar grants ou apagar objetos
+PASS compra após rollback permanece fechada
+PASS rollback preserva compras, estoque, entregas e histórico integralmente
+PASS FAIL ERROR:  P0001: FINISHED_PRE_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 210, in main
+    assert loaded.returncode == 0, loaded.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  P0001: FINISHED_PRE_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+
+
+RESULT 38 / 38 exit 1
