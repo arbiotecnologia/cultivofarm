@@ -199,6 +199,15 @@ def main():
         loaded = B.run_raw((HERE / "postflight.sql.review").read_text())
         assert loaded.returncode == 0, loaded.stderr
         B.ok("POST confirma gate fechado após a bateria")
+        historical_counts = B.last("SELECT jsonb_build_array((SELECT count(*) FROM public.lotes),(SELECT count(*) FROM public.estoque_produto),(SELECT count(*) FROM public.entregas),(SELECT count(*) FROM public.estoque_movimentacoes))::text;")
+        rolled_back = B.run_raw((HERE / "rollback.sql.review").read_text())
+        assert rolled_back.returncode == 0, rolled_back.stderr
+        B.ok("rollback deny-only executa sem restaurar grants ou apagar objetos")
+        B.reject("compra após rollback permanece fechada", purchase(first_item, 2, "purchase-after-rollback"), "42501", "FINISHED_PRODUCT_GATE_CLOSED")
+        assert B.last("SELECT jsonb_build_array((SELECT count(*) FROM public.lotes),(SELECT count(*) FROM public.estoque_produto),(SELECT count(*) FROM public.entregas),(SELECT count(*) FROM public.estoque_movimentacoes))::text;") == historical_counts
+        B.ok("rollback preserva compras, estoque, entregas e histórico integralmente")
+        loaded = B.run_raw((HERE / "postflight.sql.review").read_text())
+        assert loaded.returncode == 0, loaded.stderr
         status = 0
     except Exception as exc:
         import traceback
