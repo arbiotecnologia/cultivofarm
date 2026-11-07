@@ -1,18 +1,70 @@
--- POST_RUNTIME_REQUIRED platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) source_body_sha256=7a18023bdd5d5e0ba207e3d445f628599651b7b1f17d012c0c58dca6fc8b34d1
--- POST_RUNTIME_REQUIRED platform_private.envase_insert_final_v1() source_body_sha256=be69514b504aa8ac72909501371669e21349d600bb69ba1e52946bbb77053096
--- POST_RUNTIME_REQUIRED platform_private.envase_insert_guard_v1() source_body_sha256=058bb36a69ac0a688e64c39b83eb9fa621557a1ec7fce3a1ef4bf710a77ada4d
--- POST_RUNTIME_REQUIRED platform_private.guard_manual_lot_write_v1() source_body_sha256=fb5a8aae4f3d0d12afedb60fa1bde5f406da6618b0235c07904199d74f68c05a
--- POST_RUNTIME_REQUIRED platform_private.trg_lab_lot_biological_only() source_body_sha256=81afed373e13ae1286dd440d799c0e43da3d9472a8a67ec24aa10f500fac3eca
--- POST_RUNTIME_REQUIRED public.fn_sync_os_classica_downstream() source_body_sha256=10d1ff1e6fcfd264adfca55ece814e44e6fb9454401f0f9c3ed51f5af972bd09
--- POST_RUNTIME_REQUIRED public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) source_body_sha256=afef9c3cc61bd2bb00225b932e3c8d6c7657f48026a897b0db16f59f3c3ede74
--- POST_RUNTIME_REQUIRED public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) source_body_sha256=a769eb19c65fe800145b1702cb46e8eb265674960c5139854328479db0adc463
--- POST_RUNTIME_REQUIRED public.validate_estoque_entrada() source_body_sha256=f08abce3968049fe7739c185f0a066d3502ae2132ab326ee479c2690be400a2e
--- POST_RUNTIME_REQUIRED_DEPENDENCY platform_private.estoque_produto_catalog_tenant_guard()
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'dc878c0e49d8d5bc46f088a8a3c952e6' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.envase_insert_final_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '04602f0308123537c2a7e033ab307963' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_final_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.envase_insert_final_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.envase_insert_final_v1()';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.envase_insert_guard_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'fbe3ff7e7e5c7e8374a5028a92180103' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_guard_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.envase_insert_guard_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.envase_insert_guard_v1()';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.guard_manual_lot_write_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '38b85646f8ad5fd478524bd4cf7e0216' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.guard_manual_lot_write_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.guard_manual_lot_write_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.guard_manual_lot_write_v1()';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.trg_lab_lot_biological_only()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '35f3f59c5413651a6560f34397caf88e' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.trg_lab_lot_biological_only()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.trg_lab_lot_biological_only()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.trg_lab_lot_biological_only()';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.fn_sync_os_classica_downstream()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '7e3da111b2b79691a217dea2c48e7448' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'f0ec0838a5ba32584cf0215ca1a4dc44' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '1e7b2fcf4b7b703fe3d533d01df72eed' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('public.validate_estoque_entrada()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '19f79cc23c00cd9e85a94393ff1e0bd0' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.validate_estoque_entrada()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.validate_estoque_entrada()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.validate_estoque_entrada()';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.estoque_produto_catalog_tenant_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '874c9ca8b5b4e307cf995a0197f98efc' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.estoque_produto_catalog_tenant_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.estoque_produto_catalog_tenant_guard()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.estoque_produto_catalog_tenant_guard()';END IF;
+END$$;
 DO $$DECLARE d text;e text;ty smallint;BEGIN
  SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='estoque_produto' AND t.tgname='a000_estoque_produto_catalog_tenant_guard';
  IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_estoque_produto_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.estoque_produto_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.estoque_produto.a000_estoque_produto_catalog_tenant_guard';END IF;
 END$$;
--- POST_RUNTIME_REQUIRED_NEW_OBJECT platform_private.finished_product_stock_valid_v1(public.estoque_produto)
--- POST_RUNTIME_REQUIRED_NEW_OBJECT platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)
--- POST_RUNTIME_REQUIRED_NEW_OBJECT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)
+DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'e1c85b25f63fdcf623f2b782b6383abc' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.finished_product_stock_valid_v1(public.estoque_produto)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.finished_product_stock_valid_v1(public.estoque_produto)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.finished_product_stock_valid_v1(public.estoque_produto)';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '9484dd33aeab3831bccc9ceb83f1823d' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)';END IF;
+END$$;
+DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0b7a0b72829ce363ca6d5da2823513a0' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;
+END$$;
 DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;
