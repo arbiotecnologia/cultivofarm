@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 119,
-  "total": 119,
+  "passed": 159,
+  "total": 159,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -23,6 +23,10 @@
     },
     {
       "name": "corpo REAL = LIVE: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "corpo REAL = LIVE: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
       "ok": true
     },
     {
@@ -62,7 +66,7 @@
       "ok": true
     },
     {
-      "name": "corpos LIVE originais intactos após install",
+      "name": "create/simulate LIVE originais intactos; somente a resposta de cotação ganhou o ramo condicionado",
       "ok": true
     },
     {
@@ -294,11 +298,131 @@
       "ok": true
     },
     {
+      "name": "cotação: comprador não responde pela condição",
+      "ok": true
+    },
+    {
+      "name": "cotação: admin de outro vendedor não responde",
+      "ok": true
+    },
+    {
+      "name": "cotação: revogação do vendedor durante espera nega e restaura itens/termos",
+      "ok": true
+    },
+    {
+      "name": "cotação Price: resposta autorizada recalcula 1000 em 3x = 1036,22 pela condição escolhida",
+      "ok": true
+    },
+    {
+      "name": "cotação: pedido/termos/cronograma/snapshot econômico compartilham UMA economia",
+      "ok": true
+    },
+    {
+      "name": "cotação: escolha inicial permanece imutável e resposta é append-only",
+      "ok": true
+    },
+    {
+      "name": "cotação idempotente: replay idêntico devolve o MESMO recibo/ACK sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "cotação idempotente: mesmo pedido com preço divergente = conflito, sem segunda economia",
+      "ok": true
+    },
+    {
+      "name": "cotação: conflito não altera termos",
+      "ok": true
+    },
+    {
+      "name": "segunda cotação sintética fica pendente para prova de rollback",
+      "ok": true
+    },
+    {
       "name": "crédito: simulação avisa excesso com o total Price (não o líquido)",
       "ok": true
     },
     {
       "name": "crédito real: create bloqueado pelo total Price",
+      "ok": true
+    },
+    {
+      "name": "limite 1018,11 (entre principal 1000 e Price 1036,22): simulação avisa, nunca usa principal para liberar",
+      "ok": true
+    },
+    {
+      "name": "limite 1018,11: create bloqueado pelo total 1036,22 e nada gravado",
+      "ok": true
+    },
+    {
+      "name": "limite entre valores: falha atômica sem idempotência",
+      "ok": true
+    },
+    {
+      "name": "limite NULL: simulação indisponível (não vira apto)",
+      "ok": true
+    },
+    {
+      "name": "limite NULL: create indisponível e sem pedido",
+      "ok": true
+    },
+    {
+      "name": "limite NULL: falha atômica",
+      "ok": true
+    },
+    {
+      "name": "zero EXPLÍCITO é limite zero (não ausente nem ilimitado): simulação informa excesso",
+      "ok": true
+    },
+    {
+      "name": "zero explícito: create excede limite, não CREDIT_SETTINGS_INCOMPLETE",
+      "ok": true
+    },
+    {
+      "name": "limite negativo: simulação bloqueada",
+      "ok": true
+    },
+    {
+      "name": "limite negativo: create bloqueado atomicamente",
+      "ok": true
+    },
+    {
+      "name": "limite negativo: nenhuma idempotência gravada",
+      "ok": true
+    },
+    {
+      "name": "limite NaN: simulação bloqueada",
+      "ok": true
+    },
+    {
+      "name": "limite NaN: create bloqueado atomicamente",
+      "ok": true
+    },
+    {
+      "name": "limite NaN: nenhuma idempotência gravada",
+      "ok": true
+    },
+    {
+      "name": "erro transitório: simulação ABORTA (não devolve credit NULL)",
+      "ok": true
+    },
+    {
+      "name": "erro transitório: create não grava nem libera operação",
+      "ok": true
+    },
+    {
+      "name": "erro transitório: falha atômica",
+      "ok": true
+    },
+    {
+      "name": "função REAL de crédito restaurada byte a byte após injeção transitória",
+      "ok": true
+    },
+    {
+      "name": "limite exatamente 1036,22: simulação apta com o MESMO total Price",
+      "ok": true
+    },
+    {
+      "name": "limite exatamente 1036,22: create positivo no limite, sem folga inventada",
       "ok": true
     },
     {
@@ -434,7 +558,27 @@
       "ok": true
     },
     {
-      "name": "ator interno: barreira LIVE de origem interna preservada nos dois caminhos",
+      "name": "sem emitente válido: barreira LIVE de origem interna preservada nos dois caminhos",
+      "ok": true
+    },
+    {
+      "name": "POSITIVO INTERNO com guards REAIS: create REAL grava em análise e servidor sela origem validada",
+      "ok": true
+    },
+    {
+      "name": "positivo interno não libera operação/cobrança/fiscal",
+      "ok": true
+    },
+    {
+      "name": "guarda de origem REAL não foi alterada para obter PASS",
+      "ok": true
+    },
+    {
+      "name": "controle: removida a fixture válida, MESMA guarda volta a negar emitente ambíguo",
+      "ok": true
+    },
+    {
+      "name": "controle negativo interno sem idempotência",
       "ok": true
     },
     {
@@ -454,6 +598,10 @@
       "ok": true
     },
     {
+      "name": "cotação LEGADA de F pronta para controle de rollback",
+      "ok": true
+    },
+    {
       "name": "PB-001036/teste4 fora do escopo: nenhum pedido real no PG descartável",
       "ok": true
     },
@@ -467,6 +615,18 @@
     },
     {
       "name": "após rollback: opções negadas",
+      "ok": true
+    },
+    {
+      "name": "após rollback: resposta de cotação com condição ativada fica negada, sem reabrir legado",
+      "ok": true
+    },
+    {
+      "name": "rollback da cotação é atômico",
+      "ok": true
+    },
+    {
+      "name": "após rollback: cotação LEGADA de empresa não ativada (papel FSF) continua funcionando",
       "ok": true
     },
     {
