@@ -1,0 +1,1 @@
+- Subprocess tests that may run longer than 60 s (disposable PostgreSQL batteries) use async `promisify(execFile)`, never `execFileSync`/`spawnSync`/`execSync`; enforced by `config/syncSubprocessWorkerRpc.static.test.ts` — a synchronous wait blocks the worker event loop past Vitest's 60 s worker RPC timeout and raises `Timeout calling "onTaskUpdate"` regardless of pool.
