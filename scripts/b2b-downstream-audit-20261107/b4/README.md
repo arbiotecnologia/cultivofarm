@@ -44,6 +44,14 @@ POST e rollback exigem a metadata íntegra. No schema reduzido do harness, o rol
 - Pedido interno sintético foi negado pelo alocador com `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` e pelo writer integral anterior, sem título/alocação. Gatilhos foram pausados apenas para montar a fixture e religados antes das chamadas.
 - Cotação/pedido B3, parciais, replay, residual, baixa, substituição de centavos, concorrência, calendário e histórico passaram no componente. Isso não prova fluxo real.
 
+## Complemento: embalagem inteira e unidades fiscais
+
+A reprodução isolada encontrou lacuna na composição B3→alocador B4: `items[].quantity` era comparado diretamente com a quantidade de embalagens. O candidato anterior aceitou `0,5 UN`, divergência comercial/tributária e item sem unidade; `25/50 kg` e `500/1.000 ml` foram tratados como quantidade do pedido. Evidência anterior: **87/108, exit 1**, SHA256 `d9a2089559c8e388316b9bb17cb4939b8215b500e58f94bbdbd8cd10ae67ccb7`.
+
+A correção gerada altera somente `platform_private.b2b_allocate_document(uuid)`: exige quantidade/unidade comercial e tributável, reconcilia kg↔g ou L↔ml sem converter peso em volume, deriva unidades do pedido pelo snapshot, rejeita fração wholepack e calcula parciais/centavos sobre `item_money.quantity` normalizado. Preço, Price, calendário, grants e demais objetos não mudaram. Candidato atual SHA256 `14538a204b7351a6a47c9a2499ef7fc63079529a975b270233ae2809bf3eebcd`.
+
+Resultados separados em `review-458b6012/fiscal-units/`: **123/123** na mesma matriz antes/depois e **132/132** com duas parciais de 25 kg, replay e excesso; **73/73** nas regressões B4 e **42/42** no manifesto, todos exit 0. O payload fiscal original é preservado; documentos antigos sem unidade falham fechados, sem backfill. Isso não é E2E nem aprovação de instalação.
+
 ## Pendências para o auditor
 
 1. Capturar a baseline LIVE da projeção e reconferir todos os demais corpos/owners/ACLs, tabela/índices/gatilhos antes de instalação.
