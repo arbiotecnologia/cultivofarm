@@ -1,0 +1,7 @@
+- Somente auditoria/candidatos locais e PostgreSQL descartável; nunca operar banco hospedado, emitir NF/cobrança, aprovar contabilidade, habilitar envios, publicar ou delegar.
+- Não reabrir nem alterar o pacote B3 já instalado/publicado; usar seus harnesses como dependência somente leitura e gravar evidências neste pacote.
+- Toda reprodução do ajuste deve manter TODOS os 38 gatilhos reais capturados habilitados; declarar Auth, schema e demais costuras sintéticas e nunca tratá-las como prova JWT/RLS/Storage/hosted.
+- Correções SQL somente por gerador com pins das capturas locais identificadas; PRE/POST transacionais, hashes e rollback deny-only. Nunca copiar para supabase/migrations nem presumir captura=migração=produção.
+- Preservar B3 Price/crédito total/snapshots, gates contábeis/fiscais/financeiros, delivery no-downstream, comunicação OFF e operações posteriores fechadas. NF autorizada somente fixture local com adaptador sem rede.
+- Calendário Paracatu-MG+nacionais exige fonte e versão; ausência permanece fail-closed/BLOCKED, sem feriados ou regras comerciais inventados.
+- Evidências JSON/TXT versionadas com exit code; testes focados, sem suíte completa até necessidade. PASS local nunca significa fluxo real completo.
