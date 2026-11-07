@@ -1,0 +1,57 @@
+stderr | src/test/entregas/deliveryAtomicPageMount.test.tsx > Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > único menu de produtos e redirect preserva query/hash com aba destino prioritária
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > novo produto com resposta perdida da composição mantém ACK/componentes e replay único
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > resposta perdida: saída explícita mantém pendência/chaves, bloqueia novas intenções e retomada faz replay único
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > resposta perdida: saída explícita mantém pendência/chaves, bloqueia novas intenções e retomada faz replay único
+Select is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/catalogo/unifiedProducts.realClient.test.tsx > troca de escopo descarta rascunho/exportação pendentes sem reutilizar em outro tenant
+Select is changing from uncontrolled to controlled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+stderr | src/test/entregas/deliverySendPersistMount.test.tsx > Enviar durable retention (mounted, real QueryClient) > reload after lost ACK: same key/payload, no automatic replay, exact record removed
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+

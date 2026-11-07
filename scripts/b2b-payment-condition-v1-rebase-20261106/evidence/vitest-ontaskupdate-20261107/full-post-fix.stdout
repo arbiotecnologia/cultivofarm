@@ -1,0 +1,17 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/deliveryAtomicPageMount.test.tsx (32 tests) 6601ms
+   ✓ Entregas page with atomic adapter (mounted) > send timeout retains ownership until transport settles and never parallel-dispatches  523ms
+   ✓ Entregas page with atomic adapter (mounted) > preflight rejection then refresh uses a fresh observed revision and dispatches once  524ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: reconcile  850ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: terminal  507ms
+   ✓ Entregas page with atomic adapter (mounted) > lost ACK then Consultar retains exact send and fences other target: tenant  642ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=false)  507ms
+   ✓ Entregas page with atomic adapter (mounted) > two items: partial A confirmation then B send/replay (early B=true)  511ms
+   ✓ Entregas page with atomic adapter (mounted) > Enviar replaces direct UPDATE and makes physical confirmation reachable  328ms
+   ✓ Entregas page with atomic adapter (mounted) > cancel uses the revision seen when the dialog opened and refuses if it changed  703ms
+ ✓ src/test/comunicacao/fase4.test.ts (57 tests) 115ms
+ ✓ src/test/security/h9d-inventario.static.test.ts (36 tests) 242ms
+ ✓ src/test/fiscal/fase3_16.static.test.ts (58 tests) 58ms
+ ✓ src/test/financeiro/financialReport.edge.test.ts (123 tests) 2175ms
