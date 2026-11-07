@@ -62,7 +62,7 @@ def main():
         terms_before = psql(f"SELECT approval_status FROM public.partner_order_payment_terms WHERE partner_order_id='{order['id']}'").stdout.strip() if order else ""
         check("fixture contábil está pending→pending e com contrato REAL", origin == "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1" and before == "pending|pending" and terms_before == "pending", {"origin": origin, "order": before, "terms": terms_before})
 
-        result = SP.as_user(SP.UADM, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{order['id']}','TESTE pending para pending')::text;", check=False) if order else None
+        result = SP.as_user(SP.UADM, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{order['id']}','TESTE pending para pending')::text;") if order else None
         after = psql(f"SELECT financial_approval_status||'|'||payment_condition_status FROM public.partner_orders WHERE id='{order['id']}'").stdout.strip() if order else ""
         terms_after = psql(f"SELECT approval_status||'|'||approval_notes FROM public.partner_order_payment_terms WHERE partner_order_id='{order['id']}'").stdout.strip() if order else ""
         check("LACUNA CONFIRMADA LOCALMENTE: pending→pending conclui apesar do contrato contábil", result is not None and result.returncode == 0 and after == "pending|adjustment_requested", (result.stderr if result is not None else "sem chamada", after, terms_after))
@@ -74,7 +74,7 @@ def main():
                  VALUES ('{legacy_id}','{SP.P}','em_analise_comercial',100,'{SP.UB}','{terms_id}',true,'pending','pending');
                  INSERT INTO public.partner_order_payment_terms(id,partner_order_id,payment_plan_id,approval_status,final_amount)
                  VALUES ('{terms_id}','{legacy_id}','{SP.PLD}','pending',100);""")
-        legacy_result = SP.as_user(SP.UADMF, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{legacy_id}','TESTE escopo estrangeiro')::text;", check=False)
+        legacy_result = SP.as_user(SP.UADMF, f"SELECT public.request_b2b_payment_terms_adjustment_secure('{legacy_id}','TESTE escopo estrangeiro')::text;")
         foreign_notes = psql(f"SELECT approval_notes FROM public.partner_order_payment_terms WHERE id='{terms_id}'").stdout.strip()
         check("LACUNA DE ESCOPO CONFIRMADA LOCALMENTE: admin de outro tenant altera pedido legado", legacy_result.returncode == 0 and foreign_notes == "TESTE escopo estrangeiro", (legacy_result.stderr, foreign_notes))
 
