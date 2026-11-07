@@ -17,7 +17,8 @@ export function EstoqueBI() {
       const { data: lotesAprovados } = await supabase
         .from("lotes")
         .select("id")
-        .eq("status", "aprovado");
+        .eq("status", "aprovado")
+        .not("programacao_id", "is", null);
       
       const aprovadosIds = (lotesAprovados || []).map(l => l.id);
       
