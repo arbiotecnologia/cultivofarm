@@ -1,11 +1,11 @@
 -- READONLY.
 DO $guard$ BEGIN
- IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))<>'9bee7ca43f973d13d0c564481510b5f1' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)'; END IF;
- IF md5(pg_get_functiondef('public.rpc_register_receivable_payment(uuid,jsonb)'::regprocedure))<>'e0f8dcee3db59ffc81dee0b2bef6c0a5' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.rpc_register_receivable_payment(uuid,jsonb)'; END IF;
- IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure))<>'bea5cf67e8797b46d53c785e4c3fb93a' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.generate_b2b_receivable_secure_impl(uuid)'; END IF;
- IF md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure))<>'1dc6734bf76e65f86d8c67fc877ad474' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.tg_auto_b2b_receivable()'; END IF;
- IF md5(pg_get_functiondef('platform_private.b2b_allocate_document(uuid)'::regprocedure))<>'24a32cebcf84f6eec4cebc28cb66508e' THEN RAISE EXCEPTION 'B4_POST_DRIFT:platform_private.b2b_allocate_document(uuid)'; END IF;
- IF md5(pg_get_functiondef('platform_private.b2b_order_residual(uuid)'::regprocedure))<>'9e39b70dfdf09f6eaf4257cd785455af' THEN RAISE EXCEPTION 'B4_POST_DRIFT:platform_private.b2b_order_residual(uuid)'; END IF;
- IF md5(pg_get_functiondef('platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'::regprocedure))<>'94dba3db640a80d6fecb5dc61c19c48a' THEN RAISE EXCEPTION 'B4_POST_DRIFT:platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'; END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))<>'cafd0ca7233b7b1db79d9f4990fbff1a' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.fn_b2b_credit_exposure(uuid,numeric,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_register_receivable_payment(uuid,jsonb)'::regprocedure))<>'a0f9219c8f0531609044d247acd832a5' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.rpc_register_receivable_payment(uuid,jsonb)'; END IF;
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure))<>'d886462b7eefee5b99995303ad4e1ac8' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.generate_b2b_receivable_secure_impl(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure))<>'00f8755ddab7fdcc0314cfc80302d835' THEN RAISE EXCEPTION 'B4_POST_DRIFT:public.tg_auto_b2b_receivable()'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_allocate_document(uuid)'::regprocedure))<>'237dc90e435c97c08e39846755261324' THEN RAISE EXCEPTION 'B4_POST_DRIFT:platform_private.b2b_allocate_document(uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_order_residual(uuid)'::regprocedure))<>'fc028b46d9ead684a8036d2ffba2b72a' THEN RAISE EXCEPTION 'B4_POST_DRIFT:platform_private.b2b_order_residual(uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'::regprocedure))<>'141ba7cba669261c9c08dbb1f0a35868' THEN RAISE EXCEPTION 'B4_POST_DRIFT:platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)'; END IF;
 END $guard$;
 SELECT 'POST_OK' AS status;

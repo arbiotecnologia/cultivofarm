@@ -35,13 +35,13 @@
     "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "e7cb6a6c7fd3a305a54e62184dacd9be"
   },
   "candidate_md5": {
-    "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "9bee7ca43f973d13d0c564481510b5f1",
-    "public.rpc_register_receivable_payment(uuid,jsonb)": "e0f8dcee3db59ffc81dee0b2bef6c0a5",
-    "public.generate_b2b_receivable_secure_impl(uuid)": "bea5cf67e8797b46d53c785e4c3fb93a",
-    "public.tg_auto_b2b_receivable()": "1dc6734bf76e65f86d8c67fc877ad474",
-    "platform_private.b2b_allocate_document(uuid)": "24a32cebcf84f6eec4cebc28cb66508e",
-    "platform_private.b2b_order_residual(uuid)": "9e39b70dfdf09f6eaf4257cd785455af",
-    "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)": "94dba3db640a80d6fecb5dc61c19c48a"
+    "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "cafd0ca7233b7b1db79d9f4990fbff1a",
+    "public.rpc_register_receivable_payment(uuid,jsonb)": "a0f9219c8f0531609044d247acd832a5",
+    "public.generate_b2b_receivable_secure_impl(uuid)": "d886462b7eefee5b99995303ad4e1ac8",
+    "public.tg_auto_b2b_receivable()": "00f8755ddab7fdcc0314cfc80302d835",
+    "platform_private.b2b_allocate_document(uuid)": "237dc90e435c97c08e39846755261324",
+    "platform_private.b2b_order_residual(uuid)": "fc028b46d9ead684a8036d2ffba2b72a",
+    "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)": "141ba7cba669261c9c08dbb1f0a35868"
   },
   "calendar": {
     "version": "paracatu-mg-2026-2027-v2",
