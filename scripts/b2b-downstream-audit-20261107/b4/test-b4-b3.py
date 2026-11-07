@@ -314,7 +314,7 @@ UPDATE public.partner_accounts SET client_id='{CUSTOMER}' WHERE id='{B3.P}'""")
 
         document(DOCS[4], quote_order, quote_item, 1)
         deny("quantidade acima do pedido negada", allocate(B3.UADM, DOCS[4]), "FISCAL_QUANTITY_OVERALLOCATED")
-        deny("tenant estrangeiro não faz replay nem lê recibo", server_call(B3.UADMF, f"platform_private.b2b_allocate_document('{DOCS[0]}')"), "B2B_TENANT_DENIED")
+        deny("tenant estrangeiro não faz replay nem lê recibo", server_call(B3.UADMF, f"platform_private.b2b_allocate_document('{DOCS[0]}')"), "forbidden_partner")
         document(DOCS[5], pending_order, pending_item, 1)
         deny("pendência contábil bloqueia antes de qualquer título", allocate(B3.UADM, DOCS[5]), "C2_ACCOUNTING_PENDING")
         deny("writer B2B anterior continua negado após instalação", call(B3.UADM, f"public.generate_b2b_receivable_secure('{quote_order}')"), "B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED")
