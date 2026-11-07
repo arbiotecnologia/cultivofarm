@@ -1,0 +1,204 @@
+{
+  "kind": "DISPOSABLE_B4_REVIEW_MANUAL_NULL_1813_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
+  "review": "458b6012+4097d4e2+manual-null-1813",
+  "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
+  "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
+  "object_manifest": "b4-object-manifest.json",
+  "live_facts": [
+    "USER_REPORTED_READONLY_4097D4E2",
+    "USER_REPORTED_READONLY_MANUAL_NULL_1813; cinco títulos não lidos nem alterados pelo agente"
+  ],
+  "installation": "DISPOSABLE_PRE_INSTALL_POST_PASS; operation dependency remains real always-deny until harness-only stub",
+  "shared_impact_scope": [
+    "cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE",
+    "múltiplos parceiros no mesmo cliente",
+    "conflito partner_id/customer_id/owner",
+    "MANUAL não B2B sem parceiro: parcela e baixa legadas",
+    "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN",
+    "pedidos atuais inalterados e nova simulação do parceiro bloqueada",
+    "origem monetária legada desconhecida",
+    "pedido interno sintético",
+    "writer integral antigo"
+  ],
+  "passed": 38,
+  "total": 40,
+  "checks": [
+    {
+      "name": "boot B2/B3 com gatilhos reais",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: platform_private.h15_actor_organization()",
+      "ok": true
+    },
+    {
+      "name": "B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "ok": true
+    },
+    {
+      "name": "B3 01-pre.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "B3 02-install.sql.review",
+      "ok": true
+    },
+    {
+      "name": "B3 03-post.sql.readonly",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "publicação B3 usada pelo B4",
+      "ok": true
+    },
+    {
+      "name": "piloto B3 restrito ao parceiro fictício",
+      "ok": true
+    },
+    {
+      "name": "cotação B3 criada sem título",
+      "ok": true
+    },
+    {
+      "name": "resposta de cotação B3 com centavos",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
+      "name": "fixture contábil pendente separada",
+      "ok": true
+    },
+    {
+      "name": "trigger compartilhado candidato ainda ausente antes dos históricos",
+      "ok": true
+    },
+    {
+      "name": "cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL",
+      "ok": true
+    },
+    {
+      "name": "históricos de ambiguidade/conflito são preservados sem correção retroativa",
+      "ok": true
+    },
+    {
+      "name": "PRE confirma writers/índice e ausência de todos os overloads da projeção",
+      "ok": true
+    },
+    {
+      "name": "instalação descartável cria projeção nova e passa PRE+POST íntegros",
+      "ok": true
+    },
+    {
+      "name": "POST confirma exatamente um overload owner-only e metadata completa",
+      "ok": true
+    },
+    {
+      "name": "instalação não habilita a dependência fiscal/contábil",
+      "ok": true
+    },
+    {
+      "name": "rerun falha fechado ao encontrar overload/objetos já criados",
+      "ok": true
+    },
+    {
+      "name": "instalação não substitui dependência operacional por stub",
+      "ok": true
+    },
+    {
+      "name": "32 gatilhos reais carregados pelo harness B3 continuam habilitados",
+      "ok": true
+    },
+    {
+      "name": "B3 create/simulate antigos não foram restaurados nem alterados",
+      "ok": true
+    },
+    {
+      "name": "autorização fiscal continua service-only e sem integração de recebível",
+      "ok": true
+    },
+    {
+      "name": "gate fiscal/contábil não comprovado permanece fechado",
+      "ok": true
+    },
+    {
+      "name": "cliente não invoca alocador privado",
+      "ok": true
+    },
+    {
+      "name": "stub operacional existe só no harness depois da negação real",
+      "ok": true
+    },
+    {
+      "name": "instalação não faz backfill dos cinco históricos",
+      "ok": true
+    },
+    {
+      "name": "MANUAL real partner NULL + cliente único não pode ser omitido da exposição",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}"
+    },
+    {
+      "name": "execução sem exceção de harness",
+      "ok": false,
+      "detail": "JSONDecodeError('Extra data: line 1 column 5 (char 4)')"
+    }
+  ],
+  "hosted": "NOT_RUN",
+  "jwt_rls_storage": "NOT_RUN",
+  "synthetic_seams": [
+    "Auth por GUC/roles locais",
+    "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente",
+    "schema financeiro capturado com FK/RLS externos omitidos",
+    "títulos históricos criados antes do trigger candidato com os nove gatilhos capturados ativos; nenhum backfill",
+    "company_fiscal_settings fictícia VALIDATED",
+    "autorização/cancelamento fiscal privado fictício sem rede",
+    "b2b_integration_dependencies substituída somente após prova de negação",
+    "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação",
+    "entregas mínima para o fence"
+  ],
+  "b3_overloads_restored": false,
+  "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência"
+}

@@ -20,8 +20,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 38,
-  "total": 40,
+  "passed": 86,
+  "total": 100,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -181,9 +181,261 @@
       "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}"
     },
     {
-      "name": "execução sem exceção de harness",
+      "name": "baixa MANUAL real partner NULL também exige reconciliação",
       "ok": false,
-      "detail": "JSONDecodeError('Extra data: line 1 column 5 (char 4)')"
+      "detail": "8dc57ed1-152f-412e-a006-29d3a6915a7d"
+    },
+    {
+      "name": "tentativa de baixa não altera o título histórico nem cria pagamento",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "nova decisão do parceiro fica pendente de reconciliação na forma real",
+      "ok": false,
+      "detail": "{'items': [{'nome': 'Biológico líquido TESTE', 'codigo': 'LIQ-1', 'item_id': '00000000-0000-0000-0000-000000000031', 'rule_id': None, 'item_tipo': 'produto', 'volume_ml': 1000.0, 'base_price': 1.0, 'quantidade': 1.0, 'reason_code': 'OK', 'min_quantity': 0.0, 'price_source': 'catalog_volume_price', 'pricing_mode': 'discount_from_base', 'quote_required': False, 'unidade_medida': 'unidade', 'condition_price': None, 'final_unit_price': 1.0, 'line_final_amount': 1.0, 'line_table_amount': 1.0, 'plan_discount_percent': 0.0}], 'credit': {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 1.04, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'credit_checked': True, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998650.81, 'credit_limit_action': 'block', 'exposicao_projetada': 1349.19, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}, 'amounts': {'final_amount': 1.04, 'table_amount': 1.0, 'discount_amount': 0.0, 'financial_interest_amount': 0.04, 'net_amount_after_discount': 1.0}, 'schedule': [{'amo"
+    },
+    {
+      "name": "falha na forma real não cria pedido",
+      "ok": true
+    },
+    {
+      "name": "OVERDUE partner NULL continua explícito após cancelar somente os quatro OPEN locais",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}"
+    },
+    {
+      "name": "cleanup dos cinco históricos locais restaura somente a fixture",
+      "ok": true
+    },
+    {
+      "name": "shared fence preserva título MANUAL não B2B sem devedor parceiro",
+      "ok": true
+    },
+    {
+      "name": "projeção nova não inventa proveniência para MANUAL sem parceiro",
+      "ok": true
+    },
+    {
+      "name": "baixa MANUAL não B2B sem parceiro preserva o writer legado",
+      "ok": true
+    },
+    {
+      "name": "shared fence preserva MANUAL não B2B com devedor parceiro e crédito configurado",
+      "ok": true
+    },
+    {
+      "name": "bloqueio explícito: MANUAL de parceiro sem origem bloqueia exposição",
+      "ok": true
+    },
+    {
+      "name": "pedido atual excluído do cálculo ainda sofre bloqueio pelo título do parceiro",
+      "ok": true
+    },
+    {
+      "name": "baixa de origem desconhecida que afeta parceiro também falha fechado",
+      "ok": true
+    },
+    {
+      "name": "novo pedido do mesmo parceiro fica indisponível durante a inconsistência",
+      "ok": true
+    },
+    {
+      "name": "impacto medido não altera pedidos atuais nem cria pedido novo",
+      "ok": true
+    },
+    {
+      "name": "fixtures MANUAL canceladas após medição não contaminam a bateria seguinte",
+      "ok": true
+    },
+    {
+      "name": "múltiplos parceiros no mesmo cliente: primeiro parceiro não apropria a dívida",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000370', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 0.0, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 1000000.0, 'credit_limit_action': 'block', 'exposicao_projetada': 0.0, 'percentual_utilizado': 0.0, 'comprometido_pendente': 0.0, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 0.0}"
+    },
+    {
+      "name": "múltiplos parceiros no mesmo cliente: segundo parceiro também não apropria a dívida",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000371', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 0.0, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 1000000.0, 'credit_limit_action': 'block', 'exposicao_projetada': 0.0, 'percentual_utilizado': 0.0, 'comprometido_pendente': 0.0, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 0.0}"
+    },
+    {
+      "name": "ambiguidade de cliente/parceiro bloqueia baixa sem dupla contagem",
+      "ok": false,
+      "detail": "962e2213-fc9a-4446-afe4-3d3aecf52dac"
+    },
+    {
+      "name": "conflito partner_id/customer_id é explícito para o parceiro do cliente",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}"
+    },
+    {
+      "name": "conflito partner_id/customer_id é explícito para o parceiro declarado",
+      "ok": false,
+      "detail": "ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_credit_balances(uuid,uuid) line 8 at assignment\nPL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 20 at assignment"
+    },
+    {
+      "name": "conflito partner_id/customer_id bloqueia baixa e reconciliação silenciosa",
+      "ok": false,
+      "detail": "ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 5 at RETURN\nPL/pgSQL function public.rpc_receivable_money_projection_v1(uuid,integer,integer) line 8 at assignment\nSQL statement \"SELECT r               FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text\"\nPL/pgSQL function rpc_register_receivable_payment(uuid,jsonb) line 47 at SQL statement"
+    },
+    {
+      "name": "partner_id de outro owner não esconde a dívida do cliente no tenant",
+      "ok": false,
+      "detail": "{'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}"
+    },
+    {
+      "name": "conflito de owner também bloqueia baixa sem backfill",
+      "ok": false,
+      "detail": "ERROR:  MONEY_ORIGIN_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_proven_money_row_internal(uuid,uuid) line 18 at RAISE\nPL/pgSQL function platform_private.b2b_proven_money_row(uuid) line 5 at RETURN\nPL/pgSQL function public.rpc_receivable_money_projection_v1(uuid,integer,integer) line 8 at assignment\nSQL statement \"SELECT r               FROM jsonb_array_elements(public.rpc_receivable_money_projection_v1(v_inst.receivable_id,0,1000)) r WHERE r->>'id'=v_inst.id::text\"\nPL/pgSQL function rpc_register_receivable_payment(uuid,jsonb) line 47 at SQL statement"
+    },
+    {
+      "name": "ambiguidade e conflitos não geram pagamentos nem alteram partner_id histórico",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "pedido interno não autorizado pelo downstream B4 é contido",
+      "ok": true
+    },
+    {
+      "name": "contenção interna não cria título nem alocação",
+      "ok": true
+    },
+    {
+      "name": "writer integral antigo também permanece fechado para pedido interno",
+      "ok": true
+    },
+    {
+      "name": "primeira NF parcial autorizada fictícia gera título",
+      "ok": true
+    },
+    {
+      "name": "conversão não duplica exposição",
+      "ok": true
+    },
+    {
+      "name": "partner_id e customer_id no mesmo parceiro selecionam o título uma única vez",
+      "ok": true
+    },
+    {
+      "name": "residual = pedido restante + títulos sem dupla contagem",
+      "ok": true
+    },
+    {
+      "name": "replay da mesma autorização devolve mesmo título",
+      "ok": true
+    },
+    {
+      "name": "replay não duplica alocação",
+      "ok": true
+    },
+    {
+      "name": "datas finais partem da emissão e calendário selado",
+      "ok": true
+    },
+    {
+      "name": "juros financiados não são somados duas vezes",
+      "ok": true
+    },
+    {
+      "name": "projeção financeira usa ator e tenant autorizados",
+      "ok": true
+    },
+    {
+      "name": "baixa parcial local no ledger capturado",
+      "ok": true
+    },
+    {
+      "name": "baixa reduz somente título, não residual do pedido",
+      "ok": true
+    },
+    {
+      "name": "três documentos independentes fecham quantidade e residual",
+      "ok": true
+    },
+    {
+      "name": "três títulos, um por documento",
+      "ok": true
+    },
+    {
+      "name": "crédito após parciais preserva total menos baixa",
+      "ok": true
+    },
+    {
+      "name": "cancelamento de NF paga exige reconciliação",
+      "ok": true
+    },
+    {
+      "name": "cancelamento pago negado preserva histórico e saldo",
+      "ok": true
+    },
+    {
+      "name": "atestação fictícia de cancelamento passa pela guarda com ator",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária cancela somente título não pago",
+      "ok": true
+    },
+    {
+      "name": "cancelamento restaura exatamente principal+juros do documento",
+      "ok": true
+    },
+    {
+      "name": "documento substituto consome residual sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "substituição intermediária preserva centavos por item",
+      "ok": true
+    },
+    {
+      "name": "histórico do título cancelado permanece",
+      "ok": true
+    },
+    {
+      "name": "quantidade acima do pedido negada",
+      "ok": true
+    },
+    {
+      "name": "tenant estrangeiro não faz replay nem lê recibo",
+      "ok": true
+    },
+    {
+      "name": "pendência contábil bloqueia antes de qualquer título",
+      "ok": true
+    },
+    {
+      "name": "writer B2B anterior continua negado após instalação",
+      "ok": true
+    },
+    {
+      "name": "snapshot B3 não cotado também aloca",
+      "ok": true
+    },
+    {
+      "name": "fora da cobertura do calendário falha fechado",
+      "ok": true
+    },
+    {
+      "name": "duas sessões: somente uma consome o saldo final",
+      "ok": true
+    },
+    {
+      "name": "corrida não duplica título nem residual",
+      "ok": true
+    },
+    {
+      "name": "rollback deny-only passa com PRE/POST e metadados íntegros",
+      "ok": true
+    },
+    {
+      "name": "rollback preserva alocações, títulos e snapshots",
+      "ok": true
+    },
+    {
+      "name": "rollback fecha writer legado sem apagar projeção nem histórico",
+      "ok": true
     }
   ],
   "hosted": "NOT_RUN",

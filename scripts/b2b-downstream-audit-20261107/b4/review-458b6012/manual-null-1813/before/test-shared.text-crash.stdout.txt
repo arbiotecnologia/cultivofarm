@@ -1,0 +1,40 @@
+PASS boot B2/B3 com gatilhos reais
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+PASS publicação B3 usada pelo B4
+PASS publicação B3 usada pelo B4
+PASS piloto B3 restrito ao parceiro fictício
+PASS cotação B3 criada sem título
+PASS resposta de cotação B3 com centavos
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS aprovação comercial canônica do pedido
+PASS plano sem aprovação financeira adicional preserva not_required
+PASS pedido aprovado e economicamente selado
+PASS fixture contábil pendente separada
+PASS trigger compartilhado candidato ainda ausente antes dos históricos
+PASS cinco históricos locais 4 OPEN/1 OVERDUE nascem com partner_id NULL
+PASS históricos de ambiguidade/conflito são preservados sem correção retroativa
+PASS PRE confirma writers/índice e ausência de todos os overloads da projeção
+PASS instalação descartável cria projeção nova e passa PRE+POST íntegros
+PASS POST confirma exatamente um overload owner-only e metadata completa
+PASS instalação não habilita a dependência fiscal/contábil
+PASS rerun falha fechado ao encontrar overload/objetos já criados
+PASS instalação não substitui dependência operacional por stub
+PASS 32 gatilhos reais carregados pelo harness B3 continuam habilitados
+PASS B3 create/simulate antigos não foram restaurados nem alterados
+PASS autorização fiscal continua service-only e sem integração de recebível
+PASS gate fiscal/contábil não comprovado permanece fechado
+PASS cliente não invoca alocador privado
+PASS stub operacional existe só no harness depois da negação real
+PASS instalação não faz backfill dos cinco históricos
+FAIL MANUAL real partner NULL + cliente único não pode ser omitido da exposição :: {'partner_id': '00000000-0000-0000-0000-000000000011', 'novo_pedido': 0.0, 'reason_code': 'OK', 'credit_limit': 1000000.0, 'tem_vencidos': False, 'saldo_vencido': 0.0, 'exposicao_atual': 1348.15, 'saldo_em_aberto': 0.0, 'block_if_overdue': False, 'credito_disponivel': 998651.85, 'credit_limit_action': 'block', 'exposicao_projetada': 1348.15, 'percentual_utilizado': 0.13, 'comprometido_pendente': 1.04, 'overdue_tolerance_days': 0, 'comprometido_nao_faturado': 1347.11}
+FAIL execução sem exceção de harness :: JSONDecodeError('Extra data: line 1 column 5 (char 4)')
