@@ -1,0 +1,4 @@
+a2b456bb5cb37a82ac99706d8b197888df7ddf0f43678c9000068dcbd8288831  src/pages/portal-parceiro/NovoPedido.tsx
+37a72788d9c16dfa4ca0ca2815bbe0a31c7ff77b1515f93af5573d31a762e8e0  src/test/pedidos/novoPedidoAckDialog.test.tsx
+cc4d6edb93875ee56b1629d5d12158730ee6a15ea13d8d1fc83bb2bb0276e8a1  src/hooks/useOrderJournal.ts
+8d23765b0e4b5bd2b8dacd87906021fe349156ae7947e1e43167dba909b03d63  src/lib/authz/orderJournal.ts
