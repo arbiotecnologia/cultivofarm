@@ -1,15 +1,15 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-bsbj7sch/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 76, in main
+  File "/tmp/new-order-e2e-ogmxfnyz/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 76, in main
     Q=commercial.apply(B,load,ROOT,OUT)
-  File "/tmp/new-order-e2e-bsbj7sch/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 40, in apply
+  File "/tmp/new-order-e2e-ogmxfnyz/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 41, in apply
     B.sql(f['body']+';')
     ~~~~~^^^^^^^^^^^^^^^
-  File "/tmp/new-order-e2e-bsbj7sch/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+  File "/tmp/new-order-e2e-ogmxfnyz/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
     return pg.sql(statement)
            ~~~~~~^^^^^^^^^^^
-  File "/tmp/new-order-e2e-bsbj7sch/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+  File "/tmp/new-order-e2e-ogmxfnyz/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
     assert r.returncode==0,r.stderr[-3000:]
            ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  cannot change name of input parameter "_uid"
-HINT:  Use DROP FUNCTION platform_private.c2_internal_order_target_reason(uuid,uuid) first.
+AssertionError: ERROR:  cannot change name of input parameter "p_status"
+HINT:  Use DROP FUNCTION fn_b2b_status_is_approved_or_later(partner_order_status) first.
 
