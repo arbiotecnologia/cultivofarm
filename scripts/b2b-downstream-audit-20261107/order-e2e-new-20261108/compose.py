@@ -13,11 +13,27 @@ def main():
   physical=ROOT/'scripts/b2b-downstream-audit-20261107/physical/finished-product'
   B=load('new_finished',physical/'test_after.py').B
   # Start from exact captured catalog, not an unidentified cached fixture.
-  result=B.restore.restore()
-  (OUT/'restore-results.json').write_text(json.dumps(result,indent=2)+'\n')
-  assert not any(result.values()),result
   sys.modules[B.C.__name__]=B.C
-  B.C.prepare_checkpoint(Path('/tmp')/'new-order-checkpoint.sql')
+  checkpoint=Path('/tmp/new-order-checkpoint.sql')
+  if os.environ.get('NEW_E2E_REUSE_FRESH')=='1':
+   import hashlib
+   B.pg.start();j=B.restore.metadata()
+   roles={r['name'] for r in j['roles']}|{'supabase_admin'}
+   for x in j['relations']+j['functions']+j['schemas']:
+    roles.add(x['owner'])
+    for ent in (x.get('acl') or '').strip('{}').split(','):
+     if '=' in ent:roles.update([ent.split('=')[0],ent.split('/')[-1]])
+   for p in j['policies']:roles.update(p['roles'])
+   for r in sorted(roles-{'','postgres','pg_database_owner','public'}):B.sql('CREATE ROLE "'+r.replace('"','""')+'";')
+   for r in j['roles']:
+    if r['name']!='postgres':B.sql('ALTER ROLE "'+r['name']+'" '+('BYPASSRLS' if r['bypassrls'] else 'NOBYPASSRLS')+';')
+   B.sql(checkpoint.read_text())
+   (OUT/'fresh-checkpoint.json').write_text(json.dumps(dict(path=str(checkpoint),sha256=hashlib.sha256(checkpoint.read_bytes()).hexdigest(),source='new attempt full restoration, not lost historical artifact'))+'\n')
+  else:
+   result=B.restore.restore()
+   (OUT/'restore-results.json').write_text(json.dumps(result,indent=2)+'\n')
+   assert not any(result.values()),result
+   B.C.prepare_checkpoint(checkpoint)
   checks.append(dict(test='fresh full physical catalog restoration and reviewed upstream composition',status='PASS'))
   # Capture the new checkpoint under the path used by existing local helper.
   # Subsequent composition is continued in this same database; no source evidence reused.
@@ -34,6 +50,15 @@ def main():
   S.write(pre,post);B.sql((C.H/'send/install.sql.review').read_text())
   B.sql('GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;')
   B.apply_current_catalog(B.sql,B.T.A)
+  # Captured NULL ACL vs restore's explicit postgres-only ACL: same effective
+  # owner-only permissions. Measure representation in TEMP generator, never hosted pins.
+  F=load('new_finished_generator',physical/'assemble.py')
+  rel=next(r for r in F.BASE['relations'] if r['name']=='authz_tickets')
+  acl=B.last("SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass;")
+  assert acl=='{postgres=arwdDxtm/postgres}',acl
+  rel['acl']=acl
+  (OUT/'acl-normalization.json').write_text(json.dumps(dict(relation='platform_private.authz_tickets',historical='',restored=acl,client_grants=False,seam='restorer explicit owner ACL vs NULL default, local generator only'))+'\n')
+  F.build()
   B.sql((physical/'install.sql.review').read_text())
   checks.append(dict(test='physical revised install PRE POST; fresh confirmation/send generated pins',status='PASS'))
   # No new production behavior: closed gate first, disposable activation second.
