@@ -294,12 +294,13 @@ BEGIN
  IF saved.invoice_id IS NOT NULL THEN
   SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
   WHERE t.id=saved.transmission_id AND t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
-   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2';
+   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
+  FOR UPDATE;
  ELSE
   SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
   WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
    AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
-  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1;
+  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1 FOR UPDATE;
  END IF;
  IF tx.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
    WHERE r.fiscal_invoice_id=inv.id AND r.signed_path IS NOT NULL AND (r.access_key IS NULL OR r.access_key=inv.access_key))
