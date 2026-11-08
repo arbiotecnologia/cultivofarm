@@ -364,7 +364,10 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "send ledger origin")
         else:
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "confirm ledger origin", 2)
-            body = one(body, "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);", "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END,'enviar_entrega',NULL);", "confirm canonical advance origin")
+            # O avanço canônico consulta vw_os_integridade_esteira, cuja família
+            # de toda ordens_servico é 'manual'. A origem comercial B2B continua
+            # em ordens_servico.origem, partner_order_id e no ledger acima.
+            assert "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);" in body, "anchor drift confirm canonical advance family"
         defs[sig]["new"] = body
 
     candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"].rstrip().rstrip(";") + ";" for x in CHANGED) + "\n"
