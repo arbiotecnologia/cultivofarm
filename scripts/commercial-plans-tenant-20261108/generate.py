@@ -190,6 +190,18 @@ def build_functions() -> dict[str, str]:
     s = edit(s, needle, "  IF NOT FOUND OR NOT platform_private.commercial_plan_partner_visible(p_payment_plan_id,p_partner_id) THEN RAISE EXCEPTION 'plan_not_found'; END IF;\n  IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;")
     out[name] = s
 
+    name = "convert_partner_simulation_to_order_secure"
+    s = source(name)
+    needle = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF; IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;"
+    s = edit(s, needle, "  IF NOT FOUND OR NOT platform_private.commercial_plan_partner_visible(p_payment_plan_id,v_partner_id) THEN RAISE EXCEPTION 'plan_not_found'; END IF; IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;")
+    out[name] = s
+
+    name = "respond_b2b_order_quote_secure"
+    s = source(name)
+    needle = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF; IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;"
+    s = edit(s, needle, "  IF NOT FOUND OR NOT platform_private.commercial_plan_partner_visible(v_order.payment_plan_id,v_order.partner_id) THEN RAISE EXCEPTION 'plan_not_found'; END IF; IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;")
+    out[name] = s
+
     return out
 
 
@@ -370,7 +382,7 @@ def postflight(new_hashes: dict[str, str]) -> str:
 
 def rollback() -> str:
     functions = [
-        "public.rpc_admin_list_commercial_plans(text,text,integer,integer)","public.rpc_admin_create_commercial_plan(jsonb)","public.rpc_admin_version_commercial_plan(uuid,jsonb,text)","public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)","public.rpc_admin_set_commercial_plan_active(uuid,boolean,text)","public.rpc_admin_set_default_commercial_plan(uuid)","public.rpc_admin_reorder_commercial_plans(jsonb)","public.rpc_b2b_list_selectable_payment_plans()","public.rpc_cc_list_assignments(text)","public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)","public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)","public.b2b_payment_condition_config_list()","public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)","public.b2b_payment_condition_retire(uuid,text,integer)","public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)","public.b2b_list_payment_condition_options_secure(uuid,uuid)","public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)","public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)"]
+        "public.rpc_admin_list_commercial_plans(text,text,integer,integer)","public.rpc_admin_create_commercial_plan(jsonb)","public.rpc_admin_version_commercial_plan(uuid,jsonb,text)","public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)","public.rpc_admin_set_commercial_plan_active(uuid,boolean,text)","public.rpc_admin_set_default_commercial_plan(uuid)","public.rpc_admin_reorder_commercial_plans(jsonb)","public.rpc_b2b_list_selectable_payment_plans()","public.rpc_cc_list_assignments(text)","public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)","public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)","public.b2b_payment_condition_config_list()","public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)","public.b2b_payment_condition_retire(uuid,text,integer)","public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)","public.b2b_list_payment_condition_options_secure(uuid,uuid)","public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)","public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)","public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)","public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)"]
     return "-- DENY-ONLY: não restaura funções nem índice global vulneráveis; preserva dados, versões e cercas.\nBEGIN;\n" + "\n".join(f"REVOKE ALL ON FUNCTION {f} FROM PUBLIC,anon,authenticated;" for f in functions) + "\nALTER POLICY cpp_tenant_read ON public.commercial_payment_plans USING(false);\nALTER POLICY cppa_admin_read ON public.commercial_payment_plan_assignments USING(false);\nALTER POLICY ccip_admin_read ON public.commercial_condition_item_prices USING(false);\nALTER POLICY cpr_internal_select ON public.commercial_price_rules USING(false);\nCOMMIT;\n"
 
 

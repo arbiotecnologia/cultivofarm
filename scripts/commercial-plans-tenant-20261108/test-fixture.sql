@@ -58,6 +58,7 @@ CREATE TABLE platform_private.b2b_condition_assignments(organization_id uuid NOT
 CREATE TABLE platform_private.b2b_condition_assignment_revocations(organization_id uuid NOT NULL,partner_id uuid NOT NULL,plan_id uuid NOT NULL,version integer NOT NULL,method text NOT NULL,revoked_by uuid NOT NULL,revoked_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(organization_id,partner_id,plan_id,version,method));
 CREATE TABLE platform_private.b2b_condition_retirements(organization_id uuid NOT NULL,plan_id uuid NOT NULL,version integer NOT NULL,method text NOT NULL,retired_by uuid,retired_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(organization_id,plan_id,version,method));
 CREATE TABLE platform_private.b2b_condition_activation(organization_id uuid PRIMARY KEY,mode text NOT NULL,pilot_partner_ids uuid[] NOT NULL DEFAULT '{}',version integer NOT NULL,updated_by uuid NOT NULL,updated_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE platform_private.b2b_order_condition_snapshots(order_id uuid PRIMARY KEY);
 
 CREATE FUNCTION public.has_role(u uuid,r public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=u AND role=r) $$;
 CREATE FUNCTION platform_private.has_role(u uuid,r public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT public.has_role(u,r) $$;
