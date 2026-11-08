@@ -371,7 +371,8 @@ BEGIN
  v_volume_total:=CASE WHEN v_unit IN ('kg','g') THEN NULL WHEN v_unit='l' THEN v_total ELSE v_total/1000 END;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_lote);
  INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)
- VALUES(v_lote,btrim(p_lote_fornecedor),p_produto_id,NULL,NULL,'aprovado',v_org,
+ -- Código interno globalmente único vem do UUID servidor; lote externo permanece nos snapshots/ledger.
+ VALUES(v_lote,'BUY-'||v_lote::text,p_produto_id,NULL,NULL,'aprovado',v_org,
   jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'lote_fornecedor',btrim(p_lote_fornecedor),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text);
  DELETE FROM platform_private.authz_tickets WHERE txid=pg_catalog.txid_current() AND scope='finished_product_purchase_entry_v1' AND target=v_lote;
  v_ctx:=jsonb_build_object('acao','entrada','origem','finished_product_purchase_entry_v1','usuario_id',v_uid,'unidade','un',

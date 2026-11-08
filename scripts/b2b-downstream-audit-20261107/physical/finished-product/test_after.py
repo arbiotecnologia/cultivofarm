@@ -253,7 +253,7 @@ def main():
         _, err = B.T.finish(worker)
         assert "ESTQ_IDENTIDADE_INATIVA" in err or "ESTQ_NAO_AUTENTICADO" in err, err
         B.sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{B.T.U}';")
-        assert B.last("SELECT count(*) FROM public.lotes WHERE codigo_lote='LOTE-purchase-revocation-wait';") == "0"
+        assert B.last("SELECT count(*) FROM public.lotes WHERE observacoes_tecnicas::jsonb->>'lote_fornecedor'='LOTE-purchase-revocation-wait';") == "0"
         B.ok("revogação durante espera da compra é revalidada antes de criar lote/estoque")
 
         concurrent = catalog_item("fertilizante", "g", 25000)
@@ -266,7 +266,7 @@ def main():
         combined = holder_out + "\n" + out
         assert not holder_err and not err, holder_out + holder_err + out + err
         assert combined.count('"replay": false') == 1 and combined.count('"replay": true') == 1, combined
-        assert B.last("SELECT (SELECT count(*) FROM public.lotes WHERE codigo_lote='LOTE-purchase-concurrent-replay')=1 AND (SELECT count(*) FROM public.estoque_movimentacoes WHERE idempotency_key='purchase-concurrent-replay')=1;") == "t"
+        assert B.last("SELECT (SELECT count(*) FROM public.lotes WHERE observacoes_tecnicas::jsonb->>'lote_fornecedor'='LOTE-purchase-concurrent-replay')=1 AND (SELECT count(*) FROM public.estoque_movimentacoes WHERE idempotency_key='purchase-concurrent-replay')=1;") == "t"
         B.ok("duas compras concorrentes com a mesma chave geram uma única entrada e replay")
 
         B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;")

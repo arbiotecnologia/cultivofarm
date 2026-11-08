@@ -1327,6 +1327,10 @@
 - [ ] Manter candidato inativo até revisão independente e implantação/homologação coordenadas de todo o pacote; JWT/RLS/Storage/PostgREST/browser autenticado continuam pendentes.
 
 ## 08/11 02:55 — retomada E2E umsg_01m6vh9b8wfyebzpsjsyfjrdg9
+## Fila adicional — revisão 6667a8d6: identidade do lote de compra
+- [ ] Separar codigo_lote interno servidor do lote_fornecedor externo sem alterar UNIQUE global; preservar snapshots/ledger.
+- [ ] Provar mesmo lote fornecedor em ARBio/FSF e recebimentos/apresentações distintos, isolamento, replay e conflito sem duplicação em PG descartável; integrar candidato antes do fechamento UI/E2E.
+
 - [x] Conferir arquivos disponíveis e histórico sem reexecutar as baterias anteriores: a pasta order-e2e, os dois geradores/harnesses e candidate-logistics.sql.review estão ausentes nesta cópia; também não há checkpoint temporário recuperável.
 - [x] Registrar interrupção anterior como response.status=error relatado pelo proprietário; causa técnica/stack trace não disponíveis. Histórico 4502 confirma 11/11 instalação e 34/34 parcial, sem execução da extensão logística; não são resultados revalidados nesta retomada.
 - [x] Consolidar lote fornecedor, NULL/camadas/UI e preservação teste4/cinco títulos, sem cadastro hospedado ou alterações nos candidatos existentes.
