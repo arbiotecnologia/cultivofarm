@@ -16,41 +16,6 @@
     "status": "PASS"
   },
   {
-    "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
-    "status": "PASS"
-  },
-  {
-    "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
-    "status": "PASS",
-    "order_id": "da32a82d-5367-4e8f-b031-582325131397"
-  },
-  {
-    "test": "accounting pending approval denied atomically before synthetic promotion",
-    "status": "PASS"
-  },
-  {
-    "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
-    "status": "PASS"
-  },
-  {
-    "test": "resale candidate gate closed, no client EXECUTE and no direct ready OS bypass",
-    "status": "PASS"
-  },
-  {
-    "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
-    "status": "PASS",
-    "os_id": "be4c8fcd-dee5-4e9b-bb1b-0d4172a8e676"
-  },
-  {
-    "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
-    "status": "PASS"
-  },
-  {
-    "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
-    "status": "PASS",
-    "delivery_id": "874e3870-a7f7-497d-9996-1b1d6059526a"
-  },
-  {
     "test": "new composition",
     "status": "FAIL"
   }
