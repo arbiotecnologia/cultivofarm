@@ -23,6 +23,7 @@ CHANGED = [
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
     "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
     "public.trg_entrega_sync_partner_order_fn()",
+    "platform_private.delivery_order_transition_guard_20261030()",
     "platform_private.b2b_internal_order_snapshot_guard()",
 ]
 NEW = [
