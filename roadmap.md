@@ -1328,8 +1328,8 @@
 
 ## 08/11 02:55 — retomada E2E umsg_01m6vh9b8wfyebzpsjsyfjrdg9
 ## Fila adicional — revisão 6667a8d6: identidade do lote de compra
-- [ ] Separar codigo_lote interno servidor do lote_fornecedor externo sem alterar UNIQUE global; preservar snapshots/ledger.
-- [ ] Provar mesmo lote fornecedor em ARBio/FSF e recebimentos/apresentações distintos, isolamento, replay e conflito sem duplicação em PG descartável; integrar candidato antes do fechamento UI/E2E.
+- [x] Separar codigo_lote interno servidor (BUY-UUID) do lote_fornecedor externo sem alterar UNIQUE global; preservar snapshots/ledger. Artefatos gerados revisados em physical/finished-product/review-6667a8d6/, histórico pai intacto.
+- [x] Provar mesmo lote fornecedor em ARBio/FSF e recebimentos/apresentações distintos, isolamento, replay e conflito sem duplicação em PG descartável: antes 3/4 exit 1 UNIQUE, depois 14/14; regressão compra/concorrência/revogação/rollback 58/58 e camadas 16/16, exits 0 independentes. UI mantém contrato; E2E B2B continua pendente, sem operação hospedada.
 
 - [x] Conferir arquivos disponíveis e histórico sem reexecutar as baterias anteriores: a pasta order-e2e, os dois geradores/harnesses e candidate-logistics.sql.review estão ausentes nesta cópia; também não há checkpoint temporário recuperável.
 - [x] Registrar interrupção anterior como response.status=error relatado pelo proprietário; causa técnica/stack trace não disponíveis. Histórico 4502 confirma 11/11 instalação e 34/34 parcial, sem execução da extensão logística; não são resultados revalidados nesta retomada.
