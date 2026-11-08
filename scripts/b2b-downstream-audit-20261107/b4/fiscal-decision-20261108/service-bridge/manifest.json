@@ -2,9 +2,9 @@
   "b4_sha256": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
   "capture_sha256": "e1ac1e925f0f10f072910e66ffa183fd1fb3f2f1863061270188df64ad2dab88",
   "outputs": {
-    "01-pre.sql.readonly": "258c49577164fa125c3f3960caa2e436b05364b5abd52d2664f8590686e9da0d",
-    "02-install.sql.review": "3c0a2cdc80a3f3050355e8e13c6afc96abb397cf5511d5ccd71ac91eb9a31ba4",
-    "03-post.sql.readonly": "02b61506d4b25e81deaef370081080b3e3d7521672d073876106dc58dbde16e5",
+    "01-pre.sql.readonly": "6dc8e11586ee71ac3e0635f7f4b5f92e8dad3c1c8130252b75b42869f81b3b21",
+    "02-install.sql.review": "14fd1365e672fe19873cfafa943b4a984d65f9df52d500dcf2adff3fab23689b",
+    "03-post.sql.readonly": "7cec9dd0be9bb27f926bb620126e4467ad73629f6120369fac5220333f70317b",
     "04-rollback-deny.sql.review": "942e24a32b6169f6771e431a6fd68ca1ef78011f7e8c7718c96f3363213d8ad5"
   },
   "project_ref": "swzpzcwiasxmjutrmvkm",
