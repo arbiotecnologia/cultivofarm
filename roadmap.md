@@ -1,3 +1,8 @@
+## 08/11 18:49 — Rebuild integrado 1a65c9c: fixture fiscal completa e fechamento
+- [ ] Corrigir somente o harness: `fiscal_xml_runs.idempotency_key` obrigatória, determinística por operação e estável em replays; revisar previamente todos os campos NOT NULL/constraints das fixtures fiscais, sem relaxar contratos.
+- [ ] Executar rebuild fresh completo planos+B3+logística+B4+ponte, separando dependência real always-deny (zero documento/alocação/snapshot/título) do componente positivo com costura declarada; concluir PRE/POST/rollback composto e evidências/invariantes.
+- [ ] Revisar manifesto, hashes e rollout sem alterar whitespace do writer financeiro de produção; manter instalador mínimo de isolamento de planos separadamente revisável, independente das pendências fiscais. Nenhum pacote aprovado; sem hosted/publicação/envios/fiscal/cobranças/delegação.
+
 ## 08/11 18:23 — Complemento de revisão SQL feb815603: parser, identidade fiscal e H13
 - [ ] Reproduzir no contrato real `cStat=104` + `protocolCStat=100`: outcome não pode ficar AUTHORIZED com coluna `c_stat=104`; separar status do lote/protocolo sem trocar o payload por 100 artificial, testar mesmo envelope/replay/recuperação.
 - [ ] Reproduzir confirmação repetida da mesma chave/protocolo por nova transmissão: identidade fiscal estável e referência original preservadas, sem conflito artificial por `transmission_id`; protocolo/valor divergentes continuam negados.
