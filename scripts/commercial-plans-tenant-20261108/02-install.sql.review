@@ -210,8 +210,7 @@ BEGIN
   ORDER BY b.sort_order ASC, b.code ASC, b.version DESC
   LIMIT v_limit OFFSET v_offset;
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rpc_admin_create_commercial_plan(p_payload jsonb)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -246,8 +245,7 @@ BEGIN
   PERFORM public._cpp_audit('commercial_plan_created', v_id, NULL, p_payload, p_payload->>'motivo');
   RETURN v_id;
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rpc_admin_version_commercial_plan(p_plan_id uuid, p_payload jsonb, p_motivo text DEFAULT NULL::text)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -305,8 +303,7 @@ BEGIN
   PERFORM public._cpp_audit('commercial_plan_versioned', v_new_id, to_jsonb(v_old), p_payload || jsonb_build_object('version', v_next, 'previous_plan_id', p_plan_id), p_motivo);
   RETURN v_new_id;
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rpc_admin_update_commercial_plan_metadata(p_plan_id uuid, p_name text DEFAULT NULL::text, p_description text DEFAULT NULL::text, p_sort_order integer DEFAULT NULL::integer)
  RETURNS void
  LANGUAGE plpgsql
@@ -333,8 +330,7 @@ BEGIN
   PERFORM public._cpp_audit('commercial_plan_metadata_updated', p_plan_id, to_jsonb(v_old),
     jsonb_build_object('name', p_name, 'description', p_description, 'sort_order', p_sort_order), NULL);
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rpc_admin_set_commercial_plan_active(p_plan_id uuid, p_active boolean, p_motivo text DEFAULT NULL::text)
  RETURNS void
  LANGUAGE plpgsql
@@ -359,8 +355,7 @@ BEGIN
   PERFORM public._cpp_audit(CASE WHEN p_active THEN 'commercial_plan_activated' ELSE 'commercial_plan_deactivated' END,
     p_plan_id, to_jsonb(v_old), jsonb_build_object('active', p_active), p_motivo);
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rpc_admin_set_default_commercial_plan(p_plan_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -401,8 +396,7 @@ BEGIN
     jsonb_build_object('is_default', true, 'previous_default_plan_id', v_prev.id),
     NULL);
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rpc_admin_reorder_commercial_plans(p_orders jsonb)
  RETURNS void
  LANGUAGE plpgsql
@@ -431,8 +425,7 @@ BEGIN
 
   PERFORM public._cpp_audit('commercial_plan_reordered', NULL, NULL, jsonb_build_object('orders', p_orders), NULL);
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.rpc_b2b_list_selectable_payment_plans()
  RETURNS TABLE(id uuid, code text, name text, description text, plan_type text, max_days integer, months_count numeric, installment_count integer, discount_percent numeric, monthly_interest_percent numeric, interest_type text, pricing_mode text, minimum_order_amount numeric, requires_credit_approval boolean, requires_guarantee boolean, requires_financial_approval boolean, is_default boolean, sort_order integer)
  LANGUAGE plpgsql
@@ -465,8 +458,7 @@ BEGIN
     AND ((v_admin AND p.organization_id = v_org) OR platform_private.commercial_plan_buyer_visible(p.id, v_uid))
   ORDER BY p.sort_order, p.name;
 END
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION platform_private.c2p1_assignment_fence()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -488,8 +480,7 @@ BEGIN
  IF NOT platform_private.commercial_plan_scope_allowed(NEW.plan_id,NEW.buyer_scope,NEW.partner_id,NEW.customer_id)
  THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
  RETURN NEW;
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION platform_private.c2p1_history_allowed(p_entity text, p_id uuid, p_before jsonb, p_after jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -501,8 +492,7 @@ AS $function$
  AND platform_private.c2p1_snapshot_allowed(p_entity,p_id,p_after)
  AND CASE WHEN p_entity='assignment' THEN EXISTS(SELECT 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.commercial_plan_scope_allowed(a.plan_id,a.buyer_scope,a.partner_id,a.customer_id))
  ELSE EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.id=p_id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id)) END,false);
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION platform_private.c2p1_item_allowed(p_assignment uuid, p_plan uuid, p_scope text, p_partner uuid, p_customer uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -515,8 +505,7 @@ AS $function$
  WHERE a.id=p_assignment AND a.plan_id=p_plan AND a.buyer_scope=p_scope
  AND a.partner_id IS NOT DISTINCT FROM p_partner AND a.customer_id IS NOT DISTINCT FROM p_customer
  AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id)));
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION platform_private.c2p1_item_fence()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -542,8 +531,7 @@ BEGIN
  AND pr.product_id IS NOT DISTINCT FROM r.product_id AND pr.microrganismo_id IS NOT DISTINCT FROM r.microrganismo_id
  AND pr.unit_type=r.unit_type AND pr.volume_ml IS NOT DISTINCT FROM r.volume_ml) THEN RAISE EXCEPTION 'C2P1_RULE_LINK_INVALID' USING ERRCODE='42501'; END IF;
  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_fence()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -563,8 +551,7 @@ BEGIN
  OR (TG_OP='UPDATE' AND NOT platform_private.commercial_plan_scope_allowed(OLD.plan_id,OLD.buyer_scope,OLD.partner_id,OLD.customer_id)) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
  IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.published_rule_id=OLD.id AND (NEW.id IS DISTINCT FROM OLD.id OR i.plan_id IS DISTINCT FROM NEW.plan_id OR i.buyer_scope IS DISTINCT FROM NEW.buyer_scope OR i.partner_id IS DISTINCT FROM NEW.partner_id OR i.customer_id IS DISTINCT FROM NEW.customer_id OR i.product_id IS DISTINCT FROM NEW.product_id OR i.microrganismo_id IS DISTINCT FROM NEW.microrganismo_id OR i.unit_type IS DISTINCT FROM NEW.unit_type OR i.volume_ml IS DISTINCT FROM NEW.volume_ml)) THEN RAISE EXCEPTION 'C2P1_RULE_LINK_IMMUTABLE' USING ERRCODE='42501'; END IF;
  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.rpc_cc_list_assignments(p_status text DEFAULT NULL::text)
  RETURNS SETOF commercial_payment_plan_assignments
  LANGUAGE plpgsql
@@ -576,8 +563,7 @@ BEGIN
   RETURN QUERY SELECT * FROM public.commercial_payment_plan_assignments a
     WHERE platform_private.commercial_plan_scope_allowed(a.plan_id,a.buyer_scope,a.partner_id,a.customer_id) AND (p_status IS NULL OR a.status = p_status)
     ORDER BY a.created_at DESC;
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.rpc_cc_validate_matrix(p_plan_id uuid, p_buyer_scope text, p_partner_id uuid DEFAULT NULL::uuid, p_customer_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -614,8 +600,7 @@ BEGIN
      AND customer_id IS NOT DISTINCT FROM p_customer_id;
   RETURN jsonb_build_object('ok', jsonb_array_length(v_missing)=0,
     'missing_items', v_missing, 'draft_count', COALESCE(v_drafts,0), 'quote_only_count', COALESCE(v_quote,0));
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.rpc_cc_simulate_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric DEFAULT NULL::numeric, p_ref_date date DEFAULT CURRENT_DATE, p_quantity numeric DEFAULT NULL::numeric)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -653,8 +638,7 @@ BEGIN
  -- Read-only canonical resolver; no order, credit, receivable, snapshot or fiscal writes.
  RETURN public.fn_resolve_commercial_price('partner',p_partner_id,NULL,p_plan_id,
   p_product_id,p_microrganismo_id,p_unit_type,p_volume_ml,p_ref_date,p_quantity);
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.b2b_payment_condition_config_list()
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -691,8 +675,7 @@ BEGIN
     'plans', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'code', p.code, 'max_days', p.max_days, 'monthly_interest_percent', p.monthly_interest_percent) ORDER BY p.name)
                FROM public.commercial_payment_plans p WHERE p.organization_id = v_org AND p.active IS TRUE AND p.superseded_by_id IS NULL), '[]'::jsonb),
     'partners', COALESCE((SELECT jsonb_agg(a.id ORDER BY a.id) FROM public.partner_accounts a WHERE a.commercial_owner_organization_id = v_org AND a.ativo IS TRUE), '[]'::jsonb));
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_resolve_condition(p_partner uuid, p_plan uuid, p_choice jsonb, p_lock boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -745,8 +728,7 @@ BEGIN
  IF NOT ok THEN RAISE EXCEPTION 'payment_condition_unavailable' USING ERRCODE='PT409'; END IF;
  PERFORM platform_private.c2_owner_order_guard(auth.uid(),p_partner,p_plan);
  RETURN to_jsonb(c)-'approved_by'-'approved_at'-'created_at'-'configuration_approved'-'calendar_version' || jsonb_build_object('payment_method_name',pm.name);
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.b2b_payment_condition_publish(p_plan_id uuid, p_method text, p_payment_method_id uuid, p_category_id uuid, p_deadline_days integer, p_installment_count integer, p_monthly_rate numeric, p_expected_version integer)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -789,8 +771,7 @@ BEGIN
                         WHERE (x.organization_id,x.partner_id,x.plan_id,x.version,x.method)=(a.organization_id,a.partner_id,a.plan_id,a.version,a.method));
   END IF;
   RETURN jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','condition', to_jsonb(v_new) - 'approved_by');
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.b2b_payment_condition_retire(p_plan_id uuid, p_method text, p_expected_version integer)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -811,8 +792,7 @@ BEGIN
     RAISE EXCEPTION 'payment_condition_already_retired' USING ERRCODE='PT409'; END IF;
   INSERT INTO platform_private.b2b_condition_retirements(organization_id,plan_id,version,method,retired_by) VALUES (v_org,p_plan_id,cur.version,p_method,v_uid);
   RETURN jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','retired',jsonb_build_object('plan_id',p_plan_id,'method',p_method,'version',cur.version));
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.b2b_payment_condition_assign(p_partner_id uuid, p_plan_id uuid, p_method text, p_version integer, p_enabled boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -846,8 +826,7 @@ BEGIN
     VALUES (v_org,p_partner_id,p_plan_id,cur.version,p_method,v_uid) ON CONFLICT DO NOTHING;
   END IF;
   RETURN jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','partner_id',p_partner_id,'plan_id',p_plan_id,'method',p_method,'version',cur.version,'enabled',p_enabled);
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.simulate_b2b_payment_plan_secure(p_partner_id uuid, p_payment_plan_id uuid, p_items jsonb, p_first_due_date date DEFAULT NULL::date)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -997,8 +976,7 @@ BEGIN
     'schedule', v_schedule,
     'credit', v_credit,
     'warnings', v_warnings);
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.create_partner_order_secure(p_partner_id uuid, p_observacoes text DEFAULT NULL::text, p_items jsonb DEFAULT '[]'::jsonb, p_requested_delivery_date date DEFAULT NULL::date, p_payment_plan_id uuid DEFAULT NULL::uuid, p_first_due_date date DEFAULT NULL::date, p_installment_count integer DEFAULT NULL::integer, p_expected_cart_hash text DEFAULT NULL::text, p_idempotency_key text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -1374,8 +1352,7 @@ BEGIN
   DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='c2_external_order_create' AND target=p_partner_id;
   RETURN v_result;
 END
-$function$
-
+$function$;
 
 REVOKE ALL ON public.commercial_payment_plans FROM PUBLIC,anon;
 REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.commercial_payment_plans FROM authenticated;

@@ -1,0 +1,110 @@
+[map[definition:CREATE OR REPLACE FUNCTION public.rpc_cc_archive_assignment(p_id uuid, p_motivo text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  PERFORM 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;
+  IF p_motivo IS NULL OR length(btrim(p_motivo)) = 0 THEN RAISE EXCEPTION 'motivo_required'; END IF;
+  UPDATE public.commercial_payment_plan_assignments
+     SET status='archived', archived_by=auth.uid(), archived_at=now(), updated_by=auth.uid()
+   WHERE id=p_id AND status <> 'archived';
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;
+  PERFORM public.fn_cc_audit('assignment',p_id,'archive',NULL,NULL,p_motivo);
+END $function$
+ signature:rpc_cc_archive_assignment(uuid,text)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_cc_publish_assignment(p_id uuid, p_motivo text DEFAULT NULL::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  PERFORM 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;
+  UPDATE public.commercial_payment_plan_assignments
+     SET status='published', published_by=auth.uid(), published_at=now(), updated_by=auth.uid()
+   WHERE id=p_id AND status IN ('draft','pending_approval');
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;
+  PERFORM public.fn_cc_audit('assignment',p_id,'publish',NULL,NULL,p_motivo);
+END $function$
+ signature:rpc_cc_publish_assignment(uuid,text)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_cc_upsert_assignment(p_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_valid_from date, p_valid_until date, p_motivo text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_id uuid; v_before jsonb;
+BEGIN
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  IF NOT platform_private.c2p1_assignment_allowed(p_buyer_scope,p_partner_id,p_customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF p_id IS NULL THEN
+    INSERT INTO public.commercial_payment_plan_assignments
+      (plan_id,buyer_scope,partner_id,customer_id,valid_from,valid_until,motivo,created_by,updated_by)
+    VALUES (p_plan_id,p_buyer_scope,p_partner_id,p_customer_id,
+            COALESCE(p_valid_from,CURRENT_DATE),p_valid_until,p_motivo,auth.uid(),auth.uid())
+    RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('assignment',v_id,'create',NULL,
+      to_jsonb((SELECT a FROM public.commercial_payment_plan_assignments a WHERE a.id=v_id)),p_motivo);
+  ELSE
+    SELECT to_jsonb(a) INTO v_before FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) FOR UPDATE;
+    IF v_before IS NULL THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+    IF (v_before->>'status') <> 'draft' THEN RAISE EXCEPTION 'assignment_not_editable'; END IF;
+    UPDATE public.commercial_payment_plan_assignments
+       SET plan_id=p_plan_id, buyer_scope=p_buyer_scope, partner_id=p_partner_id, customer_id=p_customer_id,
+           valid_from=COALESCE(p_valid_from,valid_from), valid_until=p_valid_until,
+           motivo=p_motivo, updated_by=auth.uid()
+     WHERE id=p_id RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('assignment',v_id,'update',v_before,
+      to_jsonb((SELECT a FROM public.commercial_payment_plan_assignments a WHERE a.id=v_id)),p_motivo);
+  END IF;
+  RETURN v_id;
+END $function$
+ signature:rpc_cc_upsert_assignment(uuid,uuid,text,uuid,uuid,date,date,text)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_cc_upsert_item_price(p_id uuid, p_assignment_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_min_quantity numeric, p_pricing_mode text, p_condition_price numeric, p_discount_percent numeric, p_valid_from date, p_valid_until date, p_is_exception boolean, p_motivo text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_id uuid; v_before jsonb;
+BEGIN
+ IF NOT platform_private.c2p1_item_allowed(p_assignment_id,p_plan_id,p_buyer_scope,p_partner_id,p_customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  IF p_is_exception AND (p_motivo IS NULL OR length(btrim(p_motivo))=0) THEN
+    RAISE EXCEPTION 'motivo_required_for_exception';
+  END IF;
+  PERFORM public.fn_cc_validate_item_input(p_plan_id, p_pricing_mode, p_condition_price, p_discount_percent);
+
+  IF p_id IS NULL THEN
+    INSERT INTO public.commercial_condition_item_prices
+      (assignment_id,plan_id,buyer_scope,partner_id,customer_id,product_id,microrganismo_id,
+       unit_type,volume_ml,min_quantity,pricing_mode,condition_price,discount_percent,
+       valid_from,valid_until,is_exception,motivo,created_by,updated_by)
+    VALUES (p_assignment_id,p_plan_id,p_buyer_scope,p_partner_id,p_customer_id,p_product_id,p_microrganismo_id,
+       p_unit_type,p_volume_ml,COALESCE(p_min_quantity,0),p_pricing_mode,p_condition_price,p_discount_percent,
+       COALESCE(p_valid_from,CURRENT_DATE),p_valid_until,COALESCE(p_is_exception,false),p_motivo,auth.uid(),auth.uid())
+    RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('item_price',v_id,'create',NULL,
+      to_jsonb((SELECT i FROM public.commercial_condition_item_prices i WHERE i.id=v_id)),p_motivo);
+  ELSE
+    SELECT to_jsonb(i) INTO v_before FROM public.commercial_condition_item_prices i WHERE i.id=p_id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) FOR UPDATE;
+    IF v_before IS NULL THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+    IF (v_before->>'status') NOT IN ('draft','pending_approval') THEN RAISE EXCEPTION 'item_price_not_editable'; END IF;
+    UPDATE public.commercial_condition_item_prices
+       SET assignment_id=[REDACTED] plan_id=p_plan_id, buyer_scope=p_buyer_scope,
+           partner_id=p_partner_id, customer_id=p_customer_id, product_id=p_product_id,
+           microrganismo_id=p_microrganismo_id, unit_type=p_unit_type, volume_ml=p_volume_ml,
+           min_quantity=COALESCE(p_min_quantity,0), pricing_mode=p_pricing_mode,
+           condition_price=p_condition_price, discount_percent=p_discount_percent,
+           valid_from=COALESCE(p_valid_from,valid_from), valid_until=p_valid_until,
+           is_exception=COALESCE(p_is_exception,false), motivo=p_motivo, updated_by=auth.uid()
+     WHERE id=p_id RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('item_price',v_id,'update',v_before,
+      to_jsonb((SELECT i FROM public.commercial_condition_item_prices i WHERE i.id=v_id)),p_motivo);
+  END IF;
+  RETURN v_id;
+END $function$
+ signature:rpc_cc_upsert_item_price(uuid,uuid,uuid,text,uuid,uuid,uuid,uuid,text,numeric,numeric,text,numeric,numeric,date,date,boolean,text)]]
