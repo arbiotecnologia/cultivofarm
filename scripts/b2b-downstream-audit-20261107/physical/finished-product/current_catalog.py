@@ -36,6 +36,9 @@ GUARD_PINS = {
     if signature.startswith("platform_private.") and signature.endswith("_catalog_tenant_guard()")
 }
 assert len(GUARD_PINS) == 6
+MEASURED_BODY_SIGNATURES = (
+    "platform_private.delivery_mutation_guard_20261030()",
+)
 ADDITIONAL_DEPENDENCIES = (
     "platform_private.catalog_tenant_agree(uuid[])",
     "platform_private.lab_assert_manufacturable__tenant_core(uuid,uuid)",
@@ -170,7 +173,7 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
 FROM (VALUES {values}) v(signature)
 LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);
 """)
-    additional_signatures = sorted(set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES) | set(JSON_BODIES))
+    additional_signatures = sorted(set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES) | set(JSON_BODIES) | set(MEASURED_BODY_SIGNATURES))
     additional_values = ",".join("(%s)" % _literal(signature) for signature in additional_signatures)
     additional = _json(last, f"""
 SELECT COALESCE(jsonb_agg(jsonb_build_object(
@@ -358,9 +361,11 @@ CREATE TABLE IF NOT EXISTS platform_private.local_current_catalog_ledger(step te
     if result.returncode != 0:
         raise AssertionError("CURRENT_LIVE_RESTRICTED_BASELINE_FAILED\n" + result.stdout[-3000:] + result.stderr[-12000:])
     measured = measure(last)
+    pinned_additional = set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES) | set(JSON_BODIES)
     _expected_additional_pins = {
         row["signature"]: row["md5"]
         for row in measured["additional_dependencies"]
+        if row["signature"] in pinned_additional
     }
     assert all(_expected_additional_pins.values())
     state = assert_current(last)
