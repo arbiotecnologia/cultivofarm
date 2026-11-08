@@ -2,3 +2,4 @@ CHECKPOINT initdb local
 CHECKPOINT sql_calls=1 elapsed=3.5s
 NEW_PHYSICAL_BOOT_OK
 PASS baseline restrita POSPLANOS: 9 corpos medidos, 6 guards LIVE e 8 ACLs conferidos
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}

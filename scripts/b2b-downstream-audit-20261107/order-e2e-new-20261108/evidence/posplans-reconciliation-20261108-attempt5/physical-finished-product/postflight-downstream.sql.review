@@ -1,0 +1,3 @@
+-- POST_RUNTIME_REQUIRED platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb) source_body_sha256=15aefeae8f0827530efdfece9f778e1e3cd8deb8e27a6f336f731c6f971c176e
+-- POST_RUNTIME_REQUIRED platform_private.delivery_send_apply_v1(uuid,timestamptz,text) source_body_sha256=01782784337049ee804e0abc10cdda653a0d510dcc8844559973d66cebe3f8eb
+DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;
