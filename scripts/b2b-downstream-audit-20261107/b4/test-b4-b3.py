@@ -888,7 +888,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
 
         # Retorno atrasado não pode rebaixar uma transmissão já autorizada nem
         # apagar erro de provedor/origem distinta do pendente de fechamento.
-        B3.psql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='FOREIGN_PROVIDER_ERROR' WHERE id='{tx_h13}';")
+        if REVIEW_BEFORE or PARSER_BEFORE:
+            B3.psql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='FOREIGN_PROVIDER_ERROR' WHERE id='{tx_h13}';")
         stale_record, stale_error = real_record(tx_h13,"SENT",{"cStat":"103","xMotivo":"RETORNO ATRASADO"})
         stale_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip()
         if PARSER_BEFORE:
