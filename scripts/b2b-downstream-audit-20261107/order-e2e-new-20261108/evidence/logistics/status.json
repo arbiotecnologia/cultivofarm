@@ -1,24 +1,26 @@
 {
   "status": "FAIL_INCOMPLETE_INACTIVE_NOT_APPROVED",
   "run_exit_code": 1,
-  "checkpoints_passed_before_failure": 10,
-  "candidate_sha256": "72cd28ad68d97e64f7fa2f0f0abfddd015e74ccc381d308c329f029e8ccafd3b",
+  "checkpoints_passed_before_failure": 12,
+  "candidate_sha256": "2a73d61896c051c74cec1c5c6357f4551d55b3ecabb028a990e7334f7675565e",
   "positive_local_controls": [
     "gate fechado e writer privado sem EXECUTE de cliente",
     "inserção direta de OS pronta sem ticket negada por OS_APPROVAL_SCOPE_DENIED",
     "comprador sem alçada negado; CAS stale e conflito de replay negados",
     "pedido externo aprovado criou uma OS pronto_entrega sem programacao_producao ou production_order_link",
-    "compra canônica de três embalagens criou lote/estoque sem fabricação"
+    "compra canônica de três embalagens criou lote/estoque sem fabricação",
+    "reserva parcial de duas embalagens passou; fração, parceiro/pedido divergentes e comprador foram negados sem alterar saldo",
+    "agrupamento, expedição e cancelamento passaram; três embalagens voltaram disponíveis sem recebível",
+    "segunda reserva, agrupamento, replay exato e envio/replay foram alcançados sem erro antes da geração do comprovante"
   ],
   "current_blocker": {
-    "function": "platform_private.stock_p1_guard()",
-    "captured_md5": "ad87685f4b7bc87bd8cc3f41f283966d",
-    "error": "ESTQ_REFERENCE_FORBIDDEN",
-    "reason": "a guarda de linha ainda usa b2b_phase1_partner_visible/order_visible, incompatíveis com o vendedor tenant-owner sem org_partner; helpers globais não foram alterados"
+    "function": "platform_private.delivery_proof_recheck_20261030(uuid,uuid,text)",
+    "error": "DELIVERY_PROOF_SCOPE_DENIED",
+    "context": "public.rpc_entrega_formulario_gerar_v1 via platform_private.delivery_proof_apply_20261030",
+    "reason": "a releitura do comprovante ainda fecha a entrega com partner_order_id; envio já passou, mas comprovante e confirmação não foram concluídos"
   },
   "not_run": [
-    "reserva B2B concluída",
-    "agrupamento/expedição/comprovante/confirmação/cancelamento B2B",
+    "comprovante e confirmação B2B concluídos",
     "POST/rollback do candidato logístico",
     "regressão manual após o candidato",
     "B4 integrado, NF, recebível, JWT/RLS/Storage/browser"

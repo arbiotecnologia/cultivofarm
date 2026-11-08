@@ -1,5 +1,5 @@
 ## 08/11 14:26 — Achados reais na prévia original ARBio
-- [ ] Continuar primeiro o E2E local: corrigir no candidato a autoridade vendedora em `stock_p1_guard` e repetir reserva→expedição→entrega/cancelamento, negativos, regressão manual e POST/rollback.
+- [ ] E2E local avançou com 12 checkpoints PASS antes de exit 1: reserva/negativos, expedição, cancelamento com três embalagens restauradas, segundo agrupamento/replay e envio/replay. Próximo bloqueio: `delivery_proof_recheck_20261030`/`DELIVERY_PROOF_SCOPE_DENIED`; comprovante/confirmação, regressão manual e POST/rollback pendentes. Candidato INATIVO/NÃO APROVADO.
 - [ ] Investigar a perda de `valid_until=2026-11-15` no plano sintético `TESTE-FLUXO-20261108`: separar DOM/estado/evento/payload/servidor e automação, preparar regressão com datas preenchidas, submit e reabertura. Não alterar o plano LIVE nem completar sua desativação; sem hosted/publicação.
 - [ ] Investigar comprador novo sem condições e botão Enviar desabilitado; carrinho local de 1 saco 25 kg/R$10 não foi enviado. Não criar condição, pedido ou efeito externo.
 
