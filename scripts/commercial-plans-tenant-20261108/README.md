@@ -93,6 +93,10 @@ A composição no MESMO PostgreSQL descartável com B3 e logística `db36815b…
 
 ## Não comprovado / ainda bloqueado
 
+### Fechamento 40186 — nova execução local
+
+O pacote exato `cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40` passou novamente **79/79, exit 0**; compatibilidade focada frontend **62/62, seis arquivos, exit 0**. Gerador executado em espelho temporário confirmou manifesto e quatro SQL byte-idênticos; 28 fontes pinadas e 25 assinaturas/retornos conferidos. Nova evidência e catálogo ACL/policies antes/depois/rollback em `evidence/review-40186/`, sem sobrescrever histórico. O auditor relatou PRE_OK read-only no projeto canônico e coleta de advisors; impacto dos advisors ainda pendente, sem autorização de instalação.
+
 - Nenhuma instalação, JWT, PostgREST, RLS ou Storage hospedado foi exercitado por este pacote.
 - Testes sintéticos não certificam a sessão FSF nem substituem o reteste real de leitura após instalação.
 - Escritas negativas foram provadas apenas no PostgreSQL descartável; não se deve escrever como FSF em produção.

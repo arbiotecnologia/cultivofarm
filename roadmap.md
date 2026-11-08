@@ -1,3 +1,11 @@
+## 08/11 20:58 — Revisão 40186: fechamento local e PRE relatado pelo auditor
+- [x] Pacote SOMENTE planos cc1f6cc reexecutado em PostgreSQL 17.11 descartável: 79/79, exit 0; 28 capturas canônicas verificadas, gerador em espelho produz manifesto/SQL idênticos. Catálogo antes/depois/rollback e 25 assinaturas/retornos conferidos; ACL/RLS das quatro tabelas preservados, rollback fecha quatro policies.
+- [x] Compatibilidade frontend focada: seis arquivos/62 testes, exit 0; sem publicação/rede real. Evidências novas em scripts/commercial-plans-tenant-20261108/evidence/review-40186/; warnings preservados, suíte geral não declarada PASS.
+- [x] Localizados e revalidados hashes dos 29 arquivos review-a1f275: regressões em final-review-70d08c.json (13/13), fresh em final-checks.json (40/40), candidato 8ad4def8… e install 56631263…; after.json não existe. São execuções anteriores verificadas, não nova execução logística nesta rodada.
+- [x] Preparado roteiro autenticado mínimo 1/3→replay→2/3→evento terminal único→FSF negada, com barreiras de ambiente e zero efeitos externos; não executado por falta de ambiente autenticado seguro e caller público autorizado para criação da OS privada.
+- [x] Registrar como relato do auditor: list_projects comprovou ref canônico, PRE em READ ONLY/ROLLBACK retornou PRE_OK e advisors atuais foram coletados. PRE_OK não autoriza implantação; arquivos/resultados detalhados dos advisors ainda não fornecidos para revisão de impacto.
+- [ ] Auditor/revisor: concluir impacto dos advisors, revisão independente final, instalação manual somente após autorização específica e POST/reteste real. Fiscal positivo integrado NOT_RUN_BLOCKED, contabilidade real pendente; sem hosted/publicação/provedores/envios/cobranças/delegação.
+
 ## 08/11 20:13 — Revisão a1f275: confirmação parcial funcional e rollout separado
 - [x] ANTES reproduziu três falhas funcionais; initial_denial histórico classificado como oráculo superado, não PASS funcional. Iteração intermediária de evento duplicado preservada.
 - [x] Corrigido sincronizador específico, cobertura de OS e lock pedido→OS; parciais válidas persistem com sucesso/aprovado, restante completa, excesso/status direto negados. Replays e duas últimas entregas em conexões distintas sem duplicação: 13/13 regressões.
