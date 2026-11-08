@@ -408,6 +408,11 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     body = one(body, "WHERE os.partner_order_id = v_partner_order_id;", "WHERE os.partner_order_id = v_partner_order_id AND e.status <> 'cancelada';", "delivered count excludes cancellations")
     defs[sig]["new"] = body
 
+    sig = "platform_private.delivery_order_transition_guard_20261030()"
+    body = defs[sig]["body"]
+    body = one(body, "IF NEW.status IS DISTINCT FROM OLD.status AND EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current()) THEN", "IF NEW.status IS DISTINCT FROM OLD.status AND EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current())\n  AND (TG_TABLE_SCHEMA IS DISTINCT FROM 'public' OR TG_TABLE_NAME IS DISTINCT FROM 'partner_orders' OR platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN", "delivery transition exact resale exception")
+    defs[sig]["new"] = body
+
     sig = "platform_private.b2b_internal_order_snapshot_guard()"
     body = defs[sig]["body"]
     body = one(body, "IF NEW.ready_for_production OR public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;", "IF NEW.ready_for_production OR (public.fn_b2b_status_is_operational(NEW.status) AND platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;", "exact confirmed delivery order transition")
