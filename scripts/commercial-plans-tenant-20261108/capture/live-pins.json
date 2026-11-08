@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-11-08T16:08:00Z",
+  "functions": {
+    "b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)": "58c003869c6c6159a78fd3009296476a",
+    "b2b_payment_condition_config_list()": "561fa25917c7d3938faa82b1aa7d61de",
+    "b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)": "5d410cdba3c34298389302fb91d2fb16",
+    "b2b_payment_condition_retire(uuid,text,integer)": "c90717e0ed75e7cfeaefa0b7628a3643",
+    "create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "c34e740473afb7a365d362db854069cb",
+    "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)": "73b5b89c7612cd36ca5760668f0ea4b3",
+    "platform_private.c2p1_assignment_fence()": "4db90f14719c84a327a190f0d91a4d44",
+    "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)": "b3dd702a446b7ab3604229a83895326e",
+    "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)": "0e303620d70fa5d9d8b5c6702ee8526f",
+    "platform_private.c2p1_item_fence()": "b15f84985a3bb51d60f3f1128455bf8d",
+    "platform_private.c2p1_rule_fence()": "397723e1a28d19c5bf43939e135f1919",
+    "rpc_admin_create_commercial_plan(jsonb)": "16d256e65fa347929846f8444c4c9db1",
+    "rpc_admin_list_commercial_plans(text,text,integer,integer)": "82f74eb42321cd215c531c067194785a",
+    "rpc_admin_reorder_commercial_plans(jsonb)": "1871d5fcb33d36fd66ad2c265c46195d",
+    "rpc_admin_set_commercial_plan_active(uuid,boolean,text)": "8de8b1923be398bcbca3970c18951084",
+    "rpc_admin_set_default_commercial_plan(uuid)": "a4b18400e4e50ccaa62e2d53ac57b0e0",
+    "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)": "17efbe00b1f780ddd872f326602b781e",
+    "rpc_admin_version_commercial_plan(uuid,jsonb,text)": "325a7dd4f5a6778ac163531bbe8e1b35",
+    "rpc_b2b_list_selectable_payment_plans()": "eb47ea09af200744f9e4431b8a3f1828",
+    "rpc_cc_list_assignments(text)": "91529df9b063dbdf3b2f9bffa5a49329",
+    "rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": "32f75a12cf353fa7050c6ba6ffe1e5d3",
+    "rpc_cc_validate_matrix(uuid,text,uuid,uuid)": "21ab73c3a6ed77512c1e93b3958bfb1c",
+    "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee"
+  },
+  "kind": "read-only pg_get_functiondef",
+  "project_ref": "swzpzcwiasxmjutrmvkm"
+}

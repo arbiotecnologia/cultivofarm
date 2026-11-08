@@ -1,0 +1,213 @@
+[map[definition:CREATE OR REPLACE FUNCTION public.b2b_payment_condition_config_list()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_org uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  v_org := platform_private.h15_actor_organization();
+  IF v_org IS NULL OR public.is_platform_superadmin(v_uid) IS NOT FALSE
+     OR NOT (public.has_role(v_uid,'administrador'::public.app_role) IS TRUE OR public.has_role(v_uid,'financeiro'::public.app_role) IS TRUE
+             OR public.has_role(v_uid,'gestor_comercial'::public.app_role) IS TRUE)
+     OR public.has_role(v_uid,'parceiro_b2b'::public.app_role) IS NOT FALSE OR public.has_role(v_uid,'parceiro_b2b_tecnico'::public.app_role) IS NOT FALSE THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+  RETURN jsonb_build_object('contract','B2B_PAYMENT_CONDITION_V1','organization_id', v_org,
+    'can_edit', public.has_role(v_uid,'administrador'::public.app_role) IS TRUE OR public.has_role(v_uid,'financeiro'::public.app_role) IS TRUE,
+    'can_activate', public.has_role(v_uid,'administrador'::public.app_role) IS TRUE,
+    'default_deadline_days', 30,
+    'activation', COALESCE((SELECT to_jsonb(g) - 'updated_by' FROM platform_private.b2b_condition_activation g WHERE g.organization_id = v_org),
+                           jsonb_build_object('mode','off','pilot_partner_ids','[]'::jsonb,'version',0)),
+    'conditions', COALESCE((SELECT jsonb_agg(jsonb_build_object('plan_id',v.plan_id,'method',v.method,'version',v.version,'deadline_days',v.deadline_days,
+        'installment_count',v.installment_count,'monthly_rate',v.monthly_rate,'payment_method_id',v.payment_method_id,'category_id',v.category_id,
+        'approved_at',v.approved_at,
+        'retired',EXISTS (SELECT 1 FROM platform_private.b2b_condition_retirements r WHERE (r.organization_id,r.plan_id,r.version,r.method)=(v.organization_id,v.plan_id,v.version,v.method)),
+        'partner_ids',COALESCE((SELECT jsonb_agg(a.partner_id ORDER BY a.partner_id) FROM platform_private.b2b_condition_assignments a
+            WHERE (a.organization_id,a.plan_id,a.version,a.method)=(v.organization_id,v.plan_id,v.version,v.method)
+              AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_condition_assignment_revocations x WHERE (x.organization_id,x.partner_id,x.plan_id,x.version,x.method)=(a.organization_id,a.partner_id,a.plan_id,a.version,a.method))),'[]'::jsonb))
+        ORDER BY v.plan_id, v.method)
+      FROM platform_private.b2b_condition_versions v
+     WHERE v.organization_id = v_org AND v.version = (SELECT max(w.version) FROM platform_private.b2b_condition_versions w WHERE w.organization_id=v.organization_id AND w.plan_id=v.plan_id AND w.method=v.method)), '[]'::jsonb),
+    'catalog', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', pm.id, 'name', pm.name) ORDER BY pm.name) FROM public.payment_methods pm WHERE pm.active IS TRUE), '[]'::jsonb),
+    'categories', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', k.id, 'name', k.name) ORDER BY k.name) FROM public.financial_categories k WHERE k.active IS TRUE AND upper(btrim(k.type))='RECEITA'), '[]'::jsonb),
+    'plans', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'code', p.code, 'max_days', p.max_days, 'monthly_interest_percent', p.monthly_interest_percent) ORDER BY p.name)
+               FROM public.commercial_payment_plans p WHERE p.active IS TRUE AND p.superseded_by_id IS NULL), '[]'::jsonb),
+    'partners', COALESCE((SELECT jsonb_agg(a.id ORDER BY a.id) FROM public.partner_accounts a WHERE a.commercial_owner_organization_id = v_org AND a.ativo IS TRUE), '[]'::jsonb));
+END $function$
+ signature:b2b_payment_condition_config_list()] map[definition:CREATE OR REPLACE FUNCTION platform_private.c2p1_assignment_fence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'C2P1_ASSIGNMENT_DELETE_CLOSED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id IN (public.h15_actor_organization(),
+ (SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=NEW.partner_id),
+ (SELECT organization_id FROM public.clientes WHERE id=NEW.customer_id)) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN (NEW.partner_id,CASE WHEN TG_OP='UPDATE' THEN OLD.partner_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.clientes WHERE id IN (NEW.customer_id,CASE WHEN TG_OP='UPDATE' THEN OLD.customer_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ IF TG_OP='UPDATE' AND NOT platform_private.c2p1_assignment_allowed(OLD.buyer_scope,OLD.partner_id,OLD.customer_id)
+ THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NOT platform_private.c2p1_assignment_allowed(NEW.buyer_scope,NEW.partner_id,NEW.customer_id)
+ THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $function$
+ signature:platform_private.c2p1_assignment_fence()] map[definition:CREATE OR REPLACE FUNCTION platform_private.c2p1_history_allowed(p_entity text, p_id uuid, p_before jsonb, p_after jsonb)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT COALESCE(p_id IS NOT NULL AND p_entity IN ('assignment','item_price')
+ AND platform_private.c2p1_snapshot_allowed(p_entity,p_id,p_before)
+ AND platform_private.c2p1_snapshot_allowed(p_entity,p_id,p_after)
+ AND CASE WHEN p_entity='assignment' THEN EXISTS(SELECT 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id))
+ ELSE EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.id=p_id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id)) END,false);
+$function$
+ signature:platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)] map[definition:CREATE OR REPLACE FUNCTION platform_private.c2p1_item_allowed(p_assignment uuid, p_plan uuid, p_scope text, p_partner uuid, p_customer uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT platform_private.c2p1_assignment_allowed(p_scope,p_partner,p_customer) AND
+ (p_assignment IS NULL OR EXISTS(SELECT 1 FROM public.commercial_payment_plan_assignments a
+ WHERE a.id=p_assignment AND a.plan_id=p_plan AND a.buyer_scope=p_scope
+ AND a.partner_id IS NOT DISTINCT FROM p_partner AND a.customer_id IS NOT DISTINCT FROM p_customer
+ AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id)));
+$function$
+ signature:platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)] map[definition:CREATE OR REPLACE FUNCTION platform_private.c2p1_item_fence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE r public.commercial_condition_item_prices;
+BEGIN
+ IF TG_OP='DELETE' THEN r=OLD; ELSE r=NEW; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id IN (public.h15_actor_organization(),(SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=r.partner_id),(SELECT organization_id FROM public.clientes WHERE id=r.customer_id)) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN(r.partner_id,CASE WHEN TG_OP='UPDATE' THEN OLD.partner_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.clientes WHERE id IN(r.customer_id,CASE WHEN TG_OP='UPDATE' THEN OLD.customer_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.commercial_payment_plan_assignments WHERE id IN(r.assignment_id,CASE WHEN TG_OP='UPDATE' THEN OLD.assignment_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ IF NOT platform_private.c2p1_item_allowed(r.assignment_id,r.plan_id,r.buyer_scope,r.partner_id,r.customer_id)
+ OR (TG_OP='UPDATE' AND NOT platform_private.c2p1_item_allowed(OLD.assignment_id,OLD.plan_id,OLD.buyer_scope,OLD.partner_id,OLD.customer_id)) THEN
+ RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.created_at IS DISTINCT FROM OLD.created_at) THEN RAISE EXCEPTION 'C2P1_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF TG_OP<>'DELETE' AND r.published_rule_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.commercial_price_rules pr WHERE pr.id=r.published_rule_id AND pr.plan_id=r.plan_id AND pr.buyer_scope=r.buyer_scope
+ AND pr.partner_id IS NOT DISTINCT FROM r.partner_id AND pr.customer_id IS NOT DISTINCT FROM r.customer_id
+ AND pr.product_id IS NOT DISTINCT FROM r.product_id AND pr.microrganismo_id IS NOT DISTINCT FROM r.microrganismo_id
+ AND pr.unit_type=r.unit_type AND pr.volume_ml IS NOT DISTINCT FROM r.volume_ml) THEN RAISE EXCEPTION 'C2P1_RULE_LINK_INVALID' USING ERRCODE='42501'; END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $function$
+ signature:platform_private.c2p1_item_fence()] map[definition:CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_fence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE r public.commercial_price_rules;
+BEGIN
+ IF TG_OP='DELETE' THEN r=OLD; ELSE r=NEW; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id IN (public.h15_actor_organization(),(SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=r.partner_id),(SELECT organization_id FROM public.clientes WHERE id=r.customer_id)) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN(r.partner_id,CASE WHEN TG_OP='UPDATE' THEN OLD.partner_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.clientes WHERE id IN(r.customer_id,CASE WHEN TG_OP='UPDATE' THEN OLD.customer_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ IF NOT platform_private.c2p1_assignment_allowed(r.buyer_scope,r.partner_id,r.customer_id)
+ OR (TG_OP='UPDATE' AND NOT platform_private.c2p1_assignment_allowed(OLD.buyer_scope,OLD.partner_id,OLD.customer_id)) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.published_rule_id=OLD.id AND (NEW.id IS DISTINCT FROM OLD.id OR i.plan_id IS DISTINCT FROM NEW.plan_id OR i.buyer_scope IS DISTINCT FROM NEW.buyer_scope OR i.partner_id IS DISTINCT FROM NEW.partner_id OR i.customer_id IS DISTINCT FROM NEW.customer_id OR i.product_id IS DISTINCT FROM NEW.product_id OR i.microrganismo_id IS DISTINCT FROM NEW.microrganismo_id OR i.unit_type IS DISTINCT FROM NEW.unit_type OR i.volume_ml IS DISTINCT FROM NEW.volume_ml)) THEN RAISE EXCEPTION 'C2P1_RULE_LINK_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $function$
+ signature:platform_private.c2p1_rule_fence()] map[definition:CREATE OR REPLACE FUNCTION public.rpc_cc_list_assignments(p_status text DEFAULT NULL::text)
+ RETURNS SETOF commercial_payment_plan_assignments
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  RETURN QUERY SELECT * FROM public.commercial_payment_plan_assignments a
+    WHERE platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) AND (p_status IS NULL OR a.status = p_status)
+    ORDER BY a.created_at DESC;
+END $function$
+ signature:rpc_cc_list_assignments(text)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_cc_simulate_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric DEFAULT NULL::numeric, p_ref_date date DEFAULT CURRENT_DATE, p_quantity numeric DEFAULT NULL::numeric)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_org uuid;
+BEGIN
+ IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ v_org := public.h15_actor_organization();
+ IF v_org IS NULL THEN RAISE EXCEPTION 'ACTIVE_TENANT_REQUIRED' USING ERRCODE='42501'; END IF;
+ IF NOT public.fn_cc_can_prepare(v_uid) OR NOT public._saas_user_has_feature(v_uid,'catalogo_precos') THEN
+  RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501';
+ END IF;
+ IF COALESCE(p_buyer_scope,'partner') <> 'partner' OR p_customer_id IS NOT NULL THEN
+  RAISE EXCEPTION 'PRODUCER_DIRECT_NOT_ENABLED' USING ERRCODE='P0001';
+ END IF;
+ -- Only commercial ownership proves internal A. CNPJ, tenant P and user links never authorize here.
+ IF p_partner_id IS NULL OR NOT EXISTS (
+  SELECT 1 FROM public.partner_accounts pa
+  WHERE pa.id=p_partner_id AND pa.commercial_owner_organization_id=v_org
+   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   AND (pa.client_id IS NULL OR EXISTS (
+    SELECT 1 FROM public.clientes c WHERE c.id=pa.client_id AND c.organization_id=v_org
+   ))
+ ) THEN RAISE EXCEPTION 'COMMERCIAL_PARTNER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_quantity IS NOT NULL AND (p_quantity <= 0 OR p_quantity::text IN ('NaN','Infinity','-Infinity')) THEN
+  RAISE EXCEPTION 'QUANTITY_INVALID' USING ERRCODE='22023';
+ END IF;
+ IF p_volume_ml IS NOT NULL AND (p_volume_ml <= 0 OR p_volume_ml::text IN ('NaN','Infinity','-Infinity')) THEN
+  RAISE EXCEPTION 'VOLUME_INVALID' USING ERRCODE='22023';
+ END IF;
+ IF NOT platform_private.c2p1_assignment_allowed('partner',p_partner_id,NULL) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ -- Read-only canonical resolver; no order, credit, receivable, snapshot or fiscal writes.
+ RETURN public.fn_resolve_commercial_price('partner',p_partner_id,NULL,p_plan_id,
+  p_product_id,p_microrganismo_id,p_unit_type,p_volume_ml,p_ref_date,p_quantity);
+END $function$
+ signature:rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_cc_validate_matrix(p_plan_id uuid, p_buyer_scope text, p_partner_id uuid DEFAULT NULL::uuid, p_customer_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_missing jsonb; v_drafts int; v_quote int;
+BEGIN
+ IF NOT platform_private.c2p1_assignment_allowed(p_buyer_scope,p_partner_id,p_customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  SELECT COALESCE(jsonb_agg(jsonb_build_object('tipo',tipo,'id',id,'nome',nome)),'[]'::jsonb) INTO v_missing
+  FROM (
+    SELECT 'produto' tipo, p.id, p.nome FROM public.produtos p
+     WHERE COALESCE(p.ativo,true)
+       AND NOT EXISTS (SELECT 1 FROM public.commercial_condition_item_prices i
+            WHERE platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) AND i.plan_id=p_plan_id AND i.product_id=p.id AND i.buyer_scope=p_buyer_scope
+              AND i.partner_id IS NOT DISTINCT FROM p_partner_id
+              AND i.customer_id IS NOT DISTINCT FROM p_customer_id
+              AND i.status IN ('draft','pending_approval','published'))
+    UNION ALL
+    SELECT 'microrganismo', m.id, m.nome FROM public.microrganismos m
+     WHERE COALESCE(m.ativo,true)
+       AND NOT EXISTS (SELECT 1 FROM public.commercial_condition_item_prices i
+            WHERE platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) AND i.plan_id=p_plan_id AND i.microrganismo_id=m.id AND i.buyer_scope=p_buyer_scope
+              AND i.partner_id IS NOT DISTINCT FROM p_partner_id
+              AND i.customer_id IS NOT DISTINCT FROM p_customer_id
+              AND i.status IN ('draft','pending_approval','published'))
+  ) s;
+  SELECT count(*) FILTER (WHERE status='draft'), count(*) FILTER (WHERE pricing_mode='quote_only')
+    INTO v_drafts, v_quote
+  FROM public.commercial_condition_item_prices
+   WHERE platform_private.c2p1_item_allowed(assignment_id,plan_id,buyer_scope,partner_id,customer_id) AND plan_id=p_plan_id AND buyer_scope=p_buyer_scope
+     AND partner_id IS NOT DISTINCT FROM p_partner_id
+     AND customer_id IS NOT DISTINCT FROM p_customer_id;
+  RETURN jsonb_build_object('ok', jsonb_array_length(v_missing)=0,
+    'missing_items', v_missing, 'draft_count', COALESCE(v_drafts,0), 'quote_only_count', COALESCE(v_quote,0));
+END $function$
+ signature:rpc_cc_validate_matrix(uuid,text,uuid,uuid)]]
