@@ -51,9 +51,14 @@ def main():
     assert len(partial) == 13 and all(x['status'] == 'PASS' for x in partial)
     assert len(endpoint) == 15 and all(x['status'] == 'PASS' for x in endpoint)
     frontend = {}
+    expected_test_counts = {'frontend-ui':21,'frontend-candidate':13,'frontend-os-compat':73}
     for name in ('frontend-ui','frontend-candidate','frontend-os-compat','typecheck'):
         assert (E/f'{name}.exitcode').read_text().strip() == '0', name
+        log_text = (E/f'{name}.txt').read_text()
+        if name in expected_test_counts:
+            assert f"Tests  {expected_test_counts[name]} passed" in log_text, (name, 'test count drift')
         frontend[name] = {'exitcode': 0, 'sha256': sha(E/f'{name}.txt')}
+        if name in expected_test_counts: frontend[name]['tests'] = expected_test_counts[name]
     rollback = json.loads((E/'full-logistics-rollback.json').read_text())
     assert rollback['current_catalog_preserved'] is True
     OUT.mkdir(exist_ok=True)
