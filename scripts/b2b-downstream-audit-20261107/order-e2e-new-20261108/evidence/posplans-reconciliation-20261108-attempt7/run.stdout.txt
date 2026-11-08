@@ -35,3 +35,8 @@ REVIEW70 PASS create_wait_revocation_profile
 CHECKPOINT sql_calls=1200 elapsed=73.4s
 REVIEW70 PASS create_wait_revocation_tenant
 REVIEW70 PASS create_wait_revocation_gate
+REVIEW70 PASS replay_wait_revocation_role
+REVIEW70 PASS replay_wait_revocation_profile
+REVIEW70 PASS replay_wait_revocation_tenant
+REVIEW70 PASS replay_wait_revocation_gate
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
