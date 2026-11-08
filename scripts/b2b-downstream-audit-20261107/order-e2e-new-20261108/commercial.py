@@ -34,7 +34,8 @@ def apply(driver, load, root, out):
      if B.last(f"SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='{t['schema']}' AND table_name='{t['name']}' AND column_name='{c['name']}');")=='f':
       B.sql(f'ALTER TABLE {obj} ADD COLUMN "{c["name"]}" {c["type"]}'+((' DEFAULT '+c['default']) if c['default'] else '')+';')
   # Economic functions retain their exact B3 bodies. h15 and physical helpers stay original.
-  keep={'h15_actor_organization','tg_create_default_pfs','has_role','is_platform_superadmin','get_user_partner_id','update_updated_at_column','b2b_actor_scope','b2b_internal_commercial_actor'}
+  keep={'h15_actor_organization','tg_create_default_pfs','has_role','is_platform_superadmin','get_user_partner_id','update_updated_at_column','b2b_actor_scope','b2b_internal_commercial_actor','c2_internal_order_target_reason','c2_order_actor_scope','c2_owner_order_guard','c2_attempt_dispatch_guard','c2_partner_order_attempt_authz','c2_order_internal_recipients','c2_owner_order_create_allowed','platform_actor_access_ready','entitlements_for_user','issue_ticket','has_ticket','c2_accounting_promotion_ok','c2p1_internal_actor','c2p1_settings_allowed','_notify_role','_saas_user_has_feature'}
+  keep.update(f['name'] for f in meta['functions'] if ' LANGUAGE c' in f['body'])
   for f in meta['functions']:
    if f['name'] in keep:continue
    B.sql(f['body']+';')
