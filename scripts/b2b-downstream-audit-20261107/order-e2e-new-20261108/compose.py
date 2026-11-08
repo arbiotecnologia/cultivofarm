@@ -104,6 +104,28 @@ def main():
   data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error
   (OUT/'buyer-order.json').write_text(json.dumps(data,indent=2)+'\n')
   checks.append(dict(test='new buyer canonical B3 packaging order with chosen condition, no forged order row',status='PASS',order_id=data['id']))
+  order_id=data['id']
+  before=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+  denied=Q.as_user(Q.UADM,f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
+  assert denied.returncode!=0 and 'C2_ACCOUNTING_PENDING' in denied.stderr,denied.stderr
+  after_denied=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+  assert after_denied==before,'approval denied before accounting changed order'
+  checks.append(dict(test='accounting pending approval denied atomically before synthetic promotion',status='PASS'))
+  B.sql(f"""SET session_replication_role=replica;
+   INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)
+    SELECT '{Q.A}',true,'VALIDATED',now(),'ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA','00000000000191',1
+    WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{Q.A}' AND is_active);
+   SET session_replication_role=origin;""")
+  promoted,promote_error=Q.call(Q.UADM,f"public.c2_promote_accounting_pending_order_v1('{order_id}','{before['updated_at']}'::timestamptz)")
+  assert promoted is not None,promote_error
+  assert promoted['contract']=='C2_EXTERNAL_ORDER_ORIGIN_V1',promoted
+  approved=Q.as_user(Q.UADM,f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
+  assert approved.returncode==0,approved.stderr
+  accepted=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
+  assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted
+  assert accepted['ready_for_production'] is False,'external resale must not open biological production'
+  (OUT/'seller-acceptance.json').write_text(json.dumps(dict(promotion=promoted,order=accepted),indent=2)+'\n')
+  checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:
