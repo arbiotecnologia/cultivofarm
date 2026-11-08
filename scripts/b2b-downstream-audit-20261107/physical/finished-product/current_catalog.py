@@ -173,9 +173,9 @@ def _restricted_acl_sql():
     for table, entries in EXPECTED_TABLE_ACL.items():
         statements.append(f"REVOKE ALL ON TABLE public.{table} FROM PUBLIC,anon,authenticated,service_role;")
         statements.append(f"GRANT SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON TABLE public.{table} TO service_role;")
-        if "anon=s/postgres" in entries:
+        if "anon=r/postgres" in entries:
             statements.append(f"GRANT SELECT ON TABLE public.{table} TO anon;")
-        if "authenticated=s/postgres" in entries:
+        if "authenticated=r/postgres" in entries:
             statements.append(f"GRANT SELECT ON TABLE public.{table} TO authenticated;")
     for signature, entries in EXPECTED_FUNCTION_ACL.items():
         statements.append(f"REVOKE ALL ON FUNCTION {signature} FROM PUBLIC,anon,authenticated,service_role;")
