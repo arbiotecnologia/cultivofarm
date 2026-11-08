@@ -97,7 +97,11 @@ def main():
     )::text;""").stdout.strip().splitlines()[-1]
   (OUT/'buyer-scope-diagnostic.json').write_text(json.dumps(json.loads(diagnostic),indent=2)+'\n')
   data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
-  data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],'NEW-E2E-ORDER-001',choice);assert data is not None,error
+  journal,journal_error=Q.call(Q.UB,f"public.recover_partner_order_attempt_v1('{Q.P}',NULL,NULL,false,NULL)")
+  assert journal is not None,journal_error
+  assert journal['contract']=='C2_ORDER_JOURNAL_V1' and journal['state']=='reserved',journal
+  (OUT/'buyer-attempt.json').write_text(json.dumps(journal,indent=2)+'\n')
+  data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error
   (OUT/'buyer-order.json').write_text(json.dumps(data,indent=2)+'\n')
   checks.append(dict(test='new buyer canonical B3 packaging order with chosen condition, no forged order row',status='PASS',order_id=data['id']))
  except Exception:
