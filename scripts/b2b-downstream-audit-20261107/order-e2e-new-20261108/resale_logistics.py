@@ -183,6 +183,19 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
   IF TG_OP='UPDATE'""", "OS biological ticket")
     defs[sig]["new"] = body
 
+    sig = "platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)"
+    body = defs[sig]["body"]
+    body = one(body, " v_os_cliente uuid; v_os_order uuid;", " v_os_cliente uuid; v_os_order uuid; v_resale boolean:=false;", "stock refs declaration")
+    body = one(body, "BEGIN\n IF v_cliente IS NOT NULL", """BEGIN
+ IF v_tipo='b2b' AND v_order IS NOT NULL AND v_os IS NOT NULL AND platform_private.b2b_internal_commercial_actor() IS TRUE THEN
+  SELECT platform_private.b2b_resale_os_valid_v1(o) INTO v_resale FROM public.ordens_servico o WHERE o.id=v_os AND o.organization_id=p_org;
+ END IF;
+ v_resale:=coalesce(v_resale,false);
+ IF v_cliente IS NOT NULL""", "stock refs seller resale")
+    body = one(body, "IF v_partner IS NOT NULL AND NOT coalesce(public.b2b_phase1_partner_visible(v_partner,false),false) THEN", "IF v_partner IS NOT NULL AND NOT v_resale AND NOT coalesce(public.b2b_phase1_partner_visible(v_partner,false),false) THEN", "stock refs partner")
+    body = one(body, "IF v_order IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN", "IF v_order IS NOT NULL AND NOT v_resale AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN", "stock refs order")
+    defs[sig]["new"] = body
+
     sig = "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)"
     body = defs[sig]["body"]
     body = one(body, " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid;", " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid; v_partner uuid;", "group declaration")
