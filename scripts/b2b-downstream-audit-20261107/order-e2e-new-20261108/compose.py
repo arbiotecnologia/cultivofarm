@@ -506,6 +506,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
    'transmission_c_stat',(SELECT c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
    'transmission_protocol_c_stat',(SELECT protocol_c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
    'transmission_error',(SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
+   'close_pending',(SELECT error_code FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}'),
+   'close_pending_attempts',(SELECT attempts FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}'),
    'transmissions',(SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{invoice_id}'),
    'invoices',(SELECT count(*) FROM public.fiscal_invoices WHERE id='{invoice_id}' AND idempotency_key='{invoice_idem}'),
    'xml_runs',(SELECT count(*) FROM public.fiscal_xml_runs WHERE id='{xml_run_id}' AND fiscal_invoice_id='{invoice_id}' AND idempotency_key='{xml_idem}'),
