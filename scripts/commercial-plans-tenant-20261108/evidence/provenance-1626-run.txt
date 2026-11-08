@@ -1,0 +1,64 @@
+PASS ANTES: FSF lê todos os planos sem recorte pela RPC admin
+PASS ANTES: atribuição da exceção sem owner não aparece, isolada do leak de Planos
+PASS ANTES: FSF lê ARBio pela listagem operacional admin
+PASS ANTES: configuração B3 FSF expõe plano ARBio
+PASS ANTES: FSF altera metadados ARBio
+PASS ANTES: escrita indevida confirmada
+PASS PRE íntegro
+PASS instalação candidata transacional
+PASS proveniência A resolvida por profiles.user_id
+PASS proveniência B resolvida por profiles.user_id
+PASS exceção AUDIT-CF fica na organização do próprio criador, não ARBio
+PASS família ambígua permanece NULL
+PASS POST íntegro
+PASS DEPOIS: ARBio lista somente seus dois planos
+PASS DEPOIS: FSF lista somente seu plano e a exceção de sua organização
+PASS DEPOIS: exceção é legível por FSF e invisível para ARBio
+PASS DEPOIS: ARBio não lê a exceção de outra organização
+PASS DEPOIS: FSF não lê ARBio operacionalmente
+PASS DEPOIS: configuração B3 FSF não expõe ARBio
+PASS DEPOIS: leitura direta FSF isolada por RLS
+PASS DEPOIS: atribuição sem owner continua invisível após candidato
+PASS DEPOIS: comprador ARBio só lê plano publicado vinculado
+PASS DEPOIS: comprador FSF só lê seu plano
+PASS FSF nega versão ARBio
+PASS FSF nega metadados ARBio
+PASS FSF nega ativação ARBio
+PASS FSF nega padrão ARBio
+PASS FSF nega reordenação mista
+PASS reordenação negada não altera A
+PASS metadados negados não alteram A
+PASS ARBio cria versão própria
+PASS versão herda tenant ARBio
+PASS versão ARBio invisível para FSF
+PASS ARBio define padrão próprio
+PASS FSF define e lê somente seu padrão
+PASS padrões pertencem a tenants distintos
+PASS FSF cria plano com tenant próprio
+PASS plano criado por FSF não aparece para ARBio
+PASS tenant do plano é imutável
+PASS atribuição cruzada B para plano A negada
+PASS atribuição A para plano B negada
+PASS matriz cruzada negada
+PASS simulação de matriz cruzada negada
+PASS simulação legada comprador A com plano B negada
+PASS leitura direta de atribuição ambígua fechada
+PASS histórico de atribuição ambígua fechado
+PASS FSF não publica condição para plano ARBio
+PASS ARBio publica condição própria
+PASS ARBio atribui condição ao próprio parceiro
+PASS ARBio cria atribuição comercial própria
+PASS ARBio publica atribuição comercial própria
+PASS comprador ARBio resolve meio publicado
+PASS comprador FSF não resolve condição ARBio
+PASS revogação B3 fecha meio
+PASS comprador perde condição após revogação
+PASS revogação do vínculo comprador fecha leitura
+PASS perfil admin revogado fecha leitura
+PASS perfil admin revogado fecha escrita
+PASS rollback fecha RPC admin
+PASS rollback fecha leitura comprador
+PASS rollback fecha configuração B3
+PASS rollback fecha leitura direta
+PASS rollback preserva planos/atribuições/versões
+63/63 PASS; Auth sintética, sem prova hosted

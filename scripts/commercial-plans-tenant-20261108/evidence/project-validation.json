@@ -3,8 +3,8 @@
   "postgres_disposable": {
     "command": "python3 scripts/commercial-plans-tenant-20261108/test-local-pg.py",
     "exit_code": 0,
-    "checks": 58,
-    "passed": 58,
+    "checks": 63,
+    "passed": 63,
     "before_reproduced": [
       "cross_tenant_admin_plan_read",
       "cross_tenant_operational_plan_read",
