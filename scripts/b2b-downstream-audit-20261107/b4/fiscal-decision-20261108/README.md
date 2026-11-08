@@ -49,7 +49,7 @@ A bateria B4 existente foi ampliada **sem alterar o SQL do candidato** com:
 - pedido aprovado sem dívida antes da alocação fiscal;
 - ausência de boleto/Pix/pagamento ao criar o título.
 
-Resultado em PostgreSQL 17 descartável: **120/120 checks**, exit 0. Inclui parcialidade, corrida de saldo, crédito sem dupla contagem, cancelamento pago, histórico, dez gatilhos/ACL, fence de entrega e rollback deny-only. O manifesto do candidato regenerado com a baseline real passou **61/61**.
+Resultado em PostgreSQL 17 descartável: **128/128 checks**, exit 0. Inclui parcialidade, corrida de saldo, crédito sem dupla contagem, cancelamento pago, histórico, dez gatilhos/ACL, fence de entrega e rollback deny-only. O manifesto do candidato regenerado com a baseline real passou **61/61**.
 
 Esses resultados são **prova de componente com atestações fiscais sintéticas**. Não são somados a execuções históricas e não certificam a ponte fiscal real.
 

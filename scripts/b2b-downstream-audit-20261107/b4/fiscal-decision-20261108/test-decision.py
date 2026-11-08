@@ -27,7 +27,7 @@ def main():
     check("inventário determinístico", json.loads((H / "inventory.json").read_text()) == inventory)
     matrix = json.loads((H / "matrix.json").read_text())
     component = json.loads(COMPONENT.read_text())
-    result = component["results"]
+    result = component
     by_name = {row["name"]: row for row in result["checks"]}
     check("componente B4 sem falhas", result["passed"] == result["total"] and all(row["ok"] for row in result["checks"]), f"{result['passed']}/{result['total']}")
 
