@@ -310,12 +310,8 @@ BEGIN
  digest_snapshot:=canonical_snapshot-'transmission_id';
  digest:=encode(extensions.digest(convert_to(digest_snapshot::text,'UTF8'),'sha256'),'hex');
  SELECT * INTO existing FROM platform_private.b2b_authorized_documents WHERE id=inv.id;
- IF saved.invoice_id IS NOT NULL AND EXISTS(
-  SELECT 1 FROM public.fiscal_sefaz_transmissions t
-  WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED' AND t.ch_nfe=inv.access_key
-   AND (t.n_prot,coalesce(t.protocol_c_stat,t.c_stat),t.ambiente_retorno)
-    IS DISTINCT FROM (saved.protocol,saved.snapshot->>'transmission_c_stat',saved.snapshot->>'transmission_environment')
- ) THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
+ -- Uma confirmação divergente é negada pelo H12 no próprio callback; ela não
+ -- contamina nem substitui a referência original usada por replays diretos.
  IF existing.id IS NOT NULL AND (saved.invoice_id IS NULL OR saved.source_digest IS DISTINCT FROM digest OR saved.snapshot IS DISTINCT FROM canonical_snapshot
    OR (existing.organization_id,existing.partner_id,existing.order_id,existing.kind,existing.issue_date,existing.event_key,existing.source_digest,existing.items,existing.state)
    IS DISTINCT FROM (org,po.partner_id,po.id,inv.invoice_type,inv.issue_date,'fiscal_invoice:'||inv.id::text,digest,items,'AUTHORIZED'))

@@ -717,7 +717,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_proof(invoice_denied,tx_denied)
         seed_proof(invoice_foreign,tx_foreign)
         seed_proof(invoice_nonb2b,tx_nonb2b,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
-        seed_proof(invoice_partial,tx_partial)
+        seed_proof(invoice_partial,tx_partial,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_bad_cstat,tx_bad_cstat,cstat="999",outcome="REJECTED")
         seed_proof(invoice_nfse,tx_nfse,protocol="NFSE-PROTOCOL-1")
         seed_proof(invoice_h13,tx_h13,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
@@ -764,6 +764,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         parser_patch = {"cStat":"104","protocolCStat":"100","nProt":"PARSER-PROTOCOL-100","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"LOTE PROCESSADO; PROTOCOLO AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:30:00Z"}
         parser_record, parser_error = real_record(tx_parser,"SUCCEEDED",parser_patch)
         parser_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip()
+        if parser_record and parser_record["reconciliationPending"]:
+            parser_direct = server_run("",f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_parser}','35261111111111111111111111111111111111111111','PARSER-PROTOCOL-100','2027-02-01T12:30:00Z','100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{tx_parser}');ROLLBACK;")
+            print("PARSER_DIRECT_DIAGNOSTIC",parser_direct.returncode,parser_direct.stderr[-1200:],flush=True)
         if PARSER_BEFORE:
             check("ANTES: parser calcula AUTHORIZED por protocolCStat=100 mas persiste c_stat=104", parser_record and parser_record["outcome"] == "AUTHORIZED" and parser_state.startswith("AUTHORIZED|104|FISCAL_AUTHORIZATION_CLOSE_PENDING"), parser_error or parser_state)
             check("ANTES: H12 recebe 104 e deixa autorização não-B2B em CLOSE_PENDING", parser_record and parser_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_parser}'").stdout.strip() == "PENDING", parser_error or parser_record)
