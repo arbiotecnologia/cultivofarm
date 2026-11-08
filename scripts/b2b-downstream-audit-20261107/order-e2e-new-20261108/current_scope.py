@@ -190,6 +190,18 @@ def _state_triggers(state: dict, function_rows: dict[str, list]) -> list[list]:
     return sorted(result, key=lambda row: (row[0], row[1]))
 
 
+def _merged_triggers(state: dict, function_rows: dict[str, list]) -> list[list]:
+    rows = {(row[0], row[1]): row for row in _captured_triggers()}
+    for row in _state_triggers(state, function_rows):
+        rows[(row[0], row[1])] = row
+    return sorted(rows.values(), key=lambda row: (row[0], row[1]))
+
+
+def _trigger_pins(triggers: list[list]) -> list[list]:
+    rows = {row[3]: row[4] for row in triggers}
+    return sorted([[signature, md5] for signature, md5 in rows.items()], key=lambda row: row[0])
+
+
 def _structural(state: dict) -> dict:
     return {
         key: value for key, value in state.items()
@@ -197,7 +209,7 @@ def _structural(state: dict) -> dict:
     }
 
 
-def _pair(pre_state: dict, post_state: dict) -> tuple[dict, dict, dict]:
+def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict, dict, dict]:
     pre_functions, post_functions = _function_rows(pre_state), _function_rows(post_state)
     live_functions = _live_functions()
     capture_functions = {_from_signature(row["signature"]): row for row in CAPTURE["functions"]}
