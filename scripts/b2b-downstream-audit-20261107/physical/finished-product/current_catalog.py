@@ -184,8 +184,17 @@ def _restricted_acl_sql():
     return "\n".join(statements)
 
 
-def apply(run_raw, last, ok):
+def apply(run_raw, last, ok, organization_id):
     global _expected_pins
+    foundation = _module("current_catalog_foundation", HERE / "catalog_foundation.py")
+    foundation_result = []
+    def foundation_sql(statement):
+        result = run_raw(statement)
+        foundation_result.append(result)
+        return result
+    foundation.apply(foundation_sql, organization_id)
+    if any(result.returncode != 0 for result in foundation_result):
+        raise AssertionError("CURRENT_CATALOG_SCHEMA_SEAM_FAILED\n" + "\n".join(result.stderr[-4000:] for result in foundation_result))
     capture_sql = CAPTURE.read_text()
     assert capture_sql.count("CREATE OR REPLACE FUNCTION platform_private.") == 6
     assert "CREATE TABLE" not in capture_sql and "GRANT " not in capture_sql

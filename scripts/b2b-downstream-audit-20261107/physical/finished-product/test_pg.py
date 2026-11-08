@@ -101,7 +101,7 @@ def restore_checkpoint():
     ok("checkpoint descartável da composição capturada restaurado", hashlib.sha256(cached.read_bytes()).hexdigest())
     # A baseline restrita POSPLANOS antecede a geração dos candidatos: seis guards
     # LIVE capturados e dependências canônicas, sem reaplicar a migração ampla.
-    current_catalog.apply(run_raw, last, ok)
+    current_catalog.apply(run_raw, last, ok, T.A)
     # Mesma geração determinística do harness de confirmação; nenhum PRE é removido.
     pre = C.state()
     delta = C.G.candidate()

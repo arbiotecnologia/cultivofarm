@@ -39,7 +39,7 @@ def main():
   print('NEW_PHYSICAL_BOOT_OK',flush=True)
   # Baseline restrita atual: seis corpos LIVE capturados e dependências canônicas,
   # sem reaplicar a migração ampla nem contornar seu PRE histórico.
-  B.current_catalog.apply(B.run_raw,B.last,B.ok)
+  B.current_catalog.apply(B.run_raw,B.last,B.ok,B.T.A)
   shutil.copyfile(physical/'evidence/current-catalog-baseline.json',OUT/'current-catalog-baseline.json')
   checks.append(dict(test='restricted POSPLANOS baseline measures nine bodies six exact LIVE guards and eight ACLs before candidate generation',status='PASS'))
   # Install confirmation/send in the current fresh database using measured exact pins.
