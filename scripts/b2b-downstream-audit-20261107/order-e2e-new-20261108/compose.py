@@ -89,6 +89,10 @@ def main():
       'commercial_context',platform_private.b2b_commercial_context(),
       'owner_order_allowed',platform_private.c2_owner_order_create_allowed('{Q.UB}','{Q.P}'),
       'owner_plan_assigned',platform_private.c2_owner_plan_assigned('{Q.P}','{Q.P3}'),
+      'subscriptions',(SELECT jsonb_agg(to_jsonb(s)) FROM public.organization_subscriptions s WHERE s.organization_id='{Q.A}'),
+      'versions',(SELECT jsonb_agg(to_jsonb(v)) FROM public.saas_plan_versions v JOIN public.organization_subscriptions s ON s.plan_version_id=v.id WHERE s.organization_id='{Q.A}'),
+      'overrides',(SELECT jsonb_agg(to_jsonb(o)) FROM public.organization_feature_overrides o WHERE o.organization_id='{Q.A}'),
+      'entitlement_resolver_md5',md5(pg_get_functiondef('platform_private.entitlements_for_user(uuid)'::regprocedure)),
       'entitlements',(SELECT jsonb_agg(to_jsonb(e)) FROM platform_private.entitlements_for_user('{Q.UB}') e)
     )::text;""").stdout.strip().splitlines()[-1]
   (OUT/'buyer-scope-diagnostic.json').write_text(json.dumps(json.loads(diagnostic),indent=2)+'\n')
