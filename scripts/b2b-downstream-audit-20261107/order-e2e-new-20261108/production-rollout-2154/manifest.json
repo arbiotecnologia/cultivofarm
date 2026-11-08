@@ -4,6 +4,13 @@
   "baseline": "POSPLANOS; plan cc1f6cc already installed; never reinstall or roll it back",
   "hosted_io": false,
   "gates": "all closed after every install and rollback",
+  "live_readonly_reported_2026_11_08": {
+    "rpc_entrega_confirmar_manual_v1": "ABSENT_BY_PRONAME_ANY_OVERLOAD",
+    "rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)": "a4d47ccf5d116141ed46e9de9ea7eeaa",
+    "rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)": "97d476cc795d75b829f305f1e64d4e62",
+    "rpc_programar_os_v1(uuid,text,date)": "e374f0ba1698b37523b890dc91682eaf",
+    "resale_os_and_gates": "ABSENT"
+  },
   "order": [
     "00 production PRE",
     "11/12 confirmation closed",
@@ -112,8 +119,8 @@
       "bytes": 760
     },
     "README.md": {
-      "sha256": "1997cef4511fdcaa2612c496b8ca5053615fa0c436bd26961774d761f95afe6e",
-      "bytes": 5209
+      "sha256": "e5c97095ab4be5711836b9f1ed5f0109f9b12abc49425716039f6935ef95e529",
+      "bytes": 5265
     }
   }
 }
