@@ -15,6 +15,7 @@ CHANGED = [
     "platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)",
     "platform_private.stock_p1_guard()",
     "platform_private.delivery_mutation_guard_20261030()",
+    "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
