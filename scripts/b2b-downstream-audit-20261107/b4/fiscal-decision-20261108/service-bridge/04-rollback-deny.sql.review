@@ -1,5 +1,6 @@
--- DENY-ONLY: fecha ponte e callback; preserva NF, títulos, alocações e histórico.
+-- DENY-ONLY: fecha ponte e callbacks; preserva NF, títulos, snapshots e histórico.
 BEGIN;
 REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;

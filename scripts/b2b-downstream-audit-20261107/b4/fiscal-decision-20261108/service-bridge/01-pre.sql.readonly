@@ -2,7 +2,10 @@
 DO $$ BEGIN
  IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
  IF to_regprocedure('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ALREADY_INSTALLED'; END IF;
+ IF to_regclass('platform_private.b2b_fiscal_invoice_snapshots') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_ALREADY_EXISTS'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM 'c6c25ebcb29ba64adafb0bc42295d3b6' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '39d8b85a715722b4a976db4e2fd21167' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '9c94985d80502c8aea8bfb5da3abdecd' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_PIN_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM 'e340a643e46c6cc0dea0fcebd207f612' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_PIN_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='NO') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_BASELINE_DRIFT'; END IF;
 END $$;
