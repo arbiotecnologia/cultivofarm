@@ -80,6 +80,8 @@ describe("P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML host
     state.row = null;
     const { client, key } = setup(); await open();
     await screen.findByLabelText("Prazo (dias)");
+    expect(screen.getAllByRole("combobox")[0]).toHaveValue("manual");
+    expect(screen.getAllByRole("switch")[0]).not.toBeChecked();
     expect(client.getQueryData(key)).toBeNull();
     expect(state.row).toBeNull();
     expect(state.rpcCalls).toHaveLength(0);
@@ -100,7 +102,7 @@ describe("P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML host
     expect(state.rpcCalls).toHaveLength(1);
     expect(state.rpcCalls[0].p_expected).toBeNull();
     expect(state.rpcCalls[0].p_partner_id).toBe("P");
-    expect(state.row).toMatchObject({ partner_id: "P", default_payment_method: method });
+    expect(state.row).toMatchObject({ partner_id: "P", default_payment_method: method, billing_trigger: "manual", auto_generate_receivable: false });
     client.clear();
   });
   it("salvar fecha; reabrir mostra retorno canônico e nunca pix do cache anterior", async () => {

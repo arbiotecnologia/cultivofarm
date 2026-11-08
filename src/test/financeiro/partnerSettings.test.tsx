@@ -39,6 +39,19 @@ describe("configuração financeira canônica — UI sintética, sem escrita hos
     fireEvent.click(screen.getByRole("button", { name: "Configurar parceiro" }));
     expect(await screen.findByRole("button", { name: "Salvar" })).toBeEnabled();
   });
+  it("cadastro sem settings abre contido e só salva manual/auto=false explicitamente", async () => {
+    state.settings = null;
+    render(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
+    await screen.findByLabelText("Prazo (dias)");
+    expect(screen.getAllByRole("combobox")[0]).toHaveValue("manual");
+    expect(screen.getAllByRole("switch")[0]).not.toBeChecked();
+    expect(state.save).not.toHaveBeenCalled();
+    fireEvent.change(screen.getAllByRole("combobox")[1], { target: { value: method } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(state.save).toHaveBeenCalledTimes(1));
+    expect(state.save.mock.calls[0][0].baseline).toBeNull();
+    expect(state.save.mock.calls[0][0].draft).toMatchObject({ billing_trigger: "manual", auto_generate_receivable: false, payment_terms_days: 7 });
+  });
   it("nega configurações ao técnico singleton e ao parceiro cumulativo", () => {
     state.roles = ["parceiro_b2b", "parceiro_b2b_tecnico"];
     render(<FinanceiroB2B />);
@@ -94,6 +107,10 @@ describe("configuração financeira canônica — UI sintética, sem escrita hos
   });
 });
 describe("regras de configuração", () => {
+  it("novo cadastro começa manual e sem geração automática, sem alterar demais defaults", () => {
+    expect(emptyPartnerSettings("P")).toMatchObject({ billing_trigger: "manual", auto_generate_receivable: false,
+      payment_terms_days: 7, default_payment_method: null, credit_limit: null, block_if_overdue: false });
+  });
   it("não inventa pix para configuração ausente", () => expect(emptyPartnerSettings("P").default_payment_method).toBeNull());
   it("exige método ativo único sem fallback arbitrário", () => {
     expect(activePaymentMethodValid(method, state.methods)).toBe(true);
