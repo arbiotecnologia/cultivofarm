@@ -65,7 +65,7 @@ def main() -> None:
 
     # H12 só pode declarar AUTHORIZED com retorno H13 vinculado, homologado,
     # protocolado e XML assinado. O nfeProc continua explicitamente ausente.
-    apply_auth = edit(apply_source, "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid;", "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid; v_bridge jsonb; v_tx public.fiscal_sefaz_transmissions%ROWTYPE;")
+    apply_auth = edit(apply_source, "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid;", "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid; v_bridge jsonb; v_tx public.fiscal_sefaz_transmissions%ROWTYPE; v_saved platform_private.b2b_fiscal_invoice_snapshots%ROWTYPE;")
     apply_auth = edit(apply_auth, """  IF nullif(btrim(coalesce(_protocol,'')),'') IS NULL
      OR coalesce(_access_key,'') !~ '^[0-9]{44}$' THEN
     RAISE EXCEPTION 'FISCAL_AUTHORIZATION_PAYLOAD_INVALID';
@@ -95,7 +95,7 @@ def main() -> None:
 """, """  SELECT * INTO v_tx FROM public.fiscal_sefaz_transmissions
    WHERE id=_transmission_id AND fiscal_invoice_id=_invoice_id FOR UPDATE;
   IF NOT FOUND OR v_tx.state IS DISTINCT FROM 'SUCCEEDED'
-    OR v_tx.outcome IS DISTINCT FROM 'AUTHORIZED' OR v_tx.c_stat IS DISTINCT FROM _c_stat
+    OR v_tx.outcome IS DISTINCT FROM 'AUTHORIZED' OR coalesce(v_tx.protocol_c_stat,v_tx.c_stat) IS DISTINCT FROM _c_stat
     OR v_tx.ch_nfe IS DISTINCT FROM _access_key OR v_tx.n_prot IS DISTINCT FROM _protocol
     OR v_tx.ambiente_retorno IS DISTINCT FROM '2' THEN
     RAISE EXCEPTION 'FISCAL_AUTHORIZATION_TRANSMISSION_MISMATCH';
@@ -115,6 +115,13 @@ def main() -> None:
     IF coalesce(v_inv.access_key,'') <> _access_key THEN
       RAISE EXCEPTION 'FISCAL_AUTHORIZATION_CONFLICT: documento ja autorizado com outra chave.';
     END IF;
+    SELECT * INTO v_saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=v_inv.id;
+    IF v_saved.invoice_id IS NOT NULL AND (
+      v_saved.protocol IS DISTINCT FROM _protocol
+      OR v_saved.snapshot->>'access_key' IS DISTINCT FROM _access_key
+      OR v_saved.snapshot->>'transmission_c_stat' IS DISTINCT FROM _c_stat
+      OR v_saved.snapshot->>'transmission_environment' IS DISTINCT FROM v_tx.ambiente_retorno
+    ) THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
     v_bridge := platform_private.b2b_fiscal_invoice_bridge_v1(v_inv.id);
     RETURN jsonb_build_object('invoiceId', v_inv.id, 'applied', false,
       'normalizedStatus', v_inv.normalized_status,
