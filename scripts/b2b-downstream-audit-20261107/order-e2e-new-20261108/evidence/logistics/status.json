@@ -1,29 +1,47 @@
 {
-  "status": "FAIL_INCOMPLETE_INACTIVE_NOT_APPROVED",
-  "run_exit_code": 1,
-  "checkpoints_passed_before_failure": 12,
-  "candidate_sha256": "2a73d61896c051c74cec1c5c6357f4551d55b3ecabb028a990e7334f7675565e",
-  "positive_local_controls": [
-    "gate fechado e writer privado sem EXECUTE de cliente",
-    "inserção direta de OS pronta sem ticket negada por OS_APPROVAL_SCOPE_DENIED",
-    "comprador sem alçada negado; CAS stale e conflito de replay negados",
-    "pedido externo aprovado criou uma OS pronto_entrega sem programacao_producao ou production_order_link",
-    "compra canônica de três embalagens criou lote/estoque sem fabricação",
-    "reserva parcial de duas embalagens passou; fração, parceiro/pedido divergentes e comprador foram negados sem alterar saldo",
-    "agrupamento, expedição e cancelamento passaram; três embalagens voltaram disponíveis sem recebível",
-    "segunda reserva, agrupamento, replay exato e envio/replay foram alcançados sem erro antes da geração do comprovante"
+  "status": "LOCAL_COMPOSITION_PASS_CANDIDATE_INACTIVE_NOT_APPROVED",
+  "local_only": true,
+  "hosted": false,
+  "run_exit_code": 0,
+  "checkpoints_passed": 16,
+  "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+  "default_enabled": false,
+  "new_client_grants": [],
+  "positive_path": [
+    "canonical_buyer_B3_order_and_durable_recovery",
+    "accounting_pending_denial_then_synthetic_CAS_promotion_and_seller_acceptance",
+    "resale_OS_creation_and_CAS_replay",
+    "finished_goods_purchase_partial_reservation",
+    "first_group_cancellation_restores_three_whole_packs",
+    "second_group_send_proof_attachment_confirmation_and_exact_replays",
+    "partner_order_delivered_without_new_receivable_or_fiscal_document"
   ],
-  "current_blocker": {
-    "function": "platform_private.delivery_proof_recheck_20261030(uuid,uuid,text)",
-    "error": "DELIVERY_PROOF_SCOPE_DENIED",
-    "context": "public.rpc_entrega_formulario_gerar_v1 via platform_private.delivery_proof_apply_20261030",
-    "reason": "a releitura do comprovante ainda fecha a entrega com partner_order_id; envio já passou, mas comprovante e confirmação não foram concluídos"
+  "negative_controls": [
+    "gate_closed_and_no_client_EXECUTE",
+    "authenticated_direct_status_update_zero_rows",
+    "privileged_direct_operational_status_update_explicitly_denied",
+    "buyer_OS_reservation_and_proof_denied",
+    "fractional_pack_mismatched_partner_and_mismatched_order_denied",
+    "cancelled_or_manufacturing_lineage_denied",
+    "biological_and_agronomic_paths_preserved"
+  ],
+  "manual_agronomic_regression": "PASS",
+  "postflight": "PASS",
+  "rollback": "PASS_DENY_ONLY_HISTORY_PRESERVED",
+  "containment": {
+    "new_receivables": 0,
+    "new_fiscal_documents": 0,
+    "production_programs": 0,
+    "production_links": 0,
+    "controle_qualidade": 0,
+    "envase": 0,
+    "baseline_sentinels_preserved": true
   },
   "not_run": [
-    "comprovante e confirmação B2B concluídos",
-    "POST/rollback do candidato logístico",
-    "regressão manual após o candidato",
-    "B4 integrado, NF, recebível, JWT/RLS/Storage/browser"
+    "hosted_or_production_execution",
+    "real_JWT_RLS_Storage_browser_sessions",
+    "B4_document_receivable_generation",
+    "NF_or_external_collection_or_delivery"
   ],
-  "containment": "o gate nasce false; a ativação ocorreu somente no PG descartável. Nenhum hosted write, publicação, NF, cobrança, envio externo ou alteração do piloto/cinco títulos."
+  "scope": "Nova composição descartável local; não recupera nem reutiliza contagens do harness anterior ausente. Candidato permanece inativo, não aprovado e pendente de revisão independente."
 }

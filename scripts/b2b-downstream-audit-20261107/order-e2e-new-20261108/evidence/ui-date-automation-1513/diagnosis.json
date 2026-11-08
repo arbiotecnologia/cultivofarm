@@ -1,0 +1,33 @@
+{
+  "status": "INDEPENDENT_DIAGNOSIS_CLOSED_NO_PRODUCT_FIX",
+  "evidence_owner": "independent auditor report from Renato S. Cunha at 2026-11-08T15:13Z",
+  "agent_hosted_operations": "NONE",
+  "agent_browser_rerun": "NOT_RUN",
+  "plan_code": "TESTE-FLUXO-20261108",
+  "version_1": {
+    "id": "d95f0198-51d5-476d-8bfe-5574ed22bd2d",
+    "active": false,
+    "valid_from": "2026-11-08T13:58:19.207743Z",
+    "valid_until": null,
+    "server_audit_payload": {
+      "valid_from": null,
+      "valid_until": null
+    }
+  },
+  "automation_reproduction": {
+    "mechanism": "Playwright.fill(date) displayed the DOM value, but changing another field made it disappear after rerender",
+    "interpretation": "automation mechanism, not proven product defect"
+  },
+  "normal_flow_control": {
+    "mechanism": "CUA setValue(date, YYYY-MM-DD), followed by changing the reason field and saving through the normal flow",
+    "persisted": true,
+    "valid_from": "2026-11-08T00:00:00Z",
+    "valid_until": "2026-11-15T00:00:00Z",
+    "commercial_terms": "30 days, one installment, 10 percent discount, zero interest; synthetic auditor fixture"
+  },
+  "test_guidance": "Use real date-input events/CUA setValue and submit through the normal flow; do not use Playwright.fill(date) as evidence of a product regression in this case.",
+  "product_code_change_required": false,
+  "schema_or_sql_change_required": false,
+  "assignment": "exclusive assignment to the new partner is being prepared separately by the auditor; not performed by the agent",
+  "external_effects": "no NF, receivable, charge, external delivery, hosted write or publication"
+}

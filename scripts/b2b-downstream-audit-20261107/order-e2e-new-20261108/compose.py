@@ -75,6 +75,9 @@ def main():
   commercial=load('new_commercial_merge',H/'commercial.py')
   Q=commercial.apply(B,load,ROOT,OUT)
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
+  # A restauração contém sentinelas reais das dez tabelas downstream. O oráculo
+  # deve medir delta desta execução, não exigir banco global vazio.
+  effect_baseline=json.loads(B.last("SELECT jsonb_build_object('receivables',(SELECT count(*) FROM public.accounts_receivable),'fiscal_documents',(SELECT count(*) FROM public.fiscal_invoices))::text;"))
   data,error=Q.publish(Q.UFIN,Q.P3,'boleto',Q.M_BOL,30,3,'1.8',0)
   assert data is not None,error
   data,error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',1);assert data is not None,error
@@ -183,6 +186,14 @@ def main():
   checks.append(dict(test='resale candidate gate closed, no client EXECUTE and no direct ready OS bypass',status='PASS'))
 
   B.sql('UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;')
+  direct_authenticated=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  assert direct_authenticated.returncode==0,(direct_authenticated.stdout,direct_authenticated.stderr)
+  assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
+  direct_operational=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  (OUT/'resale-direct-status-denial.json').write_text(json.dumps(dict(authenticated_zero_rows=dict(returncode=direct_authenticated.returncode,stdout=direct_authenticated.stdout,stderr=direct_authenticated.stderr),privileged_guard=dict(returncode=direct_operational.returncode,stdout=direct_operational.stdout,stderr=direct_operational.stderr)),indent=2)+'\n')
+  assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,(direct_operational.returncode,direct_operational.stdout,direct_operational.stderr)
+  assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
+  checks.append(dict(test='authenticated direct status changes zero rows and privileged direct operational transition is explicitly denied',status='PASS'))
   denied=B.run_raw(resale_call(Q.UB,'resale-buyer-denied-0001'))
   assert denied.returncode!=0 and 'B2B_RESALE_ACTOR_DENIED' in denied.stderr,denied.stderr
   denied=B.run_raw(resale_call(Q.UADM,'resale-stale-cas-0001',expected='2000-01-01 00:00:00+00'))
@@ -276,10 +287,12 @@ def main():
    'envase',(SELECT count(*) FROM public.envase e WHERE e.lote_id='{received['lote_id']}'),
    'expedition_movements',(SELECT count(*) FROM public.estoque_movimentacoes WHERE referencia_id='{delivery}' AND acao='expedicao'))::text;"""))
   assert containment['order_status']=='entregue' and containment['receivable_generated'] is False,containment
-  assert all(containment[k] in (0,None) for k in ('receivables','fiscal_documents','delivery_receivable','production_programs','production_links','cq','envase')),containment
+  assert {k:containment[k] for k in ('receivables','fiscal_documents')}==effect_baseline,(effect_baseline,containment)
+  assert all(containment[k] in (0,None) for k in ('delivery_receivable','production_programs','production_links','cq','envase')),containment
   assert containment['expedition_movements']==1,containment
+  containment['effect_baseline']=effect_baseline
   (OUT/'resale-delivery.json').write_text(json.dumps(dict(group=grouped,group_replay=group_replay,send=sent,send_replay=sent_replay,confirm=confirmed,confirm_replay=confirmed_replay,containment=containment),indent=2)+'\n')
-  checks.append(dict(test='resale second reserve group send proof confirm and replays complete local B2B order with zero NF receivable manufacture CQ envase',status='PASS',delivery_id=delivery))
+  checks.append(dict(test='resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase',status='PASS',delivery_id=delivery))
 
   manual=A.finished('quimico','kg',25,2)
   manual_reserved=json.loads(B.last(B.reserve(manual['os'],manual['stock'],2,'resale-manual-regression-reserve')))['itens'][0]

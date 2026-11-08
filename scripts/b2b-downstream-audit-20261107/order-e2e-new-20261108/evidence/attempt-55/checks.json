@@ -1,0 +1,61 @@
+[
+  {
+    "test": "fresh full physical catalog restoration and reviewed upstream composition",
+    "status": "PASS"
+  },
+  {
+    "test": "physical revised install PRE POST; fresh confirmation/send generated pins",
+    "status": "PASS"
+  },
+  {
+    "test": "new physical control purchase reserve send proof confirm without manufacture",
+    "status": "PASS"
+  },
+  {
+    "test": "new B3 captured economic composition merged without dropped physical guards",
+    "status": "PASS"
+  },
+  {
+    "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
+    "status": "PASS",
+    "order_id": "edf1b411-307e-4467-ad4a-1bb2a0d721ef"
+  },
+  {
+    "test": "accounting pending approval denied atomically before synthetic promotion",
+    "status": "PASS"
+  },
+  {
+    "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
+    "status": "PASS"
+  },
+  {
+    "test": "resale candidate gate closed, no client EXECUTE and no direct ready OS bypass",
+    "status": "PASS"
+  },
+  {
+    "test": "authenticated direct status changes zero rows and privileged direct operational transition is explicitly denied",
+    "status": "PASS"
+  },
+  {
+    "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
+    "status": "PASS",
+    "os_id": "a7a6f711-c9da-48a7-851a-fdcb8d23d8c4"
+  },
+  {
+    "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
+    "status": "PASS"
+  },
+  {
+    "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
+    "status": "PASS",
+    "delivery_id": "6432dc9c-c720-4ed4-a1c8-ffbc3119d5dc"
+  },
+  {
+    "test": "new composition",
+    "status": "FAIL"
+  }
+]

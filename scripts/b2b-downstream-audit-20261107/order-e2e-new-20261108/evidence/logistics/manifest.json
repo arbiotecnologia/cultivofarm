@@ -1,0 +1,93 @@
+{
+  "status": "INACTIVE_NOT_APPROVED_NON_INSTALLABLE_PENDING_INDEPENDENT_REVIEW",
+  "hosted": false,
+  "default_enabled": false,
+  "new_client_grants": [],
+  "changed_functions": [
+    "private.guard_os_separate_approval()",
+    "platform_private.trg_lab_os_biological_only()",
+    "platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)",
+    "platform_private.stock_p1_guard()",
+    "platform_private.delivery_mutation_guard_20261030()",
+    "platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)",
+    "platform_private.delivery_confirm_recheck_v1(uuid,uuid)",
+    "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "public.trg_entrega_sync_partner_order_fn()",
+    "platform_private.delivery_order_transition_guard_20261030()",
+    "platform_private.b2b_internal_order_snapshot_guard()"
+  ],
+  "new_functions": [
+    "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)",
+    "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)",
+    "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
+    "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)",
+    "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)"
+  ],
+  "files": {
+    "raw-current.json": {
+      "sha256": "2b3722bde6c8537323d12a5f1a7b5ead3876fab217927affa2f0e6534134499f",
+      "bytes": 90320
+    },
+    "candidate.sql.review": {
+      "sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+      "bytes": 108613
+    },
+    "install.sql.review": {
+      "sha256": "97c911c90aec8d0e2b016e35a6011b83c9b8b6d4fa9d380843a8913025b8564e",
+      "bytes": 120820
+    },
+    "install.stdout.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "install.stderr.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "install.exitcode": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "pre-metadata.json": {
+      "sha256": "d6fd89bde07301d4eb5c134a38247c8f523aa52c4a63a955103b9bc9cd8c6560",
+      "bytes": 183520
+    },
+    "status.json": {
+      "sha256": "ed5e36b2469511ee110c5bc0d00c91a9b9fc781803609fa004167ca90df72b4f",
+      "bytes": 1898
+    },
+    "postflight.sql.review": {
+      "sha256": "6b894d8a8e58645c307b1498f0bc510a4e7540a7079706036809e87756686fff",
+      "bytes": 17090
+    },
+    "rollback.sql.review": {
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a",
+      "bytes": 760
+    },
+    "rollback.stdout.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "rollback.stderr.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "rollback.exitcode": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "post-metadata.json": {
+      "sha256": "796ffaff3e8461c90fdddf9303226f6f41f046b90051c1dcb31237833a7e4fdb",
+      "bytes": 4340
+    },
+    "manifest.json": {
+      "sha256": "8b4cd1d7da2dac47ec2f50da5e6914c0849c4786abf52292414a3a29be7f2541",
+      "bytes": 3774
+    }
+  }
+}

@@ -22,12 +22,16 @@ CHANGED = [
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
     "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "public.trg_entrega_sync_partner_order_fn()",
+    "platform_private.delivery_order_transition_guard_20261030()",
+    "platform_private.b2b_internal_order_snapshot_guard()",
 ]
 NEW = [
     "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)",
     "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)",
     "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
     "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)",
     "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
 ]
 
@@ -168,6 +172,35 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
   )) IS TRUE;
 $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(o public.partner_orders,n public.partner_orders)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ RETURN (
+  EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND platform_private.b2b_internal_commercial_actor() IS TRUE
+  AND o.id=n.id AND o.status::text='aprovado' AND n.status::text='entregue'
+  AND o.ready_for_production IS FALSE AND n.ready_for_production IS FALSE
+  AND n.receivable_generated IS FALSE
+  AND (to_jsonb(n)-ARRAY['status','updated_at']) IS NOT DISTINCT FROM (to_jsonb(o)-ARRAY['status','updated_at'])
+  AND EXISTS(
+   SELECT 1 FROM platform_private.delivery_context_20261030 dc
+   JOIN public.entregas e ON e.id=dc.target AND e.partner_order_id=n.id
+   JOIN public.ordens_servico os ON os.id=e.ordem_servico_id AND os.partner_order_id=n.id
+   JOIN public.partner_accounts pa ON pa.id=n.partner_id
+    AND pa.commercial_owner_organization_id=dc.organization_id AND pa.commercial_owner_organization_id=os.organization_id
+   WHERE dc.txid=txid_current() AND dc.actor=auth.uid() AND dc.action='confirm' AND dc.mutation='done'
+    AND e.organization_id=dc.organization_id AND e.status::text='entregue' AND e.receivable_id IS NULL
+    AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS TRUE
+  )
+  AND NOT EXISTS(
+   SELECT 1 FROM public.entregas e JOIN public.ordens_servico os ON os.id=e.ordem_servico_id
+   WHERE os.partner_order_id=n.id AND e.status::text NOT IN ('entregue','cancelada')
+  )
+ ) IS TRUE;
+END;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders) FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE FUNCTION platform_private.b2b_resale_os_create_v1(
  p_order_id uuid,p_order_item_id uuid,p_expected_updated_at timestamptz,p_request_key text)
@@ -364,8 +397,26 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "send ledger origin")
         else:
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "confirm ledger origin", 2)
-            body = one(body, "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);", "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END,'enviar_entrega',NULL);", "confirm canonical advance origin")
+            # O avanço canônico consulta vw_os_integridade_esteira, cuja família
+            # de toda ordens_servico é 'manual'. A origem comercial B2B continua
+            # em ordens_servico.origem, partner_order_id e no ledger acima.
+            assert "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);" in body, "anchor drift confirm canonical advance family"
         defs[sig]["new"] = body
+
+    sig = "public.trg_entrega_sync_partner_order_fn()"
+    body = defs[sig]["body"]
+    body = one(body, "WHERE os.partner_order_id = v_partner_order_id;", "WHERE os.partner_order_id = v_partner_order_id AND e.status <> 'cancelada';", "delivered count excludes cancellations")
+    defs[sig]["new"] = body
+
+    sig = "platform_private.delivery_order_transition_guard_20261030()"
+    body = defs[sig]["body"]
+    body = one(body, "IF NEW.status IS DISTINCT FROM OLD.status AND EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current()) THEN", "IF NEW.status IS DISTINCT FROM OLD.status AND EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current())\n  AND (TG_TABLE_SCHEMA IS DISTINCT FROM 'public' OR TG_TABLE_NAME IS DISTINCT FROM 'partner_orders' OR platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN", "delivery transition exact resale exception")
+    defs[sig]["new"] = body
+
+    sig = "platform_private.b2b_internal_order_snapshot_guard()"
+    body = defs[sig]["body"]
+    body = one(body, "IF NEW.ready_for_production OR public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;", "IF NEW.ready_for_production OR (public.fn_b2b_status_is_operational(NEW.status) AND platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;", "exact confirmed delivery order transition")
+    defs[sig]["new"] = body
 
     candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"].rstrip().rstrip(";") + ";" for x in CHANGED) + "\n"
     pre = ["-- Candidato B2B_RESALE_LOGISTICS_V1 INATIVO/NÃO APROVADO; somente composição local nova."]
@@ -411,7 +462,7 @@ END$$;""")
     (out / "postflight.sql.review").write_text(post_sql)
     checked = B.run_raw(post_sql)
     assert checked.returncode == 0, checked.stderr
-    rollback = "UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text),platform_private.b2b_resale_os_valid_v1(public.ordens_servico),platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico),platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes),platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: não apaga OS, estoque, entregas, recibos nem histórico e não restaura definições anteriores.\n"
+    rollback = "UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text),platform_private.b2b_resale_os_valid_v1(public.ordens_servico),platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico),platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes),platform_private.b2b_resale_delivery_order_valid_v1(public.entregas),platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: não apaga OS, estoque, entregas, recibos nem histórico e não restaura definições anteriores.\n"
     (out / "rollback.sql.review").write_text(rollback)
     rolled = B.run_raw(rollback)
     (out / "rollback.stdout.txt").write_text(rolled.stdout)
