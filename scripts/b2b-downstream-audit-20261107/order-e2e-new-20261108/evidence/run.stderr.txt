@@ -1,18 +1,17 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 76, in main
-    Q=commercial.apply(B,load,ROOT,OUT)
-  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 74, in apply
-    B.sql(f"INSERT INTO auth.users(id) VALUES('{Q.UADM}') ON CONFLICT DO NOTHING;")
-    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+  File "/tmp/new-order-e2e-640y74kf/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 263, in main
+    confirmed=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}','resale-confirm-0001','{{\"nome\":\"LOCAL REVENDA\"}}'::jsonb);"))
+                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-640y74kf/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-640y74kf/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
     return pg.sql(statement)
            ~~~~~~^^^^^^^^^^^
-  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+  File "/tmp/new-order-e2e-640y74kf/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
     assert r.returncode==0,r.stderr[-3000:]
            ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  duplicate key value violates unique constraint "profiles_user_id_key"
-DETAIL:  Key (user_id)=(00000000-0000-0000-0000-000000000024) already exists.
-CONTEXT:  SQL statement "INSERT INTO public.profiles (user_id, nome, email)
-  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'nome', ''), NEW.email)"
-PL/pgSQL function handle_new_user() line 3 at SQL statement
+AssertionError: ERROR:  DELIVERY_CONFIRM_LEDGER_DENIED
+CONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 69 at RAISE
+SQL function "rpc_entrega_confirmar_manual_v1" statement 1
 
