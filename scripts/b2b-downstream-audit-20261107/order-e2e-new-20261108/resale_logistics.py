@@ -479,6 +479,11 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
    IF v_order.status::text='entregue' THEN RETURN NEW; END IF;
    v_terminal:=jsonb_populate_record(v_order,jsonb_build_object('status','entregue'));
    IF platform_private.b2b_resale_delivery_status_transition_valid_v1(v_order,v_terminal) IS NOT TRUE THEN RETURN NEW; END IF;
+   -- O gatilho canônico do pedido registra o evento terminal uma vez.
+   -- Revenda não escreve planejamento de fabricação nem duplica timeline.
+   UPDATE public.partner_orders SET status='entregue',updated_at=now()
+    WHERE id=v_partner_order_id AND status='aprovado';
+   RETURN NEW;
   END IF;""", "sync partial success without premature order transition")
     defs[sig]["new"] = body
 
