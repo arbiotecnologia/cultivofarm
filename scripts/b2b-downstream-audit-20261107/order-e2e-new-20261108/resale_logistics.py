@@ -12,6 +12,7 @@ from pathlib import Path
 CHANGED = [
     "private.guard_os_separate_approval()",
     "platform_private.trg_lab_os_biological_only()",
+    "platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
