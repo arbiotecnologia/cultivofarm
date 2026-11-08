@@ -344,7 +344,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
 
     evidence = {
         "project_ref": "swzpzcwiasxmjutrmvkm",
-        "status": "PASS",
+        "status": "VULNERABILITIES_REPRODUCED" if REVIEW_BEFORE else "PASS",
         "checks": len(results),
         "results": results,
         "synthetic_seams": ["Auth por request.jwt.claim.sub", "h15/platform_actor_access_ready reduzidos", "C2 order guards e feature flag mínimos", "resolver de preço e tabelas fora do recorte reduzidos", "GRANT SELECT em fixture para exercitar RLS; produção não recebe GRANT"],
