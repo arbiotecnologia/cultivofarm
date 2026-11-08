@@ -1,7 +1,7 @@
 {
   "project_ref": "swzpzcwiasxmjutrmvkm",
-  "status": "PASS",
-  "checks": 63,
+  "status": "VULNERABILITIES_REPRODUCED",
+  "checks": 71,
   "results": [
     {
       "name": "ANTES: FSF lê todos os planos sem recorte pela RPC admin",
@@ -25,6 +25,10 @@
     },
     {
       "name": "ANTES: escrita indevida confirmada",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES: mesmo código em outra empresa colide na constraint global",
       "status": "PASS"
     },
     {
@@ -233,6 +237,34 @@
     },
     {
       "name": "perfil admin revogado fecha escrita",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES default_target_role",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES default_previous_profile",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES reorder_second_row_tenant",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES metadata_role",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES active_profile",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES version_tenant",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES create_unique_wait_role",
       "status": "PASS"
     },
     {

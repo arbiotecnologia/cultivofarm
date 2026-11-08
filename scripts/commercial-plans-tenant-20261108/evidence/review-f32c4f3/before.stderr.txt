@@ -1,9 +1,0 @@
-Traceback (most recent call last):
-  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 286, in <module>
-    run(f"INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador');UPDATE public.commercial_payment_plans SET is_default=(id='{new_version}') WHERE organization_id='{OA}';")
-    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 30, in run
-    raise AssertionError(completed.stderr)
-AssertionError: ERROR:  duplicate key value violates unique constraint "uq_cpp_single_default"
-DETAIL:  Key (organization_id)=(aaaaaaaa-1111-0000-0000-000000000001) already exists.
-

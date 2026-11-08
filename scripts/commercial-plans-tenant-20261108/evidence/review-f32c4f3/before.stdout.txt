@@ -57,3 +57,16 @@ PASS comprador perde condição após revogação
 PASS revogação do vínculo comprador fecha leitura
 PASS perfil admin revogado fecha leitura
 PASS perfil admin revogado fecha escrita
+PASS ANTES default_target_role
+PASS ANTES default_previous_profile
+PASS ANTES reorder_second_row_tenant
+PASS ANTES metadata_role
+PASS ANTES active_profile
+PASS ANTES version_tenant
+PASS ANTES create_unique_wait_role
+PASS rollback fecha RPC admin
+PASS rollback fecha leitura comprador
+PASS rollback fecha configuração B3
+PASS rollback fecha leitura direta
+PASS rollback preserva planos/atribuições/versões
+71/71 PASS; Auth sintética, sem prova hosted
