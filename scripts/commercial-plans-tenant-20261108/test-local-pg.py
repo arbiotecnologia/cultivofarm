@@ -94,6 +94,30 @@ try:
     for file in sorted((H / "capture" / "functions").glob("*.sql")):
         run("SET check_function_bodies=off;" + file.read_text() + ";")
 
+    # A exceção histórica sem owner é semeada antes das cercas P1; nenhuma guarda é desabilitada.
+    run(f"""
+INSERT INTO public.organizations(id,partner_account_id) VALUES('{OA}',NULL),('{OB}',NULL);
+INSERT INTO public.profiles(id,user_id,organization_id,ativo) VALUES
+('10000000-0000-0000-0000-000000000001','{A}','{OA}',true),
+('10000000-0000-0000-0000-000000000002','{B}','{OB}',true),
+('10000000-0000-0000-0000-000000000003','{UA}','{OA}',true),
+('10000000-0000-0000-0000-000000000004','{UB}','{OB}',true),
+('10000000-0000-0000-0000-000000000005','{UC}','{OB}',false);
+INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador'),('{B}','administrador'),('{UA}','parceiro_b2b'),('{UB}','parceiro_b2b');
+INSERT INTO public.partner_accounts(id,commercial_owner_organization_id) VALUES('{PA}','{OA}'),('{PB}','{OB}'),('{PNULL}',NULL);
+INSERT INTO public.partner_users(partner_id,user_id,papel,tenant_id) VALUES('{PA}','{UA}','gestor','{OA}'),('{PB}','{UB}','gestor','{OB}');
+INSERT INTO public.payment_methods(id,name) VALUES('{METHOD}','Boleto sintético');
+INSERT INTO public.financial_categories(id,name,type) VALUES('{CATEGORY}','Receita sintética','RECEITA');
+INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,months_count,installment_count,discount_percent,monthly_interest_percent,interest_type,requires_credit_approval,requires_guarantee,requires_financial_approval,active,sort_order,created_by,pricing_mode,version,root_plan_id,valid_from,is_default) VALUES
+('{PLAN_A1}','Plano A1','PLAN-A1','custom',30,1,1,10,0,'none',false,false,false,true,1,'{A}','discount_from_base',1,'{PLAN_A1}',now()-interval '1 day',false),
+('{PLAN_A2}','Plano A2','PLAN-A2','custom',30,1,1,0,0,'none',false,false,false,true,2,'{A}','discount_from_base',1,'{PLAN_A2}',now()-interval '1 day',false),
+('{PLAN_B1}','Plano B1','PLAN-B1','custom',30,1,1,0,0,'none',false,false,false,true,1,'{B}','discount_from_base',1,'{PLAN_B1}',now()-interval '1 day',false),
+('{PLAN_AMBIG}','Plano ambíguo','PLAN-AMBIG','custom',30,1,1,0,0,'none',false,false,false,true,3,'{A}','discount_from_base',1,'{PLAN_AMBIG}',now()-interval '1 day',false),
+('{PLAN_SPECIAL}','AUDIT-CF exceção','AUDIT-CF-FIX-20260912','custom',30,1,1,0,0,'none',false,false,false,true,4,'{UC}','discount_from_base',1,'{PLAN_SPECIAL}',now()-interval '1 day',false);
+INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by,submitted_by,published_by)
+VALUES('{ASN_SPECIAL}','{PLAN_SPECIAL}','partner','{PNULL}','published','{UC}','{UC}','{UC}');
+""")
+
     run("""
 CREATE TRIGGER trg_cpp_guard_financial BEFORE UPDATE OR DELETE ON public.commercial_payment_plans FOR EACH ROW EXECUTE FUNCTION public.tg_cpp_guard_financial_immutability();
 CREATE TRIGGER c2p1_assignment_fence BEFORE INSERT OR UPDATE OR DELETE ON public.commercial_payment_plan_assignments FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_assignment_fence();
@@ -107,20 +131,6 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
 """)
 
-    run(f"""
-INSERT INTO public.organizations(id,partner_account_id) VALUES('{OA}',NULL),('{OB}',NULL);
-INSERT INTO public.profiles(user_id,organization_id) VALUES('{A}','{OA}'),('{B}','{OB}'),('{UA}','{OA}'),('{UB}','{OB}');
-INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador'),('{B}','administrador'),('{UA}','parceiro_b2b'),('{UB}','parceiro_b2b');
-INSERT INTO public.partner_accounts(id,commercial_owner_organization_id) VALUES('{PA}','{OA}'),('{PB}','{OB}');
-INSERT INTO public.partner_users(partner_id,user_id,papel,tenant_id) VALUES('{PA}','{UA}','gestor','{OA}'),('{PB}','{UB}','gestor','{OB}');
-INSERT INTO public.payment_methods(id,name) VALUES('{METHOD}','Boleto sintético');
-INSERT INTO public.financial_categories(id,name,type) VALUES('{CATEGORY}','Receita sintética','RECEITA');
-INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,months_count,installment_count,discount_percent,monthly_interest_percent,interest_type,requires_credit_approval,requires_guarantee,requires_financial_approval,active,sort_order,created_by,pricing_mode,version,root_plan_id,valid_from,is_default) VALUES
-('{PLAN_A1}','Plano A1','PLAN-A1','custom',30,1,1,10,0,'none',false,false,false,true,1,'{A}','discount_from_base',1,'{PLAN_A1}',now()-interval '1 day',false),
-('{PLAN_A2}','Plano A2','PLAN-A2','custom',30,1,1,0,0,'none',false,false,false,true,2,'{A}','discount_from_base',1,'{PLAN_A2}',now()-interval '1 day',false),
-('{PLAN_B1}','Plano B1','PLAN-B1','custom',30,1,1,0,0,'none',false,false,false,true,1,'{B}','discount_from_base',1,'{PLAN_B1}',now()-interval '1 day',false),
-('{PLAN_AMBIG}','Plano ambíguo','PLAN-AMBIG','custom',30,1,1,0,0,'none',false,false,false,true,3,'{A}','discount_from_base',1,'{PLAN_AMBIG}',now()-interval '1 day',false);
-""")
     run(f"SET request.jwt.claim.sub='{A}';INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by) VALUES('{ASN_A}','{PLAN_A1}','partner','{PA}','published','{A}');")
     run(f"SET request.jwt.claim.sub='{B}';INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by) VALUES('{ASN_B}','{PLAN_B1}','partner','{PB}','published','{B}'),('{ASN_AMBIG}','{PLAN_AMBIG}','partner','{PB}','published','{B}');")
 
