@@ -22,7 +22,7 @@ Candidato `02-install.sql.review` SHA256: `5db2c160fd3a99bb847fe20a1d9764cbfed82
 
 ### ANTES — caracterização da inversão de locks
 
-- **196/196 checks, exit 0** em `../review-458b6012/lock-order-1a65-before/`. Isso não significa 196 vulnerabilidades nem aprovação.
+- **196/196 checks, exit 0** em `../../review-458b6012/lock-order-1a65-before/`. Isso não significa 196 vulnerabilidades nem aprovação.
 - Um gatilho temporário da bateria pausou H13 no `UPDATE` depois de adquirido o lock da transmissão. H12, em outra conexão e na mesma NF/transmissão, travou a nota e aguardou a transmissão; ao continuar, H13 aguardou a nota.
 - O log real do PostgreSQL registrou `deadlock detected`. O oráculo usa o log porque H13 pode capturar a exceção e convertê-la em pendência de fechamento.
 - A recuperação preservou o retorno `AUTHORIZED`, fechou a pendência privada e não criou documento/título no controle não-B2B.
@@ -30,7 +30,7 @@ Candidato `02-install.sql.review` SHA256: `5db2c160fd3a99bb847fe20a1d9764cbfed82
 
 ### DEPOIS — componente com costura declarada
 
-- **198/198 checks, exit 0** em `../review-458b6012/lock-order-1a65-after/`.
+- **198/198 checks, exit 0** em `../../review-458b6012/lock-order-1a65-after/`.
 - H13 × H12 e H13 × ponte direta, sempre na mesma NF/transmissão, terminaram sem `deadlock detected`; os dois processos tiveram exit 0.
 - A ponte direta percorreu o caminho que trava a nota e consulta/trava a transmissão, não apenas o retorno antecipado de NF pendente/não-B2B.
 - Recuperação, replay, concorrência, guarda de transmissão terminal, envelope `cStat=104` + `protocolCStat=100`, parcialidade, tenant, legado e rollback deny-only permaneceram cobertos.

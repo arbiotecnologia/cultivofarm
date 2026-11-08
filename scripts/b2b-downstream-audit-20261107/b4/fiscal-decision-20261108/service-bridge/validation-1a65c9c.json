@@ -3,7 +3,7 @@
   "status": "INACTIVE_NOT_APPROVED",
   "candidate_sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
   "component_before": {
-    "run": "../review-458b6012/lock-order-1a65-before/",
+    "run": "../../review-458b6012/lock-order-1a65-before/",
     "exit_code": 0,
     "checks": "196/196",
     "meaning": "CHARACTERIZATION_NOT_VULNERABILITY_COUNT",
@@ -13,7 +13,7 @@
     "recovery": "authorized external response preserved; private close pending retried and cleared"
   },
   "component_after": {
-    "run": "../review-458b6012/lock-order-1a65-after/",
+    "run": "../../review-458b6012/lock-order-1a65-after/",
     "exit_code": 0,
     "checks": "198/198",
     "lock_order": "invoice then transmission in H13, H12 and direct bridge",
