@@ -123,6 +123,8 @@ ROLLBACK;
     (OUT/'00-production-pre-posplans.sql.readonly').write_text(initial)
 
     artifacts = {
+      'evidence-live-catalog-guards.sql.capture': reconciliation/'live-catalog-guards-20261108.sql.capture',
+      'evidence-live-catalog-guards.json': reconciliation/'live-catalog-guards-20261108.json',
       '11-confirmation-install.sql.review': delivery/'install.sql.review',
       '12-confirmation-post.sql.readonly': delivery/'postflight.sql.review',
       '91-confirmation-rollback-deny.sql.review': delivery/'rollback.sql.review',
