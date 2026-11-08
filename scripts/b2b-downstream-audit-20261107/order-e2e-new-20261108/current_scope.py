@@ -326,13 +326,13 @@ def _guard(doc: dict, state_expression: str, label: str) -> str:
     signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["functions"])
     trigger_signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["trigger_functions"])
     relations = ",".join("('%s',%s)" % (row[0].replace("'", "''"), "true" if row[2] is not None else "false") for row in doc["relations"])
-    function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid)),coalesce((SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(p.proacl) a),''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef) ORDER BY v.signature),'[]'::jsonb)
+    function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid)),coalesce((SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(p.proacl) a),''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef) ORDER BY v.signature COLLATE "C"),'[]'::jsonb)
  FROM (VALUES {signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
-    trigger_function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid))) ORDER BY v.signature),'[]'::jsonb)
+    trigger_function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid))) ORDER BY v.signature COLLATE "C"),'[]'::jsonb)
  FROM (VALUES {trigger_signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
-    relation_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.relation_name,coalesce((SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(c.relacl) a),''),CASE WHEN v.check_flags THEN c.relrowsecurity ELSE NULL END,CASE WHEN v.check_flags THEN c.relforcerowsecurity ELSE NULL END,pg_get_userbyid(c.relowner)) ORDER BY v.relation_name),'[]'::jsonb)
+    relation_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.relation_name,coalesce((SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(c.relacl) a),''),CASE WHEN v.check_flags THEN c.relrowsecurity ELSE NULL END,CASE WHEN v.check_flags THEN c.relforcerowsecurity ELSE NULL END,pg_get_userbyid(c.relowner)) ORDER BY v.relation_name COLLATE "C"),'[]'::jsonb)
  FROM (VALUES {relations}) v(relation_name,check_flags) LEFT JOIN pg_class c ON c.oid=to_regclass(v.relation_name))"""
-    trigger_actual = """(SELECT coalesce(jsonb_agg(jsonb_build_array(c.relname,t.tgname,t.tgenabled::text,p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid)),pg_get_triggerdef(t.oid)) ORDER BY c.relname,t.tgname),'[]'::jsonb)
+    trigger_actual = """(SELECT coalesce(jsonb_agg(jsonb_build_array(c.relname,t.tgname,t.tgenabled::text,p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid)),pg_get_triggerdef(t.oid,true)) ORDER BY c.relname COLLATE "C",t.tgname COLLATE "C"),'[]'::jsonb)
  FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_proc p ON p.oid=t.tgfoid
  WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname IN ('entregas','entrega_comprovantes','ordens_servico','clientes','organizations','produto_etiquetas','profiles','programacao_producao','estoque_produto','estoque_movimentacoes','lotes','produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','partner_order_items'))"""
     structural_actual = f"(({state_expression})-'functions'-'relations'-'triggers'-'send_functions')"
