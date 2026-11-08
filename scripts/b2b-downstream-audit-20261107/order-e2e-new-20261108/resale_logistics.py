@@ -212,11 +212,10 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     for sig, label in (("platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)", "confirm"), ("platform_private.delivery_send_apply_v1(uuid,timestamptz,text)", "send")):
         body = defs[sig]["body"]
         body = one(body, "OR e.lote_id IS DISTINCT FROM initial.lote_id THEN", "OR e.lote_id IS DISTINCT FROM initial.lote_id OR e.partner_order_id IS DISTINCT FROM initial.partner_order_id THEN", label + " partner root")
-        body = one(body, " PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;\n IF NOT FOUND THEN", " IF e.cliente_id IS NOT NULL THEN PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;\n IF NOT FOUND THEN", label + " optional client")
-        body = one(body, " THEN RAISE EXCEPTION 'DELIVERY_" + label.upper() + "_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;", " END IF;\n THEN RAISE EXCEPTION 'DELIVERY_" + label.upper() + "_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;", label + " optional client end") if False else body
-        # O bloco original termina imediatamente após o IF NOT FOUND; fechar o IF opcional sem mudar seu erro.
-        body = one(body, " IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_" + label.upper() + "_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;", " IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_" + label.upper() + "_LINEAGE_DENIED' USING ERRCODE='42501'; END IF; END IF;", label + " client close")
+        body = one(body, " PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;", " IF e.cliente_id IS NOT NULL THEN PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE; END IF;", label + " optional client")
         body = one(body, " OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL", " OR (e.partner_order_id IS NULL AND (s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL))\n OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_lineage_valid_v1(s,e,l) IS NOT TRUE)", label + " resale lineage")
+        if label == "send":
+            body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "send ledger origin")
         defs[sig]["new"] = body
 
     candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"] for x in CHANGED) + "\n"
