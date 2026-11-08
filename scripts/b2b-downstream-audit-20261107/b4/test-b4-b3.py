@@ -19,6 +19,7 @@ MONEY = ROOT / "scripts/financial-installments-initial-20261024/receivable-seman
 MANUAL_LIVE = H / "live-readonly-manual-null-1813.json"
 OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))
 REVIEW_BEFORE = os.environ.get("B4_REVIEW_BEFORE") == "1"
+PARSER_BEFORE = os.environ.get("B4_PARSER_BEFORE") == "1"
 if json.loads(MONEY.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_MONEY_REF_DRIFT")
 if json.loads(MANUAL_LIVE.read_text()).get("canonical_ref") != "swzpzcwiasxmjutrmvkm":
@@ -763,7 +764,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         parser_patch = {"cStat":"104","protocolCStat":"100","nProt":"PARSER-PROTOCOL-100","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"LOTE PROCESSADO; PROTOCOLO AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:30:00Z"}
         parser_record, parser_error = real_record(tx_parser,"SUCCEEDED",parser_patch)
         parser_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip()
-        if REVIEW_BEFORE:
+        if PARSER_BEFORE:
             check("ANTES: parser calcula AUTHORIZED por protocolCStat=100 mas persiste c_stat=104", parser_record and parser_record["outcome"] == "AUTHORIZED" and parser_state.startswith("AUTHORIZED|104|FISCAL_AUTHORIZATION_CLOSE_PENDING"), parser_error or parser_state)
             check("ANTES: H12 recebe 104 e deixa autorização não-B2B em CLOSE_PENDING", parser_record and parser_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_parser}'").stdout.strip() == "PENDING", parser_error or parser_record)
         else:
@@ -772,7 +773,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
             check("DEPOIS: coluna protocol_c_stat conserva evidência efetiva 100", B3.psql(f"SELECT protocol_c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip() == "100")
         parser_replay, parser_replay_error = real_record(tx_parser,"SUCCEEDED",parser_patch)
         check("replay do mesmo envelope 104/100 não duplica transmissão nem efeito fiscal", parser_replay and parser_replay["outcome"] == "AUTHORIZED" and B3.psql(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{invoice_parser}'").stdout.strip() == "1", parser_replay_error or parser_replay)
-        if not REVIEW_BEFORE:
+        if not PARSER_BEFORE:
             check("replay 104/100 recuperado permanece sem pendência e sem rebaixar evidência", not parser_replay["reconciliationPending"] and parser_replay["protocolCStat"] == "100" and B3.psql(f"SELECT c_stat||'|'||protocol_c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip() == "104|100", parser_replay_error or parser_replay)
 
         partial_record, partial_error = real_record(tx_partial, "SUCCEEDED", {"cStat":"100","nProt":"LOCAL-PARTIAL","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:00:00Z"})
@@ -858,7 +859,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_proof(invoice_h13,tx_h13_repeat,protocol="H13-PROTOCOL",state="SENT",outcome="PENDING",cstat="103")
         repeated_record, repeated_error = real_record(tx_h13_repeat,"SUCCEEDED",h13_patch)
         repeated_state = B3.psql(f"SELECT outcome||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13_repeat}'").stdout.strip()
-        if REVIEW_BEFORE:
+        if PARSER_BEFORE:
             check("ANTES: nova transmissão da mesma chave/protocolo causa conflito artificial pelo transmission_id no digest", repeated_record and repeated_record["reconciliationPending"] and repeated_state == "AUTHORIZED|FISCAL_AUTHORIZATION_CLOSE_PENDING", repeated_error or repeated_state)
         else:
             check("DEPOIS: confirmação repetida da mesma chave/protocolo é replay sem conflito artificial", repeated_record and not repeated_record["reconciliationPending"] and repeated_state == "AUTHORIZED|", repeated_error or repeated_state)
@@ -866,7 +867,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_proof(invoice_h13,tx_h13_divergent,protocol="H13-PROTOCOL-DIVERGENT",state="SENT",outcome="PENDING",cstat="103")
         divergent_record, divergent_error = real_record(tx_h13_divergent,"SUCCEEDED",{**h13_patch,"nProt":"H13-PROTOCOL-DIVERGENT"})
         check("confirmação com protocolo divergente continua fechada sem duplicar título", divergent_record and divergent_record["reconciliationPending"] and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}'").stdout.strip() == "1", divergent_error or divergent_record)
-        if not REVIEW_BEFORE:
+        if not PARSER_BEFORE:
             check("divergência de protocolo não substitui referência fiscal original", B3.psql(f"SELECT transmission_id||'|'||protocol FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_h13}'").stdout.strip() == f"{tx_h13}|H13-PROTOCOL")
 
         # Retorno atrasado não pode rebaixar uma transmissão já autorizada nem
@@ -874,13 +875,13 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         B3.psql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='FOREIGN_PROVIDER_ERROR' WHERE id='{tx_h13}';")
         stale_record, stale_error = real_record(tx_h13,"SENT",{"cStat":"103","xMotivo":"RETORNO ATRASADO"})
         stale_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip()
-        if REVIEW_BEFORE:
-            check("ANTES: retorno SENT atrasado rebaixa AUTHORIZED para PROCESSING e sobrescreve 100 por 103", stale_record and stale_record["outcome"] == "PROCESSING" and stale_state == "PROCESSING|103|FOREIGN_PROVIDER_ERROR", stale_error or stale_state)
+        if PARSER_BEFORE:
+            check("ANTES: retorno SENT atrasado rebaixa AUTHORIZED para PENDING e sobrescreve 100 por 103", stale_record and stale_record["outcome"] == "PENDING" and stale_state == "PENDING|103|FOREIGN_PROVIDER_ERROR", stale_error or stale_state)
         else:
             check("DEPOIS: retorno atrasado não rebaixa autorização nem apaga erro de outra origem", stale_record and stale_record["outcome"] == "AUTHORIZED" and stale_state == "AUTHORIZED|100|FOREIGN_PROVIDER_ERROR", stale_error or stale_state)
         foreign_error_replay, foreign_error_replay_error = real_record(tx_h13,"SUCCEEDED",h13_patch)
         check("replay autorizado não limpa error_code estranho ao fechamento", foreign_error_replay and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR", foreign_error_replay_error or foreign_error_replay)
-        if not REVIEW_BEFORE:
+        if not PARSER_BEFORE:
             with concurrent.futures.ThreadPoolExecutor(2) as pool:
                 concurrent_records = list(pool.map(lambda call: real_record(tx_h13,call[0],call[1]), [("SENT",{"cStat":"103","xMotivo":"ATRASADO CONCORRENTE"}),("SUCCEEDED",h13_patch)]))
             check("H13 concorrente fora de ordem termina autorizado, com protocolo estável e erro estranho preservado", all(row[0] for row in concurrent_records) and B3.psql(f"SELECT outcome||'|'||c_stat||'|'||protocol_c_stat||'|'||error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "AUTHORIZED|100|100|FOREIGN_PROVIDER_ERROR", [row[1] for row in concurrent_records])
