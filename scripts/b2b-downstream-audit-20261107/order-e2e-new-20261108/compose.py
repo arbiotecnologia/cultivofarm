@@ -447,18 +447,48 @@ CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY
  state text,outcome text,c_stat text,x_motivo text,ch_nfe text,n_prot text,n_rec text,ambiente_retorno text,dh_recbto timestamptz,
  error_code text,response_summary jsonb,completed_at timestamptz);
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
-  invoice_id=Q.u(900);transmission_id=Q.u(901);access_key='35261111111111111111111111111111111111111111'
+  invoice_id=Q.u(900);transmission_id=Q.u(901);xml_run_id=Q.u(902);access_key='35261111111111111111111111111111111111111111'
   company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
-  B.sql(f"""SET ROLE service_role;
- INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
+  # A restauração contém o schema fiscal real. A costura é somente o evento
+  # sintético; NOT NULL, CHECK, FK, triggers e índices permanecem obrigatórios.
+  invoice_idem=f'integrated-fiscal-invoice:{order_id}:v1'
+  xml_idem=f'integrated-fiscal-xml:{invoice_id}:v1'
+  transmission_idem=f'integrated-sefaz-authorize:{invoice_id}:v1'
+  xml_payload='{}';xml_sha256=hashlib.sha256(xml_payload.encode()).hexdigest()
+  endpoint_url='https://hnfe.fazenda.mg.gov.br/LOCAL-SYNTHETIC-NO-NETWORK'
+  transmission_fingerprint=hashlib.sha256(f'NFeAutorizacao4|{endpoint_url}|{xml_sha256}'.encode()).hexdigest()
+  fixture_columns={
+   'fiscal_invoices':['id','invoice_type','document_model','idempotency_key','status','normalized_status','environment','company_settings_id','organization_id','partner_order_id','debtor_partner_id','issue_date','total_amount','created_by','provider_reference','access_key'],
+   'fiscal_invoice_items':['fiscal_invoice_id','partner_order_item_id','item_sequence','item_kind','quantity','commercial_unit','taxable_quantity','taxable_unit','net_value'],
+   'fiscal_xml_runs':['id','fiscal_invoice_id','idempotency_key','run_version','schema_version','environment_code','access_key','state','payload','payload_sha256','signed_sha256','signed_path','signed_at','validation','signature_metadata','created_by','updated_at'],
+   'fiscal_sefaz_transmissions':['id','fiscal_invoice_id','xml_run_id','service','environment_code','endpoint_host','endpoint_url','idempotency_key','request_fingerprint','state','outcome','c_stat','x_motivo','ch_nfe','n_prot','ambiente_retorno','dh_recbto','completed_at','created_by'],
+  }
+  fixture_contract={}
+  for table,columns in fixture_columns.items():
+   required=json.loads(B.last(f"""SELECT coalesce(jsonb_agg(a.attname ORDER BY a.attnum),'[]'::jsonb)::text
+    FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+    WHERE a.attrelid='public.{table}'::regclass AND a.attnum>0 AND NOT a.attisdropped AND a.attnotnull AND d.adbin IS NULL;"""))
+   missing=sorted(set(required)-set(columns))
+   assert not missing,(table,'REQUIRED_FIXTURE_COLUMNS_MISSING',missing)
+   constraints=json.loads(B.last(f"""SELECT coalesce(jsonb_agg(jsonb_build_object('name',c.conname,'type',c.contype,'definition',pg_get_constraintdef(c.oid)) ORDER BY c.conname),'[]'::jsonb)::text
+    FROM pg_constraint c WHERE c.conrelid='public.{table}'::regclass;"""))
+   fixture_contract[table]=dict(required_without_default=required,insert_columns=columns,constraints=constraints)
+  fixture_sql=f"""SET ROLE service_role;
+ INSERT INTO public.fiscal_invoices(id,invoice_type,document_model,idempotency_key,status,normalized_status,environment,company_settings_id,organization_id,
    partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference,access_key)
-  VALUES('{invoice_id}','NFE','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-01','{accepted['total']}','{Q.UADM}','LOCAL-INTEGRATED','{access_key}');
+  VALUES('{invoice_id}','NFE','NFE','{invoice_idem}','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-01','{accepted['total']}','{Q.UADM}','LOCAL-INTEGRATED','{access_key}');
  INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
   VALUES('{invoice_id}','{item['id']}',1,'PRODUCT','{item['quantidade']}','UN','{float(item['quantidade'])*float(item['packaging_peso_liquido_kg_snapshot'])}','KG','{accepted['total']}');
- INSERT INTO public.fiscal_xml_runs(fiscal_invoice_id,signed_path,access_key,signed_at,updated_at)
-  VALUES('{invoice_id}','local/{invoice_id}.xml','{access_key}',now(),now());
- INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
-  VALUES('{transmission_id}','{invoice_id}','SENT','PENDING','103','PROCESSANDO','{access_key}','PENDING','2',now(),now());""")
+ INSERT INTO public.fiscal_xml_runs(id,fiscal_invoice_id,idempotency_key,run_version,schema_version,environment_code,access_key,state,payload,payload_sha256,signed_sha256,signed_path,signed_at,validation,signature_metadata,created_by,updated_at)
+  VALUES('{xml_run_id}','{invoice_id}','{xml_idem}',1,'LOCAL-NFE-4.00','2','{access_key}','SIGNED','{xml_payload}'::jsonb,'{xml_sha256}','{xml_sha256}','local/{invoice_id}.xml',now(),'{{"synthetic":true,"network":false}}'::jsonb,'{{"synthetic":true,"adapter":"LOCAL_FIXTURE_ONLY"}}'::jsonb,'{Q.UADM}',now());
+ INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,service,environment_code,endpoint_host,endpoint_url,idempotency_key,request_fingerprint,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at,created_by)
+  VALUES('{transmission_id}','{invoice_id}','{xml_run_id}','NFeAutorizacao4','2','hnfe.fazenda.mg.gov.br','{endpoint_url}','{transmission_idem}','{transmission_fingerprint}','SENT','PENDING','103','PROCESSANDO','{access_key}','PENDING','2',now(),now(),'{Q.UADM}');"""
+  # Preflight integral e reversível: qualquer NOT NULL/CHECK/FK/trigger falha aqui,
+  # sem desativar constraints nem deixar uma fixture parcialmente instalada.
+  B.sql('BEGIN;'+fixture_sql+'ROLLBACK;')
+  (OUT/'fiscal-fixture-contract.json').write_text(json.dumps(dict(status='PREFLIGHT_ROLLBACK_OK',tables=fixture_contract,invoice_id=invoice_id,xml_run_id=xml_run_id,transmission_id=transmission_id,invoice_idempotency_key=invoice_idem,xml_idempotency_key=xml_idem,transmission_idempotency_key=transmission_idem,xml_payload_sha256=xml_sha256,transmission_request_fingerprint=transmission_fingerprint,network=False,provider_called=False),indent=2)+'\n')
+  checks.append(dict(test='fiscal fixture satisfies every required column and passes real NOT NULL CHECK FK trigger preflight in rolled back transaction',status='PASS'))
+  B.sql(fixture_sql)
   patch=json.dumps({'cStat':'104','protocolCStat':'100','nProt':'LOCAL-INTEGRATED-PROTOCOL','chNFe':access_key,'xMotivo':'LOTE PROCESSADO; PROTOCOLO AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-01T12:00:00Z'}).replace("'","''")
   def authorized_callback():
    return B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','SUCCEEDED','{patch}'::jsonb);")
