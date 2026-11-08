@@ -402,6 +402,16 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
             assert "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);" in body, "anchor drift confirm canonical advance family"
         defs[sig]["new"] = body
 
+    sig = "public.trg_entrega_sync_partner_order_fn()"
+    body = defs[sig]["body"]
+    body = one(body, "WHERE os.partner_order_id = v_partner_order_id;", "WHERE os.partner_order_id = v_partner_order_id AND e.status <> 'cancelada';", "delivered count excludes cancellations")
+    defs[sig]["new"] = body
+
+    sig = "platform_private.b2b_internal_order_snapshot_guard()"
+    body = defs[sig]["body"]
+    body = one(body, "IF NEW.ready_for_production OR public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;", "IF NEW.ready_for_production OR (public.fn_b2b_status_is_operational(NEW.status) AND platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;", "exact confirmed delivery order transition")
+    defs[sig]["new"] = body
+
     candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"].rstrip().rstrip(";") + ";" for x in CHANGED) + "\n"
     pre = ["-- Candidato B2B_RESALE_LOGISTICS_V1 INATIVO/NÃO APROVADO; somente composição local nova."]
     for sig in CHANGED:
