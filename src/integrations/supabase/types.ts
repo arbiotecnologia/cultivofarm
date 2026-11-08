@@ -3673,6 +3673,7 @@ export type Database = {
           monthly_interest_percent: number
           months_count: number
           name: string
+          organization_id: string | null
           plan_type: string
           pricing_mode: string
           requires_credit_approval: boolean
@@ -3704,6 +3705,7 @@ export type Database = {
           monthly_interest_percent?: number
           months_count?: number
           name: string
+          organization_id?: string | null
           plan_type: string
           pricing_mode?: string
           requires_credit_approval?: boolean
@@ -3735,6 +3737,7 @@ export type Database = {
           monthly_interest_percent?: number
           months_count?: number
           name?: string
+          organization_id?: string | null
           plan_type?: string
           pricing_mode?: string
           requires_credit_approval?: boolean
@@ -3751,6 +3754,13 @@ export type Database = {
           version_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "commercial_payment_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "commercial_payment_plans_root_plan_id_fkey"
             columns: ["root_plan_id"]
