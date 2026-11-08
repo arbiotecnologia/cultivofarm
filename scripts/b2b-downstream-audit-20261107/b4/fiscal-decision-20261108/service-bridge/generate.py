@@ -169,7 +169,7 @@ END $$;
 DO $$ BEGIN
  IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '{md5_pg(actor)}' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_POST_DRIFT'; END IF;
- IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(fence.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '{md5_pg(fence)}' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_POST_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(apply_auth.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_POST_DRIFT'; END IF;
  IF has_function_privilege('authenticated','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR has_function_privilege('anon','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR NOT has_function_privilege('service_role','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ACL_INVALID'; END IF;
 END $$;
