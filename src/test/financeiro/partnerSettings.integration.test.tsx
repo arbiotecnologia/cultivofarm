@@ -75,6 +75,33 @@ beforeEach(() => {
   Object.assign(state, { row: legacy(), holdReads: false, pendingReads: [], holdRpc: false, pendingRpc: null, rpcError: false, rpcCalls: [], readCount: 0 });
 });
 describe("P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted", () => {
+  it("parceiro cadastrado sem settings permanece sem financeiro ao abrir e reabrir", async () => {
+    state.row = null;
+    const { client, key } = setup(); await open();
+    await screen.findByLabelText("Prazo (dias)");
+    expect(client.getQueryData(key)).toBeNull();
+    expect(state.row).toBeNull();
+    expect(state.rpcCalls).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(state.rpcCalls).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    await open(); await screen.findByLabelText("Prazo (dias)");
+    expect(state.row).toBeNull();
+    expect(state.rpcCalls).toHaveLength(0); client.clear();
+  });
+  it("settings ausentes só são criadas por salvar explicitamente pelo RPC CAS com expected NULL", async () => {
+    state.row = null;
+    const { client } = setup(); await open(); await editMethod();
+    expect(state.row).toBeNull();
+    expect(state.rpcCalls).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(state.rpcCalls).toHaveLength(1);
+    expect(state.rpcCalls[0].p_expected).toBeNull();
+    expect(state.rpcCalls[0].p_partner_id).toBe("P");
+    expect(state.row).toMatchObject({ partner_id: "P", default_payment_method: method });
+    client.clear();
+  });
   it("salvar fecha; reabrir mostra retorno canônico e nunca pix do cache anterior", async () => {
     const { client, key } = setup(legacy()); await open(); await editMethod();
     fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
