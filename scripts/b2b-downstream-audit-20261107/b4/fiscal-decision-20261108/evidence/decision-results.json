@@ -1,0 +1,256 @@
+{
+  "status": "INACTIVE_BLOCKED_COMPONENT_EVIDENCE_ONLY_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "component": {
+    "passed": 128,
+    "total": 128
+  },
+  "decision_checks": {
+    "passed": 38,
+    "total": 38,
+    "checks": [
+      {
+        "name": "inventário determinístico",
+        "ok": true
+      },
+      {
+        "name": "componente B4 sem falhas",
+        "ok": true
+      },
+      {
+        "name": "R01: pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida",
+        "ok": true
+      },
+      {
+        "name": "R02: primeira NF parcial autorizada fictícia gera título",
+        "ok": true
+      },
+      {
+        "name": "R02 permanece bloqueado por lacuna explícita",
+        "ok": true
+      },
+      {
+        "name": "R03: replay da mesma autorização devolve mesmo título",
+        "ok": true
+      },
+      {
+        "name": "R03: mesmo documento em duas sessões tem replay autorizado nos dois lados",
+        "ok": true
+      },
+      {
+        "name": "R03: mesmo documento concorrente mantém um título e uma alocação",
+        "ok": true
+      },
+      {
+        "name": "R04 permanece bloqueado por lacuna explícita",
+        "ok": true
+      },
+      {
+        "name": "R05: falha depois do INSERT aborta a alocação inteira",
+        "ok": true
+      },
+      {
+        "name": "R05: falha pós-autorização não deixa título, parcelas ou alocação parcial",
+        "ok": true
+      },
+      {
+        "name": "R05: retry após falha recupera o mesmo evento uma única vez",
+        "ok": true
+      },
+      {
+        "name": "R05: replay da recuperação preserva o mesmo título sem duplicar",
+        "ok": true
+      },
+      {
+        "name": "R06: três documentos independentes fecham quantidade e residual",
+        "ok": true
+      },
+      {
+        "name": "R06: duas sessões: somente uma consome o saldo final",
+        "ok": true
+      },
+      {
+        "name": "R06: corrida não duplica título nem residual",
+        "ok": true
+      },
+      {
+        "name": "R06: quantidade acima do pedido negada",
+        "ok": true
+      },
+      {
+        "name": "R07: conversão não duplica exposição",
+        "ok": true
+      },
+      {
+        "name": "R07: residual = pedido restante + títulos sem dupla contagem",
+        "ok": true
+      },
+      {
+        "name": "R07: crédito após parciais preserva total menos baixa",
+        "ok": true
+      },
+      {
+        "name": "R08: cancelamento de NF paga exige reconciliação",
+        "ok": true
+      },
+      {
+        "name": "R08: cancelamento pago negado preserva histórico e saldo",
+        "ok": true
+      },
+      {
+        "name": "R08: histórico do título cancelado permanece",
+        "ok": true
+      },
+      {
+        "name": "R08: cancelamento restaura exatamente principal+juros do documento",
+        "ok": true
+      },
+      {
+        "name": "R09 permanece bloqueado por lacuna explícita",
+        "ok": true
+      },
+      {
+        "name": "R10: título não emite boleto/Pix nem registra pagamento",
+        "ok": true
+      },
+      {
+        "name": "R11: delivery context nega UPDATE em recebível",
+        "ok": true
+      },
+      {
+        "name": "R11: delivery context nega DELETE em recebível",
+        "ok": true
+      },
+      {
+        "name": "R11: delivery context nega INSERT em recebível",
+        "ok": true
+      },
+      {
+        "name": "R12: shared fence preserva título MANUAL não B2B sem devedor parceiro",
+        "ok": true
+      },
+      {
+        "name": "R12: rollback preserva alocações, títulos e snapshots",
+        "ok": true
+      },
+      {
+        "name": "R12: rollback deny-only passa com PRE/POST e metadados íntegros",
+        "ok": true
+      },
+      {
+        "name": "lacuna da ponte fiscal reproduzida na captura",
+        "ok": true
+      },
+      {
+        "name": "exceção manual atual não contém contrato completo",
+        "ok": true
+      },
+      {
+        "name": "candidato conserva atestação fiscal obrigatória",
+        "ok": true
+      },
+      {
+        "name": "dependência operacional continua fechada",
+        "ok": true
+      },
+      {
+        "name": "inventário declara seis lacunas e nenhum efeito hospedado",
+        "ok": true
+      },
+      {
+        "name": "matriz não converte lacunas em aprovação",
+        "ok": true
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "id": "R01",
+      "local_status": "COVERED"
+    },
+    {
+      "id": "R02",
+      "local_status": "BLOCKED",
+      "gap": "G1"
+    },
+    {
+      "id": "R03",
+      "local_status": "COVERED"
+    },
+    {
+      "id": "R04",
+      "local_status": "BLOCKED",
+      "gap": "G3"
+    },
+    {
+      "id": "R05",
+      "local_status": "COVERED_COMPONENT_ONLY",
+      "gap": "G3"
+    },
+    {
+      "id": "R06",
+      "local_status": "COVERED"
+    },
+    {
+      "id": "R07",
+      "local_status": "COVERED"
+    },
+    {
+      "id": "R08",
+      "local_status": "COVERED"
+    },
+    {
+      "id": "R09",
+      "local_status": "BLOCKED",
+      "gap": "G4"
+    },
+    {
+      "id": "R10",
+      "local_status": "COVERED_COMPONENT_ONLY",
+      "gap": "G6"
+    },
+    {
+      "id": "R11",
+      "local_status": "COVERED_COMPONENT_ONLY",
+      "gap": "G6"
+    },
+    {
+      "id": "R12",
+      "local_status": "COVERED"
+    }
+  ],
+  "open_gaps": [
+    {
+      "id": "G1",
+      "name": "PONTE_FISCAL_AUSENTE",
+      "detail": "rpc_fiscal_invoice_apply_authorization_v1 fecha a NF, mas não cria documento B4 nem chama b2b_allocate_document."
+    },
+    {
+      "id": "G2",
+      "name": "ATOR_DO_CALLBACK_NAO_RESOLVIDO",
+      "detail": "O retorno SEFAZ é service-only e o alocador B4 exige ator interno do tenant; não se pode inventar auth.uid nem permitir bypass."
+    },
+    {
+      "id": "G3",
+      "name": "ESTADOS_PENDENTE_REJEITADO_NAO_INTEGRADOS",
+      "detail": "Falta teste da ponte real para PENDING/REJECTED/AUTHORIZED e recuperação de FISCAL_AUTHORIZATION_CLOSE_PENDING."
+    },
+    {
+      "id": "G4",
+      "name": "EXCECAO_MANUAL_INCOMPLETA",
+      "detail": "rpc_create_financial_title exige staff/tenant/valores, mas não impõe justificativa e origem explícitas nem antiduplicidade por operação faturada."
+    },
+    {
+      "id": "G5",
+      "name": "DIRECAO_DO_REGISTRO_MANUAL",
+      "detail": "rpc_upsert_fiscal_invoice_manual parte de receivable_id; a decisão exige NF válida antes do título, exceto exceção auditada."
+    },
+    {
+      "id": "G6",
+      "name": "HOMOLOGACAO_REAL_PENDENTE",
+      "detail": "Faltam JWT/RLS/Storage/browser, concorrência do callback real e reteste FSF/ARBio; nenhum provedor foi acionado."
+    }
+  ],
+  "limitations": "PostgreSQL descartável e atestações sintéticas; não prova ponte fiscal real, JWT/RLS/Storage/browser nem homologação."
+}

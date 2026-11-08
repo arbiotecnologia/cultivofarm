@@ -1,8 +1,39 @@
-Traceback (most recent call last):
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py", line 73, in <module>
-    main()
-    ~~~~^^
-  File "/dev-server/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py", line 30, in main
-    result = component["results"]
-             ~~~~~~~~~^^^^^^^^^^^
-KeyError: 'results'
+PASS inventário determinístico
+PASS componente B4 sem falhas
+PASS R01: pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida
+PASS R02: primeira NF parcial autorizada fictícia gera título
+PASS R02 permanece bloqueado por lacuna explícita
+PASS R03: replay da mesma autorização devolve mesmo título
+PASS R03: mesmo documento em duas sessões tem replay autorizado nos dois lados
+PASS R03: mesmo documento concorrente mantém um título e uma alocação
+PASS R04 permanece bloqueado por lacuna explícita
+PASS R05: falha depois do INSERT aborta a alocação inteira
+PASS R05: falha pós-autorização não deixa título, parcelas ou alocação parcial
+PASS R05: retry após falha recupera o mesmo evento uma única vez
+PASS R05: replay da recuperação preserva o mesmo título sem duplicar
+PASS R06: três documentos independentes fecham quantidade e residual
+PASS R06: duas sessões: somente uma consome o saldo final
+PASS R06: corrida não duplica título nem residual
+PASS R06: quantidade acima do pedido negada
+PASS R07: conversão não duplica exposição
+PASS R07: residual = pedido restante + títulos sem dupla contagem
+PASS R07: crédito após parciais preserva total menos baixa
+PASS R08: cancelamento de NF paga exige reconciliação
+PASS R08: cancelamento pago negado preserva histórico e saldo
+PASS R08: histórico do título cancelado permanece
+PASS R08: cancelamento restaura exatamente principal+juros do documento
+PASS R09 permanece bloqueado por lacuna explícita
+PASS R10: título não emite boleto/Pix nem registra pagamento
+PASS R11: delivery context nega UPDATE em recebível
+PASS R11: delivery context nega DELETE em recebível
+PASS R11: delivery context nega INSERT em recebível
+PASS R12: shared fence preserva título MANUAL não B2B sem devedor parceiro
+PASS R12: rollback preserva alocações, títulos e snapshots
+PASS R12: rollback deny-only passa com PRE/POST e metadados íntegros
+PASS lacuna da ponte fiscal reproduzida na captura
+PASS exceção manual atual não contém contrato completo
+PASS candidato conserva atestação fiscal obrigatória
+PASS dependência operacional continua fechada
+PASS inventário declara seis lacunas e nenhum efeito hospedado
+PASS matriz não converte lacunas em aprovação
+38/38 | componente 128/128 | STATUS=BLOCKED
