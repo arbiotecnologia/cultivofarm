@@ -1,6 +1,6 @@
 ## 08/11 14:26 — Achados reais na prévia original ARBio
 - [ ] E2E local avançou com 12 checkpoints PASS antes de exit 1: reserva/negativos, expedição, cancelamento com três embalagens restauradas, segundo agrupamento/replay e envio/replay. Próximo bloqueio: `delivery_proof_recheck_20261030`/`DELIVERY_PROOF_SCOPE_DENIED`; comprovante/confirmação, regressão manual e POST/rollback pendentes. Candidato INATIVO/NÃO APROVADO.
-- [ ] Investigar a perda de `valid_until=2026-11-15` no plano sintético `TESTE-FLUXO-20261108`: separar DOM/estado/evento/payload/servidor e automação, preparar regressão com datas preenchidas, submit e reabertura. Não alterar o plano LIVE nem completar sua desativação; sem hosted/publicação.
+- [ ] Investigar a perda de `valid_until=2026-11-15` no plano sintético `TESTE-FLUXO-20261108`: separar DOM/estado/evento/payload/servidor e automação, preparar regressão com datas preenchidas, submit e reabertura. Evidência READONLY 14:45: plano `d95f0198` ficou `active=false` após confirmação do usuário e continua sem atribuição; `_cpp_audit`/`commercial_audit_log` registram `valid_from` e `valid_until` JSON NULL no payload recebido, portanto não há prova de perda no servidor. Priorizar evento/estado React e teste de usuário real; não propor SQL desnecessário, não alterar hosted/publicação.
 - [ ] Investigar comprador novo sem condições e botão Enviar desabilitado; carrinho local de 1 saco 25 kg/R$10 não foi enviado. Não criar condição, pedido ou efeito externo.
 
 ## 08/11 14:07 — Configuração financeira nova com contenção manual
