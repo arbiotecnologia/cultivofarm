@@ -4,6 +4,13 @@
   "baseline": "POSPLANOS; plan cc1f6cc already installed; never reinstall or roll it back",
   "hosted_io": false,
   "gates": "all closed after every install and rollback",
+  "live_readonly_reported_2026_11_08": {
+    "rpc_entrega_confirmar_manual_v1": "ABSENT_BY_PRONAME_ANY_OVERLOAD",
+    "rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)": "a4d47ccf5d116141ed46e9de9ea7eeaa",
+    "rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)": "97d476cc795d75b829f305f1e64d4e62",
+    "rpc_programar_os_v1(uuid,text,date)": "e374f0ba1698b37523b890dc91682eaf",
+    "resale_os_and_gates": "ABSENT"
+  },
   "order": [
     "00 production PRE",
     "11/12 confirmation closed",
@@ -32,8 +39,8 @@
   ],
   "files": {
     "00-production-pre-posplans.sql.readonly": {
-      "sha256": "becd587cf4dad1cba496018895ab9feb3708cc21d485374bcc6845195a4fe86c",
-      "bytes": 450543
+      "sha256": "cbbe17e98d642c69ad3bbc36b13351af8eeda777df0896b9464c7cec6110236e",
+      "bytes": 451552
     },
     "11-confirmation-install.sql.review": {
       "sha256": "b86b0895270436b561550fabccd119c2e65cbaae9abd7d9d2f2df187484a5201",
@@ -110,6 +117,10 @@
     "94-logistics-rollback-deny.sql.review": {
       "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a",
       "bytes": 760
+    },
+    "README.md": {
+      "sha256": "e5c97095ab4be5711836b9f1ed5f0109f9b12abc49425716039f6935ef95e529",
+      "bytes": 5265
     }
   }
 }

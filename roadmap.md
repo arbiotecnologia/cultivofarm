@@ -1,8 +1,12 @@
+## 08/11 22:18 — Complemento LIVE READONLY da cadeia mínima
+- [x] Registrar como relato do auditor: confirmação manual ausente por `proname`; duas sobrecargas canônicas de criação de entrega presentes (`a4d47ccf…`, `97d476cc…`) e programação biológica presente (`e374f0ba…`); OS/gates de revenda ausentes. Nenhum writer executado.
+- [x] PRE/documentação ajustados sem alterar candidatos: ausência por nome, pins das dependências reais e distinção da mudança semântica física na sobrecarga curta. Pacote regerado com 21 arquivos rastreados; cinco hashes de instalação conferidos inalterados. Nenhum SQL hosted executado.
+
 ## 08/11 22:20 — Caller/leitor OS, UI escopada e rollout POSPLANOS completo
 - [x] FSF com feature estoque ON e papel válido negado contra ARBio por escopo no writer/leitor; controle FSF-own positivo e fixture revertida. ACL service_role medida separadamente no catálogo; helper privado permanece fechado.
 - [x] Leitor server-side e endpoint público candidatos com tenant/ator/CAS/feature/gate; UI montada no detalhe canônico, invisível sem disponibilidade, tentativa por escopo e reload sem auto-resend. Testes endpoint/leitor 15/15, UI 21/21, parciais 13/13, composição fresh 41/41, typecheck/build OK.
-- [x] Pacote `production-rollout-2154/` com 20 arquivos e manifesto: PRE POSPLANOS + confirmação fechada → envio fechado → físico OFF → logística OFF → leitor/endpoint OFF, POSTs e rollback deny-only inverso. Planos cc1f6cc não reaplicados; B4/fiscal/recebíveis/cobranças/envios/publicação excluídos.
-- [ ] Auditor: revisão independente dos 20 hashes, execução futura do PRE READ ONLY e instalação manual somente após autorização; nenhum SQL foi executado em produção pelo Lovable. Teste autenticado/piloto continua NOT_RUN.
+- [x] Pacote `production-rollout-2154/` com 21 arquivos rastreados e manifesto: PRE POSPLANOS + confirmação fechada → envio fechado → físico OFF → logística OFF → leitor/endpoint OFF, POSTs e rollback deny-only inverso. Planos cc1f6cc não reaplicados; B4/fiscal/recebíveis/cobranças/envios/publicação excluídos.
+- [ ] Auditor: revisão independente dos 21 hashes, execução futura do PRE READ ONLY e instalação manual somente após autorização; nenhum SQL foi executado em produção pelo Lovable. Teste autenticado/piloto continua NOT_RUN.
 - [ ] Impacto do advisor `cpp_tenant_read` continua análise posterior, sem ampliar grants ou enfraquecer policy.
 
 ## 08/11 21:45 — POSPLANOS em produção e rollout incremental desativado
