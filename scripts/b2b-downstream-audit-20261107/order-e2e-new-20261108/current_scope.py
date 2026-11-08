@@ -153,6 +153,11 @@ def _trigger_function(definition: str) -> str:
     return _signature(schema, name, match.group(2))
 
 
+def _canonical_trigger_definition(definition: str, table: str) -> str:
+    definition = definition.replace(f" ON {table} ", f" ON public.{table} ")
+    return definition.replace("EXECUTE FUNCTION public.", "EXECUTE FUNCTION ")
+
+
 def _captured_triggers() -> list[list]:
     result = []
     for row in CAPTURE["triggers"]:
