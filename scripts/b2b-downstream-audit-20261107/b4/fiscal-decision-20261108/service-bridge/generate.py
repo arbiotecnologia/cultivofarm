@@ -395,6 +395,9 @@ DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_POST_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='b2b_fiscal_created_by_guard' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_GUARD_MISSING'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_fiscal_invoice_snapshots'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_RLS_MISSING'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.fiscal_close_pending'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'FISCAL_CLOSE_PENDING_RLS_MISSING'; END IF;
+ IF md5(pg_get_functiondef('public.fn_fiscal_sefaz_tx_guard()'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(transmit_guard_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_POST_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='trg_fiscal_sefaz_tx_guard' AND tgrelid='public.fiscal_sefaz_transmissions'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_POST_DISABLED'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='fiscal_sefaz_transmissions' AND column_name='protocol_c_stat' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_PROTOCOL_CSTAT_POST_DRIFT'; END IF;
 END $$;
 """
