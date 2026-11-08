@@ -1,6 +1,6 @@
 ## 08/11 16:17 — Interromper e executar todas as mensagens pendentes
 - [x] Interromper a sequência anterior e reconciliar as mensagens recentes sem apagar histórico: isolamento FSF→ARBio, targeting/meio obrigatório, E2E logístico, datas, defaults financeiros e journal foram processados; atribuição da condição V2 e o diagnóstico de datas são fatos posteriores do auditor que superam pendências antigas.
-- [ ] Repetir a validação integrada local do estado atual: isolamento 58/58, E2E 20/20 e testes UI focados, com logs/exit codes novos e sem somar suítes ou promover PASS sintético a homologação real.
+- [x] Validação local repetida no estado atual: isolamento **58/58**, E2E integral **20/20** e UI focada **9 arquivos/137 testes**, todos exit 0; logs/exit codes novos em `evidence/pending-messages-1617/`, sem somar suítes ou promover PASS sintético a homologação real. Datas permanecem sem defeito de produto comprovado e sem alteração SQL/schema.
 - [ ] Manter como bloqueios externos somente revisão independente, instalação manual expressamente autorizada, ativação escopada pelo auditor e homologação JWT/RLS/Storage/browser; nenhuma escrita hospedada, publicação, NF, cobrança ou envio.
 
 ## 08/11 16:03 — BLOCKER: isolamento por empresa nos planos comerciais

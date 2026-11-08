@@ -28,5 +28,7 @@
   "fiscal_or_charging_or_external_delivery": false,
   "real_jwt_rls_storage_browser": "NOT_RUN",
   "release_status": "BLOCKED_PENDING_INDEPENDENT_REVIEW_MANUAL_AUTHORIZED_INSTALLATION_AND_REAL_RETEST",
-  "candidate_sha256": "517b42251ac93008e136a0229e74b9e877ce2fcfe522cf2e6b3a85d966abefc7"
+  "logistics_candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+  "commercial_isolation_candidate_sha256": "92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6",
+  "resale_logistics_source_sha256": "517b42251ac93008e136a0229e74b9e877ce2fcfe522cf2e6b3a85d966abefc7"
 }
