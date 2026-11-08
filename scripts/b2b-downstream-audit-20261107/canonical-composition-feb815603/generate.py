@@ -17,7 +17,7 @@ EXPECTED = {
     PLANS / "02-install.sql.review": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40",
     B4 / "02-install.sql.review": "0d533f85731a782fa851868b41adf6e7f8e1bbfd729f156be7d6499ac6b6fee6",
     B4 / "b4-candidate.sql.review": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
-    BRIDGE / "02-install.sql.review": "3c0a2cdc80a3f3050355e8e13c6afc96abb397cf5511d5ccd71ac91eb9a31ba4",
+    BRIDGE / "02-install.sql.review": "4fe6d63a8ba562367129a5abce72a1be602acb0bd597337c556286232ffc8fdf",
 }
 SHARED = [
     "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)",
