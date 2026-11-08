@@ -592,7 +592,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   # Cadeia logística reversa completa: endpoint já foi fechado acima; agora
   # logística/físico/envio/confirmação sem apagar histórico ou reabrir grants.
   history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
-  B.sql((E:=E if False else OUT)/'logistics/rollback.sql.review' and ((OUT/'logistics/rollback.sql.review').read_text()))
+  B.sql((OUT/'logistics/rollback.sql.review').read_text())
   B.sql((physical_out/'rollback.sql.review').read_text())
   B.sql((send_out/'rollback.sql.review').read_text())
   B.sql((confirmation_out/'rollback.sql.review').read_text())
