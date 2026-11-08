@@ -1,7 +1,8 @@
 ## 08/11 22:25 — Reconciliação semântica pós-catálogo/unidades/Price/planos
-- [ ] Incorporar o PRE LIVE `CONFIRM_PRE_DRIFT` relatado pelo auditor: seis guards de tenant adicionados, funções/ACLs e oito relações mais restritas; preservar toda mudança atual e nunca restaurar grants ou guards antigos.
-- [ ] Reconciliar confirmação, envio, físico, logística, leitor/endpoint e rollbacks com as capturas recentes; identificar explicitamente qualquer corpo LIVE ainda ausente e preparar SQL READ ONLY restrito, sem operação hospedada.
-- [ ] Gerar pacote/manifest/PRE/POST novo e repetir fresh rehearsal pós-catálogo/Price/planos com ACL+seis guards, parciais 13, leitor/OS 15, UI 21, concorrência, typecheck/build. Gates OFF, fiscal/recebíveis/cobranças/envios/publicação fechados.
+- [x] Incorporar o PRE LIVE `CONFIRM_PRE_DRIFT`: pacote antigo preservado; nenhum grant/guard antigo restaurado. Typecheck exit 0, UI 21/21, candidata 13/13, compatibilidade OS 73/73 e build OK.
+- [x] Preparar SQL READ ONLY restrito em `reconciliation-posplans-20261108/00-current-live-capture.sql.readonly`; nenhuma operação hospedada.
+- [ ] **BLOCKED_CURRENT_LIVE_METADATA_REQUIRED:** a tentativa fresh 2 abortou no PRE da migração canônica por ACLs históricas fora do recorte, antes dos candidatos. Auditor deve devolver o JSON da captura atual; sem isso, reconciliar corpos/ACLs seria troca cega de pins.
+- [ ] Após captura: gerar pacote/manifest/PRE/POST novo e concluir fresh rehearsal com ACL+seis guards, parciais 13, leitor/OS 15, concorrência e rollbacks. Nenhum pacote novo foi gerado; gates OFF, fiscal/recebíveis/cobranças/envios/publicação fechados.
 
 ## 08/11 22:18 — Complemento LIVE READONLY da cadeia mínima
 - [x] Registrar como relato do auditor: confirmação manual ausente por `proname`; duas sobrecargas canônicas de criação de entrega presentes (`a4d47ccf…`, `97d476cc…`) e programação biológica presente (`e374f0ba…`); OS/gates de revenda ausentes. Nenhum writer executado.

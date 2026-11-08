@@ -1,0 +1,84 @@
+-- SOMENTE LEITURA — produção canônica swzpzcwiasxmjutrmvkm.
+-- Não retorna dados de negócio, identities, tokens ou secrets; somente metadados.
+-- Entregar o JSON completo da única linha de resultado para reconciliação local.
+BEGIN READ ONLY;
+
+WITH requested(signature) AS (
+  VALUES
+    ('platform_private.lab_assert_manufacturable(uuid,uuid)'),
+    ('platform_private.lab_item_is_manufacturable(uuid,uuid)'),
+    ('public.proximo_codigo(text,text)'),
+    ('platform_private.entregas_catalog_tenant_guard()'),
+    ('platform_private.estoque_produto_catalog_tenant_guard()'),
+    ('platform_private.lotes_catalog_tenant_guard()'),
+    ('platform_private.ordens_servico_catalog_tenant_guard()'),
+    ('platform_private.produto_etiquetas_catalog_tenant_guard()'),
+    ('platform_private.programacao_producao_catalog_tenant_guard()'),
+    ('public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)'),
+    ('public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)'),
+    ('public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)'),
+    ('platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)'),
+    ('public.fn_sync_os_classica_downstream()'),
+    ('platform_private.envase_insert_guard_v1()'),
+    ('platform_private.envase_insert_final_v1()'),
+    ('platform_private.guard_manual_lot_write_v1()'),
+    ('platform_private.trg_lab_lot_biological_only()'),
+    ('public.validate_estoque_entrada()'),
+    ('public.rpc_programar_os_v1(uuid,text,date)')
+), relations_requested(table_name) AS (
+  VALUES
+    ('entregas'),('entrega_comprovantes'),('ordens_servico'),('clientes'),
+    ('organizations'),('produto_etiquetas'),('profiles'),('programacao_producao'),
+    ('estoque_produto'),('estoque_movimentacoes'),('lotes'),('produtos'),
+    ('microrganismos'),('catalogo_volumes'),('product_sale_units'),('product_packagings'),
+    ('partner_order_items')
+)
+SELECT jsonb_build_object(
+  'contract','POSPLANOS_CURRENT_METADATA_V1',
+  'expected_ref','swzpzcwiasxmjutrmvkm',
+  'database',current_database(),
+  'server_version',current_setting('server_version'),
+  'functions',(
+    SELECT coalesce(jsonb_agg(jsonb_build_object(
+      'signature',r.signature,
+      'present',p.oid IS NOT NULL,
+      'definition',CASE WHEN p.oid IS NULL THEN NULL ELSE pg_get_functiondef(p.oid) END,
+      'md5',CASE WHEN p.oid IS NULL THEN NULL ELSE md5(pg_get_functiondef(p.oid)) END,
+      'owner',pg_get_userbyid(p.proowner),
+      'acl',p.proacl::text
+    ) ORDER BY r.signature),'[]'::jsonb)
+    FROM requested r LEFT JOIN pg_proc p ON p.oid=to_regprocedure(r.signature)
+  ),
+  'relations',(
+    SELECT coalesce(jsonb_agg(jsonb_build_object(
+      'table',r.table_name,
+      'present',c.oid IS NOT NULL,
+      'owner',pg_get_userbyid(c.relowner),
+      'acl',c.relacl::text
+    ) ORDER BY r.table_name),'[]'::jsonb)
+    FROM relations_requested r LEFT JOIN pg_class c ON c.oid=to_regclass('public.'||r.table_name)
+  ),
+  'triggers',(
+    SELECT coalesce(jsonb_agg(jsonb_build_object(
+      'schema',n.nspname,'table',c.relname,'name',t.tgname,
+      'enabled',t.tgenabled::text,'type',t.tgtype,
+      'function',p.oid::regprocedure::text,
+      'function_md5',md5(pg_get_functiondef(p.oid)),
+      'definition',pg_get_triggerdef(t.oid)
+    ) ORDER BY c.relname,t.tgname),'[]'::jsonb)
+    FROM pg_trigger t
+    JOIN pg_class c ON c.oid=t.tgrelid
+    JOIN pg_namespace n ON n.oid=c.relnamespace
+    JOIN pg_proc p ON p.oid=t.tgfoid
+    WHERE NOT t.tgisinternal AND n.nspname='public'
+      AND c.relname IN (SELECT table_name FROM relations_requested)
+  ),
+  'candidate_absence',jsonb_build_object(
+    'manual_confirmation_overloads',(SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_confirmar_manual_v1'),
+    'resale_os_public_overloads',(SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('rpc_b2b_resale_os_create_v1','rpc_b2b_resale_os_availability_v1')),
+    'finished_gate_present',to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL,
+    'resale_gate_present',to_regclass('platform_private.b2b_resale_logistics_gate_v1') IS NOT NULL
+  )
+) AS current_metadata;
+
+ROLLBACK;
