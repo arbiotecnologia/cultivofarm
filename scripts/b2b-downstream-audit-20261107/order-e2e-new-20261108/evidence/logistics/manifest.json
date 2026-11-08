@@ -84,6 +84,10 @@
     "post-metadata.json": {
       "sha256": "796ffaff3e8461c90fdddf9303226f6f41f046b90051c1dcb31237833a7e4fdb",
       "bytes": 4340
+    },
+    "manifest.json": {
+      "sha256": "191e90e1cfd3647fb12cb8342015d1fa3d61020516f4a12d7de7d42b5c915869",
+      "bytes": 3640
     }
   }
 }
