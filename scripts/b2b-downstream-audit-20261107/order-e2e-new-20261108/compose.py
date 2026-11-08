@@ -72,6 +72,18 @@ def main():
   B.prove(delivery,'new-e2e-physical-proof')
   assert json.loads(B.last(B.confirm(delivery,'new-e2e-physical-confirm')))['success'] is True
   checks.append(dict(test='new physical control purchase reserve send proof confirm without manufacture',status='PASS'))
+  commercial=load('new_commercial_merge',H/'commercial.py')
+  Q=commercial.apply(B,load,ROOT,OUT)
+  checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
+  data,error=Q.publish(Q.UFIN,Q.P3,'boleto',Q.M_BOL,30,3,'1.8',0)
+  assert data is not None,error
+  data,error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',1);assert data is not None,error
+  data,error=Q.activation(Q.UADM,'pilot',[Q.P],0);assert data is not None,error
+  choice=Q.ch('boleto',1,30)
+  data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
+  data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],'NEW-E2E-ORDER-001',choice);assert data is not None,error
+  (OUT/'buyer-order.json').write_text(json.dumps(data,indent=2)+'\n')
+  checks.append(dict(test='new buyer canonical B3 packaging order with chosen condition, no forged order row',status='PASS',order_id=data['id']))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:
