@@ -516,7 +516,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
    'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE document_id='{invoice_id}'),
    'snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_id}'),
    'receivables',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_id}'))::text;"""))
-  assert blocked=={'invoice_status':'PENDING','invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_c_stat':'104','transmission_protocol_c_stat':'100','transmission_error':'FISCAL_AUTHORIZATION_CLOSE_PENDING','transmissions':1,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked
+  assert blocked=={'invoice_status':'PENDING','invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_c_stat':'104','transmission_protocol_c_stat':'100','transmission_error':'FISCAL_AUTHORIZATION_CLOSE_PENDING','transmissions':1,'invoices':1,'xml_runs':1,'transmission_idempotency':transmission_idem,'transmission_fingerprint':transmission_fingerprint,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked
   (OUT/'integrated-always-deny-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,blocked=blocked,schema_and_fiscal_events_synthetic=True,dependency_substituted=False),indent=2)+'\n')
   checks.append(dict(test='real H13 authorized callback and replay preserve one durable transmission with close pending; always-deny yields zero B4 document allocation snapshot or receivable',status='PASS'))
 
