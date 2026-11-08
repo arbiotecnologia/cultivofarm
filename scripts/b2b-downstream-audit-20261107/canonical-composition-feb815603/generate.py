@@ -270,7 +270,8 @@ SELECT 'COMPOSED_ROLLBACK_OK' AS status;
         "post_composition_baseline": {
             "b4_dependency_md5": post_composition_pins,
             "plans_semantic_overrides": len(SHARED),
-            "whitespace_only_composition_overrides": 1,
+            "whitespace_only_composition_overrides": 0,
+            "documented_unapplied_whitespace_variants": 1,
             "harness_only_acl_restoration": {
                 "signature": "public.tg_auto_b2b_receivable()",
                 "required_acl": "{postgres=X/postgres,service_role=X/postgres}",
@@ -302,7 +303,7 @@ SELECT 'COMPOSED_ROLLBACK_OK' AS status;
     }
     (H / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     (H / "reconciliation.json").write_text(json.dumps({
-        "decision": "Plans owns the five shared dependency bodies; B4 body remains byte-identical; bridge owns its two B4 replacements.",
+        "decision": "Plans owns five shared dependency bodies; B4 body and production payment writer remain byte-identical; bridge owns its two B4 replacements.",
         "semantic_reconciliation": semantic,
         "composition_reconciliation": composition_reconciliation,
         "post_composition_baseline": manifest["post_composition_baseline"],
