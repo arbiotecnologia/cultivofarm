@@ -1,0 +1,35 @@
+{
+  "status": "PASS_LOCAL_RECONCILIATION_ONLY",
+  "executed_at_utc": "2026-11-08T16:24:05Z",
+  "commercial_plan_isolation": {
+    "passed": 58,
+    "total": 58,
+    "exit_code": 0,
+    "before_after_reproduced": true
+  },
+  "order_e2e": {
+    "passed": 20,
+    "total": 20,
+    "exit_code": 0,
+    "all_pass": true
+  },
+  "ui_focused": {
+    "files": 9,
+    "passed": 137,
+    "total": 137,
+    "exit_code": 0
+  },
+  "preview_build": "build OK 2026-11-08T16:25:47Z",
+  "date_fields": {
+    "disposition": "NO_PRODUCT_BUG_PROVEN_NO_SQL_CHANGE",
+    "cause": "Playwright.fill(date) DOM/state mismatch in automation; auditor saved V2 normally with correct dates"
+  },
+  "hosted_writes": false,
+  "published": false,
+  "fiscal_or_charging_or_external_delivery": false,
+  "real_jwt_rls_storage_browser": "NOT_RUN",
+  "release_status": "BLOCKED_PENDING_INDEPENDENT_REVIEW_MANUAL_AUTHORIZED_INSTALLATION_AND_REAL_RETEST",
+  "logistics_candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+  "commercial_isolation_candidate_sha256": "92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6",
+  "resale_logistics_source_sha256": "517b42251ac93008e136a0229e74b9e877ce2fcfe522cf2e6b3a85d966abefc7"
+}

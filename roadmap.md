@@ -1,3 +1,8 @@
+## 08/11 16:17 — Interromper e executar todas as mensagens pendentes
+- [x] Interromper a sequência anterior e reconciliar as mensagens recentes sem apagar histórico: isolamento FSF→ARBio, targeting/meio obrigatório, E2E logístico, datas, defaults financeiros e journal foram processados; atribuição da condição V2 e o diagnóstico de datas são fatos posteriores do auditor que superam pendências antigas.
+- [x] Validação local repetida no estado atual: isolamento **58/58**, E2E integral **20/20** e UI focada **9 arquivos/137 testes**, todos exit 0; logs/exit codes novos em `evidence/pending-messages-1617/`, sem somar suítes ou promover PASS sintético a homologação real. Datas permanecem sem defeito de produto comprovado e sem alteração SQL/schema.
+- [ ] Manter como bloqueios externos somente revisão independente, instalação manual expressamente autorizada, ativação escopada pelo auditor e homologação JWT/RLS/Storage/browser; nenhuma escrita hospedada, publicação, NF, cobrança ou envio.
+
 ## 08/11 16:03 — BLOCKER: isolamento por empresa nos planos comerciais
 - [x] Reprodução local ANTES: FSF leu planos ARBio por RPC admin/listagem/B3 e alterou metadados sintéticos; auditoria cobriu RLS, sete writers admin, atribuições, meios, matrizes, simulação/create/conversão/cotação. Nenhuma escrita FSF nem alteração hospedada.
 - [x] Pacote revisável `commercial-plans-tenant-20261108`: 25 funções-alvo pinadas, tenant por `created_by`/perfil familiar consistente, ambíguos/ausentes NULL e negados, comprador restrito ao vínculo publicado, atribuições/matrizes concordantes e `is_default` por tenant. Catálogos globais de meios/categorias preservados; snapshots/histórico intactos.
@@ -20,7 +25,7 @@
 - [x] E2E logístico local B2B concluído com **16/16 checkpoints e exit 0**: pedido B3/aceite, compra, reserva, cancelamento com restauração, nova expedição, envio, comprovante/anexo, confirmação, replays, negativos, regressão manual e POST/rollback. Zero novos recebíveis/NF/produção/CQ/envase; sentinelas preservadas. Candidato SHA256 `6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3`, INATIVO/NÃO APROVADO.
 - [x] Diagnóstico independente de datas concluído sem salvar na primeira reprodução: `Playwright.fill(date)` deixava valor no DOM, mas ele sumia após alteração de outro campo; CUA `setValue` seguido de alteração do motivo manteve os valores. A versão 2 salva pelo fluxo normal persistiu `valid_from=2026-11-08T00:00Z` e `valid_until=2026-11-15T00:00Z`; versão 1 permanece inativa. Não há defeito de produto comprovado nem correção SQL/schema justificada. Relatório/roteiro UI deve distinguir automação de interação real; evidência independente não é reexecução do agente.
 - [ ] Revisão independente do candidato logístico: aguarda revisor; nada instalado/publicado, sem prova JWT/RLS/Storage real ou B4.
-- [ ] Comprador novo sem condições e botão Enviar desabilitado: atribuição exclusiva da versão 2 sintética está sendo preparada pelo auditor pelo fluxo normal. Não criar/atribuir condição, pedido ou efeito externo pelo agente; carrinho local não foi enviado.
+- [x] Superado por fato posterior do auditor: atribuição exclusiva da versão 2 foi publicada pelo fluxo normal e a condição ficou visível. O achado seguinte de targeting/meio obrigatório está tratado na fila 15:38; nenhum pedido ou efeito externo foi criado pelo agente.
 
 ## 08/11 14:07 — Configuração financeira nova com contenção manual
 - [x] E2E local foi executado primeiro e suas evidências ficaram separadas. A ponte avançou até OS/compra positivas, mas a reserva B2B falhou em `stock_p1_guard`/`ESTQ_REFERENCE_FORBIDDEN`; run exit 1, sem expedição/entrega/cancelamento ou POST/rollback logístico concluídos.
@@ -38,7 +43,7 @@
 ### Revisão independente d6cd95c0 — baseline recebíveis 08/11
 - [x] Incorporar PRE READONLY falho relatado (ACL/gatilhos), recompor ACL exata com MAINTAIN e dez gatilhos usando função no-downstream canônica sem abreviação, sem alterar capturas históricas.
 - [x] Reproduzir PRE/install/POST/rollback e composição B4 locais: 116/116; manifesto 61/61; proibição INSERT/UPDATE/DELETE com delivery context testada; evidências versionadas em b4/review-d6cd95c0/. Cinco MANUAL customer-only com parcelas impactam teste4; origem desconhecida bloqueia crédito/baixa, dívida intacta.
-- [ ] Composição E2E pedido→entrega ainda depende de recuperar order-e2e; revisão independente e LIVE/JWT/Storage da nova versão pendentes, nada aprovado/implantado.
+- [x] Superado sem recuperar artefatos perdidos: harness novo reconstruído com procedência explícita e reconciliado até 20/20 na fila 16:17. Revisão independente e LIVE/JWT/Storage continuam bloqueios externos, nada aprovado/implantado.
 
 ### Complemento independente 08/11 03:04 UTC
 - [x] Incorporar relato 7b4f NULL e bf37c13a terms-wait Windows PG17.11 mínimo, sem alegar 38 gatilhos/E2E/exploração LIVE; PRE READONLY passou segundo auditor, candidato não aprovado.

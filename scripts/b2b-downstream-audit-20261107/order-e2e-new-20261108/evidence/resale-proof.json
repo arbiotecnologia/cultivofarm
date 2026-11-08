@@ -3,10 +3,10 @@
     "action": "generate",
     "reused": false,
     "success": true,
-    "entrega_id": "eeee345e-ba4e-4167-930f-adde7de44166",
+    "entrega_id": "ed77fbea-b646-4672-ada7-a42a2baf9431",
     "object_path": null,
-    "comprovante_id": "14327af0-dfef-4067-8ec8-8f66bb12bee7",
-    "validation_token": "d2fa5aae-276e-42d3-a9c5-36d955d2bb90",
+    "comprovante_id": "05377d1f-2902-469e-8553-cdb72db18772",
+    "validation_token": "32ff81b8-a8bb-4582-8094-98fee016ef2f",
     "numero_formulario": "AR-ENT-000002"
   },
   "generate_replay": {
@@ -14,20 +14,20 @@
     "reused": false,
     "success": true,
     "replayed": true,
-    "entrega_id": "eeee345e-ba4e-4167-930f-adde7de44166",
+    "entrega_id": "ed77fbea-b646-4672-ada7-a42a2baf9431",
     "object_path": null,
-    "comprovante_id": "14327af0-dfef-4067-8ec8-8f66bb12bee7",
-    "validation_token": "d2fa5aae-276e-42d3-a9c5-36d955d2bb90",
+    "comprovante_id": "05377d1f-2902-469e-8553-cdb72db18772",
+    "validation_token": "32ff81b8-a8bb-4582-8094-98fee016ef2f",
     "numero_formulario": "AR-ENT-000002"
   },
   "attach": {
     "action": "attach",
     "reused": true,
     "success": true,
-    "entrega_id": "eeee345e-ba4e-4167-930f-adde7de44166",
-    "object_path": "entregas/eeee345e-ba4e-4167-930f-adde7de44166/comprovantes/a6c62c38-49c2-42de-aca5-b3fbb918cb65.pdf",
-    "comprovante_id": "14327af0-dfef-4067-8ec8-8f66bb12bee7",
-    "validation_token": "d2fa5aae-276e-42d3-a9c5-36d955d2bb90",
+    "entrega_id": "ed77fbea-b646-4672-ada7-a42a2baf9431",
+    "object_path": "entregas/ed77fbea-b646-4672-ada7-a42a2baf9431/comprovantes/c43759f5-bb92-4d43-92bc-602c20b5c60e.pdf",
+    "comprovante_id": "05377d1f-2902-469e-8553-cdb72db18772",
+    "validation_token": "32ff81b8-a8bb-4582-8094-98fee016ef2f",
     "numero_formulario": "AR-ENT-000002"
   },
   "attach_replay": {
@@ -35,10 +35,10 @@
     "reused": true,
     "success": true,
     "replayed": true,
-    "entrega_id": "eeee345e-ba4e-4167-930f-adde7de44166",
-    "object_path": "entregas/eeee345e-ba4e-4167-930f-adde7de44166/comprovantes/a6c62c38-49c2-42de-aca5-b3fbb918cb65.pdf",
-    "comprovante_id": "14327af0-dfef-4067-8ec8-8f66bb12bee7",
-    "validation_token": "d2fa5aae-276e-42d3-a9c5-36d955d2bb90",
+    "entrega_id": "ed77fbea-b646-4672-ada7-a42a2baf9431",
+    "object_path": "entregas/ed77fbea-b646-4672-ada7-a42a2baf9431/comprovantes/c43759f5-bb92-4d43-92bc-602c20b5c60e.pdf",
+    "comprovante_id": "05377d1f-2902-469e-8553-cdb72db18772",
+    "validation_token": "32ff81b8-a8bb-4582-8094-98fee016ef2f",
     "numero_formulario": "AR-ENT-000002"
   }
 }

@@ -56,3 +56,9 @@ O fato do parceiro fictício salvo pela sessão real do proprietário foi regist
 `emptyPartnerSettings` agora inicia somente novos formulários com `manual` e `auto_generate_receivable=false`; prazo 7, método NULL e demais valores permanecem como estavam. Configurações existentes `na_entrega`/auto=true continuam sendo carregadas sem reescrita, e o RPC/CAS não mudou. Ausência e abertura/reabertura não gravam; salvar exige método ativo explícito e usa `p_expected=NULL` quando não havia settings.
 
 Evidência independente em `evidence/ui-safe-defaults-1407/`: três arquivos Vitest **47/47 exit 0**, typecheck exit 0 e prévia `build OK` em 14:24:36. Cobertura inclui novo default, abertura sem gravação, salvar explícito, existentes sem regressão e conflito CAS. SDK/Auth/RPC são sintéticos; não é prova JWT/RLS/sessão real. Nenhuma escrita hospedada, publicação, envio, NF/cobrança ou alteração de títulos.
+
+## Reconciliação das mensagens pendentes — 08/11 16:17 UTC
+
+A sequência anterior foi interrompida e todas as mensagens recentes foram reconciliadas em `evidence/pending-messages-1617/README.md`. O diagnóstico independente das datas foi registrado como limitação de `Playwright.fill(date)`, sem defeito de produto comprovado e sem alteração de código/SQL/schema; a versão 2 salva pelo fluxo normal manteve as datas corretas. A atribuição exclusiva publicada pelo auditor supera a pendência antiga de comprador sem condição, mas não ativa o piloto nem autoriza envio.
+
+Nova execução do estado atual: isolamento comercial **58/58**, reconstrução E2E **20/20** e UI focada **9 arquivos/137 testes**, todos exit 0 e com logs separados. Os hashes dos candidatos foram reconferidos. Nenhuma operação hospedada, publicação, NF, cobrança ou envio; revisão independente, ativação manual escopada e provas reais JWT/RLS/PostgREST/Storage/browser continuam bloqueando liberação.

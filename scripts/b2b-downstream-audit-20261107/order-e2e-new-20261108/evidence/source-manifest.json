@@ -3667,6 +3667,162 @@
       "sha256": "c77089284040adfb4bb80275b4b6995f93c7627bf8dcce0a265b893f20dfd823"
     },
     {
+      "file": "scripts/commercial-plans-tenant-20261108/01-pre.sql.readonly",
+      "sha256": "63789b9fece1693c3b069e839d76cb0c06844d7965e7fd9d22278c47d8493d63"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/02-install.sql.review",
+      "sha256": "92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/03-post.sql.readonly",
+      "sha256": "8d5e212772bac0083090ff3f6c015d446223f05a2db23ad20e865dfcd268a1da"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/04-rollback-deny.sql.review",
+      "sha256": "ed8299557f9d62682a3f92468e906a70e41d94f65c7162e1bd0369b2434784b0"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/b2b_payment_condition_assign.sql",
+      "sha256": "ecca2646bf8ee3701097db30566fd00fb6e9aefd663d69d13f8726fa5a7e87d2"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/b2b_payment_condition_config_list.sql",
+      "sha256": "b82ead6c2b81e89ad589670d3560d29b7a57cf7a88f93f6d5c0faffb7bbac159"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/b2b_payment_condition_publish.sql",
+      "sha256": "2040cef083aee6f1073f97853e771161d74061a37f267a1e9caac75809946243"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/b2b_payment_condition_retire.sql",
+      "sha256": "0504d3a3cc5c8bf3f89dc85b45e991813176c19f54e068afd97f313a86ad22a9"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/convert_partner_simulation_to_order_secure.sql",
+      "sha256": "2b54a7a8c9cd94f5a2e155e5818aff1dbdb91bd85b70b3e38d982ede3ee5b5af"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/create_partner_order_secure.sql",
+      "sha256": "5ee8ad51cca2da07aefdc7675f27c99a262d94c7bc37333254ed333591c144ee"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/platform_private.b2b_resolve_condition.sql",
+      "sha256": "7b79ca5b05e08f285091e95ab2a04567ae44a5859c2b49fb6763391631348a4c"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/platform_private.c2p1_assignment_fence.sql",
+      "sha256": "bc5781d745287c903399f88b2ee5bf6e48a9befb464174e30c33c051f35a3951"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/platform_private.c2p1_history_allowed.sql",
+      "sha256": "1f61a1029cb90c2690c449ebc21fd1b5cba93d6703544db73514c97095153ff0"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/platform_private.c2p1_item_allowed.sql",
+      "sha256": "a7b43c73f1d5a06532966bb6727f1acf1bd6d5f8b2ac4976481e2b93278d05fb"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/platform_private.c2p1_item_fence.sql",
+      "sha256": "87f217e538d6747046553f7193e8f9794a69f4b1c29a4fe58e93153c569bfafc"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/platform_private.c2p1_rule_fence.sql",
+      "sha256": "cc0290fe4d501c75cb3dd0930294492bed5f8423218cf41e341a5ae73448c5a6"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/respond_b2b_order_quote_secure.sql",
+      "sha256": "f496290a2d010e8aafd8a08cfe6df218f8e02a00e5f90ee21db62639e0580f4b"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_admin_create_commercial_plan.sql",
+      "sha256": "fd1a1f6fc0a1b551bac730bbaf79277f6d788591ad7799aa9e30e4495fdd7ab0"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_admin_list_commercial_plans.sql",
+      "sha256": "b7880e4cfbcd04f7dcb7d8971682cec7de2a5b9ed7aae3c46889b9233f62aaa1"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_admin_reorder_commercial_plans.sql",
+      "sha256": "6ef5f3b0fb8059022a2982f47abdcf799be06e7bc20ae5ddd902124e6646f5b8"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_admin_set_commercial_plan_active.sql",
+      "sha256": "3a5fb9c3a06e1048d36e473f27b537a8f30496c63711ec424ba4bbdd57328ccc"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_admin_set_default_commercial_plan.sql",
+      "sha256": "751a0a64e38675c311bac6032fb1fae76c1a8056332d13bbdcde0e0898c97d4f"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_admin_update_commercial_plan_metadata.sql",
+      "sha256": "1fe1fb832c7db80a72b738b2c303288cec8f99b79a931e2563dfbab5a748ee04"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_admin_version_commercial_plan.sql",
+      "sha256": "c2d5d2117747c316e74d5148302b81262a08edbadc12102107d8cf9e714fc9d6"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_b2b_list_selectable_payment_plans.sql",
+      "sha256": "959a98c5c91e2fe5a242e6a882d98df399f4c83e77b5296bc67919c144cac614"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_cc_archive_assignment.sql",
+      "sha256": "d5f7323cfcdec9700efce51c15faeb48f5b4584168990c3b0b4ae80dfbffd0ce"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_cc_list_assignments.sql",
+      "sha256": "4b21259c11d4956b8f80835d89d2f79734b9ba0e3054a31b0c25ea73ad11a4c5"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_cc_publish_assignment.sql",
+      "sha256": "6554dd7f8cc0a98d84316fddd115dc2e23e6df5c086058e2337da43ee5887c85"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_cc_simulate_price.sql",
+      "sha256": "a54ccb246dff2b7480d73adf6ac3018d02060407f17031813f748c933c597025"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_cc_upsert_assignment.sql",
+      "sha256": "3aca02e3dbbfd3ea1708956a9f48ad4666b81ecb3fc9515dd8c3f9f82497f8df"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/rpc_cc_validate_matrix.sql",
+      "sha256": "cb16e9145e655b8bbb6ab7198c19a0c9bda8ee495802e2890d24e5dfb4adf8a4"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/functions/simulate_b2b_payment_plan_secure.sql",
+      "sha256": "373760bdd287836e368c1490a8029fbd8de781792a9ae769938ff9dccbd9361b"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/live-pins.json",
+      "sha256": "c3b5a7f24f809c4f7aee7be2e7f8e842814e28df8c045c2d55f3ae3e12682b17"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/local-pg.json",
+      "sha256": "c1fa614813838d7b122d8095fa9250a8e83c8c15c2e84cc8709f078f1f1baab5"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/project-validation.json",
+      "sha256": "e23989c81013f181296f77cb27d069d542dffba5340a09015510cfeead082d11"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/generate.py",
+      "sha256": "d894473aba939f755c1205308c9361c3d09ec6610e126585f7b6c13082eef837"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/manifest.json",
+      "sha256": "7f319b984ce96d8ea7b9753e95fa256a2b80bb13b69d94415ddfcfb195abc642"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/test-fixture.sql",
+      "sha256": "068c67e37aac52d43a3eafb946050ca6106ca07bfe7188803f6ec905752ca3fe"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/test-local-pg.py",
+      "sha256": "e6ed4792169856ee57a81bbb3c1fc1d74cb095e9f84265866ee38e0f734c64ef"
+    },
+    {
       "file": "scripts/contracts-c2-20261022/candidate.sql.review",
       "sha256": "75b8e67c633869389920a64ed7a45752df631bfcb7f4fc6614ccc61a92e72292"
     },
