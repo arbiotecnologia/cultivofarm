@@ -50,6 +50,9 @@ def main():
   pre=json.loads(B.last(S.STATE+'::text;'))
   post=json.loads([x for x in B.sql('BEGIN;'+S.candidate()+S.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   S.write(pre,post);B.sql((C.H/'send/install.sql.review').read_text())
+  send_out=OUT/'delivery-send';send_out.mkdir()
+  for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
+   shutil.copyfile(C.H/'send'/name,send_out/name)
   B.sql('GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;')
   B.apply_current_catalog(B.sql,B.T.A)
   # Captured NULL ACL vs restore's explicit postgres-only ACL: same effective
