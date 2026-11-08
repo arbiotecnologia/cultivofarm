@@ -1,9 +1,11 @@
 
  RUN  v3.2.4 /dev-server
 
-No test files found, exiting with code 1
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts (10 tests) 25ms
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx (3 tests) 234ms
 
-filter: scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts, scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx
-include: src/**/*.{test,spec}.{ts,tsx}
-exclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+   Start at  22:49:42
+   Duration  4.89s (transform 306ms, setup 589ms, collect 1.09s, tests 259ms, environment 4.02s, prepare 647ms)
 
