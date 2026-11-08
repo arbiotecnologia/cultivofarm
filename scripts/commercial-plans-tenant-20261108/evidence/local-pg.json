@@ -1,10 +1,14 @@
 {
   "project_ref": "swzpzcwiasxmjutrmvkm",
   "status": "PASS",
-  "checks": 58,
+  "checks": 63,
   "results": [
     {
-      "name": "ANTES: FSF lê planos ARBio pela RPC admin",
+      "name": "ANTES: FSF lê todos os planos sem recorte pela RPC admin",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES: atribuição da exceção sem owner não aparece, isolada do leak de Planos",
       "status": "PASS"
     },
     {
@@ -32,11 +36,15 @@
       "status": "PASS"
     },
     {
-      "name": "proveniência A resolvida",
+      "name": "proveniência A resolvida por profiles.user_id",
       "status": "PASS"
     },
     {
-      "name": "proveniência B resolvida",
+      "name": "proveniência B resolvida por profiles.user_id",
+      "status": "PASS"
+    },
+    {
+      "name": "exceção AUDIT-CF fica na organização do próprio criador, não ARBio",
       "status": "PASS"
     },
     {
@@ -52,7 +60,15 @@
       "status": "PASS"
     },
     {
-      "name": "DEPOIS: FSF lista somente seu plano",
+      "name": "DEPOIS: FSF lista somente seu plano e a exceção de sua organização",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: exceção é legível por FSF e invisível para ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: ARBio não lê a exceção de outra organização",
       "status": "PASS"
     },
     {
@@ -65,6 +81,10 @@
     },
     {
       "name": "DEPOIS: leitura direta FSF isolada por RLS",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: atribuição sem owner continua invisível após candidato",
       "status": "PASS"
     },
     {
