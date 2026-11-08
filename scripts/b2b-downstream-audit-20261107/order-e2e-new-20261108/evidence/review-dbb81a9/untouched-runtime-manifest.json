@@ -1,0 +1,7 @@
+{
+  "src/integrations/supabase/client.ts": "e9fbc6a111b060a00ec6b7159e99013876afc5459b9798253d512531b14cb454",
+  "src/integrations/supabase/bindingGuard.ts": "2e5411b8b11b470bd554b4247341059574018144ecd0887edea265a3f6a5e80f",
+  "src/pages/OrdensServico.tsx": "07f2727ba7889cffc23fd4133d4361637207fa2da734e5a0c1741b5488f69b7d",
+  "src/hooks/useEsteiraLaboratorio.ts": "83fcb963d92b6e2f92b9421a5ee3cdcf42674d7d0735555c2e6ec97f914a1133",
+  "scripts/commercial-plans-tenant-20261108/02-install.sql.review": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40"
+}
