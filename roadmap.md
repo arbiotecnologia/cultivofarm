@@ -1,3 +1,11 @@
+## 08/11 17:13 — Revisão independente f32c4f3: planos, composição única e ponte fiscal
+- [ ] **PRIORIDADE/BLOCKER:** reproduzir ANTES a unicidade global `commercial_payment_plans_code_key` e as revogações durante row locks de `set_default`/`reorder`; corrigir por gerador para código único por `organization_id`, sem vazamento/colisão entre empresas, preservando validação, versionamento e consultas por código.
+- [ ] Revalidar ator, papel, perfil, tenant e organização depois do último lock relevante antes de qualquer efeito/auditoria; cobrir padrão, reordenação, metadados, ativação, versão e criação conforme seus locks reais, com conexões concorrentes e zero mudanças parciais.
+- [ ] Atualizar PRE/POST/pins/rollback deny-only para constraint/índices de código e padrão; preservar exceção não-ARBio, seis planos/snapshots e cinco títulos MANUAL teste4. Candidato anterior `92053bcb…` permanece INATIVO/NÃO APROVADO.
+- [ ] Compor o candidato corrigido de planos + B3 + logística `a0fc2e54` no MESMO PostgreSQL descartável, com positivos comprador/vendedor, negativas FSF, baselines, POST e rollback; contagens isoladas não bastam.
+- [ ] Identificar por arquivo o teste da suíte Vitest que excedeu dez minutos; não declarar a execução geral como PASS nem ignorar falhas.
+- [ ] Após o pacote de planos, preparar ponte fiscal mínima service-only `fiscal_invoices`→B4 sobre as estruturas existentes, com eventos sintéticos pendente/rejeitado/autorizado/retentativa, origem/tenant/idempotência/recuperação/parcialidade e cancelamento; sem inventar `auth.uid()`, ator, contabilidade ou habilitar exceção manual.
+
 ## 08/11 16:53 — DECISÃO: motor único de recebíveis por confirmação fiscal
 - [ ] Manter **BLOCKER prioritário** o isolamento dos planos comerciais: regressão local do candidato `92053bcb…` repetida em **63/63**, sem instalá-lo; liberação continua condicionada a revisão independente e reteste real FSF/ARBio.
 - [x] Registrar a decisão aprovada: motor único sobre as estruturas atuais; título/parcelas ARBio somente após NF-e autorizada ou NFS-e emitida confirmada; pedido aprovado é previsão/reserva de crédito e entrega não gera outro título; exceção manual exige autoridade, justificativa, origem e trilha.
