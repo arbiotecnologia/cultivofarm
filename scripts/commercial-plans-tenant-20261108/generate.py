@@ -73,7 +73,7 @@ def build_functions() -> dict[str, str]:
     needle = "  PERFORM pg_advisory_xact_lock(hashtext('cpp_default_plan:' || v_org::text));"
     s = edit(s, needle, needle + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
-    s = edit(s, "   WHERE is_default AND id <> p_plan_id FOR UPDATE", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id FOR UPDATE;")
+    s = edit(s, "   WHERE is_default AND id <> p_plan_id FOR UPDATE", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id FOR UPDATE")
     s = edit(s, "  UPDATE public.commercial_payment_plans SET is_default = false", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  UPDATE public.commercial_payment_plans SET is_default = false")
     s = edit(s, "   WHERE is_default AND id <> p_plan_id;", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id;")
     s = edit(s, "  IF v_prev.id IS NOT NULL THEN", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  IF v_prev.id IS NOT NULL THEN")
@@ -216,6 +216,22 @@ def build_functions() -> dict[str, str]:
 
 
 HELPERS = r"""
+CREATE OR REPLACE FUNCTION platform_private.commercial_plan_revalidate_actor(p_expected uuid)
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid;
+BEGIN
+ IF auth.uid() IS NULL OR NOT EXISTS(
+   SELECT 1 FROM public.user_roles ur
+   WHERE ur.user_id=auth.uid() AND ur.role IN ('administrador','financeiro','gestor_comercial')
+ ) THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
+ SELECT pr.organization_id INTO v_org
+ FROM public.profiles pr JOIN public.organizations o ON o.id=pr.organization_id
+ WHERE pr.user_id=auth.uid() AND pr.ativo IS TRUE AND o.ativo IS TRUE AND o.status='ativa';
+ IF v_org IS NULL OR v_org IS DISTINCT FROM p_expected THEN
+   RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501';
+ END IF;
+END $$;
+
 CREATE OR REPLACE FUNCTION platform_private.commercial_plan_actor_organization()
 RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]);
@@ -306,7 +322,7 @@ BEGIN
  RETURN NEW;
 END $$;
 
-REVOKE ALL ON FUNCTION platform_private.commercial_plan_actor_organization(),platform_private.commercial_plan_target_organization(text,uuid,uuid),platform_private.commercial_plan_partner_visible(uuid,uuid),platform_private.commercial_plan_tenant_guard(),platform_private.commercial_b3_version_tenant_guard() FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.commercial_plan_revalidate_actor(uuid),platform_private.commercial_plan_actor_organization(),platform_private.commercial_plan_target_organization(text,uuid,uuid),platform_private.commercial_plan_partner_visible(uuid,uuid),platform_private.commercial_plan_tenant_guard(),platform_private.commercial_b3_version_tenant_guard() FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.commercial_plan_admin_allowed(uuid),platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid),platform_private.commercial_plan_buyer_visible(uuid,uuid) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION platform_private.commercial_plan_admin_allowed(uuid),platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid),platform_private.commercial_plan_buyer_visible(uuid,uuid) TO authenticated;
 """
@@ -345,7 +361,15 @@ WITH evidence AS (
 UPDATE public.commercial_payment_plans p SET organization_id=r.organization_id
 FROM resolved r WHERE COALESCE(p.root_plan_id,p.id)=r.family_id;
 
+DO $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM public.commercial_payment_plans WHERE organization_id IS NOT NULL GROUP BY organization_id,code HAVING count(*)>1) THEN
+   RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_CODE_COLLISION';
+ END IF;
+END $$;
+ALTER TABLE public.commercial_payment_plans DROP CONSTRAINT commercial_payment_plans_code_key;
 DROP INDEX public.uq_cpp_single_default;
+CREATE UNIQUE INDEX uq_cpp_tenant_code ON public.commercial_payment_plans(organization_id,code) WHERE organization_id IS NOT NULL;
 CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans(organization_id) NULLS NOT DISTINCT WHERE is_default;
 CREATE INDEX idx_cpp_tenant_sort ON public.commercial_payment_plans(organization_id,active,sort_order);
 """
