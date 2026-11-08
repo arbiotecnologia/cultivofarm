@@ -65,7 +65,7 @@ def main() -> None:
 
     # H12 só pode declarar AUTHORIZED com retorno H13 vinculado, homologado,
     # protocolado e XML assinado. O nfeProc continua explicitamente ausente.
-    apply_auth = edit(apply_source, "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid;", "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid; v_bridge jsonb; v_tx public.fiscal_sefaz_transmissions%ROWTYPE;")
+    apply_auth = edit(apply_source, "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid;", "DECLARE v_inv public.fiscal_invoices%ROWTYPE; v_xml uuid; v_bridge jsonb; v_tx public.fiscal_sefaz_transmissions%ROWTYPE; v_saved platform_private.b2b_fiscal_invoice_snapshots%ROWTYPE;")
     apply_auth = edit(apply_auth, """  IF nullif(btrim(coalesce(_protocol,'')),'') IS NULL
      OR coalesce(_access_key,'') !~ '^[0-9]{44}$' THEN
     RAISE EXCEPTION 'FISCAL_AUTHORIZATION_PAYLOAD_INVALID';
@@ -95,7 +95,7 @@ def main() -> None:
 """, """  SELECT * INTO v_tx FROM public.fiscal_sefaz_transmissions
    WHERE id=_transmission_id AND fiscal_invoice_id=_invoice_id FOR UPDATE;
   IF NOT FOUND OR v_tx.state IS DISTINCT FROM 'SUCCEEDED'
-    OR v_tx.outcome IS DISTINCT FROM 'AUTHORIZED' OR v_tx.c_stat IS DISTINCT FROM _c_stat
+    OR v_tx.outcome IS DISTINCT FROM 'AUTHORIZED' OR coalesce(v_tx.protocol_c_stat,v_tx.c_stat) IS DISTINCT FROM _c_stat
     OR v_tx.ch_nfe IS DISTINCT FROM _access_key OR v_tx.n_prot IS DISTINCT FROM _protocol
     OR v_tx.ambiente_retorno IS DISTINCT FROM '2' THEN
     RAISE EXCEPTION 'FISCAL_AUTHORIZATION_TRANSMISSION_MISMATCH';
@@ -115,6 +115,13 @@ def main() -> None:
     IF coalesce(v_inv.access_key,'') <> _access_key THEN
       RAISE EXCEPTION 'FISCAL_AUTHORIZATION_CONFLICT: documento ja autorizado com outra chave.';
     END IF;
+    SELECT * INTO v_saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=v_inv.id;
+    IF v_saved.invoice_id IS NOT NULL AND (
+      v_saved.protocol IS DISTINCT FROM _protocol
+      OR v_saved.snapshot->>'access_key' IS DISTINCT FROM _access_key
+      OR v_saved.snapshot->>'transmission_c_stat' IS DISTINCT FROM _c_stat
+      OR v_saved.snapshot->>'transmission_environment' IS DISTINCT FROM v_tx.ambiente_retorno
+    ) THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
     v_bridge := platform_private.b2b_fiscal_invoice_bridge_v1(v_inv.id);
     RETURN jsonb_build_object('invoiceId', v_inv.id, 'applied', false,
       'normalizedStatus', v_inv.normalized_status,
@@ -136,9 +143,37 @@ def main() -> None:
     'signedXmlRunId', v_xml,
     'protocoledXmlStored', false);""")
 
+    # H13 separa o status do lote do status efetivo do protocolo, serializa o
+    # callback pela transmissão e nunca rebaixa uma autorização já persistida.
+    transmit = edit(transmit_source, "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;", "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;")
+    transmit = edit(transmit, "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.c_stat);", "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.protocol_c_stat, v_cur.c_stat);")
+    transmit = edit(transmit, """  UPDATE public.fiscal_sefaz_transmissions SET
+    state            = _state,""", """  IF v_cur.outcome = 'AUTHORIZED' AND v_outcome IS DISTINCT FROM 'AUTHORIZED' THEN
+    RETURN jsonb_build_object(
+      'transmissionId',v_cur.id,'state',v_cur.state,'outcome',v_cur.outcome,
+      'cStat',v_cur.c_stat,'protocolCStat',coalesce(v_cur.protocol_c_stat,v_cur.c_stat),
+      'xMotivo',v_cur.x_motivo,'chNFe',v_cur.ch_nfe,'nProt',v_cur.n_prot,'nRec',v_cur.n_rec,
+      'reconciliationPending',v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING',
+      'reconciliationCode',CASE WHEN v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' THEN v_cur.error_code ELSE NULL END);
+  END IF;
+  IF v_cur.outcome = 'AUTHORIZED' AND (
+    v_cur.ch_nfe IS DISTINCT FROM coalesce(_patch->>'chNFe',v_cur.ch_nfe)
+    OR v_cur.n_prot IS DISTINCT FROM v_prot
+    OR coalesce(v_cur.protocol_c_stat,v_cur.c_stat) IS DISTINCT FROM v_cstat
+  ) THEN RAISE EXCEPTION 'FISCAL_AUTHORIZATION_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+
+  UPDATE public.fiscal_sefaz_transmissions SET
+    state            = _state,""")
+    transmit = edit(transmit, "    c_stat           = coalesce(_patch->>'cStat', c_stat),", """    c_stat           = coalesce(_patch->>'cStat', c_stat),
+    protocol_c_stat  = CASE WHEN _patch ? 'protocolCStat' THEN _patch->>'protocolCStat'
+                            WHEN _patch->>'cStat' IN ('100','150') THEN _patch->>'cStat'
+                            ELSE protocol_c_stat END,""")
+    transmit = edit(transmit, "        v_row.c_stat, v_row.x_motivo, v_row.id);", "        coalesce(v_row.protocol_c_stat,v_row.c_stat), v_row.x_motivo, v_row.id);")
+    transmit = edit(transmit, "    'cStat', v_row.c_stat, 'xMotivo', v_row.x_motivo,", "    'cStat', v_row.c_stat, 'protocolCStat', coalesce(v_row.protocol_c_stat,v_row.c_stat), 'xMotivo', v_row.x_motivo,")
+
     # H13 preserva o retorno externo em caso de falha. Um retry bem-sucedido limpa
     # somente o pendente de fechamento, nunca outros erros fiscais.
-    transmit = edit(transmit_source, """  IF v_close_error IS NOT NULL THEN
+    transmit = edit(transmit, """  IF v_close_error IS NOT NULL THEN
     UPDATE public.fiscal_sefaz_transmissions
        SET error_code = v_close_error
      WHERE id = _transmission_id
@@ -169,6 +204,7 @@ ALTER TABLE platform_private.b2b_fiscal_invoice_snapshots ENABLE ROW LEVEL SECUR
 REVOKE ALL ON platform_private.b2b_fiscal_invoice_snapshots FROM PUBLIC,anon,authenticated,service_role;
 ALTER TABLE platform_private.b2b_title_permits ALTER COLUMN actor_id DROP NOT NULL;
 ALTER TABLE public.accounts_receivable ALTER COLUMN created_by DROP NOT NULL;
+ALTER TABLE public.fiscal_sefaz_transmissions ADD COLUMN protocol_c_stat text;
 """
 
     bridge = r"""
@@ -202,7 +238,7 @@ ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b
 CREATE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
 DECLARE inv public.fiscal_invoices; po public.partner_orders; tx public.fiscal_sefaz_transmissions;
- org uuid; items jsonb; snapshot_items jsonb; canonical_snapshot jsonb; digest text; result jsonb;
+ org uuid; items jsonb; snapshot_items jsonb; canonical_snapshot jsonb; digest_snapshot jsonb; digest text; result jsonb;
  existing platform_private.b2b_authorized_documents; saved platform_private.b2b_fiscal_invoice_snapshots;
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'B2B_READ_COMMITTED_REQUIRED' USING ERRCODE='0A000'; END IF;
@@ -225,10 +261,17 @@ BEGIN
  IF inv.invoice_type IS DISTINCT FROM 'NFE' OR inv.authorized_at IS NULL OR inv.issue_date IS NULL
   OR inv.environment IS DISTINCT FROM 'HOMOLOGATION' OR coalesce(inv.access_key,'')!~'^[0-9]{44}$'
  THEN RAISE EXCEPTION 'B2B_FISCAL_CONFIRMATION_UNPROVEN' USING ERRCODE='42501'; END IF;
- SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
- WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
-  AND t.c_stat IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
- ORDER BY t.completed_at DESC NULLS LAST,t.id LIMIT 1;
+ SELECT * INTO saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=inv.id;
+ IF saved.invoice_id IS NOT NULL THEN
+  SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
+  WHERE t.id=saved.transmission_id AND t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
+   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2';
+ ELSE
+  SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
+  WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
+   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
+  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1;
+ END IF;
  IF tx.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
    WHERE r.fiscal_invoice_id=inv.id AND r.signed_path IS NOT NULL AND (r.access_key IS NULL OR r.access_key=inv.access_key))
  THEN RAISE EXCEPTION 'B2B_FISCAL_CONFIRMATION_UNPROVEN' USING ERRCODE='42501'; END IF;
@@ -260,11 +303,15 @@ BEGIN
   'partner_order_id',inv.partner_order_id,'debtor_partner_id',inv.debtor_partner_id,'debtor_customer_id',inv.debtor_customer_id,
   'issue_date',inv.issue_date,'total_amount',inv.total_amount,'provider_reference',inv.provider_reference,
   'provider_status_raw',inv.provider_status_raw,'tax_authority_notes',inv.tax_authority_notes,
-  'transmission_id',tx.id,'protocol',tx.n_prot,'transmission_c_stat',tx.c_stat,
+  'transmission_id',tx.id,'protocol',tx.n_prot,'transmission_c_stat',coalesce(tx.protocol_c_stat,tx.c_stat),
   'transmission_outcome',tx.outcome,'transmission_environment',tx.ambiente_retorno,'items',snapshot_items);
- digest:=encode(extensions.digest(convert_to(canonical_snapshot::text,'UTF8'),'sha256'),'hex');
+ -- O ID identifica a evidência original, mas não a identidade fiscal do evento.
+ -- Nova confirmação da mesma chave/protocolo não altera digest nem referência.
+ digest_snapshot:=canonical_snapshot-'transmission_id';
+ digest:=encode(extensions.digest(convert_to(digest_snapshot::text,'UTF8'),'sha256'),'hex');
  SELECT * INTO existing FROM platform_private.b2b_authorized_documents WHERE id=inv.id;
- SELECT * INTO saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=inv.id;
+ -- Uma confirmação divergente é negada pelo H12 no próprio callback; ela não
+ -- contamina nem substitui a referência original usada por replays diretos.
  IF existing.id IS NOT NULL AND (saved.invoice_id IS NULL OR saved.source_digest IS DISTINCT FROM digest OR saved.snapshot IS DISTINCT FROM canonical_snapshot
    OR (existing.organization_id,existing.partner_id,existing.order_id,existing.kind,existing.issue_date,existing.event_key,existing.source_digest,existing.items,existing.state)
    IS DISTINCT FROM (org,po.partner_id,po.id,inv.invoice_type,inv.issue_date,'fiscal_invoice:'||inv.id::text,digest,items,'AUTHORIZED'))
@@ -301,6 +348,7 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(apply_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(transmit_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_PIN_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='NO') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_BASELINE_DRIFT'; END IF;
+ IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='fiscal_sefaz_transmissions' AND column_name='protocol_c_stat') THEN RAISE EXCEPTION 'B2B_FISCAL_PROTOCOL_CSTAT_ALREADY_EXISTS'; END IF;
 END $$;
 """
     post = f"""-- READONLY POST da ponte; não certifica provedor/JWT/RLS hosted.
@@ -314,6 +362,7 @@ DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_POST_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='b2b_fiscal_created_by_guard' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_GUARD_MISSING'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_fiscal_invoice_snapshots'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_RLS_MISSING'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='fiscal_sefaz_transmissions' AND column_name='protocol_c_stat' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_PROTOCOL_CSTAT_POST_DRIFT'; END IF;
 END $$;
 """
     install = "-- REVIEW ONLY; ponte service-only inativa até revisão e autorização.\nBEGIN;\nSET LOCAL lock_timeout='3s';\n" + pre + schema + bridge + "\n" + actor + ";\n" + fence + ";\n" + apply_auth + ";\n" + transmit + ";\n" + post + "\nCOMMIT;\n"

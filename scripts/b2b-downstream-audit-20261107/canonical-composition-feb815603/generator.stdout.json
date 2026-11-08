@@ -1,0 +1,19 @@
+{
+  "outputs": {
+    "01-pre.sql.readonly": "b23c99691c3b8b783076bde20cff2d2e63b9c2a30f28a02e7a6787be00398cdc",
+    "02-install.sql.review": "3f587be543c731a58db846f55e3e5e291fb525c066acc0ef6687e0f9c3515dd4",
+    "03-post.sql.readonly": "b5d0f6e43f954f995b192edb4370a2246bc60d6a53dc573ce31922d86ae14bbb",
+    "04-rollback-deny.sql.review": "d51b80a5a8eec7fc6d873a4ba4c96bcc8d5e0e5534297daf021469db03a11f4f",
+    "stages/01-b4-pre-post-composition.sql.readonly": "f495866d7628858360fa409247f929862360939091b216f289af9cf4e39d5464",
+    "stages/02-b4-install-post-composition.sql.review": "6500bf54b5df05c753e75ada0f6ed12948e81f0e86f274222a2eae481a681f54",
+    "stages/03-b4-post.sql.readonly": "2b9e665765c85e3f9cc6ffb0fc9fcd59cb8272fcf60833bf257da33935af2ae4",
+    "stages/04-bridge-install.sql.review": "4fe6d63a8ba562367129a5abce72a1be602acb0bd597337c556286232ffc8fdf"
+  },
+  "overridden_dependencies": [
+    "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)",
+    "public.b2b_payment_condition_retire(uuid,text,integer)",
+    "public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)",
+    "public.b2b_payment_condition_config_list()",
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)"
+  ]
+}

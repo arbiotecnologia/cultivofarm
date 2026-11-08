@@ -1,0 +1,16 @@
+--- production/b2b_payment_condition_publish
++++ post-plans/b2b_payment_condition_publish
+@@ -11,10 +11,12 @@
+      OR p_installment_count IS NULL OR p_monthly_rate IS NULL THEN RAISE EXCEPTION 'payment_condition_config_invalid' USING ERRCODE='22023'; END IF;
+   PERFORM pg_advisory_xact_lock(hashtextextended('b2bcond:' || v_org::text || ':' || p_plan_id::text || ':' || p_method, 0));
+   IF platform_private.b2b_condition_cfg_actor(false) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
++  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+   SELECT * INTO cur FROM platform_private.b2b_condition_versions v WHERE v.organization_id=v_org AND v.plan_id=p_plan_id AND v.method=p_method
+    ORDER BY v.version DESC LIMIT 1 FOR UPDATE;
+   IF COALESCE(cur.version,0) <> p_expected_version THEN RAISE EXCEPTION 'payment_condition_config_stale' USING ERRCODE='PT409'; END IF;
+-  SELECT p.active, p.superseded_by_id, p.max_days, p.monthly_interest_percent INTO pl FROM public.commercial_payment_plans p WHERE p.id=p_plan_id FOR SHARE;
++  SELECT p.active, p.superseded_by_id, p.max_days, p.monthly_interest_percent INTO pl FROM public.commercial_payment_plans p WHERE p.id=p_plan_id AND p.organization_id=v_org FOR SHARE;
++  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
+   IF pl.active IS NOT TRUE OR pl.superseded_by_id IS NOT NULL THEN RAISE EXCEPTION 'plan_inactive' USING ERRCODE='P0001'; END IF;
+   IF COALESCE(pl.monthly_interest_percent,0) <> 0 THEN RAISE EXCEPTION 'payment_condition_plan_interest_conflict' USING ERRCODE='P0001'; END IF;
+   IF p_deadline_days > COALESCE(pl.max_days,0) THEN RAISE EXCEPTION 'payment_condition_deadline_exceeds_plan' USING ERRCODE='P0001'; END IF;

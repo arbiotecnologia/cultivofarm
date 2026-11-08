@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "1dad4271-db2d-480f-952d-8bf90c443f88"
+    "order_id": "56baa5b8-e60e-4d2d-9b22-51169e04fae8"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "1e0238d4-7787-4619-99c2-0731ad32c387"
+    "os_id": "5f6457dd-1405-4c4f-bb28-785cadf96f28"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +68,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "636a009e-5450-4804-8253-8c5858cc4fdd"
+    "delivery_id": "a8ad582d-6998-482a-be0f-3b30bcab778c"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "1a174645-5fdf-4191-ac3a-5bce2276644b"
+    "delivery_id": "a0562378-139c-4339-9e53-c36e70f1c51b"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -197,7 +197,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "1df00d8b-e213-4bf5-9236-b3fe99098c19"
+    "delivery_id": "faa44344-527e-48e1-9c88-d1df3c8c7f81"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
@@ -206,6 +206,14 @@
   },
   {
     "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
+    "status": "PASS"
+  },
+  {
+    "test": "composed PRE post-plans reconciles five dependencies then B4 bridge and composed POST pass without changing B4 body or always-deny",
+    "status": "PASS"
+  },
+  {
+    "test": "B4 credit exposure includes approved unbilled orders without creating receivable or using dependency seam",
     "status": "PASS"
   },
   {

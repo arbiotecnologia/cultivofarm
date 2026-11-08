@@ -1,0 +1,15 @@
+--- production/b2b_payment_condition_config_list
++++ post-plans/b2b_payment_condition_config_list
+@@ -28,10 +28,10 @@
+               AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_condition_assignment_revocations x WHERE (x.organization_id,x.partner_id,x.plan_id,x.version,x.method)=(a.organization_id,a.partner_id,a.plan_id,a.version,a.method))),'[]'::jsonb))
+         ORDER BY v.plan_id, v.method)
+       FROM platform_private.b2b_condition_versions v
+-     WHERE v.organization_id = v_org AND v.version = (SELECT max(w.version) FROM platform_private.b2b_condition_versions w WHERE w.organization_id=v.organization_id AND w.plan_id=v.plan_id AND w.method=v.method)), '[]'::jsonb),
++     WHERE v.organization_id = v_org AND platform_private.commercial_plan_admin_allowed(v.plan_id) AND v.version = (SELECT max(w.version) FROM platform_private.b2b_condition_versions w WHERE w.organization_id=v.organization_id AND w.plan_id=v.plan_id AND w.method=v.method)), '[]'::jsonb),
+     'catalog', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', pm.id, 'name', pm.name) ORDER BY pm.name) FROM public.payment_methods pm WHERE pm.active IS TRUE), '[]'::jsonb),
+     'categories', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', k.id, 'name', k.name) ORDER BY k.name) FROM public.financial_categories k WHERE k.active IS TRUE AND upper(btrim(k.type))='RECEITA'), '[]'::jsonb),
+     'plans', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'code', p.code, 'max_days', p.max_days, 'monthly_interest_percent', p.monthly_interest_percent) ORDER BY p.name)
+-               FROM public.commercial_payment_plans p WHERE p.active IS TRUE AND p.superseded_by_id IS NULL), '[]'::jsonb),
++               FROM public.commercial_payment_plans p WHERE p.organization_id = v_org AND p.active IS TRUE AND p.superseded_by_id IS NULL), '[]'::jsonb),
+     'partners', COALESCE((SELECT jsonb_agg(a.id ORDER BY a.id) FROM public.partner_accounts a WHERE a.commercial_owner_organization_id = v_org AND a.ativo IS TRUE), '[]'::jsonb));
+ END $function$

@@ -1,14 +1,20 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-z85sxxxm/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 379, in main
-    composed_manifest=json.loads((composed_dir/'manifest.json').read_text())
-                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 546, in read_text
-    return PathBase.read_text(self, encoding, errors, newline)
-           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_abc.py", line 632, in read_text
-    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
-         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 537, in open
-    return io.open(self, mode, buffering, encoding, errors, newline)
-           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/tmp/new-order-e2e-z85sxxxm/project/scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/manifest.json'
+  File "/tmp/new-order-e2e-hoywqdrf/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 452, in main
+     B.sql(f"""SET ROLE service_role;
+     ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     VALUES('{transmission_id}','{invoice_id}','SENT','PENDING','103','PROCESSANDO','{access_key}','PENDING','2',now(),now());""")
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-hoywqdrf/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-hoywqdrf/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  null value in column "idempotency_key" of relation "fiscal_xml_runs" violates not-null constraint
+DETAIL:  Failing row contains (2f3acaa0-9def-4435-b2d0-b41010f0a762, 00000000-0000-0000-0000-000000000900, null, null, 1, null, F4.1, null, null, 35261111111111111111111111111111111111111111, PREPARED, null, null, null, null, null, null, null, local/00000000-0000-0000-0000-000000000900.xml, fiscal-xml, {}, {}, null, null, null, 2026-11-08 18:48:12.545737+00, null, null, 2026-11-08 18:48:12.545737+00, null, null, 2026-11-08 18:48:12.545737+00).
+

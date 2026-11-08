@@ -449,7 +449,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
   invoice_id=Q.u(900);transmission_id=Q.u(901);access_key='35261111111111111111111111111111111111111111'
   company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
-  B.sql(f"""INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
+  B.sql(f"""SET ROLE service_role;
+ INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
    partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference,access_key)
   VALUES('{invoice_id}','NFE','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-01','{accepted['total']}','{Q.UADM}','LOCAL-INTEGRATED','{access_key}');
  INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
@@ -458,13 +459,13 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   VALUES('{invoice_id}','local/{invoice_id}.xml','{access_key}',now(),now());
  INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
   VALUES('{transmission_id}','{invoice_id}','SENT','PENDING','103','PROCESSANDO','{access_key}','PENDING','2',now(),now());""")
-  patch=json.dumps({'cStat':'100','nProt':'LOCAL-INTEGRATED-PROTOCOL','chNFe':access_key,'xMotivo':'AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-01T12:00:00Z'}).replace("'","''")
+  patch=json.dumps({'cStat':'104','protocolCStat':'100','nProt':'LOCAL-INTEGRATED-PROTOCOL','chNFe':access_key,'xMotivo':'LOTE PROCESSADO; PROTOCOLO AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-01T12:00:00Z'}).replace("'","''")
   def authorized_callback():
    return B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','SUCCEEDED','{patch}'::jsonb);")
   callback=authorized_callback()
   assert callback.returncode==0,(callback.stdout,callback.stderr)
   callback_data=json.loads(callback.stdout.strip().splitlines()[-1])
-  assert callback_data['outcome']=='AUTHORIZED' and callback_data['reconciliationPending'] is True and callback_data['reconciliationCode']=='FISCAL_AUTHORIZATION_CLOSE_PENDING',callback_data
+  assert callback_data['outcome']=='AUTHORIZED' and callback_data['cStat']=='104' and callback_data['protocolCStat']=='100' and callback_data['reconciliationPending'] is True and callback_data['reconciliationCode']=='FISCAL_AUTHORIZATION_CLOSE_PENDING',callback_data
   replay_callback=authorized_callback()
   assert replay_callback.returncode==0,(replay_callback.stdout,replay_callback.stderr)
   replay_data=json.loads(replay_callback.stdout.strip().splitlines()[-1])
@@ -473,13 +474,15 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
    'invoice_status',(SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}'),
    'invoice_receivable',(SELECT receivable_id FROM public.fiscal_invoices WHERE id='{invoice_id}'),
    'transmission_outcome',(SELECT outcome FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
+   'transmission_c_stat',(SELECT c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
+   'transmission_protocol_c_stat',(SELECT protocol_c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
    'transmission_error',(SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
    'transmissions',(SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{invoice_id}'),
    'documents',(SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_id}'),
    'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE document_id='{invoice_id}'),
    'snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_id}'),
    'receivables',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_id}'))::text;"""))
-  assert blocked=={'invoice_status':'PENDING','invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_error':'FISCAL_AUTHORIZATION_CLOSE_PENDING','transmissions':1,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked
+  assert blocked=={'invoice_status':'PENDING','invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_c_stat':'104','transmission_protocol_c_stat':'100','transmission_error':'FISCAL_AUTHORIZATION_CLOSE_PENDING','transmissions':1,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked
   (OUT/'integrated-always-deny-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,blocked=blocked,schema_and_fiscal_events_synthetic=True,dependency_substituted=False),indent=2)+'\n')
   checks.append(dict(test='real H13 authorized callback and replay preserve one durable transmission with close pending; always-deny yields zero B4 document allocation snapshot or receivable',status='PASS'))
 

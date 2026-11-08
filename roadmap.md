@@ -1,3 +1,9 @@
+## 08/11 18:23 — Complemento de revisão SQL feb815603: parser, identidade fiscal e H13
+- [ ] Reproduzir no contrato real `cStat=104` + `protocolCStat=100`: outcome não pode ficar AUTHORIZED com coluna `c_stat=104`; separar status do lote/protocolo sem trocar o payload por 100 artificial, testar mesmo envelope/replay/recuperação.
+- [ ] Reproduzir confirmação repetida da mesma chave/protocolo por nova transmissão: identidade fiscal estável e referência original preservadas, sem conflito artificial por `transmission_id`; protocolo/valor divergentes continuam negados.
+- [ ] Revisar H13 fora de ordem/concorrente: não rebaixar autorização persistida nem apagar `error_code` de outra origem; callback segue service-only, always-deny e demais bloqueios intactos.
+- [ ] Integrar antes/depois ao rebuild descartável em andamento; candidato continua INATIVO/NÃO APROVADO, sem hosted/publicação/provedores/NF/cobranças/envios/delegação.
+
 ## 08/11 17:55 — Reconciliação canônica do bloqueio integrado feb815603
 - [ ] Inventariar TODAS as sobreposições entre baseline de produção, planos `cc1f6cc…`, B4 e ponte `3c0a2cdc…`; comparar semântica, tenant, revogação, locks e B3/B4 antes de novo rebuild.
 - [ ] Gerar candidato composto canônico com manifesto de baseline de produção versus baseline pós-planos, hashes/dependências e ordem PRE→install→POST→rollback conjunto.

@@ -1,0 +1,15 @@
+--- production/rpc_register_receivable_payment
++++ measured-alternate/rpc_register_receivable_payment
+@@ -71,9 +71,9 @@
+   v_notes    := NULLIF(p_payload->>'notes','');
+   v_has_receipt := COALESCE((p_payload->>'has_receipt')::boolean, false);
+ 
+-  IF v_amount::text IN ('NaN','Infinity','-Infinity') OR v_disc::text IN ('NaN','Infinity','-Infinity') OR v_int::text IN ('NaN','Infinity','-Infinity') OR v_pen::text IN ('NaN','Infinity','-Infinity') OR v_disc < 0 OR v_int < 0 OR v_pen < 0 OR v_amount <> round(v_amount,2) OR v_disc <> round(v_disc,2) OR v_int <> round(v_int,2) OR v_pen <> round(v_pen,2) THEN
+- RAISE EXCEPTION 'FIN_INVALID_AMOUNT: valores monetários inválidos.' USING ERRCODE='23514';
+- END IF;
++  IF v_amount::text IN ('NaN','Infinity','-Infinity') OR v_disc::text IN ('NaN','Infinity','-Infinity') OR v_int::text IN ('NaN','Infinity','-Infinity') OR v_pen::text IN ('NaN','Infinity','-Infinity') OR v_disc < 0 OR v_int < 0 OR v_pen < 0 OR v_amount <> round(v_amount,2) OR v_disc <> round(v_disc,2) OR v_int <> round(v_int,2) OR v_pen <> round(v_pen,2) THEN
++ RAISE EXCEPTION 'FIN_INVALID_AMOUNT: valores monetários inválidos.' USING ERRCODE='23514';
++ END IF;
+  IF v_amount <= 0 THEN
+     RAISE EXCEPTION 'Valor inválido.' USING ERRCODE='check_violation';
+   END IF;

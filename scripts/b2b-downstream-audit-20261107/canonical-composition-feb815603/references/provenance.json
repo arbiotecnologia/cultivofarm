@@ -1,0 +1,9 @@
+{
+  "kind": "LOCAL_POSTGRESQL_MEASUREMENT_NOT_HOSTED",
+  "checkpoint_path": "/tmp/new-order-checkpoint.sql",
+  "checkpoint_sha256": "5f54fc996e8df11bc293540fb75aefe39c304f3c9c9270970adc3bc0b25e646c",
+  "query": "SELECT pg_get_functiondef('public.rpc_register_receivable_payment(uuid,jsonb)'::regprocedure)",
+  "body_md5": "2f238ac7871ed569adee240c372027eb",
+  "normalization": "Removed only the extra newline appended by psql; SQL body unchanged",
+  "reference_sha256": "78c35680210b6267417e1975c54b21b45a890a9072135aa412382346d0f57677"
+}
