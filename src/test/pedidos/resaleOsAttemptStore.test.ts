@@ -3,7 +3,7 @@ import { clearResaleOsAttempt, loadResaleOsAttempt, RESALE_OS_ATTEMPT_KEY, retai
 
 const scope = { scope: "scope-A", actor: "10000000-0000-4000-8000-000000000004", tenant: "10000000-0000-4000-8000-000000000005" };
 const intent = { orderId: "10000000-0000-4000-8000-000000000001", itemId: "10000000-0000-4000-8000-000000000002", observed: "2026-11-08T21:12:00Z" };
-const now = Date.parse("2026-11-08T22:00:00Z");
+const now = Date.now();
 
 describe("retenção da tentativa de OS na aba", () => {
   beforeEach(() => { window.sessionStorage.clear(); vi.restoreAllMocks(); });
