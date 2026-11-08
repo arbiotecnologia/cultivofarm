@@ -90,7 +90,7 @@ END $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_created_by_guard(),platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) TO service_role;
 
-CREATE FUNCTION platform_private.b2b_integration_actor(p_partner uuid, p_internal boolean DEFAULT false) RETURNS uuid
+CREATE OR REPLACE FUNCTION platform_private.b2b_integration_actor(p_partner uuid, p_internal boolean DEFAULT false) RETURNS uuid
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
 DECLARE u uuid:=auth.uid(); org uuid:=public.h15_actor_organization(); owner_org uuid;
 BEGIN
@@ -112,7 +112,7 @@ BEGIN
   OR public.has_role(u,'cliente_produtor'::public.app_role)) THEN RAISE EXCEPTION 'B2B_INTERNAL_ONLY' USING ERRCODE='42501'; END IF;
  RETURN org;
 END $$;;
-CREATE FUNCTION platform_private.b2b_title_insert_fence() RETURNS trigger
+CREATE OR REPLACE FUNCTION platform_private.b2b_title_insert_fence() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE p platform_private.b2b_title_permits;
 BEGIN

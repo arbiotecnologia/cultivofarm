@@ -127,31 +127,20 @@ PASS rollback deny-only passa com PRE/POST e metadados íntegros
 PASS rollback preserva alocações, títulos e snapshots
 PASS rollback fecha writer legado sem apagar projeção nem histórico
 PASS ponte PRE confirma pins B4 e autorização capturada
-FAIL ponte service-only instala com POST e ACL fechada :: ERROR:  function "b2b_integration_actor" already exists with same argument types
-
-FAIL ponte POST íntegro :: ERROR:  B2B_FISCAL_ACTOR_POST_DRIFT
-CONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE
-
-FAIL ponte não recebe EXECUTE de usuário autenticado :: ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist
-LINE 1: SELECT platform_private.b2b_fiscal_invoice_bridge_v1('000000...
-               ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
-
-FAIL ponte mantém dependência fiscal/contábil real fechada antes da costura local :: ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist
-LINE 1: SELECT (platform_private.b2b_fiscal_invoice_bridge_v1('00000...
-                ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+PASS ponte service-only instala com POST e ACL fechada
+PASS ponte POST íntegro
+PASS ponte não recebe EXECUTE de usuário autenticado
+FAIL ponte mantém dependência fiscal/contábil real fechada antes da costura local :: ERROR:  B2B_FISCAL_CONFIRMATION_UNPROVEN
+CONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 15 at RAISE
 PASS dependência negada não deixa documento/título
-FAIL evento pendente é ignorado sem título :: ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist
-LINE 1: SELECT (platform_private.b2b_fiscal_invoice_bridge_v1('00000...
-                ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
-FAIL evento rejeitado é ignorado sem título :: ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist
-LINE 1: SELECT (platform_private.b2b_fiscal_invoice_bridge_v1('00000...
-                ^
-HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+PASS evento pendente é ignorado sem título
+PASS evento rejeitado é ignorado sem título
 PASS pendente/rejeitado não criam documento ou recebível
-FAIL autorização com falha pós-título aborta sem perder capacidade de retry :: 
-FAIL falha da autorização não deixa NF autorizada, documento ou título parcial :: 
-FAIL retentativa autorizada gera um recebível B4 pela NF :: {'applied': False, 'invoiceId': '00000000-0000-0000-0000-000000000390', 'normalizedStatus': 'AUTHORIZED', 'reconciliationStatus': 'PENDING'}
-FAIL execução sem exceção de harness :: KeyError('receivableId')
+PASS autorização com falha pós-título aborta sem perder capacidade de retry
+PASS falha da autorização não deixa NF autorizada, documento ou título parcial
+PASS retentativa autorizada gera um recebível B4 pela NF
+FAIL título service-only não inventa ator humano e conserva vínculo NF :: 
+PASS parcialidade service-only consome somente o restante do pedido
+PASS retentativa da NF autorizada é replay sem duplicação
+PASS duas chamadas service-only concorrentes preservam um único título
+FAIL execução sem exceção de harness :: TypeError('cannot unpack non-iterable NoneType object')

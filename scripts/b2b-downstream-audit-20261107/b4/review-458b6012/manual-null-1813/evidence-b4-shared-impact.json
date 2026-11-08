@@ -26,8 +26,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 131,
-  "total": 141,
+  "passed": 142,
+  "total": 145,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -547,23 +547,20 @@
     },
     {
       "name": "ponte service-only instala com POST e ACL fechada",
-      "ok": false,
-      "detail": "ERROR:  function \"b2b_integration_actor\" already exists with same argument types\n"
+      "ok": true
     },
     {
       "name": "ponte POST íntegro",
-      "ok": false,
-      "detail": "ERROR:  B2B_FISCAL_ACTOR_POST_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE\n"
+      "ok": true
     },
     {
       "name": "ponte não recebe EXECUTE de usuário autenticado",
-      "ok": false,
-      "detail": "ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist\nLINE 1: SELECT platform_private.b2b_fiscal_invoice_bridge_v1('000000...\n               ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+      "ok": true
     },
     {
       "name": "ponte mantém dependência fiscal/contábil real fechada antes da costura local",
       "ok": false,
-      "detail": "ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist\nLINE 1: SELECT (platform_private.b2b_fiscal_invoice_bridge_v1('00000...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+      "detail": "ERROR:  B2B_FISCAL_CONFIRMATION_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 15 at RAISE"
     },
     {
       "name": "dependência negada não deixa documento/título",
@@ -571,13 +568,11 @@
     },
     {
       "name": "evento pendente é ignorado sem título",
-      "ok": false,
-      "detail": "ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist\nLINE 1: SELECT (platform_private.b2b_fiscal_invoice_bridge_v1('00000...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+      "ok": true
     },
     {
       "name": "evento rejeitado é ignorado sem título",
-      "ok": false,
-      "detail": "ERROR:  function platform_private.b2b_fiscal_invoice_bridge_v1(unknown) does not exist\nLINE 1: SELECT (platform_private.b2b_fiscal_invoice_bridge_v1('00000...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts."
+      "ok": true
     },
     {
       "name": "pendente/rejeitado não criam documento ou recebível",
@@ -585,23 +580,37 @@
     },
     {
       "name": "autorização com falha pós-título aborta sem perder capacidade de retry",
-      "ok": false,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "falha da autorização não deixa NF autorizada, documento ou título parcial",
+      "ok": true
+    },
+    {
+      "name": "retentativa autorizada gera um recebível B4 pela NF",
+      "ok": true
+    },
+    {
+      "name": "título service-only não inventa ator humano e conserva vínculo NF",
       "ok": false,
       "detail": ""
     },
     {
-      "name": "retentativa autorizada gera um recebível B4 pela NF",
-      "ok": false,
-      "detail": "{'applied': False, 'invoiceId': '00000000-0000-0000-0000-000000000390', 'normalizedStatus': 'AUTHORIZED', 'reconciliationStatus': 'PENDING'}"
+      "name": "parcialidade service-only consome somente o restante do pedido",
+      "ok": true
+    },
+    {
+      "name": "retentativa da NF autorizada é replay sem duplicação",
+      "ok": true
+    },
+    {
+      "name": "duas chamadas service-only concorrentes preservam um único título",
+      "ok": true
     },
     {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "KeyError('receivableId')"
+      "detail": "TypeError('cannot unpack non-iterable NoneType object')"
     }
   ],
   "hosted": "NOT_RUN",
