@@ -160,7 +160,7 @@ GRANT EXECUTE ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) TO
 DO $$ BEGIN
  IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
  IF to_regprocedure('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ALREADY_INSTALLED'; END IF;
- IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(extract(b4text,'b2b_integration_actor').encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_PIN_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '{md5_pg(extract(b4text,'b2b_integration_actor'))}' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(extract(b4text,'b2b_title_insert_fence').encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(next(x['body'] for x in captured['functions'] if x['name']=='rpc_fiscal_invoice_apply_authorization_v1').encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_PIN_DRIFT'; END IF;
 END $$;
