@@ -1,7 +1,8 @@
 ## 08/11 21:12 — Continuação dbb81a9: caller OS e homologação
-- [ ] Auditar criação/programação canônica; preparar caller mínimo/UI candidato sem alterar runtime produção nem ACL do helper privado.
-- [ ] Executar endpoint público real em PG descartável: permitido/FSF/comprador/revogado/feature/pending/CAS/replay/concorrência/parcial 1+2; preservar fiscal always-deny e rollback.
-- [ ] Planejar configuração isolada do homolog existente vrlcdwmlytukrjezrrnf, dependências e etapas autenticadas, sem conexão ou login até verificação do auditor.
+- [x] Criação agronômica e programação biológica existentes incompatíveis com revenda; endpoint mínimo gerado com pins, UI fora do runtime, cliente/rotas/SQL B3 preservados e ACL helper privada inalterada.
+- [x] Primeira composição fresh 40/40 e final ampliada 41/41, 13/13 regressões parciais pelo endpoint público com SQL-role authenticated, nove provas específicas incluindo concorrência criação, negativos FSF/comprador/revogado/feature/pending e helper direto. FSF parou na feature; service_role parou no schema, POST também conferiu ausência EXECUTE helper — não tratar esses erros como prova isolada de tenant/ACL de função.
+- [x] Testes UI candidato 13/13, compatibilidade OS 73/73, tipos candidato exit 0 e build automático OK; rollback deny-only executado, gate fechado e fiscal real always-deny intacto. Evidências em evidence/review-dbb81a9/, install endpoint 21d40202…, logística 8ad4def8… inalterada.
+- [x] Plano corrigido de homolog existente vrlcdwmlytukrjezrrnf, configuração isolada proposta sem cliente paralelo ou alteração original; preflight/capturas/contratos/Storage/saídas/fixture e etapas autenticadas definidos. Nenhuma conexão/login/hosted/publicação.
 - [ ] Revisão independente e execução autenticada aguardam verificação do ambiente/capturas e instalação aprovada pelo auditor; nenhuma autorização hosted/publicação.
 
 ## 08/11 20:58 — Revisão 40186: fechamento local e PRE relatado pelo auditor

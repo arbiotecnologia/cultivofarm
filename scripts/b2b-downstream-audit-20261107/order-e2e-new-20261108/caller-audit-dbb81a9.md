@@ -32,4 +32,15 @@ Contrato: `p_order_id`, `p_order_item_id`, `p_expected_updated_at`, `p_request_k
 
 ## Limites de evidência
 
+## Resultados executados
+
+- `evidence/review-dbb81a9/checks.json`: **41/41**, composição nova de restauração integral, exit `run.exitcode=0`. Primeira rodada **40/40** preservada em `iteration1/`; não somar rodadas.
+- `review-70d08c.json`: **13/13** usando o endpoint público como `authenticated` SQL-role: dois itens/uma OS, 3→1→2 com restante inicialmente livre, cancelada parcial, excesso, confirmações finais concorrentes e revogações após locks/replays.
+- `os-endpoint-tests.json`: **9/9**: comprador, FSF, não aprovado, contabilidade pending, inativo, feature OFF, helper direto authenticated/service_role, duas criações concorrentes = uma OS + um replay. **FSF negada em `ESTQ_FEATURE_REQUIRED`**, não é prova isolada de recorte tenant; service_role negado no schema, não na função. POST mede separadamente ausência de EXECUTE do helper para ambos. Nenhum grant temporário para superar esses gates.
+- `frontend/ui-final2.txt`: **13/13**, incluindo três interações do botão com SDK mockado; `frontend/compat.txt`: **73/73** dos contratos OS existentes. `frontend/typecheck-final.txt`, exit 0: tipos completos candidato, não typecheck global. Falha inicial de configuração Vitest (`expect` ausente) preservada em `frontend/ui-final.txt`, corrigida sem alterar testes/asserts. Build automático mais recente OK; sem browser autenticado hospedado.
+- `os-endpoint/02-install.sql.review` SHA256 **`21d40202d32e70dfbb44c7eb2a54a4135ebace840b301c15ab37b910cbfa0ee3`**. É endpoint adicional, não nova versão da logística.
+- `logistics/candidate.sql.review` SHA256 **`8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20`**, inalterado. Planos cc1f6cc também preservado.
+- `os-endpoint/01-pre.sql.readonly`, `03-post.sql.readonly`, `04-rollback-deny.sql.review` executados na composição local. Rollback revoga endpoint, fecha gate e a nova chamada authenticated falha por falta de EXECUTE; históricos permanecem.
+- `integrated-b4-fiscal-bridge.json`: positivo fiscal **NOT_RUN_BLOCKED**, dependency real always-deny sem substituição; sentinelas contábeis/fiscais anteriores preservadas, zero novo título pelo fluxo físico. O harness fiscal faz somente fixture/callback sintético local sem rede; não emissão.
+
 PG local usa `SET ROLE authenticated` com auth.uid/JWT sintéticos e Storage/schema/fixture declarados. O endpoint executado é real SQL candidato, sem stub de writer, mas isso **não prova** JWT/PostgREST/RLS/Storage/browser hospedados. Alguns carregamentos de fixtures do harness herdado usam triggers desligados; no dispatch dos testes as guards reais estão habilitadas. Não promover essa carga a prova de provisão/contabilidade. Não usar o resultado como autorização hosted ou publicação.
