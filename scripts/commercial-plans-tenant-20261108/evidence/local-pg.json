@@ -1,7 +1,7 @@
 {
   "project_ref": "swzpzcwiasxmjutrmvkm",
-  "status": "VULNERABILITIES_REPRODUCED",
-  "checks": 71,
+  "status": "PASS",
+  "checks": 79,
   "results": [
     {
       "name": "ANTES: FSF lê todos os planos sem recorte pela RPC admin",
@@ -160,6 +160,38 @@
       "status": "PASS"
     },
     {
+      "name": "DEPOIS: FSF cria o mesmo código da ARBio sem colisão global",
+      "status": "PASS"
+    },
+    {
+      "name": "código duplicado permanece isolado por tenant",
+      "status": "PASS"
+    },
+    {
+      "name": "busca por código da ARBio não revela o plano FSF",
+      "status": "PASS"
+    },
+    {
+      "name": "busca por código da FSF não revela o plano ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "mesmo código dentro da mesma empresa é negado",
+      "status": "PASS"
+    },
+    {
+      "name": "versionamento aceita código existente somente em outra empresa",
+      "status": "PASS"
+    },
+    {
+      "name": "versão cruzada conserva tenant e código",
+      "status": "PASS"
+    },
+    {
+      "name": "versionamento com colisão dentro do tenant é negado",
+      "status": "PASS"
+    },
+    {
       "name": "tenant do plano é imutável",
       "status": "PASS"
     },
@@ -240,31 +272,31 @@
       "status": "PASS"
     },
     {
-      "name": "ANTES default_target_role",
+      "name": "DEPOIS default_target_role",
       "status": "PASS"
     },
     {
-      "name": "ANTES default_previous_profile",
+      "name": "DEPOIS default_previous_profile",
       "status": "PASS"
     },
     {
-      "name": "ANTES reorder_second_row_tenant",
+      "name": "DEPOIS reorder_second_row_tenant",
       "status": "PASS"
     },
     {
-      "name": "ANTES metadata_role",
+      "name": "DEPOIS metadata_role",
       "status": "PASS"
     },
     {
-      "name": "ANTES active_profile",
+      "name": "DEPOIS active_profile",
       "status": "PASS"
     },
     {
-      "name": "ANTES version_tenant",
+      "name": "DEPOIS version_tenant",
       "status": "PASS"
     },
     {
-      "name": "ANTES create_unique_wait_role",
+      "name": "DEPOIS create_unique_wait_role",
       "status": "PASS"
     },
     {
@@ -301,5 +333,5 @@
     "E2E de pedido",
     "instalação em produção"
   ],
-  "candidate_sha256": "92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6"
+  "candidate_sha256": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40"
 }
