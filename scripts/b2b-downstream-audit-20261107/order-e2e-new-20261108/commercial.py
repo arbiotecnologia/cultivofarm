@@ -120,7 +120,7 @@ def apply(driver, load, root, out):
      if 'X' in rights:B.sql('GRANT EXECUTE ON FUNCTION '+sig+' TO '+(role or 'PUBLIC')+';')
   B.sql("GRANT USAGE ON SCHEMA platform_private TO authenticated; GRANT SELECT ON platform_private.seam_entitlements TO authenticated;")
   Q.psql=lambda s,**kwargs: type('R',(),{'stdout':B.sql(s),'returncode':0,'stderr':''})()
-  Q.as_user=lambda uid,s,role='authenticated':B.run_raw(f"SET ROLE {role}; SET request.jwt.claim.sub='{uid}';"+s)
+  Q.as_user=lambda uid,s,role='authenticated':B.run_raw(f"SET ROLE {role}; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claims='"+json.dumps({'sub':uid,'role':'authenticated','iat':1,'exp':4102444800},separators=(',',':'))+"';"+s)
   return Q
  finally:
   subprocess.run(Q.SP.su()+['pg_ctl','-D',str(tmp/'d'),'-m','fast','stop'],capture_output=True)
