@@ -115,13 +115,13 @@
   },
   {
     "acl": "{postgres=X/postgres}",
-    "md5": "bfad211288599f55b1407916bd4d0266",
+    "md5": "72d5d18157ffd837b89245bad19fc17e",
     "owner": "postgres",
     "signature": "platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)"
   },
   {
     "acl": "{postgres=X/postgres}",
-    "md5": "44b2e7438d8ecee0ed590cc7ef2f43e8",
+    "md5": "0cd104409e779858b64316da91ccd518",
     "owner": "postgres",
     "signature": "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)"
   }

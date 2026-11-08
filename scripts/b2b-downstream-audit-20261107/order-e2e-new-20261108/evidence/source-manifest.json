@@ -1912,7 +1912,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py",
-      "sha256": "517b42251ac93008e136a0229e74b9e877ce2fcfe522cf2e6b3a85d966abefc7"
+      "sha256": "56545af4bc0af6fcfb190b63191e04b32b99282c4b95bf5641bc44d922c34b12"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py",

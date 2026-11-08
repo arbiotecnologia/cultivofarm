@@ -30,16 +30,16 @@
   ],
   "files": {
     "candidate.sql.review": {
-      "sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
-      "bytes": 108613
+      "sha256": "db36815b2aad673a2f9e09823f90eb4c1014856df191e06374d1b701cbb8beea",
+      "bytes": 111294
     },
     "install.exitcode": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
       "bytes": 2
     },
     "install.sql.review": {
-      "sha256": "97c911c90aec8d0e2b016e35a6011b83c9b8b6d4fa9d380843a8913025b8564e",
-      "bytes": 120820
+      "sha256": "7b1b9e9903265d7963f60d32fffeedeb5aaef27d28a6ff09ae9c1598c083b9e9",
+      "bytes": 123501
     },
     "install.stderr.txt": {
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -50,15 +50,15 @@
       "bytes": 0
     },
     "manifest.json": {
-      "sha256": "74be11e74f6f02c9586dc68c941b1d894659fca3794bb7d838edeb29e8a6535b",
+      "sha256": "81528b1f4efa4893a727de6d2ff34c4054f1ca09557163b9bd2e07936d0c0ccd",
       "bytes": 3774
     },
     "post-metadata.json": {
-      "sha256": "796ffaff3e8461c90fdddf9303226f6f41f046b90051c1dcb31237833a7e4fdb",
+      "sha256": "814fedd0c929961f1f5ec43860ead4bdfb7c772121cd211b5011fce5c54d1155",
       "bytes": 4340
     },
     "postflight.sql.review": {
-      "sha256": "6b894d8a8e58645c307b1498f0bc510a4e7540a7079706036809e87756686fff",
+      "sha256": "aff150685236a4872202495d3c2900297a5dd579c5f536c2af363af0517d0216",
       "bytes": 17090
     },
     "pre-metadata.json": {
