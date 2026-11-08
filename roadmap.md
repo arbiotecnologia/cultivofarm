@@ -1,3 +1,10 @@
+## 08/11 16:53 — DECISÃO: motor único de recebíveis por confirmação fiscal
+- [ ] Manter **BLOCKER prioritário** o isolamento dos planos comerciais: repetir a regressão local do candidato `92053bcb…`, sem instalá-lo; liberação continua condicionada a revisão independente e reteste real FSF/ARBio.
+- [x] Registrar a decisão aprovada: motor único sobre as estruturas atuais; título/parcelas ARBio somente após NF-e autorizada ou NFS-e emitida confirmada; pedido aprovado é previsão/reserva de crédito e entrega não gera outro título; exceção manual exige autoridade, justificativa, origem e trilha.
+- [ ] Inventariar writers/triggers/RPCs fiscais e financeiros, estruturas reutilizadas e lacunas; preparar matriz de gatilhos/negativas e testes descartáveis de recuperação, concorrência, parcialidade, crédito, cancelamento/estorno e exceção manual, sem provedores ou efeitos externos.
+- [ ] Preservar snapshots/condições personalizáveis, dez gatilhos/ACL/fence, cinco títulos MANUAL teste4 e histórico; não adotar taxas/descontos de referência, não emitir boleto/Pix/mensagem/pagamento, não aprovar contabilidade ou fiscal real.
+- [ ] Revisão logística `db36815b…`: 32/32 checkpoints e 12/12 regressões locais já executados, porém candidato segue INATIVO/NÃO APROVADO; composição financeiro/físico e sessões reais permanecem bloqueios independentes.
+
 ## 08/11 16:30 — Revisão independente 70d08c da logística de revenda
 - [x] ANTES reproduziu cinco vulnerabilidades no candidato `6452c8ce…`: quatro conclusões com item/quantidade incorretos (dois itens/uma OS, 3→1 sem reserva, cancelada parcial e excesso) e criação de OS/recibo após revogação do papel durante o row lock. Perfil/tenant/gate já foram contidos por guards independentes; quatro replays revogados já negados.
 - [x] Gerador corrigido: cada item exige soma entregue exatamente igual à quantidade, entregas estranhas/canceladas não completam, excesso não confirma e snapshots permanecem imutáveis. Após o último `FOR SHARE`, ator/tenant/gate/escopo são revalidados antes de ticket/INSERT; zero OS/ticket/ledger/evento/recibo nas revogações.
