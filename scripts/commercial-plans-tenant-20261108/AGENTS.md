@@ -1,6 +1,6 @@
-# Isolamento de planos comerciais — preparação inativa
+# Isolamento de planos comerciais — baseline instalada pelo auditor
 
-- Nunca aplicar `02-install.sql.review` ou `04-rollback-deny.sql.review` no banco hospedado, publicar ou alterar planos/atribuições reais; o auditor revisa e executa após autorização específica.
+- O auditor instalou `cc1f6cc…` em 08/11/2026; nunca reaplicar `02-install.sql.review` nem executar rollback como parte de outro candidato. Não publicar ou alterar planos/atribuições reais a partir deste pacote; preservar a baseline POSPLANOS.
 - O projeto canônico é somente `swzpzcwiasxmjutrmvkm`; PRE/POST exigem a declaração de revisão desse ref como verificação de ambiente, nunca como autorização.
 - As funções em `capture/functions/` são capturas read-only completas de `pg_get_functiondef`, com MD5 pinado em `capture/live-pins.json`; 25 são funções-alvo e três são chamadores reais usados pela fixture. `generate.py` deve validar todas as fontes e âncoras antes de emitir SQL.
 - A propriedade é resolvida por família (`root_plan_id`) usando somente `profiles.user_id = commercial_payment_plans.created_by` (nunca `profiles.id`), destino das atribuições e versões B3. Zero ou múltiplos tenants permanecem NULL e negados; nunca inferir por nome, CNPJ ou código. O plano `d89ce2b4-9f68-4b0e-b78e-5009b6119a4f` não pode ser atribuído à ARBio: sua evidência canônica disponível aponta exclusivamente para `8eae2bc1-ad00-4402-9f57-564258e493ca`; divergência futura o torna ambíguo e fechado.

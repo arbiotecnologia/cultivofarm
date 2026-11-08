@@ -1,5 +1,7 @@
 # Ponte fiscal service-only — candidato local INATIVO/NÃO APROVADO
 
+> **Baseline POSPLANOS 08/11 21:45 UTC:** o isolamento `cc1f6cc…` já foi instalado pelo auditor em produção. Não reaplicar o pacote de planos, o instalador combinado ou o rollback combinado histórico, que fecharia planos. Futuras revisões usam somente estágios pós-planos após captura LIVE atual; a ponte continua inativa e a dependência real always-deny. Detalhes em `../../../production-postplans-baseline-20261108.md`.
+
 Revisões `ab904bf`, `feb815603` e `1a65c9c`, preparadas em 08/11/2026 sobre B4 `7dde7f07…` e as capturas integrais H12/H13. Nenhuma operação hospedada, provedor, emissão, cobrança, envio ou publicação.
 
 ## Contrato candidato

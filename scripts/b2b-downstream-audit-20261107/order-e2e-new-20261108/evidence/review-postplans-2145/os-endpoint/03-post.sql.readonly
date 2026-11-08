@@ -1,0 +1,8 @@
+BEGIN READ ONLY;
+DO $$BEGIN
+ IF md5(pg_get_functiondef('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)'::regprocedure)) IS DISTINCT FROM '5a310cc4b561e07778c6af820056419f'
+ OR NOT has_function_privilege('authenticated','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE')
+ OR has_function_privilege('anon','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE') OR has_function_privilege('service_role','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE')
+ OR has_function_privilege('authenticated','platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE') OR has_function_privilege('service_role','platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE')
+ THEN RAISE EXCEPTION 'RESALE_ENDPOINT_POST_DRIFT'; END IF; END$$;
+ROLLBACK;

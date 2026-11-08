@@ -1,14 +1,22 @@
-## 08/11 21:27 — Preflight homolog relatado: dependências ausentes
+## 08/11 21:45 — POSPLANOS em produção e rollout incremental desativado
+- [x] Registrar como fato do auditor: isolamento `cc1f6cc…` instalado somente em `swzpzcwiasxmjutrmvkm` pela migration `commercial_plans_tenant_isolation_reviewed_20261108`, PRE_OK/POST_OK; seis planos, quatro assignments, nove orders, dez receivables e cinco fiscal invoices preservados. FSF real 6→0 após reload; controle ARBio aguarda login. Nenhuma operação hospedada pelo Lovable.
+- [x] Baseline comum atualizada em `production-postplans-baseline-20261108.md`: não reaplicar planos nem instalador combinado que os contenha; B4/ponte/logística/endpoint/UI continuam inativos e não aprovados, hashes preservados. Rollback nunca reabre vazamento.
+- [x] Reexecução fresh POSPLANOS em `evidence/review-postplans-2145/`: 41/41, parciais 13/13, endpoint 9/9, UI 13/13, compatibilidade OS 73/73, typecheck exit 0 e build automático OK. Logística `8ad4def8…`, install `56631263…` e endpoint `21d40202…` inalterados; fiscal positivo continua NOT_RUN_BLOCKED_REAL_ALWAYS_DENY.
+- [x] Homolog retirada dos próximos passos; roteiro autenticado agora exclusivamente produção sob gates/piloto/fixtures aprovadas. `production-rollout-postplans-2145.md` separa PRE atual, logística gate OFF, endpoint, UI ainda desmontada, ativação posterior e reversão deny-only sem tocar planos.
+- [ ] Auditor/revisor: controle positivo ARBio, captura LIVE POSPLANOS, revisão independente final e aprovação por estágio. Teste autenticado NOT_RUN_BLOCKED_CALLER_REVIEW_AND_PRODUCTION_APPROVAL; não pedir login para suprir caller/leitores/capabilities.
+- [ ] Medir posteriormente o novo advisor `auth_rls_initplan` em `cpp_tenant_read` com definição/planos reais; contagens relatadas RLS sem policy 60→59, initplan 47→48, unused 327→328 e DEFINER inalterados. Sem ampliar grants nem alterar policy agora.
+
+## 08/11 21:27 — Preflight homolog relatado: HISTÓRICO SUPERADO
 - [x] Registrar relato READONLY homolog vrlcdwmlytukrjezrrnf/PG17.11: confirmação manual, helper OS revenda e gate ausentes; login não resolve. Sem consulta hospedada pelo agente.
 - [x] Inventário mínimo/ordem candidata por dependências, fontes exatas, gates/rebase/rollback e exclusão fiscal/B4; checklist mantém homolog permitida para planejamento isolado e produção intacta.
-- [ ] Teste autenticado NOT_RUN_BLOCKED_ENVIRONMENT_AND_CALLER: exige capturas homolog/deltas aprovados/callers OS+compra/leitores/capabilities/Storage e isolamento, somente auditor instala após autorização; não pedir login agora.
+- [x] SUPERADO às 21:45: homolog não é mais destino. Testes autenticados futuros somente produção sob gates/piloto/fixtures aprovadas; documentos antigos marcados como históricos, sem conexão ou instalação.
 
 ## 08/11 21:12 — Continuação dbb81a9: caller OS e homologação
 - [x] Criação agronômica e programação biológica existentes incompatíveis com revenda; endpoint mínimo gerado com pins, UI fora do runtime, cliente/rotas/SQL B3 preservados e ACL helper privada inalterada.
 - [x] Primeira composição fresh 40/40 e final ampliada 41/41, 13/13 regressões parciais pelo endpoint público com SQL-role authenticated, nove provas específicas incluindo concorrência criação, negativos FSF/comprador/revogado/feature/pending e helper direto. FSF parou na feature; service_role parou no schema, POST também conferiu ausência EXECUTE helper — não tratar esses erros como prova isolada de tenant/ACL de função.
 - [x] Testes UI candidato 13/13, compatibilidade OS 73/73, tipos candidato exit 0 e build automático OK; rollback deny-only executado, gate fechado e fiscal real always-deny intacto. Evidências em evidence/review-dbb81a9/, install endpoint 21d40202…, logística 8ad4def8… inalterada.
-- [x] Plano corrigido de homolog existente vrlcdwmlytukrjezrrnf, configuração isolada proposta sem cliente paralelo ou alteração original; preflight/capturas/contratos/Storage/saídas/fixture e etapas autenticadas definidos. Nenhuma conexão/login/hosted/publicação.
-- [ ] Revisão independente e execução autenticada aguardam verificação do ambiente/capturas e instalação aprovada pelo auditor; nenhuma autorização hosted/publicação.
+- [x] Plano corrigido de homolog existente vrlcdwmlytukrjezrrnf, configuração isolada proposta sem cliente paralelo ou alteração original; preflight/capturas/contratos/Storage/saídas/fixture e etapas autenticadas definidos. Nenhuma conexão/login/hosted/publicação. SUPERADO como destino às 21:45.
+- [ ] Revisão independente e execução autenticada aguardam capturas POSPLANOS e instalação aprovada pelo auditor em produção; nenhuma autorização hosted/publicação para o Lovable.
 
 ## 08/11 20:58 — Revisão 40186: fechamento local e PRE relatado pelo auditor
 - [x] Pacote SOMENTE planos cc1f6cc reexecutado em PostgreSQL 17.11 descartável: 79/79, exit 0; 28 capturas canônicas verificadas, gerador em espelho produz manifesto/SQL idênticos. Catálogo antes/depois/rollback e 25 assinaturas/retornos conferidos; ACL/RLS das quatro tabelas preservados, rollback fecha quatro policies.

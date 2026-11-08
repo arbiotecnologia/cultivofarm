@@ -1,5 +1,7 @@
 # dbb81a9 — caller de OS de revenda, INATIVO / NÃO APROVADO
 
+> **Baseline atual POSPLANOS (08/11 21:45 UTC):** o auditor instalou o isolamento `cc1f6cc…` na produção canônica. Não reaplicá-lo. Homolog deixou de ser destino; validações autenticadas futuras serão em produção sob gates/piloto/fixtures aprovadas. Nova execução local em `evidence/review-postplans-2145/`: 41/41, 13/13 parciais, 9/9 endpoint, UI 13/13, compatibilidade 73/73 e typecheck exit 0, com hashes inalterados. Rollout desativado: `production-rollout-postplans-2145.md`.
+
 ## Auditoria do caminho existente
 
 Fontes lidas nesta rodada, sem consulta hospedada:
@@ -26,7 +28,7 @@ Contrato: `p_order_id`, `p_order_item_id`, `p_expected_updated_at`, `p_request_k
 1. Capturas exatas atuais de h15/roles/readiness/stock e origem C2, catálogo por empresa, B3 e fence contábil; snapshots íntegros.
 2. Candidato logístico de revenda e físico, motor/batch de estoque, grupo/envio físico/prova/confirmação com contratos/ACL/Storage revisados. Não liberar automaticamente suas capabilities ou outros writers.
 3. Contrato de leitura da carteira/lista operacional capaz de fornecer pedido/item/updated_at/OS no tenant vendedor. Não fazer SELECT privado ou usar IDs de URL como autorização.
-4. Contabilidade de homolog validada pelo processo autorizado, não por agente, SQL de fixture hospedado ou superadmin. Pedido pendente/sem aprovação fica negado. Fiscal positivo continua NOT_RUN_BLOCKED_REAL_ALWAYS_DENY.
+4. Contabilidade da fixture de produção validada pelo processo autorizado, não por agente, SQL de fixture hospedado ou superadmin. Pedido pendente/sem aprovação fica negado. Fiscal positivo continua NOT_RUN_BLOCKED_REAL_ALWAYS_DENY.
 
 `os-endpoint/04-rollback-deny.sql.review`: revoga endpoint e fecha gate numa transação. Não apaga OS, estoque, entregas, comprovantes, tickets históricos, recibos ou snapshots; não restaura corpos vulneráveis nem reabre vazamento de planos. Retirar botão antes/depois da reversão não equivale à proteção servidor. Provas fiscais e de planos permanecem pacotes independentes.
 

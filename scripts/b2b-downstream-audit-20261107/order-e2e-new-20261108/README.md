@@ -1,4 +1,10 @@
-## Resultado atual — revisão a1f275
+## Resultado atual — POSPLANOS, 08/11 21:45 UTC
+
+O auditor relatou a instalação do isolamento de planos `cc1f6cc…` em `swzpzcwiasxmjutrmvkm`, com PRE_OK/POST_OK e FSF real 6→0 após reload; controle ARBio pendente. **Não reaplicar planos nem instalador combinado que os contenha.** Baseline comum: `../production-postplans-baseline-20261108.md`.
+
+Nova execução fresh em `evidence/review-postplans-2145/`: **41/41, exit 0**, regressões **13/13**, endpoint **9/9**, UI **13/13**, compatibilidade OS **73/73** e typecheck exit 0. Candidato logístico `8ad4def8…`, instalador `56631263…` e endpoint `21d40202…` inalterados. Homolog não é mais destino; rollout de produção desativado em `production-rollout-postplans-2145.md`. Tudo continua INATIVO/NÃO APROVADO; fiscal positivo NOT_RUN_BLOCKED_REAL_ALWAYS_DENY.
+
+## Histórico — revisão a1f275
 
 Rebuild fresh **40/40, exit 0**, regressões funcionais **13/13**. Parciais válidas agora persistem com sucesso e pedido aprovado; restante completa, excesso/status forçado negados, últimas duas entregas concorrentes e replays sem duplicação. Candidato inativo/não aprovado. Evidência e hashes em `evidence/review-a1f275/summary.json` e README. As contagens abaixo são histórico; `initial_denial` antigo não valida operação parcial. Fiscal positivo integrado permanece bloqueado pela dependência real always-deny, zero documento/alocação/snapshot/título.
 

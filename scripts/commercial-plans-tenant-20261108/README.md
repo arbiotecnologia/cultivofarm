@@ -1,6 +1,18 @@
-# BLOCKER — isolamento de planos comerciais por empresa
+# Isolamento de planos comerciais por empresa — INSTALADO EM PRODUÇÃO PELO AUDITOR
 
-Candidato preparado em 08/11/2026. **INATIVO / NÃO APROVADO / NÃO INSTALADO.**
+Candidato preparado em 08/11/2026 e instalado pelo auditor às 21:45 UTC. **NÃO REAPLICAR.**
+
+## Atualização canônica POSPLANOS — 08/11 21:45 UTC
+
+O auditor instalou somente `02-install.sql.review` SHA256 `cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40`, pela migration `commercial_plans_tenant_isolation_reviewed_20261108`, em `swzpzcwiasxmjutrmvkm`. Relatou ref comprovado, PRE_OK, POST antes do COMMIT e POST separado READ ONLY POST_OK. Preservados seis planos (cinco ARBio e um `8eae2bc1…`), quatro assignments, nove orders, dez receivables e cinco fiscal invoices.
+
+FSF real na prévia conectada à produção passou de seis planos para zero após reload. Controle positivo ARBio aguarda login e não deve ser presumido. Nenhum frontend/B4/logística/ponte/gate foi publicado, instalado ou habilitado por essa atualização.
+
+Todos os demais candidatos passam a usar baseline POSPLANOS. O instalador combinado antigo que inclui planos não pode ser reaplicado. Detalhes e hashes em `scripts/b2b-downstream-audit-20261107/production-postplans-baseline-20261108.md`.
+
+Advisors relatados: RLS sem policy 60→59; WARN DEFINER inalterados; auth_rls_initplan 47→48; unused 327→328. O novo alerta da policy `cpp_tenant_read` será medido posteriormente; não ampliar grants nem enfraquecer RLS.
+
+O conteúdo abaixo registra a investigação e a preparação histórica. As instruções de instalação já foram cumpridas pelo auditor e não autorizam nova execução.
 
 ## Achado real e limite da investigação
 
@@ -97,8 +109,8 @@ A composição no MESMO PostgreSQL descartável com B3 e logística `db36815b…
 
 O pacote exato `cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40` passou novamente **79/79, exit 0**; compatibilidade focada frontend **62/62, seis arquivos, exit 0**. Gerador executado em espelho temporário confirmou manifesto e quatro SQL byte-idênticos; 28 fontes pinadas e 25 assinaturas/retornos conferidos. Nova evidência e catálogo ACL/policies antes/depois/rollback em `evidence/review-40186/`, sem sobrescrever histórico. O auditor relatou PRE_OK read-only no projeto canônico e coleta de advisors; impacto dos advisors ainda pendente, sem autorização de instalação.
 
-- Nenhuma instalação, JWT, PostgREST, RLS ou Storage hospedado foi exercitado por este pacote.
-- Testes sintéticos não certificam a sessão FSF nem substituem o reteste real de leitura após instalação.
+- Antes da atualização POSPLANOS, nenhuma instalação, JWT, PostgREST, RLS ou Storage hospedado havia sido exercitado por este pacote. A instalação posterior foi executada e relatada pelo auditor, não pelo Lovable.
+- Os testes sintéticos não certificaram a sessão FSF; o auditor relatou posteriormente o reteste real FSF com zero planos. O controle positivo ARBio continua pendente.
 - Escritas negativas foram provadas apenas no PostgreSQL descartável; não se deve escrever como FSF em produção.
 - Concorrência real multisessão e E2E de pedido não foram executados aqui.
 - Liberação B3/E2E, envios, fiscal, cobranças e publicação permanecem bloqueados.

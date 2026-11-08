@@ -1,5 +1,7 @@
 # Reconciliação B4 útil sobre o B3 atual — revisões 458b6012, 4097d4e2 e manual-null-1813
 
+> **Baseline POSPLANOS 08/11 21:45 UTC:** o auditor instalou o isolamento `cc1f6cc…` em produção. Não reaplicar planos nem `canonical-composition-feb815603/02-install.sql.review`, que ainda os inclui. Uma futura revisão B4 começa pela captura LIVE atual e `stages/01-b4-pre-post-composition.sql.readonly`, sem trocar pins. Consulte `../production-postplans-baseline-20261108.md`. A nova composição local POSPLANOS passou 41/41 e manteve o fiscal real always-deny.
+
 **INATIVO, BLOQUEADO E NÃO APROVADO.** Nenhuma operação hospedada, NF/cobrança/aprovação contábil real, envio, publicação ou subagente. B3 e os 63 testes históricos não foram reabertos nem promovidos a E2E. O candidato mínimo da equipe vendedora permanece separado.
 
 ## Revisão atual

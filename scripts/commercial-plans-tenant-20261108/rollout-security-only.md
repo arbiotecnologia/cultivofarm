@@ -1,6 +1,8 @@
-# Rollout mínimo separado — SOMENTE isolamento dos planos
+# Rollout mínimo separado — EXECUTADO PELO AUDITOR / NÃO REAPLICAR
 
-**Revisável / INATIVO / NÃO APROVADO. Instalação exclusiva pelo auditor após revisão e autorização específica.**
+**Atualização 08/11 21:45 UTC:** o auditor instalou somente este pacote `cc1f6cc…` em `swzpzcwiasxmjutrmvkm` pela migration `commercial_plans_tenant_isolation_reviewed_20261108`, com PRE_OK e POST_OK relatados. FSF real passou de seis planos para zero após reload; controle positivo ARBio aguarda login. Seis planos, quatro assignments, nove orders, dez receivables e cinco fiscal invoices preservados.
+
+Este roteiro é agora histórico. Não executar novamente PRE/install/rollback. A baseline dos demais candidatos é POSPLANOS; instaladores combinados que incluem planos estão proibidos na produção atual. Advisors pós: RLS sem policy 60→59, DEFINER inalterados, auth_rls_initplan 47→48 e unused 327→328; revisar `cpp_tenant_read` somente com evidência de impacto real, sem ampliar grants. Detalhes em `../b2b-downstream-audit-20261107/production-postplans-baseline-20261108.md`.
 
 ## Artefato exato e independência
 

@@ -1,5 +1,7 @@
 # Compra de produto acabado para revenda — reconciliação física local
 
+> **Baseline POSPLANOS 08/11 21:45 UTC:** o isolamento de planos `cc1f6cc…` foi instalado pelo auditor em produção e não deve ser reaplicado. Este pacote físico permanece inativo; futuras capturas/PRE devem considerar o estado POSPLANOS. Testes autenticados futuros são somente em produção sob gates/piloto/fixtures aprovadas, não em homolog. Consulte `../../production-postplans-baseline-20261108.md`.
+
 **Status: INATIVO / BLOQUEADO / NÃO APROVADO.** Somente PostgreSQL descartável; nenhuma operação hospedada, publicação, NF, cobrança, aprovação contábil, envio externo ou delegação.
 
 ## Revisão posterior 6667a8d6 — lote fornecedor separado
