@@ -145,9 +145,22 @@ def main() -> None:
     'signedXmlRunId', v_xml,
     'protocoledXmlStored', false);""")
 
-    # H13 separa o status do lote do status efetivo do protocolo, serializa o
-    # callback pela transmissão e nunca rebaixa uma autorização já persistida.
-    transmit = edit(transmit_source, "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;", "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;")
+    # H13 separa o status do lote do status efetivo do protocolo e nunca rebaixa
+    # uma autorização persistida. Todos os caminhos usam nota→transmissão:
+    # H12 já fazia isso; H13 e a ponte direta não podem inverter os row locks.
+    transmit = edit(transmit_source, "  v_close_error text := NULL;", "  v_close_error text := NULL;\n  v_invoice_id uuid;")
+    transmit = edit(transmit, """  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;""", """  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  v_invoice_id := v_cur.fiscal_invoice_id;
+  IF v_invoice_id IS NOT NULL THEN
+    PERFORM 1 FROM public.fiscal_invoices WHERE id=v_invoice_id FOR UPDATE;
+  END IF;
+  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  IF v_cur.fiscal_invoice_id IS DISTINCT FROM v_invoice_id THEN
+    RAISE EXCEPTION 'FISCAL_TRANSMISSION_LINK_CHANGED' USING ERRCODE='PT409';
+  END IF;""")
     transmit = edit(transmit, "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.c_stat);", "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.protocol_c_stat, v_cur.c_stat);")
     transmit = edit(transmit, """  UPDATE public.fiscal_sefaz_transmissions SET
     state            = _state,""", """  IF v_cur.outcome = 'AUTHORIZED' AND v_outcome IS DISTINCT FROM 'AUTHORIZED' THEN
