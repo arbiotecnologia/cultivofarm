@@ -762,7 +762,7 @@ export default function NovoPedido() {
         </p>
       </div>
 
-          {!isSimulationMode && durableAttempt.mode!=='legacy' && <Alert role="status" data-journal={durableAttempt.mode}>
+          {!isSimulationMode && durableAttempt.mode!=='legacy' && durableAttempt.journal?.state!=='reserved' && <Alert role="status" data-journal={durableAttempt.mode}>
             <AlertDescription className="space-y-2">
               {durableAttempt.journal?.state==='committed' ? <>
                 <span className="block">Pedido {durableAttempt.journal.numero} já registrado. Consulte-o antes de iniciar outro pedido.</span>
@@ -772,12 +772,15 @@ export default function NovoPedido() {
                   if(j?.state==='committed' && pageScope.ready) setAckTarget({journal:j,slot:attemptSlot,scope:pageScope.scope,fence:pageScope.capture()});
                 }}>Confirmar pedido existente e iniciar novo</Button>
               </> : durableAttempt.journal?.state==='closed' ? <>
-                <span className="block">Envio anterior encerrado sem pedido. Seu carrinho foi mantido.</span>
+                <span className="block">Tentativa encerrada sem pedido. Seu carrinho foi mantido.</span>
                 <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover(durableAttempt.journal??undefined)}>Iniciar nova tentativa</Button>
-              </> : <>
-                <span className="block">{durableAttempt.mode==='checking'?'Verificando continuidade do pedido…':durableAttempt.mode==='blocked'?'Não foi possível confirmar o envio anterior. Nada foi liberado.':'Tentativa identificada pelo servidor. O mesmo envio não cria outro pedido.'}</span>
+              </> : durableAttempt.journal?.state==='uncertain' ? <>
+                <span className="block">O resultado de uma tentativa de envio ainda não foi confirmado. Verifique antes de iniciar outro pedido.</span>
                 <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar envio anterior</Button>
-                {durableAttempt.mode==='durable' && <Button size="sm" variant="outline" disabled={closeAttempt.pending} onClick={()=>void closeAttempt.close(partner?.id)}>Verificar e encerrar envio anterior</Button>}
+                <Button size="sm" variant="outline" disabled={closeAttempt.pending || durableAttempt.pending} onClick={()=>void closeAttempt.close(partner?.id)}>Verificar e encerrar envio anterior</Button>
+              </> : <>
+                <span className="block">{durableAttempt.mode==='checking'?'Verificando disponibilidade para o pedido…':'Não foi possível verificar a continuidade do pedido. Nada foi liberado.'}</span>
+                {durableAttempt.mode!=='checking' && <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar novamente</Button>}
               </>}
             </AlertDescription>
           </Alert>}

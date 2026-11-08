@@ -1,0 +1,123 @@
+$ vitest run src/test/pedidos/novoPedidoAckDialog.test.tsx src/test/pedidos/orderJournal.integration.test.tsx src/test/pedidos/novoPedidoAttemptClosure.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > reopened React hook recovers server committed without any local storage
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > A uncertain / B closed+advanced / A hook recovers N+1 with authoritative predecessor
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+stderr | src/test/pedidos/orderJournal.integration.test.tsx > A uncertain / B closed+advanced / A hook recovers N+1 with authoritative predecessor
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/dev-server/node_modules/@testing-library/react/dist/pure.js:328:5)
+
+ ✓ src/test/pedidos/orderJournal.integration.test.tsx (34 tests) 309ms
+stderr | src/test/pedidos/novoPedidoAckDialog.test.tsx > nunca usa window.confirm; diálogo cita o número e Voltar não chama RPC nem limpa carrinho
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/pedidos/novoPedidoAttemptClosure.test.tsx > nunca encerra automaticamente após falha/timeout: só por clique
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/pedidos/novoPedidoAckDialog.test.tsx (9 tests) 6562ms
+   ✓ nunca usa window.confirm; diálogo cita o número e Voltar não chama RPC nem limpa carrinho  1197ms
+   ✓ duplo clique em confirmar avança uma única vez com key/geração/pedido capturados  911ms
+   ✓ estado do servidor muda com o diálogo aberto (outra aba): não confirma geração errada  388ms
+   ✓ revogação/troca de contexto com o diálogo aberto nega o avanço  623ms
+   ✓ troca de papel com o diálogo aberto fecha sem avançar  378ms
+   ✓ comprador novo: reserva inicial conserva a chave e não oferece encerramento nem avança ao montar  1060ms
+   ✓ envio incerto só encerra após clique e conserva a geração terminal até novo clique  951ms
+   ✓ closed não avança na montagem; clique usa CAS sem confirmação fictícia de pedido  502ms
+   ✓ troca de conta do committed para comprador novo fecha ACK e não encerra nem avança a reserva  548ms
+ ✓ src/test/pedidos/novoPedidoAttemptClosure.test.tsx (16 tests) 27120ms
+   ✓ nunca encerra automaticamente após falha/timeout: só por clique  2194ms
+   ✓ closed validado: mesma chave/parceiro na RPC, libera nova chave e envia o carrinho editado mantido  2003ms
+   ✓ committed com schema válido: mostra número e navega pelo caminho canônico; não cria outro  2004ms
+   ✓ committed sem número não é conclusivo: bloqueio preservado  1806ms
+   ✓ committed com id inválido não é conclusivo: bloqueio preservado  1897ms
+   ✓ in_progress não é conclusivo: bloqueio preservado  1895ms
+   ✓ contrato desconhecido não é conclusivo: bloqueio preservado  1776ms
+   ✓ vazio não é conclusivo: bloqueio preservado  1540ms
+   ✓ erro PostgREST mantém bloqueio  1628ms
+   ✓ exceção de rede mantém bloqueio  1575ms
+   ✓ duplo clique em verificar: uma única RPC  1701ms
+   ✓ revogação durante a verificação: closed tardio NÃO libera e carrinho editado permanece  1815ms
+   ✓ desmontagem durante a verificação: resposta antiga não libera; remontado continua bloqueado  1714ms
+   ✓ troca de empresa durante a verificação: nada liberado para nenhum dos dois contextos  1281ms
+   ✓ logout e espera não descartam a tentativa; outro ator não a vê  2257ms
+
+ Test Files  3 passed (3)
+      Tests  59 passed (59)
+   Start at  03:32:28
+   Duration  32.62s (transform 1.60s, setup 653ms, collect 6.14s, tests 33.99s, environment 3.61s, prepare 416ms)
+

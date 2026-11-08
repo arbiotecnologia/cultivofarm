@@ -135,7 +135,7 @@ function mount() {
 type Args = Record<string, unknown>;
 const K1='44444444-4444-4444-8444-444444444444', ID1='55555555-5555-4555-8555-555555555555', K2='66666666-6666-4666-8666-666666666666';
 const CT='C2_ORDER_JOURNAL_V1';
-let srv:{key:string;gen:number;order:string;numero:string};
+let srv:{key:string;gen:number;order:string;numero:string;state?:'reserved'|'uncertain'|'closed'|'committed'};
 let hold:null|Promise<void>=null;
 const advances=()=>state.rpc.mock.calls.filter(([n,a])=>n==='recover_partner_order_attempt_v1'&&(a as Args).p_advance).map(([,a])=>a as Args);
 beforeEach(()=>{
@@ -145,12 +145,17 @@ beforeEach(()=>{
   state.rpc.mockImplementation(withPaymentMethod((name:string,args?:Args)=>{
     if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:{contract:CT,enabled:true,actor_id:state.actorOverride??state.actor,organization_id:state.tenant,partner_id:state.partner},error:null});
     if(name==='recover_partner_order_attempt_v1'){
-      const cur={contract:CT,key:srv.key,generation:srv.gen,state:'committed',order_id:srv.order,numero:srv.numero};
+      const terminal=srv.state??'committed';
+      const cur={contract:CT,key:srv.key,generation:srv.gen,state:terminal,...(terminal==='committed'?{order_id:srv.order,numero:srv.numero}:{})};
       if(!args?.p_advance) return Promise.resolve({data:cur,error:null});
-      if(args.p_expected_key!==srv.key||args.p_expected_generation!==srv.gen||args.p_ack_order!==srv.order) return Promise.resolve({data:null,error:{code:'PT409',message:'C2DJ_CAS_CONFLICT'}});
-      const pred={key:srv.key,generation:srv.gen,state:'committed',order_id:srv.order,numero:srv.numero};
+      if(args.p_expected_key!==srv.key||args.p_expected_generation!==srv.gen||!['closed','committed'].includes(terminal)||args.p_ack_order!==(terminal==='committed'?srv.order:null)) return Promise.resolve({data:null,error:{code:'PT409',message:'C2DJ_CAS_CONFLICT'}});
+      const pred={key:srv.key,generation:srv.gen,state:terminal,...(terminal==='committed'?{order_id:srv.order,numero:srv.numero}:{})};
       const out={contract:CT,key:K2,generation:srv.gen+1,state:'reserved',predecessors:[pred]};
       return (hold??Promise.resolve()).then(()=>({data:out,error:null}));
+    }
+    if(name==='close_partner_order_attempt_v1') {
+      srv.state='closed';
+      return response({contract:'C2_ORDER_ATTEMPT_CLOSURE_V1',state:'closed'});
     }
     return base(name,args);
   }, (n: string, a?: Record<string, unknown>) => state.rpc(n, a)));
@@ -215,4 +220,53 @@ it('troca de papel com o diálogo aberto fecha sem avançar',async()=>{
   v.rerender(tree());
   await waitFor(()=>expect(screen.queryByRole('alertdialog')).toBeNull());
   expect(advances()).toHaveLength(0);
+});
+
+const closures=()=>state.rpc.mock.calls.filter(([n])=>n==='close_partner_order_attempt_v1');
+const creations=()=>state.rpc.mock.calls.filter(([n])=>n==='create_partner_order_secure');
+it('comprador novo: reserva inicial conserva a chave e não oferece encerramento nem avança ao montar',async()=>{
+  srv.state='reserved';
+  mount(); await screen.findAllByText('Produto local');
+  await waitFor(()=>expect(state.rpc.mock.calls.some(([n])=>n==='recover_partner_order_attempt_v1')).toBe(true));
+  await act(async()=>{});
+  expect(screen.queryByRole('button',{name:'Verificar e encerrar envio anterior'})).toBeNull();
+  expect(closures()).toHaveLength(0); expect(advances()).toHaveLength(0); expect(creations()).toHaveLength(0);
+  fireEvent.click(screen.getByRole('button',{name:'Adicionar ao pedido'}));
+  fireEvent.click(await screen.findByRole('button',{name:'Adicionar ao carrinho'}));
+  await waitCart();
+  fireEvent.click(screen.getAllByRole('button',{name:'Continuar para condição de pagamento'})[0]);
+  fireEvent.click(await screen.findByRole('button',{name:/À vista/}));
+  await pickTestPix();
+  const send=await screen.findByRole('button',{name:'Enviar pedido para análise'});
+  await waitFor(()=>expect(send).toBeEnabled()); fireEvent.click(send);
+  await waitFor(()=>expect(creations()).toHaveLength(1));
+  expect(creations()[0][1]).toMatchObject({p_idempotency_key:K1});
+  expect(closures()).toHaveLength(0); expect(advances()).toHaveLength(0);
+});
+it('envio incerto só encerra após clique e conserva a geração terminal até novo clique',async()=>{
+  srv.state='uncertain'; mount();
+  const close=await screen.findByRole('button',{name:'Verificar e encerrar envio anterior'});
+  expect(closures()).toHaveLength(0); expect(advances()).toHaveLength(0);
+  fireEvent.click(close);
+  await screen.findByRole('button',{name:'Iniciar nova tentativa'});
+  expect(closures()).toHaveLength(1); expect(advances()).toHaveLength(0); expect(creations()).toHaveLength(0);
+});
+it('closed não avança na montagem; clique usa CAS sem confirmação fictícia de pedido',async()=>{
+  srv.state='closed'; mount();
+  const next=await screen.findByRole('button',{name:'Iniciar nova tentativa'});
+  expect(advances()).toHaveLength(0); expect(closures()).toHaveLength(0);
+  fireEvent.click(next);
+  await waitFor(()=>expect(advances()).toHaveLength(1));
+  expect(advances()[0]).toMatchObject({p_expected_key:K1,p_expected_generation:1,p_ack_order:null});
+  expect(creations()).toHaveLength(0);
+});
+it('troca de conta do committed para comprador novo fecha ACK e não encerra nem avança a reserva',async()=>{
+  const v=mount(); await openDialog();
+  state.actorOverride='88888888-8888-4888-8888-888888888888'; srv.state='reserved';
+  v.rerender(tree());
+  await waitFor(()=>expect(screen.queryByRole('alertdialog')).toBeNull());
+  await waitFor(()=>expect(state.rpc.mock.calls.filter(([n])=>n==='recover_partner_order_attempt_v1').length).toBeGreaterThan(1));
+  await act(async()=>{});
+  expect(screen.queryByRole('button',{name:'Verificar e encerrar envio anterior'})).toBeNull();
+  expect(advances()).toHaveLength(0); expect(closures()).toHaveLength(0); expect(creations()).toHaveLength(0);
 });
