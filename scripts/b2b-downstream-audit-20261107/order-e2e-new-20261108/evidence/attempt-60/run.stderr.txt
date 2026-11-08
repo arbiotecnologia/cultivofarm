@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-hc3ni51q/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 82, in main
+    R.install(B,OUT,ROOT)
+    ~~~~~~~~~^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-hc3ni51q/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py", line 88, in install
+    assert after["receivable"]["acl"] == current_ar.ACL, after["receivable"]["acl"]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}
