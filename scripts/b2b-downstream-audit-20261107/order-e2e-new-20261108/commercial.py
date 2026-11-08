@@ -68,6 +68,25 @@ def apply(driver, load, root, out):
     cols=list(row)
     # JSONB populate keeps native arrays/json/numeric casts intact.
     B.sql('SET session_replication_role=replica; INSERT INTO '+obj+' ('+','.join('"'+c+'"' for c in cols)+') SELECT '+','.join('"'+c+'"' for c in cols)+' FROM jsonb_populate_record(NULL::'+obj+','+lit(json.dumps(row))+'::jsonb) ON CONFLICT DO NOTHING; SET session_replication_role=origin;')
+  # Entitlements reais: a tabela seam_entitlements do harness B3 não é lida
+  # pelo resolvedor canônico mantido da base física. Concessões GRANT apenas
+  # no tenant A; nenhuma versão publicada é alterada e F não recebe o grant.
+  B.sql(f"""SET session_replication_role=replica;
+   INSERT INTO public.saas_modules(id,key,name,active) VALUES
+    ('{Q.u(800)}','local_b2b_e2e','LOCAL B2B E2E',true) ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_features(id,module_id,key,name,active)
+    SELECT '{Q.u(801)}',id,'pedidos_b2b','LOCAL pedidos B2B',true FROM public.saas_modules WHERE key='local_b2b_e2e'
+    ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_features(id,module_id,key,name,active)
+    SELECT '{Q.u(802)}',id,'catalogo_precos','LOCAL catálogo preços',true FROM public.saas_modules WHERE key='local_b2b_e2e'
+    ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.organization_feature_overrides(id,organization_id,feature_id,mode,starts_at,reason,created_by)
+    SELECT '{Q.u(803)}','{Q.A}',id,'GRANT',now()-interval '1 day','FIXTURE LOCAL E2E','{Q.UADM}'
+     FROM public.saas_features WHERE key='pedidos_b2b' ON CONFLICT DO NOTHING;
+   INSERT INTO public.organization_feature_overrides(id,organization_id,feature_id,mode,starts_at,reason,created_by)
+    SELECT '{Q.u(804)}','{Q.A}',id,'GRANT',now()-interval '1 day','FIXTURE LOCAL E2E','{Q.UADM}'
+     FROM public.saas_features WHERE key='catalogo_precos' ON CONFLICT DO NOTHING;
+   SET session_replication_role=origin;""")
   for t in meta['triggers']:
    B.sql('DROP TRIGGER IF EXISTS "'+t['name']+'" ON public.'+t['table']+';'+t['definition']+';')
   for obj in ['produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','catalogo_precos_embalagem','partner_accounts','partner_users','profiles','user_roles','commercial_payment_plans','commercial_payment_plan_assignments','commercial_price_rules']:
