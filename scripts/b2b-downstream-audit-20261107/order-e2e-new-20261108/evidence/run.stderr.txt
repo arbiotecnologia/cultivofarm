@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-a29fs0k1/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 457, in main
-    xml_payload='{}';xml_sha256=hashlib.sha256(xml_payload.encode()).hexdigest()
-                                ^^^^^^^
-UnboundLocalError: cannot access local variable 'hashlib' where it is not associated with a value
+  File "/tmp/new-order-e2e-o5tamp1i/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 495, in main
+    assert callback.returncode==0,(callback.stdout,callback.stderr)
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('', 'ERROR:  P0001: FISCAL_TRANSMISSION_IMMUTABLE\nCONTEXT:  PL/pgSQL function fn_fiscal_sefaz_tx_guard() line 8 at RAISE\nSQL statement "UPDATE public.fiscal_sefaz_transmissions\n       SET error_code = v_close_error\n     WHERE id = _transmission_id\n    RETURNING *"\nPL/pgSQL function rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) line 97 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n')

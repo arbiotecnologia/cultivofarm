@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-a29fs0k1/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 457, in main
+    xml_payload='{}';xml_sha256=hashlib.sha256(xml_payload.encode()).hexdigest()
+                                ^^^^^^^
+UnboundLocalError: cannot access local variable 'hashlib' where it is not associated with a value
