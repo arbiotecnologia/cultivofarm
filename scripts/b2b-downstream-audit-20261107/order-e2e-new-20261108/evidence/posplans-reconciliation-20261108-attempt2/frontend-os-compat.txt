@@ -1,0 +1,13 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/ordens-servico/validacao.test.ts (36 tests) 72ms
+ ✓ src/test/ordens-servico/approval.test.tsx (10 tests) 1107ms
+   ✓ aprovação existente — transporte fake, não homologação > usa assinatura existente e bloqueia duplo clique sem iniciar programação  417ms
+ ✓ src/test/ordens-servico/programming.test.tsx (27 tests) 2381ms
+
+ Test Files  3 passed (3)
+      Tests  73 passed (73)
+   Start at  22:38:51
+   Duration  9.89s (transform 912ms, setup 933ms, collect 4.38s, tests 3.56s, environment 6.34s, prepare 3.12s)
+
