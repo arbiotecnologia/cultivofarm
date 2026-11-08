@@ -104,6 +104,9 @@ def main():
   assert arb_code.returncode==0 and arb_code.stdout.strip()=='0',(arb_code.stdout,arb_code.stderr)
   (OUT/'plan-isolation-composition.json').write_text(json.dumps(dict(pre=plan_pre,post=plan_post,arbio_plan_visible=True,fsf_arbio_plan_visible=False,fsf_write_denied=fsf_write.stderr,shared_code_plan_id=shared_id,shared_code_invisible_to_arbio=True),indent=2)+'\n')
   checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
+  current_state=B.current_catalog.assert_current(B.last)
+  (OUT/'current-catalog-posplans.json').write_text(json.dumps(current_state,indent=2)+'\n')
+  checks.append(dict(test='post catalog Price plans preserve nine current bodies six enabled guards and eight restricted ACLs',status='PASS'))
   # As baselines atuais são compostas antes do pedido B2B: o fluxo inteiro abaixo
   # corre com a ACL e os dez gatilhos reais de recebíveis, além do cadastro sem
   # configuração automática. Nenhum writer B4/NF é instalado por esta etapa.
