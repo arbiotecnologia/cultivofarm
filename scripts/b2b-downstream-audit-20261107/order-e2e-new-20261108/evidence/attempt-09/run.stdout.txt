@@ -1,0 +1,20 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.5s
+NEW_PHYSICAL_BOOT_OK
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=100 elapsed=10.8s
+CHECKPOINT sql_calls=200 elapsed=12.7s
+CHECKPOINT sql_calls=300 elapsed=14.8s
+CHECKPOINT sql_calls=400 elapsed=17.0s
+CHECKPOINT sql_calls=500 elapsed=19.0s
+CHECKPOINT sql_calls=600 elapsed=20.5s
