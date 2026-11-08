@@ -1,0 +1,28 @@
+PASS ANTES: FSF lê planos ARBio pela RPC admin
+PASS ANTES: FSF lê ARBio pela listagem operacional admin
+PASS ANTES: configuração B3 FSF expõe plano ARBio
+PASS ANTES: FSF altera metadados ARBio
+PASS ANTES: escrita indevida confirmada
+PASS PRE íntegro
+PASS instalação candidata transacional
+PASS proveniência A resolvida
+PASS proveniência B resolvida
+PASS família ambígua permanece NULL
+PASS POST íntegro
+PASS DEPOIS: ARBio lista somente seus dois planos
+PASS DEPOIS: FSF lista somente seu plano
+PASS DEPOIS: FSF não lê ARBio operacionalmente
+PASS DEPOIS: configuração B3 FSF não expõe ARBio
+PASS DEPOIS: leitura direta FSF isolada por RLS
+PASS DEPOIS: comprador ARBio só lê plano publicado vinculado
+PASS DEPOIS: comprador FSF só lê seu plano
+Traceback (most recent call last):
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 148, in <module>
+    check("FSF nega versão ARBio", actor(B, f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_A1}','{payload}'::jsonb,'x');"), error="plan_not_found")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 31, in check
+    output = run(sql, error)
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 23, in run
+    assert completed.returncode != 0 and error in completed.stderr, (error, completed.stdout, completed.stderr)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('plan_not_found', '', 'ERROR:  syntax error at or near "name"\nLINE 1: ...al_plan(\'aaaaaaaa-4444-0000-0000-000000000001\',\'{\'name\':\'Nov...\n                                                             ^\n')
