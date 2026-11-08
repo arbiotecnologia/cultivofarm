@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "ccf54286-656b-4143-a17a-a0818c0bbf07"
+    "order_id": "4b2f6c7c-7d69-46dd-9982-70b198f1f179"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "45abe86c-f5f4-40ee-a14d-ca620ccdadba"
+    "os_id": "da6c9ab9-c228-4724-b2fe-1eb8f93d9618"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +68,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "96f49bcd-215b-4303-b032-a24917603efd"
+    "delivery_id": "bb2adcf0-18a8-4582-81d3-7667515d5b17"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "95b1e727-ee90-419f-9f6e-9fea4f6a4fcb"
+    "delivery_id": "dfec56cb-76f4-4ee6-a88d-79d1795a9bb7"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -197,7 +197,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "048af745-0cf0-404b-b924-a88a181346fd"
+    "delivery_id": "157443c7-6935-47dc-a2f4-de51c04d2317"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
@@ -211,5 +211,9 @@
   {
     "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
     "status": "PASS"
+  },
+  {
+    "test": "new composition",
+    "status": "FAIL"
   }
 ]
