@@ -29,6 +29,7 @@ A, F, P, PO, PF = SP.A, SP.F, SP.P, SP.PO, SP.PF
 UB, UT, UB2, UADM, UADMF, UINACT = SP.UB, SP.UT, SP.UB2, SP.UADM, SP.UADMF, SP.UINACT
 UFIN, UGC = u(29), u(30)
 PC, UBC = u(85), u(86)  # parceiro/comprador sintéticos isolados para fronteiras de crédito
+PN, UN = u(100), u(101)  # novo parceiro/comprador sem histórico para expansão aditiva do piloto
 PLD, PLQ = SP.PLD, SP.PLQ
 P3, PINT, PNA, P3B = u(81), u(82), u(83), u(84)
 P1 = u(87)  # plano sintético exclusivo do oráculo de parcela única com taxa explícita
@@ -207,14 +208,15 @@ BEGIN
   RETURN '{{}}'::jsonb;
 END $$;
 REVOKE ALL ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.get_partner_order_payment_terms_secure(uuid) TO authenticated;
-INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true),('{UBC}','{A}',true);
-INSERT INTO public.partner_accounts VALUES ('{PC}',true,NULL,'{A}');
-INSERT INTO public.partner_users VALUES ('{UBC}','{PC}');
-INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial'),('{UBC}','parceiro_b2b');
+INSERT INTO public.profiles VALUES ('{UFIN}','{A}',true),('{UGC}','{A}',true),('{UBC}','{A}',true),('{UN}','{A}',true);
+INSERT INTO public.partner_accounts VALUES ('{PC}',true,NULL,'{A}'),('{PN}',true,NULL,'{A}');
+INSERT INTO public.partner_users VALUES ('{UBC}','{PC}'),('{UN}','{PN}');
+INSERT INTO public.user_roles VALUES ('{UFIN}','financeiro'),('{UGC}','gestor_comercial'),('{UBC}','parceiro_b2b'),('{UN}','parceiro_b2b');
 INSERT INTO platform_private.seam_entitlements VALUES ('{UFIN}','pedidos_b2b'),('{UGC}','pedidos_b2b'),('{UFIN}','catalogo_precos'),('{UGC}','catalogo_precos'),
-  ('{UBC}','pedidos_b2b'),('{UBC}','catalogo_precos');
+  ('{UBC}','pedidos_b2b'),('{UBC}','catalogo_precos'),('{UN}','pedidos_b2b'),('{UN}','catalogo_precos');
 INSERT INTO public.partner_financial_settings(id,partner_id,credit_limit,credit_limit_action,block_if_overdue,overdue_tolerance_days) VALUES
-  (gen_random_uuid(),'{P}',1000000,'block',false,0),(gen_random_uuid(),'{PF}',1000000,'block',false,0),(gen_random_uuid(),'{PC}',1018.11,'block',false,0);
+  (gen_random_uuid(),'{P}',1000000,'block',false,0),(gen_random_uuid(),'{PF}',1000000,'block',false,0),(gen_random_uuid(),'{PC}',1018.11,'block',false,0),
+  (gen_random_uuid(),'{PN}',1000000,'block',false,0);
 INSERT INTO public.payment_methods VALUES ('{M_PIX}','Pix TESTE',true),('{M_BOL}','Boleto TESTE',true),('{M_CASH}','Dinheiro TESTE',true),
   ('{M_OFF}','Inativo TESTE',false),('{M_PROM}','Promissória TESTE',true),('{M_DEB}','Débito TESTE',true);
 INSERT INTO public.financial_categories(id,name,type,active) VALUES ('{CAT}','Receita B2B TESTE','RECEITA',true),('{CAT_D}','Despesa TESTE','DESPESA',true),
@@ -230,6 +232,7 @@ INSERT INTO public.commercial_payment_plan_assignments VALUES
   ('published','{PLD}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLD}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
   ('published','{PLQ}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{PLQ}','partner','{PF}',NULL,CURRENT_DATE-1,NULL),
   ('published','{P3}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P3}','partner','{PC}',NULL,CURRENT_DATE-1,NULL),
+  ('published','{P3}','partner','{PN}',NULL,CURRENT_DATE-1,NULL),
   ('published','{P3B}','partner','{P}',NULL,CURRENT_DATE-1,NULL),('published','{P1}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
   ('published','{PINT}','partner','{P}',NULL,CURRENT_DATE-1,NULL),
   ('draft','{PNA}','partner','{P}',NULL,CURRENT_DATE-1,NULL);
@@ -713,6 +716,23 @@ BEGIN RAISE EXCEPTION 'credit_transient_TESTE' USING ERRCODE='57P03'; END $$;"""
         j, e = activation(UADM, "pilot", [P], 0); check("admin A ativa piloto só para o parceiro P", j and j["activation"]["mode"] == "pilot" and j["activation"]["version"] == 1, e)
         denied("ativação com CAS antigo recusada", activation(UADM, "enforced", [], 0), "payment_condition_activation_stale")
         j, e = call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')"); check("piloto: comprador P vê mode required", j and j["mode"] == "required", e)
+        # Expansão aditiva e escopada: o parceiro antigo permanece, PC entra com
+        # condição já atribuída; PO e o outro tenant continuam no legado.
+        j_assign, e_assign = assign(UADM, PN, P3, "boleto", 1)
+        check("novo parceiro tem condição vigente atribuída antes da ativação", j_assign and j_assign["enabled"] is True, e_assign or j_assign)
+        denied("expansão do piloto com CAS antigo não altera escopo", activation(UADM, "pilot", [P, PN], 0), "payment_condition_activation_stale")
+        j, e = activation(UADM, "pilot", [P, PN], 1)
+        check("novo parceiro entra no piloto sem remover o antigo nem enforced global", j and j["activation"]["mode"] == "pilot"
+              and j["activation"]["version"] == 2 and set(j["activation"]["pilot_partner_ids"]) == {P, PN}, e or j)
+        j_old, e_old = call(UB, f"public.b2b_list_payment_condition_options_secure('{P}','{PLD}')")
+        j_new, e_new = call(UN, f"public.b2b_list_payment_condition_options_secure('{PN}','{P3}')")
+        j_out, e_out = call(UADM, f"public.b2b_list_payment_condition_options_secure('{PO}','{P3}')")
+        check("targeting após expansão: antigo e novo required; parceiro fora do array legacy",
+              j_old and j_old["mode"] == "required" and j_new and j_new["mode"] == "required" and j_out and j_out["mode"] == "legacy",
+              (e_old, e_new, e_out, j_old, j_new, j_out))
+        r = legacy(UN, P3, [S(1)], "TESTE-LEG-PN", partner=PN)
+        check("novo parceiro no piloto: fallback legado negado sem pedido/idempotência", r.returncode != 0
+              and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("TESTE-LEG-PN") == "0", r.stderr[-200:])
         r = legacy(UB, PLD, [L(1)], "TESTE-LEG-1")
         check("piloto: contrato antigo do comprador P bloqueado (B2B_PAYMENT_CONDITION_REQUIRED, nada gravado)", r.returncode != 0 and "B2B_PAYMENT_CONDITION_REQUIRED" in r.stderr and idem("TESTE-LEG-1") == "0", r.stderr[-200:])
         r = legacy(SP.UADM, PLD, [L(1)], "TESTE-LEG-INT"); e_leg = (r.stderr or "").strip().splitlines()[0] if r.returncode else ""

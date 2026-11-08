@@ -1,0 +1,11 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/comercial/meiosPagamentoTab.test.tsx (9 tests) 1503ms
+   ✓ nova versão envia CAS da versão vigente; conflito mantém o rascunho, mostra motivo e não tenta de novo  533ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  15:45:51
+   Duration  5.41s (transform 356ms, setup 148ms, collect 1.01s, tests 1.50s, environment 804ms, prepare 943ms)
+

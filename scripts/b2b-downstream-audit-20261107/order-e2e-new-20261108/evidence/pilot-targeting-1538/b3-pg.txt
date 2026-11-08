@@ -1,0 +1,4 @@
+229/230
+FAIL novo parceiro no piloto: fallback legado negado sem pedido/idempotência ERROR:  forbidden_partner
+CONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 79 at RAISE
+

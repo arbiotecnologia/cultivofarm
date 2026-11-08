@@ -90,6 +90,25 @@ def main():
   assert data is not None,error
   data,error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',1);assert data is not None,error
   data,error=Q.activation(Q.UADM,'pilot',[Q.P],0);assert data is not None,error
+  # Expansão aditiva do piloto: PN representa o novo parceiro sintético, sem
+  # promover enforced global. O parceiro antigo P e os demais escopos são medidos.
+  assigned_new,assign_new_error=Q.assign(Q.UADM,Q.PN,Q.P3,'boleto',1);assert assigned_new is not None,assign_new_error
+  stale,stale_error=Q.activation(Q.UADM,'pilot',[Q.P,Q.PN],0)
+  assert stale is None and 'payment_condition_activation_stale' in (stale_error or ''),stale_error
+  expanded,expand_error=Q.activation(Q.UADM,'pilot',[Q.P,Q.PN],1);assert expanded is not None,expand_error
+  old_options,old_error=Q.call(Q.UB,f"public.b2b_list_payment_condition_options_secure('{Q.P}','{Q.PLD}')")
+  new_options,new_error=Q.call(Q.UN,f"public.b2b_list_payment_condition_options_secure('{Q.PN}','{Q.P3}')")
+  out_options,out_error=Q.call(Q.UADM,f"public.b2b_list_payment_condition_options_secure('{Q.PO}','{Q.P3}')")
+  foreign_options,foreign_error=Q.call(Q.UADMF,f"public.b2b_list_payment_condition_options_secure('{Q.PF}','{Q.PLD}')")
+  assert old_options and old_options['mode']=='required' and new_options and new_options['mode']=='required',(old_error,new_error)
+  assert out_options and out_options['mode']=='legacy' and foreign_options and foreign_options['mode']=='legacy',(out_error,foreign_error)
+  new_journal,new_journal_error=Q.call(Q.UN,f"public.recover_partner_order_attempt_v1('{Q.PN}',NULL,NULL,false,NULL)")
+  assert new_journal and new_journal['state']=='reserved',new_journal_error or new_journal
+  legacy_new=Q.legacy(Q.UN,Q.P3,[Q.S(1)],new_journal['key'],partner=Q.PN)
+  assert legacy_new.returncode!=0 and 'B2B_PAYMENT_CONDITION_REQUIRED' in legacy_new.stderr,legacy_new.stderr
+  assert Q.idem(new_journal['key'])=='0'
+  (OUT/'pilot-targeting.json').write_text(json.dumps(dict(activation=expanded,old_required=old_options['mode'],new_required=new_options['mode'],outside_pilot=out_options['mode'],other_tenant=foreign_options['mode'],legacy_denial=legacy_new.stderr,stale_cas=stale_error,orders_for_denied_attempt=Q.idem(new_journal['key'])),indent=2)+'\n')
+  checks.append(dict(test='additive pilot targeting keeps old and new required; legacy writer denied; outside partner and tenant unchanged',status='PASS'))
   choice=Q.ch('boleto',1,30)
   diagnostic=Q.psql(f"""SELECT set_config('request.jwt.claim.sub','{Q.UB}',false);
     SELECT jsonb_build_object(

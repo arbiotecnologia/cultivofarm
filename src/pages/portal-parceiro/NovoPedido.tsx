@@ -481,7 +481,7 @@ export default function NovoPedido() {
   const methodList = methodOptions.data?.status === "ok" ? methodOptions.data.options : [];
   // Modo vem do servidor por empresa vendedora/parceiro. Pré-instalação exata = contrato atual (o servidor não exige meio).
   // Carregando/erro/escopo ausente => null: nenhuma simulação nem envio (falha fechada).
-  const methodMode: "required" | "legacy" | null = methodOptions.isError ? null
+  const methodMode: "required" | "legacy" | null = methodOptions.isError || methodOptions.isFetching ? null
     : methodOptions.data?.status === "ok" ? methodOptions.data.mode
     : methodOptions.data?.status === "not_installed" ? "legacy" : null;
   const requireMethod = methodMode === "required";
@@ -1277,7 +1277,7 @@ export default function NovoPedido() {
                 {selectedPlanId && methodMode !== "legacy" && (
                   <div className="space-y-1" data-testid="b2b-payment-method">
                     <div className="text-xs font-semibold uppercase text-muted-foreground">Meio de pagamento</div>
-                    {methodOptions.isLoading ? (
+                     {methodOptions.isFetching ? (
                       <p className="text-xs text-muted-foreground">Carregando meios permitidos…</p>
                     ) : methodOptions.isError || methodOptions.data?.status !== "ok" ? (
                       <Alert variant="destructive" className="py-2" role="alert" data-testid="b2b-payment-method-error">

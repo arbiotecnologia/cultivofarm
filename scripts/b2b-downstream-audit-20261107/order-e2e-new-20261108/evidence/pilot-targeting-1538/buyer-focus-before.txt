@@ -1,0 +1,351 @@
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/b2b/novoPedidoPaymentMethod.test.tsx > releitura da capability com o diálogo aberto não mantém envio legado habilitado
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ src/test/b2b/novoPedidoPaymentMethod.test.tsx (18 tests | 1 failed | 17 skipped) 3392ms
+   ↓ sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio
+   ↓ meio escolhido: simulação e criação levam meio/versão/prazo; cliente não envia parcelas nem vencimento; datas rotuladas como estimadas
+   ↓ falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por clique
+   ↓ leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio
+   ↓ ativação legacy → required aposenta a simulação antiga durante a releitura e volta a exigir meio
+   × releitura da capability com o diálogo aberto não mantém envio legado habilitado 3388ms
+     → expected 1 to be greater than 1
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"contents"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-h-screen flex w-full"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex-1 flex flex-col min-w-0"[39m
+          [36m>[39m
+            [36m<main[39m
+              [33mclass[39m=[32m"flex-1 p-4 md:p-6 overflow-x-auto"[39m
+            [36m>[39m
+              [36m<section[39m
+                [33maria-label[39m=[32m"Comprar para minha empresa"[39m
+                [33mclass[39m=[32m"space-y-3 mb-4"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex flex-wrap items-center justify-between gap-3"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"text-lg font-semibold"[39m
+                  [36m>[39m
+                    [0mComprar para minha empresa[0m
+                  [36m</h2>[39m
+                  [36m<a[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+                    [33mhref[39m=[32m"/portal-parceiro/catalogo"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-shopping-cart"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<circle[39m
+                        [33mcx[39m=[32m"8"[39m
+                        [33mcy[39m=[32m"21"[39m
+                        [33mr[39m=[32m"1"[39m
+                      [36m/>[39m
+                      [36m<circle[39m
+                        [33mcx[39m=[32m"19"[39m
+                        [33mcy[39m=[32m"21"[39m
+                        [33mr[39m=[32m"1"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                    [0mSelecionar produto / Novo pedido[0m
+                  [36m</a>[39m
+                [36m</div>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"text-sm text-muted-foreground"[39m
+                  [33mrole[39m=[32m"status"[39m
+                [36m>[39m
+                  [0mPedido para a empresa vinculada ao seu acesso, sujeito à análise comercial.[0m
+                [36m</p>[39m
+                [36m<section[39m
+                  [33maria-label[39m=[32m"Percurso do pedido"[39m
+                  [33mclass[39m=[32m"space-y-2 border-y border-border py-3"[39m
+                [36m>[39m
+                  [36m<ol[39m
+                    [33mclass[39m=[32m"flex flex-wrap gap-x-5 gap-y-2 text-sm"[39m
+                  [36m>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m1[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mPedido[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m2[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mAprovação[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m3[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mFinanceiro[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m4[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mFiscal[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m5[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mEntrega[0m
+                    [36m</li>[39m
+                  [36m</ol>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"text-xs text-muted-foreground"[39m
+                  [36m>[39m
+                    [0mCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.[0m
+                  [36m</p>[39m
+                [36m</section>[39m
+              [36m</section>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"space-y...
+   ↓ outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado
+   ↓ empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global
+   ↓ resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)
+   ↓ promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)
+   ↓ Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas
+   ↓ Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18
+   ↓ plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de versão/meio aposenta economia anterior
+   ↓ crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado
+   ↓ resposta com credit null não é aceita como apta: erro visível e envio bloqueado
+   ↓ Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado
+   ↓ ACK com total diferente da simulação não é sucesso (sem navegação)
+   ↓ ACK com outro meio/versão não é tratado como sucesso (sem navegação)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/b2b/novoPedidoPaymentMethod.test.tsx > releitura da capability com o diálogo aberto não mantém envio legado habilitado
+AssertionError: expected 1 to be greater than 1
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"contents"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"min-h-screen flex w-full"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex-1 flex flex-col min-w-0"[39m
+          [36m>[39m
+            [36m<main[39m
+              [33mclass[39m=[32m"flex-1 p-4 md:p-6 overflow-x-auto"[39m
+            [36m>[39m
+              [36m<section[39m
+                [33maria-label[39m=[32m"Comprar para minha empresa"[39m
+                [33mclass[39m=[32m"space-y-3 mb-4"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex flex-wrap items-center justify-between gap-3"[39m
+                [36m>[39m
+                  [36m<h2[39m
+                    [33mclass[39m=[32m"text-lg font-semibold"[39m
+                  [36m>[39m
+                    [0mComprar para minha empresa[0m
+                  [36m</h2>[39m
+                  [36m<a[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+                    [33mhref[39m=[32m"/portal-parceiro/catalogo"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-shopping-cart"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<circle[39m
+                        [33mcx[39m=[32m"8"[39m
+                        [33mcy[39m=[32m"21"[39m
+                        [33mr[39m=[32m"1"[39m
+                      [36m/>[39m
+                      [36m<circle[39m
+                        [33mcx[39m=[32m"19"[39m
+                        [33mcy[39m=[32m"21"[39m
+                        [33mr[39m=[32m"1"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                    [0mSelecionar produto / Novo pedido[0m
+                  [36m</a>[39m
+                [36m</div>[39m
+                [36m<p[39m
+                  [33mclass[39m=[32m"text-sm text-muted-foreground"[39m
+                  [33mrole[39m=[32m"status"[39m
+                [36m>[39m
+                  [0mPedido para a empresa vinculada ao seu acesso, sujeito à análise comercial.[0m
+                [36m</p>[39m
+                [36m<section[39m
+                  [33maria-label[39m=[32m"Percurso do pedido"[39m
+                  [33mclass[39m=[32m"space-y-2 border-y border-border py-3"[39m
+                [36m>[39m
+                  [36m<ol[39m
+                    [33mclass[39m=[32m"flex flex-wrap gap-x-5 gap-y-2 text-sm"[39m
+                  [36m>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m1[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mPedido[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m2[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mAprovação[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m3[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mFinanceiro[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m4[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mFiscal[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground"[39m
+                      [36m>[39m
+                        [0m5[0m
+                        [0m.[0m
+                      [36m</span>[39m
+                      [0m [0m
+                      [0mEntrega[0m
+                    [36m</li>[39m
+                  [36m</ol>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"text-xs text-muted-foreground"[39m
+                  [36m>[39m
+                    [0mCada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.[0m
+                  [36m</p>[39m
+                [36m</section>[39m
+              [36m</section>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"space-y...
+ ❯ src/test/b2b/novoPedidoPaymentMethod.test.tsx:248:89
+    246|   });
+    247|   window.dispatchEvent(new Event("focus"));
+    248|   await waitFor(() => expect(calls("b2b_list_payment_condition_options…
+       |                                                                                         ^
+    249|   expect(await submitBtn()).toBeDisabled();
+    250|   finish();
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 skipped (18)
+   Start at  15:42:28
+   Duration  9.70s (transform 1.86s, setup 215ms, collect 3.38s, tests 3.39s, environment 936ms, prepare 147ms)
+

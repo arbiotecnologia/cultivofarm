@@ -4,7 +4,7 @@
   "hosted": false,
   "fresh_full_rebuild": "PASS",
   "run_exit_code": 0,
-  "checkpoints_passed": 19,
+  "checkpoints_passed": 20,
   "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
   "default_enabled": false,
   "new_client_grants": [],
@@ -20,6 +20,7 @@
     "post_rollback": "PASS_UNCHANGED"
   },
   "positive_path": [
+    "additive_pilot_targeting_old_and_new_required_outside_scopes_legacy",
     "canonical_buyer_B3_order_and_durable_recovery",
     "accounting_pending_denial_then_synthetic_CAS_promotion_and_seller_acceptance",
     "resale_OS_creation_and_CAS_replay",
@@ -29,6 +30,8 @@
     "partner_order_delivered_without_new_receivable_or_fiscal_document"
   ],
   "negative_controls": [
+    "legacy_writer_for_new_pilot_partner_denied_after_valid_durable_reservation_without_order",
+    "stale_activation_CAS_denied",
     "gate_closed_and_no_client_EXECUTE",
     "authenticated_direct_status_update_zero_rows",
     "privileged_direct_operational_status_update_explicitly_denied",
