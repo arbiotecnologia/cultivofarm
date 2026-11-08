@@ -202,7 +202,7 @@ ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b
 CREATE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
 DECLARE inv public.fiscal_invoices; po public.partner_orders; tx public.fiscal_sefaz_transmissions;
- org uuid; items jsonb; canonical_snapshot jsonb; digest text; result jsonb;
+ org uuid; items jsonb; snapshot_items jsonb; canonical_snapshot jsonb; digest text; result jsonb;
  existing platform_private.b2b_authorized_documents; saved platform_private.b2b_fiscal_invoice_snapshots;
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'B2B_READ_COMMITTED_REQUIRED' USING ERRCODE='0A000'; END IF;
@@ -240,8 +240,10 @@ BEGIN
    SELECT 1 FROM public.partner_accounts pa WHERE pa.id=po.partner_id AND pa.commercial_owner_organization_id=org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
  ) THEN RAISE EXCEPTION 'B2B_FISCAL_ORDER_SCOPE_INVALID' USING ERRCODE='42501'; END IF;
  SELECT jsonb_agg(jsonb_build_object('item_id',x.partner_order_item_id,'quantity',x.quantity,
+   'commercial_unit',x.commercial_unit,'taxable_quantity',x.taxable_quantity,'taxable_unit',x.taxable_unit) ORDER BY x.partner_order_item_id),
+ jsonb_agg(jsonb_build_object('item_id',x.partner_order_item_id,'quantity',x.quantity,
    'commercial_unit',x.commercial_unit,'taxable_quantity',x.taxable_quantity,'taxable_unit',x.taxable_unit,'net_value',x.net_value) ORDER BY x.partner_order_item_id)
- INTO items FROM (
+ INTO items,snapshot_items FROM (
    SELECT i.partner_order_item_id,sum(i.quantity) quantity,i.commercial_unit,sum(i.taxable_quantity) taxable_quantity,i.taxable_unit,sum(i.net_value) net_value
    FROM public.fiscal_invoice_items i WHERE i.fiscal_invoice_id=inv.id
     GROUP BY i.partner_order_item_id,i.commercial_unit,i.taxable_unit
@@ -259,7 +261,7 @@ BEGIN
   'issue_date',inv.issue_date,'total_amount',inv.total_amount,'provider_reference',inv.provider_reference,
   'provider_status_raw',inv.provider_status_raw,'tax_authority_notes',inv.tax_authority_notes,
   'transmission_id',tx.id,'protocol',tx.n_prot,'transmission_c_stat',tx.c_stat,
-  'transmission_outcome',tx.outcome,'transmission_environment',tx.ambiente_retorno,'items',items);
+  'transmission_outcome',tx.outcome,'transmission_environment',tx.ambiente_retorno,'items',snapshot_items);
  digest:=encode(extensions.digest(convert_to(canonical_snapshot::text,'UTF8'),'sha256'),'hex');
  SELECT * INTO existing FROM platform_private.b2b_authorized_documents WHERE id=inv.id;
  SELECT * INTO saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=inv.id;
