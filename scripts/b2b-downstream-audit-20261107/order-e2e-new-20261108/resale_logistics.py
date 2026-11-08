@@ -172,6 +172,35 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
 $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;
 
+CREATE FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(o public.partner_orders,n public.partner_orders)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ RETURN (
+  EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND platform_private.b2b_internal_commercial_actor() IS TRUE
+  AND o.id=n.id AND o.status::text='aprovado' AND n.status::text='entregue'
+  AND o.ready_for_production IS FALSE AND n.ready_for_production IS FALSE
+  AND n.receivable_generated IS FALSE
+  AND (to_jsonb(n)-ARRAY['status','updated_at']) IS NOT DISTINCT FROM (to_jsonb(o)-ARRAY['status','updated_at'])
+  AND EXISTS(
+   SELECT 1 FROM platform_private.delivery_context_20261030 dc
+   JOIN public.entregas e ON e.id=dc.target AND e.partner_order_id=n.id
+   JOIN public.ordens_servico os ON os.id=e.ordem_servico_id AND os.partner_order_id=n.id
+   JOIN public.partner_accounts pa ON pa.id=n.partner_id
+    AND pa.commercial_owner_organization_id=dc.organization_id AND pa.commercial_owner_organization_id=os.organization_id
+   WHERE dc.txid=txid_current() AND dc.actor=auth.uid() AND dc.action='confirm' AND dc.mutation='done'
+    AND e.organization_id=dc.organization_id AND e.status::text='entregue' AND e.receivable_id IS NULL
+    AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS TRUE
+  )
+  AND NOT EXISTS(
+   SELECT 1 FROM public.entregas e JOIN public.ordens_servico os ON os.id=e.ordem_servico_id
+   WHERE os.partner_order_id=n.id AND e.status::text NOT IN ('entregue','cancelada')
+  )
+ ) IS TRUE;
+END;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders) FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE FUNCTION platform_private.b2b_resale_os_create_v1(
  p_order_id uuid,p_order_item_id uuid,p_expected_updated_at timestamptz,p_request_key text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $resale$
