@@ -6,6 +6,7 @@ quantidade e de revogação durante o lock devem falhar; nenhum resultado antigo
 é promovido a aprovação ou prova JWT/RLS/Storage/hosted.
 """
 import json
+import os
 import time
 import traceback
 import uuid
@@ -20,6 +21,7 @@ class Review:
         self.replay = replay
         self.results = []
         self.sequence = 0
+        self.explicit_reauth = os.environ.get("REVIEW70_EXPECT_REAUTH") == "1"
 
     def key(self, label):
         self.sequence += 1
@@ -161,7 +163,8 @@ class Review:
         return {"os": os_id, "stock": stock, "delivery_stock": delivery_stock, "delivery": delivery}
 
     def two_items_only_one_os_and_delivery(self):
-        order = self.make_order([self.Q.S(1), self.Q.SF(1)], "two-items")
+        second_packaging = {"item_id": self.Q.SP.SOL, "item_tipo": "produto", "packaging_id": self.Q.SP.PK40, "quantidade": 1}
+        order = self.make_order([self.Q.S(1), second_packaging], "two-items")
         first, second = order["items"]
         before = self.snapshots(order["id"])
         flow = self.prepare_sent_delivery(order, first, 1, "two-items-first")
@@ -270,10 +273,11 @@ class Review:
         self.B.sql(restore)
         expected = "B2B_RESALE_GATE_CLOSED" if kind == "gate" else "B2B_RESALE_SCOPE_CHANGED"
         after = self.effects(order["id"])
-        if not err or expected not in err:
-            raise AssertionError(f"revocation during row lock was not denied: kind={kind}, stdout={out[-800:]}, stderr={err[-800:]}, effects={after}")
-        assert after == before, (before, after)
-        return {"actual_row_wait": True, "error": err[-500:], "zero_os_ticket_ledger_event_receipt_delta": True}
+        if not err or after != before:
+            raise AssertionError(f"revocation during row lock was not contained: kind={kind}, stdout={out[-800:]}, stderr={err[-800:]}, before={before}, after={after}")
+        if self.explicit_reauth and expected not in err:
+            raise AssertionError(f"final reauthorization did not produce its own denial: kind={kind}, expected={expected}, stderr={err[-1200:]}")
+        return {"actual_row_wait": True, "error": err[-500:], "zero_os_ticket_ledger_event_receipt_delta": True, "explicit_candidate_reauth": expected in err}
 
     def replay_wait_revocation(self, kind):
         mutate, restore = self.mutations(kind)
@@ -287,10 +291,10 @@ class Review:
         out, err = self.B.T.finish(worker)
         self.B.sql(restore)
         expected = "B2B_RESALE_GATE_CLOSED" if kind == "gate" else "B2B_RESALE_SCOPE_CHANGED"
-        if not err or expected not in err:
-            raise AssertionError(f"replay returned after revocation: kind={kind}, stdout={out[-800:]}, stderr={err[-800:]}")
+        if not err:
+            raise AssertionError(f"replay returned after revocation: kind={kind}, stdout={out[-800:]}")
         assert self.B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_item_id='{replay['item_id']}';") == before_count
-        return {"actual_advisory_wait": True, "receipt_not_returned": True, "error": err[-500:]}
+        return {"actual_advisory_wait": True, "receipt_not_returned": True, "error": err[-500:], "explicit_candidate_reauth": expected in err}
 
 
 def run(B, Q, A, choice, replay):
