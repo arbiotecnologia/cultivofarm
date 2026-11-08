@@ -18,6 +18,7 @@ CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.jso
 MONEY = ROOT / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
 MANUAL_LIVE = H / "live-readonly-manual-null-1813.json"
 OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))
+REVIEW_BEFORE = os.environ.get("B4_REVIEW_BEFORE") == "1"
 if json.loads(MONEY.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_MONEY_REF_DRIFT")
 if json.loads(MANUAL_LIVE.read_text()).get("canonical_ref") != "swzpzcwiasxmjutrmvkm":
@@ -244,7 +245,7 @@ def main():
 CREATE FUNCTION platform_private.c2_order_partner_recipients(uuid) RETURNS SETOF uuid LANGUAGE sql AS $$SELECT NULL::uuid WHERE FALSE$$;""")
         for name in ["approve_b2b_payment_terms_secure", "approve_partner_order", "fn_b2b_order_priceable", "fn_b2b_order_billing_eligibility", "is_financial_staff", "fn_authz_uid_scope_ok",
                      "generate_b2b_receivable_secure", "generate_b2b_receivable_secure_impl", "tg_auto_b2b_receivable",
-                     "fn_generate_receivable_from_entrega", "rpc_fiscal_invoice_apply_authorization_v1"]:
+                     "fn_generate_receivable_from_entrega", "rpc_fiscal_invoice_apply_authorization_v1", "rpc_fiscal_sefaz_transmit_record_v1"]:
             function = captured_function(name)
             B3.psql(function["body"] + ";")
         B3.psql("""REVOKE ALL ON FUNCTION public.generate_b2b_receivable_secure(uuid) FROM PUBLIC,anon;GRANT EXECUTE ON FUNCTION public.generate_b2b_receivable_secure(uuid) TO authenticated,service_role;
@@ -302,6 +303,14 @@ WHERE s.partner_id='{B3.P}';""")
         recovery_item = B3.psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{recovery_order}'").stdout.strip()
         check("fixture independente de recuperação criada sem título", recovery_order is not None and recovery_item != "", error)
         approve_order(recovery_order)
+
+        # Pedido separado para callback real H12/H13, prova divergente e NFS-e.
+        data, error = B3.sim(B3.UB, B3.P3, [B3.L(5)], BOL)
+        data, error = B3.create(B3.UB, B3.P3, [B3.L(5)], data and data["cart_hash"], "TESTE-B4-CALLBACK-REVIEW", BOL)
+        callback_order = data and data["id"]
+        callback_item = B3.psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{callback_order}'").stdout.strip()
+        check("fixture independente do callback fiscal criada sem título", callback_order is not None and callback_item != "", error)
+        approve_order(callback_order)
 
         # Pedido ainda pendente de contabilidade: fixture separada, nunca promovida artificialmente.
         B3.psql(f"DELETE FROM public.company_fiscal_settings WHERE organization_id='{B3.A}'")
@@ -644,6 +653,9 @@ WHERE s.partner_id='{B3.P}';""")
 CREATE TABLE public.fiscal_invoice_items(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid NOT NULL,partner_order_item_id uuid,
  item_sequence integer NOT NULL,item_kind text NOT NULL,quantity numeric(18,6),commercial_unit text,taxable_quantity numeric(18,6),taxable_unit text,net_value numeric(18,2));
 CREATE TABLE IF NOT EXISTS public.fiscal_xml_runs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid,signed_path text,access_key text,signed_at timestamptz,updated_at timestamptz);
+CREATE TABLE public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY,service text NOT NULL DEFAULT 'NFeAutorizacao4',fiscal_event_id uuid,fiscal_invoice_id uuid,
+ state text,outcome text,c_stat text,x_motivo text,ch_nfe text,n_prot text,n_rec text,ambiente_retorno text,dh_recbto timestamptz,
+ error_code text,response_summary jsonb,completed_at timestamptz);
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
         B3.psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
  SELECT '{B3.A}',true,'VALIDATED','AR BIO FIXTURE LOCAL','00000000000191',7 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.A}' AND is_active);""")
@@ -652,15 +664,27 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
  SELECT '{B3.F}',true,'VALIDATED','FSF FIXTURE LOCAL','00000000000191',1 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active);""")
         company_f = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active").stdout.strip()
         invoice_main, invoice_pending, invoice_denied, invoice_foreign = [B3.u(390+i) for i in range(4)]
+        invoice_nonb2b, invoice_partial, invoice_bad_cstat, invoice_no_tx, invoice_nfse, invoice_h13, invoice_h13_pending, invoice_h13_rejected = [B3.u(400+i) for i in range(8)]
+        tx_main, tx_denied, tx_foreign, tx_nonb2b, tx_partial, tx_bad_cstat, tx_nfse, tx_h13, tx_h13_pending, tx_h13_rejected = [B3.u(420+i) for i in range(10)]
         monetary = B3.psql(f"SELECT principal+financed_interest FROM platform_private.b2b_document_allocations WHERE document_id='{RECOVERY_DOC}'").stdout.strip()
-        def seed_invoice(invoice_id, status="PENDING", org=None, company=None, order=None, partner=None, with_item=False):
+        def seed_invoice(invoice_id, status="PENDING", org=None, company=None, order=None, partner=None, with_item=False, item=None, invoice_type="NFE", provider_reference="LOCAL-PROVIDER"):
             org = org or B3.A; company = company or company_a; order = order or recovery_order; partner = partner or B3.P
+            item = item or recovery_item
+            order_sql = f"'{order}'" if order else "NULL"
+            partner_sql = f"'{partner}'" if partner else "NULL"
             B3.psql(f"""INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
  partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference)
- VALUES('{invoice_id}','NFE','{status}','{status}','HOMOLOGATION','{company}','{org}','{order}','{partner}','2027-02-01','{monetary}','{B3.UADM}','LOCAL-PROVIDER');""")
+  VALUES('{invoice_id}','{invoice_type}','{status}','{status}','HOMOLOGATION','{company}','{org}',{order_sql},{partner_sql},'2027-02-01','{monetary}','{B3.UADM}','{provider_reference}');""")
             if with_item:
                 B3.psql(f"""INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
- VALUES('{invoice_id}','{recovery_item}',1,'PRODUCT',1,'UN',1,'UN','{monetary}');""")
+ VALUES('{invoice_id}','{item}',1,'PRODUCT',1,'UN',1,'UN','{monetary}');""")
+        def seed_proof(invoice_id, transmission_id, key=access_key if 'access_key' in globals() else "35261111111111111111111111111111111111111111", protocol="LOCAL-PROTOCOL", cstat="100", outcome="AUTHORIZED", state="SUCCEEDED"):
+            B3.psql(f"""INSERT INTO public.fiscal_xml_runs(fiscal_invoice_id,signed_path,access_key,signed_at,updated_at)
+ VALUES('{invoice_id}','local/{invoice_id}.xml','{key}',now(),now());
+ INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
+ VALUES('{transmission_id}','{invoice_id}','{state}','{outcome}','{cstat}','LOCAL','{key}','{protocol}','2',now(),now());""")
+        def real_record(transmission_id, state, patch):
+            return service_json(f"public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','{state}','{js(patch)}'::jsonb)")
         def service_sql(sql):
             return server_run("", "SET ROLE service_role;" + sql)
         def service_json(expression):
