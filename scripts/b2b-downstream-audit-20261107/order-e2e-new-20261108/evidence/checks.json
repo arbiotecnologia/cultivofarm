@@ -34,7 +34,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "91881631-f190-4814-8919-79b6d0485fff"
+    "order_id": "7ce5515e-5a2a-4a92-9a38-6246c27531fd"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -55,7 +55,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "9b2c13ee-8b86-41e8-b2eb-a34c329e4a61"
+    "os_id": "c3d2b908-5df0-4ff8-837e-2be3b4d7a998"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -64,12 +64,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "b7247776-61c8-4bef-a8fb-cc46a8919435"
+    "delivery_id": "f9883a0d-6014-442f-abc2-2909d7630122"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "8be11662-815c-4acd-af97-6c7d7b43ccf6"
+    "delivery_id": "402fb3e1-bfd9-4b14-aa75-5fb6322a2a7e"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -132,8 +132,13 @@
   },
   {
     "test": "review70 create_wait_revocation_tenant",
-    "status": "FAIL",
-    "detail": "final reauthorization did not produce its own denial: kind=tenant, expected=B2B_RESALE_SCOPE_CHANGED, stderr=ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 43 at IF\n"
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 43 at IF\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
   },
   {
     "test": "review70 create_wait_revocation_gate",
@@ -188,7 +193,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "2b49ccc5-5b42-4bdb-b11a-11fd2671c42e"
+    "delivery_id": "a64ccaa4-b609-4602-8552-5e0f44e20c3a"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",

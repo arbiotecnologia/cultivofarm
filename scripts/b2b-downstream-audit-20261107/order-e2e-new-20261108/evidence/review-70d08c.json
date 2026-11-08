@@ -64,9 +64,13 @@
     },
     {
       "name": "create_wait_revocation_tenant",
-      "status": "FAIL",
-      "error": "final reauthorization did not produce its own denial: kind=tenant, expected=B2B_RESALE_SCOPE_CHANGED, stderr=ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 43 at IF\n",
-      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-mlgiuo2s/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 43, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-mlgiuo2s/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 38, in <lambda>\n    cases.append((f\"create_wait_revocation_{kind}\", lambda kind=kind: self.create_wait_revocation(kind)))\n                                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/tmp/new-order-e2e-mlgiuo2s/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 279, in create_wait_revocation\n    raise AssertionError(f\"final reauthorization did not produce its own denial: kind={kind}, expected={expected}, stderr={err[-1200:]}\")\nAssertionError: final reauthorization did not produce its own denial: kind=tenant, expected=B2B_RESALE_SCOPE_CHANGED, stderr=ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 43 at IF\n\n"
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 43 at IF\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": true
+      }
     },
     {
       "name": "create_wait_revocation_gate",
