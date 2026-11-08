@@ -34,7 +34,7 @@ def apply(driver, load, root, out):
      if B.last(f"SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='{t['schema']}' AND table_name='{t['name']}' AND column_name='{c['name']}');")=='f':
       B.sql(f'ALTER TABLE {obj} ADD COLUMN "{c["name"]}" {c["type"]}'+((' DEFAULT '+c['default']) if c['default'] else '')+';')
   # Economic functions retain their exact B3 bodies. h15 and physical helpers stay original.
-  keep={'h15_actor_organization','tg_create_default_pfs','has_role','is_platform_superadmin','get_user_partner_id','update_updated_at_column'}
+  keep={'h15_actor_organization','tg_create_default_pfs','has_role','is_platform_superadmin','get_user_partner_id','update_updated_at_column','b2b_actor_scope','b2b_internal_commercial_actor'}
   for f in meta['functions']:
    if f['name'] in keep:continue
    B.sql(f['body']+';')
