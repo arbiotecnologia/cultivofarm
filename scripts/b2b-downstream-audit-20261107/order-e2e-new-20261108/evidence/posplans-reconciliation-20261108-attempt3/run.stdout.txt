@@ -105,3 +105,8 @@ CHECKPOINT sql_calls=10200 elapsed=394.7s
 CHECKPOINT sql_calls=10300 elapsed=397.9s
 CHECKPOINT sql_calls=10400 elapsed=401.0s
 CHECKPOINT sql_calls=10500 elapsed=404.4s
+CHECKPOINT sql_calls=10600 elapsed=408.7s
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+NEW_PHYSICAL_BOOT_OK
