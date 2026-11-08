@@ -149,21 +149,7 @@ def main() -> None:
     # callback pela transmissão e nunca rebaixa uma autorização já persistida.
     transmit = edit(transmit_source, "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;", "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;")
     transmit = edit(transmit, "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.c_stat);", "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.protocol_c_stat, v_cur.c_stat);")
-    transmit = edit(transmit, """  IF v_cur.outcome = 'AUTHORIZED' AND v_outcome IS DISTINCT FROM 'AUTHORIZED' THEN
-    RETURN jsonb_build_object(
-      'transmissionId',v_cur.id,'state',v_cur.state,'outcome',v_cur.outcome,
-      'cStat',v_cur.c_stat,'protocolCStat',coalesce(v_cur.protocol_c_stat,v_cur.c_stat),
-      'xMotivo',v_cur.x_motivo,'chNFe',v_cur.ch_nfe,'nProt',v_cur.n_prot,'nRec',v_cur.n_rec,
-      'reconciliationPending',v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING',
-      'reconciliationCode',CASE WHEN v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' THEN v_cur.error_code ELSE NULL END);
-  END IF;
-  IF v_cur.outcome = 'AUTHORIZED' AND (
-    v_cur.ch_nfe IS DISTINCT FROM coalesce(_patch->>'chNFe',v_cur.ch_nfe)
-    OR v_cur.n_prot IS DISTINCT FROM v_prot
-    OR coalesce(v_cur.protocol_c_stat,v_cur.c_stat) IS DISTINCT FROM v_cstat
-  ) THEN RAISE EXCEPTION 'FISCAL_AUTHORIZATION_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
-
-  UPDATE public.fiscal_sefaz_transmissions SET
+    transmit = edit(transmit, """  UPDATE public.fiscal_sefaz_transmissions SET
     state            = _state,""", """  IF v_cur.outcome = 'AUTHORIZED' AND v_outcome IS DISTINCT FROM 'AUTHORIZED' THEN
     RETURN jsonb_build_object(
       'transmissionId',v_cur.id,'state',v_cur.state,'outcome',v_cur.outcome,
