@@ -41,7 +41,7 @@ def main():
   # sem reaplicar a migração ampla nem contornar seu PRE histórico.
   B.current_catalog.apply(B.run_raw,B.last,B.ok,B.T.A)
   shutil.copyfile(physical/'evidence/current-catalog-baseline.json',OUT/'current-catalog-baseline.json')
-  checks.append(dict(test='restricted POSPLANOS baseline measures nine bodies six exact LIVE guards and eight ACLs before candidate generation',status='PASS'))
+  checks.append(dict(test='restricted POSPLANOS baseline measures twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies before candidate generation',status='PASS'))
   # Install confirmation/send in the current fresh database using measured exact pins.
   C=B.C
   pre=C.state();delta=C.G.candidate()
@@ -126,7 +126,7 @@ def main():
   checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
   current_state=B.current_catalog.assert_current(B.last)
   (OUT/'current-catalog-posplans.json').write_text(json.dumps(current_state,indent=2)+'\n')
-  checks.append(dict(test='post catalog Price plans preserve nine current bodies six enabled guards and eight restricted ACLs',status='PASS'))
+  checks.append(dict(test='post catalog Price plans preserve twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies',status='PASS'))
   # As baselines atuais são compostas antes do pedido B2B: o fluxo inteiro abaixo
   # corre com a ACL e os dez gatilhos reais de recebíveis, além do cadastro sem
   # configuração automática. Nenhum writer B4/NF é instalado por esta etapa.
@@ -432,7 +432,7 @@ def main():
    assert history_after==history_before,(history_before,history_after)
    B.current_catalog.assert_current(B.last)
    (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True,'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE'},indent=2)+'\n')
-   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history six guards eight ACLs; B4 fiscal NOT_RUN out of scope',status='PASS'))
+   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 17 ACLs; B4 fiscal NOT_RUN out of scope',status='PASS'))
    return 0
 
   # feb815603: B4 reconciliado com TODAS as cinco dependências pós-planos.

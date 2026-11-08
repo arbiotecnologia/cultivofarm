@@ -181,7 +181,7 @@ def assert_current(last):
     if _expected_additional_pins:
         for signature, expected in _expected_additional_pins.items():
             if additional.get(signature) != expected:
-                errors.append(f"additional_function_md5:{signature}:{additional.get(signature')}")
+                errors.append(f"additional_function_md5:{signature}:{additional.get(signature)}")
     by_table = {row["table"]: row for row in state["relations"]}
     for table, expected in RELATION_ROWS.items():
         actual = by_table.get(table, {})
@@ -197,7 +197,7 @@ def assert_current(last):
             continue
         for field in ("schema", "enabled", "type", "function", "function_md5", "definition"):
             if actual.get(field) != expected[field]:
-                errors.append(f"trigger_{field}:{key[0]}:{key[1]}:{actual.get(field')}!={expected[field]}")
+                errors.append(f"trigger_{field}:{key[0]}:{key[1]}:{actual.get(field)}!={expected[field]}")
     if errors:
         raise AssertionError("CURRENT_LIVE_BASELINE_DRIFT\n" + "\n".join(errors))
     return state
