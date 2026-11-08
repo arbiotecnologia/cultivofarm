@@ -381,7 +381,8 @@ def main() -> None:
         signature = next(sig for sig in PINS["functions"] if sig.split("(", 1)[0] == name)
         new_hashes[signature] = hashlib.md5(text.encode()).hexdigest()
         assert new_hashes[signature] != PINS["functions"][signature], f"Função sem delta: {name}"
-    install = "-- REVIEW ONLY; não aplicar sem autorização. Gerado de capturas LIVE completas.\nBEGIN;\nSET LOCAL lock_timeout='3s';\n" + preflight().replace("-- READONLY PRE: gerado; nenhum dado ou objeto é alterado.\n", "") + BACKFILL + HELPERS + FENCES + "\n" + "\n".join(functions.values()) + "\n" + ACL_PRESERVE + "\nCOMMIT;\n"
+    function_sql = "\n".join(text.rstrip() + ";" for text in functions.values())
+    install = "-- REVIEW ONLY; não aplicar sem autorização. Gerado de capturas LIVE completas.\nBEGIN;\nSET LOCAL lock_timeout='3s';\n" + preflight().replace("-- READONLY PRE: gerado; nenhum dado ou objeto é alterado.\n", "") + BACKFILL + HELPERS + FENCES + "\n" + function_sql + "\n" + ACL_PRESERVE + "\nCOMMIT;\n"
     (ROOT / "01-pre.sql.readonly").write_text(preflight())
     (ROOT / "02-install.sql.review").write_text(install)
     (ROOT / "03-post.sql.readonly").write_text(postflight(new_hashes))
