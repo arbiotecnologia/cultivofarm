@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-dp_t4e8i/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 95, in main
+  File "/tmp/new-order-e2e-3zif3nk0/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 95, in main
     data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
                                                        ^^^^^^^^^^^^^^^^
 AssertionError: ERROR:  42501: C2_OWNER_ORDER_CLOSED
