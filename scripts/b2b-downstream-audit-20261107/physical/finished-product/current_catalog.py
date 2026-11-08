@@ -254,7 +254,10 @@ def _extract_function(source, signature):
     end = end + len(tag)
     if end < len(text) and text[end] == ";":
         end += 1
-    return text[match.start():end].rstrip() + ";"
+    definition = text[match.start():end].rstrip() + ";"
+    if definition.startswith("CREATE FUNCTION "):
+        definition = "CREATE OR REPLACE FUNCTION " + definition[len("CREATE FUNCTION "):]
+    return definition
 
 
 def _supplemental_function_sql():
