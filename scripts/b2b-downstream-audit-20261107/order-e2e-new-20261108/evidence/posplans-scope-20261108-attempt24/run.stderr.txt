@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-scope-attempt24-qteY2x/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 59, in main
+    B.sql((confirmation_out/'install.sql.review').read_text())
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-scope-attempt24-qteY2x/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/posplans-scope-attempt24-qteY2x/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  CONFIRM_PRE_SCOPED_TRIGGERS actual_missing=[["programacao_producao", "trg_validate_responsavel_producao", "O", "validate_responsavel_producao()", "443795794c2cb18b295239a0c81021c6", "CREATE TRIGGER trg_validate_responsavel_producao BEFORE INSERT OR UPDATE OF responsavel_id ON programacao_producao FOR EACH ROW EXECUTE FUNCTION validate_responsavel_producao()"], ["clientes", "a00_stock_envase_mutation_gate", "O", "platform_private.stock_envase_mutation_gate_v1()", "fd66c95c67366e613d886ac4e6a4f9f7", "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON clientes FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"]] expected_missing=[["lotes", "a00_stock_envase_mutation_gate", "O", "platform_private.stock_envase_mutation_gate_v1()", "fd66c95c67366e613d886ac4e6a4f9f7", "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lotes FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"], ["entregas", "update_entregas_updated_at", "O", "public.update_updated_at_column()", "b1930ed5bca3be839f783c6202ab8147", "CREATE TRIGGER update_entregas_updated_at BEFORE UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"]]
+CONTEXT:  PL/pgSQL function inline_code_block line 10 at RAISE
+
