@@ -29,6 +29,7 @@ def load(name, path):
 
 
 G = load("b4_base_generator", H / "generate-b4.py")
+CURRENT_AR = load("current_receivable_baseline", H / "current_receivable_baseline.py")
 CAP = json.loads(CAPTURE.read_text())
 FIN = json.loads(MONEY.read_text())
 LIVE_FACTS = json.loads(LIVE_FACTS_PATH.read_text())
@@ -312,7 +313,9 @@ def build():
         if (baseline.get("body_md5"), baseline.get("owner"), baseline.get("acl")) != (fact["body_md5"], fact["owner"], fact["acl"]):
             raise SystemExit(f"B4_REPORTED_LIVE_FUNCTION_MISMATCH {sig}")
 
-    ar = next(t for t in FIN["tables"] if t["name"] == "accounts_receivable")
+    ar = CURRENT_AR.table_metadata(next(t for t in FIN["tables"] if t["name"] == "accounts_receivable"))
+    if acl_md5(ar["acl"], "r") != CURRENT_AR.ACL_MD5:
+        raise SystemExit("REPORTED_RECEIVABLE_ACL_MISMATCH")
     ar_indexes = [x for x in FIN["indexes"] if x["table"] == "accounts_receivable"]
     reported_index = LIVE_FACTS["index"]
     captured_index = next(x for x in ar_indexes if x["name"] == reported_index["name"])
@@ -370,6 +373,8 @@ def build():
     captured_baselines = [(SIGS[name], meta) for name, meta in baselines.items() if meta["status"] == "CAPTURED_REQUIRES_LIVE_RECHECK"]
     pre += function_guard(captured_baselines, "B4_PRE_SHARED")
     pre += relation_acl_guard(baseline_schema["owner"], ar["acl"], "B4_PRE")
+    immutable_guard = function_guard([(CURRENT_AR.SIGNATURE, {"body_md5": CURRENT_AR.FUNCTION_MD5, "owner": "postgres", "acl": "{postgres=X/postgres}"})], "B4_IMMUTABLE_DOWNSTREAM")
+    pre += immutable_guard
     for query, expected, code in [(column_query, baseline_schema["columns_md5"], "B4_PRE_COLUMNS"),
                                   (constraint_query, baseline_schema["constraints_md5"], "B4_PRE_CONSTRAINTS"),
                                   (index_query, baseline_schema["indexes_md5"], "B4_PRE_INDEXES"),
@@ -396,6 +401,7 @@ def build():
     for name in new_names + ["public.generate_b2b_receivable_secure_impl", "public.tg_auto_b2b_receivable"]:
         post += digest_guard(f"SELECT md5(pg_get_functiondef('{SIGS[name]}'::regprocedure))", candidate_funcs[name]["body_md5"], "B4_POST_BODY:" + SIGS[name])
     post += relation_acl_guard(baseline_schema["owner"], ar["acl"], "B4_POST")
+    post += immutable_guard
     for query, expected, code in [(column_query, post_columns_md5, "B4_POST_COLUMNS"),
                                   (constraint_query, post_constraints_md5, "B4_POST_CONSTRAINTS"),
                                   (index_query, post_indexes_md5, "B4_POST_INDEXES"),

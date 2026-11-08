@@ -32,6 +32,7 @@ def load(name, path):
 
 
 B3 = load("b3_for_b4", B3DIR / "test-local-pg.py")
+CURRENT_AR = load("current_receivable_baseline", H / "current_receivable_baseline.py")
 B3.SP.PORT = "55489"
 G = B3.g
 CHECKS = []
@@ -197,6 +198,8 @@ GRANT EXECUTE ON FUNCTION public.rpc_register_receivable_payment(uuid,jsonb) TO 
                     exists = B3.psql(f"SELECT count(*) FROM pg_trigger WHERE tgname='{trigger['name']}' AND tgrelid='public.{table['name']}'::regclass").stdout.strip()
                     if exists == "0":
                         B3.psql(trigger["definition"] + ";")
+    CURRENT_AR.restore(B3.psql)
+    check("guard downstream real tem MD5 exato", B3.md5_of(CURRENT_AR.SIGNATURE) == CURRENT_AR.FUNCTION_MD5)
 
 
 def document(doc_id, order, item, quantity, issue="2026-10-01", event=None):
@@ -308,7 +311,7 @@ WHERE s.partner_id='{B3.P}';""")
               VALUES('{title_id}','{B3.A}','MANUAL','{customer_id}',{partner_sql},'TESTE SHARED MANUAL','{category_id}','{amount}','2026-10-01',{due},1,'{status}','{B3.M_BOL}','{B3.UFIN}');""")
 
         # Os cinco títulos e os conflitos são históricos: existem ANTES do trigger
-        # candidato. Todos os nove gatilhos capturados da tabela seguem ativos;
+        # candidato. Todos os dez gatilhos atuais da tabela seguem ativos;
         # nenhum UPDATE de partner_id/backfill é usado para montar a forma real.
         check("trigger compartilhado candidato ainda ausente antes dos históricos", B3.psql("SELECT count(*) FROM pg_trigger WHERE tgname='zz_b2b_shared_credit_guard' AND tgrelid='public.accounts_receivable'::regclass").stdout.strip() == "0")
         real_results = [manual_title(title, CUSTOMER, str(index + 1), "OVERDUE" if index == 4 else "OPEN", "CURRENT_DATE-30" if index == 4 else "CURRENT_DATE+30")
@@ -577,6 +580,13 @@ WHERE s.partner_id='{B3.P}';""")
         check("corrida não duplica título nem residual", residual(direct_order) == 0 and B3.psql(f"SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{direct_order}'").stdout.strip() == "2")
 
         allocations_before = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
+        for operation, statement in (
+            ("UPDATE", f"UPDATE public.accounts_receivable SET description=description WHERE id='{REAL_MANUAL[0]}'"),
+            ("DELETE", f"DELETE FROM public.accounts_receivable WHERE id='{REAL_MANUAL[0]}'"),
+            ("INSERT", f"INSERT INTO public.accounts_receivable SELECT * FROM public.accounts_receivable WHERE id='{REAL_MANUAL[0]}'"),
+        ):
+            r = server_run(B3.UADM, f"BEGIN;INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action) VALUES(txid_current(),'{B3.UADM}','{B3.A}','test');{statement};ROLLBACK;")
+            check(f"delivery context nega {operation} em recebível", r.returncode != 0 and "DELIVERY_DOWNSTREAM_FORBIDDEN" in r.stderr, r.stderr)
         # Remove somente a costura operacional do harness antes do POST/rollback;
         # o corpo real always-deny instalado é restaurado byte a byte.
         B3.psql(real_dependencies + ";")
@@ -604,7 +614,7 @@ WHERE s.partner_id='{B3.P}';""")
             "shared_impact_scope": ["credit_limit zero/NULL/negativo/NaN em parceiro isolado sem exposição", "cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE", "múltiplos parceiros no mesmo cliente", "conflito partner_id/customer_id/owner", "MANUAL não B2B sem parceiro: parcela e baixa legadas", "MANUAL não B2B com parceiro: exposição e baixa MONEY_ORIGIN_UNPROVEN", "pedidos atuais inalterados e nova simulação do parceiro bloqueada", "origem monetária legada desconhecida", "pedido interno sintético", "writer integral antigo"],
             "passed": sum(c["ok"] for c in CHECKS), "total": len(CHECKS), "checks": CHECKS,
             "hosted": "NOT_RUN", "jwt_rls_storage": "NOT_RUN",
-            "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "títulos históricos criados antes do trigger candidato com os nove gatilhos capturados ativos; nenhum backfill", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
+            "synthetic_seams": ["Auth por GUC/roles locais", "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente", "schema financeiro capturado com FK/RLS externos omitidos", "títulos históricos criados antes do trigger candidato com dez gatilhos atuais ativos; nenhum backfill", "company_fiscal_settings fictícia VALIDATED", "autorização/cancelamento fiscal privado fictício sem rede", "b2b_integration_dependencies substituída somente após prova de negação", "c2_order_partner_recipients sintética sem destinatários, somente para concluir aprovação", "entregas mínima para o fence"],
             "b3_overloads_restored": False,
             "historical_301bf597": "não liberado; componentes B4 extraídos e adaptados, não prova de equivalência",
         }

@@ -1,0 +1,59 @@
+{
+  "kind": "INACTIVE_B4_ON_CURRENT_B3_NOT_HOSTED",
+  "historical_candidate": "301bf597 relatado; não liberado e não presumido byte-equivalente",
+  "sources": {
+    "scripts/b2b-payment-condition-v1-rebase-20261106/02-install.sql.review": "7d6d8d5e8ed6b66015fcc4f6878d872855d501e28d03b1299851389855c36eab",
+    "scripts/b2b-payment-condition-v1-rebase-20261106/fn-md5.json": "d56be6785132a3ab43139b657c8ac4ef7b59fbef1c8253c467830be336a8cd3c",
+    "scripts/financial-price-generator-20261029/integration/schema.sql.review": "b1416978e38d792a20e05a05d88f063068b92a138d9a98d382b1df0e59c56a75",
+    "scripts/financial-price-generator-20261029/integration/origin.sql.review": "b299cdc11abbc8b1cec2e658aa5463b29485152f0d77bae05748b7e75ded947e",
+    "scripts/financial-price-generator-20261029/integration/partial.sql.review": "d44257dc9d06bbc807b4192e778e913e30c7d56a178a3d735c50cde56d8c5d05",
+    "scripts/financial-price-generator-20261029/integration/fences.sql.review": "f7d79ef0fc728273cd4708c2311a34e0ebd787c9f4475a4238ff6fe57d1544b4",
+    "scripts/financial-price-generator-20261029/integration/captured-deltas.sql.review": "153e858bba9c6594720f40a07f75572c6add7983f1041ef6f46c4276a1941f59",
+    "scripts/financial-price-generator-20261029/price-generator.sql.review": "033a01df72c4be8cd119fc8476880abb67a6340faf9610f8c5550197b2b0a03d",
+    "scripts/financial-price-generator-20261029/shared-credit-guard.sql.review": "540d47070562b86c619b87bd0950908296e38c092a546437bccd835dbf0da9d5",
+    "scripts/delivery-atomic-hardening-20261030/capture/current.json": "e1ac1e925f0f10f072910e66ffa183fd1fb3f2f1863061270188df64ad2dab88"
+  },
+  "live_baseline": {
+    "public.generate_b2b_receivable_secure(uuid)": "c49cc7ccedbcb28cba9b816b7e47c521",
+    "public.generate_b2b_receivable_secure_impl(uuid)": "1bdac7fae6d702fb42d3a30539e9c9c3",
+    "public.tg_auto_b2b_receivable()": "0f679538fe394924b140e54938a3bb9e",
+    "public.fn_generate_receivable_from_entrega(uuid,jsonb)": "670ea34d37c4c4fd6612031ad763a3a7",
+    "public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)": "9c94985d80502c8aea8bfb5da3abdecd",
+    "public.fn_b2b_order_billing_eligibility(uuid)": "db977875e15ea49ce10fb3e5388d7dfb",
+    "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "213ac31f3a30816ead75365b0d1fed18"
+  },
+  "b3_installed_baseline": {
+    "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)": "5d410cdba3c34298389302fb91d2fb16",
+    "public.b2b_payment_condition_retire(uuid,text,integer)": "c90717e0ed75e7cfeaefa0b7628a3643",
+    "public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)": "58c003869c6c6159a78fd3009296476a",
+    "public.b2b_payment_condition_activation_set(text,uuid[],integer)": "9efe4e6eb5afe29d8e3d9f3ef7077863",
+    "public.b2b_payment_condition_config_list()": "561fa25917c7d3938faa82b1aa7d61de",
+    "public.b2b_list_payment_condition_options_secure(uuid,uuid)": "8a7f29c199e77e653966ebdb8a4b3ed3",
+    "public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)": "06ea0933992a05a0d2a7fb78c6881bcf",
+    "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": "e86385fefb25c68d9dd4d0fef6619f27",
+    "public.get_partner_order_payment_condition_secure(uuid)": "7ffe3bbbefd040bab1b3ce1bce8069a7",
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": "e7cb6a6c7fd3a305a54e62184dacd9be"
+  },
+  "candidate_md5": {
+    "public.fn_b2b_credit_exposure(uuid,numeric,uuid)": "44e8768ff53d7fe5ff3b9f0889258946",
+    "public.rpc_register_receivable_payment(uuid,jsonb)": "db0ef1369e8a98630afb98368d391678",
+    "public.generate_b2b_receivable_secure_impl(uuid)": "3a4ca7fcd75f9fd3a183b6917fe05cd2",
+    "public.tg_auto_b2b_receivable()": "d179755ea3701a723338d08283d42fe5",
+    "platform_private.b2b_allocate_document(uuid)": "cc539ca8c501af53a528d66b810aecd8",
+    "platform_private.b2b_order_residual(uuid)": "93769163bfc7c72a4bbc722e62313179",
+    "platform_private.b4_schedule_from_nf(numeric,numeric,integer,date,integer,platform_private.holiday_calendars)": "af9e7e4f05742ab42f2d2b30e8faf560"
+  },
+  "calendar": {
+    "version": "paracatu-mg-2026-2027-v2",
+    "locality": "Paracatu-MG",
+    "sha256": "a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269"
+  },
+  "excluded": [
+    "create_partner_order_secure(",
+    "simulate_b2b_payment_plan_secure(",
+    "partner_payment_condition_capability_v1",
+    "rpc_create_price_receivable_candidate"
+  ],
+  "fiscal_authorization_integration": "NOT_INSTALLED; rpc_fiscal_invoice_apply_authorization_v1 permanece service-only/PENDING e não chama gerador",
+  "client_grants_added": false
+}

@@ -1,4 +1,9 @@
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
+### Revisão independente d6cd95c0 — baseline recebíveis 08/11
+- [x] Incorporar PRE READONLY falho relatado (ACL/gatilhos), recompor ACL exata com MAINTAIN e dez gatilhos usando função no-downstream canônica sem abreviação, sem alterar capturas históricas.
+- [x] Reproduzir PRE/install/POST/rollback e composição B4 locais: 116/116; manifesto 61/61; proibição INSERT/UPDATE/DELETE com delivery context testada; evidências versionadas em b4/review-d6cd95c0/. Cinco MANUAL customer-only com parcelas impactam teste4; origem desconhecida bloqueia crédito/baixa, dívida intacta.
+- [ ] Composição E2E pedido→entrega ainda depende de recuperar order-e2e; revisão independente e LIVE/JWT/Storage da nova versão pendentes, nada aprovado/implantado.
+
 ### Complemento independente 08/11 03:04 UTC
 - [x] Incorporar relato 7b4f NULL e bf37c13a terms-wait Windows PG17.11 mínimo, sem alegar 38 gatilhos/E2E/exploração LIVE; PRE READONLY passou segundo auditor, candidato não aprovado.
 - [x] Registrar impacto direto: cinco títulos MANUAL ativos ARBio pertencem ao cliente/parceiro de teste4, nenhum alterado; não tratá-los como fora do piloto.

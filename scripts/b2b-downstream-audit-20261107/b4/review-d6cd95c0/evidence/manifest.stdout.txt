@@ -1,0 +1,62 @@
+PASS gerado determinístico: b4-candidate.sql.review
+PASS gerado determinístico: 01-pre.sql.readonly
+PASS gerado determinístico: 02-install.sql.review
+PASS gerado determinístico: 03-post.sql.readonly
+PASS gerado determinístico: 04-rollback-deny.sql.review
+PASS gerado determinístico: b4-pins.json
+PASS gerado determinístico: SHA256SUMS
+PASS gerado determinístico: live-readonly-4097d4e2.json
+PASS gerado determinístico: live-readonly-manual-null-1813.json
+PASS gerado determinístico: b4-object-manifest.json
+PASS status permanece inativo/bloqueado/não aprovado
+PASS manifesto cobre 56 alterações sem contagem de testes sobreposta
+PASS histórico 63 preservado byte a byte
+PASS histórico não é promovido nem somado
+PASS ref canônico explícito
+PASS quatro achados do revisor têm entradas próprias
+PASS writers compartilhados são REPLACE com baseline
+PASS projeção é CREATE com ausência LIVE relatada
+PASS não há baseline de projeção inventada
+PASS PRE exige zero overloads pelo catálogo pg_proc
+PASS POST exige exatamente um overload da projeção
+PASS índice compartilhado é DROP_AND_RECREATE com definição LIVE relatada
+PASS todos os objetos têm baseline e candidato
+PASS objetos novos exigem ausência no PRE
+PASS inventário de funções cobre exatamente o corpo candidato
+PASS duplicidade histórica do guard compartilhado fica visível
+PASS toda função candidata tem MD5 no manifesto
+PASS todo MD5 de função nova aparece no POST
+PASS MD5/owner/ACL dos writers relatados aparecem no PRE
+PASS tabela compartilhada tem todas as colunas
+PASS tabela compartilhada tem todas as constraints
+PASS tabela compartilhada tem ACL/RLS/owner
+PASS todos os índices compartilhados entram no PRE/POST
+PASS dez triggers compartilhados entram no PRE/POST
+PASS trigger automático dependente também é pinado
+PASS coluna/FK novas exigem ausência e têm pós-condição
+PASS baixa não B2B sem parceiro usa matemática legada
+PASS prova obrigatória cobre B2B ou devedor resolvido inclusive partner_id NULL
+PASS origem desconhecida de parceiro continua explicitamente bloqueada
+PASS resolvedor de escopo é função nova owner-only
+PASS crédito inclui cliente ligado sem UNION nem dupla contagem
+PASS ambiguidade, conflito e owner têm negações explícitas
+PASS não há backfill dos cinco títulos nem cancelamento LIVE
+PASS forma LIVE relatada 4 OPEN/1 OVERDUE permanece bloqueio de aprovação
+PASS crédito usa prova monetária interna no tenant vendedor
+PASS limite zero é configuração válida; NULL/negativo/NaN continuam fechados
+PASS limite zero positivo usa limite excedido, nunca NO_LIMIT_DEFINED
+PASS residual legado não usa projeção do ator comprador
+PASS projeção pública conserva guard de ator, papel e tenant
+PASS resolvedor interno é função nova owner-only
+PASS blocos DO do PRE balanceados
+PASS blocos DO do POST balanceados
+PASS instalação é transacional e contém PRE+POST
+PASS instalação não contém GRANT
+PASS instalação não injeta stub operacional
+PASS dependência operacional real permanece sempre deny
+PASS separação instalação/operação declarada
+PASS funções novas não herdam EXECUTE de PUBLIC
+PASS rollback é deny-only e exige POST completo
+PASS impacto em dados LIVE continua bloqueio explícito
+PASS hashes gerados cobrem os artefatos
+61/61

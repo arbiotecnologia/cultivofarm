@@ -73,7 +73,7 @@ def main():
     check("tabela compartilhada tem todas as constraints", len(baseline["constraints"]) == 16 and baseline["constraints_md5"] in pre and manifest["post_shared_schema_md5"]["constraints"] in post)
     check("tabela compartilhada tem ACL/RLS/owner", baseline["acl"] and baseline["rls"] is True and baseline["force_rls"] is False and baseline["owner"] == "postgres")
     check("todos os índices compartilhados entram no PRE/POST", len(baseline["indexes"]) == 13 and baseline["indexes_md5"] in pre and manifest["post_shared_schema_md5"]["indexes"] in post)
-    check("todos os triggers compartilhados entram no PRE/POST", len(baseline["triggers"]) == 9 and baseline["triggers_md5"] in pre and manifest["post_shared_schema_md5"]["triggers"] in post)
+    check("dez triggers compartilhados entram no PRE/POST", len(baseline["triggers"]) == 10 and baseline["triggers_md5"] == "7c65f3e7fed5e102fd6c8b96bc9fe8e0" and baseline["triggers_md5"] in pre and manifest["post_shared_schema_md5"]["triggers"] in post)
     check("trigger automático dependente também é pinado", len(manifest["dependent_trigger_pins"]) == 1 and "B4_PRE_AUTO_TRIGGER" in pre and "B4_POST_AUTO_TRIGGER" in post)
     check("coluna/FK novas exigem ausência e têm pós-condição", table["baseline"]["status"] == "ABSENCE_REQUIRED" and table["candidate"]["references"] == "platform_private.b2b_authorized_documents(id)" and "B4_PRE_UNEXPECTED_COLUMN" in pre)
 
