@@ -131,6 +131,16 @@ ROLLBACK;
       'BEGIN READ ONLY;\n'+pre_from_install(physical/'install.sql.review',physical/'candidate.sql.review')+'ROLLBACK;\n')
     (OUT/'40-logistics-pre-after-physical.sql.readonly').write_text(
       'BEGIN READ ONLY;\n'+pre_from_install(E/'logistics/install.sql.review',E/'logistics/candidate.sql.review')+'ROLLBACK;\n')
+    evidence_summary = {
+      'scope':'PostgreSQL 17.11 descartável e testes locais; não é prova JWT/RLS/Storage/hosted',
+      'composition_checks':len(checks),
+      'partial_regressions':len(partial),
+      'endpoint_reader_checks':len(endpoint),
+      'frontend':frontend,
+      'full_reverse_rollback':rollback,
+      'positive_fiscal_receivable':'NOT_RUN_BLOCKED_REAL_ALWAYS_DENY',
+    }
+    (OUT/'evidence-summary.json').write_text(json.dumps(evidence_summary,indent=2)+'\n')
     files = {p.name:{'sha256':sha(p),'bytes':p.stat().st_size} for p in sorted(OUT.iterdir()) if p.is_file() and p.name!='manifest.json'}
     manifest = {
       'status':'REVIEW_ONLY_INACTIVE_NOT_APPROVED', 'production_ref':REF,
