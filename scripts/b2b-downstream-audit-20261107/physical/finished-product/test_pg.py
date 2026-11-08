@@ -99,8 +99,8 @@ def restore_checkpoint():
             sql('ALTER ROLE "' + role["name"] + '" ' + ("BYPASSRLS" if role["bypassrls"] else "NOBYPASSRLS") + ";")
     sql(cached.read_text())
     ok("checkpoint descartável da composição capturada restaurado", hashlib.sha256(cached.read_bytes()).hexdigest())
-    # O catálogo canônico antecede a geração dos candidatos: os pins de confirmação,
-    # envio, físico e logística nascem da baseline POSPLANOS, não da captura antiga.
+    # A baseline restrita POSPLANOS antecede a geração dos candidatos: seis guards
+    # LIVE capturados e dependências canônicas, sem reaplicar a migração ampla.
     current_catalog.apply(run_raw, last, ok)
     # Mesma geração determinística do harness de confirmação; nenhum PRE é removido.
     pre = C.state()

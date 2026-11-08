@@ -37,10 +37,11 @@ def main():
   # Capture the new checkpoint under the path used by existing local helper.
   # Subsequent composition is continued in this same database; no source evidence reused.
   print('NEW_PHYSICAL_BOOT_OK',flush=True)
-  # A migração canônica pós-catálogo antecede todos os pins dos candidatos.
+  # Baseline restrita atual: seis corpos LIVE capturados e dependências canônicas,
+  # sem reaplicar a migração ampla nem contornar seu PRE histórico.
   B.current_catalog.apply(B.run_raw,B.last,B.ok)
   shutil.copyfile(physical/'evidence/current-catalog-baseline.json',OUT/'current-catalog-baseline.json')
-  checks.append(dict(test='canonical post-catalog migration matches nine LIVE bodies six guards and eight ACLs before candidate generation',status='PASS'))
+  checks.append(dict(test='restricted POSPLANOS baseline measures nine bodies six exact LIVE guards and eight ACLs before candidate generation',status='PASS'))
   # Install confirmation/send in the current fresh database using measured exact pins.
   C=B.C
   pre=C.state();delta=C.G.candidate()
