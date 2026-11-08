@@ -1,3 +1,4 @@
+SET check_function_bodies=off;
 CREATE ROLE authenticated;
 CREATE ROLE anon;
 CREATE ROLE service_role;
