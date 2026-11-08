@@ -1,20 +1,29 @@
-# Reconciliação POSPLANOS — bloqueada para captura atual
+# Reconciliação POSPLANOS — fresh rehearsal com guards LIVE
 
-**Estado: BLOCKED_CURRENT_LIVE_METADATA_REQUIRED. Nenhum pacote de instalação foi gerado.**
+**Estado: ensaio local attempt 3 em andamento. Nenhum pacote novo está aprovado ou foi aplicado/publicado.**
 
-O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor não instalou a cadeia de entregas.
+O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor não instalou a cadeia de entregas. A tentativa 2 também foi preservada: a migração ampla abortou no próprio PRE por ACLs históricas fora do recorte, antes dos candidatos. Esse PRE não foi enfraquecido.
 
-## O que foi verificado localmente
+## Nova evidência fornecida pelo proprietário
 
-- Typecheck: exit 0.
-- UI integrada: 21/21; interface candidata: 13/13; compatibilidade OS: 73/73.
-- Build automático: OK.
-- O ensaio descartável `evidence/posplans-reconciliation-20261108-attempt2/` restaurou a composição histórica, mas a migração canônica completa abortou no próprio PRE por ACLs históricas de tabelas fora deste recorte. Nenhum candidato foi instalado nessa tentativa e nenhum banco hospedado foi acessado.
+- `live-catalog-guards-20261108.sql.capture`: seis corpos LIVE reais de `*_catalog_tenant_guard`, fornecidos em 08/11/2026 para a produção canônica relatada `swzpzcwiasxmjutrmvkm`.
+- `live-catalog-guards-20261108.json`: hashes medidos por `md5(pg_get_functiondef(oid))` em PostgreSQL 17.11 descartável e SHA256 da captura.
+- Esclarecimento factual: nenhuma das 114 funções alteradas é diretamente redefinida pelos cinco instaladores; o problema é a baseline antiga e suas dependências/guards.
 
-## Por que uma captura é indispensável
+## Correção do ensaio
 
-Reaplicar a migração completa do catálogo a um checkpoint que já contém a composição de entregas não é uma forma válida de reconstruir o estado atual. O repositório contém fontes e pins antigos, mas não uma captura integral dos corpos/ACLs atualmente em produção. Trocar esses pins sem evidência seria exatamente a reconciliação cega proibida.
+`physical/finished-product/current_catalog.py` não reaplica mais a migração ampla. Ele monta uma baseline restrita com:
 
-O auditor deve executar `00-current-live-capture.sql.readonly` somente em `swzpzcwiasxmjutrmvkm` e devolver o JSON integral. Ele lê apenas definições, owners, ACLs e triggers das dependências; não retorna registros comerciais nem escreve.
+1. os seis corpos capturados, sem alteração semântica;
+2. os seis triggers `a000_*_catalog_tenant_guard` habilitados;
+3. as três dependências necessárias geradas pelas fontes canônicas `fence_section.py` e `codigo_section.py`;
+4. as oito ACLs restritas relatadas;
+5. medição dos nove corpos após a composição, sem pins provisórios.
 
-Com essa captura será possível gerar e ensaiar confirmação → envio → físico → logística → leitor/endpoint e rollbacks deny-only, com seis guards, oito ACLs restritas e gates OFF. Até lá, não há PRE/POST/candidato novo aprovado ou pronto para revisão de instalação.
+A antiga costura sintética do guard de estoque é substituída somente no PostgreSQL descartável. O ledger usado pelos geradores canônicos é uma costura local declarada; nada dessa montagem entra nos candidatos de instalação.
+
+## Validação exigida
+
+O pacote `production-rollout-posplans-20261108/` só pode ser montado após o fresh rehearsal integral terminar com exit 0, incluindo PRE/POST, parciais 13/13, leitor/endpoint 15/15, concorrência, rollbacks deny-only, preservação dos seis guards/oito ACLs e gates OFF. As provas locais de interface desta tentativa já registram 21/21, 13/13 e 73/73; typecheck exit 0.
+
+`00-current-live-capture.sql.readonly` permanece disponível para complementação READONLY de metadados caso alguma dependência ainda divergir. Resultados de PostgreSQL descartável não provam JWT/RLS/Storage/hosted e não autorizam instalação, ativação, fiscal, recebíveis, cobranças, envios ou publicação.
