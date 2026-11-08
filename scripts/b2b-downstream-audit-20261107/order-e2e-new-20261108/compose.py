@@ -73,7 +73,18 @@ def main():
   (OUT/'acl-normalization.json').write_text(json.dumps(dict(relation='platform_private.authz_tickets',historical='',restored=acl,client_grants=False,seam='restorer explicit owner ACL vs NULL default, local generator only'))+'\n')
   F.build()
   B.sql((physical_out/'install.sql.review').read_text())
-  checks.append(dict(test='physical revised install PRE POST; fresh confirmation/send generated pins',status='PASS'))
+  # Medir o POST real e regenerar os pins: nenhum POST_RUNTIME_REQUIRED permanece.
+  post_signatures=[x['signature'] for x in F.BASE['functions']+F.BASE.get('dependency_functions',[])]
+  post_signatures += ['platform_private.finished_product_stock_valid_v1(public.estoque_produto)','platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)','platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','public.rpc_finished_product_purchase_capability_v1()','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)']
+  values=','.join("('%s')"%x for x in post_signatures)
+  post_rows=json.loads(B.last("SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',r.rolname,'acl',coalesce(p.proacl::text,'')) ORDER BY v.signature),'[]'::jsonb) FROM (VALUES "+values+") v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature) JOIN pg_roles r ON r.oid=p.proowner;"))
+  post_capture=physical_out/'post-install-functions.json'
+  post_capture.write_text(json.dumps({'candidate_sha256':hashlib.sha256((physical_out/'candidate.sql.review').read_bytes()).hexdigest(),'functions':post_rows},indent=2)+'\n')
+  os.environ['FINISHED_POST_CAPTURE']=str(post_capture)
+  F.build()
+  assert 'POST_RUNTIME_REQUIRED' not in (physical_out/'postflight.sql.review').read_text()
+  B.sql((physical_out/'postflight.sql.review').read_text())
+  checks.append(dict(test='physical revised install exact measured PRE POST with six current tenant guards; fresh confirmation/send generated pins',status='PASS'))
   # No new production behavior: closed gate first, disposable activation second.
   assert B.last('SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton;')=='f'
   B.sql('UPDATE platform_private.finished_product_gate_v1 SET enabled=true WHERE singleton;')

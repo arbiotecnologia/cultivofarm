@@ -472,7 +472,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uui
     foundation_candidate = "\n\n".join(foundation_bodies) + "\n"
     downstream_candidate = "\n\n".join(downstream_bodies) + "\n"
     post_blocks = {}
-    post_capture_path = HERE / "evidence/post-install-functions.json"
+    post_capture_path = Path(os.environ.get("FINISHED_POST_CAPTURE", str(HERE / "evidence/post-install-functions.json")))
     post_capture_data = json.loads(post_capture_path.read_text()) if post_capture_path.exists() else {}
     candidate_source_sha256 = hashlib.sha256(candidate.encode()).hexdigest()
     post_capture = post_capture_data.get("functions", []) if post_capture_data.get("candidate_sha256") == candidate_source_sha256 else []
