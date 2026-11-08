@@ -116,11 +116,9 @@ INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,mont
 ('{PLAN_A2}','Plano A2','PLAN-A2','custom',30,1,1,0,0,'none',false,false,false,true,2,'{A}','discount_from_base',1,'{PLAN_A2}',now()-interval '1 day',false),
 ('{PLAN_B1}','Plano B1','PLAN-B1','custom',30,1,1,0,0,'none',false,false,false,true,1,'{B}','discount_from_base',1,'{PLAN_B1}',now()-interval '1 day',false),
 ('{PLAN_AMBIG}','Plano ambíguo','PLAN-AMBIG','custom',30,1,1,0,0,'none',false,false,false,true,3,'{A}','discount_from_base',1,'{PLAN_AMBIG}',now()-interval '1 day',false);
-INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by) VALUES
-('{ASN_A}','{PLAN_A1}','partner','{PA}','published','{A}'),
-('{ASN_B}','{PLAN_B1}','partner','{PB}','published','{B}'),
-('{ASN_AMBIG}','{PLAN_AMBIG}','partner','{PB}','published','{B}');
 """)
+    run(f"SET request.jwt.claim.sub='{A}';INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by) VALUES('{ASN_A}','{PLAN_A1}','partner','{PA}','published','{A}');")
+    run(f"SET request.jwt.claim.sub='{B}';INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by) VALUES('{ASN_B}','{PLAN_B1}','partner','{PB}','published','{B}'),('{ASN_AMBIG}','{PLAN_AMBIG}','partner','{PB}','published','{B}');")
 
     check("ANTES: FSF lê planos ARBio pela RPC admin", actor(B, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);"), 4)
     check("ANTES: FSF lê ARBio pela listagem operacional admin", actor(B, f"SELECT count(*) FROM public.rpc_b2b_list_selectable_payment_plans() WHERE id='{PLAN_A1}';"), 1)
