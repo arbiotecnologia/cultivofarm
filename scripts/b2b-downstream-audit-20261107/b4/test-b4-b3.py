@@ -868,7 +868,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         if REVIEW_BEFORE:
             check("ANTES: retry deixa erro de reconciliação obsoleto na transmissão", B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FISCAL_AUTHORIZATION_CLOSE_PENDING")
         else:
-            check("DEPOIS: retry H13 limpa somente o pendente de fechamento recuperado", B3.psql(f"SELECT coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "")
+            check("DEPOIS: retry H13 limpa somente a pendência privada e preserva erro estranho", pending_code(tx_h13) == "" and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR")
 
         # Nova transmissão/confirmação da MESMA chave e protocolo: o ID é evidência
         # adicional, não parte da identidade fiscal estável nem motivo de conflito.
