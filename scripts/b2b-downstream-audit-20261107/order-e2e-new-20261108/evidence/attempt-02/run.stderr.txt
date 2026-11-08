@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-b_j8bo84/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 37, in main
+    B.sql((physical/'install.sql.review').read_text())
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-b_j8bo84/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-b_j8bo84/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets
+CONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE
+
