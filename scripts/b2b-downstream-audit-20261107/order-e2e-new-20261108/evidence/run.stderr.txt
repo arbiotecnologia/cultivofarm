@@ -1,5 +1,23 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-5zef_wpx/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 191, in main
-    assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,(direct_operational.returncode,direct_operational.stdout,direct_operational.stderr)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: (0, '', '')
+  File "/tmp/new-order-e2e-znfs3klc/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 274, in main
+    confirmed=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}','resale-confirm-0001','{{\"nome\":\"LOCAL REVENDA\"}}'::jsonb);"))
+                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-znfs3klc/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-znfs3klc/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-znfs3klc/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  DELIVERY_B2B_TRANSITION_CLOSED
+CONTEXT:  PL/pgSQL function platform_private.delivery_order_transition_guard_20261030() line 4 at RAISE
+SQL statement "UPDATE public.partner_orders SET status = 'entregue', updated_at = now()
+      WHERE id = v_partner_order_id AND status <> 'entregue'"
+PL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement
+SQL statement "UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,
+ recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed"
+PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement
+SQL function "rpc_entrega_confirmar_manual_v1" statement 1
+
