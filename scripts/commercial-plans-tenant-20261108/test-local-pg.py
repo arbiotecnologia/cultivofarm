@@ -283,13 +283,13 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
     row = lock_revocation("default_target_role", f"SELECT id FROM public.commercial_payment_plans WHERE id='{PLAN_A2}' FOR UPDATE;", f"SELECT public.rpc_admin_set_default_commercial_plan('{PLAN_A2}');", f"DELETE FROM public.user_roles WHERE user_id='{A}' AND role='administrador';")
     row["observed_default"] = run(f"SELECT id FROM public.commercial_payment_plans WHERE organization_id='{OA}' AND is_default;")
     if not REVIEW_BEFORE: assert row["observed_default"] == new_version, row
-    run(f"INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador');UPDATE public.commercial_payment_plans SET is_default=(id='{new_version}') WHERE organization_id='{OA}';")
+    run(f"INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador');UPDATE public.commercial_payment_plans SET is_default=false WHERE organization_id='{OA}';UPDATE public.commercial_payment_plans SET is_default=true WHERE id='{new_version}';")
     review_assert(row, vulnerability_required=True);cleanup_audit(row)
 
     row = lock_revocation("default_previous_profile", f"SELECT id FROM public.commercial_payment_plans WHERE id='{new_version}' FOR UPDATE;", f"SELECT public.rpc_admin_set_default_commercial_plan('{PLAN_A2}');", f"UPDATE public.profiles SET ativo=false WHERE user_id='{A}';")
     row["observed_default"] = run(f"SELECT id FROM public.commercial_payment_plans WHERE organization_id='{OA}' AND is_default;")
     if not REVIEW_BEFORE: assert row["observed_default"] == new_version, row
-    run(f"UPDATE public.profiles SET ativo=true WHERE user_id='{A}';UPDATE public.commercial_payment_plans SET is_default=(id='{new_version}') WHERE organization_id='{OA}';")
+    run(f"UPDATE public.profiles SET ativo=true WHERE user_id='{A}';UPDATE public.commercial_payment_plans SET is_default=false WHERE organization_id='{OA}';UPDATE public.commercial_payment_plans SET is_default=true WHERE id='{new_version}';")
     review_assert(row);cleanup_audit(row)
 
     orders = json.dumps([{"id":PLAN_A1,"sort_order":91},{"id":PLAN_A2,"sort_order":92}], separators=(",", ":"))
