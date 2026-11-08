@@ -57,6 +57,7 @@ def main() -> None:
  IF u IS NULL OR org IS NULL THEN RAISE EXCEPTION 'B2B_ACTOR_DENIED' USING ERRCODE='42501'; END IF;""")
 
     fence = extract(b4text, "b2b_title_insert_fence")
+    fence = re.sub(r"^CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", fence, count=1)
     fence = edit(fence, "  IF NOT FOUND OR p.actor_id IS DISTINCT FROM auth.uid() OR p.organization_id IS DISTINCT FROM public.h15_actor_organization()", """  IF NOT FOUND OR p.actor_id IS DISTINCT FROM auth.uid()
   OR (auth.uid() IS NULL AND NOT EXISTS(SELECT 1 FROM platform_private.b2b_fiscal_service_permits sp
     WHERE sp.transaction_id=txid_current() AND sp.document_id=NEW.b2b_document_id AND sp.organization_id=NEW.organization_id AND sp.partner_id=NEW.partner_id))
