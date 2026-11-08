@@ -1355,6 +1355,7 @@
 - [ ] Composição financeira integral e E2E B2B: reconstrução local autorizada 03:13; gates/revisão independente seguem fechados para produção, cadastro aplicado não aprova B4/estoque/entregas.
 
 ## 08/11 03:13 — reconstrução NOVA autorizada
-- [ ] Criar novo harness e procedência por SHA256 dos pacotes revisáveis B3/B4/físico/revenda e baseline reconciliada; não recuperar nem contabilizar evidências perdidas.
+- [x] Criar infraestrutura nova de harness com procedência SHA256 e espelho temporário; restauração física integral e controle compra→reserva parcial→expedição→comprovante→entrega executados do zero, sem fabricação. Não é E2E B2B; evidências perdidas não contabilizadas.
 - [ ] Compor logística de revenda sem bioreator com pedido comprador canônico, autoridade local explicitamente sintética e candidato logístico revisável; executar positivos/negativos e preservar cada falha.
 - [ ] Registrar resultados novos, limites JWT/RLS/Storage e gates; sem alterar piloto/Auth/títulos hospedados, sem publicação ou efeitos externos.
+- [x] Registrar resultados parciais e todas as falhas em order-e2e-new-20261108: último exit 1 por assert_b2b_partner_scope/42501 forbidden_partner na simulação comprador da composição integral; próximo trabalho é fixture local de vínculo completo, não stub permissivo. Nenhuma dependência humana por arquivos ausentes; tarefa técnica permanece incompleta.
