@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-full-capture-attempt18-Q2eNQR/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 131, in main
+    current_state=B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS)
+  File "/tmp/posplans-full-capture-attempt18-Q2eNQR/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 274, in assert_current
+    raise AssertionError("CURRENT_LIVE_BASELINE_DRIFT\n" + "\n".join(errors))
+AssertionError: CURRENT_LIVE_BASELINE_DRIFT
+function_md5:platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb):dc878c0e49d8d5bc46f088a8a3c952e6!=41ce8f4c7e887241153752b6bd4b9268
+function_md5:platform_private.envase_insert_final_v1():04602f0308123537c2a7e033ab307963!=7837c5852e37159d826875babf9da228
+function_md5:platform_private.envase_insert_guard_v1():fbe3ff7e7e5c7e8374a5028a92180103!=c150d00c4e0258ddcf4f7e2f86f53170
+function_md5:platform_private.guard_manual_lot_write_v1():38b85646f8ad5fd478524bd4cf7e0216!=4eab765e76ca79f16a7dd481887496d9
+function_md5:platform_private.trg_lab_lot_biological_only():35f3f59c5413651a6560f34397caf88e!=58abf38671745d272abeb923ee866083
+function_md5:public.fn_sync_os_classica_downstream():7e3da111b2b79691a217dea2c48e7448!=06e64b76968f91e19f03b24363ac610a
+function_md5:public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text):f0ec0838a5ba32584cf0215ca1a4dc44!=9d62ba2fa4fad1b6e5d5ac67045d2e98
+function_md5:public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb):1e7b2fcf4b7b703fe3d533d01df72eed!=a4d47ccf5d116141ed46e9de9ea7eeaa
+function_md5:public.validate_estoque_entrada():19f79cc23c00cd9e85a94393ff1e0bd0!=9e24938a8d716a02ba023c9fb7ce24e9
+table_acl:product_packagings:{postgres=arwdDxtm/postgres,authenticated=r/postgres}!={postgres=arwdDxtm/postgres}
+table_acl:product_sale_units:{postgres=arwdDxtm/postgres,authenticated=r/postgres}!={postgres=arwdDxtm/postgres}
+trigger_function_md5:estoque_produto:a01_stock_final_permit:04602f0308123537c2a7e033ab307963!=7837c5852e37159d826875babf9da228
+trigger_function_md5:estoque_produto:a01_stock_insert_permit:fbe3ff7e7e5c7e8374a5028a92180103!=c150d00c4e0258ddcf4f7e2f86f53170
+trigger_function_md5:estoque_produto:trg_validate_estoque_entrada:19f79cc23c00cd9e85a94393ff1e0bd0!=9e24938a8d716a02ba023c9fb7ce24e9
+trigger_function_md5:lotes:aa_manual_lot_write_fence_v1:38b85646f8ad5fd478524bd4cf7e0216!=4eab765e76ca79f16a7dd481887496d9
+trigger_function_md5:lotes:trg_lab_lot_biological_only:35f3f59c5413651a6560f34397caf88e!=58abf38671745d272abeb923ee866083
+trigger_function_md5:ordens_servico:trg_sync_os_classica_downstream:7e3da111b2b79691a217dea2c48e7448!=06e64b76968f91e19f03b24363ac610a

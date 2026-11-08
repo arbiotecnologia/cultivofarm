@@ -1,6 +1,6 @@
 """Review generator, no hosted I/O. Applied sources are immutable dependencies."""
 from pathlib import Path
-import json,sys,hashlib
+import json,sys,hashlib,os
 H=Path(__file__).resolve().parent; ROOT=H.parents[2]
 sys.path.insert(0,str(ROOT/'scripts/stock-envase-recovery-20261027/isolated'))
 # Import by path avoids same module name collision.
@@ -14,6 +14,10 @@ STATE=STATE[:-1]+", 'storage_objects_schema',(SELECT jsonb_agg(jsonb_build_array
 def candidate():
  proof=ROOT/'scripts/delivery-proof-authz-20261030/candidate.sql.review'
  s=proof.read_text(); a=s.index('CREATE OR REPLACE FUNCTION platform_private.delivery_mutation_guard_20261030()');b=s.index('-- Payload validation:',a); barrier=s[a:b]
+ current_barrier=os.environ.get('DELIVERY_CURRENT_BARRIER_JSON')
+ if current_barrier:
+  current=json.loads(Path(current_barrier).read_text())
+  barrier=current['platform_private.delivery_mutation_guard_20261030()']['definition'].rstrip()+';\n'
  anchor=" IF c.action='proof' THEN"
  branch=""" IF c.action='confirm' THEN
   v_org:=platform_private.delivery_confirm_actor_v1();
@@ -36,7 +40,10 @@ def candidate():
   RAISE EXCEPTION 'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED' USING ERRCODE='42501';
  END IF;
 """
- assert barrier.count(anchor)==1;barrier=barrier.replace(anchor,branch+recovery_branch+anchor)
+ assert barrier.count(anchor)==1
+ if " IF c.action='confirm' THEN" in barrier or " IF c.action='proof_recover' THEN" in barrier:
+  raise AssertionError('CURRENT_BARRIER_ALREADY_HAS_CONFIRMATION_DELTA_REVIEW_REQUIRED')
+ barrier=barrier.replace(anchor,branch+recovery_branch+anchor)
  meta=json.loads((ROOT/'scripts/delivery-atomic-hardening-20261030/capture/current.json').read_text())
  rows=[r for r in meta['functions'] if r['name']=='fn_validate_entrega_confirmacao'];assert len(rows)==1
  validator=rows[0]['body'];a=validator.index('      SELECT count(*)');b=validator.index('      IF v_anexos = 0',a)

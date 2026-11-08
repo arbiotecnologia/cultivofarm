@@ -1,0 +1,79 @@
+-- CAPTURA READONLY ADICIONAL FORNECIDA PELO PROPRIETÁRIO EM 08/11/2026.
+-- Produção canônica relatada: swzpzcwiasxmjutrmvkm.
+-- Dependências adicionais; este arquivo não é instalador nem candidato.
+CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_agree(p uuid[])
+ RETURNS uuid
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+DECLARE v uuid[] := ARRAY(SELECT DISTINCT x FROM unnest(p) x WHERE x IS NOT NULL);
+BEGIN
+  IF cardinality(v) > 1 THEN RAISE EXCEPTION 'tenant_catalog_chain_divergence' USING ERRCODE = '42501', DETAIL = array_to_string(v, ','); END IF;
+  RETURN v[1];
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.lab_assert_manufacturable(p_product_id uuid, p_microorganism_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$BEGIN PERFORM platform_private.tenant_catalog_fence('read_catalog', array_remove(ARRAY[CASE WHEN p_product_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.produtos z WHERE z.id = p_product_id), '00000000-0000-0000-0000-000000000000'::uuid) END, CASE WHEN p_microorganism_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.microrganismos z WHERE z.id = p_microorganism_id), '00000000-0000-0000-0000-000000000000'::uuid) END]::uuid[], NULL)); PERFORM platform_private.lab_assert_manufacturable__tenant_core(p_product_id, p_microorganism_id); RETURN; END$function$;
+
+CREATE OR REPLACE FUNCTION platform_private.lab_assert_manufacturable__tenant_core(p_product_id uuid, p_microorganism_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+  IF NOT platform_private.lab_item_is_manufacturable(p_product_id,p_microorganism_id) THEN
+    RAISE EXCEPTION 'LAB_ITEM_NOT_MANUFACTURABLE' USING ERRCODE='23514',
+      HINT='Somente produtos biológicos e microrganismos podem gerar fabricação laboratorial.';
+  END IF;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.lab_item_is_manufacturable(p_product_id uuid, p_microorganism_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$BEGIN PERFORM platform_private.tenant_catalog_fence('read_catalog', array_remove(ARRAY[CASE WHEN p_product_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.produtos z WHERE z.id = p_product_id), '00000000-0000-0000-0000-000000000000'::uuid) END, CASE WHEN p_microorganism_id IS NULL THEN NULL ELSE coalesce((SELECT z.owner_organization_id FROM public.microrganismos z WHERE z.id = p_microorganism_id), '00000000-0000-0000-0000-000000000000'::uuid) END]::uuid[], NULL)); RETURN platform_private.lab_item_is_manufacturable__tenant_core(p_product_id, p_microorganism_id); END$function$;
+
+CREATE OR REPLACE FUNCTION platform_private.lab_item_is_manufacturable__tenant_core(p_product_id uuid, p_microorganism_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  SELECT CASE
+    -- Duas referências na mesma linha são ambíguas e falham fechadas. Isso impede que
+    -- um microrganismo válido transforme produto químico/fertilizante em fabricável.
+    WHEN p_product_id IS NOT NULL AND p_microorganism_id IS NOT NULL THEN false
+    WHEN p_product_id IS NOT NULL THEN EXISTS(SELECT 1 FROM public.produtos p WHERE p.id=p_product_id AND p.familia_catalogo='biologico')
+    WHEN p_microorganism_id IS NOT NULL THEN EXISTS(SELECT 1 FROM public.microrganismos m WHERE m.id=p_microorganism_id)
+    ELSE false END
+$function$;
+
+CREATE OR REPLACE FUNCTION platform_private.tenant_catalog_fence(p_mode text, p_orgs uuid[])
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_actor uuid;
+BEGIN
+  IF p_mode NOT IN ('mutate','read_catalog') THEN RAISE EXCEPTION 'tenant_catalog_fence_mode' USING ERRCODE='22023'; END IF;
+  IF auth.uid() IS NULL THEN
+    IF session_user::text IN ('anon','authenticated') OR current_setting('role', true) IN ('anon','authenticated') THEN
+      RAISE EXCEPTION 'tenant_catalog_fence_denied' USING ERRCODE='42501'; END IF;
+    RETURN;   -- contexto servidor sem ator (gatilho/serviço); clientes sempre têm auth.uid()
+  END IF;
+  BEGIN
+    v_actor := platform_private.catalog_tenant_actor(p_mode);
+  EXCEPTION WHEN raise_exception OR insufficient_privilege OR invalid_parameter_value THEN
+    RAISE EXCEPTION 'tenant_catalog_fence_denied' USING ERRCODE='42501';
+  END;
+  IF v_actor IS NULL OR EXISTS (SELECT 1 FROM unnest(p_orgs) o WHERE o IS DISTINCT FROM v_actor) THEN
+    RAISE EXCEPTION 'tenant_catalog_fence_denied' USING ERRCODE='42501'; END IF;
+END $function$;

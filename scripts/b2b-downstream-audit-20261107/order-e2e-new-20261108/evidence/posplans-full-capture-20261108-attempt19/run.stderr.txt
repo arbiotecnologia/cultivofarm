@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-full-capture-attempt19-rX6O8n/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 440, in main
+    B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-full-capture-attempt19-rX6O8n/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 275, in assert_current
+    raise AssertionError("CURRENT_LIVE_BASELINE_DRIFT\n" + "\n".join(errors))
+AssertionError: CURRENT_LIVE_BASELINE_DRIFT
+function_md5:public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz):25cd07ec1e4d16c0cd16380cebe04a9f!=97d476cc795d75b829f305f1e64d4e62
+function_acl:public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb):{postgres=X/postgres}!={postgres=X/postgres,service_role=X/postgres}
+trigger_function_md5:entregas:trg_entrega_sync_partner_order:a24295a3fe797bdbd87c33deffb57589!=e8fb9e9512db8d1cfb801e37f63ee497
+trigger_function_md5:estoque_produto:a00_stock_p1_tenant_guard:1c2bc33e8d3d3e56de7756bd730f5e25!=ad87685f4b7bc87bd8cc3f41f283966d
+trigger_function_md5:ordens_servico:aa_guard_separate_approval:71d8237bb37c69f0d9995d09e704e327!=f00397fe862e611fbfa0eba3911d95c6
+trigger_function_md5:ordens_servico:trg_lab_os_biological_only:a05f979cb43473ebd0ccd9eb8f7a5e22!=75b55313502aecaf7226cd0a235f1a4f
+trigger_function_md5:ordens_servico:zz_audit_separate_approval:71d8237bb37c69f0d9995d09e704e327!=f00397fe862e611fbfa0eba3911d95c6

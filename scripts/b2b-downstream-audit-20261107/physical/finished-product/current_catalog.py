@@ -1,60 +1,125 @@
 """Baseline restrita POSPLANOS para ensaios em PostgreSQL descartável.
 
-Não reaplica a migração ampla do catálogo. Os seis guards vêm da captura LIVE
-fornecida pelo proprietário em 08/11/2026; as demais dependências são geradas
-pelas fontes canônicas versionadas. Nada aqui acessa banco hospedado ou integra
-os candidatos de instalação.
+Não reaplica a migração ampla do catálogo. A referência é a captura LIVE integral
+a7b973949 (20 funções, 120 triggers e 17 relações), complementada pelos seis
+corpos auxiliares fornecidos separadamente. Nada aqui acessa banco hospedado ou
+integra os candidatos de instalação.
 """
 from __future__ import annotations
 
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SCRIPTS = HERE.parents[2]
-CATALOG = SCRIPTS / "tenant-exclusive-catalog-20261101"
-CAPTURE = HERE.parents[1] / "order-e2e-new-20261108/reconciliation-posplans-20261108/live-catalog-guards-20261108.sql.capture"
+RECONCILIATION = HERE.parents[1] / "order-e2e-new-20261108/reconciliation-posplans-20261108"
+FULL_CAPTURE = RECONCILIATION / "live-current-metadata-a7b973949.json"
+GUARD_CAPTURE = RECONCILIATION / "live-catalog-guards-20261108.sql.capture"
+ADDITIONAL_CAPTURE = RECONCILIATION / "live-additional-dependencies-20261108.sql.capture"
 
+CAPTURE = json.loads(FULL_CAPTURE.read_text())
+assert CAPTURE["expected_ref"] == "swzpzcwiasxmjutrmvkm"
+assert len(CAPTURE["functions"]) == 20
+assert len(CAPTURE["triggers"]) == 120
+assert len(CAPTURE["relations"]) == 17
+assert all(row["present"] is True for row in CAPTURE["functions"] + CAPTURE["relations"])
+
+FUNCTION_ROWS = {row["signature"]: row for row in CAPTURE["functions"]}
+RELATION_ROWS = {row["table"]: row for row in CAPTURE["relations"]}
+TRIGGER_ROWS = {(row["table"], row["name"]): row for row in CAPTURE["triggers"]}
 GUARD_PINS = {
-    "platform_private.entregas_catalog_tenant_guard()": "86711a2f96fee0a3d0f9c02b55c55bcd",
-    "platform_private.estoque_produto_catalog_tenant_guard()": "874c9ca8b5b4e307cf995a0197f98efc",
-    "platform_private.lotes_catalog_tenant_guard()": "0fc1d2741a73a92ade8e558e3dd58c20",
-    "platform_private.ordens_servico_catalog_tenant_guard()": "8abd58791e7e27336b07e648cdef35e7",
-    "platform_private.produto_etiquetas_catalog_tenant_guard()": "d53f9827e3b5504e632fffe9949fa8c4",
-    "platform_private.programacao_producao_catalog_tenant_guard()": "2e25fe68cf66a79fbc1d2eecee8b20e9",
+    signature: row["md5"]
+    for signature, row in FUNCTION_ROWS.items()
+    if signature.startswith("platform_private.") and signature.endswith("_catalog_tenant_guard()")
 }
-CANONICAL_DEPENDENCIES = (
-    "platform_private.lab_assert_manufacturable(uuid,uuid)",
-    "platform_private.lab_item_is_manufacturable(uuid,uuid)",
-    "public.proximo_codigo(text,text)",
+assert len(GUARD_PINS) == 6
+MEASURED_BODY_SIGNATURES = (
+    "platform_private.delivery_mutation_guard_20261030()",
 )
-EXPECTED_FUNCTION_ACL = {
-    "platform_private.lab_assert_manufacturable(uuid,uuid)": ["postgres=X/postgres", "authenticated=X/postgres"],
-    "platform_private.lab_item_is_manufacturable(uuid,uuid)": ["postgres=X/postgres"],
-    "public.proximo_codigo(text,text)": ["postgres=X/postgres"],
-    **{name: ["postgres=X/postgres"] for name in GUARD_PINS},
+ADDITIONAL_DEPENDENCIES = (
+    "platform_private.catalog_tenant_agree(uuid[])",
+    "platform_private.lab_assert_manufacturable__tenant_core(uuid,uuid)",
+    "platform_private.lab_item_is_manufacturable__tenant_core(uuid,uuid)",
+    "platform_private.tenant_catalog_fence(text,uuid[])",
+)
+# As duas funções abaixo já fazem parte das 20; ficam fora desta lista para não
+# duplicar pins. Os quatro objetos acima não têm MD5/ACL LIVE informados: são
+# medidos no ensaio e identificados como derivação da captura SQL, não como pins
+# LIVE independentes.
+EXPECTED_FUNCTION_ACL = {name: row["acl"] for name, row in FUNCTION_ROWS.items()}
+EXPECTED_TABLE_ACL = {name: row["acl"] for name, row in RELATION_ROWS.items()}
+_expected_additional_pins: dict[str, str] = {}
+
+# A captura integral traz os MD5 das funções de trigger, mas não todos os corpos.
+# Estas origens versionadas já continham capturas/candidatos exatos. O ensaio só
+# prossegue se o pg_get_functiondef resultante coincidir com o MD5 LIVE do trigger.
+SUPPLEMENTAL_SOURCES = {
+    "platform_private.b2b_packaging_item_snapshot_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/02-install.sql.review",
+    "platform_private.catalog_owner_immutable()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
+    "platform_private.catalogo_volumes_owner_consistent()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.catalogo_volumes_owner_consistent.a4cfde90.live-20261106.sql",
+    "platform_private.partner_order_items_catalog_tenant_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/platform_private.partner_order_items_catalog_tenant_guard.211a5c4d.live-20261106.sql",
+    "platform_private.solid_mass_immutable()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_immutable.b0611f3e.live-20261106.sql",
+    "platform_private.solid_mass_packaging_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_packaging_guard.1494933c.live-20261106.sql",
+    "platform_private.solid_pack_presentation_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.solid_pack_presentation_guard.0906ab6b.live-20261106.sql",
+    "platform_private.solid_pack_presentation_link()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.solid_pack_presentation_link.a912476c.live-20261106.sql",
+    "platform_private.stock_envase_mutation_gate_v1()": SCRIPTS / "stock-envase-recovery-20261027/isolated/candidate.sql.review",
+    "platform_private.stock_envase_reservation_root_v1()": SCRIPTS / "stock-envase-recovery-20261027/isolated/candidate.sql.review",
+    "public.set_codigo_produto()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
+    "public.set_codigo_microrganismo()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
 }
-EXPECTED_TABLE_ACL = {
-    "entregas": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
-    "entrega_comprovantes": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
-    "ordens_servico": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
-    "clientes": ["anon=r/postgres", "authenticated=r/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
-    "organizations": ["authenticated=r/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
-    "produto_etiquetas": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
-    "profiles": ["anon=r/postgres", "authenticated=r/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
-    "programacao_producao": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+SUPPLEMENTAL_MD5 = {
+    (row["function"] if "." in row["function"].split("(")[0] else "public." + row["function"]): row["function_md5"]
+    for row in CAPTURE["triggers"]
+    if (row["function"] if "." in row["function"].split("(")[0] else "public." + row["function"]) in SUPPLEMENTAL_SOURCES
 }
-TRIGGER_TABLES = {
-    "entregas": "entregas_catalog_tenant_guard",
-    "estoque_produto": "estoque_produto_catalog_tenant_guard",
-    "lotes": "lotes_catalog_tenant_guard",
-    "ordens_servico": "ordens_servico_catalog_tenant_guard",
-    "produto_etiquetas": "produto_etiquetas_catalog_tenant_guard",
-    "programacao_producao": "programacao_producao_catalog_tenant_guard",
+assert set(SUPPLEMENTAL_MD5) == set(SUPPLEMENTAL_SOURCES)
+JSON_BODY_SOURCE = SCRIPTS / "delivery-atomic-hardening-20261030/capture/current.json"
+JSON_BODY_SIGNATURES = {
+    "cf_user_guards_v1.acquire_gate()",
+    "cf_user_guards_v1.advance_stamp()",
+    "cf_user_guards_v1.block_truncate()",
+    "cf_user_guards_v1.require_admin()",
 }
-_expected_pins: dict[str, str] = {}
+_json_rows = json.loads(JSON_BODY_SOURCE.read_text())["functions"]
+JSON_BODIES = {}
+for _signature in JSON_BODY_SIGNATURES:
+    _name = _signature.split(".")[-1].split("(")[0]
+    _expected = next(row["function_md5"] for row in CAPTURE["triggers"] if row["function"] == _signature)
+    JSON_BODIES[_signature] = next(row["body"] for row in _json_rows if row.get("name") == _name and row.get("md5") == _expected)
+
+SHORT_DELIVERY_SIGNATURE = "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+SHORT_DELIVERY_SOURCE = SCRIPTS / "delivery-atomic-hardening-20261030/capture/current.json"
+_short_capture = next(row for row in FUNCTION_ROWS.values() if row["signature"] == SHORT_DELIVERY_SIGNATURE)
+_short_prior = next(
+    row for row in json.loads(SHORT_DELIVERY_SOURCE.read_text())["functions"]
+    if row.get("md5") == _short_capture["md5"] and row.get("name") == "rpc_cockpit_criar_entrega_v1"
+)
+assert _short_prior["body"] != _short_capture["definition"]
+assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDO" in _short_capture["definition"]
+assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA" in _short_prior["body"]
+BODY_RECONCILIATION = {
+    SHORT_DELIVERY_SIGNATURE: {
+        "reason": "A definição da PARTE 2 contém ORIGEM_INVALIDO, mas o MD5 informado e duas capturas anteriores correspondem a ORIGEM_INVALIDA; a captura integral permanece imutável e a divergência é explícita.",
+        "prior_capture": str(SHORT_DELIVERY_SOURCE.relative_to(SCRIPTS)),
+        "md5": _short_capture["md5"],
+        "body": _short_prior["body"],
+    }
+}
+
+ACL_PRIVILEGES = {
+    "r": "SELECT",
+    "a": "INSERT",
+    "w": "UPDATE",
+    "d": "DELETE",
+    "D": "TRUNCATE",
+    "x": "REFERENCES",
+    "t": "TRIGGER",
+    "m": "MAINTAIN",
+    "X": "EXECUTE",
+}
 
 
 def _module(name, path):
@@ -68,23 +133,65 @@ def _json(last, query):
     return json.loads(last(query))
 
 
+def _acl_set(raw):
+    return set(raw.strip("{}").split(",")) if raw else set()
+
+
+def _literal(value):
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _acl_grants(kind, signature, raw):
+    """Normaliza somente os papéis de cliente/serviço ao ACL capturado."""
+    statements = [
+        f"REVOKE ALL ON {kind} {signature} FROM PUBLIC,anon,authenticated,service_role;"
+    ]
+    for entry in sorted(_acl_set(raw)):
+        grantee_privileges, _grantor = entry.split("/", 1)
+        grantee, privileges = grantee_privileges.split("=", 1)
+        role = "PUBLIC" if grantee == "" else grantee
+        if role not in {"PUBLIC", "anon", "authenticated", "service_role"}:
+            continue
+        for code in privileges:
+            privilege = ACL_PRIVILEGES.get(code)
+            if privilege is None:
+                raise AssertionError(f"CAPTURE_ACL_CODE_UNSUPPORTED:{entry}")
+            statements.append(f"GRANT {privilege} ON {kind} {signature} TO {role};")
+    return statements
+
+
 def measure(last):
-    signatures = sorted(tuple(GUARD_PINS) + CANONICAL_DEPENDENCIES)
-    values = ",".join("('%s')" % signature for signature in signatures)
+    signatures = sorted(FUNCTION_ROWS)
+    values = ",".join("(%s)" % _literal(signature) for signature in signatures)
     functions = _json(last, f"""
 SELECT COALESCE(jsonb_agg(jsonb_build_object(
   'signature', v.signature,
   'md5', md5(pg_get_functiondef(p.oid)),
+  'owner', pg_get_userbyid(p.proowner),
   'acl', COALESCE(p.proacl::text,'')
 ) ORDER BY v.signature),'[]'::jsonb)
 FROM (VALUES {values}) v(signature)
 LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);
 """)
-    tables = sorted(EXPECTED_TABLE_ACL)
-    values = ",".join("('%s')" % table for table in tables)
+    additional_signatures = sorted(set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES) | set(JSON_BODIES) | set(MEASURED_BODY_SIGNATURES))
+    additional_values = ",".join("(%s)" % _literal(signature) for signature in additional_signatures)
+    additional = _json(last, f"""
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+  'signature', v.signature,
+  'md5', md5(pg_get_functiondef(p.oid)),
+  'definition', pg_get_functiondef(p.oid),
+  'owner', pg_get_userbyid(p.proowner),
+  'acl', COALESCE(p.proacl::text,'')
+) ORDER BY v.signature),'[]'::jsonb)
+FROM (VALUES {additional_values}) v(signature)
+LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);
+""")
+    tables = sorted(RELATION_ROWS)
+    values = ",".join("(%s)" % _literal(table) for table in tables)
     relations = _json(last, f"""
 SELECT COALESCE(jsonb_agg(jsonb_build_object(
   'table', v.table_name,
+  'owner', pg_get_userbyid(c.relowner),
   'acl', COALESCE(c.relacl::text,'')
 ) ORDER BY v.table_name),'[]'::jsonb)
 FROM (VALUES {values}) v(table_name)
@@ -92,9 +199,11 @@ LEFT JOIN pg_class c ON c.oid=to_regclass('public.'||v.table_name);
 """)
     triggers = _json(last, """
 SELECT COALESCE(jsonb_agg(jsonb_build_object(
+  'schema',n.nspname,
   'table', c.relname,
   'name', t.tgname,
-  'enabled', t.tgenabled,
+  'enabled', t.tgenabled::text,
+  'type', t.tgtype,
   'function', p.oid::regprocedure::text,
   'function_md5', md5(pg_get_functiondef(p.oid)),
   'definition', pg_get_triggerdef(t.oid)
@@ -104,148 +213,181 @@ JOIN pg_class c ON c.oid=t.tgrelid
 JOIN pg_namespace n ON n.oid=c.relnamespace
 JOIN pg_proc p ON p.oid=t.tgfoid
 WHERE NOT t.tgisinternal AND n.nspname='public'
-  AND t.tgname LIKE 'a000_%_catalog_tenant_guard'
-  AND c.relname IN ('entregas','estoque_produto','lotes','ordens_servico','produto_etiquetas','programacao_producao');
+  AND c.relname IN ('entregas','entrega_comprovantes','ordens_servico','clientes',
+    'organizations','produto_etiquetas','profiles','programacao_producao',
+    'estoque_produto','estoque_movimentacoes','lotes','produtos',
+    'microrganismos','catalogo_volumes','product_sale_units','product_packagings',
+    'partner_order_items');
 """)
-    return {"functions": functions, "relations": relations, "triggers": triggers}
+    return {
+        "functions": functions,
+        "additional_dependencies": additional,
+        "relations": relations,
+        "triggers": triggers,
+    }
 
 
-def _acl_set(raw):
-    return set(raw.strip("{}").split(",")) if raw else set()
-
-
-def assert_current(last):
-    if set(_expected_pins) != set(GUARD_PINS) | set(CANONICAL_DEPENDENCIES):
-        raise AssertionError("CURRENT_CATALOG_NOT_MEASURED")
+def assert_current(last, allowed_trigger_function_deltas=(), allowed_function_deltas=()):
+    allowed_trigger_function_deltas = set(allowed_trigger_function_deltas)
+    allowed_function_deltas = set(allowed_function_deltas)
     state = measure(last)
     errors = []
     by_signature = {row["signature"]: row for row in state["functions"]}
-    for signature, expected in _expected_pins.items():
-        actual = by_signature.get(signature, {}).get("md5")
-        if actual != expected:
-            errors.append(f"function_md5:{signature}:{actual}!={expected}")
-        actual_acl = _acl_set(by_signature.get(signature, {}).get("acl", ""))
-        if actual_acl != set(EXPECTED_FUNCTION_ACL[signature]):
-            errors.append(f"function_acl:{signature}:{sorted(actual_acl)}")
+    for signature, expected in FUNCTION_ROWS.items():
+        actual = by_signature.get(signature, {})
+        if signature not in allowed_function_deltas and actual.get("md5") != expected["md5"]:
+            errors.append(f"function_md5:{signature}:{actual.get('md5')}!={expected['md5']}")
+        if actual.get("owner") != expected["owner"]:
+            errors.append(f"function_owner:{signature}:{actual.get('owner')}!={expected['owner']}")
+        if _acl_set(actual.get("acl", "")) != _acl_set(expected["acl"]):
+            errors.append(f"function_acl:{signature}:{actual.get('acl')}!={expected['acl']}")
+    additional = {row["signature"]: row["md5"] for row in state["additional_dependencies"]}
+    for signature, expected in SUPPLEMENTAL_MD5.items():
+        if additional.get(signature) != expected:
+            errors.append(f"supplemental_function_md5:{signature}:{additional.get(signature)}!={expected}")
+    for signature, body in JSON_BODIES.items():
+        expected = next(row["function_md5"] for row in CAPTURE["triggers"] if row["function"] == signature)
+        if additional.get(signature) != expected:
+            errors.append(f"json_function_md5:{signature}:{additional.get(signature)}!={expected}")
+    if _expected_additional_pins:
+        for signature, expected in _expected_additional_pins.items():
+            if additional.get(signature) != expected:
+                errors.append(f"additional_function_md5:{signature}:{additional.get(signature)}")
     by_table = {row["table"]: row for row in state["relations"]}
-    for table, expected in EXPECTED_TABLE_ACL.items():
-        actual = _acl_set(by_table.get(table, {}).get("acl", ""))
-        if actual != set(expected):
-            errors.append(f"table_acl:{table}:{sorted(actual)}!={sorted(expected)}")
+    for table, expected in RELATION_ROWS.items():
+        actual = by_table.get(table, {})
+        if actual.get("owner") != expected["owner"]:
+            errors.append(f"table_owner:{table}:{actual.get('owner')}!={expected['owner']}")
+        if _acl_set(actual.get("acl", "")) != _acl_set(expected["acl"]):
+            errors.append(f"table_acl:{table}:{actual.get('acl')}!={expected['acl']}")
     by_trigger = {(row["table"], row["name"]): row for row in state["triggers"]}
-    for table, name in TRIGGER_TABLES.items():
-        row = by_trigger.get((table, "a000_" + name))
-        if not row:
-            errors.append(f"trigger_missing:{table}:{name}")
+    for key, expected in TRIGGER_ROWS.items():
+        actual = by_trigger.get(key)
+        if actual is None:
+            errors.append(f"trigger_missing:{key[0]}:{key[1]}")
             continue
-        if row["enabled"] != "O":
-            errors.append(f"trigger_disabled:{table}:{name}:{row['enabled']}")
-        signature = "platform_private." + name + "()"
-        if row["function_md5"] != GUARD_PINS[signature]:
-            errors.append(f"trigger_function_drift:{table}:{name}")
-        definition = row["definition"]
-        if "BEFORE INSERT OR UPDATE" not in definition or "FOR EACH ROW" not in definition:
-            errors.append(f"trigger_shape:{table}:{name}:{definition}")
+        for field in ("schema", "enabled", "type", "function", "function_md5", "definition"):
+            if field == "function_md5" and key in allowed_trigger_function_deltas:
+                continue
+            if actual.get(field) != expected[field]:
+                errors.append(f"trigger_{field}:{key[0]}:{key[1]}:{actual.get(field)}!={expected[field]}")
     if errors:
-        raise AssertionError("CURRENT_CATALOG_BASELINE_DRIFT\n" + "\n".join(errors))
+        raise AssertionError("CURRENT_LIVE_BASELINE_DRIFT\n" + "\n".join(errors))
     return state
 
 
-def _canonical_dependency_sql():
-    rpc = _module("current_catalog_rpc", CATALOG / "rpc_section.py")
-    fence = _module("current_catalog_fence", CATALOG / "fence_section.py")
-    fence.FENCED = [row for row in fence.FENCED if row[0] in CANONICAL_DEPENDENCIES]
-    assert len(fence.FENCED) == 2
+def _captured_function_sql():
+    # A ordem evita apenas dependências de criação; plpgsql continua validando os
+    # corpos reais no PostgreSQL. Nenhum corpo é reconstruído ou concatenado por pin.
+    definitions = [
+        BODY_RECONCILIATION.get(row["signature"], {}).get("body", row["definition"]).rstrip() + ";"
+        for row in CAPTURE["functions"]
+    ]
+    return "\n".join(definitions)
+
+
+def _extract_function(source, signature):
+    text = source.read_text()
+    match = re.search(r"CREATE(?: OR REPLACE)? FUNCTION\s+" + re.escape(signature), text)
+    if not match:
+        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_NOT_FOUND:{signature}:{source}")
+    delimiter = re.search(r"\$[A-Za-z_]*\$", text[match.end():])
+    if not delimiter:
+        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_DELIMITER_MISSING:{signature}")
+    start = match.end() + delimiter.start()
+    tag = delimiter.group(0)
+    end = text.find(tag, start + len(tag))
+    if end < 0:
+        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_UNTERMINATED:{signature}")
+    end = end + len(tag)
+    if end < len(text) and text[end] == ";":
+        end += 1
+    definition = text[match.start():end].rstrip() + ";"
+    if definition.startswith("CREATE FUNCTION "):
+        definition = "CREATE OR REPLACE FUNCTION " + definition[len("CREATE FUNCTION "):]
+    return definition
+
+
+def _supplemental_function_sql():
+    sql_bodies = [
+        _extract_function(SUPPLEMENTAL_SOURCES[signature], signature)
+        for signature in sorted(SUPPLEMENTAL_SOURCES)
+    ]
+    return "\n".join(sql_bodies + [JSON_BODIES[signature].rstrip() + ";" for signature in sorted(JSON_BODIES)])
+
+
+def _captured_trigger_sql():
     statements = []
-    fence.fence_sql(statements.append, "platform_private.local_current_catalog_ledger", rpc.lit)
-    migration = (CATALOG / "01-migrate.sql.review").read_text()
-    start = migration.index("CREATE OR REPLACE FUNCTION public.proximo_codigo(_prefixo text, _tabela text)")
-    end = migration.index("REVOKE ALL ON FUNCTION public.proximo_codigo(text,text) FROM PUBLIC, anon, authenticated;", start)
-    end = migration.index(";", end) + 1
-    # Somente o gerador global fechado é dependência dos cinco instaladores.
-    # A migração de sequências/triggers não é necessária e exigiria schema fora do recorte.
-    statements.append(migration[start:end])
-    return "\n".join(statements)
+    for (table, name), row in sorted(TRIGGER_ROWS.items()):
+        statements.append(f'DROP TRIGGER IF EXISTS "{name}" ON public."{table}";')
+    for (_table, _name), row in sorted(TRIGGER_ROWS.items()):
+        statements.append(row["definition"].rstrip() + ";")
+    return statements
 
 
 def _restricted_acl_sql():
     statements = []
-    for table, entries in EXPECTED_TABLE_ACL.items():
-        statements.append(f"REVOKE ALL ON TABLE public.{table} FROM PUBLIC,anon,authenticated,service_role;")
-        statements.append(f"GRANT SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON TABLE public.{table} TO service_role;")
-        if "anon=r/postgres" in entries:
-            statements.append(f"GRANT SELECT ON TABLE public.{table} TO anon;")
-        if "authenticated=r/postgres" in entries:
-            statements.append(f"GRANT SELECT ON TABLE public.{table} TO authenticated;")
-    for signature, entries in EXPECTED_FUNCTION_ACL.items():
-        statements.append(f"REVOKE ALL ON FUNCTION {signature} FROM PUBLIC,anon,authenticated,service_role;")
-        if "authenticated=X/postgres" in entries:
-            statements.append(f"GRANT EXECUTE ON FUNCTION {signature} TO authenticated;")
-    return "\n".join(statements)
+    for table, row in RELATION_ROWS.items():
+        statements.extend(_acl_grants("TABLE", f"public.{table}", row["acl"]))
+    for signature, row in FUNCTION_ROWS.items():
+        statements.extend(_acl_grants("FUNCTION", signature, row["acl"]))
+    return statements
 
 
 def apply(run_raw, last, ok, organization_id):
-    global _expected_pins
+    global _expected_additional_pins
     foundation = _module("current_catalog_foundation", HERE / "catalog_foundation.py")
     foundation_result = []
+
     def foundation_sql(statement):
         result = run_raw(statement)
         foundation_result.append(result)
         return result
+
     foundation.apply(foundation_sql, organization_id)
     if any(result.returncode != 0 for result in foundation_result):
         raise AssertionError("CURRENT_CATALOG_SCHEMA_SEAM_FAILED\n" + "\n".join(result.stderr[-4000:] for result in foundation_result))
-    capture_sql = CAPTURE.read_text()
-    assert capture_sql.count("CREATE OR REPLACE FUNCTION platform_private.") == 6
-    assert "CREATE TABLE" not in capture_sql and "GRANT " not in capture_sql
-    trigger_sql = []
-    for table, name in TRIGGER_TABLES.items():
-        trigger = "a000_" + name
-        # O checkpoint histórico contém uma costura sintética de estoque. Somente
-        # os seis triggers nomeados são substituídos no banco descartável.
-        trigger_sql.append(f"DROP TRIGGER IF EXISTS {trigger} ON public.{table};")
-        trigger_sql.append(
-            f"CREATE TRIGGER {trigger} BEFORE INSERT OR UPDATE ON public.{table} "
-            f"FOR EACH ROW EXECUTE FUNCTION platform_private.{name}();"
-        )
+    additional_sql = ADDITIONAL_CAPTURE.read_text()
+    assert additional_sql.count("CREATE OR REPLACE FUNCTION platform_private.") == 6
+    assert "CREATE TABLE" not in additional_sql and "GRANT " not in additional_sql
     setup = f"""
 CREATE TABLE IF NOT EXISTS platform_private.local_current_catalog_ledger(step text,detail jsonb);
-CREATE OR REPLACE FUNCTION platform_private.catalog_tenant_agree(p uuid[]) RETURNS uuid
-LANGUAGE plpgsql IMMUTABLE SET search_path = '' AS $f$
-DECLARE v uuid[] := ARRAY(SELECT DISTINCT x FROM unnest(p) x WHERE x IS NOT NULL);
-BEGIN
-  IF cardinality(v) > 1 THEN RAISE EXCEPTION 'tenant_catalog_chain_divergence' USING ERRCODE = '42501', DETAIL = array_to_string(v, ','); END IF;
-  RETURN v[1];
-END $f$;
-REVOKE ALL ON FUNCTION platform_private.catalog_tenant_agree(uuid[]) FROM PUBLIC,anon,authenticated,service_role;
-{_canonical_dependency_sql()}
-{capture_sql}
-{chr(10).join(trigger_sql)}
-{_restricted_acl_sql()}
+{additional_sql}
+{_supplemental_function_sql()}
+{_captured_function_sql()}
+{chr(10).join(_captured_trigger_sql())}
+{chr(10).join(_restricted_acl_sql())}
 """
     result = run_raw(setup)
     if result.returncode != 0:
-        raise AssertionError("CURRENT_CATALOG_RESTRICTED_BASELINE_FAILED\n" + result.stdout[-3000:] + result.stderr[-12000:])
+        raise AssertionError("CURRENT_LIVE_RESTRICTED_BASELINE_FAILED\n" + result.stdout[-3000:] + result.stderr[-12000:])
     measured = measure(last)
-    _expected_pins = {row["signature"]: row["md5"] for row in measured["functions"]}
-    for signature, expected in GUARD_PINS.items():
-        assert _expected_pins.get(signature) == expected, (signature, _expected_pins.get(signature), expected)
-    assert all(_expected_pins.get(signature) for signature in CANONICAL_DEPENDENCIES)
+    pinned_additional = set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES) | set(JSON_BODIES)
+    _expected_additional_pins = {
+        row["signature"]: row["md5"]
+        for row in measured["additional_dependencies"]
+        if row["signature"] in pinned_additional
+    }
+    assert all(_expected_additional_pins.values())
     state = assert_current(last)
     evidence = {
         "status": "PASS",
         "scope": "PostgreSQL descartável; baseline restrita POSPLANOS; não é prova JWT/RLS/Storage",
-        "source": "seis corpos LIVE fornecidos pelo proprietário + geradores canônicos versionados; migração ampla NÃO reaplicada",
-        "guard_capture": CAPTURE.name,
-        "guard_capture_sha256": hashlib.sha256(CAPTURE.read_bytes()).hexdigest(),
-        "canonical_generator_sha256": {
-            "fence_section.py": hashlib.sha256((CATALOG / "fence_section.py").read_bytes()).hexdigest(),
-            "01-migrate.sql.review#proximo_codigo": hashlib.sha256((CATALOG / "01-migrate.sql.review").read_bytes()).hexdigest(),
-        },
-        "synthetic_seam": "schema canônico mínimo de apresentação, ledger local e substituição dos seis triggers nomeados; nenhuma costura entra nos candidatos",
+        "source": "captura LIVE integral a7b973949 + dependências adicionais fornecidas pelo proprietário; migração ampla NÃO reaplicada",
+        "capture": FULL_CAPTURE.name,
+        "capture_sha256": hashlib.sha256(FULL_CAPTURE.read_bytes()).hexdigest(),
+        "guard_capture": GUARD_CAPTURE.name,
+        "guard_capture_sha256": hashlib.sha256(GUARD_CAPTURE.read_bytes()).hexdigest(),
+        "additional_capture": ADDITIONAL_CAPTURE.name,
+        "additional_capture_sha256": hashlib.sha256(ADDITIONAL_CAPTURE.read_bytes()).hexdigest(),
+        "additional_pin_provenance": "MD5 medido localmente dos corpos SQL fornecidos; ACL adicional não foi presumida como LIVE",
+        "body_reconciliation": {signature: {key: value for key, value in row.items() if key != "body"} for signature, row in BODY_RECONCILIATION.items()},
+        "counts": {"functions": 20, "triggers": 120, "relations": 17, "additional_dependencies": 4, "supplemental_trigger_functions": len(SUPPLEMENTAL_SOURCES) + len(JSON_BODIES)},
+        "supplemental_sources": {signature: str(path.relative_to(SCRIPTS)) for signature, path in SUPPLEMENTAL_SOURCES.items()},
+        "synthetic_seam": "schema canônico mínimo de apresentação e ledger local; corpos suplementares versionados validados pelos MD5 dos triggers LIVE; nenhuma costura entra nos candidatos",
         **state,
     }
     (HERE / "evidence").mkdir(exist_ok=True)
     (HERE / "evidence/current-catalog-baseline.json").write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
-    ok("baseline restrita POSPLANOS: 9 corpos medidos, 6 guards LIVE e 8 ACLs conferidos", evidence["guard_capture_sha256"])
+    ok("baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas", evidence["capture_sha256"])
     return state
