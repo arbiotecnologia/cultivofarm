@@ -292,7 +292,7 @@ def main():
   assert containment['expedition_movements']==1,containment
   containment['effect_baseline']=effect_baseline
   (OUT/'resale-delivery.json').write_text(json.dumps(dict(group=grouped,group_replay=group_replay,send=sent,send_replay=sent_replay,confirm=confirmed,confirm_replay=confirmed_replay,containment=containment),indent=2)+'\n')
-  checks.append(dict(test='resale second reserve group send proof confirm and replays complete local B2B order with zero NF receivable manufacture CQ envase',status='PASS',delivery_id=delivery))
+  checks.append(dict(test='resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase',status='PASS',delivery_id=delivery))
 
   manual=A.finished('quimico','kg',25,2)
   manual_reserved=json.loads(B.last(B.reserve(manual['os'],manual['stock'],2,'resale-manual-regression-reserve')))['itens'][0]
