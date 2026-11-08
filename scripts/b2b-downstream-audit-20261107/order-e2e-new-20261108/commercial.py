@@ -68,6 +68,10 @@ def apply(driver, load, root, out):
     cols=list(row)
     # JSONB populate keeps native arrays/json/numeric casts intact.
     B.sql('SET session_replication_role=replica; INSERT INTO '+obj+' ('+','.join('"'+c+'"' for c in cols)+') SELECT '+','.join('"'+c+'"' for c in cols)+' FROM jsonb_populate_record(NULL::'+obj+','+lit(json.dumps(row))+'::jsonb) ON CONFLICT DO NOTHING; SET session_replication_role=origin;')
+  # O comprovante referencia auth.users. Inserir DEPOIS dos perfis evita que o
+  # trigger de signup crie um perfil incompleto e o ON CONFLICT o preserve.
+  # Identidade SOMENTE no PG descartável; nenhuma conta/Auth hospedado é criado.
+  B.sql(f"INSERT INTO auth.users(id) VALUES('{Q.UADM}') ON CONFLICT DO NOTHING;")
   # Entitlements reais: a tabela seam_entitlements do harness B3 não é lida
   # pelo resolvedor canônico mantido da base física. Concessões GRANT apenas
   # no tenant A; nenhuma versão publicada é alterada e F não recebe o grant.
