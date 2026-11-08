@@ -1,0 +1,4 @@
+ERROR:  42601: syntax error at or near "CREATE"
+LINE 38: CREATE OR REPLACE FUNCTION platform_private.trg_lab_os_biolo...
+         ^
+LOCATION:  scanner_yyerror, scan.l:1248
