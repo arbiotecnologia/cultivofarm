@@ -1,0 +1,11 @@
+{
+  "source_functions": 28,
+  "outputs": {
+    "01-pre.sql.readonly": "2708c69b6633745205d12d811d8d7b89022d535aee28614d94afe7d917f8d7f8",
+    "02-install.sql.review": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40",
+    "03-post.sql.readonly": "033312331dd757c72c625f027d24176efa33931c8881ab002122a4e56867e894",
+    "04-rollback-deny.sql.review": "6af8ffdda88c6b0026d427f4b0459c3d86a74f25e3083abe44d4ad05675531a3"
+  },
+  "temporary_harness_instrumentation": "read-only catalog snapshots before/after/rollback; assertions unchanged",
+  "hosted": false
+}

@@ -1,0 +1,1 @@
+bun run test -- src/test/motorB2BFase6Planos.test.ts src/test/comercial/preview-cronograma.test.ts src/test/comercial/meiosPagamentoTab.test.tsx src/test/comercial/assignmentPublishDialog.test.tsx src/test/b2b/novoPedidoPaymentMethod.test.tsx src/test/b2b/novoPedidoSimulationFence.test.tsx --maxWorkers=1
