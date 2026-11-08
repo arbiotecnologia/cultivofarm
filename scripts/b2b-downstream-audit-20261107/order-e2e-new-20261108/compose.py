@@ -238,11 +238,6 @@ def main():
   checks.append(dict(test='public endpoint gate closed, private helper client EXECUTE denied and no direct ready OS bypass',status='PASS'))
 
   B.sql('UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;')
-  EndpointTests=load('endpoint_tests',H/'test_os_endpoint.py')
-  EndpointTests.run(B,Q,order_id,item['id'],accepted['updated_at'],OUT)
-  # Matrix uses a separate request key; preserve the original item's canonical
-  # idempotency receipt for the existing create/replay sequence below.
-  # Use a fresh order for the positive concurrent case in the matrix instead.
   direct_authenticated=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
   assert direct_authenticated.returncode==0,(direct_authenticated.stdout,direct_authenticated.stderr)
   assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
@@ -359,6 +354,10 @@ def main():
   (OUT/'review-70d08c.json').write_text(json.dumps(dict(review='70d08c',candidate_sha256=logistics['candidate_sha256'],hosted=False,results=review70),indent=2)+'\n')
   for row in review70:
    checks.append(dict(test='review70 '+row['name'],status=row['status'],detail=row.get('detail') or row.get('error')))
+  EndpointTests=load('endpoint_tests',H/'test_os_endpoint.py')
+  endpoint_fixture=Review70.Review(B,Q,A,choice,{}).make_order([Q.S(3)],'endpoint-matrix')
+  EndpointTests.run(B,Q,endpoint_fixture['id'],endpoint_fixture['items'][0]['id'],endpoint_fixture['accepted']['updated_at'],OUT)
+  checks.append(dict(test='public OS endpoint FSF buyer revoked feature pending helper ACL and concurrent creation',status='PASS'))
 
   manual=A.finished('quimico','kg',25,2)
   manual_reserved=json.loads(B.last(B.reserve(manual['os'],manual['stock'],2,'resale-manual-regression-reserve')))['itens'][0]
