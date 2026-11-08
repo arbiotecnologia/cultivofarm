@@ -1,0 +1,22 @@
+{
+  "review": "ab904bf",
+  "hosted": false,
+  "candidate_status": "INACTIVE_NOT_APPROVED",
+  "candidate_install_sha256": "3c0a2cdc80a3f3050355e8e13c6afc96abb397cf5511d5ccd71ac91eb9a31ba4",
+  "component_before": {"checks": 174, "passed": 174, "exit_code": 0, "meaning": "vulnerability characterization, not approval"},
+  "component_after": {"checks": 175, "passed": 175, "exit_code": 0, "synthetic_accounting_and_fiscal_events": true},
+  "integrated_fresh_rebuild": {
+    "controls_passed_before_b4": 34,
+    "exit_code": 1,
+    "status": "BLOCKED_B4_PRE_PIN_DRIFT",
+    "error": "B4_PRE_DRIFT:public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)",
+    "plans_candidate_md5": "c6fbe15906c5d893ab80e962ee162b3c",
+    "b4_pre_expected_md5": "5d410cdba3c34298389302fb91d2fb16",
+    "b4_or_bridge_installed": false,
+    "pre_bypassed": false,
+    "always_allow_substitution": false,
+    "fiscal_positive_and_integrated_rollback": "NOT_RUN"
+  },
+  "jwt_rls_storage": "NOT_RUN",
+  "external_effects": "NONE"
+}

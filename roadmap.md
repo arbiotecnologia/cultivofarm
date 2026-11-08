@@ -1,9 +1,9 @@
 ## 08/11 17:37 — Revisão independente ab904bf: ponte fiscal e rebuild integral
-- [ ] Reproduzir ANTES e corrigir: classificação explícita de NF não-B2B sem esconder B2B inválida; regra `created_by=NULL` estritamente B2B fiscal, sem quebrar recorrência/importação/ajustes/updates legados.
-- [ ] Snapshot/digest fiscal completo e verificável, incluindo valores monetários, referência/protocolo/ambiente; callback real deve comprovar `_c_stat`, transmissão e evidência autorizada, sem promover pendente/rejeitado.
-- [ ] Integrar H13 `FISCAL_AUTHORIZATION_CLOSE_PENDING` com falha de título, preservando autorização externa e permitindo retry sem reemissão; NFS-e/cancelamento permanecem fail-closed se não houver prova exata.
-- [ ] Fechar planos com PRE/POST independente e executar rebuild integral do zero com planos+B3+logística+B4+ponte; manter `b2b_integration_dependencies` always-deny e reportar separadamente a costura sintética, sem always-allow.
-- [ ] Candidatos continuam INATIVOS/NÃO APROVADOS; sem hosted writes, publicação, provedores, emissão, envios ou cobranças.
+- [x] ANTES **174/174** caracterizou não-B2B quebrado, `_c_stat=999`/sem transmissão criando título, NFS-e sem contrato e replay monetário/referência/protocolo aceito. DEPOIS **175/175**: classificação não-B2B segura, vínculo parcial fechado, `created_by=NULL` somente no permit B2B fiscal e regressões legadas preservadas.
+- [x] Snapshot privado imutável contém totais e líquidos por item, referência, protocolo, transmissão, ambiente e origem; callback exige `_c_stat=100/150`, transmissão H13 vinculada/homologada e XML assinado também no replay. NFS-e e cancelamento automático seguem fail-closed.
+- [x] H13 preserva retorno externo em `FISCAL_AUTHORIZATION_CLOSE_PENDING`, retry gera uma vez sem reemissão e limpa somente esse pendente recuperado. Candidato INATIVO SHA256 `3c0a2cdc80a3f3050355e8e13c6afc96abb397cf5511d5ccd71ac91eb9a31ba4`.
+- [ ] Rebuild integral do zero executou planos+B3+logística com **34 PASS**, mas B4/ponte não instalaram: `B4_PRE_DRIFT` em `b2b_payment_condition_publish`; planos gera MD5 `c6fbe159…` e B4 exige o antigo `5d410cd…`. Não se contornou PRE nem sempre-deny; composição fiscal e rollback integrado permanecem NOT_RUN/BLOCKED.
+- [ ] Candidatos continuam INATIVOS/NÃO APROVADOS; revisão independente e homologação real pendentes, sem hosted writes, publicação, provedores, emissão, envios ou cobranças.
 
 ## 08/11 17:13 — Revisão independente f32c4f3: planos, composição única e ponte fiscal
 - [x] **PRIORIDADE/BLOCKER:** ANTES reproduziu constraint global e quatro efeitos após revogação sob locks; gerador corrigiu código único por `organization_id`, reautorização pós-lock e reordenação com locks ordenados. DEPOIS **79/79**, sem auditoria/mutação parcial; metadata/ativação/versão já contidos também registrados.
