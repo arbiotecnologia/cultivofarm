@@ -5,7 +5,7 @@
 - [x] Incorporar os seis corpos LIVE fornecidos pelo proprietário em `live-catalog-guards-20261108.sql.capture`; hashes PostgreSQL medidos, pins provisórios eliminados. Baseline restrita usa geradores canônicos para as três dependências e não reaplica a migração ampla.
 - [x] Tentativas 3–9 preservadas com falhas reais de schema/ACL/Auth/B4/rollback; nenhum PRE foi enfraquecido. Claims sintéticos completos, writers financeiros fora do escopo preservados e rollback composto pinam o estado integral, mantendo ação deny-only.
 - [x] **Attempt 10 exit 0:** 38/38 checkpoints, parciais 13/13, leitor/endpoint 15/15, UI 21/21 + 13/13 + 73/73, typecheck/build OK. Seis guards LIVE e oito ACLs preservados; concorrência, revogação, histórico e rollback deny-only verificados; gates OFF.
-- [x] Novo pacote `production-rollout-posplans-20261108/` com 23 arquivos e manifesto SHA256 `7fc669b8d5402c025b19daf8575aa8227e04ca4de9641d383343115485aaf8c2`. B4/fiscal NOT_RUN_OUT_OF_SCOPE; planos não reaplicados. Nenhum hosted/publicação.
+- [x] Novo pacote `production-rollout-posplans-20261108/` com 23 arquivos e manifesto SHA256 `0b7bf46015288e7bbdaa71422d24f4029b8acbe78ca334500c65bbed54c838f7`. B4/fiscal NOT_RUN_OUT_OF_SCOPE; planos não reaplicados. Nenhum hosted/publicação.
 - [ ] Auditor: revisão independente e PRE READONLY em `swzpzcwiasxmjutrmvkm`; instalação futura somente por autorização específica. PASS local não é prova JWT/RLS/Storage/hosted nem liberação operacional.
 
 ## 08/11 22:18 — Complemento LIVE READONLY da cadeia mínima

@@ -29,7 +29,7 @@ O rollback da confirmação é composto: exige o estado integral medido após os
 `../production-rollout-posplans-20261108/`
 
 - 23 arquivos rastreados.
-- Manifesto SHA256: `7fc669b8d5402c025b19daf8575aa8227e04ca4de9641d383343115485aaf8c2`.
+- Manifesto SHA256: `0b7bf46015288e7bbdaa71422d24f4029b8acbe78ca334500c65bbed54c838f7`.
 - Ordem: PRE READONLY → confirmação → envio → físico OFF → logística OFF → leitor/endpoint OFF.
 - Rollbacks em ordem inversa, deny-only.
 - Planos `cc1f6cc…`, B4, ponte fiscal, NF/NFS-e, recebíveis, pagamentos, comunicação, publicação e ativação automática estão excluídos.
