@@ -75,6 +75,9 @@ def main():
   commercial=load('new_commercial_merge',H/'commercial.py')
   Q=commercial.apply(B,load,ROOT,OUT)
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
+  # A restauração contém sentinelas reais das dez tabelas downstream. O oráculo
+  # deve medir delta desta execução, não exigir banco global vazio.
+  effect_baseline=json.loads(B.last("SELECT jsonb_build_object('receivables',(SELECT count(*) FROM public.accounts_receivable),'fiscal_documents',(SELECT count(*) FROM public.fiscal_invoices))::text;"))
   data,error=Q.publish(Q.UFIN,Q.P3,'boleto',Q.M_BOL,30,3,'1.8',0)
   assert data is not None,error
   data,error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',1);assert data is not None,error
@@ -162,7 +165,10 @@ def main():
   assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted
   assert accepted['ready_for_production'] is False,'external resale must not open biological production'
   (OUT/'seller-acceptance.json').write_text(json.dumps(dict(promotion=promoted,order=accepted),indent=2)+'\n')
-  checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))
+  direct_operational=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,direct_operational.stderr
+  assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
+  checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production and direct operational status stay closed',status='PASS'))
 
   # Nova ponte de revenda: gerada no espelho a partir dos corpos recém-instalados.
   # Nenhum writer privado recebe grant de cliente; o gate começa e termina fechado.
@@ -276,8 +282,10 @@ def main():
    'envase',(SELECT count(*) FROM public.envase e WHERE e.lote_id='{received['lote_id']}'),
    'expedition_movements',(SELECT count(*) FROM public.estoque_movimentacoes WHERE referencia_id='{delivery}' AND acao='expedicao'))::text;"""))
   assert containment['order_status']=='entregue' and containment['receivable_generated'] is False,containment
-  assert all(containment[k] in (0,None) for k in ('receivables','fiscal_documents','delivery_receivable','production_programs','production_links','cq','envase')),containment
+  assert {k:containment[k] for k in ('receivables','fiscal_documents')}==effect_baseline,(effect_baseline,containment)
+  assert all(containment[k] in (0,None) for k in ('delivery_receivable','production_programs','production_links','cq','envase')),containment
   assert containment['expedition_movements']==1,containment
+  containment['effect_baseline']=effect_baseline
   (OUT/'resale-delivery.json').write_text(json.dumps(dict(group=grouped,group_replay=group_replay,send=sent,send_replay=sent_replay,confirm=confirmed,confirm_replay=confirmed_replay,containment=containment),indent=2)+'\n')
   checks.append(dict(test='resale second reserve group send proof confirm and replays complete local B2B order with zero NF receivable manufacture CQ envase',status='PASS',delivery_id=delivery))
 
