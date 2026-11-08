@@ -1,0 +1,25 @@
+-- DENY-ONLY: não restaura funções nem índice global vulneráveis; preserva dados, versões e cercas.
+BEGIN;
+REVOKE ALL ON FUNCTION public.rpc_admin_list_commercial_plans(text,text,integer,integer) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_admin_create_commercial_plan(jsonb) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_admin_version_commercial_plan(uuid,jsonb,text) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_admin_set_commercial_plan_active(uuid,boolean,text) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_admin_set_default_commercial_plan(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_admin_reorder_commercial_plans(jsonb) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_b2b_list_selectable_payment_plans() FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_cc_list_assignments(text) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_cc_validate_matrix(uuid,text,uuid,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_config_list() FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_retire(uuid,text,integer) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.b2b_list_payment_condition_options_secure(uuid,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) FROM PUBLIC,anon,authenticated;
+ALTER POLICY cpp_tenant_read ON public.commercial_payment_plans USING(false);
+ALTER POLICY cppa_admin_read ON public.commercial_payment_plan_assignments USING(false);
+ALTER POLICY ccip_admin_read ON public.commercial_condition_item_prices USING(false);
+ALTER POLICY cpr_internal_select ON public.commercial_price_rules USING(false);
+COMMIT;
