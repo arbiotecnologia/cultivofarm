@@ -278,22 +278,20 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
         key=lambda row: row[0],
     )
 
-    post_trigger_function_pins = [
-        [signature, post_functions[signature][3] if signature in post_functions else md5]
-        for signature, md5 in _captured_trigger_function_pins()
-    ]
+    pre_triggers = _merged_triggers(pre_state, pre_functions)
+    post_triggers = _merged_triggers(post_state, post_functions)
     pre_doc = {
         "functions": pre_doc_functions,
-        "trigger_functions": _captured_trigger_function_pins(),
+        "trigger_functions": _trigger_pins(pre_triggers),
         "relations": pre_doc_relations,
-        "triggers": _captured_triggers(),
+        "triggers": pre_triggers,
         "structural": _structural(pre_state),
     }
     post_doc = {
         "functions": post_doc_functions,
-        "trigger_functions": post_trigger_function_pins,
+        "trigger_functions": _trigger_pins(post_triggers),
         "relations": post_doc_relations,
-        "triggers": _state_triggers(post_state, post_functions),
+        "triggers": post_triggers,
         "structural": _structural(post_state),
     }
     metadata = {
