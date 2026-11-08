@@ -126,11 +126,8 @@ PASS delivery context nega INSERT em recebível
 PASS rollback deny-only passa com PRE/POST e metadados íntegros
 PASS rollback preserva alocações, títulos e snapshots
 PASS rollback fecha writer legado sem apagar projeção nem histórico
-FAIL ponte PRE confirma pins B4 e autorização capturada :: ERROR:  B2B_FISCAL_ACTOR_PIN_DRIFT
-CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
-
-FAIL ponte service-only instala com POST e ACL fechada :: ERROR:  B2B_FISCAL_ACTOR_PIN_DRIFT
-CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+PASS ponte PRE confirma pins B4 e autorização capturada
+FAIL ponte service-only instala com POST e ACL fechada :: ERROR:  function "b2b_integration_actor" already exists with same argument types
 
 FAIL ponte POST íntegro :: ERROR:  B2B_FISCAL_ACTOR_POST_DRIFT
 CONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE

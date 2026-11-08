@@ -26,7 +26,7 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 130,
+  "passed": 131,
   "total": 141,
   "checks": [
     {
@@ -543,13 +543,12 @@
     },
     {
       "name": "ponte PRE confirma pins B4 e autorização capturada",
-      "ok": false,
-      "detail": "ERROR:  B2B_FISCAL_ACTOR_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+      "ok": true
     },
     {
       "name": "ponte service-only instala com POST e ACL fechada",
       "ok": false,
-      "detail": "ERROR:  B2B_FISCAL_ACTOR_PIN_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE\n"
+      "detail": "ERROR:  function \"b2b_integration_actor\" already exists with same argument types\n"
     },
     {
       "name": "ponte POST íntegro",
