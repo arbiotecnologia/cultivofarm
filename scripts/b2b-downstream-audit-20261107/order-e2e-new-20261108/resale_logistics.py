@@ -167,10 +167,10 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
 
     sig = "private.guard_os_separate_approval()"
     body = defs[sig]["body"]
-    body = one(body, " IF TG_OP='INSERT' THEN\n  -- Criação normal", """ IF TG_OP='INSERT' THEN
-  IF EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='b2b_resale_os_create_v1' AND t.target=NEW.id)
-   AND platform_private.b2b_resale_os_valid_v1(NEW) IS TRUE THEN RETURN NEW;END IF;
-  -- Criação normal""", "OS separate approval ticket")
+    body = one(body, " IF TG_OP='INSERT' THEN\n -- Criação normal", """ IF TG_OP='INSERT' THEN
+ IF EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='b2b_resale_os_create_v1' AND t.target=NEW.id)
+  AND platform_private.b2b_resale_os_valid_v1(NEW) IS TRUE THEN RETURN NEW;END IF;
+ -- Criação normal""", "OS separate approval ticket")
     defs[sig]["new"] = body
 
     sig = "platform_private.trg_lab_os_biological_only()"
