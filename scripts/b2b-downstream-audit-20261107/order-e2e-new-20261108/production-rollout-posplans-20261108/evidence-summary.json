@@ -48,5 +48,11 @@
     "current_catalog_preserved": true,
     "b4_fiscal": "NOT_RUN_OUT_OF_SCOPE"
   },
-  "positive_fiscal_receivable": "NOT_RUN_BLOCKED_REAL_ALWAYS_DENY"
+  "b4_fiscal_scope": {
+    "status": "NOT_RUN_OUT_OF_SCOPE",
+    "reason": "B4_PRE_SHARED_BODY hist\u00f3rico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido",
+    "positive_fiscal_receivable": "NOT_RUN_BLOCKED",
+    "hosted": false
+  },
+  "positive_fiscal_receivable": "NOT_RUN_OUT_OF_SCOPE"
 }
