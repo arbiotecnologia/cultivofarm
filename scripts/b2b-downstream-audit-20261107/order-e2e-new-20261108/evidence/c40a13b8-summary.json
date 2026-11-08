@@ -1,0 +1,51 @@
+{
+  "revision": "c40a13b8",
+  "execution": "new disposable reconstruction, not recovery and not hosted proof",
+  "exit_code": 0,
+  "checks_passed": 8,
+  "checks_failed": 0,
+  "callers": [
+    "public.simulate_b2b_payment_condition_secure",
+    "public.create_partner_order_condition_secure",
+    "platform_private.c2_order_actor_scope",
+    "platform_private.c2_owner_order_guard"
+  ],
+  "shape": {
+    "seller_organization_partner_account_id": null,
+    "buyer_partner_users_count": 1,
+    "buyer_tenant": "seller organization",
+    "superadmin_used": false
+  },
+  "guards_unchanged": {
+    "platform_private.assert_b2b_partner_scope(uuid,uuid)": "f86f43f9d9ad3ed97b840fcc02c79476",
+    "platform_private.c2_order_actor_scope(uuid,uuid)": "54c4327d63f48e39f598129ff9dd8f09"
+  },
+  "positive": [
+    "B3 simulation for two 25 kg packages",
+    "server-owned durable attempt reservation",
+    "canonical order creation and same-id replay",
+    "committed journal recovery",
+    "synthetic accounting CAS promotion",
+    "canonical seller acceptance",
+    "ready_for_production remains false"
+  ],
+  "negative": [
+    "technician isolated",
+    "cross-tenant buyer",
+    "inactive profile",
+    "revoked link",
+    "tenant mismatch",
+    "second partner_users row rejected by unique constraint",
+    "approval before accounting promotion denied atomically"
+  ],
+  "not_proven": [
+    "B2B purchase reserve dispatch confirmation cancellation integrated chain",
+    "B4 integrated receivable or fiscal document",
+    "JWT RLS Storage PostgREST browser or hosted E2E"
+  ],
+  "logistics_candidate_generated": false,
+  "delivery_scope_denied_preserved": true,
+  "hosted_writes": false,
+  "publication": false,
+  "external_effects": false
+}

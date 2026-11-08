@@ -1,7 +1,7 @@
 ## 08/11 13:46 — E2E c40a13b8: comprador no tenant vendedor
-- [ ] Identificar os chamadores B3 e reconstruir o shape real: tenant vendedor com `organizations.partner_account_id=NULL`, comprador com um vínculo `partner_users`, sem transformar a organização no parceiro nem usar Superadmin.
-- [ ] Se a autoridade antiga for incompatível, gerar candidato privado específico comprador/vendedor, preservar `assert_b2b_partner_scope` global e cobrir positivos/negativos, revogação, tenant, papel, vínculo e origem.
-- [ ] Continuar a composição nova até pedido B3, aceite, compra/reserva/expedição/entrega/cancelamento, com evidências separadas; sem hosted/Auth/publicação/NF/cobrança/envios e sem tocar piloto/cinco títulos.
+- [x] Chamadores B3 identificados; shape real com org vendedora NULL e um `partner_users` no tenant vendedor, sem Superadmin. A captura atual já tem fallback de vínculo válido: falta de `tenant_id` e entitlements reais na fixture, não defeito comprovado do writer. Guards globais byte-pinados preservados.
+- [x] Nova matriz local 8/8 exit 0: negativos papel/tenant/inativo/revogação/unicidade; simulação, reserva durável, pedido B3, replay, recovery committed; aprovação pré-contábil negada atomicamente, promoção CAS fictícia e aceite vendedor; produção biológica fechada.
+- [ ] Ponte logística B2B até compra/reserva/expedição/entrega/cancelamento continua NOT_RUN: `DELIVERY_SCOPE_DENIED` preservado, nenhum candidato de autorização/logística gerado. Controle físico agronômico positivo não é E2E B2B; sem hosted/Auth/publicação/NF/cobrança/envios e sem tocar piloto/cinco títulos.
 
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
 ### 08/11 03:31 — UX comprador novo
