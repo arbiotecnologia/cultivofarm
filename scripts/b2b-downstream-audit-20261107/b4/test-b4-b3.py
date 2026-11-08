@@ -654,6 +654,7 @@ WHERE s.partner_id='{B3.P}';""")
  ADD COLUMN reconciliation_status text,ADD COLUMN updated_at timestamptz DEFAULT now(),ADD COLUMN status text DEFAULT 'PENDING',
  ADD COLUMN company_settings_id uuid,ADD COLUMN organization_id uuid,ADD COLUMN partner_order_id uuid,ADD COLUMN debtor_partner_id uuid,ADD COLUMN debtor_customer_id uuid,
  ADD COLUMN invoice_type text,ADD COLUMN issue_date date,ADD COLUMN total_amount numeric(14,2),ADD COLUMN provider_reference text,ADD COLUMN created_by uuid;
+ALTER TABLE public.fiscal_invoices ADD CONSTRAINT fiscal_invoices_pkey PRIMARY KEY(id);
 CREATE TABLE public.fiscal_invoice_items(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid NOT NULL,partner_order_item_id uuid,
  item_sequence integer NOT NULL,item_kind text NOT NULL,quantity numeric(18,6),commercial_unit text,taxable_quantity numeric(18,6),taxable_unit text,net_value numeric(18,2));
 CREATE TABLE IF NOT EXISTS public.fiscal_xml_runs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid,signed_path text,access_key text,signed_at timestamptz,updated_at timestamptz);
