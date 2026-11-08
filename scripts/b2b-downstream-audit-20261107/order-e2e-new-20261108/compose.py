@@ -95,7 +95,38 @@ def main():
       'entitlement_resolver_md5',md5(pg_get_functiondef('platform_private.entitlements_for_user(uuid)'::regprocedure)),
       'entitlements',(SELECT jsonb_agg(to_jsonb(e)) FROM platform_private.entitlements_for_user('{Q.UB}') e)
     )::text;""").stdout.strip().splitlines()[-1]
-  (OUT/'buyer-scope-diagnostic.json').write_text(json.dumps(json.loads(diagnostic),indent=2)+'\n')
+  scope=json.loads(diagnostic)
+  assert scope['seller_org_partner_is_null'] is True and scope['valid_partner_user'] is True and scope['owner_order_allowed'] is True,scope
+  assert {x['feature_key'] for x in scope['entitlements'] or []}=={'pedidos_b2b','catalogo_precos'},scope
+  assert B.last("SELECT md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure));")=='f86f43f9d9ad3ed97b840fcc02c79476'
+  assert B.last("SELECT md5(pg_get_functiondef('platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure));")=='54c4327d63f48e39f598129ff9dd8f09'
+  (OUT/'buyer-scope-diagnostic.json').write_text(json.dumps(scope,indent=2)+'\n')
+  negative={}
+  for label,uid,partner,token in [
+    ('technician_isolated',Q.UT,Q.P,'forbidden_financial_terms'),
+    ('cross_tenant_buyer',Q.UB2,Q.P,'forbidden_partner'),
+    ('inactive_profile',Q.UINACT,Q.P,'inactive_scope')]:
+   result,err=Q.sim(uid,Q.P3,[Q.S(2)],choice,partner=partner)
+   assert result is None and token in (err or ''),(label,result,err)
+   negative[label]=err
+  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET revoked_at=now() WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
+  result,err=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice)
+  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET revoked_at=NULL WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
+  assert result is None and 'forbidden_partner' in (err or ''),err
+  negative['revoked_link']=err
+  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET tenant_id='{Q.F}' WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
+  result,err=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice)
+  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET tenant_id='{Q.A}' WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
+  assert result is None and 'forbidden_partner' in (err or ''),err
+  negative['tenant_mismatch']=err
+  B.sql(f"SET session_replication_role=replica;INSERT INTO public.partner_users(user_id,partner_id,tenant_id,papel) VALUES('{Q.UB}','{Q.PO}','{Q.A}','gestor');SET session_replication_role=origin;")
+  result,err=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice)
+  B.sql(f"SET session_replication_role=replica;DELETE FROM public.partner_users WHERE user_id='{Q.UB}' AND partner_id='{Q.PO}';SET session_replication_role=origin;")
+  assert result is None and 'forbidden_partner' in (err or ''),err
+  negative['second_active_link']=err
+  assert B.last("SELECT count(*) FROM public.partner_orders;")=='0'
+  (OUT/'buyer-scope-negatives.json').write_text(json.dumps(negative,indent=2)+'\n')
+  checks.append(dict(test='real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives',status='PASS'))
   data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
   journal,journal_error=Q.call(Q.UB,f"public.recover_partner_order_attempt_v1('{Q.P}',NULL,NULL,false,NULL)")
   assert journal is not None,journal_error
