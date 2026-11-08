@@ -238,14 +238,20 @@ def _pair(pre_state: dict, post_state: dict) -> tuple[dict, dict, dict]:
         key=lambda row: row[0],
     )
 
+    post_trigger_function_pins = [
+        [signature, post_functions[signature][3] if signature in post_functions else md5]
+        for signature, md5 in _captured_trigger_function_pins()
+    ]
     pre_doc = {
         "functions": pre_doc_functions,
+        "trigger_functions": _captured_trigger_function_pins(),
         "relations": pre_doc_relations,
-        "triggers": _captured_triggers(current_scope),
+        "triggers": _captured_triggers(),
         "structural": _structural(pre_state),
     }
     post_doc = {
         "functions": post_doc_functions,
+        "trigger_functions": post_trigger_function_pins,
         "relations": post_doc_relations,
         "triggers": _state_triggers(post_state, post_functions),
         "structural": _structural(post_state),
