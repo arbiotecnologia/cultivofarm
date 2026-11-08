@@ -76,8 +76,8 @@ class Review:
     def os_create_sql(self, order_id, item_id, expected, key):
         uid = self.Q.UADM
         return (
-            f"RESET ROLE;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';"
-            f"SELECT platform_private.b2b_resale_os_create_v1('{order_id}','{item_id}','{expected}'::timestamptz,'{key}');"
+            f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';"
+            f"SELECT public.rpc_b2b_resale_os_create_v1('{order_id}','{item_id}','{expected}'::timestamptz,'{key}');"
         )
 
     def create_os(self, order, item, label):
@@ -223,6 +223,7 @@ class Review:
         assert self.confirm(second, "qty-three-remainder-confirm")["success"] is True
         assert self.status(order["id"]) == "entregue"
         assert self.snapshots(order["id"]) == before
+        assert self.B.last(f"SELECT count(*) FROM public.production_timeline_events WHERE partner_order_id='{order['id']}' AND event_type='entrega_realizada';") == '1'
         return {"partial": partial, "delivered_quantities": [1, 2], "remainder_initially_unreserved": True}
 
     def cancelled_partial_does_not_complete(self):

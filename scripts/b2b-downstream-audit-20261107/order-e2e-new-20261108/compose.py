@@ -221,19 +221,21 @@ def main():
   # Nenhum writer privado recebe grant de cliente; o gate começa e termina fechado.
   L=load('new_b2b_resale_logistics',H/'resale_logistics.py')
   logistics=L.install(B,OUT)
+  E=load('new_os_endpoint',H/'os_endpoint.py')
+  endpoint_out=E.install(B,OUT)
   item=json.loads(B.last(f"SELECT to_jsonb(i)::text FROM public.partner_order_items i WHERE i.order_id='{order_id}' ORDER BY i.created_at,i.id LIMIT 1;"))
   def resale_call(uid,key,expected=None,item_id=None,role=False):
    expected=expected or accepted['updated_at'];item_id=item_id or item['id']
-   prefix=(f"SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';" if role else f"RESET ROLE;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';")
-   return prefix+f"SELECT platform_private.b2b_resale_os_create_v1('{order_id}','{item_id}','{expected}'::timestamptz,'{key}');"
+   prefix=f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';"
+   return prefix+f"SELECT public.rpc_b2b_resale_os_create_v1('{order_id}','{item_id}','{expected}'::timestamptz,'{key}');"
   denied=B.run_raw(resale_call(Q.UADM,'resale-gate-closed-0001'))
   assert denied.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in denied.stderr,denied.stderr
-  denied=B.run_raw(resale_call(Q.UADM,'resale-client-grant-0001',role=True))
+  denied=B.run_raw(B.T.actor(Q.UADM)+f"SELECT platform_private.b2b_resale_os_create_v1('{order_id}','{item['id']}','{accepted['updated_at']}','resale-client-grant-0001');")
   assert denied.returncode!=0 and 'permission denied for function b2b_resale_os_create_v1' in denied.stderr,denied.stderr
   direct=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';INSERT INTO public.ordens_servico(organization_id,produto_id,status,prioridade,tipo_item,partner_order_id,partner_order_item_id,origem) VALUES('{Q.A}','{item['product_id']}','pronto_entrega','media','produto','{order_id}','{item['id']}','b2b');")
   assert direct.returncode!=0 and 'OS_APPROVAL_SCOPE_DENIED' in direct.stderr,direct.stderr
   assert B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{order_id}';")=='0'
-  checks.append(dict(test='resale candidate gate closed, no client EXECUTE and no direct ready OS bypass',status='PASS'))
+  checks.append(dict(test='public endpoint gate closed, private helper client EXECUTE denied and no direct ready OS bypass',status='PASS'))
 
   B.sql('UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;')
   direct_authenticated=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
@@ -363,8 +365,9 @@ def main():
   checks.append(dict(test='manual agronomic physical flow still passes after resale candidate',status='PASS',delivery_id=manual_delivery))
   manifest=L.finish(B,OUT)
   assert manifest['default_enabled'] is False and manifest['new_client_grants']==[]
+  B.sql((endpoint_out/'04-rollback-deny.sql.review').read_text())
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
-  assert after_rollback.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in after_rollback.stderr,after_rollback.stderr
+  assert after_rollback.returncode!=0 and 'permission denied for function rpc_b2b_resale_os_create_v1' in after_rollback.stderr,after_rollback.stderr
   checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
   plans_before_rollback=B.last('SELECT count(*) FROM public.commercial_payment_plans;')
   R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
