@@ -16,7 +16,6 @@ def main():
   sys.modules[B.C.__name__]=B.C
   checkpoint=Path('/tmp/new-order-checkpoint.sql')
   if os.environ.get('NEW_E2E_REUSE_FRESH')=='1':
-   import hashlib
    B.pg.start();j=B.restore.metadata()
    roles={r['name'] for r in j['roles']}|{'supabase_admin'}
    for x in j['relations']+j['functions']+j['schemas']:
