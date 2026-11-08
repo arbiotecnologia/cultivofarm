@@ -140,18 +140,18 @@ def main() -> None:
     # somente o pendente de fechamento, nunca outros erros fiscais.
     transmit = edit(transmit_source, """  IF v_close_error IS NOT NULL THEN
     UPDATE public.fiscal_sefaz_transmissions
-      SET error_code = v_close_error
-    WHERE id = _transmission_id
+       SET error_code = v_close_error
+     WHERE id = _transmission_id
     RETURNING * INTO v_row;
   END IF;""", """  IF v_close_error IS NOT NULL THEN
     UPDATE public.fiscal_sefaz_transmissions
-      SET error_code = v_close_error
-    WHERE id = _transmission_id
+       SET error_code = v_close_error
+     WHERE id = _transmission_id
     RETURNING * INTO v_row;
   ELSIF v_row.outcome = 'AUTHORIZED' AND v_row.error_code = 'FISCAL_AUTHORIZATION_CLOSE_PENDING' THEN
     UPDATE public.fiscal_sefaz_transmissions
-      SET error_code = NULL
-    WHERE id = _transmission_id
+       SET error_code = NULL
+     WHERE id = _transmission_id
     RETURNING * INTO v_row;
   END IF;""")
 
