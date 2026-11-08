@@ -326,7 +326,9 @@ FROM resolved r WHERE COALESCE(p.root_plan_id,p.id)=r.family_id;
 DROP INDEX public.uq_cpp_single_default;
 CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans(organization_id) NULLS NOT DISTINCT WHERE is_default;
 CREATE INDEX idx_cpp_tenant_sort ON public.commercial_payment_plans(organization_id,active,sort_order);
+"""
 
+FENCES = r"""
 CREATE TRIGGER commercial_plan_tenant_guard BEFORE INSERT OR UPDATE ON public.commercial_payment_plans
 FOR EACH ROW EXECUTE FUNCTION platform_private.commercial_plan_tenant_guard();
 CREATE TRIGGER commercial_b3_version_tenant_guard BEFORE INSERT ON platform_private.b2b_condition_versions
