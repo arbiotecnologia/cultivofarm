@@ -722,6 +722,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_proof(invoice_h13,tx_h13,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_h13_pending,tx_h13_pending,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_h13_rejected,tx_h13_rejected,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
+        seed_proof(invoice_parser,tx_parser,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         pre_bridge = bridge_file("01-pre.sql.readonly")
         check("ponte PRE confirma pins B4 e autorização capturada", pre_bridge.returncode == 0, pre_bridge.stderr[-1000:])
         install_bridge = bridge_file("02-install.sql.review")
