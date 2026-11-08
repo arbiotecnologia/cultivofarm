@@ -79,7 +79,8 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
     AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
     AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
     AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
-    AND i.packaging_peso_liquido_kg_snapshot IS NOT DISTINCT FROM NULL OR i.packaging_unidade_conteudo_snapshot IN ('kg','g')
+    AND ((i.packaging_unidade_conteudo_snapshot IN ('kg','g') AND i.packaging_peso_liquido_kg_snapshot>0)
+      OR (i.packaging_unidade_conteudo_snapshot IN ('l','ml') AND i.packaging_peso_liquido_kg_snapshot IS NULL))
   )) IS TRUE;
 $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_valid_v1(public.ordens_servico) FROM PUBLIC,anon,authenticated,service_role;
