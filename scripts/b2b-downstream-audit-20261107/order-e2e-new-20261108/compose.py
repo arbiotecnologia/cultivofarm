@@ -623,7 +623,10 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   B.sql((OUT/'logistics/rollback.sql.review').read_text())
   B.sql((physical_out/'rollback.sql.review').read_text())
   B.sql((send_out/'rollback.sql.review').read_text())
-  B.sql((confirmation_out/'rollback.sql.review').read_text())
+  confirmation_rollback_state=C.state()
+  composed_confirmation_rollback='BEGIN;\n'+C.G.guard(confirmation_rollback_state,'CONFIRM_COMPOSED_ROLLBACK_DRIFT')+f'REVOKE EXECUTE ON FUNCTION {C.G.RPC} FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n'
+  (confirmation_out/'rollback-composed.sql.review').write_text(composed_confirmation_rollback)
+  B.sql(composed_confirmation_rollback)
   closed=json.loads(B.last("""SELECT jsonb_build_object(
    'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
    'physical_gate',(SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton),
