@@ -251,10 +251,10 @@ def _extract_function(source, signature):
     end = text.find(tag, start + len(tag))
     if end < 0:
         raise AssertionError(f"SUPPLEMENTAL_FUNCTION_UNTERMINATED:{signature}")
-    end = text.find(";", end + len(tag))
-    if end < 0:
-        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_SEMICOLON_MISSING:{signature}")
-    return text[match.start():end + 1]
+    end = end + len(tag)
+    if end < len(text) and text[end] == ";":
+        end += 1
+    return text[match.start():end].rstrip() + ";"
 
 
 def _supplemental_function_sql():
