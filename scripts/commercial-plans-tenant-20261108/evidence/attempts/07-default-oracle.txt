@@ -1,0 +1,37 @@
+PASS ANTES: FSF lê planos ARBio pela RPC admin
+PASS ANTES: FSF lê ARBio pela listagem operacional admin
+PASS ANTES: configuração B3 FSF expõe plano ARBio
+PASS ANTES: FSF altera metadados ARBio
+PASS ANTES: escrita indevida confirmada
+PASS PRE íntegro
+PASS instalação candidata transacional
+PASS proveniência A resolvida
+PASS proveniência B resolvida
+PASS família ambígua permanece NULL
+PASS POST íntegro
+PASS DEPOIS: ARBio lista somente seus dois planos
+PASS DEPOIS: FSF lista somente seu plano
+PASS DEPOIS: FSF não lê ARBio operacionalmente
+PASS DEPOIS: configuração B3 FSF não expõe ARBio
+PASS DEPOIS: leitura direta FSF isolada por RLS
+PASS DEPOIS: comprador ARBio só lê plano publicado vinculado
+PASS DEPOIS: comprador FSF só lê seu plano
+PASS FSF nega versão ARBio
+PASS FSF nega metadados ARBio
+PASS FSF nega ativação ARBio
+PASS FSF nega padrão ARBio
+PASS FSF nega reordenação mista
+PASS reordenação negada não altera A
+PASS metadados negados não alteram A
+PASS ARBio cria versão própria
+PASS versão herda tenant ARBio
+PASS versão ARBio invisível para FSF
+PASS ARBio define padrão próprio
+Traceback (most recent call last):
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 160, in <module>
+    check("FSF define padrão próprio sem limpar ARBio", actor(B, f"SELECT public.rpc_admin_set_default_commercial_plan('{PLAN_B1}');SELECT count(*) FROM public.commercial_payment_plans WHERE is_default;"), 2)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 33, in check
+    assert output == str(expected), (name, output, expected)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('FSF define padrão próprio sem limpar ARBio', '1', 2)

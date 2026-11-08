@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "postgres_disposable": {
+    "command": "python3 scripts/commercial-plans-tenant-20261108/test-local-pg.py",
+    "exit_code": 0,
+    "checks": 58,
+    "passed": 58,
+    "before_reproduced": [
+      "cross_tenant_admin_plan_read",
+      "cross_tenant_operational_plan_read",
+      "cross_tenant_b3_plan_read",
+      "cross_tenant_metadata_write"
+    ]
+  },
+  "vitest": {
+    "command": "bunx vitest run src/test/b2b/simulationState.test.ts src/test/b2b/novoPedidoSimulationFence.test.tsx src/test/b2b/novoPedidoPaymentMethod.test.tsx",
+    "exit_code": 0,
+    "files": 3,
+    "tests": 31,
+    "passed": 31
+  },
+  "typecheck": {
+    "command": "bun run typecheck",
+    "exit_code": 0
+  },
+  "build": {
+    "command": "bun run build",
+    "exit_code": 0,
+    "warnings": [
+      "Browserslist desatualizado",
+      "imports estáticos/dinâmicos preexistentes",
+      "chunks grandes preexistentes"
+    ]
+  },
+  "candidate_sha256": "92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6",
+  "hosted_writes": false,
+  "published": false,
+  "real_jwt_rls_storage_proven": false,
+  "release_status": "BLOCKED_PENDING_INDEPENDENT_REVIEW_AND_REAL_RETEST"
+}

@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 106, in <module>
+        run(f"""
+        ~~~^^^^^
+    INSERT INTO public.organizations(id,partner_account_id) VALUES('{OA}',NULL),('{OB}',NULL);
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<14 lines>...
+    ('{ASN_AMBIG}','{PLAN_AMBIG}','partner','{PB}','published','{B}');
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    """)
+    ^^^^
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 26, in run
+    raise AssertionError(completed.stderr)
+AssertionError: ERROR:  C2P1_FORBIDDEN
+CONTEXT:  PL/pgSQL function platform_private.c2p1_assignment_fence() line 14 at RAISE
+

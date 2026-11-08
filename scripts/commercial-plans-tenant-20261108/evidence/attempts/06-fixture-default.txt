@@ -1,0 +1,63 @@
+PASS ANTES: FSF lê planos ARBio pela RPC admin
+PASS ANTES: FSF lê ARBio pela listagem operacional admin
+PASS ANTES: configuração B3 FSF expõe plano ARBio
+PASS ANTES: FSF altera metadados ARBio
+PASS ANTES: escrita indevida confirmada
+PASS PRE íntegro
+PASS instalação candidata transacional
+PASS proveniência A resolvida
+PASS proveniência B resolvida
+PASS família ambígua permanece NULL
+PASS POST íntegro
+PASS DEPOIS: ARBio lista somente seus dois planos
+PASS DEPOIS: FSF lista somente seu plano
+PASS DEPOIS: FSF não lê ARBio operacionalmente
+PASS DEPOIS: configuração B3 FSF não expõe ARBio
+PASS DEPOIS: leitura direta FSF isolada por RLS
+PASS DEPOIS: comprador ARBio só lê plano publicado vinculado
+PASS DEPOIS: comprador FSF só lê seu plano
+PASS FSF nega versão ARBio
+PASS FSF nega metadados ARBio
+PASS FSF nega ativação ARBio
+PASS FSF nega padrão ARBio
+PASS FSF nega reordenação mista
+PASS reordenação negada não altera A
+PASS metadados negados não alteram A
+Traceback (most recent call last):
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 156, in <module>
+    new_version = check("ARBio cria versão própria", actor(A, f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_A1}','{payload}'::jsonb,'nova');"))
+                  ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 31, in check
+    output = run(sql, error)
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 26, in run
+    raise AssertionError(completed.stderr)
+AssertionError: ERROR:  null value in column "is_default" of relation "commercial_payment_plans" violates not-null constraint
+DETAIL:  Failing row contains (c84cf065-5591-4d75-b833-01ffc6f589ec, Nova versão, PLAN-A1-V2, null, custom, 30, 1, 1, 10, 0, none, f, f, f, null, t, 1, aaaaaaaa-0000-0000-0000-000000000001, 2026-11-08 16:13:22.881807+00, 2026-11-08 16:13:22.881807+00, discount_from_base, 2, aaaaaaaa-4444-0000-0000-000000000001, null, 2026-11-08 16:13:22.881807+00, null, null, nova, aaaaaaaa-0000-0000-0000-000000000001, aaaaaaaa-1111-0000-0000-000000000001).
+CONTEXT:  SQL statement "INSERT INTO public.commercial_payment_plans (
+    name, code, description, plan_type, max_days, months_count, installment_count,
+    discount_percent, monthly_interest_percent, interest_type, requires_credit_approval,
+    requires_guarantee, requires_financial_approval, minimum_order_amount, pricing_mode,
+    active, sort_order, created_by, updated_by, valid_from, valid_until,
+    version, root_plan_id, version_reason, organization_id
+  ) VALUES (
+    btrim(coalesce(nullif(p_payload->>'name',''), v_old.name)), v_code,
+    coalesce(nullif(btrim(coalesce(p_payload->>'description','')),''), v_old.description),
+    coalesce(nullif(p_payload->>'plan_type',''), v_old.plan_type),
+    coalesce((p_payload->>'max_days')::integer, v_old.max_days),
+    coalesce((p_payload->>'months_count')::numeric, v_old.months_count),
+    coalesce((p_payload->>'installment_count')::integer, v_old.installment_count),
+    coalesce((p_payload->>'discount_percent')::numeric, v_old.discount_percent),
+    coalesce((p_payload->>'monthly_interest_percent')::numeric, v_old.monthly_interest_percent),
+    coalesce(nullif(p_payload->>'interest_type',''), v_old.interest_type),
+    coalesce((p_payload->>'requires_credit_approval')::boolean, v_old.requires_credit_approval),
+    coalesce((p_payload->>'requires_guarantee')::boolean, v_old.requires_guarantee),
+    coalesce((p_payload->>'requires_financial_approval')::boolean, v_old.requires_financial_approval),
+    coalesce(nullif(p_payload->>'minimum_order_amount','')::numeric, v_old.minimum_order_amount),
+    coalesce(nullif(p_payload->>'pricing_mode',''), v_old.pricing_mode),
+    true, v_old.sort_order, auth.uid(), auth.uid(),
+    coalesce(nullif(p_payload->>'valid_from','')::timestamptz, now()),
+    nullif(p_payload->>'valid_until','')::timestamptz,
+    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'') , v_org
+  ) RETURNING id"
+PL/pgSQL function rpc_admin_version_commercial_plan(uuid,jsonb,text) line 18 at SQL statement
+
