@@ -362,6 +362,9 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
         body = one(body, " OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL", " OR (e.partner_order_id IS NULL AND (s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL))\n OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_lineage_valid_v1(s,e,l) IS NOT TRUE)", label + " resale lineage")
         if label == "send":
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "send ledger origin")
+        else:
+            body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "confirm ledger origin", 2)
+            body = one(body, "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);", "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END,'enviar_entrega',NULL);", "confirm canonical advance origin")
         defs[sig]["new"] = body
 
     candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"].rstrip().rstrip(";") + ";" for x in CHANGED) + "\n"
