@@ -1,0 +1,38 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-full-capture-attempt11-1HlFX5/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 42, in main
+    B.current_catalog.apply(B.run_raw,B.last,B.ok,B.T.A)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-full-capture-attempt11-1HlFX5/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 256, in apply
+    raise AssertionError("CURRENT_LIVE_RESTRICTED_BASELINE_FAILED\n" + result.stdout[-3000:] + result.stderr[-12000:])
+AssertionError: CURRENT_LIVE_RESTRICTED_BASELINE_FAILED
+NOTICE:  00000: trigger "a00_catalogo_volumes_owner_consistent" for relation "public.catalogo_volumes" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a01_catalogo_volumes_presentation_guard" for relation "public.catalogo_volumes" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a000_entregas_catalog_tenant_guard" for relation "public.entregas" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a000_lotes_catalog_tenant_guard" for relation "public.lotes" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a00_microrganismos_owner_immutable" for relation "public.microrganismos" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a000_ordens_servico_catalog_tenant_guard" for relation "public.ordens_servico" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a000_partner_order_items_catalog_tenant_guard" for relation "public.partner_order_items" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a001_b2b_packaging_item_snapshot" for relation "public.partner_order_items" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "pp_guard" for relation "public.product_packagings" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "pp_no_truncate" for relation "public.product_packagings" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "pp_presentation_link" for relation "public.product_packagings" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a000_produto_etiquetas_catalog_tenant_guard" for relation "public.produto_etiquetas" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a00_produtos_owner_immutable" for relation "public.produtos" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+NOTICE:  00000: trigger "a000_programacao_producao_catalog_tenant_guard" for relation "public.programacao_producao" does not exist, skipping
+LOCATION:  does_not_exist_skipping, dropcmds.c:523
+ERROR:  42883: function platform_private.catalogo_volumes_owner_consistent() does not exist
+LOCATION:  LookupFuncName, parse_func.c:2229
+
