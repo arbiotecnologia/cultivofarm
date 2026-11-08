@@ -42,8 +42,8 @@ def snapshot(B):
     return json.loads(text)
 
 
-def install(B, out):
-    root = B.C.H.parents[1]
+def install(B, out, root):
+    root = Path(root)
     registration_path = root / "scripts/b2b-downstream-audit-20261107/registration-deferred-20261108/canonical-readonly.json"
     money_path = root / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
     baseline_path = root / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py"
@@ -130,11 +130,12 @@ def negative_controls(B, Q, out):
     return evidence
 
 
-def assert_current(B, out, name):
-    current_ar = B.load("new_current_receivable_baseline_post", B.C.H.parents[1] / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py") if hasattr(B, "load") else None
+def assert_current(B, out, name, root):
+    root = Path(root)
+    current_ar = B.load("new_current_receivable_baseline_post", root / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py") if hasattr(B, "load") else None
     if current_ar is None:
         import importlib.util
-        path = B.C.H.parents[1] / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py"
+        path = root / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py"
         spec = importlib.util.spec_from_file_location("new_current_receivable_baseline_post", path)
         current_ar = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(current_ar)

@@ -79,7 +79,7 @@ def main():
   # corre com a ACL e os dez gatilhos reais de recebíveis, além do cadastro sem
   # configuração automática. Nenhum writer B4/NF é instalado por esta etapa.
   R=load('new_real_baselines',H/'real_baselines.py')
-  R.install(B,OUT)
+  R.install(B,OUT,ROOT)
   checks.append(dict(test='real registration fence and exact receivable ACL with all ten triggers enabled before B2B order',status='PASS'))
   R.negative_controls(B,Q,OUT)
   checks.append(dict(test='direct settings write denied and delivery context forbids receivable INSERT UPDATE DELETE',status='PASS'))
@@ -315,7 +315,7 @@ def main():
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in after_rollback.stderr,after_rollback.stderr
   checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
-  R.assert_current(B,OUT,'real-baselines-post-rollback.json')
+  R.assert_current(B,OUT,'real-baselines-post-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
