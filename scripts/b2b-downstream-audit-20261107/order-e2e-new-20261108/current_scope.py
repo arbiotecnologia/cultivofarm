@@ -257,7 +257,7 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
 
     current_relations = {}
     for name in required_relations:
-        live = live_relations.get(name)
+        live = live_relations.get(name) if initial else pre_relations.get(name)
         if name in capture_relations:
             captured = capture_relations[name]
             if live is None:
