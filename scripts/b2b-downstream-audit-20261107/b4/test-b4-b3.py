@@ -851,7 +851,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         subprocess.run(B3.SP.su() + ["pg_ctl", "-D", str(tmp / "d"), "-m", "fast", "stop"], capture_output=True)
         evidence = {
             "kind": "DISPOSABLE_B4_FINAL_CREDIT_TERMS_1833_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
-            "review": "458b6012+4097d4e2+manual-null-1813+fiscal-units-grams-1f4073+final-credit-terms-1833",
+            "review": "458b6012+4097d4e2+manual-null-1813+fiscal-units-grams-1f4073+final-credit-terms-1833+ab904bf",
+            "review_ab904bf_mode": "BEFORE_VULNERABILITY_CHARACTERIZATION" if REVIEW_BEFORE else "AFTER_CANDIDATE",
             "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
             "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
             "object_manifest": "b4-object-manifest.json",
