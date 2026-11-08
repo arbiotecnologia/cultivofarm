@@ -31,20 +31,20 @@ CANONICAL_DEPENDENCIES = (
     "public.proximo_codigo(text,text)",
 )
 EXPECTED_FUNCTION_ACL = {
-    "platform_private.lab_assert_manufacturable(uuid,uuid)": ["authenticated=X/postgres"],
-    "platform_private.lab_item_is_manufacturable(uuid,uuid)": [],
-    "public.proximo_codigo(text,text)": [],
-    **{name: [] for name in GUARD_PINS},
+    "platform_private.lab_assert_manufacturable(uuid,uuid)": ["postgres=X/postgres", "authenticated=X/postgres"],
+    "platform_private.lab_item_is_manufacturable(uuid,uuid)": ["postgres=X/postgres"],
+    "public.proximo_codigo(text,text)": ["postgres=X/postgres"],
+    **{name: ["postgres=X/postgres"] for name in GUARD_PINS},
 }
 EXPECTED_TABLE_ACL = {
-    "entregas": ["postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
-    "entrega_comprovantes": ["postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
-    "ordens_servico": ["postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
-    "clientes": ["anon=s/postgres", "authenticated=s/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
-    "organizations": ["authenticated=s/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
-    "produto_etiquetas": ["postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
-    "profiles": ["anon=s/postgres", "authenticated=s/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
-    "programacao_producao": ["postgres=arwdDxtm/postgres", "service_role=arwdDxtm/postgres"],
+    "entregas": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+    "entrega_comprovantes": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+    "ordens_servico": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+    "clientes": ["anon=r/postgres", "authenticated=r/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+    "organizations": ["authenticated=r/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+    "produto_etiquetas": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+    "profiles": ["anon=r/postgres", "authenticated=r/postgres", "postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
+    "programacao_producao": ["postgres=arwdDxtm/postgres", "service_role=arwdDxt/postgres"],
 }
 TRIGGER_TABLES = {
     "entregas": "entregas_catalog_tenant_guard",
