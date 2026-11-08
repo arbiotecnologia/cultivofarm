@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-full-capture-attempt12-TFb9H1/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 42, in main
+    B.current_catalog.apply(B.run_raw,B.last,B.ok,B.T.A)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-full-capture-attempt12-TFb9H1/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 311, in apply
+    raise AssertionError("CURRENT_LIVE_RESTRICTED_BASELINE_FAILED\n" + result.stdout[-3000:] + result.stderr[-12000:])
+AssertionError: CURRENT_LIVE_RESTRICTED_BASELINE_FAILED
+ERROR:  42723: function "delivery_mutation_guard_20261030" already exists with same argument types
+LOCATION:  ProcedureCreate, pg_proc.c:375
+
