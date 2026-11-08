@@ -175,6 +175,45 @@ BEGIN
   RETURN NEW;
 END $function$;
 
+CREATE OR REPLACE FUNCTION platform_private.stock_motor_refs(p_item uuid, p_lote uuid, p_org uuid, p jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ DECLARE v_os uuid:=nullif(p->>'os_id','')::uuid; v_tipo text:=p->>'os_tipo'; v_cliente uuid:=nullif(p->>'cliente_id','')::uuid;
+ v_partner uuid:=nullif(p->>'partner_id','')::uuid; v_order uuid:=nullif(p->>'partner_order_id','')::uuid;
+ v_ref uuid:=nullif(p->>'referencia_id','')::uuid; v_rt text:=p->>'referencia_tipo'; v_origin uuid:=nullif(p->>'movimentacao_origem_id','')::uuid;
+ v_os_cliente uuid; v_os_order uuid; v_resale boolean:=false;
+BEGIN
+ IF v_tipo='b2b' AND v_order IS NOT NULL AND v_os IS NOT NULL AND platform_private.b2b_internal_commercial_actor() IS TRUE THEN
+  SELECT platform_private.b2b_resale_os_valid_v1(o) INTO v_resale FROM public.ordens_servico o WHERE o.id=v_os AND o.organization_id=p_org;
+ END IF;
+ v_resale:=coalesce(v_resale,false);
+ IF v_cliente IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=v_cliente AND c.organization_id=p_org) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_partner IS NOT NULL AND NOT v_resale AND NOT coalesce(public.b2b_phase1_partner_visible(v_partner,false),false) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_order IS NOT NULL AND NOT v_resale AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_os IS NOT NULL THEN
+  IF v_tipo IN ('manual','b2b') THEN
+   SELECT o.cliente_id,o.partner_order_id INTO v_os_cliente,v_os_order FROM public.ordens_servico o WHERE o.id=v_os AND o.organization_id=p_org;
+   IF NOT FOUND THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+   IF v_tipo='b2b' AND (v_order IS NULL OR v_os_order IS DISTINCT FROM v_order OR v_cliente IS NOT NULL) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+   IF v_tipo='manual' AND (v_os_order IS NOT NULL OR v_partner IS NOT NULL OR v_order IS NOT NULL) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  ELSIF v_tipo IN ('onfarm','on_farm') THEN
+   SELECT o.cliente_id INTO v_os_cliente FROM public.ordens_servico_onfarm o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=v_os AND c.organization_id=p_org;
+   IF NOT FOUND OR v_partner IS NOT NULL OR v_order IS NOT NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  ELSE RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+  IF v_cliente IS NOT NULL AND v_cliente IS DISTINCT FROM v_os_cliente THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ END IF;
+ IF v_origin IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes m WHERE m.id=v_origin AND m.estoque_produto_id=p_item AND m.lote_id=p_lote AND public.stock_p1_movement_owned(m.estoque_produto_id,m.lote_id)) THEN RAISE EXCEPTION 'ESTQ_ESTORNO_ORIGEM_INVALIDA' USING ERRCODE='42501'; END IF;
+ -- Only proven existing guard semantics. Unsupported literals fail even without an ID.
+ IF v_rt IS NOT NULL AND v_rt NOT IN ('entrega','ordem_servico','manual','sistema') THEN RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+ IF v_rt IN ('manual','sistema') AND v_ref IS NOT NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+ IF v_ref IS NOT NULL AND v_rt IS NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+ IF v_rt IN ('entrega','ordem_servico') AND v_ref IS NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_rt='ordem_servico' AND (v_os IS NULL OR v_ref IS DISTINCT FROM v_os OR v_tipo NOT IN ('manual','b2b','onfarm','on_farm')) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_rt='entrega' AND NOT EXISTS(SELECT 1 FROM public.entregas e WHERE e.id=v_ref AND e.organization_id=p_org AND e.estoque_produto_id=p_item AND (e.lote_id IS NULL OR e.lote_id=p_lote) AND (v_cliente IS NULL OR e.cliente_id=v_cliente) AND (v_os IS NULL OR (v_tipo IN ('manual','b2b') AND e.ordem_servico_id=v_os) OR (v_tipo IN ('onfarm','on_farm') AND e.ordem_servico_onfarm_id=v_os))) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+END $function$;
+
 CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_itens jsonb, p_request_key text, p_dados jsonb, p_os_observed timestamp with time zone)
  RETURNS jsonb
  LANGUAGE plpgsql

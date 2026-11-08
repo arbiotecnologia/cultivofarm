@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-pu97m9lv/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 214, in main
+    rejected=B.run_raw(wrong);assert rejected.returncode!=0 and 'FINISHED_PRODUCT_WHOLE_PACK_REQUIRED' in rejected.stderr,rejected.stderr
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: ESTQ_REFERENCE_FORBIDDEN
+CONTEXT:  PL/pgSQL function platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb) line 7 at RAISE
+SQL statement "SELECT platform_private.stock_motor_refs(p_item,v_item.lote_id,v_org,p_payload)"
+PL/pgSQL function platform_private.stock_motor_item(uuid,text,jsonb) line 13 at PERFORM
+SQL statement "SELECT platform_private.stock_motor_item(v_id,'reserva',v_payload)"
+PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 27 at PERFORM
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
+
