@@ -1,3 +1,8 @@
+## 08/11 13:46 — E2E c40a13b8: comprador no tenant vendedor
+- [ ] Identificar os chamadores B3 e reconstruir o shape real: tenant vendedor com `organizations.partner_account_id=NULL`, comprador com um vínculo `partner_users`, sem transformar a organização no parceiro nem usar Superadmin.
+- [ ] Se a autoridade antiga for incompatível, gerar candidato privado específico comprador/vendedor, preservar `assert_b2b_partner_scope` global e cobrir positivos/negativos, revogação, tenant, papel, vínculo e origem.
+- [ ] Continuar a composição nova até pedido B3, aceite, compra/reserva/expedição/entrega/cancelamento, com evidências separadas; sem hosted/Auth/publicação/NF/cobrança/envios e sem tocar piloto/cinco títulos.
+
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
 ### 08/11 03:31 — UX comprador novo
 - [x] Distinguir reserva inicial de tentativa incerta na apresentação; reserva sem alerta/encerramento, uncertain explícito, committed com ACK e closed por clique, troca de conta coberta. Três arquivos/59 testes PASS exit 0; build OK 03:33:02; evidência nova em order-e2e-new-20261108/evidence/ux-journal-0331/. Journal/deduplicação/SQL/pins intactos, sem hosted/publicação; sessão real não executada pois montagem reserva no servidor. Pendências logísticas preservadas.
