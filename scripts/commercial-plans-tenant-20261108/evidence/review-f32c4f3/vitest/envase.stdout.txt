@@ -1,0 +1,11 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/envase/envasePageReadOnly.test.tsx > EnvasePage contained independent contracts > never mounts complement, package creation or label mutation while preserving history 246ms
+ ✓ src/test/envase/envasePageReadOnly.test.tsx > EnvasePage contained independent contracts > keeps existing label view and print available without calling a writer 276ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:22:45
+   Duration  3.44s (transform 255ms, setup 105ms, collect 723ms, tests 525ms, environment 702ms, prepare 621ms)
+
