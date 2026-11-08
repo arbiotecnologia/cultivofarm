@@ -14,7 +14,10 @@ export function ResaleOsAction({ intent, fence, available, onConfirmed }: {
   const [message, setMessage] = useState('');
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const submit = useRef(createOsRequest(((name, args) => supabase.rpc(name as never, args as never)) as Rpc, () => live.current));
+  const submit = useRef(createOsRequest(async (name, args) => {
+    const { data, error } = await supabase.rpc(name as never, args as never);
+    return { data, error };
+  }, () => live.current));
   return <div>
     <Button disabled={!available || !fence.ready || pending} onClick={async () => {
       if (!available || !live.current.ready) return;
