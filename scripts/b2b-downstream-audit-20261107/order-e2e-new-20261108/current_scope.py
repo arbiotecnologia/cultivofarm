@@ -228,11 +228,16 @@ def _pair(pre_state: dict, post_state: dict) -> tuple[dict, dict, dict]:
     current_relations = {}
     for name in required_relations:
         live = live_relations.get(name)
-        assert live is not None, f"LIVE_SCOPED_RELATION_UNRESOLVED:{name}"
         if name in capture_relations:
             captured = capture_relations[name]
-            live = list(live)
-            live[1], live[4] = captured["acl"], captured["owner"]
+            if live is None:
+                # The integral capture proves owner/ACL but did not request RLS
+                # flags for these newer relations. NULL means not captured.
+                live = [name, captured["acl"], None, None, captured["owner"]]
+            else:
+                live = list(live)
+                live[1], live[4] = captured["acl"], captured["owner"]
+        assert live is not None, f"LIVE_SCOPED_RELATION_UNRESOLVED:{name}"
         current_relations[name] = live
     pre_doc_relations = sorted((_relation_doc(current_relations[key], key) for key in required_relations), key=lambda row: row[0])
     for name in capture_relations:
