@@ -27,7 +27,7 @@ Negativos executados: técnico isolado, comprador de outro tenant, perfil inativ
 
 Dados upstream sintéticos montados sob `session_replication_role=replica` somente na preparação local, nunca durante os writers testados; GUC local é transporte Auth sintético, Storage.objects é fixture sem bytes/HTTP. Permissões de consulta de fixture e relações mínimas adicionadas são costuras locais, não prova de RLS/JWT/produção. Os dez gatilhos/ACL reais de recebíveis e baseline de cadastro reconciliada deverão ser exigidos na próxima composição B4; este controle físico ainda não os revalida integralmente.
 
-Não houve consultas/escritas hospedadas, Auth, publicação, NF, cobrança ou envio externo nesta reconstrução. Piloto e cinco títulos intocados. B4/estoque/entregas continuam NÃO APROVADOS. A ausência antiga de artefatos deixou de ser bloqueio humano; a tarefa permanece tecnicamente incompleta na releitura de comprovante `delivery_proof_recheck_20261030` documentada acima.
+Não houve consultas/escritas hospedadas, Auth hospedado, publicação, NF, cobrança ou envio externo nesta reconstrução. Piloto e cinco títulos intocados. B4/estoque/entregas continuam NÃO APROVADOS para produção. A composição logística local está concluída; a liberação permanece pendente de revisão independente e de provas reais fora deste escopo.
 
 Execução: `python3 scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/rebuild.py`. Por padrão restaura tudo do zero; `NEW_E2E_REUSE_FRESH=1` reutiliza exclusivamente checkpoint novo local explicitamente identificado para iterações.
 
