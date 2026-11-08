@@ -1,3 +1,8 @@
+## 08/11 16:30 — Revisão independente 70d08c da logística de revenda
+- [ ] Reproduzir antes/corrigir depois a conclusão `aprovado→entregue` sem todos os itens/quantidades: dois itens com uma OS, item 3 com entrega 1 e restante sem reserva, parcial cancelada e excesso; preservar snapshots e impedir conclusão/overdelivery.
+- [ ] Reproduzir revogação de papel, perfil, tenant e gate durante `SELECT ... FOR UPDATE` em `b2b_resale_os_create_v1`; exigir zero OS/ticket/ledger/recibo e reautorizar também replays.
+- [ ] Repetir a composição descartável integral, POST/rollback e baselines; separar checkpoints locais de aprovação. Candidato continua INATIVO/NÃO APROVADO, sem hosted/publicação/NF/cobrança/envios. Isolamento dos planos continua BLOCKER prioritário de liberação.
+
 ## 08/11 16:26 — Complemento READONLY da proveniência dos seis planos
 - [x] Relatório corrigido: FSF viu seis planos sem recorte, não seis ARBio; cinco têm criador na ARBio `007bb519…`, inclusive o plano code `01` apesar do nome FSF. `AUDIT-CF-FIX-20260912` (`d89ce2b4…`) tem criador/atribuição publicada pelo mesmo ator na organização atual `8eae2bc1…`, com owner do parceiro atribuído NULL; evidência read-only e trilha sanitizada preservadas, sem atribuí-lo à ARBio ou inferir por código/nome.
 - [x] Join `profiles.user_id=p.created_by` confirmado no gerador e exercitado com `profiles.id` diferente; exceção separada, criador inativo, owner NULL, divergência ambígua fechada e Atribuições invisível versus leak de Planos cobertos. Regressão PostgreSQL descartável **63/63, exit 0**, candidato SQL inalterado SHA256 `92053bcb…`.
