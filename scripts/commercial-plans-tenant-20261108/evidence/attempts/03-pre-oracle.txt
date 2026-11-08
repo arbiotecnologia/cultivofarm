@@ -1,0 +1,13 @@
+PASS ANTES: FSF lê planos ARBio pela RPC admin
+PASS ANTES: FSF lê ARBio pela listagem operacional admin
+PASS ANTES: configuração B3 FSF expõe plano ARBio
+PASS ANTES: FSF altera metadados ARBio
+PASS ANTES: escrita indevida confirmada
+Traceback (most recent call last):
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 130, in <module>
+    check("PRE íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "01-pre.sql.readonly").read_text(), "4|4|0|0")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/commercial-plans-tenant-20261108/test-local-pg.py", line 33, in check
+    assert output == str(expected), (name, output, expected)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('PRE íntegro', '4|3|1|0', '4|4|0|0')
