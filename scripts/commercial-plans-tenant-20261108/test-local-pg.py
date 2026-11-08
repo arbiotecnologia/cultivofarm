@@ -175,6 +175,8 @@ INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,mont
     check("FSF não publica condição para plano ARBio", actor(B, f"SELECT public.b2b_payment_condition_publish('{PLAN_A1}','boleto','{METHOD}','{CATEGORY}',30,1,0,0);"), error="forbidden")
     published = check("ARBio publica condição própria", actor(A, f"SELECT public.b2b_payment_condition_publish('{PLAN_A2}','boleto','{METHOD}','{CATEGORY}',30,1,0,0)->>'contract';"), "B2B_PAYMENT_CONDITION_V1")
     check("ARBio atribui condição ao próprio parceiro", actor(A, f"SELECT public.b2b_payment_condition_assign('{PA}','{PLAN_A2}','boleto',1,true)->>'enabled';"), "true")
+    assignment_a2 = check("ARBio cria atribuição comercial própria", actor(A, f"SELECT public.rpc_cc_upsert_assignment(NULL,'{PLAN_A2}','partner','{PA}',NULL,CURRENT_DATE,NULL,'x');"))
+    check("ARBio publica atribuição comercial própria", actor(A, f"SELECT public.rpc_cc_publish_assignment('{assignment_a2}','x');"))
     check("comprador ARBio resolve meio publicado", actor(UA, f"SELECT platform_private.b2b_resolve_condition('{PA}','{PLAN_A2}',jsonb_build_object('payment_method','boleto','payment_condition_version',1,'payment_deadline_days',30),false)->>'payment_method_name';"), "Boleto sintético")
     check("comprador FSF não resolve condição ARBio", actor(UB, f"SELECT platform_private.b2b_resolve_condition('{PA}','{PLAN_A2}',jsonb_build_object('payment_method','boleto','payment_condition_version',1,'payment_deadline_days',30),false);"), error="forbidden_partner")
     check("revogação B3 fecha meio", actor(A, f"SELECT public.b2b_payment_condition_assign('{PA}','{PLAN_A2}','boleto',1,false);"))
