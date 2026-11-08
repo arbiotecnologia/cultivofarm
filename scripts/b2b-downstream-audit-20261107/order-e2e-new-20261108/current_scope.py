@@ -340,7 +340,9 @@ def _guard(doc: dict, state_expression: str, label: str) -> str:
  IF {function_actual} IS DISTINCT FROM {_json_literal(doc['functions'])} THEN RAISE EXCEPTION '{label}_SCOPED_FUNCTIONS'; END IF;
  IF {trigger_function_actual} IS DISTINCT FROM {_json_literal(doc['trigger_functions'])} THEN RAISE EXCEPTION '{label}_TRIGGER_FUNCTION_PINS'; END IF;
  IF {relation_actual} IS DISTINCT FROM {_json_literal(doc['relations'])} THEN RAISE EXCEPTION '{label}_SCOPED_RELATIONS'; END IF;
- IF {trigger_actual} IS DISTINCT FROM {_json_literal(doc['triggers'])} THEN RAISE EXCEPTION '{label}_SCOPED_TRIGGERS'; END IF;
+ IF {trigger_actual} IS DISTINCT FROM {_json_literal(doc['triggers'])} THEN RAISE EXCEPTION '{label}_SCOPED_TRIGGERS actual_missing=% expected_missing=%',
+  (SELECT left(coalesce(jsonb_agg(x)::text,'[]'),1800) FROM (SELECT x FROM jsonb_array_elements({trigger_actual}) x EXCEPT SELECT x FROM jsonb_array_elements({_json_literal(doc['triggers'])}) x LIMIT 2) d),
+  (SELECT left(coalesce(jsonb_agg(x)::text,'[]'),1800) FROM (SELECT x FROM jsonb_array_elements({_json_literal(doc['triggers'])}) x EXCEPT SELECT x FROM jsonb_array_elements({trigger_actual}) x LIMIT 2) d); END IF;
  IF {structural_actual} IS DISTINCT FROM {_json_literal(doc['structural'])} THEN RAISE EXCEPTION '{label}_STRUCTURE'; END IF;
 END $scope$;
 """
