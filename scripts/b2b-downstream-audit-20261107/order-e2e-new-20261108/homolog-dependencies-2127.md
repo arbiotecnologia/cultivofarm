@@ -1,6 +1,8 @@
-# Homolog: inventário mínimo e ordem candidata — 08/11, 21:27 UTC
+# Homolog: inventário mínimo e ordem candidata — HISTÓRICO SUPERADO
 
-**Estado: NOT_RUN_BLOCKED_ENVIRONMENT_AND_CALLER. Sem instalação autorizada.**
+> **08/11/2026 21:45 UTC:** homologação deixou de ser destino por decisão do proprietário. Não executar nem estender esta ordem para `vrlcdwmlytukrjezrrnf`. As validações futuras serão na produção canônica sob gates/piloto e fixtures aprovadas; usar `production-postplans-baseline-20261108.md` e `order-e2e-new-20261108/production-rollout-postplans-2145.md`. O restante é somente registro histórico.
+
+**Estado histórico às 21:27 UTC: NOT_RUN_BLOCKED_ENVIRONMENT_AND_CALLER. Nenhuma instalação foi autorizada ou executada pelo Lovable.**
 
 ## Evidência recebida
 

@@ -1,41 +1,40 @@
-# Teste autenticado mínimo de parciais — PREPARADO / NÃO EXECUTADO
+# Teste autenticado mínimo de parciais em produção — PREPARADO / NÃO EXECUTADO
 
-## Ambiente e barreiras
+## Destino e barreiras
 
-Executar apenas pelo auditor em ambiente seguro previamente comprovado e isolado, com sessões reais e contratos exatos instalados após revisão independente. Esta preparação NÃO autoriza uso de produção ou implantação. Produção é exclusivamente `swzpzcwiasxmjutrmvkm`; homolog existente `vrlcdwmlytukrjezrrnf` foi indicada pelo proprietário em dbb81a9 para planejamento isolado, condicionado à verificação do auditor. Refs proibidos/Lovable Cloud permanecem proibidos; conferir o ref exato do ambiente explicitamente autorizado antes de conectar. Não criar/usar outro destino por iniciativa própria. Plano atualizado: `homolog-isolation-dbb81a9.md`.
+**Destino exclusivo: produção `swzpzcwiasxmjutrmvkm`, somente pelo auditor após revisão independente, instalação incremental aprovada e autorização expressa da fixture/piloto.** Em 08/11 21:45 UTC o proprietário substituiu a preparação de homologação por validações autenticadas na produção sob gates e testes sintéticos aprovados. Os documentos de homolog anteriores são históricos, não próximos passos.
 
-Não injetar claims/GUC de autorização, usar service_role como usuário, criar Auth, inventar atestação contábil ou dar grants temporários. Manter dez gatilhos de recebível, ACL/fence/no-downstream e dependência fiscal real always-deny. Comunicação, provedores, NF, cobrança e pagamentos fechados. “Envio” logístico nesta matriz é somente transição física local no ambiente autorizado, nunca envio externo.
+Estado atual: **NOT_RUN_BLOCKED_CALLER_REVIEW_AND_PRODUCTION_APPROVAL**. O endpoint e a UI foram exercitados localmente, mas ainda não estão instalados/montados; leitores/capability/continuidade durável e dependências LIVE precisam revisão. Não pedir login para contornar essas lacunas. Rollout exato e desativado: `production-rollout-postplans-2145.md`.
 
-**Bloqueio de entrada atualizado em dbb81a9:** o helper privado continua sem EXECUTE para authenticated/service_role. `os_endpoint.py` prepara caller público mínimo candidato, exercitado por SQL-role em PG descartável; UI revisável em `ui-candidate/`, fora do runtime. Isso NÃO é prova autenticada hospedada nem autorização de montagem/instalação. Auditoria de criação/programação canônica em `caller-audit-dbb81a9.md`; ambiente/capturas/capability/leitores/continuidade da UI e instalação independente precisam revisão antes de sessão real. Não chamar helper privado pelo cliente nem ampliar sua ACL. Se o pedido exigir contabilidade, não promover artificialmente um pedido real.
+Não injetar claims/GUC de autorização, usar service_role como usuário, criar Auth por harness, inventar atestação contábil ou dar grants temporários. Manter dez gatilhos/ACL de recebíveis, no-downstream, isolamento POSPLANOS e dependência fiscal real always-deny. Comunicação, provedores, NF, cobrança e pagamentos fechados. “Envio” logístico significa somente transição física, nunca mensagem externa.
 
-## Fixture e provas
+## Fixture e leituras iniciais
 
-Atualização READONLY relatada pelo auditor às 21:27 de 08/11: homolog `vrlcdwmlytukrjezrrnf` em PostgreSQL 17.11 não possui assinatura de confirmação manual, helper OS revenda nem gate. Teste autenticado = **NOT_RUN_BLOCKED_ENVIRONMENT_AND_CALLER**, sem pedir login. Preparação/ordem mínima em `homolog-dependencies-2127.md`; catálogo completo e callers/leitores/capabilities/Storage precisam revisão, sem reaplicar pacotes ou copiar pins de produção.
+Uma única compra autorizada de revenda e um pedido sintético aprovado de **3 embalagens inteiras de 25 kg** no tenant vendedor ARBio, com OS ligada ao item exato e estoque de compra, sem produção/CQ/envase. Preço/condição vêm do snapshot aprovado; não impor valores de referência. Identidades e vínculos devem ser criados pelos fluxos normais pelo auditor/usuário, nunca pelo agente ou SQL de fixture. Preservar teste4, cinco títulos e todos os históricos; não apagar a fixture depois.
 
-Uma única compra autorizada de revenda, pedido de **3 embalagens inteiras de 25 kg** no tenant vendedor ARBio, OS ligada ao item exato e estoque de compra, sem produção/CQ/envase. Preço/condição vêm do snapshot aprovado; não impor valores de referência. Identidades: vendedor autorizado e FSF negativa em sessões separadas, nunca impersonação administrativa. Isolar IDs das fixtures, preservar teste4 e cinco títulos; não apagar histórico depois.
+Antes, registrar por leituras autorizadas: pedido aprovado, `ready_for_production=false`, snapshot/itens, estoque/reserva, zero deltas de dívidas/documentos/alocações/snapshots fiscais, contagem do evento terminal e recibos. Tabelas privadas só podem ser observadas pelo auditor READ ONLY; o cliente usa somente leitores escopados.
 
-Antes, registrar leituras autorizadas: pedido aprovado, `ready_for_production=false`, snapshot/itens, estoque/reserva, zero novas dívidas/documentos/alocações/snapshots fiscais, contagem do evento terminal e recibos. Não usar tabelas privadas via cliente; observação privada somente pelo auditor read-only.
-
-| Passo | Ação canônica no ambiente autorizado | Resultado obrigatório |
+| Passo | Ação canônica em produção aprovada | Resultado obrigatório |
 |---|---|---|
-| 1 | Preparar entrega de 1 embalagem usando reserva/group/prova já revisados; confirmar por `rpc_entrega_confirmar_manual_v1`, timestamp observado e chave única | ACK success/replay=false; entrega entregue, comprovante confirmado, expedição/recibo únicos; pedido aprovado, restante 2 sem obrigação de segunda OS/reserva; evento terminal 0 |
-| 2 | Repetir **exatamente** timestamp, chave e payload da confirmação 1 | ACK replay=true; nenhum delta em estoque, ledger, recibo, snapshot, título ou evento |
-| 3 | Preparar e confirmar as 2 embalagens restantes com seus próprios timestamps/chaves/provas | Ambas as quantidades persistidas [1,2]; pedido entregue somente agora; evento canônico `entrega_realizada` total 1 |
-| 4 | Repetir confirmação final e releitura com sessão nova | Replays sem delta; evento terminal continua 1, snapshots econômicos intactos; zero recebível/NF/cobrança/envio externo |
-| 5 | Sessão FSF: leitura do pedido/OS/entrega e tentativa de confirmação da fixture **somente nesse ambiente seguro** | Sem dados estrangeiros; negação autorizativa, zero mutações/recibos/ledger; não aceitar erro de endpoint ausente como prova de autorização |
+| 1 | Vendedor cria OS pelo endpoint público com IDs fornecidos pelo leitor, timestamp observado e key durável | Uma OS/recibo; helper privado sem EXECUTE de cliente; nenhum programa de produção |
+| 2 | Preparar entrega de 1 embalagem por reserva/group/prova revisados e confirmar com timestamp/chave únicos | ACK success/replay=false; entrega, comprovante, estoque e ledger persistidos; pedido aprovado, restante 2 sem segunda OS/reserva exigida; evento terminal 0 |
+| 3 | Repetir exatamente timestamp, chave e payload da confirmação | ACK replay=true; nenhum delta de estoque, ledger, recibo, snapshot, título ou evento |
+| 4 | Preparar e confirmar as 2 embalagens restantes com timestamps/chaves/provas próprios | Quantidades [1,2]; pedido entregue somente agora; evento canônico `entrega_realizada` total 1 |
+| 5 | Repetir ACK final e duas confirmações finais concorrentes em cenário aprovado | Replays sem delta; um evento/recibo; snapshots econômicos intactos |
+| 6 | Sessões próprias de comprador, FSF, inativo/revogado e feature fechada; pedido não aprovado e contabilidade pendente | Negações sem dados estrangeiros, OS, ticket, recibo ou ledger; revogação durante wait sem mutação. Não aceitar endpoint ausente/erro de schema como prova de autorização |
 
-Capturar ACKs sanitizados, leituras antes/depois e screenshots em sessão autenticada; nunca registrar JWT/cookies/URLs assinadas/credenciais. Confirmar bytes do comprovante por transporte autorizado e RLS real, sem fabricar `storage.objects`. Se UI permanecer contida, registrar bloqueio antes de dispatch e NÃO simular sucesso pelo console. Sem endpoint/prova/autorização, passo = NOT_RUN_BLOCKED.
+Capturar ACKs sanitizados, leituras antes/depois e screenshots em sessões reais; nunca registrar JWT/cookies/URLs assinadas/credenciais. Confirmar bytes do comprovante por transporte autorizado e RLS real, sem fabricar `storage.objects`. Se a UI estiver contida, registrar bloqueio antes do dispatch e não simular sucesso pelo console.
 
-## Referências verificadas nesta rodada
+Ao final, medir zero novos recebíveis, NF, cobranças, pagamentos, mensagens, produção/CQ/envase e efeitos externos. Desativar o gate/piloto do teste conforme aprovação, preservando o isolamento de planos. Rollback operacional é deny-only e não remove histórico nem reabre vazamento.
 
-Diretório exato: `scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/`.
+## Evidência local POSPLANOS desta preparação
 
-- 13 regressões: `final-review-70d08c.json` (SHA256 `08a78b454f5d8a1bcc66e6e78d4c8b4661cc429f2211571f81b52d0f76fe8b1c`).
-- 40 fresh checks: `final-checks.json` (SHA256 `f61c7474e8959572dce49de20e42bf43655bb9e7dace61df412742f533611995`).
-- Exit/logs: `final-run.exitcode` (=0), `final-run.stdout.txt`, `final-run.stderr.txt`.
-- Candidato: `final-logistics-candidate.sql.review` SHA256 `8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20`.
-- Instalador: `final-logistics-install.sql.review` SHA256 `56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09`.
-- PRE/POST/rollback: `final-logistics-pre-metadata.json`, `final-logistics-post-metadata.json`, `final-logistics-postflight.sql.review`, `final-logistics-rollback.sql.review`.
-- Manifestos: `final-source-manifest.json`, `final-canonical-composition-manifest.json`; hashes completos em `summary.json`.
+Diretório: `evidence/review-postplans-2145/`.
 
-`review-a1f275/after.json` **não existe** e não deve ser citado. Os 29 arquivos do summary foram verificados byte a byte, não reexecutados nesta rodada. Execuções anteriores 13/13 e 40/40 são sintéticas locais, sem aprovação. Fiscal positivo integrado permanece **NOT_RUN_BLOCKED_REAL_ALWAYS_DENY**, contabilidade real pendente; nenhuma atestação mudou.
+- `checks.json`: **41/41**, `run.exitcode=0`, fresh PostgreSQL descartável com isolamento de planos antes do B3/logística.
+- `review-70d08c.json`: **13/13**, incluindo dois itens/uma OS, 3→1→2, cancelada parcial, excesso, concorrência e revogações.
+- `os-endpoint-tests.json`: **9/9**, incluindo negativos e duas criações concorrentes = uma OS + replay. FSF parou na feature, não prova isolada de tenant; service_role parou no schema, ACL do helper medida separadamente.
+- `frontend/ui.txt`: **13/13**; `frontend/compat.txt`: **73/73**; typecheck exit 0. UI fora do runtime, sem browser autenticado.
+- Logística `8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20`; instalador `56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09`; endpoint `21d40202d32e70dfbb44c7eb2a54a4135ebace840b301c15ab37b910cbfa0ee3`, todos inalterados.
+
+Esses resultados são sintéticos locais, não prova de JWT/RLS/PostgREST/Storage/browser de produção. Fiscal positivo integrado permanece **NOT_RUN_BLOCKED_REAL_ALWAYS_DENY**; contabilidade real não foi atestada.

@@ -1,4 +1,6 @@
-# Conexão isolada de homolog — SOMENTE PLANO
+# Conexão isolada de homolog — HISTÓRICO SUPERADO
+
+> **08/11/2026 21:45 UTC:** o proprietário decidiu que as validações autenticadas serão feitas somente na produção `swzpzcwiasxmjutrmvkm`, sob gates/piloto e fixtures aprovadas. Este documento não é mais um plano de destino e não deve ser executado. Não preparar conexão, binding ou instalação em homolog. O sucessor é `production-rollout-postplans-2145.md`; o conteúdo abaixo permanece apenas como histórico.
 
 ## Destinos e interpretação correta
 

@@ -1,6 +1,18 @@
-# BLOCKER — isolamento de planos comerciais por empresa
+# Isolamento de planos comerciais por empresa — INSTALADO EM PRODUÇÃO PELO AUDITOR
 
-Candidato preparado em 08/11/2026. **INATIVO / NÃO APROVADO / NÃO INSTALADO.**
+Candidato preparado em 08/11/2026 e instalado pelo auditor às 21:45 UTC. **NÃO REAPLICAR.**
+
+## Atualização canônica POSPLANOS — 08/11 21:45 UTC
+
+O auditor instalou somente `02-install.sql.review` SHA256 `cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40`, pela migration `commercial_plans_tenant_isolation_reviewed_20261108`, em `swzpzcwiasxmjutrmvkm`. Relatou ref comprovado, PRE_OK, POST antes do COMMIT e POST separado READ ONLY POST_OK. Preservados seis planos (cinco ARBio e um `8eae2bc1…`), quatro assignments, nove orders, dez receivables e cinco fiscal invoices.
+
+FSF real na prévia conectada à produção passou de seis planos para zero após reload. Controle positivo ARBio aguarda login e não deve ser presumido. Nenhum frontend/B4/logística/ponte/gate foi publicado, instalado ou habilitado por essa atualização.
+
+Todos os demais candidatos passam a usar baseline POSPLANOS. O instalador combinado antigo que inclui planos não pode ser reaplicado. Detalhes e hashes em `scripts/b2b-downstream-audit-20261107/production-postplans-baseline-20261108.md`.
+
+Advisors relatados: RLS sem policy 60→59; WARN DEFINER inalterados; auth_rls_initplan 47→48; unused 327→328. O novo alerta da policy `cpp_tenant_read` será medido posteriormente; não ampliar grants nem enfraquecer RLS.
+
+O conteúdo abaixo registra a investigação e a preparação histórica. As instruções de instalação já foram cumpridas pelo auditor e não autorizam nova execução.
 
 ## Achado real e limite da investigação
 
