@@ -1,3 +1,8 @@
+## 08/11 13:46 — E2E c40a13b8: comprador no tenant vendedor
+- [x] Chamadores B3 identificados; shape real com org vendedora NULL e um `partner_users` no tenant vendedor, sem Superadmin. A captura atual já tem fallback de vínculo válido: falta de `tenant_id` e entitlements reais na fixture, não defeito comprovado do writer. Guards globais byte-pinados preservados.
+- [x] Nova matriz local 8/8 exit 0: negativos papel/tenant/inativo/revogação/unicidade; simulação, reserva durável, pedido B3, replay, recovery committed; aprovação pré-contábil negada atomicamente, promoção CAS fictícia e aceite vendedor; produção biológica fechada.
+- [ ] Ponte logística B2B até compra/reserva/expedição/entrega/cancelamento continua NOT_RUN: `DELIVERY_SCOPE_DENIED` preservado, nenhum candidato de autorização/logística gerado. Controle físico agronômico positivo não é E2E B2B; sem hosted/Auth/publicação/NF/cobrança/envios e sem tocar piloto/cinco títulos.
+
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
 ### 08/11 03:31 — UX comprador novo
 - [x] Distinguir reserva inicial de tentativa incerta na apresentação; reserva sem alerta/encerramento, uncertain explícito, committed com ACK e closed por clique, troca de conta coberta. Três arquivos/59 testes PASS exit 0; build OK 03:33:02; evidência nova em order-e2e-new-20261108/evidence/ux-journal-0331/. Journal/deduplicação/SQL/pins intactos, sem hosted/publicação; sessão real não executada pois montagem reserva no servidor. Pendências logísticas preservadas.

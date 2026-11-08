@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-dp_t4e8i/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 95, in main
+    data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
+                                                       ^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: C2_OWNER_ORDER_CLOSED
+CONTEXT:  PL/pgSQL function platform_private.c2_owner_order_guard(uuid,uuid,uuid) line 12 at RAISE
+SQL statement "SELECT platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id)"
+PL/pgSQL function simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) line 18 at PERFORM
+LOCATION:  exec_stmt_raise, pl_exec.c:3911

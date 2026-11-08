@@ -9,11 +9,17 @@ Autorização Renato 08/11/2026 03:13 UTC. Este diretório é novo, não recuper
 - Confirmação/envio com PRE/POST medidos e instalador físico 6667a8d6 pinado (SHA256 `93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf`). Controle novo executou compra de três embalagens de 25 kg, reserva parcial de duas, agrupamento/baixa, envio, comprovante sintético e confirmação, sem fabricação/CQ/envase. **Controle físico com demanda agronômica local, não E2E B2B.**
 - Base B3 reconstruída separadamente do zero: checks dos seis corpos reais e PRE/install/POST passaram nesta execução, sem contabilizar resultados antigos. Tentativa de fusão das relações/corpos econômicos na base física mantém helpers de autoridade existentes em vez dos stubs permissivos do harness B3.
 
-## Bloqueio concreto atual, não ausência de arquivo
+## Continuação c40a13b8 — comprador no tenant vendedor
 
-Última execução: **exit 1**, simulação comprador negada por `platform_private.assert_b2b_partner_scope`, `42501 forbidden_partner`, através do `c2_order_actor_scope` real. A fixture reduzida B3 não satisfaz a cadeia de vínculo exigida pela base física completa. Não substituir a guarda por stub, não conceder papéis internos nem fabricar origem para obter PASS. Próximo passo técnico: compor a fixture local de vínculo completo a partir dos contratos capturados e testar revogação/empresa/papel antes de continuar pedido e logística.
+Última execução nova: **8/8 checkpoints PASS, exit 0**. Os chamadores exatos são `simulate_b2b_payment_condition_secure` e `create_partner_order_condition_secure`, ambos por `c2_order_actor_scope` e `c2_owner_order_guard`. O shape canônico foi preservado: `organizations.partner_account_id=NULL` no tenant vendedor e exatamente um `partner_users` do comprador com `tenant_id` do vendedor. Nenhuma organização foi transformada em parceiro e nenhum Superadmin foi usado.
 
-Pedido canônico comprador não foi criado na composição integral. Candidato logístico B2B, aceite vendedor, B4 integrado, cancelamento, negativos de toda a cadeia e biológicos **ainda não executados/concluídos**; não afirmar que logística B2B está resolvida. A função de fusão é infraestrutura experimental de schema/fixtures, não SQL implantável. Nenhuma alteração para abrir B2B foi gerada nesta rodada.
+A captura atual de `b2b_actor_scope` já resolve o vínculo válido quando a organização não tem parceiro próprio. As falhas reproduzidas foram da fixture reduzida: `tenant_id` ausente e o resolvedor real sem assinatura/funcionalidades. Foram completados o vínculo e uma assinatura local com `pedidos_b2b` e `catalogo_precos`; nenhuma guarda ou writer foi substituído. `assert_b2b_partner_scope` permanece MD5 `f86f43f9d9ad3ed97b840fcc02c79476` e `c2_order_actor_scope` MD5 `54c4327d63f48e39f598129ff9dd8f09`.
+
+Novo pedido de duas embalagens de 25 kg: simulação B3, reserva durável pelo servidor, criação, replay com o mesmo ID e recuperação `committed`. Total local R$ 373,04 em três parcelas estimadas, sem NF ou recebível. Antes da promoção, `approve_partner_order` foi negado por `C2_ACCOUNTING_PENDING` sem alterar o pedido; com configuração contábil fictícia VALIDATED e CAS exato, a promoção e o aceite vendedor passaram. `ready_for_production=false` preservado.
+
+Negativos executados: técnico isolado, comprador de outro tenant, perfil inativo, vínculo revogado, tenant divergente e segundo vínculo impedido por `partner_users_user_id_key`. Evidências em `buyer-scope-diagnostic.json`, `buyer-scope-negatives.json`, `buyer-attempt.json`, `buyer-order.json` e `seller-acceptance.json`.
+
+**Pendente:** a ponte logística B2B até compra/reserva/expedição/entrega/cancelamento não foi aberta nem concluída. O controle físico positivo continua sendo demanda agronômica separada; `rpc_cockpit_criar_entrega_v1` mantém `DELIVERY_SCOPE_DENIED` para OS B2B. Nenhum candidato de autorização ou logística foi gerado nesta continuação. B4 integrado, NF/recebível e prova JWT/RLS/Storage/browser continuam NOT_RUN/NÃO APROVADOS.
 
 ## Evidências e limites
 

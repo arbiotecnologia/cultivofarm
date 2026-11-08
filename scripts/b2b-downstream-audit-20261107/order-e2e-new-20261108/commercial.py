@@ -55,12 +55,44 @@ def apply(driver, load, root, out):
     if name=='profiles':row.update(nome='LOCAL B3',senha_provisoria=False)
     if name=='organizations':row.update(nome='LOCAL B3',status='ativa')
     if name=='partner_accounts':row.update(razao_social='LOCAL B3 PARTNER')
+    # Shape real c40a13b8: comprador é vínculo externo no tenant VENDEDOR;
+    # organizations.partner_account_id do vendedor permanece NULL. A fixture B3
+    # reduzida não tinha tenant_id e session_replication_role impede o trigger
+    # canônico de derivá-lo, portanto o dado completo é explícito nesta costura.
+    if name=='partner_users':
+     row.update(tenant_id=Q.F if row['partner_id']==Q.PF else Q.A,
+                papel='tecnico' if row['user_id']==Q.UT else 'gestor')
     if name=='produtos':row.update(tipo='solo' if row['id']==Q.SP.SOL else 'inseticida',familia_catalogo='fertilizante_adubo' if row['id']==Q.SP.SOL else 'quimico')
     if name=='microrganismos':row.update(tipo='bacteria')
     if name=='commercial_payment_plans':row.update(plan_type='custom')
     cols=list(row)
     # JSONB populate keeps native arrays/json/numeric casts intact.
     B.sql('SET session_replication_role=replica; INSERT INTO '+obj+' ('+','.join('"'+c+'"' for c in cols)+') SELECT '+','.join('"'+c+'"' for c in cols)+' FROM jsonb_populate_record(NULL::'+obj+','+lit(json.dumps(row))+'::jsonb) ON CONFLICT DO NOTHING; SET session_replication_role=origin;')
+  # Entitlements reais: a tabela seam_entitlements do harness B3 não é lida
+  # pelo resolvedor canônico mantido da base física. Concessões GRANT apenas
+  # no tenant A; nenhuma versão publicada é alterada e F não recebe o grant.
+  B.sql(f"""SET session_replication_role=replica;
+   INSERT INTO public.saas_modules(id,key,name,active) VALUES
+    ('{Q.u(800)}','local_b2b_e2e','LOCAL B2B E2E',true) ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_features(id,module_id,key,name,active)
+    SELECT '{Q.u(801)}',id,'pedidos_b2b','LOCAL pedidos B2B',true FROM public.saas_modules WHERE key='local_b2b_e2e'
+    ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_features(id,module_id,key,name,active)
+    SELECT '{Q.u(802)}',id,'catalogo_precos','LOCAL catálogo preços',true FROM public.saas_modules WHERE key='local_b2b_e2e'
+    ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_plans(id,key,name,active,is_default) VALUES
+    ('{Q.u(805)}','local_b2b_e2e','LOCAL B2B E2E',true,false) ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,published_at,features_snapshot,
+     price_amount,currency,billing_cycle,trial_days)
+    SELECT '{Q.u(806)}',id,1,'LOCAL B2B E2E','PUBLISHED',now()-interval '1 day',now()-interval '1 day',
+     '["pedidos_b2b","catalogo_precos"]'::jsonb,0,'BRL','monthly',1
+     FROM public.saas_plans WHERE key='local_b2b_e2e' ON CONFLICT(id) DO NOTHING;
+   INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled)
+    SELECT '{Q.u(806)}',id,true FROM public.saas_features WHERE key IN ('pedidos_b2b','catalogo_precos') ON CONFLICT DO NOTHING;
+   INSERT INTO public.organization_subscriptions(id,organization_id,plan_id,plan_version_id,status,started_at)
+    SELECT '{Q.u(807)}','{Q.A}',id,'{Q.u(806)}','ACTIVE',now()-interval '1 hour'
+     FROM public.saas_plans WHERE key='local_b2b_e2e' ON CONFLICT(id) DO NOTHING;
+   SET session_replication_role=origin;""")
   for t in meta['triggers']:
    B.sql('DROP TRIGGER IF EXISTS "'+t['name']+'" ON public.'+t['table']+';'+t['definition']+';')
   for obj in ['produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','catalogo_precos_embalagem','partner_accounts','partner_users','profiles','user_roles','commercial_payment_plans','commercial_payment_plan_assignments','commercial_price_rules']:
