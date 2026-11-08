@@ -227,14 +227,15 @@ WHERE NOT t.tgisinternal AND n.nspname='public'
     }
 
 
-def assert_current(last, allowed_trigger_function_deltas=()):
+def assert_current(last, allowed_trigger_function_deltas=(), allowed_function_deltas=()):
     allowed_trigger_function_deltas = set(allowed_trigger_function_deltas)
+    allowed_function_deltas = set(allowed_function_deltas)
     state = measure(last)
     errors = []
     by_signature = {row["signature"]: row for row in state["functions"]}
     for signature, expected in FUNCTION_ROWS.items():
         actual = by_signature.get(signature, {})
-        if actual.get("md5") != expected["md5"]:
+        if signature not in allowed_function_deltas and actual.get("md5") != expected["md5"]:
             errors.append(f"function_md5:{signature}:{actual.get('md5')}!={expected['md5']}")
         if actual.get("owner") != expected["owner"]:
             errors.append(f"function_owner:{signature}:{actual.get('owner')}!={expected['owner']}")

@@ -108,7 +108,7 @@ def apply(driver, load, root, out):
    SET session_replication_role=origin;""")
   for t in meta['triggers']:
    B.sql('DROP TRIGGER IF EXISTS "'+t['name']+'" ON public.'+t['table']+';'+t['definition']+';')
-  for obj in ['produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','catalogo_precos_embalagem','partner_accounts','partner_users','profiles','user_roles','commercial_payment_plans','commercial_payment_plan_assignments','commercial_price_rules']:
+  for obj in ['produtos','microrganismos','catalogo_volumes','catalogo_precos_embalagem','partner_accounts','partner_users','profiles','user_roles','commercial_payment_plans','commercial_payment_plan_assignments','commercial_price_rules']:
    B.sql('GRANT SELECT ON public.'+obj+' TO authenticated;')
   # Auth transport is synthetic; scoped economic grants reuse local B3 ACL.
   for f in meta['functions']:

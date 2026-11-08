@@ -6,7 +6,8 @@ H=Path(__file__).resolve().parent;ROOT=H.parents[2]
 assert ROOT.is_relative_to(Path('/tmp')), 'TEMP_MIRROR_REQUIRED'
 OUT=Path(os.environ['NEW_E2E_OUT'])
 checks=[]
-CURRENT_CANDIDATE_TRIGGER_DELTAS={('entregas','trg_validate_entrega_confirmacao'),('entregas','zz_delivery_mutation_closed')}
+CURRENT_CANDIDATE_TRIGGER_DELTAS={('entregas','trg_validate_entrega_confirmacao'),('entregas','zz_delivery_mutation_closed'),('estoque_produto','a01_stock_final_permit'),('estoque_produto','a01_stock_insert_permit'),('estoque_produto','trg_validate_estoque_entrada'),('lotes','aa_manual_lot_write_fence_v1'),('lotes','trg_lab_lot_biological_only'),('ordens_servico','trg_sync_os_classica_downstream')}
+CURRENT_CANDIDATE_FUNCTION_DELTAS={'platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)','platform_private.envase_insert_final_v1()','platform_private.envase_insert_guard_v1()','platform_private.guard_manual_lot_write_v1()','platform_private.trg_lab_lot_biological_only()','public.fn_sync_os_classica_downstream()','public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)','public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)','public.validate_estoque_entrada()'}
 def load(name,p):
  s=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 def main():
@@ -59,7 +60,7 @@ def main():
   send_out=OUT/'delivery-send';send_out.mkdir(exist_ok=True)
   S.write(pre,post,out=send_out);B.sql((send_out/'install.sql.review').read_text())
   B.sql('GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;')
-  B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS)
+  B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
   # O gerador físico consome a composição atual medida, não a captura anterior ao catálogo.
   current_capture=OUT/'current-pre-physical.json';current_capture.write_text(json.dumps(B.restore.metadata(),indent=2)+'\n')
   capture_module=load('new_current_baseline',physical/'capture_baseline.py')
@@ -128,8 +129,9 @@ def main():
   assert arb_code.returncode==0 and arb_code.stdout.strip()=='0',(arb_code.stdout,arb_code.stderr)
   (OUT/'plan-isolation-composition.json').write_text(json.dumps(dict(pre=plan_pre,post=plan_post,arbio_plan_visible=True,fsf_arbio_plan_visible=False,fsf_write_denied=fsf_write.stderr,shared_code_plan_id=shared_id,shared_code_invisible_to_arbio=True),indent=2)+'\n')
   checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
-  current_state=B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS)
+  current_state=B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
   current_state['allowed_candidate_trigger_function_deltas']=sorted(list(x) for x in CURRENT_CANDIDATE_TRIGGER_DELTAS)
+  current_state['allowed_candidate_function_deltas']=sorted(CURRENT_CANDIDATE_FUNCTION_DELTAS)
   (OUT/'current-catalog-posplans.json').write_text(json.dumps(current_state,indent=2)+'\n')
   checks.append(dict(test='post catalog Price plans preserve twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies',status='PASS'))
   # As baselines atuais são compostas antes do pedido B2B: o fluxo inteiro abaixo
@@ -435,8 +437,8 @@ def main():
    assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
    history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
    assert history_after==history_before,(history_before,history_after)
-   B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS)
-   (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True,'allowed_candidate_trigger_function_deltas':sorted(list(x) for x in CURRENT_CANDIDATE_TRIGGER_DELTAS),'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE'},indent=2)+'\n')
+   B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
+   (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True,'allowed_candidate_trigger_function_deltas':sorted(list(x) for x in CURRENT_CANDIDATE_TRIGGER_DELTAS),'allowed_candidate_function_deltas':sorted(CURRENT_CANDIDATE_FUNCTION_DELTAS),'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE'},indent=2)+'\n')
    checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 17 ACLs; B4 fiscal NOT_RUN out of scope',status='PASS'))
    return 0
 
@@ -642,7 +644,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
   history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
   assert history_after==history_before,(history_before,history_after)
-  B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS)
+  B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
   (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True},indent=2)+'\n')
   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history six guards eight ACLs',status='PASS'))
  except Exception:
