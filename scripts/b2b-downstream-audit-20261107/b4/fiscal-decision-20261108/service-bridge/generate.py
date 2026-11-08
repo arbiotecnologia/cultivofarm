@@ -188,6 +188,7 @@ def main() -> None:
                             WHEN _patch->>'cStat' IN ('100','150') THEN _patch->>'cStat'
                             ELSE protocol_c_stat END,""")
     transmit = edit(transmit, "        v_row.c_stat, v_row.x_motivo, v_row.id);", "        coalesce(v_row.protocol_c_stat,v_row.c_stat), v_row.x_motivo, v_row.id);")
+    transmit = edit(transmit, "  WHERE id = _transmission_id\n  RETURNING * INTO v_row;\n\n  IF v_row.ambiente_retorno", "  WHERE id = _transmission_id\n  RETURNING * INTO v_row;\n  END IF;\n\n  IF v_row.ambiente_retorno")
     transmit = edit(transmit, "    'cStat', v_row.c_stat, 'xMotivo', v_row.x_motivo,", "    'cStat', v_row.c_stat, 'protocolCStat', coalesce(v_row.protocol_c_stat,v_row.c_stat), 'xMotivo', v_row.x_motivo,")
 
     # H13 preserva o retorno externo em caso de falha. Um retry bem-sucedido limpa
