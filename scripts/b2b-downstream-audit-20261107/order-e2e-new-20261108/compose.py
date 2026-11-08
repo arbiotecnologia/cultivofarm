@@ -533,10 +533,12 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
    positive_fiscal_receivable='NOT_RUN_BLOCKED',always_allow_substitution=False),indent=2)+'\n')
   checks.append(dict(test='same fresh DB installs B4 and service bridge PRE POST after buyer seller logistics and plan controls; real always-deny preserved and positive fiscal receivable BLOCKED',status='PASS'))
   B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'04-rollback-deny.sql.review').read_text())
-  denied_after_bridge=B.run_raw("RESET ROLE;SELECT platform_private.b2b_fiscal_invoice_bridge_v1(NULL);")
-  denied_after_allocate=B.run_raw("RESET ROLE;SELECT platform_private.b2b_allocate_document(NULL);")
-  assert denied_after_bridge.returncode!=0 and 'permission denied' in denied_after_bridge.stderr
-  assert denied_after_allocate.returncode!=0 and 'permission denied' in denied_after_allocate.stderr
+  # O proprietário local é superusuário: RESET ROLE não mede revogação. A ACL
+  # precisa ser exercida como o papel que efetivamente perdeu EXECUTE.
+  denied_after_bridge=B.run_raw("RESET ROLE;SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1(NULL);")
+  denied_after_allocate=B.run_raw("RESET ROLE;SET ROLE authenticated;SELECT platform_private.b2b_allocate_document(NULL);")
+  assert denied_after_bridge.returncode!=0 and 'permission denied' in denied_after_bridge.stderr,denied_after_bridge.stderr
+  assert denied_after_allocate.returncode!=0 and 'permission denied' in denied_after_allocate.stderr,denied_after_allocate.stderr
   denied_plan_read=Q.as_user(Q.UADM,"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);")
   assert denied_plan_read.returncode!=0 and 'permission denied' in denied_plan_read.stderr,denied_plan_read.stderr
   assert B.last('SELECT count(*) FROM public.commercial_payment_plans;')==plans_before_rollback
