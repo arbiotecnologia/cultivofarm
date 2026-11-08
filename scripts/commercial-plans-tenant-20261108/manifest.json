@@ -25,8 +25,8 @@
     "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "6e81e29397a9bd633f2fe6ec364d8cf3"
   },
   "outputs": {
-    "01-pre.sql.readonly": "f1bf20173cdb8dcba6c2681627ecb4d8e6003ee8c81d382a32b7463a2b982b56",
-    "02-install.sql.review": "4f31a6c41298c0582e8fff812229344b10b98a4e5858a42096fddbf05ed1fbd2",
+    "01-pre.sql.readonly": "c66c6810b59ed1995e92ba5a0f8bc8b1bae8bed4a7467b820a6628b935c8838e",
+    "02-install.sql.review": "1d6839b25c533282feee3844cbb69039958b263c249f67c15b6929429ce5b4d9",
     "03-post.sql.readonly": "809e7ea906a4b33157390e04c2417b9867c46449c1c5584ac09dab932b027e84",
     "04-rollback-deny.sql.review": "7e48f2a2fba53b061669425e0050cf1306496baef7c9d3e4701fa3c9ed1aefd5"
   },
@@ -51,8 +51,11 @@
     "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)": "17efbe00b1f780ddd872f326602b781e",
     "rpc_admin_version_commercial_plan(uuid,jsonb,text)": "325a7dd4f5a6778ac163531bbe8e1b35",
     "rpc_b2b_list_selectable_payment_plans()": "eb47ea09af200744f9e4431b8a3f1828",
+    "rpc_cc_archive_assignment(uuid,text)": "322cfcaf140f45bf5fbe3744eeff568c",
     "rpc_cc_list_assignments(text)": "91529df9b063dbdf3b2f9bffa5a49329",
+    "rpc_cc_publish_assignment(uuid,text)": "bc4ebdacb52304e3731c5b2fc5aa7242",
     "rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": "32f75a12cf353fa7050c6ba6ffe1e5d3",
+    "rpc_cc_upsert_assignment(uuid,uuid,text,uuid,uuid,date,date,text)": "215d43e1ba4e6342c8659426a39f6002",
     "rpc_cc_validate_matrix(uuid,text,uuid,uuid)": "21ab73c3a6ed77512c1e93b3958bfb1c",
     "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee"
   }

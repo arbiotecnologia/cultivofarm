@@ -20,8 +20,11 @@
     "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)": "17efbe00b1f780ddd872f326602b781e",
     "rpc_admin_version_commercial_plan(uuid,jsonb,text)": "325a7dd4f5a6778ac163531bbe8e1b35",
     "rpc_b2b_list_selectable_payment_plans()": "eb47ea09af200744f9e4431b8a3f1828",
+    "rpc_cc_archive_assignment(uuid,text)": "322cfcaf140f45bf5fbe3744eeff568c",
     "rpc_cc_list_assignments(text)": "91529df9b063dbdf3b2f9bffa5a49329",
+    "rpc_cc_publish_assignment(uuid,text)": "bc4ebdacb52304e3731c5b2fc5aa7242",
     "rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)": "32f75a12cf353fa7050c6ba6ffe1e5d3",
+    "rpc_cc_upsert_assignment(uuid,uuid,text,uuid,uuid,date,date,text)": "215d43e1ba4e6342c8659426a39f6002",
     "rpc_cc_validate_matrix(uuid,text,uuid,uuid)": "21ab73c3a6ed77512c1e93b3958bfb1c",
     "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee"
   },
