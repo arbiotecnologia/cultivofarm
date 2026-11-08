@@ -1,3 +1,8 @@
+## 08/11 16:17 — Interromper e executar todas as mensagens pendentes
+- [x] Interromper a sequência anterior e reconciliar as mensagens recentes sem apagar histórico: isolamento FSF→ARBio, targeting/meio obrigatório, E2E logístico, datas, defaults financeiros e journal foram processados; atribuição da condição V2 e o diagnóstico de datas são fatos posteriores do auditor que superam pendências antigas.
+- [ ] Repetir a validação integrada local do estado atual: isolamento 58/58, E2E 20/20 e testes UI focados, com logs/exit codes novos e sem somar suítes ou promover PASS sintético a homologação real.
+- [ ] Manter como bloqueios externos somente revisão independente, instalação manual expressamente autorizada, ativação escopada pelo auditor e homologação JWT/RLS/Storage/browser; nenhuma escrita hospedada, publicação, NF, cobrança ou envio.
+
 ## 08/11 16:03 — BLOCKER: isolamento por empresa nos planos comerciais
 - [x] Reprodução local ANTES: FSF leu planos ARBio por RPC admin/listagem/B3 e alterou metadados sintéticos; auditoria cobriu RLS, sete writers admin, atribuições, meios, matrizes, simulação/create/conversão/cotação. Nenhuma escrita FSF nem alteração hospedada.
 - [x] Pacote revisável `commercial-plans-tenant-20261108`: 25 funções-alvo pinadas, tenant por `created_by`/perfil familiar consistente, ambíguos/ausentes NULL e negados, comprador restrito ao vínculo publicado, atribuições/matrizes concordantes e `is_default` por tenant. Catálogos globais de meios/categorias preservados; snapshots/histórico intactos.
