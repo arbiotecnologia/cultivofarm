@@ -671,6 +671,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_invoice(invoice_main,with_item=True)
         seed_invoice(invoice_denied,"AUTHORIZED",with_item=True)
         seed_invoice(invoice_foreign,"AUTHORIZED",org=B3.F,company=company_f,with_item=True)
+        B3.psql(f"UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}');")
         pre_bridge = bridge_file("01-pre.sql.readonly")
         check("ponte PRE confirma pins B4 e autorização capturada", pre_bridge.returncode == 0, pre_bridge.stderr[-1000:])
         install_bridge = bridge_file("02-install.sql.review")
