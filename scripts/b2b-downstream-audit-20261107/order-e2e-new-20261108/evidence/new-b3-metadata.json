@@ -5910,5 +5910,289 @@
       "schema": "platform_private",
       "signature": "platform_private.b2b_condition_cfg_actor(boolean)"
     }
+  ],
+  "constraints": [
+    {
+      "name": "organizations_pkey",
+      "table": "organizations",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "profiles_pkey",
+      "table": "profiles",
+      "schema": "public",
+      "definition": "PRIMARY KEY (user_id)"
+    },
+    {
+      "name": "partner_accounts_pkey",
+      "table": "partner_accounts",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "produtos_pkey",
+      "table": "produtos",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "microrganismos_pkey",
+      "table": "microrganismos",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "catalogo_volumes_pkey",
+      "table": "catalogo_volumes",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "product_sale_units_pkey",
+      "table": "product_sale_units",
+      "schema": "public",
+      "definition": "PRIMARY KEY (product_id)"
+    },
+    {
+      "name": "product_packagings_pkey",
+      "table": "product_packagings",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "pp_codigo_version",
+      "table": "product_packagings",
+      "schema": "public",
+      "definition": "UNIQUE (product_id, codigo, version)"
+    },
+    {
+      "name": "catalogo_precos_embalagem_pkey",
+      "table": "catalogo_precos_embalagem",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "commercial_payment_plans_pkey",
+      "table": "commercial_payment_plans",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "commercial_price_rules_pkey",
+      "table": "commercial_price_rules",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_order_attempt_journal_actor_id_partner_id_idempoten_key",
+      "table": "partner_order_attempt_journal",
+      "schema": "platform_private",
+      "definition": "UNIQUE (actor_id, partner_id, idempotency_key)"
+    },
+    {
+      "name": "partner_orders_pkey",
+      "table": "partner_orders",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_orders_numero_key",
+      "table": "partner_orders",
+      "schema": "public",
+      "definition": "UNIQUE (numero)"
+    },
+    {
+      "name": "partner_order_payment_terms_pkey",
+      "table": "partner_order_payment_terms",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_order_items_pkey",
+      "table": "partner_order_items",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_order_idempotency_pkey",
+      "table": "partner_order_idempotency",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_timeline_events_pkey",
+      "table": "production_timeline_events",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "authz_tickets_pkey",
+      "table": "authz_tickets",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (txid, scope, target)"
+    },
+    {
+      "name": "commercial_audit_log_pkey",
+      "table": "commercial_audit_log",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "notificacoes_operacionais_pkey",
+      "table": "notificacoes_operacionais",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_engagement_metrics_pkey",
+      "table": "partner_engagement_metrics",
+      "schema": "public",
+      "definition": "PRIMARY KEY (partner_id)"
+    },
+    {
+      "name": "partner_financial_settings_pkey",
+      "table": "partner_financial_settings",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_financial_settings_partner_id_key",
+      "table": "partner_financial_settings",
+      "schema": "public",
+      "definition": "UNIQUE (partner_id)"
+    },
+    {
+      "name": "partner_order_audit_logs_pkey",
+      "table": "partner_order_audit_logs",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_link_pkey",
+      "table": "production_order_link",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_order_link_partner_order_item_id_key",
+      "table": "production_order_link",
+      "schema": "public",
+      "definition": "UNIQUE (partner_order_item_id)"
+    },
+    {
+      "name": "production_planning_pkey",
+      "table": "production_planning",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "production_planning_partner_order_id_key",
+      "table": "production_planning",
+      "schema": "public",
+      "definition": "UNIQUE (partner_order_id)"
+    },
+    {
+      "name": "clientes_pkey",
+      "table": "clientes",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "delivery_context_20261030_pkey",
+      "table": "delivery_context_20261030",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (txid)"
+    },
+    {
+      "name": "solid_pack_presentation_tx_pkey",
+      "table": "solid_pack_presentation_tx",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (txid)"
+    },
+    {
+      "name": "accounts_receivable_pkey",
+      "table": "accounts_receivable",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "accounts_receivable_installments_pkey",
+      "table": "accounts_receivable_installments",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "partner_order_financial_links_pkey",
+      "table": "partner_order_financial_links",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "payment_methods_pkey",
+      "table": "payment_methods",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "financial_categories_pkey",
+      "table": "financial_categories",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "b2b_condition_versions_pkey",
+      "table": "b2b_condition_versions",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (organization_id, plan_id, version, method)"
+    },
+    {
+      "name": "b2b_condition_assignments_pkey",
+      "table": "b2b_condition_assignments",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (organization_id, partner_id, plan_id, version, method)"
+    },
+    {
+      "name": "b2b_order_condition_snapshots_pkey",
+      "table": "b2b_order_condition_snapshots",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (order_id)"
+    },
+    {
+      "name": "b2b_condition_retirements_pkey",
+      "table": "b2b_condition_retirements",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (organization_id, plan_id, version, method)"
+    },
+    {
+      "name": "b2b_condition_assignment_revocations_pkey",
+      "table": "b2b_condition_assignment_revocations",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (organization_id, partner_id, plan_id, version, method)"
+    },
+    {
+      "name": "b2b_condition_activation_pkey",
+      "table": "b2b_condition_activation",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (organization_id)"
+    },
+    {
+      "name": "b2b_condition_activation_history_pkey",
+      "table": "b2b_condition_activation_history",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (organization_id, version)"
+    },
+    {
+      "name": "b2b_order_condition_quote_snapshots_pkey",
+      "table": "b2b_order_condition_quote_snapshots",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (order_id)"
+    },
+    {
+      "name": "b2b_quote_response_receipts_pkey",
+      "table": "b2b_quote_response_receipts",
+      "schema": "platform_private",
+      "definition": "PRIMARY KEY (order_id)"
+    }
   ]
 }

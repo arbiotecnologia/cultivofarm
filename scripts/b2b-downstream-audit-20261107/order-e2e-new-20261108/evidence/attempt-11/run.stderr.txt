@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-ntuzq45b/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 81, in main
+    data,error=Q.activation(Q.UADM,'pilot',[Q.P],0);assert data is not None,error
+                                                           ^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42P10: there is no unique or exclusion constraint matching the ON CONFLICT specification
+CONTEXT:  SQL statement "INSERT INTO platform_private.b2b_condition_activation(organization_id, mode, pilot_partner_ids, version, updated_by)
+  VALUES (v_org, p_mode, v_ids, COALESCE(g.version, 0) + 1, v_uid)
+  ON CONFLICT (organization_id) DO UPDATE SET mode = EXCLUDED.mode, pilot_partner_ids = EXCLUDED.pilot_partner_ids, version = EXCLUDED.version,
+    updated_by = EXCLUDED.updated_by, updated_at = now()
+  RETURNING *"
+PL/pgSQL function public.b2b_payment_condition_activation_set(text,uuid[],integer) line 20 at SQL statement
+LOCATION:  infer_arbiter_indexes, plancat.c:950
