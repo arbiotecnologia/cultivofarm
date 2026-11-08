@@ -708,6 +708,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_invoice(invoice_h13,order=callback_order,with_item=True,item=callback_item)
         seed_invoice(invoice_h13_pending,order=None,partner=None)
         seed_invoice(invoice_h13_rejected,order=None,partner=None)
+        seed_invoice(invoice_parser,order=None,partner=None,provider_reference="PARSER-104-100")
         B3.psql(f"""UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}','{invoice_nfse}');
  UPDATE public.fiscal_invoices SET partner_order_id=NULL,debtor_partner_id=NULL WHERE id='{invoice_nonb2b}';
  UPDATE public.fiscal_invoices SET debtor_partner_id=NULL WHERE id='{invoice_partial}';""")
