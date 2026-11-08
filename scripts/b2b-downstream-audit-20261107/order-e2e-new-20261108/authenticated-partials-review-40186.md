@@ -10,6 +10,8 @@ Não injetar claims/GUC de autorização, usar service_role como usuário, criar
 
 ## Fixture e provas
 
+Atualização READONLY relatada pelo auditor às 21:27 de 08/11: homolog `vrlcdwmlytukrjezrrnf` em PostgreSQL 17.11 não possui assinatura de confirmação manual, helper OS revenda nem gate. Teste autenticado = **NOT_RUN_BLOCKED_ENVIRONMENT_AND_CALLER**, sem pedir login. Preparação/ordem mínima em `homolog-dependencies-2127.md`; catálogo completo e callers/leitores/capabilities/Storage precisam revisão, sem reaplicar pacotes ou copiar pins de produção.
+
 Uma única compra autorizada de revenda, pedido de **3 embalagens inteiras de 25 kg** no tenant vendedor ARBio, OS ligada ao item exato e estoque de compra, sem produção/CQ/envase. Preço/condição vêm do snapshot aprovado; não impor valores de referência. Identidades: vendedor autorizado e FSF negativa em sessões separadas, nunca impersonação administrativa. Isolar IDs das fixtures, preservar teste4 e cinco títulos; não apagar histórico depois.
 
 Antes, registrar leituras autorizadas: pedido aprovado, `ready_for_production=false`, snapshot/itens, estoque/reserva, zero novas dívidas/documentos/alocações/snapshots fiscais, contagem do evento terminal e recibos. Não usar tabelas privadas via cliente; observação privada somente pelo auditor read-only.
