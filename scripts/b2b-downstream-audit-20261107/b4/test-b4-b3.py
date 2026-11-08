@@ -669,6 +669,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         invoice_main, invoice_pending, invoice_denied, invoice_foreign = [B3.u(390+i) for i in range(4)]
         invoice_nonb2b, invoice_partial, invoice_bad_cstat, invoice_no_tx, invoice_nfse, invoice_h13, invoice_h13_pending, invoice_h13_rejected = [B3.u(400+i) for i in range(8)]
         tx_main, tx_denied, tx_foreign, tx_nonb2b, tx_partial, tx_bad_cstat, tx_nfse, tx_h13, tx_h13_pending, tx_h13_rejected = [B3.u(420+i) for i in range(10)]
+        invoice_parser = B3.u(440)
+        tx_parser, tx_h13_repeat, tx_h13_divergent = [B3.u(441+i) for i in range(3)]
         monetary = B3.psql(f"SELECT principal+financed_interest FROM platform_private.b2b_document_allocations WHERE document_id='{RECOVERY_DOC}'").stdout.strip()
         def seed_invoice(invoice_id, status="PENDING", org=None, company=None, order=None, partner=None, with_item=False, item=None, invoice_type="NFE", provider_reference="LOCAL-PROVIDER"):
             org = org or B3.A; company = company or company_a; order = order or recovery_order; partner = partner or B3.P
