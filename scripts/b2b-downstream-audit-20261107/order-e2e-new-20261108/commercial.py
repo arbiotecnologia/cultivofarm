@@ -88,10 +88,10 @@ def apply(driver, load, root, out):
    INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,published_at,features_snapshot,
      price_amount,currency,billing_cycle,trial_days)
     SELECT '{Q.u(806)}',id,1,'LOCAL B2B E2E','PUBLISHED',now()-interval '1 day',now()-interval '1 day',
-     '["pedidos_b2b","catalogo_precos"]'::jsonb,0,'BRL','monthly',1
+     '["pedidos_b2b","catalogo_precos","estoque_embalagens"]'::jsonb,0,'BRL','monthly',1
      FROM public.saas_plans WHERE key='local_b2b_e2e' ON CONFLICT(id) DO NOTHING;
    INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled)
-    SELECT '{Q.u(806)}',id,true FROM public.saas_features WHERE key IN ('pedidos_b2b','catalogo_precos') ON CONFLICT DO NOTHING;
+    SELECT '{Q.u(806)}',id,true FROM public.saas_features WHERE key IN ('pedidos_b2b','catalogo_precos','estoque_embalagens') ON CONFLICT DO NOTHING;
    INSERT INTO public.organization_subscriptions(id,organization_id,plan_id,plan_version_id,status,started_at)
     SELECT '{Q.u(807)}','{Q.A}',id,'{Q.u(806)}','ACTIVE',now()-interval '1 hour'
      FROM public.saas_plans WHERE key='local_b2b_e2e' ON CONFLICT(id) DO NOTHING;
