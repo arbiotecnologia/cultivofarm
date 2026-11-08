@@ -1471,6 +1471,10 @@
       "sha256": "889fa012daa99ac0944da1c5c4398f9e6158008c119094d7feb8c872e0671f5d"
     },
     {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/evidence/review-ab904bf-summary.json",
+      "sha256": "7f838ffdfeff963b3005ac18f773e5dbe72cc5110d1ac2c7b95abafcff8cff76"
+    },
+    {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/generate.py",
       "sha256": "96e7cec2122695dcde242efcdf16e76a8c11d7dc999407062ccb43035f211194"
     },
@@ -1867,6 +1871,10 @@
       "sha256": "0d4c2bbeb3fdb936a62d62d38e35f7a97681ff861e64fda5d4e009c46ef9a25b"
     },
     {
+      "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generate.py",
+      "sha256": "ac806624a9610161e2979ae4404a2331ada10450998fc44d9283fc8e74472636"
+    },
+    {
       "file": "scripts/b2b-downstream-audit-20261107/captured/auth-scoping/platform_private.b2b_actor_scope.c3f29977.sql",
       "sha256": "d2fcc66c1008a438a72be21100a13d7d3a9515714a8e8304cfccec0b9eeec54e"
     },
@@ -1980,7 +1988,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "ce80e2eb9fac68bd7794baca56177404584a2a055feeb27125d9ea7bb02aa3b3"
+      "sha256": "d8075ef74ffd5e1253d7f325d5e0e0d714893d9babd4b9a4f36d6e9beb95e451"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",

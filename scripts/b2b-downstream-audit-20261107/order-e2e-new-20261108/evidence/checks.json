@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "4b2f6c7c-7d69-46dd-9982-70b198f1f179"
+    "order_id": "1dad4271-db2d-480f-952d-8bf90c443f88"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "da6c9ab9-c228-4724-b2fe-1eb8f93d9618"
+    "os_id": "1e0238d4-7787-4619-99c2-0731ad32c387"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +68,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "bb2adcf0-18a8-4582-81d3-7667515d5b17"
+    "delivery_id": "636a009e-5450-4804-8253-8c5858cc4fdd"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "dfec56cb-76f4-4ee6-a88d-79d1795a9bb7"
+    "delivery_id": "1a174645-5fdf-4191-ac3a-5bce2276644b"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -197,16 +197,12 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "157443c7-6935-47dc-a2f4-de51c04d2317"
+    "delivery_id": "1df00d8b-e213-4bf5-9236-b3fe99098c19"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
     "status": "PASS",
     "candidate_sha256": "db36815b2aad673a2f9e09823f90eb4c1014856df191e06374d1b701cbb8beea"
-  },
-  {
-    "test": "same DB deny-only rollback closes plan readers preserves plans and never restores global code uniqueness",
-    "status": "PASS"
   },
   {
     "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
