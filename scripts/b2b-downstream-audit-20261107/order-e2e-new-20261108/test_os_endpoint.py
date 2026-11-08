@@ -8,11 +8,11 @@ def run(B,Q,order,item,expected,out):
     product=B.last(f"SELECT product_id FROM public.partner_order_items WHERE id='{item}';")
     def call(uid,key='endpoint-negative-0001'):
         return (f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';"
-                f"SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';"
+                f"SET request.jwt.claims='{{\"sub\":\"{uid}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';"
                 f"SELECT public.rpc_b2b_resale_os_create_v1('{order}','{item}','{expected}','{key}');")
     def read(uid):
         return (f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';"
-                f"SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';"
+                f"SET request.jwt.claims='{{\"sub\":\"{uid}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';"
                 f"SELECT public.rpc_b2b_resale_os_availability_v1('{order}');")
     def effects():
         return B.last(f"SELECT jsonb_build_array((SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{order}'),(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1 WHERE order_id='{order}'),(SELECT count(*) FROM platform_private.authz_tickets),(SELECT count(*) FROM public.accounts_receivable),(SELECT count(*) FROM public.estoque_movimentacoes))::text;")

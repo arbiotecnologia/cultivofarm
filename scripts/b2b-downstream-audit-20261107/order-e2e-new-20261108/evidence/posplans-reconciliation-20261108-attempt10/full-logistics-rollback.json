@@ -1,0 +1,24 @@
+{
+  "closed": {
+    "os_writer": false,
+    "send_writer": false,
+    "physical_gate": false,
+    "confirm_writer": false,
+    "logistics_gate": false,
+    "purchase_writer": false
+  },
+  "history_before": {
+    "os": 19,
+    "movements": 50,
+    "deliveries": 14,
+    "resale_receipts": 9
+  },
+  "history_after": {
+    "os": 19,
+    "movements": 50,
+    "deliveries": 14,
+    "resale_receipts": 9
+  },
+  "current_catalog_preserved": true,
+  "b4_fiscal": "NOT_RUN_OUT_OF_SCOPE"
+}

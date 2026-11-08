@@ -20,7 +20,9 @@ def check(label,s):
 def deny(label,s,code):
     e=pg.sql(s,False);assert code in e,label+':'+e
     checks.append({'test':label,'status':'PASS','expected':code});print('PASS',label,flush=True)
-def actor(w=U): return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}';"
+def actor(w=U):
+    claims=json.dumps({'sub':w,'role':'authenticated','iat':1,'exp':4102444800},separators=(',',':'))
+    return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}'; SET request.jwt.claims='{claims}';"
 def call(key,items=None,os=O,origin='manual'):
     if items is None: items=[{'item_id':S,'quantidade':2},{'item_id':T,'quantidade':2}]
     if key not in observed:

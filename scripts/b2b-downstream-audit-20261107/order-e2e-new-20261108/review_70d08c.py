@@ -76,7 +76,7 @@ class Review:
     def os_create_sql(self, order_id, item_id, expected, key):
         uid = self.Q.UADM
         return (
-            f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';"
+            f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';"
             f"SELECT public.rpc_b2b_resale_os_create_v1('{order_id}','{item_id}','{expected}'::timestamptz,'{key}');"
         )
 

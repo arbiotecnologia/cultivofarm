@@ -121,7 +121,7 @@ def install(B, out, root):
 
 def negative_controls(B, Q, out):
     # A cerca real deve negar antes de qualquer configuração implícita ou ticket inventado.
-    settings = B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';INSERT INTO public.partner_financial_settings(partner_id) VALUES('00000000-0000-0000-0000-000000000099');")
+    settings = B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';INSERT INTO public.partner_financial_settings(partner_id) VALUES('00000000-0000-0000-0000-000000000099');")
     assert settings.returncode != 0 and "C2P1_SETTINGS_WRITE_CLOSED" in settings.stderr, settings.stderr
     receivable_id = B.last("SELECT id FROM public.accounts_receivable ORDER BY id LIMIT 1;")
     assert receivable_id, "REAL_RECEIVABLE_SENTINEL_REQUIRED"

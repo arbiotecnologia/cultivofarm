@@ -1,0 +1,45 @@
+-- POST_RUNTIME_REQUIRED platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) source_body_sha256=7a18023bdd5d5e0ba207e3d445f628599651b7b1f17d012c0c58dca6fc8b34d1
+-- POST_RUNTIME_REQUIRED platform_private.envase_insert_final_v1() source_body_sha256=be69514b504aa8ac72909501371669e21349d600bb69ba1e52946bbb77053096
+-- POST_RUNTIME_REQUIRED platform_private.envase_insert_guard_v1() source_body_sha256=058bb36a69ac0a688e64c39b83eb9fa621557a1ec7fce3a1ef4bf710a77ada4d
+-- POST_RUNTIME_REQUIRED platform_private.guard_manual_lot_write_v1() source_body_sha256=fb5a8aae4f3d0d12afedb60fa1bde5f406da6618b0235c07904199d74f68c05a
+-- POST_RUNTIME_REQUIRED platform_private.trg_lab_lot_biological_only() source_body_sha256=81afed373e13ae1286dd440d799c0e43da3d9472a8a67ec24aa10f500fac3eca
+-- POST_RUNTIME_REQUIRED public.fn_sync_os_classica_downstream() source_body_sha256=10d1ff1e6fcfd264adfca55ece814e44e6fb9454401f0f9c3ed51f5af972bd09
+-- POST_RUNTIME_REQUIRED public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) source_body_sha256=afef9c3cc61bd2bb00225b932e3c8d6c7657f48026a897b0db16f59f3c3ede74
+-- POST_RUNTIME_REQUIRED public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) source_body_sha256=a769eb19c65fe800145b1702cb46e8eb265674960c5139854328479db0adc463
+-- POST_RUNTIME_REQUIRED public.validate_estoque_entrada() source_body_sha256=f08abce3968049fe7739c185f0a066d3502ae2132ab326ee479c2690be400a2e
+-- POST_RUNTIME_REQUIRED_DEPENDENCY platform_private.entregas_catalog_tenant_guard()
+-- POST_RUNTIME_REQUIRED_DEPENDENCY platform_private.estoque_produto_catalog_tenant_guard()
+-- POST_RUNTIME_REQUIRED_DEPENDENCY platform_private.lotes_catalog_tenant_guard()
+-- POST_RUNTIME_REQUIRED_DEPENDENCY platform_private.ordens_servico_catalog_tenant_guard()
+-- POST_RUNTIME_REQUIRED_DEPENDENCY platform_private.produto_etiquetas_catalog_tenant_guard()
+-- POST_RUNTIME_REQUIRED_DEPENDENCY platform_private.programacao_producao_catalog_tenant_guard()
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='entregas' AND t.tgname='a000_entregas_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_entregas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.entregas_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.entregas.a000_entregas_catalog_tenant_guard';END IF;
+END$$;
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='estoque_produto' AND t.tgname='a000_estoque_produto_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_estoque_produto_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.estoque_produto_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.estoque_produto.a000_estoque_produto_catalog_tenant_guard';END IF;
+END$$;
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='lotes' AND t.tgname='a000_lotes_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_lotes_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.lotes_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.lotes.a000_lotes_catalog_tenant_guard';END IF;
+END$$;
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='ordens_servico' AND t.tgname='a000_ordens_servico_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_ordens_servico_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.ordens_servico_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.ordens_servico.a000_ordens_servico_catalog_tenant_guard';END IF;
+END$$;
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='produto_etiquetas' AND t.tgname='a000_produto_etiquetas_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_produto_etiquetas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.produto_etiquetas FOR EACH ROW EXECUTE FUNCTION platform_private.produto_etiquetas_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.produto_etiquetas.a000_produto_etiquetas_catalog_tenant_guard';END IF;
+END$$;
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='programacao_producao' AND t.tgname='a000_programacao_producao_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_programacao_producao_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.programacao_producao_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.programacao_producao.a000_programacao_producao_catalog_tenant_guard';END IF;
+END$$;
+-- POST_RUNTIME_REQUIRED_NEW_OBJECT platform_private.finished_product_stock_valid_v1(public.estoque_produto)
+-- POST_RUNTIME_REQUIRED_NEW_OBJECT platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)
+-- POST_RUNTIME_REQUIRED_NEW_OBJECT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)
+-- POST_RUNTIME_REQUIRED_NEW_OBJECT public.rpc_finished_product_purchase_capability_v1()
+-- POST_RUNTIME_REQUIRED_NEW_OBJECT public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)
+DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE enabled IS TRUE) THEN RAISE EXCEPTION 'FINISHED_POST_GATE_OPEN';END IF;END$$;

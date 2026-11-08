@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-reconciliation-attempt7-Ig95qS/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 441, in main
+    b4_pre=B.sql((composed_dir/'stages/01-b4-pre-post-composition.sql.readonly').read_text())
+  File "/tmp/posplans-reconciliation-attempt7-Ig95qS/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/posplans-reconciliation-attempt7-Ig95qS/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  B4_PRE_SHARED_BODY:public.rpc_register_receivable_payment(uuid,jsonb)
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE
+

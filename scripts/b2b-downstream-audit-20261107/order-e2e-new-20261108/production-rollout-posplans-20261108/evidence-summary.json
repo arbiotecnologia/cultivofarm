@@ -1,0 +1,58 @@
+{
+  "scope": "PostgreSQL 17.11 descart\u00e1vel e testes locais; n\u00e3o \u00e9 prova JWT/RLS/Storage/hosted",
+  "composition_checks": 38,
+  "partial_regressions": 13,
+  "endpoint_reader_checks": 15,
+  "frontend": {
+    "frontend-ui": {
+      "exitcode": 0,
+      "sha256": "59fb8b057e7585b5b20a90e15a54b14d7aaabdcbfb02ece2de25123c20918a8d",
+      "tests": 21
+    },
+    "frontend-candidate": {
+      "exitcode": 0,
+      "sha256": "d6e4550320f0ce4f66f05dbcbfd45cf707864ee6e6ac9d400dadfaf0bb55a3c4",
+      "tests": 13
+    },
+    "frontend-os-compat": {
+      "exitcode": 0,
+      "sha256": "be8b85a11815a5e3b012586418f74ca3df82f9842724a3d715f3aa1c4b2a7e03",
+      "tests": 73
+    },
+    "typecheck": {
+      "exitcode": 0,
+      "sha256": "a88bae2bea8c4e57075772502a79026d50ce12accdce08d43b0c5ec3a3a0ce2e"
+    }
+  },
+  "full_reverse_rollback": {
+    "closed": {
+      "os_writer": false,
+      "send_writer": false,
+      "physical_gate": false,
+      "confirm_writer": false,
+      "logistics_gate": false,
+      "purchase_writer": false
+    },
+    "history_before": {
+      "os": 19,
+      "movements": 50,
+      "deliveries": 14,
+      "resale_receipts": 9
+    },
+    "history_after": {
+      "os": 19,
+      "movements": 50,
+      "deliveries": 14,
+      "resale_receipts": 9
+    },
+    "current_catalog_preserved": true,
+    "b4_fiscal": "NOT_RUN_OUT_OF_SCOPE"
+  },
+  "b4_fiscal_scope": {
+    "status": "NOT_RUN_OUT_OF_SCOPE",
+    "reason": "B4_PRE_SHARED_BODY hist\u00f3rico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido",
+    "positive_fiscal_receivable": "NOT_RUN_BLOCKED",
+    "hosted": false
+  },
+  "positive_fiscal_receivable": "NOT_RUN_OUT_OF_SCOPE"
+}

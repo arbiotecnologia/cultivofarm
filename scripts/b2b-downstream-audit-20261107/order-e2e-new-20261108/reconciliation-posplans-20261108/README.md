@@ -1,20 +1,37 @@
-# Reconciliação POSPLANOS — bloqueada para captura atual
+# Reconciliação POSPLANOS — concluída localmente
 
-**Estado: BLOCKED_CURRENT_LIVE_METADATA_REQUIRED. Nenhum pacote de instalação foi gerado.**
+**Estado: pacote REVIEW_ONLY_INACTIVE_NOT_APPROVED. Nada foi aplicado, ativado ou publicado.**
 
-O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor não instalou a cadeia de entregas.
+O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor não instalou a cadeia de entregas. Todas as tentativas desta reconciliação foram preservadas em `evidence/posplans-reconciliation-20261108-attempt*`, inclusive as falhas.
 
-## O que foi verificado localmente
+## Evidência LIVE fornecida
 
-- Typecheck: exit 0.
-- UI integrada: 21/21; interface candidata: 13/13; compatibilidade OS: 73/73.
-- Build automático: OK.
-- O ensaio descartável `evidence/posplans-reconciliation-20261108-attempt2/` restaurou a composição histórica, mas a migração canônica completa abortou no próprio PRE por ACLs históricas de tabelas fora deste recorte. Nenhum candidato foi instalado nessa tentativa e nenhum banco hospedado foi acessado.
+- `live-catalog-guards-20261108.sql.capture`: seis corpos reais fornecidos pelo proprietário para a produção canônica relatada `swzpzcwiasxmjutrmvkm`.
+- `live-catalog-guards-20261108.json`: SHA256 `8e7c2859843d6f4eb39e09e37d49be19c16a8a0c8c530b61ab6cbf26ebe4addb` e MD5s medidos por `pg_get_functiondef` em PostgreSQL 17.11 descartável.
+- Esclarecimento aceito como fato relatado: nenhuma das 114 funções alteradas é diretamente redefinida pelos cinco instaladores.
 
-## Por que uma captura é indispensável
+## Resultado final — attempt 10
 
-Reaplicar a migração completa do catálogo a um checkpoint que já contém a composição de entregas não é uma forma válida de reconstruir o estado atual. O repositório contém fontes e pins antigos, mas não uma captura integral dos corpos/ACLs atualmente em produção. Trocar esses pins sem evidência seria exatamente a reconciliação cega proibida.
+- Fresh rehearsal logístico: **38/38**, exit 0.
+- Parciais/revogação/concorrência: **13/13**.
+- Endpoint/leitor: **15/15**.
+- UI integrada **21/21**, candidata **13/13**, compatibilidade OS **73/73**; typecheck e build OK.
+- Seis guards LIVE e oito ACLs restritas preservados antes/depois e após rollback.
+- Histórico preservado; gates e writers fechados após rollback deny-only.
+- B4/fiscal: **NOT_RUN_OUT_OF_SCOPE**. As tentativas 7/8 preservam `B4_PRE_SHARED_BODY` sem enfraquecer o PRE.
 
-O auditor deve executar `00-current-live-capture.sql.readonly` somente em `swzpzcwiasxmjutrmvkm` e devolver o JSON integral. Ele lê apenas definições, owners, ACLs e triggers das dependências; não retorna registros comerciais nem escreve.
+A baseline restrita usa o schema mínimo de apresentação já declarado, os seis corpos capturados e dependências geradas por fontes canônicas. A migração ampla não foi reaplicada. Claims sintéticos completos foram necessários porque o fence atual valida `role`, `sub`, `iat` e `exp`; nenhum fence foi desabilitado.
 
-Com essa captura será possível gerar e ensaiar confirmação → envio → físico → logística → leitor/endpoint e rollbacks deny-only, com seis guards, oito ACLs restritas e gates OFF. Até lá, não há PRE/POST/candidato novo aprovado ou pronto para revisão de instalação.
+O rollback da confirmação é composto: exige o estado integral medido após os rollbacks posteriores e executa somente REVOKE. Isso corrige a comparação isolada que incluía funções de estágios futuros sem aceitar estado arbitrário.
+
+## Pacote para revisão
+
+`../production-rollout-posplans-20261108/`
+
+- 23 arquivos rastreados.
+- Manifesto SHA256: `0b7bf46015288e7bbdaa71422d24f4029b8acbe78ca334500c65bbed54c838f7`.
+- Ordem: PRE READONLY → confirmação → envio → físico OFF → logística OFF → leitor/endpoint OFF.
+- Rollbacks em ordem inversa, deny-only.
+- Planos `cc1f6cc…`, B4, ponte fiscal, NF/NFS-e, recebíveis, pagamentos, comunicação, publicação e ativação automática estão excluídos.
+
+O auditor deve revisar independentemente os hashes e executar o PRE somente em `swzpzcwiasxmjutrmvkm`. Qualquer instalação futura exige autorização específica. PostgreSQL descartável e testes locais não provam JWT/RLS/Storage/hosted nem liberam operação real.

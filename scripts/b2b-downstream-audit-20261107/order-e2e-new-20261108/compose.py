@@ -37,10 +37,11 @@ def main():
   # Capture the new checkpoint under the path used by existing local helper.
   # Subsequent composition is continued in this same database; no source evidence reused.
   print('NEW_PHYSICAL_BOOT_OK',flush=True)
-  # A migração canônica pós-catálogo antecede todos os pins dos candidatos.
-  B.current_catalog.apply(B.run_raw,B.last,B.ok)
+  # Baseline restrita atual: seis corpos LIVE capturados e dependências canônicas,
+  # sem reaplicar a migração ampla nem contornar seu PRE histórico.
+  B.current_catalog.apply(B.run_raw,B.last,B.ok,B.T.A)
   shutil.copyfile(physical/'evidence/current-catalog-baseline.json',OUT/'current-catalog-baseline.json')
-  checks.append(dict(test='canonical post-catalog migration matches nine LIVE bodies six guards and eight ACLs before candidate generation',status='PASS'))
+  checks.append(dict(test='restricted POSPLANOS baseline measures nine bodies six exact LIVE guards and eight ACLs before candidate generation',status='PASS'))
   # Install confirmation/send in the current fresh database using measured exact pins.
   C=B.C
   pre=C.state();delta=C.G.candidate()
@@ -254,7 +255,7 @@ def main():
   item=json.loads(B.last(f"SELECT to_jsonb(i)::text FROM public.partner_order_items i WHERE i.order_id='{order_id}' ORDER BY i.created_at,i.id LIMIT 1;"))
   def resale_call(uid,key,expected=None,item_id=None,role=False):
    expected=expected or accepted['updated_at'];item_id=item_id or item['id']
-   prefix=f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';"
+   prefix=f"RESET ROLE;SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';"
    return prefix+f"SELECT public.rpc_b2b_resale_os_create_v1('{order_id}','{item_id}','{expected}'::timestamptz,'{key}');"
   denied=B.run_raw(resale_call(Q.UADM,'resale-gate-closed-0001'))
   assert denied.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in denied.stderr,denied.stderr
@@ -269,7 +270,7 @@ def main():
   direct_authenticated=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
   assert direct_authenticated.returncode==0,(direct_authenticated.stdout,direct_authenticated.stderr)
   assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
-  direct_operational=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  direct_operational=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
   (OUT/'resale-direct-status-denial.json').write_text(json.dumps(dict(authenticated_zero_rows=dict(returncode=direct_authenticated.returncode,stdout=direct_authenticated.stdout,stderr=direct_authenticated.stderr),privileged_guard=dict(returncode=direct_operational.returncode,stdout=direct_operational.stdout,stderr=direct_operational.stderr)),indent=2)+'\n')
   assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,(direct_operational.returncode,direct_operational.stdout,direct_operational.stderr)
   assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
@@ -407,6 +408,33 @@ def main():
   R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
 
+  # O rollout de cinco instaladores exclui B4/fiscal. As tentativas 7/8 preservam
+  # o drift histórico de rpc_register_receivable_payment; ele não é contornado.
+  if os.environ.get('NEW_E2E_LOGISTICS_ONLY')=='1':
+   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(status='NOT_RUN_OUT_OF_SCOPE',reason='B4_PRE_SHARED_BODY histórico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido',positive_fiscal_receivable='NOT_RUN_BLOCKED',hosted=False),indent=2)+'\n')
+   history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+   B.sql((OUT/'logistics/rollback.sql.review').read_text())
+   B.sql((physical_out/'rollback.sql.review').read_text())
+   B.sql((send_out/'rollback.sql.review').read_text())
+   confirmation_rollback_state=C.state()
+   composed_confirmation_rollback='BEGIN;\n'+C.G.guard(confirmation_rollback_state,'CONFIRM_COMPOSED_ROLLBACK_DRIFT')+f'REVOKE EXECUTE ON FUNCTION {C.G.RPC} FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n'
+   (confirmation_out/'rollback-composed.sql.review').write_text(composed_confirmation_rollback)
+   B.sql(composed_confirmation_rollback)
+   closed=json.loads(B.last("""SELECT jsonb_build_object(
+    'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
+    'physical_gate',(SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton),
+    'os_writer',has_function_privilege('authenticated','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE'),
+    'purchase_writer',has_function_privilege('authenticated','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE'),
+    'send_writer',has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE'),
+    'confirm_writer',has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE'));"""))
+   assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
+   history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+   assert history_after==history_before,(history_before,history_after)
+   B.current_catalog.assert_current(B.last)
+   (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True,'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE'},indent=2)+'\n')
+   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history six guards eight ACLs; B4 fiscal NOT_RUN out of scope',status='PASS'))
+   return 0
+
   # feb815603: B4 reconciliado com TODAS as cinco dependências pós-planos.
   # O corpo B4 e a ponte continuam byte-pinados; o PRE isolado antigo não é usado.
   b4_dir=ROOT/'scripts/b2b-downstream-audit-20261107/b4'
@@ -462,7 +490,7 @@ def main():
 
   # Crédito do pedido aprovado/entregue continua previsão, não dívida. Nenhuma
   # costura de dependência é usada neste controle integrado.
-  credit=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
+  credit=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
   assert credit['reason_code']=='OK' and float(credit['exposicao_atual'])>=float(accepted['total']),credit
   assert B.last('SELECT count(*) FROM public.accounts_receivable;')==str(effect_baseline['receivables'])
   (OUT/'integrated-credit-without-receivable.json').write_text(json.dumps(dict(credit=credit,receivables=effect_baseline['receivables'],fiscal_confirmation=False),indent=2)+'\n')
@@ -595,7 +623,10 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   B.sql((OUT/'logistics/rollback.sql.review').read_text())
   B.sql((physical_out/'rollback.sql.review').read_text())
   B.sql((send_out/'rollback.sql.review').read_text())
-  B.sql((confirmation_out/'rollback.sql.review').read_text())
+  confirmation_rollback_state=C.state()
+  composed_confirmation_rollback='BEGIN;\n'+C.G.guard(confirmation_rollback_state,'CONFIRM_COMPOSED_ROLLBACK_DRIFT')+f'REVOKE EXECUTE ON FUNCTION {C.G.RPC} FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n'
+  (confirmation_out/'rollback-composed.sql.review').write_text(composed_confirmation_rollback)
+  B.sql(composed_confirmation_rollback)
   closed=json.loads(B.last("""SELECT jsonb_build_object(
    'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
    'physical_gate',(SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton),

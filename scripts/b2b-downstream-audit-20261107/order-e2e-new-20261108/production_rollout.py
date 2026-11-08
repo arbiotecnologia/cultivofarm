@@ -36,14 +36,29 @@ def main():
     physical = E/'physical-finished-product'
     assert (E/'current-catalog-baseline.json').is_file()
     assert (E/'current-catalog-posplans.json').is_file()
+    reconciliation = H/'reconciliation-posplans-20261108'
+    guard_source = json.loads((reconciliation/'live-catalog-guards-20261108.json').read_text())
+    current_baseline = json.loads((E/'current-catalog-baseline.json').read_text())
+    current_posplans = json.loads((E/'current-catalog-posplans.json').read_text())
+    assert current_baseline['guard_capture_sha256'] == guard_source['capture_sha256']
+    assert sha(reconciliation/'live-catalog-guards-20261108.sql.capture') == guard_source['capture_sha256']
+    for state in (current_baseline, current_posplans):
+        measured = {row['signature']: row['md5'] for row in state['functions']}
+        for signature, expected in guard_source['functions'].items():
+            assert measured.get(signature) == expected, (signature, measured.get(signature), expected)
     partial = json.loads((E/'review-70d08c.json').read_text())['results']
     endpoint = json.loads((E/'os-endpoint-tests.json').read_text())['results']
     assert len(partial) == 13 and all(x['status'] == 'PASS' for x in partial)
     assert len(endpoint) == 15 and all(x['status'] == 'PASS' for x in endpoint)
     frontend = {}
+    expected_test_counts = {'frontend-ui':21,'frontend-candidate':13,'frontend-os-compat':73}
     for name in ('frontend-ui','frontend-candidate','frontend-os-compat','typecheck'):
         assert (E/f'{name}.exitcode').read_text().strip() == '0', name
+        log_text = (E/f'{name}.txt').read_text()
+        if name in expected_test_counts:
+            assert f"Tests  {expected_test_counts[name]} passed" in log_text, (name, 'test count drift')
         frontend[name] = {'exitcode': 0, 'sha256': sha(E/f'{name}.txt')}
+        if name in expected_test_counts: frontend[name]['tests'] = expected_test_counts[name]
     rollback = json.loads((E/'full-logistics-rollback.json').read_text())
     assert rollback['current_catalog_preserved'] is True
     OUT.mkdir(exist_ok=True)
@@ -108,9 +123,11 @@ ROLLBACK;
     (OUT/'00-production-pre-posplans.sql.readonly').write_text(initial)
 
     artifacts = {
+      'evidence-live-catalog-guards.sql.capture': reconciliation/'live-catalog-guards-20261108.sql.capture',
+      'evidence-live-catalog-guards.json': reconciliation/'live-catalog-guards-20261108.json',
       '11-confirmation-install.sql.review': delivery/'install.sql.review',
       '12-confirmation-post.sql.readonly': delivery/'postflight.sql.review',
-      '91-confirmation-rollback-deny.sql.review': delivery/'rollback.sql.review',
+      '91-confirmation-rollback-deny.sql.review': delivery/'rollback-composed.sql.review',
       '20-send-pre.sql.readonly': send/'preflight.sql.review',
       '21-send-install.sql.review': send/'install.sql.review',
       '22-send-post.sql.readonly': send/'postflight.sql.review',
@@ -131,6 +148,7 @@ ROLLBACK;
       'BEGIN READ ONLY;\n'+pre_from_install(physical/'install.sql.review',physical/'candidate.sql.review')+'ROLLBACK;\n')
     (OUT/'40-logistics-pre-after-physical.sql.readonly').write_text(
       'BEGIN READ ONLY;\n'+pre_from_install(E/'logistics/install.sql.review',E/'logistics/candidate.sql.review')+'ROLLBACK;\n')
+    b4_scope = json.loads((E/'integrated-b4-fiscal-bridge.json').read_text())
     evidence_summary = {
       'scope':'PostgreSQL 17.11 descartável e testes locais; não é prova JWT/RLS/Storage/hosted',
       'composition_checks':len(checks),
@@ -138,14 +156,15 @@ ROLLBACK;
       'endpoint_reader_checks':len(endpoint),
       'frontend':frontend,
       'full_reverse_rollback':rollback,
-      'positive_fiscal_receivable':'NOT_RUN_BLOCKED_REAL_ALWAYS_DENY',
+      'b4_fiscal_scope':b4_scope,
+      'positive_fiscal_receivable':'NOT_RUN_OUT_OF_SCOPE' if b4_scope.get('status')=='NOT_RUN_OUT_OF_SCOPE' else 'NOT_RUN_BLOCKED_REAL_ALWAYS_DENY',
     }
     (OUT/'evidence-summary.json').write_text(json.dumps(evidence_summary,indent=2)+'\n')
     files = {p.name:{'sha256':sha(p),'bytes':p.stat().st_size} for p in sorted(OUT.iterdir()) if p.is_file() and p.name!='manifest.json'}
     manifest = {
       'status':'REVIEW_ONLY_INACTIVE_NOT_APPROVED', 'production_ref':REF,
       'baseline':'POSPLANOS + catálogo exclusivo atual; plan cc1f6cc already installed; never reinstall or roll it back',
-      'current_catalog_evidence':{'pre':sha(E/'current-catalog-baseline.json'),'post_plans':sha(E/'current-catalog-posplans.json'),'function_pins':9,'tenant_guards':6,'restricted_relation_acls':8},
+      'current_catalog_evidence':{'pre':sha(E/'current-catalog-baseline.json'),'post_plans':sha(E/'current-catalog-posplans.json'),'function_pins':9,'tenant_guards':6,'restricted_relation_acls':8,'live_guard_capture_sha256':guard_source['capture_sha256'],'live_guard_function_md5':guard_source['functions']},
       'previous_failed_pre':'CONFIRM_PRE_DRIFT em 4f68d404; pacote anterior preservado e não reutilizado como baseline',
       'hosted_io':False,'gates':'all closed after every install and rollback',
       'live_readonly_reported_2026_11_08':{

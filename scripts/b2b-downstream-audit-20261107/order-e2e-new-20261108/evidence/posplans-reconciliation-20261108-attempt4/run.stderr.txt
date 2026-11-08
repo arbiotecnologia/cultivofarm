@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-reconciliation-attempt4-N5G6Pb/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 42, in main
+    B.current_catalog.apply(B.run_raw,B.last,B.ok)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-reconciliation-attempt4-N5G6Pb/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 225, in apply
+    state = assert_current(last)
+  File "/tmp/posplans-reconciliation-attempt4-N5G6Pb/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 150, in assert_current
+    raise AssertionError("CURRENT_CATALOG_BASELINE_DRIFT\n" + "\n".join(errors))
+AssertionError: CURRENT_CATALOG_BASELINE_DRIFT
+function_acl:platform_private.entregas_catalog_tenant_guard():['postgres=X/postgres']
+function_acl:platform_private.estoque_produto_catalog_tenant_guard():['postgres=X/postgres']
+function_acl:platform_private.lab_assert_manufacturable(uuid,uuid):['authenticated=X/postgres', 'postgres=X/postgres']
+function_acl:platform_private.lab_item_is_manufacturable(uuid,uuid):['postgres=X/postgres']
+function_acl:platform_private.lotes_catalog_tenant_guard():['postgres=X/postgres']
+function_acl:platform_private.ordens_servico_catalog_tenant_guard():['postgres=X/postgres']
+function_acl:platform_private.produto_etiquetas_catalog_tenant_guard():['postgres=X/postgres']
+function_acl:platform_private.programacao_producao_catalog_tenant_guard():['postgres=X/postgres']
+function_acl:public.proximo_codigo(text,text):['postgres=X/postgres']
+table_acl:entregas:['postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']
+table_acl:entrega_comprovantes:['postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']
+table_acl:ordens_servico:['postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']
+table_acl:clientes:['anon=r/postgres', 'authenticated=r/postgres', 'postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['anon=s/postgres', 'authenticated=s/postgres', 'postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']
+table_acl:organizations:['authenticated=r/postgres', 'postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['authenticated=s/postgres', 'postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']
+table_acl:produto_etiquetas:['postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']
+table_acl:profiles:['anon=r/postgres', 'authenticated=r/postgres', 'postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['anon=s/postgres', 'authenticated=s/postgres', 'postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']
+table_acl:programacao_producao:['postgres=arwdDxtm/postgres', 'service_role=arwdDxt/postgres']!=['postgres=arwdDxtm/postgres', 'service_role=arwdDxtm/postgres']

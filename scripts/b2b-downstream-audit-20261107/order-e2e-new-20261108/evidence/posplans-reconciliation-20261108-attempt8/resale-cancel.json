@@ -1,0 +1,23 @@
+{
+  "group": {
+    "itens": [
+      {
+        "entrega_id": "a1ed95c1-b5b0-453b-9da2-b0456ace5b51",
+        "movimentacao_id": "89a97091-29b0-452b-9cf8-6d15a0911d37",
+        "estoque_produto_id": "87e49a3d-4364-4eaa-8241-68ba4c000697"
+      }
+    ],
+    "os_id": "871c7846-82b1-4244-8784-3220177eb7a4",
+    "replay": false,
+    "success": true,
+    "organization_id": "00000000-0000-0000-0000-000000000001"
+  },
+  "cancel": {
+    "replay": false,
+    "success": true,
+    "entrega_id": "a1ed95c1-b5b0-453b-9da2-b0456ace5b51",
+    "organization_id": "00000000-0000-0000-0000-000000000001",
+    "reserva_liberada": true,
+    "estoque_estornado": true
+  }
+}
