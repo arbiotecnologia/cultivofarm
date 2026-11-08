@@ -108,8 +108,9 @@ def restore_checkpoint():
     measured = sql("BEGIN;" + delta + C.G.STATE + "::text;ROLLBACK;")
     post = json.loads([x for x in measured.splitlines() if x.startswith("{")][-1])
     released = json.loads([x for x in sql("BEGIN;" + delta + f"GRANT EXECUTE ON FUNCTION {C.G.RPC} TO authenticated;" + C.G.STATE + "::text;ROLLBACK;").splitlines() if x.startswith("{")][-1])
-    C.G.write(pre, post, released)
-    loaded = run_raw((CONF / "install.sql.review").read_text())
+    confirm_out = H / "evidence/current-confirmation"
+    C.G.write(pre, post, released, out=confirm_out)
+    loaded = run_raw((confirm_out / "install.sql.review").read_text())
     if loaded.returncode != 0:
         raise AssertionError("CONFIRM_INSTALL_PIN_FAILED\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
     send_spec = importlib.util.spec_from_file_location("finished_send_generator", CONF / "send/assemble.py")
@@ -117,8 +118,9 @@ def restore_checkpoint():
     send_spec.loader.exec_module(send_generator)
     send_pre = json.loads(last(send_generator.STATE + "::text;"))
     send_post = json.loads([x for x in sql("BEGIN;" + send_generator.candidate() + send_generator.STATE + "::text;ROLLBACK;").splitlines() if x.startswith("{")][-1])
-    send_generator.write(send_pre, send_post)
-    loaded = run_raw((CONF / "send/install.sql.review").read_text())
+    send_out = H / "evidence/current-send"
+    send_generator.write(send_pre, send_post, out=send_out)
+    loaded = run_raw((send_out / "install.sql.review").read_text())
     if loaded.returncode != 0:
         raise AssertionError("SEND_INSTALL_PIN_FAILED\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
     # Ativação exclusivamente no harness; os artefatos de release permanecem fechados.
