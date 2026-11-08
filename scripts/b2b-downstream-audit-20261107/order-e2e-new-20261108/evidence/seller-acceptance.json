@@ -1,10 +1,10 @@
 {
   "promotion": {
     "contract": "C2_EXTERNAL_ORDER_ORIGIN_V1",
-    "order_id": "3330500d-f99e-4d30-9d89-4d75c40a4cf4"
+    "order_id": "0fb90202-4720-4415-b3c2-5e60a9425d66"
   },
   "order": {
-    "id": "3330500d-f99e-4d30-9d89-4d75c40a4cf4",
+    "id": "0fb90202-4720-4415-b3c2-5e60a9425d66",
     "total": 373.04,
     "numero": "PB-001000",
     "status": "aprovado",
@@ -12,11 +12,11 @@
     "priority": "normal",
     "subtotal": 360.0,
     "cliente_id": null,
-    "created_at": "2026-11-08T14:20:24.251153+00:00",
+    "created_at": "2026-11-08T14:21:25.981737+00:00",
     "created_by": "00000000-0000-0000-0000-000000000021",
     "partner_id": "00000000-0000-0000-0000-000000000011",
-    "updated_at": "2026-11-08T14:20:25.215332+00:00",
-    "approved_at": "2026-11-08T14:20:25.215332+00:00",
+    "updated_at": "2026-11-08T14:21:26.76163+00:00",
+    "approved_at": "2026-11-08T14:21:26.76163+00:00",
     "approved_by": "00000000-0000-0000-0000-000000000024",
     "observacoes": null,
     "table_amount": 360.0,
@@ -28,7 +28,7 @@
     "commercial_notes": null,
     "financial_status": "pendente",
     "payment_due_date": null,
-    "payment_terms_id": "a4548524-e57a-4cd4-afaf-74bc34baf715",
+    "payment_terms_id": "51e1e44e-af57-4339-a8eb-cad0ef0f8991",
     "credit_approved_at": null,
     "credit_approved_by": null,
     "credit_block_reason": null,
@@ -52,8 +52,8 @@
     "internal_economic_snapshot": {
       "items": [
         {
-          "id": "febe6cda-3a9f-42ad-b126-538a6ad9921c",
-          "order_id": "3330500d-f99e-4d30-9d89-4d75c40a4cf4",
+          "id": "4143c590-cfa2-4710-a7ad-f6778aa4b1b2",
+          "order_id": "0fb90202-4720-4415-b3c2-5e60a9425d66",
           "subtotal": 360.0,
           "volume_ml": null,
           "product_id": "00000000-0000-0000-0000-000000000032",
@@ -84,15 +84,15 @@
         }
       ],
       "terms": {
-        "id": "a4548524-e57a-4cd4-afaf-74bc34baf715",
-        "created_at": "2026-11-08T14:20:24.251153+00:00",
+        "id": "51e1e44e-af57-4339-a8eb-cad0ef0f8991",
+        "created_at": "2026-11-08T14:21:25.981737+00:00",
         "created_by": "00000000-0000-0000-0000-000000000021",
         "final_amount": 373.04,
         "table_amount": 360.0,
         "first_due_date": "2026-12-08",
         "discount_amount": 0.0,
         "payment_plan_id": "00000000-0000-0000-0000-000000000081",
-        "partner_order_id": "3330500d-f99e-4d30-9d89-4d75c40a4cf4",
+        "partner_order_id": "0fb90202-4720-4415-b3c2-5e60a9425d66",
         "installment_count": 3,
         "plan_code_snapshot": "T3",
         "plan_name_snapshot": "TESTE 3x",
@@ -132,8 +132,8 @@
         "schema_version": "1",
         "organization_id": "00000000-0000-0000-0000-000000000001",
         "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-        "company_settings_id": "f37370a2-6ae9-40e4-9315-4c8a78ca969b",
-        "accounting_promoted_at": "2026-11-08T14:20:25.129423+00:00",
+        "company_settings_id": "5cf286d1-e8d8-4f58-bc92-258935e8f816",
+        "accounting_promoted_at": "2026-11-08T14:21:26.684501+00:00",
         "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
         "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
         "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",
@@ -143,32 +143,32 @@
       "discount": 0.0,
       "schedule": [
         {
-          "id": "77a773aa-1f23-4816-91e9-b77f1e39cf56",
+          "id": "22a686bf-0f7b-4f5c-b2f7-191b09556807",
           "amount": 124.35,
           "due_date": "2026-12-08",
           "interest_amount": 6.48,
-          "partner_order_id": "3330500d-f99e-4d30-9d89-4d75c40a4cf4",
-          "payment_terms_id": "a4548524-e57a-4cd4-afaf-74bc34baf715",
+          "partner_order_id": "0fb90202-4720-4415-b3c2-5e60a9425d66",
+          "payment_terms_id": "51e1e44e-af57-4339-a8eb-cad0ef0f8991",
           "principal_amount": 117.87,
           "installment_number": 1
         },
         {
-          "id": "f6eeb9e6-6ab3-40e7-8d97-edf46c4048c1",
+          "id": "23389533-1606-43b6-815b-4841caa83327",
           "amount": 124.35,
           "due_date": "2027-01-08",
           "interest_amount": 4.36,
-          "partner_order_id": "3330500d-f99e-4d30-9d89-4d75c40a4cf4",
-          "payment_terms_id": "a4548524-e57a-4cd4-afaf-74bc34baf715",
+          "partner_order_id": "0fb90202-4720-4415-b3c2-5e60a9425d66",
+          "payment_terms_id": "51e1e44e-af57-4339-a8eb-cad0ef0f8991",
           "principal_amount": 119.99,
           "installment_number": 2
         },
         {
-          "id": "1800b1b0-caec-4264-b3bc-8f1a81cecb5d",
+          "id": "d181639d-dede-4d74-9cbf-4d41d5d71a7e",
           "amount": 124.34,
           "due_date": "2027-02-08",
           "interest_amount": 2.2,
-          "partner_order_id": "3330500d-f99e-4d30-9d89-4d75c40a4cf4",
-          "payment_terms_id": "a4548524-e57a-4cd4-afaf-74bc34baf715",
+          "partner_order_id": "0fb90202-4720-4415-b3c2-5e60a9425d66",
+          "payment_terms_id": "51e1e44e-af57-4339-a8eb-cad0ef0f8991",
           "principal_amount": 122.14,
           "installment_number": 3
         }
@@ -185,8 +185,8 @@
       "schema_version": "1",
       "organization_id": "00000000-0000-0000-0000-000000000001",
       "issuer_legal_name": "ARBIO FIXTURE LOCAL SEM VALIDADE EXTERNA",
-      "company_settings_id": "f37370a2-6ae9-40e4-9315-4c8a78ca969b",
-      "accounting_promoted_at": "2026-11-08T14:20:25.129423+00:00",
+      "company_settings_id": "5cf286d1-e8d8-4f58-bc92-258935e8f816",
+      "accounting_promoted_at": "2026-11-08T14:21:26.684501+00:00",
       "accounting_promoted_by": "00000000-0000-0000-0000-000000000024",
       "issuer_organization_id": "00000000-0000-0000-0000-000000000001",
       "promoted_from_contract": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1",

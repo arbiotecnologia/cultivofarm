@@ -7,27 +7,28 @@
       "currency": "BRL",
       "revision": 1,
       "draft_key": null,
-      "created_at": "2026-11-08T14:20:19.609981+00:00",
+      "created_at": "2026-11-08T14:21:20.435629+00:00",
       "created_by": null,
       "trial_days": 1,
-      "updated_at": "2026-11-08T14:20:19.609981+00:00",
+      "updated_at": "2026-11-08T14:21:20.435629+00:00",
       "archived_at": null,
       "archived_by": null,
       "publish_key": null,
       "effective_to": null,
       "price_amount": 0.0,
-      "published_at": "2026-11-07T14:20:19.609981+00:00",
+      "published_at": "2026-11-07T14:21:20.435629+00:00",
       "billing_cycle": "monthly",
       "name_snapshot": "LOCAL B2B E2E",
       "archive_reason": null,
       "correlation_id": null,
-      "effective_from": "2026-11-07T14:20:19.609981+00:00",
+      "effective_from": "2026-11-07T14:21:20.435629+00:00",
       "version_number": 1,
       "limits_snapshot": {},
       "features_snapshot": [
         "pedidos_b2b",
         "catalogo_precos",
-        "estoque_embalagens"
+        "estoque_embalagens",
+        "ordens_producao"
       ],
       "publication_reason": null,
       "description_snapshot": null
@@ -44,16 +45,16 @@
   },
   "buyer_links": [
     {
-      "id": "0f86367a-ac0f-45b1-ba3b-dd19cf2915e2",
+      "id": "f8f7f68e-540e-487f-a5dd-f8d30506cb01",
       "papel": "gestor",
       "user_id": "00000000-0000-0000-0000-000000000021",
       "version": 1,
       "tenant_id": "00000000-0000-0000-0000-000000000001",
-      "created_at": "2026-11-08T14:20:17.338185+00:00",
+      "created_at": "2026-11-08T14:21:17.60345+00:00",
       "partner_id": "00000000-0000-0000-0000-000000000011",
       "revoked_at": null,
       "revoked_by": null,
-      "valid_from": "2026-11-08T14:20:17.338185+00:00",
+      "valid_from": "2026-11-08T14:21:17.60345+00:00",
       "revoke_reason": null
     }
   ],
@@ -62,6 +63,12 @@
       "config": null,
       "module_key": "local",
       "feature_key": "estoque_embalagens",
+      "limit_value": null
+    },
+    {
+      "config": null,
+      "module_key": "local",
+      "feature_key": "ordens_producao",
       "limit_value": null
     },
     {
@@ -83,10 +90,10 @@
       "status": "ACTIVE",
       "plan_id": "00000000-0000-0000-0000-000000000805",
       "cancel_at": null,
-      "created_at": "2026-11-08T14:20:19.612373+00:00",
+      "created_at": "2026-11-08T14:21:20.441043+00:00",
       "created_by": null,
-      "started_at": "2026-11-08T13:20:19.612373+00:00",
-      "updated_at": "2026-11-08T14:20:19.612373+00:00",
+      "started_at": "2026-11-08T13:21:20.441043+00:00",
+      "updated_at": "2026-11-08T14:21:20.441043+00:00",
       "cancelled_at": null,
       "suspended_at": null,
       "billing_cycle": null,
@@ -115,7 +122,7 @@
     "partner_id": "00000000-0000-0000-0000-000000000011",
     "technician": false,
     "link_version": 1,
-    "profile_stamp": "2026-11-08T14:20:16.487022+00:00",
+    "profile_stamp": "2026-11-08T14:21:16.719432+00:00",
     "external_roles": [
       "parceiro_b2b"
     ],
