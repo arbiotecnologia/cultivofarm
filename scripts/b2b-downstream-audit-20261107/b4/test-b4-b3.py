@@ -776,17 +776,17 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
  BEGIN RAISE EXCEPTION 'B4_TEST_POST_TITLE_FAILURE' USING ERRCODE='P0001'; END $$;
  CREATE TRIGGER zz_b4_test_fail_after_title AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION public.b4_test_fail_after_title();""")
         access_key = "35261111111111111111111111111111111111111111"
-        failed_auth = service_sql(f"SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL);")
+        failed_auth = service_sql(f"SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL','{tx_main}');")
         check("autorização com falha pós-título aborta sem perder capacidade de retry", failed_auth.returncode != 0 and "B4_TEST_POST_TITLE_FAILURE" in failed_auth.stderr, failed_auth.stderr[-1000:])
         check("falha da autorização não deixa NF autorizada, documento ou título parcial", B3.psql(f"SELECT (SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_main}')||'|'||(SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_main}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_main}')").stdout.strip() == "PENDING|0|0")
         B3.psql("DROP TRIGGER zz_b4_test_fail_after_title ON public.accounts_receivable;DROP FUNCTION public.b4_test_fail_after_title();")
-        authorized, authorized_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL)")
+        authorized, authorized_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL','{tx_main}')")
         check("retentativa autorizada gera um recebível B4 pela NF", authorized and authorized["applied"] and authorized.get("receivableId"), authorized_error or authorized)
         service_title = authorized and authorized["receivableId"]
         service_origin = B3.psql(f"SELECT coalesce((SELECT created_by::text FROM public.accounts_receivable WHERE id='{service_title}'),'<NULL>')||'|'||coalesce(receivable_id::text,'<NULL>') FROM public.fiscal_invoices WHERE id='{invoice_main}'").stdout.strip()
         check("título service-only não inventa ator humano e conserva vínculo NF", service_origin == f"<NULL>|{service_title}", service_origin)
         check("parcialidade service-only consome somente o restante do pedido", residual(recovery_order) == 0, residual(recovery_order))
-        replay, replay_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL)")
+        replay, replay_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL','{tx_main}')")
         check("retentativa da NF autorizada é replay sem duplicação", replay and replay["applied"] is False and replay["b2bReplay"] and replay["receivableId"] == service_title, replay_error or replay)
         def bridge_race():
             return service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');")
