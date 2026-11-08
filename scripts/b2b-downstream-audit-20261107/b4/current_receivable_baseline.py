@@ -23,7 +23,7 @@ def restore(sql):
     function=re.search(r'CREATE FUNCTION platform_private\.delivery_no_downstream_20261030\(\).*?END \$\$;',text,re.S)
     context=re.search(r'CREATE TABLE platform_private\.delivery_context_20261030 \(.*?ALTER TABLE platform_private\.delivery_context_20261030 ENABLE ROW LEVEL SECURITY;',text,re.S)
     assert function is not None and context is not None, 'CANONICAL_SOURCE_MISSING'
-    sql(context.group())
+    sql(context.group().replace('CREATE TABLE platform_private.delivery_context_20261030', 'CREATE TABLE IF NOT EXISTS platform_private.delivery_context_20261030'))
     sql(function.group()+'\nREVOKE ALL ON FUNCTION '+SIGNATURE+' FROM PUBLIC,anon,authenticated,service_role;')
     sql(TRIGGER['definition']+';')
     sql('REVOKE ALL ON public.accounts_receivable FROM anon,authenticated,service_role; GRANT DELETE,INSERT,MAINTAIN,SELECT,UPDATE ON public.accounts_receivable TO anon,authenticated; GRANT DELETE,INSERT,MAINTAIN,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE ON public.accounts_receivable TO postgres,service_role;')
