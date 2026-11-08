@@ -29,7 +29,8 @@ vi.mock("react-router-dom", () => ({ Link: ({ children }: any) => <a>{children}<
 import FinanceiroB2B, { PartnerFinancialSettingsDialog } from "@/pages/financeiro/FinanceiroB2B";
 const partner = { partner_id: "P", partner_name: "Teste" };
 const method = "AUDIT-AR-20260922 - Sem transferencia";
-const row = () => ({ ...emptyPartnerSettings("P"), id: "S", updated_at: "2026-10-23T20:00:00Z", default_payment_method: method });
+const row = () => ({ ...emptyPartnerSettings("P"), id: "S", updated_at: "2026-10-23T20:00:00Z", default_payment_method: method,
+  billing_trigger: "na_entrega", payment_terms_days: 7, auto_generate_receivable: true });
 beforeEach(() => { state.roles = ["administrador"]; state.settings = row(); state.fetching = false; state.error = false; state.save.mockReset().mockResolvedValue({}); });
 describe("configuração financeira canônica — UI sintética, sem escrita hosted", () => {
   it("permite abrir o mesmo diálogo antes do primeiro pedido", async () => {
