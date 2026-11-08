@@ -56,6 +56,9 @@ def install(B, out, root):
         spec = importlib.util.spec_from_file_location("new_current_receivable_baseline", baseline_path)
         current_ar = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(current_ar)
+    # O auxiliar histórico calcula ROOT relativo ao diretório review; no espelho
+    # novo a origem explícita evita duplicar "scripts" sem alterar o pacote B4.
+    current_ar.SOURCE = root / "scripts/delivery-atomic-hardening-20261030/candidate.sql.review"
 
     before = snapshot(B)
     registration_defs = {x["signature"]: x for x in registration["functions"]}
