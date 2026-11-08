@@ -127,7 +127,7 @@ ROLLBACK;
       'evidence-live-catalog-guards.json': reconciliation/'live-catalog-guards-20261108.json',
       '11-confirmation-install.sql.review': delivery/'install.sql.review',
       '12-confirmation-post.sql.readonly': delivery/'postflight.sql.review',
-      '91-confirmation-rollback-deny.sql.review': delivery/'rollback.sql.review',
+      '91-confirmation-rollback-deny.sql.review': delivery/'rollback-composed.sql.review',
       '20-send-pre.sql.readonly': send/'preflight.sql.review',
       '21-send-install.sql.review': send/'install.sql.review',
       '22-send-post.sql.readonly': send/'postflight.sql.review',
