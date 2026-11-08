@@ -1,0 +1,4 @@
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/b4/test-b4-b3.py", line 649
+    B3.psql(f"INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
+            ^
+SyntaxError: unterminated f-string literal (detected at line 649)
