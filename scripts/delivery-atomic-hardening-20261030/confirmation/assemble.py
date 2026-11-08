@@ -17,7 +17,7 @@ def candidate():
  current_barrier=os.environ.get('DELIVERY_CURRENT_BARRIER_JSON')
  if current_barrier:
   current=json.loads(Path(current_barrier).read_text())
-  barrier=current['platform_private.delivery_mutation_guard_20261030()']['definition'].rstrip()+'\n'
+  barrier=current['platform_private.delivery_mutation_guard_20261030()']['definition'].rstrip()+';\n'
  anchor=" IF c.action='proof' THEN"
  branch=""" IF c.action='confirm' THEN
   v_org:=platform_private.delivery_confirm_actor_v1();
