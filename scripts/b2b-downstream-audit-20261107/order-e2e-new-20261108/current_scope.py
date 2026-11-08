@@ -93,19 +93,19 @@ def _relation_rows(state: dict) -> dict[str, list]:
     return {_relation_name(row[0]): row for row in state["relations"]}
 
 
-def _live_functions(pre_state: dict) -> dict[str, list]:
-    rows = _function_rows(pre_state)
+def _live_functions() -> dict[str, list]:
+    rows = _function_rows(DIFF_BASELINE)
     for row in DIFF["functions"]["removed"]:
         key = _signature(row[0], row[1], row[2])
         assert rows.pop(key, None) == row, f"LIVE_REMOVED_ROW_MISMATCH:{key}"
     for row in DIFF["functions"]["added"]:
         rows[_signature(row[0], row[1], row[2])] = row
-    assert len(rows) == len(pre_state["functions"]) - 126 + 232
+    assert len(rows) == len(DIFF_BASELINE["functions"]) - 126 + 232
     return rows
 
 
-def _live_relations(pre_state: dict) -> dict[str, list]:
-    rows = _relation_rows(pre_state)
+def _live_relations() -> dict[str, list]:
+    rows = _relation_rows(DIFF_BASELINE)
     for row in DIFF["relations"]["removed"]:
         key = _relation_name(row[0])
         assert rows.pop(key, None) == row, f"LIVE_REMOVED_RELATION_MISMATCH:{key}"
