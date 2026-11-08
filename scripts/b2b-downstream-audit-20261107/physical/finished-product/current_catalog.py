@@ -73,9 +73,9 @@ SUPPLEMENTAL_SOURCES = {
     "cf_user_guards_v1.require_admin()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
 }
 SUPPLEMENTAL_MD5 = {
-    row["function"]: row["function_md5"]
+    (row["function"] if "." in row["function"].split("(")[0] else "public." + row["function"]): row["function_md5"]
     for row in CAPTURE["triggers"]
-    if row["function"] in SUPPLEMENTAL_SOURCES
+    if (row["function"] if "." in row["function"].split("(")[0] else "public." + row["function"]) in SUPPLEMENTAL_SOURCES
 }
 assert set(SUPPLEMENTAL_MD5) == set(SUPPLEMENTAL_SOURCES)
 
