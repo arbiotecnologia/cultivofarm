@@ -1,0 +1,1 @@
+- Compose current receivable metadata from the reported ACL and ten-trigger baseline without editing historical captures; restore the exact canonical delivery prohibition only in disposable harnesses and pin it as immutable in PRE/POST/rollback — prevents metadata-only pin swaps and downstream reopening.
