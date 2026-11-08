@@ -16,7 +16,7 @@ O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor 
 
 1. os seis corpos capturados, sem alteração semântica;
 2. os seis triggers `a000_*_catalog_tenant_guard` habilitados;
-3. as três dependências necessárias geradas pelas fontes canônicas `fence_section.py` e `codigo_section.py`;
+3. as três dependências necessárias geradas pela fonte canônica `fence_section.py` e pelo trecho exato de `proximo_codigo` na migração versionada;
 4. as oito ACLs restritas relatadas;
 5. medição dos nove corpos após a composição, sem pins provisórios.
 
