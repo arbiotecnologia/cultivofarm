@@ -70,12 +70,19 @@ def install(B, out, root):
 
     historical = next(t for t in money["tables"] if t["name"] == "accounts_receivable")
     expected = current_ar.table_metadata(historical)
-    before_triggers = sorted(before["receivable"]["triggers"], key=lambda x: x["name"])
-    historical_triggers = sorted(historical["triggers"], key=lambda x: x["name"])
-    assert before_triggers == historical_triggers, {"before": before_triggers, "expected_nine": historical_triggers}
-    assert before["receivable"]["trigger_md5"] != current_ar.TRIGGERS_MD5
-    assert B.last("SELECT to_regprocedure('platform_private.delivery_no_downstream_20261030()') IS NULL;") == "t"
-    current_ar.restore(B.sql)
+    shape = lambda rows: sorted(({"name": x["name"], "definition": x["definition"], "enabled": x["enabled"]} for x in rows), key=lambda x: x["name"])
+    before_triggers = shape(before["receivable"]["triggers"])
+    historical_triggers = shape(historical["triggers"])
+    if before["receivable"]["trigger_md5"] != current_ar.TRIGGERS_MD5:
+        assert before_triggers == historical_triggers, {"before": before_triggers, "expected_nine": historical_triggers}
+        assert B.last("SELECT to_regprocedure('platform_private.delivery_no_downstream_20261030()') IS NULL;") == "t"
+        current_ar.restore(B.sql)
+    else:
+        # O checkpoint revisto já pode conter o décimo gatilho. Não recriar nem
+        # substituir a guarda: somente a composição exata é aceita.
+        assert before_triggers == shape(expected["triggers"]), before_triggers
+        assert before["downstream_guard"] and before["downstream_guard"]["md5"] == current_ar.FUNCTION_MD5, before
+        B.sql("REVOKE ALL ON public.accounts_receivable FROM anon,authenticated,service_role; GRANT DELETE,INSERT,MAINTAIN,SELECT,UPDATE ON public.accounts_receivable TO anon,authenticated; GRANT DELETE,INSERT,MAINTAIN,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE ON public.accounts_receivable TO postgres,service_role;")
 
     after = snapshot(B)
     assert after["receivable"]["acl"] == current_ar.ACL, after["receivable"]["acl"]
