@@ -408,6 +408,30 @@ def main():
   R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
 
+  # O rollout de cinco instaladores exclui B4/fiscal. As tentativas 7/8 preservam
+  # o drift histórico de rpc_register_receivable_payment; ele não é contornado.
+  if os.environ.get('NEW_E2E_LOGISTICS_ONLY')=='1':
+   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(status='NOT_RUN_OUT_OF_SCOPE',reason='B4_PRE_SHARED_BODY histórico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido',positive_fiscal_receivable='NOT_RUN_BLOCKED',hosted=False),indent=2)+'\n')
+   history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+   B.sql((OUT/'logistics/rollback.sql.review').read_text())
+   B.sql((physical_out/'rollback.sql.review').read_text())
+   B.sql((send_out/'rollback.sql.review').read_text())
+   B.sql((confirmation_out/'rollback.sql.review').read_text())
+   closed=json.loads(B.last("""SELECT jsonb_build_object(
+    'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
+    'physical_gate',(SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton),
+    'os_writer',has_function_privilege('authenticated','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE'),
+    'purchase_writer',has_function_privilege('authenticated','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE'),
+    'send_writer',has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE'),
+    'confirm_writer',has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE'));"""))
+   assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
+   history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+   assert history_after==history_before,(history_before,history_after)
+   B.current_catalog.assert_current(B.last)
+   (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True,'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE'},indent=2)+'\n')
+   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history six guards eight ACLs; B4 fiscal NOT_RUN out of scope',status='PASS'))
+   return 0
+
   # feb815603: B4 reconciliado com TODAS as cinco dependências pós-planos.
   # O corpo B4 e a ponte continuam byte-pinados; o PRE isolado antigo não é usado.
   b4_dir=ROOT/'scripts/b2b-downstream-audit-20261107/b4'
