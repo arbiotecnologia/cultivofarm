@@ -1904,7 +1904,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py",
-      "sha256": "4849b25df0fcda38dab232477d3aba9e47f3493cdaff8db2c582ed3cb43c30b0"
+      "sha256": "6a47a357d133f8c2d3e58e7048a6b8c5cd5647514347288916942bb921a0f31e"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",
