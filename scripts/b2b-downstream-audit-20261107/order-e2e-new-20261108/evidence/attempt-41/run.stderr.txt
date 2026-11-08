@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-wvynray1/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 235, in main
+    cancelled=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_cancelar_v1('{cancel_delivery}','LOCAL resale-cancel-0001','{cancel_observed}'::timestamptz);"))
+                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-wvynray1/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-wvynray1/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-wvynray1/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  DELIVERY_CANCEL_ORIGIN_CLOSED
+CONTEXT:  PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 17 at RAISE
+

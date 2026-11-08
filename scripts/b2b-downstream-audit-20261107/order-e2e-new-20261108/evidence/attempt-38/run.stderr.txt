@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-mznq_ke8/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 170, in main
+    logistics=L.install(B,OUT)
+  File "/tmp/new-order-e2e-mznq_ke8/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 230, in install
+    body = one(body, """IF v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'manual'
+     OR v_row.reservado_para_cliente_id IS DISTINCT FROM v_os.cliente_id OR v_row.reservado_para_partner_id IS NOT NULL
+    ...<8 lines>...
+      OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric))
+     THEN RAISE EXCEPTION 'DELIVERY_RESERVATION_NOT_OWNED' USING ERRCODE='PT409'; END IF;""", "group reserved ownership")
+  File "/tmp/new-order-e2e-mznq_ke8/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 30, in one
+    assert body.count(old) == count, f"anchor drift {label}: {body.count(old)} != {count}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: anchor drift group reserved ownership: 0 != 1

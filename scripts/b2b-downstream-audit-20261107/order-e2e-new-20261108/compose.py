@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Composition driver, executes only in /tmp mirror; all experiments are local."""
-import importlib.util,json,os,sys,traceback
+import importlib.util,json,os,sys,traceback,uuid
 from pathlib import Path
 H=Path(__file__).resolve().parent;ROOT=H.parents[2]
 assert ROOT.is_relative_to(Path('/tmp')), 'TEMP_MIRROR_REQUIRED'
@@ -205,17 +205,36 @@ def main():
   def reserve_resale(key,quantity=2):
    items=json.dumps([{'item_id':stock,'quantidade':quantity}]);data=json.dumps({'partner_id':Q.P,'partner_order_id':order_id})
    return B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{data}'::jsonb);"
+  group_observations={}
   def group_resale(stock_id,key):
-   observed_os=B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';")
-   observed_stock=B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';")
+   if key not in group_observations:
+    group_observations[key]=(B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';"),B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';"))
+   observed_os,observed_stock=group_observations[key]
    items=json.dumps([{'item_id':stock_id,'quantidade':2,'observed_updated_at':observed_stock}])
    return B.T.actor(Q.UADM)+f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
+  def prove_resale(delivery_id,key):
+   generated=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery_id}','resale-generate-{key}');"))
+   assert generated['success'] is True,generated
+   path=f"entregas/{delivery_id}/comprovantes/{uuid.uuid4()}.pdf"
+   B.sql(f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{path}','{Q.UADM}','{Q.UADM}');")
+   payload=json.dumps({'arquivo_path':path,'arquivo_nome':'local.pdf','arquivo_mime':'application/pdf','recebedor_nome':'LOCAL REVENDA'})
+   attached=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_comprovante_anexar_v1('{delivery_id}','resale-proof-{key}','{payload}'::jsonb);"))
+   assert attached['success'] is True,attached
   wrong=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":0.5}}]'::jsonb,'resale-fractional-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':order_id})}'::jsonb);"
   rejected=B.run_raw(wrong);assert rejected.returncode!=0 and 'FINISHED_PRODUCT_WHOLE_PACK_REQUIRED' in rejected.stderr,rejected.stderr
+  wrong_partner=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]'::jsonb,'resale-wrong-partner-0001','{json.dumps({'partner_id':Q.PO,'partner_order_id':order_id})}'::jsonb);"
+  rejected=B.run_raw(wrong_partner);assert rejected.returncode!=0 and 'ESTQ_REFERENCE_FORBIDDEN' in rejected.stderr,rejected.stderr
+  wrong_order=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]'::jsonb,'resale-wrong-order-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':'00000000-0000-0000-0000-000000000001'})}'::jsonb);"
+  rejected=B.run_raw(wrong_order);assert rejected.returncode!=0 and 'ESTQ_REFERENCE_FORBIDDEN' in rejected.stderr,rejected.stderr
+  wrong_actor=B.T.actor(Q.UB)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]'::jsonb,'resale-wrong-actor-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':order_id})}'::jsonb);"
+  rejected=B.run_raw(wrong_actor);assert rejected.returncode!=0,rejected.stderr
+  assert B.last(f"SELECT quantidade=3 AND status='disponivel' AND reservado_para_os_id IS NULL FROM public.estoque_produto WHERE id='{stock}';")=='t'
+  checks.append(dict(test='fractional pack, mismatched partner/order and buyer reservation all fail without changing stock',status='PASS'))
   reserved=json.loads(B.last(reserve_resale('resale-reserve-cancel-0001')))['itens'][0]
   grouped=json.loads(B.last(group_resale(reserved,'resale-group-cancel-0001')))
   cancel_delivery=grouped['itens'][0]['entrega_id']
-  cancelled=json.loads(B.last(B.cancel(cancel_delivery,'resale-cancel-0001')))
+  cancel_observed=B.last(f"SELECT updated_at FROM public.entregas WHERE id='{cancel_delivery}';")
+  cancelled=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_cancelar_v1('{cancel_delivery}','LOCAL resale-cancel-0001','{cancel_observed}'::timestamptz);"))
   assert cancelled['success'] is True and cancelled['replay'] is False,cancelled
   assert B.last(f"SELECT quantidade=3 AND status='disponivel' FROM public.estoque_produto WHERE id='{stock}';")=='t'
   assert B.last(f"SELECT receivable_id IS NULL AND partner_order_id='{order_id}' FROM public.entregas WHERE id='{cancel_delivery}';")=='t'
@@ -232,7 +251,7 @@ def main():
   assert sent['success'] is True and sent['status']=='em_rota',sent
   sent_replay=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{observed}','resale-send-0001');"))
   assert sent_replay['replay'] is True,sent_replay
-  B.prove(delivery,'resale-proof-0001')
+  prove_resale(delivery,'resale-proof-0001')
   observed=B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
   confirmed=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}','resale-confirm-0001','{{\"nome\":\"LOCAL REVENDA\"}}'::jsonb);"))
   assert confirmed['success'] is True and confirmed['status']=='entregue',confirmed

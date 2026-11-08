@@ -1,0 +1,48 @@
+[
+  {
+    "test": "fresh full physical catalog restoration and reviewed upstream composition",
+    "status": "PASS"
+  },
+  {
+    "test": "physical revised install PRE POST; fresh confirmation/send generated pins",
+    "status": "PASS"
+  },
+  {
+    "test": "new physical control purchase reserve send proof confirm without manufacture",
+    "status": "PASS"
+  },
+  {
+    "test": "new B3 captured economic composition merged without dropped physical guards",
+    "status": "PASS"
+  },
+  {
+    "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
+    "status": "PASS",
+    "order_id": "371c69c6-602b-4aef-b1e8-5e87fb189a3a"
+  },
+  {
+    "test": "accounting pending approval denied atomically before synthetic promotion",
+    "status": "PASS"
+  },
+  {
+    "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
+    "status": "PASS"
+  },
+  {
+    "test": "resale candidate gate closed, no client EXECUTE and no direct ready OS bypass",
+    "status": "PASS"
+  },
+  {
+    "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
+    "status": "PASS",
+    "os_id": "4d80d62e-cc02-4b8f-af2c-5815c6324302"
+  },
+  {
+    "test": "new composition",
+    "status": "FAIL"
+  }
+]

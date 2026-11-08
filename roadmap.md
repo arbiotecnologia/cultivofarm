@@ -1,12 +1,17 @@
+## 08/11 14:26 — Achados reais na prévia original ARBio
+- [ ] E2E local avançou com 12 checkpoints PASS antes de exit 1: reserva/negativos, expedição, cancelamento com três embalagens restauradas, segundo agrupamento/replay e envio/replay. Próximo bloqueio: `delivery_proof_recheck_20261030`/`DELIVERY_PROOF_SCOPE_DENIED`; comprovante/confirmação, regressão manual e POST/rollback pendentes. Candidato INATIVO/NÃO APROVADO.
+- [ ] Investigar a perda de `valid_until=2026-11-15` no plano sintético `TESTE-FLUXO-20261108`: separar DOM/estado/evento/payload/servidor e automação, preparar regressão com datas preenchidas, submit e reabertura. Não alterar o plano LIVE nem completar sua desativação; sem hosted/publicação.
+- [ ] Investigar comprador novo sem condições e botão Enviar desabilitado; carrinho local de 1 saco 25 kg/R$10 não foi enviado. Não criar condição, pedido ou efeito externo.
+
 ## 08/11 14:07 — Configuração financeira nova com contenção manual
 - [x] E2E local foi executado primeiro e suas evidências ficaram separadas. A ponte avançou até OS/compra positivas, mas a reserva B2B falhou em `stock_p1_guard`/`ESTQ_REFERENCE_FORBIDDEN`; run exit 1, sem expedição/entrega/cancelamento ou POST/rollback logístico concluídos.
 - [x] Formulário sem configuração inicia `auto_generate_receivable=false` e `billing_trigger=manual`; demais valores, existentes e CAS preservados. Ausência/abertura não gravam; salvar explícito usa `p_expected=NULL`. Três arquivos/47 testes PASS, typecheck exit 0 e build OK 14:24:36. Evidência separada `ui-safe-defaults-1407/`; sem hosted/publicação/envios/cobranças. Fato auditado do parceiro é configuração sintética específica, não nova regra comercial: recebível somente por NF autorizada continua pendente.
-- [ ] Corrigir em candidato posterior a autoridade vendedora também em `stock_p1_guard` (MD5 capturado `ad87685f4b7bc87bd8cc3f41f283966d`), sem mudar helpers globais; depois repetir reserva→expedição→entrega/cancelamento, negativos, regressão manual e POST/rollback. Candidato logístico atual INATIVO/NÃO APROVADO e incompleto.
+- [x] Autoridade vendedora em `stock_p1_guard` incorporada ao candidato local sem mudar helpers globais; reserva/negativos e etapas posteriores foram exercitados. Continuação e bloqueio atual estão na fila 14:26.
 
 ## 08/11 13:46 — E2E c40a13b8: comprador no tenant vendedor
 - [x] Chamadores B3 identificados; shape real com org vendedora NULL e um `partner_users` no tenant vendedor, sem Superadmin. A captura atual já tem fallback de vínculo válido: falta de `tenant_id` e entitlements reais na fixture, não defeito comprovado do writer. Guards globais byte-pinados preservados.
 - [x] Nova matriz local 8/8 exit 0: negativos papel/tenant/inativo/revogação/unicidade; simulação, reserva durável, pedido B3, replay, recovery committed; aprovação pré-contábil negada atomicamente, promoção CAS fictícia e aceite vendedor; produção biológica fechada.
-- [ ] Ponte logística B2B continua INCOMPLETA: candidato novo gerado por corpos medidos; 10 checkpoints PASS antes de exit 1, incluindo OS sem fabricação e compra, mas reserva negada por `stock_p1_guard`. Expedição/entrega/cancelamento/POST/rollback NÃO concluídos. Controle físico agronômico positivo não é E2E B2B; sem hosted/Auth/publicação/NF/cobrança/envios e sem tocar piloto/cinco títulos.
+- [x] Resultado desta tentativa histórica atualizado pela rodada 14:26: reserva, expedição, cancelamento e envio avançaram; ponte segue INCOMPLETA no comprovante. Controle físico agronômico não é E2E B2B; sem hosted/Auth/publicação/NF/cobrança/envios e sem tocar piloto/cinco títulos.
 
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
 ### 08/11 03:31 — UX comprador novo

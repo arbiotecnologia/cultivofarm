@@ -13,6 +13,10 @@ CHANGED = [
     "private.guard_os_separate_approval()",
     "platform_private.trg_lab_os_biological_only()",
     "platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)",
+    "platform_private.stock_p1_guard()",
+    "platform_private.delivery_mutation_guard_20261030()",
+    "platform_private.delivery_confirm_recheck_v1(uuid,uuid)",
+    "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
@@ -20,7 +24,9 @@ CHANGED = [
 ]
 NEW = [
     "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)",
+    "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)",
     "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
+    "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)",
     "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
 ]
 
@@ -87,6 +93,35 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
 $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_valid_v1(public.ordens_servico) FROM PUBLIC,anon,authenticated,service_role;
 
+CREATE FUNCTION platform_private.b2b_resale_os_operational_valid_v1(o public.ordens_servico)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
+  AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
+  AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
+  AND o.fazenda_id IS NULL AND o.talhao_id IS NULL AND o.volume_total_ml IS NULL AND o.area_hectares IS NULL
+  AND EXISTS(
+   SELECT 1 FROM public.partner_orders po
+    JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=o.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   JOIN public.partner_order_items i ON i.id=o.partner_order_item_id AND i.order_id=po.id
+   JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=o.organization_id
+    AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+   WHERE po.id=o.partner_order_id AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+    AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
+    AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+    AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+    AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+    AND ((i.packaging_unidade_conteudo_snapshot IN ('kg','g') AND i.packaging_peso_liquido_kg_snapshot>0)
+      OR (i.packaging_unidade_conteudo_snapshot IN ('l','ml') AND i.packaging_peso_liquido_kg_snapshot IS NULL))
+  )) IS TRUE;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico) FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE FUNCTION platform_private.b2b_resale_delivery_lineage_valid_v1(s public.estoque_produto,e public.entregas,l public.lotes)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
@@ -111,6 +146,27 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
   )) IS TRUE;
 $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(e public.entregas)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND e.id IS NOT NULL AND e.organization_id IS NOT NULL AND e.partner_order_id IS NOT NULL
+  AND e.receivable_id IS NULL AND e.ordem_servico_id IS NOT NULL AND e.ordem_servico_onfarm_id IS NULL
+  AND e.cliente_id IS NULL AND EXISTS(
+   SELECT 1 FROM public.ordens_servico os
+   JOIN public.partner_orders po ON po.id=os.partner_order_id AND po.id=e.partner_order_id
+   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=os.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   WHERE os.id=e.ordem_servico_id AND os.organization_id=e.organization_id AND os.origem='b2b'
+    AND os.partner_order_item_id IS NOT NULL AND os.produto_id=e.produto_id AND os.microrganismo_id IS NULL
+    AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+  )) IS TRUE;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE FUNCTION platform_private.b2b_resale_os_create_v1(
  p_order_id uuid,p_order_item_id uuid,p_expected_updated_at timestamptz,p_request_key text)
@@ -196,16 +252,79 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     body = one(body, "IF v_order IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN", "IF v_order IS NOT NULL AND NOT v_resale AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN", "stock refs order")
     defs[sig]["new"] = body
 
+    sig = "platform_private.stock_p1_guard()"
+    body = defs[sig]["body"]
+    body = one(body, " v_lote public.lotes%ROWTYPE;", " v_lote public.lotes%ROWTYPE;\n v_resale boolean:=false;", "stock row guard declaration")
+    body = one(body, "BEGIN\n IF auth.uid() IS NULL", """BEGIN
+ IF TG_OP IN ('INSERT','UPDATE') AND NEW.reservado_para_os_id IS NOT NULL AND NEW.reservado_para_os_tipo='b2b'
+  AND NEW.reservado_para_partner_id IS NOT NULL AND NEW.reservado_para_partner_order_id IS NOT NULL
+  AND platform_private.b2b_internal_commercial_actor() IS TRUE THEN
+  SELECT platform_private.b2b_resale_os_valid_v1(o) INTO v_resale
+   FROM public.ordens_servico o
+   WHERE o.id=NEW.reservado_para_os_id AND o.organization_id=v_org
+    AND o.partner_order_id=NEW.reservado_para_partner_order_id
+    AND EXISTS(SELECT 1 FROM public.partner_orders po WHERE po.id=o.partner_order_id AND po.partner_id=NEW.reservado_para_partner_id);
+ END IF;
+ v_resale:=coalesce(v_resale,false);
+ IF auth.uid() IS NULL""", "stock row guard seller resale")
+    body = one(body, "IF NEW.reservado_para_partner_id IS NOT NULL AND NOT coalesce(public.b2b_phase1_partner_visible(NEW.reservado_para_partner_id,false),false) THEN", "IF NEW.reservado_para_partner_id IS NOT NULL AND NOT v_resale AND NOT coalesce(public.b2b_phase1_partner_visible(NEW.reservado_para_partner_id,false),false) THEN", "stock row guard partner")
+    body = one(body, "IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT EXISTS (", "IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT v_resale AND NOT EXISTS (", "stock row guard order")
+    defs[sig]["new"] = body
+
+    sig = "platform_private.delivery_mutation_guard_20261030()"
+    body = defs[sig]["body"]
+    body = one(body, "OR NEW.partner_order_id IS NOT NULL OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "OR (NEW.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS NOT TRUE) OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "delivery mutation resale order")
+    defs[sig]["new"] = body
+
+    sig = "platform_private.delivery_confirm_recheck_v1(uuid,uuid)"
+    body = defs[sig]["body"]
+    body = one(body, """IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.partner_order_id IS NOT NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL
+ OR NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL)
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;""", """IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL
+ OR (e.partner_order_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL))
+ OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS NOT TRUE)
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;""", "confirmation recheck resale")
+    defs[sig]["new"] = body
+
+    sig = "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)"
+    body = defs[sig]["body"]
+    body = one(body, """IF v_e.ordem_servico_onfarm_id IS NOT NULL OR v_e.partner_order_id IS NOT NULL OR v_e.receivable_id IS NOT NULL OR v_e.status::text='entregue'
+ OR NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='agronomica' AND partner_order_id IS NULL)
+ THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;""", """IF v_e.ordem_servico_onfarm_id IS NOT NULL OR v_e.receivable_id IS NOT NULL OR v_e.status::text='entregue'
+ OR (v_e.partner_order_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='agronomica' AND partner_order_id IS NULL))
+ OR (v_e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(v_e) IS NOT TRUE)
+ THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;""", "cancel origin")
+    body = one(body, " PERFORM 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='agronomica' AND partner_order_id IS NULL AND cliente_id=v_e.cliente_id FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;", " IF v_e.partner_order_id IS NULL THEN PERFORM 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='agronomica' AND partner_order_id IS NULL AND cliente_id=v_e.cliente_id FOR UPDATE;\n ELSE PERFORM 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='b2b' AND partner_order_id=v_e.partner_order_id AND cliente_id IS NULL FOR UPDATE;\n END IF;\n IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;", "cancel OS lock")
+    body = one(body, " PERFORM 1 FROM public.clientes WHERE id=v_e.cliente_id AND organization_id=v_org FOR SHARE;\n IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", " IF v_e.cliente_id IS NOT NULL THEN PERFORM 1 FROM public.clientes WHERE id=v_e.cliente_id AND organization_id=v_org FOR SHARE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n END IF;", "cancel optional client")
+    body = one(body, "IF v_e.status::text NOT IN ('separado','em_rota') OR v_s.reservado_para_os_id IS DISTINCT FROM v_e.ordem_servico_id OR v_s.reservado_para_os_tipo IS DISTINCT FROM 'manual' THEN", "IF v_e.status::text NOT IN ('separado','em_rota') OR v_s.reservado_para_os_id IS DISTINCT FROM v_e.ordem_servico_id OR v_s.reservado_para_os_tipo IS DISTINCT FROM (CASE WHEN v_e.partner_order_id IS NULL THEN 'manual' ELSE 'b2b' END)\n OR (v_e.partner_order_id IS NOT NULL AND (v_s.reservado_para_cliente_id IS NOT NULL OR v_s.reservado_para_partner_order_id IS DISTINCT FROM v_e.partner_order_id OR v_s.reservado_para_partner_id IS DISTINCT FROM (SELECT partner_id FROM public.partner_orders WHERE id=v_e.partner_order_id))) THEN", "cancel stock lineage")
+    defs[sig]["new"] = body
+
     sig = "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)"
     body = defs[sig]["body"]
     body = one(body, " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid;", " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid; v_partner uuid;", "group declaration")
     body = one(body, " IF p_origem IS DISTINCT FROM 'manual' OR p_os_id IS NULL THEN", " IF p_origem NOT IN ('manual','b2b') OR p_os_id IS NULL THEN", "group origin")
     old_scope = "IF NOT FOUND OR v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica' THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
-    new_scope = "IF NOT FOUND OR (p_origem='manual' AND (v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica')) OR (p_origem='b2b' AND platform_private.b2b_resale_os_valid_v1(v_os) IS NOT TRUE) THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
+    new_scope = "IF NOT FOUND OR (p_origem='manual' AND (v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica')) OR (p_origem='b2b' AND platform_private.b2b_resale_os_operational_valid_v1(v_os) IS NOT TRUE) THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
     body = one(body, old_scope, new_scope, "group OS scope", 2)
     body = one(body, "'origin','manual'", "'origin',p_origem", "group fingerprint")
+    body = one(body, "IF v_os.cliente_id IS DISTINCT FROM v_original_client OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org)", "IF v_os.cliente_id IS DISTINCT FROM v_original_client OR (p_origem='manual' AND NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org))", "group replay client")
+    body = one(body, "WHERE e.id IS NULL OR e.organization_id IS DISTINCT FROM v_org OR e.ordem_servico_id IS DISTINCT FROM p_os_id OR e.cliente_id IS DISTINCT FROM v_os.cliente_id)", "WHERE e.id IS NULL OR e.organization_id IS DISTINCT FROM v_org OR e.ordem_servico_id IS DISTINCT FROM p_os_id OR e.cliente_id IS DISTINCT FROM v_os.cliente_id OR e.partner_order_id IS DISTINCT FROM (CASE WHEN p_origem='b2b' THEN v_os.partner_order_id ELSE NULL END))", "group replay lineage")
     body = one(body, " IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN", " SELECT partner_id INTO v_partner FROM public.partner_orders WHERE id=v_os.partner_order_id;\n IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN", "group partner")
     body = one(body, " PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org FOR SHARE;\n IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", " IF p_origem='manual' THEN PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org FOR SHARE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n ELSIF v_os.cliente_id IS NOT NULL OR v_partner IS NULL THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "group client")
+    body = one(body, """IF v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'manual'
+    OR v_row.reservado_para_cliente_id IS DISTINCT FROM v_os.cliente_id OR v_row.reservado_para_partner_id IS NOT NULL
+    OR v_row.reservado_para_partner_order_id IS NOT NULL OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
+    OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric THEN RAISE EXCEPTION 'DELIVERY_RESERVATION_NOT_OWNED' USING ERRCODE='PT409'; END IF;""", """IF (p_origem='manual' AND (v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'manual'
+      OR v_row.reservado_para_cliente_id IS DISTINCT FROM v_os.cliente_id OR v_row.reservado_para_partner_id IS NOT NULL
+      OR v_row.reservado_para_partner_order_id IS NOT NULL OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
+      OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric))
+     OR (p_origem='b2b' AND (v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'b2b'
+      OR v_row.reservado_para_cliente_id IS NOT NULL OR v_row.reservado_para_partner_id IS DISTINCT FROM v_partner
+      OR v_row.reservado_para_partner_order_id IS DISTINCT FROM v_os.partner_order_id OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
+      OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric))
+     THEN RAISE EXCEPTION 'DELIVERY_RESERVATION_NOT_OWNED' USING ERRCODE='PT409'; END IF;""", "group reserved ownership")
     body = one(body, "jsonb_build_object('os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id)", "jsonb_build_object('os_id',p_os_id,'os_tipo',p_origem,'cliente_id',v_os.cliente_id,'partner_id',v_partner,'partner_order_id',v_os.partner_order_id)", "group stock permits", 2)
     body = one(body, "v_batch:=public.rpc_estoque_reservar_v1(p_os_id,'manual',v_free,'delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text),jsonb_build_object('cliente_id',v_os.cliente_id));", "v_batch:=public.rpc_estoque_reservar_v1(p_os_id,p_origem,v_free,'delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text),CASE WHEN p_origem='b2b' THEN jsonb_build_object('partner_id',v_partner,'partner_order_id',v_os.partner_order_id) ELSE jsonb_build_object('cliente_id',v_os.cliente_id) END);", "group reserve")
     body = one(body, "v_call:=public.rpc_cockpit_criar_entrega_v1(p_os_id,'manual',v_reserved,v_qty,p_dados||jsonb_build_object('cliente_id',v_os.cliente_id));", "v_call:=public.rpc_cockpit_criar_entrega_v1(p_os_id,p_origem,v_reserved,v_qty,p_dados||CASE WHEN p_origem='b2b' THEN '{}'::jsonb ELSE jsonb_build_object('cliente_id',v_os.cliente_id) END);", "group create")
@@ -276,7 +395,7 @@ END$$;""")
     (out / "postflight.sql.review").write_text(post_sql)
     checked = B.run_raw(post_sql)
     assert checked.returncode == 0, checked.stderr
-    rollback = "UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text),platform_private.b2b_resale_os_valid_v1(public.ordens_servico),platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: não apaga OS, estoque, entregas, recibos nem histórico e não restaura definições anteriores.\n"
+    rollback = "UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text),platform_private.b2b_resale_os_valid_v1(public.ordens_servico),platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico),platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes),platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: não apaga OS, estoque, entregas, recibos nem histórico e não restaura definições anteriores.\n"
     (out / "rollback.sql.review").write_text(rollback)
     rolled = B.run_raw(rollback)
     (out / "rollback.stdout.txt").write_text(rolled.stdout)

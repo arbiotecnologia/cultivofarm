@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-1lizsaec/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 245, in main
+    group_replay=json.loads(B.last(group_resale(reserved,'resale-group-final-0001')))
+                            ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-1lizsaec/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-1lizsaec/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-1lizsaec/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  DELIVERY_REPLAY_CONFLICT
+CONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 51 at RAISE
+
