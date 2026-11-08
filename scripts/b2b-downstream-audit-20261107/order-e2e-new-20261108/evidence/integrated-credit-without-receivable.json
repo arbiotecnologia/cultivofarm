@@ -6,16 +6,16 @@
     "credit_limit": 1000000.0,
     "tem_vencidos": false,
     "saldo_vencido": 0.0,
-    "exposicao_atual": 3357.36,
+    "exposicao_atual": 3916.92,
     "saldo_em_aberto": 0.0,
     "block_if_overdue": false,
-    "credito_disponivel": 996642.64,
+    "credito_disponivel": 996083.08,
     "credit_limit_action": "block",
-    "exposicao_projetada": 3357.36,
-    "percentual_utilizado": 0.34,
+    "exposicao_projetada": 3916.92,
+    "percentual_utilizado": 0.39,
     "comprometido_pendente": 0.0,
     "overdue_tolerance_days": 0,
-    "comprometido_nao_faturado": 3357.36
+    "comprometido_nao_faturado": 3916.92
   },
   "receivables": 1,
   "fiscal_confirmation": false
