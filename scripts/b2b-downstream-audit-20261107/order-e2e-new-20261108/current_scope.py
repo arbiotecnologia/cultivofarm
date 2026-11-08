@@ -249,7 +249,7 @@ def _pair(pre_state: dict, post_state: dict) -> tuple[dict, dict, dict]:
     pre_doc_relations = sorted((_relation_doc(current_relations[key], key) for key in required_relations), key=lambda row: row[0])
     for name in capture_relations:
         post = post_relations.get(name, current_relations[name])
-        assert post[1] == capture_relations[name]["acl"] and post[4] == capture_relations[name]["owner"], f"CANDIDATE_PUBLIC_ACL_DRIFT:{name}"
+        assert _acl(post[1]) == _acl(capture_relations[name]["acl"]) and post[4] == capture_relations[name]["owner"], f"CANDIDATE_PUBLIC_ACL_DRIFT:{name}"
     post_doc_relations = sorted(
         (_relation_doc(post_relations.get(key, current_relations[key]), key) for key in required_relations | added_relations),
         key=lambda row: row[0],
