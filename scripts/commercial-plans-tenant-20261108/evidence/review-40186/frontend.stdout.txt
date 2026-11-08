@@ -1,0 +1,43 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/b2b/novoPedidoPaymentMethod.test.tsx (18 tests) 15385ms
+   ✓ sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio  1085ms
+   ✓ meio escolhido: simulação e criação levam meio/versão/prazo; cliente não envia parcelas nem vencimento; datas rotuladas como estimadas  906ms
+   ✓ falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por clique  828ms
+   ✓ leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio  658ms
+   ✓ ativação legacy → required aposenta a simulação antiga durante a releitura e volta a exigir meio  1537ms
+   ✓ releitura da capability com o diálogo aberto não mantém envio legado habilitado  1143ms
+   ✓ outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado  586ms
+   ✓ empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global  637ms
+   ✓ resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)  587ms
+   ✓ promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)  566ms
+   ✓ Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas  868ms
+   ✓ Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18  1109ms
+   ✓ plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de versão/meio aposenta economia anterior  1101ms
+   ✓ crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado  750ms
+   ✓ resposta com credit null não é aceita como apta: erro visível e envio bloqueado  726ms
+   ✓ Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado  666ms
+   ✓ ACK com total diferente da simulação não é sucesso (sem navegação)  761ms
+   ✓ ACK com outro meio/versão não é tratado como sucesso (sem navegação)  869ms
+ ✓ src/test/b2b/novoPedidoSimulationFence.test.tsx (7 tests) 5581ms
+   ✓ A→B→A: resposta atrasada do primeiro A não é adotada; só a do A atual  1433ms
+   ✓ erro fica visível com código; nova tentativa é manual e só ela dispara nova leitura  723ms
+   ✓ revogação/troca de época na mesma identidade descarta resultado e resposta em voo  833ms
+   ✓ referência à vista atrasada de contexto anterior não aparece como diferença  660ms
+   ✓ fechar e reabrir aposenta resposta em voo e exige simulação nova antes do envio  653ms
+   ✓ mudar itens com o mesmo plano invalida o resultado e a resposta antiga  709ms
+   ✓ clique de envio com resultado de época antiga não chama o criador de pedido  569ms
+ ✓ src/test/comercial/meiosPagamentoTab.test.tsx (9 tests) 1142ms
+   ✓ nova versão envia CAS da versão vigente; conflito mantém o rascunho, mostra motivo e não tenta de novo  393ms
+ ✓ src/test/comercial/assignmentPublishDialog.test.tsx (9 tests) 2014ms
+   ✓ confirmação controlada de publicação da atribuição > bloqueia duplo clique, mostra pendência e invalida as leituras após confirmação  355ms
+   ✓ confirmação controlada de publicação da atribuição > espera 190 s, renova normalmente e ainda exige reabertura e novo clique explícito  419ms
+ ✓ src/test/comercial/preview-cronograma.test.ts (12 tests) 10ms
+ ✓ src/test/motorB2BFase6Planos.test.ts (7 tests) 8ms
+
+ Test Files  6 passed (6)
+      Tests  62 passed (62)
+   Start at  21:00:38
+   Duration  37.45s (transform 1.62s, setup 658ms, collect 5.23s, tests 24.14s, environment 4.43s, prepare 763ms)
+

@@ -1,0 +1,54 @@
+{
+  "review": "40186",
+  "created_at": "2026-11-08T21:03:12.940158+00:00",
+  "status": "INACTIVE_NOT_APPROVED",
+  "plans": {
+    "checks": 79,
+    "pass": 79,
+    "exit": 0,
+    "sha256": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40"
+  },
+  "frontend": {
+    "files": 6,
+    "tests": 62,
+    "exit": 0
+  },
+  "logistics_verified_not_rerun": {
+    "regressions": 13,
+    "fresh": 40,
+    "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20"
+  },
+  "authenticated_partials": "PREPARED_NOT_RUN_BLOCKED_SAFE_ENVIRONMENT_AND_CANONICAL_CALLER",
+  "fiscal_positive_integrated": "NOT_RUN_BLOCKED_REAL_ALWAYS_DENY",
+  "accounting_real": "PENDING_UNPROVEN",
+  "hosted": false,
+  "auditor_report": {
+    "project_ref": "swzpzcwiasxmjutrmvkm",
+    "pre": "PRE_OK_READ_ONLY_ROLLBACK_REPORTED",
+    "advisors": "COLLECTED_REPORTED_IMPACT_NOT_REVIEWED",
+    "installation_authorized": false
+  },
+  "files": {
+    "README.md": "4115297446f9252d4bf906e4403f0a51cb755105c75af3a105ee4e38a1bebd10",
+    "catalog-contract-verification.json": "31cb58c706c1c4a3c2a8eb05df6843095e9e51e9ee7a02ea051c29c210d8c414",
+    "frontend-command.txt": "7cbacf98457650a23a9572c47cd43b469068611d35ede6d41a6f1a1617a43b77",
+    "frontend.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "frontend.stderr.txt": "c4bead9e931c685e70191500dd78789e52a44d5d52776fcb276b3f21100a4162",
+    "frontend.stdout.txt": "68b32543eaacfc47b45ddf5737c4de1bd8552894b53cc08577a3e81af1144579",
+    "generate.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "generate.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "generate.stdout.txt": "0350a967cc2178665de1b49db57e320eea54d2b38885df91d1eaf2530d22f4e7",
+    "instrumented-test-local-pg.py.txt": "2115e235fe2c935610039a06c60e79b99866a9f1690237174094fca4a5cb7e63",
+    "local-pg.json": "c2b1cad7cfd1b7623c8c74a1e7b0a039b888fcc340969ca877e55142122133fe",
+    "lock-revocations.json": "927999a11a7bb5ce9cf765f5bcb09a57ae58b6f17b4e5fe027b6ea4667151670",
+    "logistics-evidence-inventory.json": "f07462ff7f36a1f01a218e29cc18e8f8e71e5885691d947aed880db61b50e5f2",
+    "permissions-after.json": "d6ed8be1b736fc5a3ad97ee2c9e3475e57bd64307e6672a1c1a95ebfc020e47a",
+    "permissions-before.json": "8d50d04b5e1a70782659ce4cb9ecf5b482202f75263293e15883fbaf8f78f8a4",
+    "permissions-diff.json": "2646e07e6a0dddfb3a531fbf6b27684cd741a55fe49c13d91359f536b32d13bb",
+    "permissions-rollback.json": "413adcaef8977467160e71260ca6bbd6d8821ded9c124c70e262853732938f71",
+    "plans.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "plans.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plans.stdout.txt": "c4031c7cc6cf04f7fe64dded5efeeb3c9ce72c20cfe467c842b7c01485a2fa18",
+    "verification.json": "b8b5a8235c47ac1d968fb142ca53e566e409204b72c9bcb15ec42a0b63db802b"
+  }
+}

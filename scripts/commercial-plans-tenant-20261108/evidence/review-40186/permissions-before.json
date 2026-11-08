@@ -1,0 +1,439 @@
+{
+  "tables": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres}",
+      "rls": true,
+      "table": "commercial_condition_item_prices",
+      "force_rls": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres}",
+      "rls": true,
+      "table": "commercial_payment_plan_assignments",
+      "force_rls": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres}",
+      "rls": true,
+      "table": "commercial_payment_plans",
+      "force_rls": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=r/postgres}",
+      "rls": true,
+      "table": "commercial_price_rules",
+      "force_rls": false
+    }
+  ],
+  "indexes": [
+    {
+      "indexdef": "CREATE UNIQUE INDEX commercial_payment_plans_code_key ON public.commercial_payment_plans USING btree (code)",
+      "indexname": "commercial_payment_plans_code_key",
+      "tablename": "commercial_payment_plans",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX commercial_payment_plans_pkey ON public.commercial_payment_plans USING btree (id)",
+      "indexname": "commercial_payment_plans_pkey",
+      "tablename": "commercial_payment_plans",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans USING btree ((true)) WHERE is_default",
+      "indexname": "uq_cpp_single_default",
+      "tablename": "commercial_payment_plans",
+      "schemaname": "public",
+      "tablespace": null
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "platform_private.c2p1_item_allowed(assignment_id, plan_id, buyer_scope, partner_id, customer_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "commercial_condition_item_prices",
+      "permissive": "PERMISSIVE",
+      "policyname": "ccip_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "platform_private.c2p1_assignment_allowed(buyer_scope, partner_id, customer_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "commercial_payment_plan_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "cppa_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "platform_private.c2p1_assignment_allowed(buyer_scope, partner_id, customer_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "commercial_price_rules",
+      "permissive": "PERMISSIVE",
+      "policyname": "cpr_internal_select",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "functions": [
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "_cpp_audit(text,uuid,jsonb,jsonb,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": false,
+      "signature": "_cpp_validate_payload(jsonb)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "_saas_user_has_feature(uuid,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "b2b_list_payment_condition_options_secure(uuid,uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "b2b_payment_condition_config_list()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "b2b_payment_condition_retire(uuid,text,integer)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_b2b_can_admin_plans(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_b2b_plan_referenced(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_b2b_plan_selectable(uuid,timestamp with time zone)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_cc_audit(text,uuid,text,jsonb,jsonb,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_cc_can_prepare(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_cc_can_publish(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": false,
+      "signature": "fn_cc_validate_item_input(uuid,text,numeric,numeric)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": false,
+      "signature": "fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "get_user_partner_id()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "h15_actor_organization()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "has_role(uuid,app_role)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "is_platform_superadmin(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": false,
+      "signature": "platform_private.b2b_choice(jsonb)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.b2b_condition_cfg_actor(boolean)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.b2b_condition_mode(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.b2b_condition_seller(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.b2b_partner_catalog_reader(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2_order_actor_scope(uuid,uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2_owner_order_guard(uuid,uuid,uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_assignment_allowed(text,uuid,uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_assignment_fence()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_internal_actor(app_role[])"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_item_fence()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_rule_fence()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.c2p1_snapshot_allowed(text,uuid,jsonb)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.h15_actor_organization()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.has_role(uuid,app_role)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "platform_private.platform_actor_access_ready(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_admin_create_commercial_plan(jsonb)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_admin_list_commercial_plans(text,text,integer,integer)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_admin_reorder_commercial_plans(jsonb)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_admin_set_commercial_plan_active(uuid,boolean,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_admin_set_default_commercial_plan(uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_admin_version_commercial_plan(uuid,jsonb,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_b2b_list_selectable_payment_plans()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_cc_archive_assignment(uuid,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_cc_list_assignments(text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_cc_publish_assignment(uuid,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_cc_upsert_assignment(uuid,uuid,text,uuid,uuid,date,date,text)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "rpc_cc_validate_matrix(uuid,text,uuid,uuid)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "tg_cpp_guard_financial_immutability()"
+    }
+  ]
+}

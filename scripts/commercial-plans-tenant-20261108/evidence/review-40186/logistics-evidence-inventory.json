@@ -1,0 +1,154 @@
+{
+  "verified_only_not_rerun": true,
+  "missing_after_json": true,
+  "functional_regressions": 13,
+  "fresh_checks": 40,
+  "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20",
+  "files": {
+    "before-checks.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/before-checks.json",
+      "sha256": "f95a02feee8ff61a5ac847a53a81ef3a11d54b29137495c6d769999a37be8b88",
+      "matches_recorded": true
+    },
+    "before-review-70d08c.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/before-review-70d08c.json",
+      "sha256": "e284df7faa59372c7432a4755d92ff4615e3484c2fed004a18b777d740350eaa",
+      "matches_recorded": true
+    },
+    "before-run.exitcode": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/before-run.exitcode",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "matches_recorded": true
+    },
+    "before-run.stderr.txt": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/before-run.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matches_recorded": true
+    },
+    "before-run.stdout.txt": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/before-run.stdout.txt",
+      "sha256": "721f68e8fd5bbf702b35480cc53dd4d28c344df3bd60933424d874687bd009b9",
+      "matches_recorded": true
+    },
+    "before-source-manifest.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/before-source-manifest.json",
+      "sha256": "224221c13951534dcb64ad65fc51f62b08ba7a106692f16f4ff0bffade0c0553",
+      "matches_recorded": true
+    },
+    "before-workspace.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/before-workspace.json",
+      "sha256": "e1adc25a28ed04e64bd16f91f29045020ae651e327dcc568d364eb02fd1791da",
+      "matches_recorded": true
+    },
+    "final-canonical-composition-manifest.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-canonical-composition-manifest.json",
+      "sha256": "0f09097b2e3c4608390b66227a9043c5aa33c79d7c8b125cccdf4cccd171a5ef",
+      "matches_recorded": true
+    },
+    "final-checks.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-checks.json",
+      "sha256": "f61c7474e8959572dce49de20e42bf43655bb9e7dace61df412742f533611995",
+      "matches_recorded": true
+    },
+    "final-integrated-always-deny-callback.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-integrated-always-deny-callback.json",
+      "sha256": "b7e8c6e1af2e08cac1b6f0314b06ef15b16d61b940386969a95370c21004e3fa",
+      "matches_recorded": true
+    },
+    "final-integrated-b4-fiscal-bridge.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-integrated-b4-fiscal-bridge.json",
+      "sha256": "cfb7b70238a137e1cb0b02963655285bc8f82cf4fd5c5b66e8f5543a8c064fcc",
+      "matches_recorded": true
+    },
+    "final-logistics-candidate.sql.review": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-logistics-candidate.sql.review",
+      "sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20",
+      "matches_recorded": true
+    },
+    "final-logistics-install.sql.review": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-logistics-install.sql.review",
+      "sha256": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09",
+      "matches_recorded": true
+    },
+    "final-logistics-post-metadata.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-logistics-post-metadata.json",
+      "sha256": "511f8ffc0cd8f066245c2c894cede1fa67834fa854a96f2b1f5d42fc07ad0622",
+      "matches_recorded": true
+    },
+    "final-logistics-postflight.sql.review": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-logistics-postflight.sql.review",
+      "sha256": "e893bc9fe098029b0a1d4f997cfe8ed4e48074b89dddc3d1efaf1df6e98dc0ad",
+      "matches_recorded": true
+    },
+    "final-logistics-pre-metadata.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-logistics-pre-metadata.json",
+      "sha256": "4766e4085d9ef306f3219248120029acdf9aa7c135a391c1948c137fce16fcb4",
+      "matches_recorded": true
+    },
+    "final-logistics-raw-current.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-logistics-raw-current.json",
+      "sha256": "2b3722bde6c8537323d12a5f1a7b5ead3876fab217927affa2f0e6534134499f",
+      "matches_recorded": true
+    },
+    "final-logistics-rollback.sql.review": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-logistics-rollback.sql.review",
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a",
+      "matches_recorded": true
+    },
+    "final-review-70d08c.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-review-70d08c.json",
+      "sha256": "08a78b454f5d8a1bcc66e6e78d4c8b4661cc429f2211571f81b52d0f76fe8b1c",
+      "matches_recorded": true
+    },
+    "final-run.exitcode": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-run.exitcode",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "matches_recorded": true
+    },
+    "final-run.stderr.txt": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-run.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matches_recorded": true
+    },
+    "final-run.stdout.txt": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-run.stdout.txt",
+      "sha256": "603c5683d65c5b99f6584fa23fe6d89c5519764b7f86a071a8220de71cad50f4",
+      "matches_recorded": true
+    },
+    "final-source-manifest.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-source-manifest.json",
+      "sha256": "740325834bd1b2e5c58cb7af5bc72c5e7b6b60379de7e8e68dfdfe46bfd502ed",
+      "matches_recorded": true
+    },
+    "final-workspace.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/final-workspace.json",
+      "sha256": "5b3a9c44d9a8a1cee468a7f3c5672f7d8f58a5f728f149a238ade5478d4515b0",
+      "matches_recorded": true
+    },
+    "iteration1-checks.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/iteration1-checks.json",
+      "sha256": "fabab31fbf0b224877aa7981ce3184e56d46e57158fdc6a17733657e5491841b",
+      "matches_recorded": true
+    },
+    "iteration1-review-70d08c.json": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/iteration1-review-70d08c.json",
+      "sha256": "98eb4663f5fbbb3cea83cce351f16f7d5df416b164a958b8686759cbbb2b75f4",
+      "matches_recorded": true
+    },
+    "iteration1-run.exitcode": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/iteration1-run.exitcode",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "matches_recorded": true
+    },
+    "iteration1-run.stderr.txt": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/iteration1-run.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matches_recorded": true
+    },
+    "iteration1-run.stdout.txt": {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/review-a1f275/iteration1-run.stdout.txt",
+      "sha256": "8ed42408fe5bca47d7d34b00add2420eefa6d83c135f5fff35169e26e026b322",
+      "matches_recorded": true
+    }
+  }
+}

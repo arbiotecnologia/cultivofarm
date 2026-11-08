@@ -1,0 +1,46 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": false,
+  "unchanged_table_acl_rls": true,
+  "rollback_all_four_policies_false": true,
+  "unchanged_function_parameters_and_returns": [
+    "b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)",
+    "b2b_payment_condition_config_list()",
+    "b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)",
+    "b2b_payment_condition_retire(uuid,text,integer)",
+    "convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)",
+    "create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+    "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)",
+    "platform_private.c2p1_assignment_fence()",
+    "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)",
+    "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)",
+    "platform_private.c2p1_item_fence()",
+    "platform_private.c2p1_rule_fence()",
+    "respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+    "rpc_admin_create_commercial_plan(jsonb)",
+    "rpc_admin_list_commercial_plans(text,text,integer,integer)",
+    "rpc_admin_reorder_commercial_plans(jsonb)",
+    "rpc_admin_set_commercial_plan_active(uuid,boolean,text)",
+    "rpc_admin_set_default_commercial_plan(uuid)",
+    "rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)",
+    "rpc_admin_version_commercial_plan(uuid,jsonb,text)",
+    "rpc_b2b_list_selectable_payment_plans()",
+    "rpc_cc_list_assignments(text)",
+    "rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)",
+    "rpc_cc_validate_matrix(uuid,text,uuid,uuid)",
+    "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)"
+  ],
+  "source_count": 28,
+  "candidate_count": 25,
+  "outputs": {
+    "01-pre.sql.readonly": "2708c69b6633745205d12d811d8d7b89022d535aee28614d94afe7d917f8d7f8",
+    "02-install.sql.review": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40",
+    "03-post.sql.readonly": "033312331dd757c72c625f027d24176efa33931c8881ab002122a4e56867e894",
+    "04-rollback-deny.sql.review": "6af8ffdda88c6b0026d427f4b0459c3d86a74f25e3083abe44d4ad05675531a3"
+  },
+  "limitations": [
+    "ACL fixture inclui grants sintéticos declarados; não é captura hosted",
+    "advisors atuais coletados pelo auditor sem conteúdo disponível nesta rodada",
+    "JWT/Storage/browser autenticado não executados"
+  ]
+}
