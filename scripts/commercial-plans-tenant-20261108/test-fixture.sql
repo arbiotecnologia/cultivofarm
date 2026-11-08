@@ -20,7 +20,7 @@ CREATE TABLE public.commercial_payment_plans(
  requires_guarantee boolean NOT NULL,requires_financial_approval boolean NOT NULL,minimum_order_amount numeric,
  active boolean NOT NULL,sort_order integer NOT NULL,created_by uuid,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),
  pricing_mode text NOT NULL,version integer NOT NULL,root_plan_id uuid,superseded_by_id uuid,valid_from timestamptz NOT NULL,
- valid_until timestamptz,is_default boolean NOT NULL,version_reason text,updated_by uuid
+ valid_until timestamptz,is_default boolean NOT NULL DEFAULT false,version_reason text,updated_by uuid
 );
 CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans((true)) WHERE is_default;
 CREATE TABLE public.commercial_payment_plan_assignments(
