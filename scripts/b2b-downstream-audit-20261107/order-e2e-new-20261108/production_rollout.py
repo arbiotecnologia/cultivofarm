@@ -36,6 +36,16 @@ def main():
     physical = E/'physical-finished-product'
     assert (E/'current-catalog-baseline.json').is_file()
     assert (E/'current-catalog-posplans.json').is_file()
+    reconciliation = H/'reconciliation-posplans-20261108'
+    guard_source = json.loads((reconciliation/'live-catalog-guards-20261108.json').read_text())
+    current_baseline = json.loads((E/'current-catalog-baseline.json').read_text())
+    current_posplans = json.loads((E/'current-catalog-posplans.json').read_text())
+    assert current_baseline['guard_capture_sha256'] == guard_source['capture_sha256']
+    assert sha(reconciliation/'live-catalog-guards-20261108.sql.capture') == guard_source['capture_sha256']
+    for state in (current_baseline, current_posplans):
+        measured = {row['signature']: row['md5'] for row in state['functions']}
+        for signature, expected in guard_source['functions'].items():
+            assert measured.get(signature) == expected, (signature, measured.get(signature), expected)
     partial = json.loads((E/'review-70d08c.json').read_text())['results']
     endpoint = json.loads((E/'os-endpoint-tests.json').read_text())['results']
     assert len(partial) == 13 and all(x['status'] == 'PASS' for x in partial)
