@@ -1325,3 +1325,11 @@
 - [x] Corrigir exibição dimensional kg/g e L/ml, listagem, reservas, resumo Cockpit e preview de entrega sem cadastro paralelo nem peso apresentado como volume.
 - [x] Testar unidade, persistência, autorização, duplicação e regressões: 58/58 físico, 51/51 nulidade, 16/16 camadas, 6/6 legado SQL, 39/39 revisão, 71/71 UI focal, 214/214 Cockpit/estoque e 22/22 entrega; build OK, sem SQL hospedado/publicação/NF/recebível/cobrança/envio.
 - [ ] Manter candidato inativo até revisão independente e implantação/homologação coordenadas de todo o pacote; JWT/RLS/Storage/PostgREST/browser autenticado continuam pendentes.
+
+## 08/11 02:55 — retomada E2E umsg_01m6vh9b8wfyebzpsjsyfjrdg9
+- [x] Conferir arquivos disponíveis e histórico sem reexecutar as baterias anteriores: a pasta order-e2e, os dois geradores/harnesses e candidate-logistics.sql.review estão ausentes nesta cópia; também não há checkpoint temporário recuperável.
+- [x] Registrar interrupção anterior como response.status=error relatado pelo proprietário; causa técnica/stack trace não disponíveis. Histórico 4502 confirma 11/11 instalação e 34/34 parcial, sem execução da extensão logística; não são resultados revalidados nesta retomada.
+- [x] Consolidar lote fornecedor, NULL/camadas/UI e preservação teste4/cinco títulos, sem cadastro hospedado ou alterações nos candidatos existentes.
+- [ ] Recuperar artefatos exatos order-e2e e evidências/inventário dos dez gatilhos reais com ACL: bloqueio por arquivos ausentes; não fabricar hash nem reconstruir como se fosse o mesmo candidato.
+- [ ] Depois da recuperação, testar revenda não fabricável e biológicos, compra/reserva/expedição/confirmação/cancelamento, isolamento/revogação/concorrência/idempotência/saldos, documento parcial/recebível exclusivamente sintéticos locais. Fluxo completo permanece NOT_RUN nesta retomada.
+- [ ] Revisão independente e homologação real: candidatos INATIVOS; parceiro/comprador exclusivos ARBio serão cadastrados pelo proprietário no fluxo normal após login, sem Auth hospedado pelo agente.
