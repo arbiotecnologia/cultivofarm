@@ -26,8 +26,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 149,
-  "total": 149,
+  "passed": 128,
+  "total": 128,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -539,90 +539,6 @@
     },
     {
       "name": "rollback fecha writer legado sem apagar projeção nem histórico",
-      "ok": true
-    },
-    {
-      "name": "ponte PRE confirma pins B4 e autorização capturada",
-      "ok": true
-    },
-    {
-      "name": "ponte service-only instala com POST e ACL fechada",
-      "ok": true
-    },
-    {
-      "name": "ponte POST íntegro",
-      "ok": true
-    },
-    {
-      "name": "ponte não recebe EXECUTE de usuário autenticado",
-      "ok": true
-    },
-    {
-      "name": "ponte mantém dependência fiscal/contábil real fechada antes da costura local",
-      "ok": true
-    },
-    {
-      "name": "dependência negada não deixa documento/título",
-      "ok": true
-    },
-    {
-      "name": "evento pendente é ignorado sem título",
-      "ok": true
-    },
-    {
-      "name": "evento rejeitado é ignorado sem título",
-      "ok": true
-    },
-    {
-      "name": "pendente/rejeitado não criam documento ou recebível",
-      "ok": true
-    },
-    {
-      "name": "autorização com falha pós-título aborta sem perder capacidade de retry",
-      "ok": true
-    },
-    {
-      "name": "falha da autorização não deixa NF autorizada, documento ou título parcial",
-      "ok": true
-    },
-    {
-      "name": "retentativa autorizada gera um recebível B4 pela NF",
-      "ok": true
-    },
-    {
-      "name": "título service-only não inventa ator humano e conserva vínculo NF",
-      "ok": true
-    },
-    {
-      "name": "parcialidade service-only consome somente o restante do pedido",
-      "ok": true
-    },
-    {
-      "name": "retentativa da NF autorizada é replay sem duplicação",
-      "ok": true
-    },
-    {
-      "name": "duas chamadas service-only concorrentes preservam um único título",
-      "ok": true
-    },
-    {
-      "name": "NF com tenant divergente do pedido é negada",
-      "ok": true
-    },
-    {
-      "name": "NF estrangeira não gera documento/título",
-      "ok": true
-    },
-    {
-      "name": "origem manual sem ator continua fechada",
-      "ok": true
-    },
-    {
-      "name": "rollback deny-only da ponte fecha callback e preserva histórico",
-      "ok": true
-    },
-    {
-      "name": "rollback da ponte não reabre alocador nem exceção manual",
       "ok": true
     }
   ],
