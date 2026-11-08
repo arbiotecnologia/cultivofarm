@@ -1,4 +1,9 @@
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
+### Complemento independente 08/11 03:04 UTC
+- [x] Incorporar relato 7b4f NULL e bf37c13a terms-wait Windows PG17.11 mínimo, sem alegar 38 gatilhos/E2E/exploração LIVE; PRE READONLY passou segundo auditor, candidato não aprovado.
+- [x] Registrar impacto direto: cinco títulos MANUAL ativos ARBio pertencem ao cliente/parceiro de teste4, nenhum alterado; não tratá-los como fora do piloto.
+- [ ] Reconfirmar harness completo de ajustes com 38 gatilhos e revalidação pós-terms; preservar resultados históricos e limites.
+
 - [x] Reproduzir `b2b_credit_config_block`: antes **107/112, cinco falhas de zero, exit 1**. Corrigir somente config/exposição por gerador: zero é limite válido e positivo usa `LIMIT_EXCEEDED_BLOCK/APPROVAL`; NULL/negativo/NaN seguem fechados. Depois **112/112**, manifesto **61/61** e fiscal **177/177**, exits 0 sem soma; configuração LIVE não alterada.
 - [x] Request/approve/reject agora releem pedido+termos, pertencimento, escopo e C2 também depois do `FOR UPDATE` dos termos. Antes **184/187, três falhas, exit 1**; depois **187/187, exit 0**, com duas sessões, rollback explícito, 38 gatilhos reais e rollback deny-only. Tentativa cruzada com ordem inversa de locks deadlockou e ficou separada, sem contá-la como prova pós-espera.
 - [x] Preservar fila, B3/gates e evidências; diffs/hashes/JSON/TXT/exits em `b4/review-458b6012/final-credit-terms-1833/` e `review-31430566/final-credit-terms-1833/`. B4 SHA256 `7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f`; tudo INATIVO/NÃO APROVADO, sem hosted/publicação/NF/cobrança/envios/delegação.
