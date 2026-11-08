@@ -15,3 +15,4 @@ CHECKPOINT sql_calls=1200 elapsed=74.7s
 CHECKPOINT sql_calls=1300 elapsed=77.7s
 CHECKPOINT sql_calls=1400 elapsed=81.2s
 CHECKPOINT sql_calls=1500 elapsed=84.5s
+CHECKPOINT sql_calls=1600 elapsed=87.9s
