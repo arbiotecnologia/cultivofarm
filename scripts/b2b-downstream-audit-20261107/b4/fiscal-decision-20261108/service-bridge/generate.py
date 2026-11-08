@@ -373,6 +373,9 @@ DO $$ BEGIN
  IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
  IF to_regprocedure('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ALREADY_INSTALLED'; END IF;
  IF to_regclass('platform_private.b2b_fiscal_invoice_snapshots') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_ALREADY_EXISTS'; END IF;
+ IF to_regclass('platform_private.fiscal_close_pending') IS NOT NULL THEN RAISE EXCEPTION 'FISCAL_CLOSE_PENDING_ALREADY_EXISTS'; END IF;
+ IF md5(pg_get_functiondef('public.fn_fiscal_sefaz_tx_guard()'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(transmit_guard_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_PIN_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='trg_fiscal_sefaz_tx_guard' AND tgrelid='public.fiscal_sefaz_transmissions'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_NOT_ENABLED'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '{md5_pg(extract(b4text,'b2b_integration_actor'))}' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '{md5_pg(extract(b4text,'b2b_title_insert_fence'))}' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(apply_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_PIN_DRIFT'; END IF;
