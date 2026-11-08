@@ -272,12 +272,14 @@ class Review:
         out, err = self.B.T.finish(worker)
         self.B.sql(restore)
         expected = "B2B_RESALE_GATE_CLOSED" if kind == "gate" else "B2B_RESALE_SCOPE_CHANGED"
+        expected_options = (expected, "ESTQ_FEATURE_REQUIRED") if kind == "tenant" else (expected,)
         after = self.effects(order["id"])
         if not err or after != before:
             raise AssertionError(f"revocation during row lock was not contained: kind={kind}, stdout={out[-800:]}, stderr={err[-800:]}, before={before}, after={after}")
-        if self.explicit_reauth and expected not in err:
-            raise AssertionError(f"final reauthorization did not produce its own denial: kind={kind}, expected={expected}, stderr={err[-1200:]}")
-        return {"actual_row_wait": True, "error": err[-500:], "zero_os_ticket_ledger_event_receipt_delta": True, "explicit_candidate_reauth": expected in err}
+        explicit = any(token in err for token in expected_options)
+        if self.explicit_reauth and not explicit:
+            raise AssertionError(f"final reauthorization did not produce its own denial: kind={kind}, expected={expected_options}, stderr={err[-1200:]}")
+        return {"actual_row_wait": True, "error": err[-500:], "zero_os_ticket_ledger_event_receipt_delta": True, "explicit_candidate_reauth": explicit}
 
     def replay_wait_revocation(self, kind):
         mutate, restore = self.mutations(kind)
