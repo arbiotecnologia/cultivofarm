@@ -853,6 +853,39 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         else:
             check("DEPOIS: retry H13 limpa somente o pendente de fechamento recuperado", B3.psql(f"SELECT coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "")
 
+        # Nova transmissão/confirmação da MESMA chave e protocolo: o ID é evidência
+        # adicional, não parte da identidade fiscal estável nem motivo de conflito.
+        seed_proof(invoice_h13,tx_h13_repeat,protocol="H13-PROTOCOL",state="SENT",outcome="PENDING",cstat="103")
+        repeated_record, repeated_error = real_record(tx_h13_repeat,"SUCCEEDED",h13_patch)
+        repeated_state = B3.psql(f"SELECT outcome||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13_repeat}'").stdout.strip()
+        if REVIEW_BEFORE:
+            check("ANTES: nova transmissão da mesma chave/protocolo causa conflito artificial pelo transmission_id no digest", repeated_record and repeated_record["reconciliationPending"] and repeated_state == "AUTHORIZED|FISCAL_AUTHORIZATION_CLOSE_PENDING", repeated_error or repeated_state)
+        else:
+            check("DEPOIS: confirmação repetida da mesma chave/protocolo é replay sem conflito artificial", repeated_record and not repeated_record["reconciliationPending"] and repeated_state == "AUTHORIZED|", repeated_error or repeated_state)
+            check("DEPOIS: replay estável preserva transmissão original no snapshot e um único título", B3.psql(f"SELECT transmission_id FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_h13}'").stdout.strip() == tx_h13 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}'").stdout.strip() == "1")
+        seed_proof(invoice_h13,tx_h13_divergent,protocol="H13-PROTOCOL-DIVERGENT",state="SENT",outcome="PENDING",cstat="103")
+        divergent_record, divergent_error = real_record(tx_h13_divergent,"SUCCEEDED",{**h13_patch,"nProt":"H13-PROTOCOL-DIVERGENT"})
+        check("confirmação com protocolo divergente continua fechada sem duplicar título", divergent_record and divergent_record["reconciliationPending"] and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}'").stdout.strip() == "1", divergent_error or divergent_record)
+        if not REVIEW_BEFORE:
+            check("divergência de protocolo não substitui referência fiscal original", B3.psql(f"SELECT transmission_id||'|'||protocol FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_h13}'").stdout.strip() == f"{tx_h13}|H13-PROTOCOL")
+
+        # Retorno atrasado não pode rebaixar uma transmissão já autorizada nem
+        # apagar erro de provedor/origem distinta do pendente de fechamento.
+        B3.psql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='FOREIGN_PROVIDER_ERROR' WHERE id='{tx_h13}';")
+        stale_record, stale_error = real_record(tx_h13,"SENT",{"cStat":"103","xMotivo":"RETORNO ATRASADO"})
+        stale_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip()
+        if REVIEW_BEFORE:
+            check("ANTES: retorno SENT atrasado rebaixa AUTHORIZED para PROCESSING e sobrescreve 100 por 103", stale_record and stale_record["outcome"] == "PROCESSING" and stale_state == "PROCESSING|103|FOREIGN_PROVIDER_ERROR", stale_error or stale_state)
+        else:
+            check("DEPOIS: retorno atrasado não rebaixa autorização nem apaga erro de outra origem", stale_record and stale_record["outcome"] == "AUTHORIZED" and stale_state == "AUTHORIZED|100|FOREIGN_PROVIDER_ERROR", stale_error or stale_state)
+        foreign_error_replay, foreign_error_replay_error = real_record(tx_h13,"SUCCEEDED",h13_patch)
+        check("replay autorizado não limpa error_code estranho ao fechamento", foreign_error_replay and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR", foreign_error_replay_error or foreign_error_replay)
+        if not REVIEW_BEFORE:
+            with concurrent.futures.ThreadPoolExecutor(2) as pool:
+                concurrent_records = list(pool.map(lambda call: real_record(tx_h13,call[0],call[1]), [("SENT",{"cStat":"103","xMotivo":"ATRASADO CONCORRENTE"}),("SUCCEEDED",h13_patch)]))
+            check("H13 concorrente fora de ordem termina autorizado, com protocolo estável e erro estranho preservado", all(row[0] for row in concurrent_records) and B3.psql(f"SELECT outcome||'|'||c_stat||'|'||protocol_c_stat||'|'||error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "AUTHORIZED|100|100|FOREIGN_PROVIDER_ERROR", [row[1] for row in concurrent_records])
+            check("concorrência H13 não duplica NF, snapshot ou título", B3.psql(f"SELECT (SELECT count(*) FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip() == "1|1|1")
+
         foreign = service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_foreign}');")
         check("NF com tenant divergente do pedido é negada", foreign.returncode != 0 and "B2B_FISCAL_ORDER_SCOPE_INVALID" in foreign.stderr, foreign.stderr[-800:])
         check("NF estrangeira não gera documento/título", B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_foreign}'").stdout.strip() == "0")
