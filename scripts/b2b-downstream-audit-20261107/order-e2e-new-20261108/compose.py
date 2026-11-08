@@ -87,8 +87,9 @@ def main():
   assert fsf_plans.returncode==0 and Q.P3 not in json.loads(fsf_plans.stdout.strip()),(fsf_plans.stdout,fsf_plans.stderr)
   fsf_write=Q.as_user(Q.UADMF,f"SELECT public.rpc_admin_update_commercial_plan_metadata('{Q.P3}','FSF DENIED',NULL,NULL);")
   assert fsf_write.returncode!=0 and 'plan_not_found' in fsf_write.stderr,fsf_write.stderr
+  shared_code=B.last(f"SELECT code FROM public.commercial_payment_plans WHERE id='{Q.P3}';").replace("'","''")
   shared=Q.as_user(Q.UADMF,f"""SELECT public.rpc_admin_create_commercial_plan(jsonb_build_object(
-   'name','LOCAL FSF SAME CODE','code',(SELECT code FROM public.commercial_payment_plans WHERE id='{Q.P3}'),
+   'name','LOCAL FSF SAME CODE','code','{shared_code}',
    'plan_type','custom','max_days',30,'months_count',1,'installment_count',1,'discount_percent',0,
    'monthly_interest_percent',0,'interest_type','none','pricing_mode','discount_from_base',
    'requires_credit_approval',false,'requires_guarantee',false,'requires_financial_approval',false));""")
