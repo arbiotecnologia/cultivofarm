@@ -1,6 +1,6 @@
 ## 07/11 18:33 — Revisão final B4: limite zero e revalidação dos termos
 ### 08/11 03:31 — UX comprador novo
-- [ ] Distinguir reserva inicial de tentativa incerta na apresentação; testar reserva/uncertain/committed/closed/troca de conta e integrar evidência local ao pacote novo, sem hosted/publicação nem mudança da deduplicação.
+- [x] Distinguir reserva inicial de tentativa incerta na apresentação; reserva sem alerta/encerramento, uncertain explícito, committed com ACK e closed por clique, troca de conta coberta. Três arquivos/59 testes PASS exit 0; build OK 03:33:02; evidência nova em order-e2e-new-20261108/evidence/ux-journal-0331/. Journal/deduplicação/SQL/pins intactos, sem hosted/publicação; sessão real não executada pois montagem reserva no servidor. Pendências logísticas preservadas.
 ### Revisão independente d6cd95c0 — baseline recebíveis 08/11
 - [x] Incorporar PRE READONLY falho relatado (ACL/gatilhos), recompor ACL exata com MAINTAIN e dez gatilhos usando função no-downstream canônica sem abreviação, sem alterar capturas históricas.
 - [x] Reproduzir PRE/install/POST/rollback e composição B4 locais: 116/116; manifesto 61/61; proibição INSERT/UPDATE/DELETE com delivery context testada; evidências versionadas em b4/review-d6cd95c0/. Cinco MANUAL customer-only com parcelas impactam teste4; origem desconhecida bloqueia crédito/baixa, dívida intacta.
