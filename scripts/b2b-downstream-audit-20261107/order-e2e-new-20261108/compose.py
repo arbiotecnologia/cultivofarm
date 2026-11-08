@@ -270,7 +270,7 @@ def main():
   direct_authenticated=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
   assert direct_authenticated.returncode==0,(direct_authenticated.stdout,direct_authenticated.stderr)
   assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
-  direct_operational=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  direct_operational=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
   (OUT/'resale-direct-status-denial.json').write_text(json.dumps(dict(authenticated_zero_rows=dict(returncode=direct_authenticated.returncode,stdout=direct_authenticated.stdout,stderr=direct_authenticated.stderr),privileged_guard=dict(returncode=direct_operational.returncode,stdout=direct_operational.stdout,stderr=direct_operational.stderr)),indent=2)+'\n')
   assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,(direct_operational.returncode,direct_operational.stdout,direct_operational.stderr)
   assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
@@ -463,7 +463,7 @@ def main():
 
   # Crédito do pedido aprovado/entregue continua previsão, não dívida. Nenhuma
   # costura de dependência é usada neste controle integrado.
-  credit=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
+  credit=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"role\":\"authenticated\",\"iat\":1,\"exp\":4102444800}}';SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
   assert credit['reason_code']=='OK' and float(credit['exposicao_atual'])>=float(accepted['total']),credit
   assert B.last('SELECT count(*) FROM public.accounts_receivable;')==str(effect_baseline['receivables'])
   (OUT/'integrated-credit-without-receivable.json').write_text(json.dumps(dict(credit=credit,receivables=effect_baseline['receivables'],fiscal_confirmation=False),indent=2)+'\n')
