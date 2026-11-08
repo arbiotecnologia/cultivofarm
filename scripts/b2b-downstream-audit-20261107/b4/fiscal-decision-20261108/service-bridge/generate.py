@@ -191,24 +191,24 @@ def main() -> None:
     transmit = edit(transmit, "  WHERE id = _transmission_id\n  RETURNING * INTO v_row;\n\n  IF v_row.ambiente_retorno", "  WHERE id = _transmission_id\n  RETURNING * INTO v_row;\n  END IF;\n\n  IF v_row.ambiente_retorno")
     transmit = edit(transmit, "    'cStat', v_row.c_stat, 'xMotivo', v_row.x_motivo,", "    'cStat', v_row.c_stat, 'protocolCStat', coalesce(v_row.protocol_c_stat,v_row.c_stat), 'xMotivo', v_row.x_motivo,")
 
-    # H13 preserva o retorno externo em caso de falha. Um retry bem-sucedido limpa
-    # somente o pendente de fechamento, nunca outros erros fiscais.
+    # A pendência de fechamento não altera a transmissão terminal imutável nem
+    # error_code de outra origem. O retry remove somente seu próprio registro.
     transmit = edit(transmit, """  IF v_close_error IS NOT NULL THEN
     UPDATE public.fiscal_sefaz_transmissions
        SET error_code = v_close_error
      WHERE id = _transmission_id
     RETURNING * INTO v_row;
   END IF;""", """  IF v_close_error IS NOT NULL THEN
-    UPDATE public.fiscal_sefaz_transmissions
-       SET error_code = v_close_error
-     WHERE id = _transmission_id
-    RETURNING * INTO v_row;
-  ELSIF v_row.outcome = 'AUTHORIZED' AND v_row.error_code = 'FISCAL_AUTHORIZATION_CLOSE_PENDING' THEN
-    UPDATE public.fiscal_sefaz_transmissions
-       SET error_code = NULL
-     WHERE id = _transmission_id
-    RETURNING * INTO v_row;
+    INSERT INTO platform_private.fiscal_close_pending(transmission_id,fiscal_invoice_id,error_code)
+    VALUES(v_row.id,v_row.fiscal_invoice_id,v_close_error)
+    ON CONFLICT(transmission_id) DO UPDATE SET fiscal_invoice_id=EXCLUDED.fiscal_invoice_id,
+      error_code=EXCLUDED.error_code,last_error_at=now(),attempts=platform_private.fiscal_close_pending.attempts+1;
+  ELSIF v_row.outcome = 'AUTHORIZED' THEN
+    DELETE FROM platform_private.fiscal_close_pending
+     WHERE transmission_id=v_row.id AND error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING';
   END IF;""")
+    transmit = edit(transmit, "    'reconciliationPending', v_close_error IS NOT NULL,\n    'reconciliationCode', v_close_error);", """    'reconciliationPending',EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_row.id),
+    'reconciliationCode',(SELECT cp.error_code FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_row.id));""")
 
     schema = r"""
 CREATE TABLE platform_private.b2b_fiscal_service_permits(
