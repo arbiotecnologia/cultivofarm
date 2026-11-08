@@ -25,12 +25,6 @@ FUNCTION_PINS = {
     "platform_private.programacao_producao_catalog_tenant_guard()": "f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
 }
 
-# Valores reais informados pelo READONLY; mantidos separados dos pins acima para
-# que uma falha de transcrição nunca possa ser confundida com drift de produção.
-FUNCTION_PINS.update({
-    "platform_private.lab_assert_manufacturable(uuid,uuid)": "7acdeee32a61f0c0d6d4c56f8ea7b3c4",
-})
-
 EXPECTED_FUNCTION_ACL = {
     "platform_private.lab_assert_manufacturable(uuid,uuid)": ["authenticated=X/postgres"],
     "platform_private.lab_item_is_manufacturable(uuid,uuid)": [],
@@ -106,9 +100,7 @@ WHERE NOT t.tgisinternal AND n.nspname='public'
 
 
 def _acl_set(raw):
-    if not raw:
-        return set()
-    return {item for item in raw.strip("{}").split(",") if item and not item.startswith('"') is False} if False else set(raw.strip("{}").split(","))
+    return set(raw.strip("{}").split(",")) if raw else set()
 
 
 def assert_current(last):
