@@ -144,7 +144,7 @@ INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,mont
     check("DEPOIS: comprador ARBio só lê plano publicado vinculado", actor(UA, f"SELECT id FROM public.rpc_b2b_list_selectable_payment_plans();"), PLAN_A1)
     check("DEPOIS: comprador FSF só lê seu plano", actor(UB, f"SELECT id FROM public.rpc_b2b_list_selectable_payment_plans();"), PLAN_B1)
 
-    payload = "{'name':'Nova versão','code':'PLAN-A1','plan_type':'custom','max_days':30,'months_count':1,'installment_count':1,'discount_percent':10,'monthly_interest_percent':0,'interest_type':'none','pricing_mode':'discount_from_base','requires_credit_approval':false,'requires_guarantee':false,'requires_financial_approval':false}"
+    payload = json.dumps({"name":"Nova versão","code":"PLAN-A1","plan_type":"custom","max_days":30,"months_count":1,"installment_count":1,"discount_percent":10,"monthly_interest_percent":0,"interest_type":"none","pricing_mode":"discount_from_base","requires_credit_approval":False,"requires_guarantee":False,"requires_financial_approval":False}, separators=(",", ":"))
     check("FSF nega versão ARBio", actor(B, f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_A1}','{payload}'::jsonb,'x');"), error="plan_not_found")
     check("FSF nega metadados ARBio", actor(B, f"SELECT public.rpc_admin_update_commercial_plan_metadata('{PLAN_A1}','B',NULL,NULL);"), error="plan_not_found")
     check("FSF nega ativação ARBio", actor(B, f"SELECT public.rpc_admin_set_commercial_plan_active('{PLAN_A1}',false,'x');"), error="plan_not_found")
