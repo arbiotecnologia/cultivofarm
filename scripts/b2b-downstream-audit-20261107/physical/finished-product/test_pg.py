@@ -27,10 +27,9 @@ sys.path.insert(0, str(ATOMIC))
 import restore
 from restore import pg
 import test_pg as T
-catalog_spec = importlib.util.spec_from_file_location("finished_current_catalog", H / "catalog_foundation.py")
-catalog_module = importlib.util.module_from_spec(catalog_spec)
-catalog_spec.loader.exec_module(catalog_module)
-apply_current_catalog = catalog_module.apply
+catalog_spec = importlib.util.spec_from_file_location("finished_current_catalog", H / "current_catalog.py")
+current_catalog = importlib.util.module_from_spec(catalog_spec)
+catalog_spec.loader.exec_module(current_catalog)
 spec = importlib.util.spec_from_file_location("finished_confirmation", CONF / "test_pg.py")
 C = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(C)
@@ -100,14 +99,18 @@ def restore_checkpoint():
             sql('ALTER ROLE "' + role["name"] + '" ' + ("BYPASSRLS" if role["bypassrls"] else "NOBYPASSRLS") + ";")
     sql(cached.read_text())
     ok("checkpoint descartável da composição capturada restaurado", hashlib.sha256(cached.read_bytes()).hexdigest())
+    # O catálogo canônico antecede a geração dos candidatos: os pins de confirmação,
+    # envio, físico e logística nascem da baseline POSPLANOS, não da captura antiga.
+    current_catalog.apply(run_raw, last, ok)
     # Mesma geração determinística do harness de confirmação; nenhum PRE é removido.
     pre = C.state()
     delta = C.G.candidate()
     measured = sql("BEGIN;" + delta + C.G.STATE + "::text;ROLLBACK;")
     post = json.loads([x for x in measured.splitlines() if x.startswith("{")][-1])
     released = json.loads([x for x in sql("BEGIN;" + delta + f"GRANT EXECUTE ON FUNCTION {C.G.RPC} TO authenticated;" + C.G.STATE + "::text;ROLLBACK;").splitlines() if x.startswith("{")][-1])
-    C.G.write(pre, post, released)
-    loaded = run_raw((CONF / "install.sql.review").read_text())
+    confirm_out = H / "evidence/current-confirmation"
+    C.G.write(pre, post, released, out=confirm_out)
+    loaded = run_raw((confirm_out / "install.sql.review").read_text())
     if loaded.returncode != 0:
         raise AssertionError("CONFIRM_INSTALL_PIN_FAILED\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
     send_spec = importlib.util.spec_from_file_location("finished_send_generator", CONF / "send/assemble.py")
@@ -115,15 +118,15 @@ def restore_checkpoint():
     send_spec.loader.exec_module(send_generator)
     send_pre = json.loads(last(send_generator.STATE + "::text;"))
     send_post = json.loads([x for x in sql("BEGIN;" + send_generator.candidate() + send_generator.STATE + "::text;ROLLBACK;").splitlines() if x.startswith("{")][-1])
-    send_generator.write(send_pre, send_post)
-    loaded = run_raw((CONF / "send/install.sql.review").read_text())
+    send_out = H / "evidence/current-send"
+    send_generator.write(send_pre, send_post, out=send_out)
+    loaded = run_raw((send_out / "install.sql.review").read_text())
     if loaded.returncode != 0:
         raise AssertionError("SEND_INSTALL_PIN_FAILED\n" + loaded.stdout[-3000:] + loaded.stderr[-8000:])
     # Ativação exclusivamente no harness; os artefatos de release permanecem fechados.
     sql("GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;")
     ok("writers de confirmação/envio ativados somente no PostgreSQL descartável")
-    # Costura exclusivamente local da captura antiga com o catálogo exclusivo atual.
-    apply_current_catalog(sql, T.A)
+    current_catalog.assert_current(last)
 
 
 def group(os_id, stock_id, quantity, key, observed=None):

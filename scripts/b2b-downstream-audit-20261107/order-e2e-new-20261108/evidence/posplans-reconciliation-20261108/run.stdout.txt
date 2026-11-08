@@ -1,0 +1,16 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=7.3s
+CHECKPOINT sql_calls=100 elapsed=11.8s
+CHECKPOINT sql_calls=200 elapsed=16.1s
+CHECKPOINT sql_calls=300 elapsed=20.2s
+CHECKPOINT sql_calls=400 elapsed=24.4s
+CHECKPOINT sql_calls=500 elapsed=28.4s
+CHECKPOINT sql_calls=600 elapsed=32.2s
+CHECKPOINT sql_calls=700 elapsed=36.5s
+CHECKPOINT sql_calls=800 elapsed=40.2s
+CHECKPOINT sql_calls=900 elapsed=43.7s
+CHECKPOINT sql_calls=1000 elapsed=47.5s
+CHECKPOINT sql_calls=1100 elapsed=52.1s
+CHECKPOINT sql_calls=1200 elapsed=56.4s
+CHECKPOINT sql_calls=1300 elapsed=59.9s
+CHECKPOINT sql_calls=1400 elapsed=63.7s

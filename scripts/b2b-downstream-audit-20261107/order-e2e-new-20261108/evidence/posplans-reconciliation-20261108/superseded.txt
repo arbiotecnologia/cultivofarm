@@ -1,0 +1,1 @@
+Superseded before candidate generation: generator updated to six guards and measured physical POST; no hosted I/O.

@@ -2,6 +2,7 @@
 """Gera o candidato de produto acabado com corpos/pins capturados, sem hosted."""
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -9,9 +10,10 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
 DELIVERY = ROOT / "scripts/delivery-atomic-hardening-20261030"
 CONF = DELIVERY / "confirmation"
-BASE = json.loads((HERE / "baseline.json").read_text())
+BASE = json.loads(Path(os.environ.get("FINISHED_BASELINE", str(HERE / "baseline.json"))).read_text())
 LIVE_FACTS = json.loads((HERE / "live-entry-guards-20261107T1737Z.json").read_text())
-CURRENT = json.loads((DELIVERY / "capture/current.json").read_text())
+CURRENT = json.loads(Path(os.environ.get("FINISHED_CURRENT_CAPTURE", str(DELIVERY / "capture/current.json"))).read_text())
+OUT = Path(os.environ.get("FINISHED_REVIEW_OUT", str(HERE)))
 
 
 def extract(text, qualified):
@@ -89,17 +91,22 @@ END$$;"""
 def build():
     functions = {x["signature"]: x for x in BASE["functions"]}
     dependencies = {x["signature"]: x for x in BASE.get("dependency_functions", [])}
-    if len(functions) != 11 or len(dependencies) != 1 or len(BASE.get("dependency_triggers", [])) != 1 or BASE["existing_candidate_columns"]:
+    current_rehearsal = bool(os.environ.get("FINISHED_CURRENT_CAPTURE"))
+    expected_dependencies = 6 if current_rehearsal else 1
+    if len(functions) != 11 or len(dependencies) != expected_dependencies or len(BASE.get("dependency_triggers", [])) != expected_dependencies or BASE["existing_candidate_columns"]:
         raise AssertionError("baseline incompleta ou colunas já presentes")
-    for signature, entry in list(functions.items()) + list(dependencies.items()):
-        reported = LIVE_FACTS["functions"].get(signature)
-        if reported and entry["md5"] != reported["reported_md5"]:
-            raise AssertionError("reported LIVE pin drift " + signature)
+    if not current_rehearsal:
+        for signature, entry in list(functions.items()) + list(dependencies.items()):
+            reported = LIVE_FACTS["functions"].get(signature)
+            if reported and entry["md5"] != reported["reported_md5"]:
+                raise AssertionError("reported LIVE pin drift " + signature)
     reservar = captured("public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)")
     criar = captured("public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)")
     merge = extract((DELIVERY / "candidate.sql.review").read_text(), "platform_private.delivery_merge_split_20261030")
-    confirm = extract((CONF / "candidate.sql.review").read_text(), "platform_private.delivery_confirm_apply_v1")
-    send = extract((CONF / "send/candidate.sql.review").read_text(), "platform_private.delivery_send_apply_v1")
+    confirm_path = Path(os.environ.get("FINISHED_CONFIRMATION_CANDIDATE", str(CONF / "candidate.sql.review")))
+    send_path = Path(os.environ.get("FINISHED_SEND_CANDIDATE", str(CONF / "send/candidate.sql.review")))
+    confirm = extract(confirm_path.read_text(), "platform_private.delivery_confirm_apply_v1")
+    send = extract(send_path.read_text(), "platform_private.delivery_send_apply_v1")
     sync = captured("public.fn_sync_os_classica_downstream()")
     isolated_source = (ROOT / "scripts/stock-envase-recovery-20261027/isolated/candidate.sql.review").read_text()
     entry_guard = extract(isolated_source, "platform_private.envase_insert_guard_v1")
@@ -465,7 +472,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uui
     foundation_candidate = "\n\n".join(foundation_bodies) + "\n"
     downstream_candidate = "\n\n".join(downstream_bodies) + "\n"
     post_blocks = {}
-    post_capture_path = HERE / "evidence/post-install-functions.json"
+    post_capture_path = Path(os.environ.get("FINISHED_POST_CAPTURE", str(HERE / "evidence/post-install-functions.json")))
     post_capture_data = json.loads(post_capture_path.read_text()) if post_capture_path.exists() else {}
     candidate_source_sha256 = hashlib.sha256(candidate.encode()).hexdigest()
     post_capture = post_capture_data.get("functions", []) if post_capture_data.get("candidate_sha256") == candidate_source_sha256 else []
@@ -512,20 +519,22 @@ GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uui
     downstream_pre = ["-- Camada downstream INATIVA: exige as dependências de confirmação/envio e o POST exato da entrada."]
     downstream_pre += [dependency_pin(x) for x in downstream_entries] + foundation_post + [gate_closed]
 
-    (HERE / "candidate.sql.review").write_text(candidate)
-    (HERE / "candidate-foundation.sql.review").write_text(foundation_candidate)
-    (HERE / "candidate-downstream.sql.review").write_text(downstream_candidate)
-    (HERE / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
-    (HERE / "install-foundation.sql.review").write_text("\n\n".join(foundation_pre) + "\n\n" + foundation_candidate)
-    (HERE / "install-downstream.sql.review").write_text("\n\n".join(downstream_pre) + "\n\n" + downstream_candidate)
-    (HERE / "postflight.sql.review").write_text("\n".join(post) + "\n" + gate_closed + "\n")
-    (HERE / "postflight-foundation.sql.review").write_text("\n".join(foundation_post) + "\n" + gate_closed + "\n")
-    (HERE / "postflight-downstream.sql.review").write_text("\n".join(downstream_post) + "\n" + gate_closed + "\n")
-    (HERE / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
+    OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / "baseline.json").write_text(json.dumps(BASE, indent=2) + "\n")
+    (OUT / "candidate.sql.review").write_text(candidate)
+    (OUT / "candidate-foundation.sql.review").write_text(foundation_candidate)
+    (OUT / "candidate-downstream.sql.review").write_text(downstream_candidate)
+    (OUT / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
+    (OUT / "install-foundation.sql.review").write_text("\n\n".join(foundation_pre) + "\n\n" + foundation_candidate)
+    (OUT / "install-downstream.sql.review").write_text("\n\n".join(downstream_pre) + "\n\n" + downstream_candidate)
+    (OUT / "postflight.sql.review").write_text("\n".join(post) + "\n" + gate_closed + "\n")
+    (OUT / "postflight-foundation.sql.review").write_text("\n".join(foundation_post) + "\n" + gate_closed + "\n")
+    (OUT / "postflight-downstream.sql.review").write_text("\n".join(downstream_post) + "\n" + gate_closed + "\n")
+    (OUT / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
     manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1", "public.rpc_finished_product_purchase_capability_v1", "public.rpc_finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": ["public.rpc_finished_product_purchase_capability_v1():authenticated", "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date):authenticated"], "layers": {"foundation": {"changed_functions": [x["signature"] for x in foundation_entries], "requires_delivery_confirmation_or_send": False}, "downstream": {"changed_functions": [x["signature"] for x in downstream_entries], "requires_delivery_confirmation_or_send": True, "requires_foundation_postflight": True}}, "reported_live_state": {"delivery_confirm_apply_v1": "ABSENT", "delivery_send_apply_v1": "ABSENT", "other_six_bodies_owners_acls": "REPORTED_MATCH_REMAINING_PRE_PINS_RETAINED"}, "files": {}}
     for name in ["baseline.json", "candidate.sql.review", "candidate-foundation.sql.review", "candidate-downstream.sql.review", "install.sql.review", "install-foundation.sql.review", "install-downstream.sql.review", "postflight.sql.review", "postflight-foundation.sql.review", "postflight-downstream.sql.review", "rollback.sql.review"]:
-        data = (HERE / name).read_bytes(); manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
-    (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+        data = (OUT / name).read_bytes(); manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+    (OUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({"candidate_sha256": manifest["files"]["candidate.sql.review"]["sha256"], "functions": len(functions), "enabled_by_default": False}))
 
 if __name__ == "__main__":

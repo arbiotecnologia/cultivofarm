@@ -37,26 +37,34 @@ def main():
   # Capture the new checkpoint under the path used by existing local helper.
   # Subsequent composition is continued in this same database; no source evidence reused.
   print('NEW_PHYSICAL_BOOT_OK',flush=True)
+  # A migração canônica pós-catálogo antecede todos os pins dos candidatos.
+  B.current_catalog.apply(B.run_raw,B.last,B.ok)
+  shutil.copyfile(physical/'evidence/current-catalog-baseline.json',OUT/'current-catalog-baseline.json')
+  checks.append(dict(test='canonical post-catalog migration matches nine LIVE bodies six guards and eight ACLs before candidate generation',status='PASS'))
   # Install confirmation/send in the current fresh database using measured exact pins.
   C=B.C
   pre=C.state();delta=C.G.candidate()
   post=json.loads([x for x in B.sql('BEGIN;'+delta+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   released=json.loads([x for x in B.sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {C.G.RPC} TO authenticated;'+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
-  C.G.write(pre,post,released);B.sql((C.H/'install.sql.review').read_text())
   confirmation_out=OUT/'delivery-confirmation';confirmation_out.mkdir(exist_ok=True)
-  for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
-   shutil.copyfile(C.H/name,confirmation_out/name)
+  C.G.write(pre,post,released,out=confirmation_out);B.sql((confirmation_out/'install.sql.review').read_text())
   S=load('new_send',C.H/'send/assemble.py')
   pre=json.loads(B.last(S.STATE+'::text;'))
   post=json.loads([x for x in B.sql('BEGIN;'+S.candidate()+S.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
-  S.write(pre,post);B.sql((C.H/'send/install.sql.review').read_text())
   send_out=OUT/'delivery-send';send_out.mkdir(exist_ok=True)
-  for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
-   shutil.copyfile(C.H/'send'/name,send_out/name)
+  S.write(pre,post,out=send_out);B.sql((send_out/'install.sql.review').read_text())
   B.sql('GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;')
-  B.apply_current_catalog(B.sql,B.T.A)
-  # Captured NULL ACL vs restore's explicit postgres-only ACL: same effective
-  # owner-only permissions. Measure representation in TEMP generator, never hosted pins.
+  B.current_catalog.assert_current(B.last)
+  # O gerador físico consome a composição atual medida, não a captura anterior ao catálogo.
+  current_capture=OUT/'current-pre-physical.json';current_capture.write_text(json.dumps(B.restore.metadata(),indent=2)+'\n')
+  capture_module=load('new_current_baseline',physical/'capture_baseline.py')
+  current_baseline=OUT/'current-physical-baseline.json';current_baseline.write_text(json.dumps(capture_module.capture(B),indent=2)+'\n')
+  physical_out=OUT/'physical-finished-product';physical_out.mkdir(exist_ok=True)
+  os.environ['FINISHED_CURRENT_CAPTURE']=str(current_capture)
+  os.environ['FINISHED_BASELINE']=str(current_baseline)
+  os.environ['FINISHED_REVIEW_OUT']=str(physical_out)
+  os.environ['FINISHED_CONFIRMATION_CANDIDATE']=str(confirmation_out/'candidate.sql.review')
+  os.environ['FINISHED_SEND_CANDIDATE']=str(send_out/'candidate.sql.review')
   F=load('new_finished_generator',physical/'assemble.py')
   rel=next(r for r in F.BASE['relations'] if r['name']=='authz_tickets')
   acl=B.sql("SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass;").strip()
@@ -64,8 +72,19 @@ def main():
   rel['acl']=acl
   (OUT/'acl-normalization.json').write_text(json.dumps(dict(relation='platform_private.authz_tickets',historical='',restored=acl,client_grants=False,seam='restorer explicit owner ACL vs NULL default, local generator only'))+'\n')
   F.build()
-  B.sql((physical/'install.sql.review').read_text())
-  checks.append(dict(test='physical revised install PRE POST; fresh confirmation/send generated pins',status='PASS'))
+  B.sql((physical_out/'install.sql.review').read_text())
+  # Medir o POST real e regenerar os pins: nenhum POST_RUNTIME_REQUIRED permanece.
+  post_signatures=[x['signature'] for x in F.BASE['functions']+F.BASE.get('dependency_functions',[])]
+  post_signatures += ['platform_private.finished_product_stock_valid_v1(public.estoque_produto)','platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)','platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','public.rpc_finished_product_purchase_capability_v1()','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)']
+  values=','.join("('%s')"%x for x in post_signatures)
+  post_rows=json.loads(B.last("SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',r.rolname,'acl',coalesce(p.proacl::text,'')) ORDER BY v.signature),'[]'::jsonb) FROM (VALUES "+values+") v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature) JOIN pg_roles r ON r.oid=p.proowner;"))
+  post_capture=physical_out/'post-install-functions.json'
+  post_capture.write_text(json.dumps({'candidate_sha256':hashlib.sha256((physical_out/'candidate.sql.review').read_bytes()).hexdigest(),'functions':post_rows},indent=2)+'\n')
+  os.environ['FINISHED_POST_CAPTURE']=str(post_capture)
+  F.build()
+  assert 'POST_RUNTIME_REQUIRED' not in (physical_out/'postflight.sql.review').read_text()
+  B.sql((physical_out/'postflight.sql.review').read_text())
+  checks.append(dict(test='physical revised install exact measured PRE POST with six current tenant guards; fresh confirmation/send generated pins',status='PASS'))
   # No new production behavior: closed gate first, disposable activation second.
   assert B.last('SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton;')=='f'
   B.sql('UPDATE platform_private.finished_product_gate_v1 SET enabled=true WHERE singleton;')
@@ -104,6 +123,9 @@ def main():
   assert arb_code.returncode==0 and arb_code.stdout.strip()=='0',(arb_code.stdout,arb_code.stderr)
   (OUT/'plan-isolation-composition.json').write_text(json.dumps(dict(pre=plan_pre,post=plan_post,arbio_plan_visible=True,fsf_arbio_plan_visible=False,fsf_write_denied=fsf_write.stderr,shared_code_plan_id=shared_id,shared_code_invisible_to_arbio=True),indent=2)+'\n')
   checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
+  current_state=B.current_catalog.assert_current(B.last)
+  (OUT/'current-catalog-posplans.json').write_text(json.dumps(current_state,indent=2)+'\n')
+  checks.append(dict(test='post catalog Price plans preserve nine current bodies six enabled guards and eight restricted ACLs',status='PASS'))
   # As baselines atuais são compostas antes do pedido B2B: o fluxo inteiro abaixo
   # corre com a ACL e os dez gatilhos reais de recebíveis, além do cadastro sem
   # configuração automática. Nenhum writer B4/NF é instalado por esta etapa.
@@ -567,6 +589,26 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   assert B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}' AND idempotency_key='{transmission_idem}' AND request_fingerprint='{transmission_fingerprint}';")=='1'
   assert B.last(f"SELECT count(*) FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}' AND error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' AND attempts=2;")=='1'
   checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency close pending and all original ten receivable triggers',status='PASS'))
+  # Cadeia logística reversa completa: endpoint já foi fechado acima; agora
+  # logística/físico/envio/confirmação sem apagar histórico ou reabrir grants.
+  history_before=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+  B.sql((OUT/'logistics/rollback.sql.review').read_text())
+  B.sql((physical_out/'rollback.sql.review').read_text())
+  B.sql((send_out/'rollback.sql.review').read_text())
+  B.sql((confirmation_out/'rollback.sql.review').read_text())
+  closed=json.loads(B.last("""SELECT jsonb_build_object(
+   'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
+   'physical_gate',(SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton),
+   'os_writer',has_function_privilege('authenticated','public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)','EXECUTE'),
+   'purchase_writer',has_function_privilege('authenticated','public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)','EXECUTE'),
+   'send_writer',has_function_privilege('authenticated','public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)','EXECUTE'),
+   'confirm_writer',has_function_privilege('authenticated','public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)','EXECUTE'));"""))
+  assert closed=={'logistics_gate':False,'physical_gate':False,'os_writer':False,'purchase_writer':False,'send_writer':False,'confirm_writer':False},closed
+  history_after=json.loads(B.last("SELECT jsonb_build_object('deliveries',(SELECT count(*) FROM public.entregas),'movements',(SELECT count(*) FROM public.estoque_movimentacoes),'os',(SELECT count(*) FROM public.ordens_servico),'resale_receipts',(SELECT count(*) FROM platform_private.b2b_resale_os_requests_v1));"))
+  assert history_after==history_before,(history_before,history_after)
+  B.current_catalog.assert_current(B.last)
+  (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True},indent=2)+'\n')
+  checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history six guards eight ACLs',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:

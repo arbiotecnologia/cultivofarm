@@ -2,14 +2,17 @@
 """Captura baseline da composição local; nunca conecta ao hosted."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("finished_before", HERE / "test_pg.py")
-B = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(B)
 DEPENDENCY_NAMES = [
+    "platform_private.entregas_catalog_tenant_guard()",
     "platform_private.estoque_produto_catalog_tenant_guard()",
+    "platform_private.lotes_catalog_tenant_guard()",
+    "platform_private.ordens_servico_catalog_tenant_guard()",
+    "platform_private.produto_etiquetas_catalog_tenant_guard()",
+    "platform_private.programacao_producao_catalog_tenant_guard()",
 ]
 NAMES = [
     "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
@@ -25,8 +28,7 @@ NAMES = [
     "public.validate_estoque_entrada()",
 ]
 
-def main():
-    B.restore_checkpoint()
+def capture(B):
     values = ",".join("('" + n.replace("'", "''") + "')" for n in NAMES)
     rows = json.loads(B.last(f"""
       SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'md5',md5(pg_get_functiondef(p.oid)),'owner',r.rolname,'acl',coalesce(p.proacl::text,'')::text) ORDER BY v.signature),'[]'::jsonb)
@@ -44,8 +46,9 @@ def main():
     dependency_triggers = json.loads(B.last("""
       SELECT coalesce(jsonb_agg(jsonb_build_object('schema',n.nspname,'table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid),'enabled',t.tgenabled::text,'type',t.tgtype) ORDER BY t.tgname),'[]'::jsonb)
       FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='estoque_produto'
-        AND t.tgname='a000_estoque_produto_catalog_tenant_guard';
+      WHERE NOT t.tgisinternal AND n.nspname='public'
+        AND c.relname IN ('entregas','estoque_produto','lotes','ordens_servico','produto_etiquetas','programacao_producao')
+        AND t.tgname LIKE 'a000_%_catalog_tenant_guard';
     """))
     relations = json.loads(B.last("""
       SELECT coalesce(jsonb_agg(jsonb_build_object('schema',n.nspname,'name',c.relname,'owner',r.rolname,'acl',coalesce(c.relacl::text,'')::text) ORDER BY n.nspname,c.relname),'[]'::jsonb)
@@ -71,9 +74,19 @@ def main():
       FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('estoque_produto','entregas')
       AND column_name IN ('origem_estoque','unidade_comercial','conteudo_por_unidade','unidade_conteudo','quantidade_conteudo','embalagem_id','embalagem_versao');
     """))
-    out = {"source": "disposable_captured_composition_with_current_catalog_schema_seam", "hosted": False, "functions": rows, "dependency_functions": dependency_functions, "dependency_triggers": dependency_triggers, "relations": relations, "catalog_columns": catalog_columns, "catalog_constraints": catalog_constraints, "existing_candidate_columns": columns}
-    (HERE / "baseline.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
-    print(json.dumps({"functions": len(rows), "dependency_functions": len(dependency_functions), "dependency_triggers": len(dependency_triggers), "relations": len(relations), "candidate_columns_already_present": len(columns)}))
+    return {"source": "disposable_canonical_post_catalog_posplans_composition", "hosted": False, "functions": rows, "dependency_functions": dependency_functions, "dependency_triggers": dependency_triggers, "relations": relations, "catalog_columns": catalog_columns, "catalog_constraints": catalog_constraints, "existing_candidate_columns": columns}
+
+
+def main():
+    spec = importlib.util.spec_from_file_location("finished_before", HERE / "test_pg.py")
+    B = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(B)
+    B.restore_checkpoint()
+    out = capture(B)
+    target = Path(os.environ.get("FINISHED_BASELINE_OUT", str(HERE / "baseline.json")))
+    target.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
+    print(json.dumps({"functions": len(out["functions"]), "dependency_functions": len(out["dependency_functions"]), "dependency_triggers": len(out["dependency_triggers"]), "relations": len(out["relations"]), "candidate_columns_already_present": len(out["existing_candidate_columns"])}))
+
 
 if __name__ == "__main__":
     main()

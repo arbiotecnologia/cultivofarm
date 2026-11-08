@@ -2,13 +2,14 @@
 """Assemble review-only POSPLANOS rollout from fresh disposable evidence; no hosted I/O."""
 import hashlib
 import json
+import os
 import shutil
 from pathlib import Path
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[2]
-E = H / 'evidence'
-OUT = H / 'production-rollout-2154'
+E = Path(os.environ.get('NEW_E2E_OUT', str(H / 'evidence')))
+OUT = H / 'production-rollout-posplans-20261108'
 REF = 'swzpzcwiasxmjutrmvkm'
 
 
@@ -31,11 +32,20 @@ def pre_from_install(install, candidate):
 def main():
     checks = json.loads((E/'checks.json').read_text())
     assert (E/'run.exitcode').read_text().strip() == '0' and checks and all(x['status'] == 'PASS' for x in checks)
-    assert sha(E/'logistics/install.sql.review') == '56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09'
     assert sha(E/'logistics/candidate.sql.review') == '8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20'
-    assert sha(E/'os-endpoint/02-install.sql.review') == '617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb'
-    physical = ROOT/'scripts/b2b-downstream-audit-20261107/physical/finished-product'
-    assert sha(physical/'install.sql.review') == '7fbd198c5356bf32dc9806143c78d4ae28baed5906f29c56ec8f6c893c836a18'
+    physical = E/'physical-finished-product'
+    assert (E/'current-catalog-baseline.json').is_file()
+    assert (E/'current-catalog-posplans.json').is_file()
+    partial = json.loads((E/'review-70d08c.json').read_text())['results']
+    endpoint = json.loads((E/'os-endpoint-tests.json').read_text())['results']
+    assert len(partial) == 13 and all(x['status'] == 'PASS' for x in partial)
+    assert len(endpoint) == 15 and all(x['status'] == 'PASS' for x in endpoint)
+    frontend = {}
+    for name in ('frontend-ui','frontend-candidate','frontend-os-compat','typecheck'):
+        assert (E/f'{name}.exitcode').read_text().strip() == '0', name
+        frontend[name] = {'exitcode': 0, 'sha256': sha(E/f'{name}.txt')}
+    rollback = json.loads((E/'full-logistics-rollback.json').read_text())
+    assert rollback['current_catalog_preserved'] is True
     OUT.mkdir(exist_ok=True)
     delivery = E/'delivery-confirmation'
     send = E/'delivery-send'
@@ -121,10 +131,22 @@ ROLLBACK;
       'BEGIN READ ONLY;\n'+pre_from_install(physical/'install.sql.review',physical/'candidate.sql.review')+'ROLLBACK;\n')
     (OUT/'40-logistics-pre-after-physical.sql.readonly').write_text(
       'BEGIN READ ONLY;\n'+pre_from_install(E/'logistics/install.sql.review',E/'logistics/candidate.sql.review')+'ROLLBACK;\n')
+    evidence_summary = {
+      'scope':'PostgreSQL 17.11 descartável e testes locais; não é prova JWT/RLS/Storage/hosted',
+      'composition_checks':len(checks),
+      'partial_regressions':len(partial),
+      'endpoint_reader_checks':len(endpoint),
+      'frontend':frontend,
+      'full_reverse_rollback':rollback,
+      'positive_fiscal_receivable':'NOT_RUN_BLOCKED_REAL_ALWAYS_DENY',
+    }
+    (OUT/'evidence-summary.json').write_text(json.dumps(evidence_summary,indent=2)+'\n')
     files = {p.name:{'sha256':sha(p),'bytes':p.stat().st_size} for p in sorted(OUT.iterdir()) if p.is_file() and p.name!='manifest.json'}
     manifest = {
       'status':'REVIEW_ONLY_INACTIVE_NOT_APPROVED', 'production_ref':REF,
-      'baseline':'POSPLANOS; plan cc1f6cc already installed; never reinstall or roll it back',
+      'baseline':'POSPLANOS + catálogo exclusivo atual; plan cc1f6cc already installed; never reinstall or roll it back',
+      'current_catalog_evidence':{'pre':sha(E/'current-catalog-baseline.json'),'post_plans':sha(E/'current-catalog-posplans.json'),'function_pins':9,'tenant_guards':6,'restricted_relation_acls':8},
+      'previous_failed_pre':'CONFIRM_PRE_DRIFT em 4f68d404; pacote anterior preservado e não reutilizado como baseline',
       'hosted_io':False,'gates':'all closed after every install and rollback',
       'live_readonly_reported_2026_11_08':{
         'rpc_entrega_confirmar_manual_v1':'ABSENT_BY_PRONAME_ANY_OVERLOAD',
