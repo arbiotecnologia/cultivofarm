@@ -129,9 +129,9 @@ def main():
     assert not remaining, remaining
     assert set(post_plans_pins) == set(pins) and len(post_plans_pins) == 17
 
-    # A composição física reproduz o mesmo writer de baixa com whitespace diverso.
-    # Só aceita a variante medida se TODOS os tokens SQL forem idênticos; não há
-    # substituição de lógica nem edição do corpo para satisfazer o PRE.
+    # O writer de baixa já medido em outra restauração tinha somente CRLF/
+    # whitespace diverso. A restauração canônica atual preserva o corpo de
+    # produção db41f7e2…; a variante 2f238ac… é documentada, nunca aplicada.
     payment_sig = "public.rpc_register_receivable_payment(uuid,jsonb)"
     capture = json.loads((ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json").read_text())
     production_payment = next(row["body"] for row in capture["functions"] if row["name"] == "rpc_register_receivable_payment")
@@ -141,30 +141,27 @@ def main():
     production_payment_md5 = hashlib.md5(production_payment.encode()).hexdigest()
     assert re.fullmatch(r"[0-9a-f]{32}", production_payment_md5)
     assert payment_sig not in pins
+    assert production_payment_md5 == "db41f7e2cfcb196ef64536f62746f365"
     assert composed_payment_md5 == "2f238ac7871ed569adee240c372027eb"
-    assert composed_payment_md5 != production_payment_md5
     assert sql_tokens(production_payment) == sql_tokens(composed_payment), "PAYMENT_BODY_SEMANTIC_DRIFT"
     payment_diff = "".join(difflib.unified_diff(
         production_payment.splitlines(True), composed_payment.splitlines(True),
         fromfile="production/rpc_register_receivable_payment",
-        tofile="post-composition/rpc_register_receivable_payment",
+        tofile="measured-alternate/rpc_register_receivable_payment",
     ))
     assert payment_diff, "PAYMENT_VARIANT_DIFF_MISSING"
     (diff_dir / "rpc_register_receivable_payment.diff").write_text(payment_diff)
     post_composition_pins = dict(post_plans_pins)
-    post_composition_production_payment_md5 = composed_payment_md5
-    for label, text in (("pre", b4_pre), ("install", b4_install)):
-        assert text.count(production_payment_md5) == 1, (label, payment_sig)
-    b4_pre = replace_once(b4_pre, production_payment_md5, composed_payment_md5, payment_sig)
-    b4_install = replace_once(b4_install, production_payment_md5, composed_payment_md5, payment_sig)
+    post_composition_pins[payment_sig] = production_payment_md5
     composition_reconciliation = {
         "signature": payment_sig,
         "production_md5": production_payment_md5,
-        "post_composition_md5": composed_payment_md5,
+        "post_composition_md5": production_payment_md5,
+        "measured_alternate_md5": composed_payment_md5,
         "reference_sha256": sha(payment_reference),
         "sql_token_sequence_identical": True,
         "diff": "diff/rpc_register_receivable_payment.diff",
-        "decision": "PIN_MEASURED_COMPOSITION_BODY_WITHOUT_REWRITING_LOGIC",
+        "decision": "KEEP_PRODUCTION_BODY_AND_PIN; alternate whitespace-only measurement documented but not applied",
     }
 
     plan_defs = function_names((PLANS / "02-install.sql.review").read_text())
