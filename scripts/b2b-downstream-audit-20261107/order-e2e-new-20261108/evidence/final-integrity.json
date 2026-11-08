@@ -1,0 +1,74 @@
+{
+  "status": "PASS_LOCAL_ONLY_CANDIDATE_INACTIVE_NOT_APPROVED",
+  "fresh_full_rebuild": true,
+  "checkpoints": "19/19",
+  "run_exit_code": 0,
+  "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+  "zero_new_receivables_or_fiscal_documents": true,
+  "files": {
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py": {
+      "sha256": "37541d3af56a7a1f31e9d5df3d2f4daaf61adf37f4f7b0d1c14723f3d6986456",
+      "bytes": 11726
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py": {
+      "sha256": "0675c5890aca616a73c0cd3b4302df275144267618016ef674483aebeb28bbb9",
+      "bytes": 30445
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py": {
+      "sha256": "517b42251ac93008e136a0229e74b9e877ce2fcfe522cf2e6b3a85d966abefc7",
+      "bytes": 47510
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/README.md": {
+      "sha256": "b4cb2c195f290d7b8ca76e9e2a96651970c9243f26100be62f3bd04e5905de03",
+      "bytes": 10529
+    },
+    "roadmap.md": {
+      "sha256": "ca1d0e739ff9a6bb5f0073b75276f8efb5ca406ec5e8541497d13b2392dde442",
+      "bytes": 213788
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/logistics/candidate.sql.review": {
+      "sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+      "bytes": 108613
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/checks.json": {
+      "sha256": "2bcb54f3c348774c4f7c9ddd3750e5e066e4d77a25a35b939ba3d606016c5d65",
+      "bytes": 3055
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/real-baselines.json": {
+      "sha256": "b62026431fcbd36d1c25fe272f86420cea734c45e21ca33d1601a5f1706b4cf5",
+      "bytes": 9262
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/real-baseline-negatives.json": {
+      "sha256": "406630900225d68659aa57d0d110e2cf038184b0411b8c8d1c8e97fcdc795e16",
+      "bytes": 1193
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/real-baselines-post-rollback.json": {
+      "sha256": "c21b85697908c46fe4f52f3f71073930939373940500dd13786b80080baf2942",
+      "bytes": 4121
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/resale-delivery.json": {
+      "sha256": "34ff69bbf787614cdd9a068c1962e2e1b1e12179b4848521b779f0028b9ba488",
+      "bytes": 3019
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/reconciliation-02eab03d.json": {
+      "sha256": "d63d93f0bb8f5e713dd2513976aebb5129c475673d9c5ac135dc088bb3c9dee4",
+      "bytes": 3030
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/logistics/status.json": {
+      "sha256": "e5b466d701d1b95469a6825f9004e575cac2caee7b4d52329a0faa88972061d0",
+      "bytes": 2676
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/run.stdout.txt": {
+      "sha256": "1b353137362bbe8e6747e60beca485bb3ad5966a3feaf1cff59ae03b357d2654",
+      "bytes": 5990
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/run.stderr.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/run.exitcode": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    }
+  }
+}
