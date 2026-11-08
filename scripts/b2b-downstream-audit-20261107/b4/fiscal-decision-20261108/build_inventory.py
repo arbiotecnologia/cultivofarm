@@ -56,7 +56,7 @@ def build():
         selected[1]: ("GERADOR_B2B_ANTIGO", "Candidato B4 substitui por B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED"),
         selected[2]: ("GATILHO_AUTOMATICO_ATUAL", "Candidato B4 neutraliza aprovação/produção/entrega; não cria novo motor"),
         selected[3]: ("GERADOR_POR_ENTREGA_A2_INATIVO", "Não reabrir; delivery_no_downstream permanece"),
-        selected[4]: ("EXCECAO_MANUAL_GENERICa", "Reutilizar somente após contrato de justificativa/origem/antiduplicidade"),
+        selected[4]: ("EXCECAO_MANUAL_GENERICA", "Reutilizar somente após contrato de justificativa/origem/antiduplicidade"),
         selected[5]: ("RECORRENCIA_GENERICA", "Fora do evento B2B/NF; revisar escopo antes de qualquer bloqueio global"),
         selected[6]: ("GERADOR_PARCELAS_CANONICO", "Reutilizado pelo título com b2b_title_permits"),
         selected[7]: ("FECHAMENTO_DA_AUTORIZACAO_NFE", "Ponto de integração futuro; hoje não chama alocador nem cria recebível"),

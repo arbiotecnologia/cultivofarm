@@ -1,8 +1,9 @@
 ## 08/11 16:53 — DECISÃO: motor único de recebíveis por confirmação fiscal
-- [ ] Manter **BLOCKER prioritário** o isolamento dos planos comerciais: repetir a regressão local do candidato `92053bcb…`, sem instalá-lo; liberação continua condicionada a revisão independente e reteste real FSF/ARBio.
+- [ ] Manter **BLOCKER prioritário** o isolamento dos planos comerciais: regressão local do candidato `92053bcb…` repetida em **63/63**, sem instalá-lo; liberação continua condicionada a revisão independente e reteste real FSF/ARBio.
 - [x] Registrar a decisão aprovada: motor único sobre as estruturas atuais; título/parcelas ARBio somente após NF-e autorizada ou NFS-e emitida confirmada; pedido aprovado é previsão/reserva de crédito e entrega não gera outro título; exceção manual exige autoridade, justificativa, origem e trilha.
-- [ ] Inventariar writers/triggers/RPCs fiscais e financeiros, estruturas reutilizadas e lacunas; preparar matriz de gatilhos/negativas e testes descartáveis de recuperação, concorrência, parcialidade, crédito, cancelamento/estorno e exceção manual, sem provedores ou efeitos externos.
-- [ ] Preservar snapshots/condições personalizáveis, dez gatilhos/ACL/fence, cinco títulos MANUAL teste4 e histórico; não adotar taxas/descontos de referência, não emitir boleto/Pix/mensagem/pagamento, não aprovar contabilidade ou fiscal real.
+- [x] Inventariar writers/triggers/RPCs, tabelas reutilizadas e lacunas em `b4/fiscal-decision-20261108/`; matriz de doze requisitos validada em **38/38**, componente B4 ampliado em **128/128** e manifesto em **61/61**, incluindo mesma NF concorrente, falha pós-INSERT/retry, parcialidade, crédito, cancelamento, rollback e ausência de boleto/Pix/pagamento.
+- [x] Preservar snapshots/condições, dez gatilhos/ACL/fence, cinco títulos MANUAL teste4 e histórico; regenerar PRE/POST/rollback somente pelo gerador com a baseline real, sem taxas de referência, efeitos externos, aprovação contábil/fiscal ou operação hospedada.
+- [ ] Manter bloqueadas a ponte real `fiscal_invoices`→B4, o ator service-only do callback, estados pendente/rejeitado e recuperação H13, a exceção manual completa e a homologação JWT/RLS/Storage/browser; nenhum SQL instalável da ponte foi produzido.
 - [ ] Revisão logística `db36815b…`: 32/32 checkpoints e 12/12 regressões locais já executados, porém candidato segue INATIVO/NÃO APROVADO; composição financeiro/físico e sessões reais permanecem bloqueios independentes.
 
 ## 08/11 16:30 — Revisão independente 70d08c da logística de revenda
