@@ -44,6 +44,46 @@ def actor(uid, sql):
     return f"SET request.jwt.claim.sub='{uid}';SET ROLE authenticated;\n{sql}"
 
 
+def async_sql(sql):
+    process = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    process.stdin.write(sql)
+    process.stdin.close()
+    return process
+
+
+def finish_async(process):
+    stdout = process.stdout.read()
+    stderr = process.stderr.read()
+    returncode = process.wait(timeout=25)
+    return {"returncode": returncode, "stdout": stdout.strip(), "stderr": stderr.strip()}
+
+
+def lock_revocation(name, holder_sql, worker_sql, revoke_sql, holder_end="COMMIT"):
+    marker = "f32c4f3_" + name
+    holder = async_sql("BEGIN;" + holder_sql + "SELECT pg_sleep(3);" + holder_end + ";")
+    worker = async_sql(actor(A, "/*" + marker + "*/ " + worker_sql))
+    observed = False
+    for _ in range(100):
+        waiting = run(f"SELECT count(*) FROM pg_stat_activity WHERE query LIKE '%{marker}%' AND wait_event_type='Lock';")
+        if waiting == "1":
+            observed = True
+            break
+        if worker.poll() is not None:
+            break
+        time.sleep(0.05)
+    if not observed:
+        finish_async(holder)
+        finish_async(worker)
+        raise AssertionError("Lock não observado: " + name)
+    audit_before = int(run("SELECT count(*) FROM public.commercial_audit_log;"))
+    run(revoke_sql)
+    worker_result = finish_async(worker)
+    holder_result = finish_async(holder)
+    row = {"name": name, "lock_observed": observed, "worker": worker_result, "holder": holder_result, "audit_before": audit_before}
+    REVIEW_RESULTS.append(row)
+    return row
+
+
 def extract(path, name):
     import re
     text = Path(path).read_text()
