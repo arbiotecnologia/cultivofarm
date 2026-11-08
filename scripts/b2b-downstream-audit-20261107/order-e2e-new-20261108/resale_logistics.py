@@ -118,8 +118,8 @@ DECLARE v_uid uuid:=auth.uid();v_org uuid;v_order public.partner_orders%ROWTYPE;
  v_item public.partner_order_items%ROWTYPE;v_prev platform_private.b2b_resale_os_requests_v1%ROWTYPE;
  v_os uuid:=gen_random_uuid();v_fp text;v_result jsonb;
 BEGIN
- v_org:=platform_private.stock_motor_actor('reserva');
  IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ v_org:=platform_private.stock_motor_actor('reserva');
  IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'B2B_RESALE_GATE_CLOSED' USING ERRCODE='42501';END IF;
  IF p_order_id IS NULL OR p_order_item_id IS NULL OR p_expected_updated_at IS NULL OR p_request_key IS NULL
   OR length(btrim(p_request_key))<8 OR length(p_request_key)>128 THEN RAISE EXCEPTION 'B2B_RESALE_REQUEST_INVALID' USING ERRCODE='22023';END IF;
