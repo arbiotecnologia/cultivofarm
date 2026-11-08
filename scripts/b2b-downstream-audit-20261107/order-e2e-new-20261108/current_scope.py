@@ -279,9 +279,12 @@ def _json_literal(value) -> str:
 
 def _guard(doc: dict, state_expression: str, label: str) -> str:
     signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["functions"])
+    trigger_signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["trigger_functions"])
     relations = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["relations"])
     function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef) ORDER BY v.signature),'[]'::jsonb)
  FROM (VALUES {signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
+    trigger_function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid))) ORDER BY v.signature),'[]'::jsonb)
+ FROM (VALUES {trigger_signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
     relation_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.relation_name,coalesce(c.relacl::text,''),c.relrowsecurity,c.relforcerowsecurity,pg_get_userbyid(c.relowner)) ORDER BY v.relation_name),'[]'::jsonb)
  FROM (VALUES {relations}) v(relation_name) LEFT JOIN pg_class c ON c.oid=to_regclass(v.relation_name))"""
     trigger_actual = """(SELECT coalesce(jsonb_agg(jsonb_build_array(c.relname,t.tgname,t.tgenabled::text,p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid)),pg_get_triggerdef(t.oid)) ORDER BY c.relname,t.tgname),'[]'::jsonb)
