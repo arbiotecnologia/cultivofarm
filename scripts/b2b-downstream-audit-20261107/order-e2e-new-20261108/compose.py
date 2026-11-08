@@ -429,7 +429,7 @@ def main():
    B.sql((physical_out/'rollback.sql.review').read_text())
    B.sql((send_out/'rollback.sql.review').read_text())
    confirmation_rollback_state=C.state()
-   current_scope.write_final_confirmation_rollback(confirmation_out,send_out,confirmation_rollback_state,C.STATE)
+   current_scope.write_final_confirmation_rollback(confirmation_out,send_out,confirmation_rollback_state,C.G.STATE)
    B.sql((confirmation_out/'rollback-composed.sql.review').read_text())
    closed=json.loads(B.last("""SELECT jsonb_build_object(
     'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
