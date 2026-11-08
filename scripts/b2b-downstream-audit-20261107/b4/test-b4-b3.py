@@ -654,13 +654,21 @@ WHERE s.partner_id='{B3.P}';""")
  ADD COLUMN reconciliation_status text,ADD COLUMN updated_at timestamptz DEFAULT now(),ADD COLUMN status text DEFAULT 'PENDING',
  ADD COLUMN company_settings_id uuid,ADD COLUMN organization_id uuid,ADD COLUMN partner_order_id uuid,ADD COLUMN debtor_partner_id uuid,ADD COLUMN debtor_customer_id uuid,
  ADD COLUMN invoice_type text,ADD COLUMN issue_date date,ADD COLUMN total_amount numeric(14,2),ADD COLUMN provider_reference text,ADD COLUMN created_by uuid;
+ALTER TABLE public.fiscal_invoices ADD CONSTRAINT fiscal_invoices_pkey PRIMARY KEY(id);
 CREATE TABLE public.fiscal_invoice_items(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid NOT NULL,partner_order_item_id uuid,
  item_sequence integer NOT NULL,item_kind text NOT NULL,quantity numeric(18,6),commercial_unit text,taxable_quantity numeric(18,6),taxable_unit text,net_value numeric(18,2));
 CREATE TABLE IF NOT EXISTS public.fiscal_xml_runs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid,signed_path text,access_key text,signed_at timestamptz,updated_at timestamptz);
 CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY,service text NOT NULL DEFAULT 'NFeAutorizacao4',fiscal_event_id uuid,fiscal_invoice_id uuid,
+ xml_run_id uuid,idempotency_key text,request_fingerprint text,environment_code text DEFAULT '2',endpoint_url text,correlation_id uuid DEFAULT gen_random_uuid(),created_at timestamptz DEFAULT now(),
  state text,outcome text,c_stat text,x_motivo text,ch_nfe text,n_prot text,n_rec text,ambiente_retorno text,dh_recbto timestamptz,
  error_code text,response_summary jsonb,completed_at timestamptz);
+ALTER TABLE public.fiscal_sefaz_transmissions ADD COLUMN IF NOT EXISTS xml_run_id uuid,ADD COLUMN IF NOT EXISTS idempotency_key text,
+ ADD COLUMN IF NOT EXISTS request_fingerprint text,ADD COLUMN IF NOT EXISTS environment_code text DEFAULT '2',ADD COLUMN IF NOT EXISTS endpoint_url text,
+ ADD COLUMN IF NOT EXISTS correlation_id uuid DEFAULT gen_random_uuid(),ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now(),
+ ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
+        captured_tx_guard = next(x["body"] for x in json.loads(CAPTURE.read_text())["functions"] if x["name"] == "fn_fiscal_sefaz_tx_guard")
+        B3.psql(captured_tx_guard + ";DROP TRIGGER IF EXISTS trg_fiscal_sefaz_tx_guard ON public.fiscal_sefaz_transmissions;CREATE TRIGGER trg_fiscal_sefaz_tx_guard BEFORE DELETE OR UPDATE ON public.fiscal_sefaz_transmissions FOR EACH ROW EXECUTE FUNCTION public.fn_fiscal_sefaz_tx_guard();")
         B3.psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
  SELECT '{B3.A}',true,'VALIDATED','AR BIO FIXTURE LOCAL','00000000000191',7 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.A}' AND is_active);""")
         company_a = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.A}' AND is_active").stdout.strip()
@@ -687,10 +695,12 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         def seed_proof(invoice_id, transmission_id, key=access_key if 'access_key' in globals() else "35261111111111111111111111111111111111111111", protocol="LOCAL-PROTOCOL", cstat="100", outcome="AUTHORIZED", state="SUCCEEDED"):
             B3.psql(f"""INSERT INTO public.fiscal_xml_runs(fiscal_invoice_id,signed_path,access_key,signed_at,updated_at)
  VALUES('{invoice_id}','local/{invoice_id}.xml','{key}',now(),now());
- INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
- VALUES('{transmission_id}','{invoice_id}','{state}','{outcome}','{cstat}','LOCAL','{key}','{protocol}','2',now(),now());""")
+ INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,idempotency_key,request_fingerprint,environment_code,endpoint_url,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
+ VALUES('{transmission_id}','{invoice_id}',gen_random_uuid(),'local-tx:{transmission_id}','local-fp:{transmission_id}','2','https://hnfe.fazenda.mg.gov.br/LOCAL-SYNTHETIC-NO-NETWORK','{state}','{outcome}','{cstat}','LOCAL','{key}','{protocol}','2',now(),now());""")
         def real_record(transmission_id, state, patch):
             return service_json(f"public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','{state}','{js(patch)}'::jsonb)")
+        def pending_code(transmission_id):
+            return B3.psql(f"SELECT coalesce(error_code,'') FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}'").stdout.strip()
         def service_sql(sql):
             return server_run("", "SET ROLE service_role;" + sql)
         def service_json(expression):
@@ -724,6 +734,10 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_proof(invoice_h13_pending,tx_h13_pending,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_h13_rejected,tx_h13_rejected,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_parser,tx_parser,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
+        if not REVIEW_BEFORE and not PARSER_BEFORE:
+            # Erro estranho é gravado enquanto a transmissão ainda é mutável;
+            # depois disso a guarda real proíbe qualquer alteração terminal.
+            B3.psql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='FOREIGN_PROVIDER_ERROR' WHERE id='{tx_h13}';")
         pre_bridge = bridge_file("01-pre.sql.readonly")
         check("ponte PRE confirma pins B4 e autorização capturada", pre_bridge.returncode == 0, pre_bridge.stderr[-1000:])
         install_bridge = bridge_file("02-install.sql.review")
@@ -764,9 +778,6 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         parser_patch = {"cStat":"104","protocolCStat":"100","nProt":"PARSER-PROTOCOL-100","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"LOTE PROCESSADO; PROTOCOLO AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:30:00Z"}
         parser_record, parser_error = real_record(tx_parser,"SUCCEEDED",parser_patch)
         parser_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip()
-        if parser_record and parser_record["reconciliationPending"]:
-            parser_direct = server_run("",f"BEGIN;SET ROLE service_role;SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_parser}','35261111111111111111111111111111111111111111','PARSER-PROTOCOL-100','2027-02-01T12:30:00Z','100','LOTE PROCESSADO; PROTOCOLO AUTORIZADO','{tx_parser}');ROLLBACK;")
-            print("PARSER_DIRECT_DIAGNOSTIC",parser_direct.returncode,parser_direct.stderr[-1200:],flush=True)
         if PARSER_BEFORE:
             check("ANTES: parser calcula AUTHORIZED por protocolCStat=100 mas persiste c_stat=104", parser_record and parser_record["outcome"] == "AUTHORIZED" and parser_state.startswith("AUTHORIZED|104|FISCAL_AUTHORIZATION_CLOSE_PENDING"), parser_error or parser_state)
             check("ANTES: H12 recebe 104 e deixa autorização não-B2B em CLOSE_PENDING", parser_record and parser_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_parser}'").stdout.strip() == "PENDING", parser_error or parser_record)
@@ -848,14 +859,18 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         h13_patch = {"cStat":"100","nProt":"H13-PROTOCOL","chNFe":access_key,"xMotivo":"AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T13:00:00Z"}
         h13_failed, h13_failed_error = real_record(tx_h13, "SUCCEEDED", h13_patch)
         check("H13 preserva retorno autorizado quando título falha", h13_failed and h13_failed["reconciliationPending"] and h13_failed["reconciliationCode"] == "FISCAL_AUTHORIZATION_CLOSE_PENDING", h13_failed_error or h13_failed)
-        check("falha de título não apaga evidência externa nem deixa NF/título parcial", B3.psql(f"SELECT (SELECT outcome||'|'||error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}')||'|'||(SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip() == "AUTHORIZED|FISCAL_AUTHORIZATION_CLOSE_PENDING|PENDING|0")
+        if REVIEW_BEFORE or PARSER_BEFORE:
+            check("falha de título não apaga evidência externa nem deixa NF/título parcial", B3.psql(f"SELECT (SELECT outcome||'|'||error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}')||'|'||(SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip() == "AUTHORIZED|FISCAL_AUTHORIZATION_CLOSE_PENDING|PENDING|0")
+        else:
+            h13_evidence = B3.psql(f"SELECT (SELECT outcome||'|'||error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}')||'|'||(SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip()
+            check("guarda terminal preserva transmissão/erro estranho e pendência privada sem NF/título parcial", h13_evidence == "AUTHORIZED|FOREIGN_PROVIDER_ERROR|PENDING|0" and pending_code(tx_h13) == "FISCAL_AUTHORIZATION_CLOSE_PENDING", h13_evidence)
         B3.psql("DROP TRIGGER zz_b4_test_fail_after_title ON public.accounts_receivable;DROP FUNCTION public.b4_test_fail_after_title();")
         h13_retry, h13_retry_error = real_record(tx_h13, "SUCCEEDED", h13_patch)
         check("retry H13 recupera título sem reenviar emissão", h13_retry and not h13_retry["reconciliationPending"] and B3.psql(f"SELECT (SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip() == "AUTHORIZED|1", h13_retry_error or h13_retry)
         if REVIEW_BEFORE:
             check("ANTES: retry deixa erro de reconciliação obsoleto na transmissão", B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FISCAL_AUTHORIZATION_CLOSE_PENDING")
         else:
-            check("DEPOIS: retry H13 limpa somente o pendente de fechamento recuperado", B3.psql(f"SELECT coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "")
+            check("DEPOIS: retry H13 limpa somente a pendência privada e preserva erro estranho", pending_code(tx_h13) == "" and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR")
 
         # Nova transmissão/confirmação da MESMA chave e protocolo: o ID é evidência
         # adicional, não parte da identidade fiscal estável nem motivo de conflito.
@@ -875,7 +890,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
 
         # Retorno atrasado não pode rebaixar uma transmissão já autorizada nem
         # apagar erro de provedor/origem distinta do pendente de fechamento.
-        B3.psql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='FOREIGN_PROVIDER_ERROR' WHERE id='{tx_h13}';")
+        if REVIEW_BEFORE or PARSER_BEFORE:
+            B3.psql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='FOREIGN_PROVIDER_ERROR' WHERE id='{tx_h13}';")
         stale_record, stale_error = real_record(tx_h13,"SENT",{"cStat":"103","xMotivo":"RETORNO ATRASADO"})
         stale_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip()
         if PARSER_BEFORE:
@@ -884,6 +900,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
             check("DEPOIS: retorno atrasado não rebaixa autorização nem apaga erro de outra origem", stale_record and stale_record["outcome"] == "AUTHORIZED" and stale_state == "AUTHORIZED|100|FOREIGN_PROVIDER_ERROR", stale_error or stale_state)
         foreign_error_replay, foreign_error_replay_error = real_record(tx_h13,"SUCCEEDED",h13_patch)
         check("replay autorizado não limpa error_code estranho ao fechamento", foreign_error_replay and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR", foreign_error_replay_error or foreign_error_replay)
+        if not REVIEW_BEFORE and not PARSER_BEFORE:
+            terminal_mutation = server_run("", f"UPDATE public.fiscal_sefaz_transmissions SET error_code='MUTACAO_PROIBIDA' WHERE id='{tx_h13}';")
+            check("guarda real continua negando UPDATE terminal após os replays", terminal_mutation.returncode != 0 and "FISCAL_TRANSMISSION_IMMUTABLE" in terminal_mutation.stderr and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR", terminal_mutation.stderr)
         if not PARSER_BEFORE:
             with concurrent.futures.ThreadPoolExecutor(2) as pool:
                 concurrent_records = list(pool.map(lambda call: real_record(tx_h13,call[0],call[1]), [("SENT",{"cStat":"103","xMotivo":"ATRASADO CONCORRENTE"}),("SUCCEEDED",h13_patch)]))

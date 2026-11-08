@@ -1428,15 +1428,15 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/01-pre.sql.readonly",
-      "sha256": "6dc8e11586ee71ac3e0635f7f4b5f92e8dad3c1c8130252b75b42869f81b3b21"
+      "sha256": "f8e790f4db66cb347630980610a1e3f87cea1fa86b778fcc76a40601c9b9a249"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/02-install.sql.review",
-      "sha256": "4fe6d63a8ba562367129a5abce72a1be602acb0bd597337c556286232ffc8fdf"
+      "sha256": "2b37eba4414ed300270f372d0ffdb3639f8e1d27046ec356896b4ffae48cab2f"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/03-post.sql.readonly",
-      "sha256": "7cec9dd0be9bb27f926bb620126e4467ad73629f6120369fac5220333f70317b"
+      "sha256": "7cb4b6c966c9938b4afb6ab9cc1870c4b0c2a73216b48e8217a5896d52b1d890"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/04-rollback-deny.sql.review",
@@ -1499,12 +1499,32 @@
       "sha256": "3f2c2f03df5eb971cea36c49efefbdd69a4818ba33314502fb94fe1083eda4f7"
     },
     {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/evidence/review-integrated-transmission-guard-after/evidence-b4-shared-impact.json",
+      "sha256": "87254627790be1e631f72d7e653c512eddb7831a346897ff56e60320fcc03d12"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/evidence/review-integrated-transmission-guard-after-v2/evidence-b4-shared-impact.json",
+      "sha256": "0204856253701010336bec1b92672ee443e0cf080a1ae2806684f54a73c7b3ac"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/evidence/review-integrated-transmission-guard-after-v3/evidence-b4-shared-impact.json",
+      "sha256": "1deede0c0be5faf612f1007e2b0cf4c1085bc56a34dcd23e06f7cde686eff63f"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/evidence/review-integrated-transmission-guard-after-v4/evidence-b4-shared-impact.json",
+      "sha256": "0b581a308761306b33d9ce410cdc7661144a4d7eb12061af7d216979873c8be0"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/evidence/review-integrated-transmission-guard-after-v5/evidence-b4-shared-impact.json",
+      "sha256": "be33ecb0c1eb2821794f1788d84cd1766e09aa67a3e8ec5bef184b0a414b7548"
+    },
+    {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/generate.py",
-      "sha256": "4310814e00032d5dd5ea9e5842a32c51eefc16f24800f9cf9920d1206c872298"
+      "sha256": "de0f50ff46a32f8177622384e74512aa78eceb854556f565c3dc291048c524ee"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/manifest.json",
-      "sha256": "a81caddb2d2acf1fe48d3ef5cd6934f053045757e851f36a9a0a63243c6ab93d"
+      "sha256": "6783d0b51d46603462986789c2985f5aa86a83e5b26b2f1763a36eb0a23431c1"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py",
@@ -1868,7 +1888,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/test-b4-b3.py",
-      "sha256": "aa6a4afac69f4f235b03c44682594479f2289385cbe6cf8ccbe86f440bd25dc4"
+      "sha256": "6ef59024920cc98991f1063ebc207331a11291dd28e11daa368de55375a997d4"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/test-b4-fiscal-units.py",
@@ -1900,11 +1920,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/02-install.sql.review",
-      "sha256": "3f587be543c731a58db846f55e3e5e291fb525c066acc0ef6687e0f9c3515dd4"
+      "sha256": "9e13a75a98a71b090792176c968090535c92d0acd69a1579244cd9305ae7918c"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/03-post.sql.readonly",
-      "sha256": "b5d0f6e43f954f995b192edb4370a2246bc60d6a53dc573ce31922d86ae14bbb"
+      "sha256": "761a9d694bca023abe745d519099495a41be072796772178abf57e29caf8292e"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/04-rollback-deny.sql.review",
@@ -1912,7 +1932,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generate.py",
-      "sha256": "4a461cec58a101056f83901aca69ba686e3fc41f82abab25153c7792757480a5"
+      "sha256": "299112af5387841be984b9cfbbb71f042aac1d17410d4d9b2036ddba45821ba1"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generator.stdout.json",
@@ -1920,7 +1940,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/manifest.json",
-      "sha256": "55a774540ac379426d74bac01cefc358e773238c4cfb801ca9f87328cf652b34"
+      "sha256": "a6b300e92625dcf880812402b07f7a170c2993a2d5fd9c18dc33b292f6e9747a"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/reconciliation.json",
@@ -1948,7 +1968,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/04-bridge-install.sql.review",
-      "sha256": "4fe6d63a8ba562367129a5abce72a1be602acb0bd597337c556286232ffc8fdf"
+      "sha256": "2b37eba4414ed300270f372d0ffdb3639f8e1d27046ec356896b4ffae48cab2f"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/captured/auth-scoping/platform_private.b2b_actor_scope.c3f29977.sql",
@@ -2064,7 +2084,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "d7745313c38b97012538c4cfe90a224b06106543d9ba2b71b18f650e06dc527e"
+      "sha256": "941d357a8ec1169d53bc8c24153ee24aa4b1a0b273ead4c15ce2029c547a23c7"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",

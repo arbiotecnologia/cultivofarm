@@ -42,6 +42,8 @@ def main() -> None:
     captured = json.loads(CAPTURE.read_text())
     apply_source = next(x["body"] for x in captured["functions"] if x["name"] == "rpc_fiscal_invoice_apply_authorization_v1")
     transmit_source = next(x["body"] for x in captured["functions"] if x["name"] == "rpc_fiscal_sefaz_transmit_record_v1")
+    transmit_guard_source = next(x["body"] for x in captured["functions"] if x["name"] == "fn_fiscal_sefaz_tx_guard")
+    assert hashlib.md5(transmit_guard_source.encode()).hexdigest() == "1661123d056217810d8fb175b46fdd8b"
     assert "v_close_error" in transmit_source and "FISCAL_AUTHORIZATION_CLOSE_PENDING" in transmit_source, "H13_EXACT_SOURCE_REQUIRED"
 
     actor = extract(b4text, "b2b_integration_actor")
@@ -153,8 +155,8 @@ def main() -> None:
       'transmissionId',v_cur.id,'state',v_cur.state,'outcome',v_cur.outcome,
       'cStat',v_cur.c_stat,'protocolCStat',coalesce(v_cur.protocol_c_stat,v_cur.c_stat),
       'xMotivo',v_cur.x_motivo,'chNFe',v_cur.ch_nfe,'nProt',v_cur.n_prot,'nRec',v_cur.n_rec,
-      'reconciliationPending',v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING',
-      'reconciliationCode',CASE WHEN v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' THEN v_cur.error_code ELSE NULL END);
+      'reconciliationPending',EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_cur.id),
+      'reconciliationCode',(SELECT cp.error_code FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_cur.id));
   END IF;
   IF v_cur.outcome = 'AUTHORIZED' AND (
     v_cur.ch_nfe IS DISTINCT FROM coalesce(_patch->>'chNFe',v_cur.ch_nfe)
@@ -162,33 +164,39 @@ def main() -> None:
     OR coalesce(v_cur.protocol_c_stat,v_cur.c_stat) IS DISTINCT FROM v_cstat
   ) THEN RAISE EXCEPTION 'FISCAL_AUTHORIZATION_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
 
-  UPDATE public.fiscal_sefaz_transmissions SET
+  IF v_cur.state IN ('SUCCEEDED','FAILED','BLOCKED') THEN
+    -- A guarda canonica torna a transmissao terminal imutavel. O replay exato
+    -- reutiliza a evidencia; somente o fechamento documental pode ser retentado.
+    v_row := v_cur;
+  ELSE
+    UPDATE public.fiscal_sefaz_transmissions SET
     state            = _state,""")
     transmit = edit(transmit, "    c_stat           = coalesce(_patch->>'cStat', c_stat),", """    c_stat           = coalesce(_patch->>'cStat', c_stat),
     protocol_c_stat  = CASE WHEN _patch ? 'protocolCStat' THEN _patch->>'protocolCStat'
                             WHEN _patch->>'cStat' IN ('100','150') THEN _patch->>'cStat'
                             ELSE protocol_c_stat END,""")
     transmit = edit(transmit, "        v_row.c_stat, v_row.x_motivo, v_row.id);", "        coalesce(v_row.protocol_c_stat,v_row.c_stat), v_row.x_motivo, v_row.id);")
+    transmit = edit(transmit, "  WHERE id = _transmission_id\n  RETURNING * INTO v_row;\n\n  IF v_row.ambiente_retorno", "  WHERE id = _transmission_id\n  RETURNING * INTO v_row;\n  END IF;\n\n  IF v_row.ambiente_retorno")
     transmit = edit(transmit, "    'cStat', v_row.c_stat, 'xMotivo', v_row.x_motivo,", "    'cStat', v_row.c_stat, 'protocolCStat', coalesce(v_row.protocol_c_stat,v_row.c_stat), 'xMotivo', v_row.x_motivo,")
 
-    # H13 preserva o retorno externo em caso de falha. Um retry bem-sucedido limpa
-    # somente o pendente de fechamento, nunca outros erros fiscais.
+    # A pendência de fechamento não altera a transmissão terminal imutável nem
+    # error_code de outra origem. O retry remove somente seu próprio registro.
     transmit = edit(transmit, """  IF v_close_error IS NOT NULL THEN
     UPDATE public.fiscal_sefaz_transmissions
        SET error_code = v_close_error
      WHERE id = _transmission_id
     RETURNING * INTO v_row;
   END IF;""", """  IF v_close_error IS NOT NULL THEN
-    UPDATE public.fiscal_sefaz_transmissions
-       SET error_code = v_close_error
-     WHERE id = _transmission_id
-    RETURNING * INTO v_row;
-  ELSIF v_row.outcome = 'AUTHORIZED' AND v_row.error_code = 'FISCAL_AUTHORIZATION_CLOSE_PENDING' THEN
-    UPDATE public.fiscal_sefaz_transmissions
-       SET error_code = NULL
-     WHERE id = _transmission_id
-    RETURNING * INTO v_row;
+    INSERT INTO platform_private.fiscal_close_pending(transmission_id,fiscal_invoice_id,error_code)
+    VALUES(v_row.id,v_row.fiscal_invoice_id,v_close_error)
+    ON CONFLICT(transmission_id) DO UPDATE SET fiscal_invoice_id=EXCLUDED.fiscal_invoice_id,
+      error_code=EXCLUDED.error_code,last_error_at=now(),attempts=platform_private.fiscal_close_pending.attempts+1;
+  ELSIF v_row.outcome = 'AUTHORIZED' THEN
+    DELETE FROM platform_private.fiscal_close_pending
+     WHERE transmission_id=v_row.id AND error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING';
   END IF;""")
+    transmit = edit(transmit, "    'reconciliationPending', v_close_error IS NOT NULL,\n    'reconciliationCode', v_close_error);", """    'reconciliationPending',EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_row.id),
+    'reconciliationCode',(SELECT cp.error_code FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_row.id));""")
 
     schema = r"""
 CREATE TABLE platform_private.b2b_fiscal_service_permits(
@@ -197,6 +205,14 @@ CREATE TABLE platform_private.b2b_fiscal_service_permits(
  created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(transaction_id,invoice_id));
 ALTER TABLE platform_private.b2b_fiscal_service_permits ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON platform_private.b2b_fiscal_service_permits FROM PUBLIC,anon,authenticated,service_role;
+CREATE TABLE platform_private.fiscal_close_pending(
+ transmission_id uuid PRIMARY KEY REFERENCES public.fiscal_sefaz_transmissions(id) ON DELETE RESTRICT,
+ fiscal_invoice_id uuid REFERENCES public.fiscal_invoices(id) ON DELETE RESTRICT,
+ error_code text NOT NULL CHECK(error_code IN ('FISCAL_AUTHORIZATION_CLOSE_PENDING','FISCAL_EVENT_RECONCILIATION_PENDING')),
+ first_error_at timestamptz NOT NULL DEFAULT now(),last_error_at timestamptz NOT NULL DEFAULT now(),
+ attempts integer NOT NULL DEFAULT 1 CHECK(attempts>=1));
+ALTER TABLE platform_private.fiscal_close_pending ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.fiscal_close_pending FROM PUBLIC,anon,authenticated,service_role;
 CREATE TABLE platform_private.b2b_fiscal_invoice_snapshots(
  invoice_id uuid PRIMARY KEY,transmission_id uuid NOT NULL,protocol text NOT NULL,
  source_digest text NOT NULL,snapshot jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
@@ -343,6 +359,9 @@ DO $$ BEGIN
  IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
  IF to_regprocedure('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ALREADY_INSTALLED'; END IF;
  IF to_regclass('platform_private.b2b_fiscal_invoice_snapshots') IS NOT NULL THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_ALREADY_EXISTS'; END IF;
+ IF to_regclass('platform_private.fiscal_close_pending') IS NOT NULL THEN RAISE EXCEPTION 'FISCAL_CLOSE_PENDING_ALREADY_EXISTS'; END IF;
+ IF md5(pg_get_functiondef('public.fn_fiscal_sefaz_tx_guard()'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(transmit_guard_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_PIN_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='trg_fiscal_sefaz_tx_guard' AND tgrelid='public.fiscal_sefaz_transmissions'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_NOT_ENABLED'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '{md5_pg(extract(b4text,'b2b_integration_actor'))}' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '{md5_pg(extract(b4text,'b2b_title_insert_fence'))}' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(apply_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_PIN_DRIFT'; END IF;
@@ -362,6 +381,9 @@ DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_POST_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='b2b_fiscal_created_by_guard' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_GUARD_MISSING'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_fiscal_invoice_snapshots'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_RLS_MISSING'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.fiscal_close_pending'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'FISCAL_CLOSE_PENDING_RLS_MISSING'; END IF;
+ IF md5(pg_get_functiondef('public.fn_fiscal_sefaz_tx_guard()'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(transmit_guard_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_POST_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='trg_fiscal_sefaz_tx_guard' AND tgrelid='public.fiscal_sefaz_transmissions'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'FISCAL_TX_GUARD_POST_DISABLED'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='fiscal_sefaz_transmissions' AND column_name='protocol_c_stat' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_PROTOCOL_CSTAT_POST_DRIFT'; END IF;
 END $$;
 """
