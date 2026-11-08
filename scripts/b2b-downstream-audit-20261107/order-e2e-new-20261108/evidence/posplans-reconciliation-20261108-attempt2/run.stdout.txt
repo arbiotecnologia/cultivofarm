@@ -26,3 +26,7 @@ CHECKPOINT sql_calls=2300 elapsed=109.0s
 CHECKPOINT sql_calls=2400 elapsed=112.0s
 CHECKPOINT sql_calls=2500 elapsed=114.9s
 CHECKPOINT sql_calls=2600 elapsed=117.5s
+CHECKPOINT sql_calls=2700 elapsed=120.6s
+CHECKPOINT sql_calls=2800 elapsed=123.1s
+CHECKPOINT sql_calls=2900 elapsed=125.9s
+CHECKPOINT sql_calls=3000 elapsed=128.8s
