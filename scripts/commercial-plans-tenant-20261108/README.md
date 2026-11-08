@@ -4,7 +4,7 @@ Candidato preparado em 08/11/2026. **INATIVO / NÃO APROVADO / NÃO INSTALADO.**
 
 ## Achado real e limite da investigação
 
-O proprietário reproduziu, com usuário FSF autenticado na prévia ligada à produção, a leitura dos seis planos ARBio, incluindo `TESTE-FLUXO-20261108-V2`. Nenhuma escrita FSF foi executada em produção. A captura local `fsf-leitura-planos-arbio.png` foi registrada pelo proprietário.
+O proprietário reproduziu, com usuário FSF autenticado na prévia ligada à produção, a leitura irrestrita dos seis planos, incluindo `TESTE-FLUXO-20261108-V2`. Cinco têm evidência de origem ARBio; `AUDIT-CF-FIX-20260912` tem evidência distinta, detalhada abaixo. Portanto, não se deve descrever os seis como ARBio. Na mesma sessão, a aba Atribuições retornou “Nenhuma” (comportamento esperado), enquanto Planos expôs os seis (falha de isolamento). Nenhuma escrita FSF foi executada em produção. A captura local `fsf-leitura-planos-arbio.png` foi registrada pelo proprietário.
 
 Consultas exclusivamente de metadados no ref canônico confirmaram que `rpc_admin_list_commercial_plans` é `SECURITY DEFINER`, aplica somente papel e filtros de busca/status, e não restringe empresa. A listagem operacional, a configuração B3 e o resolvedor de condições também não comparavam a organização do plano com a do ator/vínculo.
 

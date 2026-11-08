@@ -1,3 +1,8 @@
+## 08/11 16:26 — Complemento READONLY da proveniência dos seis planos
+- [ ] Corrigir relatório e testes: FSF viu seis planos sem recorte, não seis ARBio; cinco têm criador na ARBio `007bb519…`, inclusive o plano code `01` apesar do nome FSF. `AUDIT-CF-FIX-20260912` (`d89ce2b4…`) tem criador/atribuição publicada pelo mesmo ator na organização atual `8eae2bc1…`, com owner do parceiro atribuído NULL; não atribuí-lo à ARBio nem inferir por código/nome.
+- [ ] Exigir join `profiles.user_id=p.created_by`, com `profiles.id` diferente na fixture; testar exceção separada, owner de atribuição NULL, divergência ambígua fechada e a distinção Atribuições “Nenhuma” (PASS) versus Planos sem tenant (FAIL).
+- [ ] Preservar os seis planos/snapshots e repetir bateria local/validações; manter candidato inativo e bloqueado, sem escrita FSF/hosted, publicação ou alteração de dados reais.
+
 ## 08/11 16:17 — Interromper e executar todas as mensagens pendentes
 - [x] Interromper a sequência anterior e reconciliar as mensagens recentes sem apagar histórico: isolamento FSF→ARBio, targeting/meio obrigatório, E2E logístico, datas, defaults financeiros e journal foram processados; atribuição da condição V2 e o diagnóstico de datas são fatos posteriores do auditor que superam pendências antigas.
 - [x] Validação local repetida no estado atual: isolamento **58/58**, E2E integral **20/20** e UI focada **9 arquivos/137 testes**, todos exit 0; logs/exit codes novos em `evidence/pending-messages-1617/`, sem somar suítes ou promover PASS sintético a homologação real. Datas permanecem sem defeito de produto comprovado e sem alteração SQL/schema.

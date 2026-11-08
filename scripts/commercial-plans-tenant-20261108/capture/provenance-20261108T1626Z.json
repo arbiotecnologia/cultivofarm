@@ -1,0 +1,48 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "captured_at": "2026-11-08T16:26:00Z",
+  "access": "read_only_metadata_and_audit",
+  "hosted_writes": false,
+  "facts": {
+    "plans_total": 6,
+    "assignments_total": 4,
+    "default_plans": 0,
+    "creator_join": "profiles.user_id = commercial_payment_plans.created_by",
+    "arbio_organization_id": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "arbio_plan_ids": [
+      "62147f24-299e-40dd-a6a0-05718b21c55f",
+      "2a1e7820-b5df-40ce-913c-540cfb4d30e9",
+      "d2e37af8-60e6-4930-8071-e1824326e84d",
+      "d95f0198-51d5-476d-8bfe-5574ed22bd2d",
+      "a129001e-5a3b-4663-8f98-9bb9c3a739ed"
+    ],
+    "other_plan": {
+      "id": "d89ce2b4-9f68-4b0e-b78e-5009b6119a4f",
+      "code": "AUDIT-CF-FIX-20260912",
+      "creator_user_id": "d856140b-26c9-4d6a-a5aa-8bea47e78fff",
+      "creator_current_organization_id": "8eae2bc1-ad00-4402-9f57-564258e493ca",
+      "creator_currently_active": false,
+      "creator_current_roles": [],
+      "assignment_id": "3d0799cb-f817-4053-b202-dd3170f1781f",
+      "assigned_partner_owner": null,
+      "assignment_created_submitted_published_by_same_actor": true,
+      "audit_actions": ["commercial_plan_created", "price_rule_insert"],
+      "audit_origin": "admin_planos_b2b",
+      "b3_version_owner": null,
+      "conflicting_organization_evidence": []
+    }
+  },
+  "classification": {
+    "arbio_plans": 5,
+    "other_single_candidate_plans": 1,
+    "ambiguous_families_from_current_evidence": 0,
+    "other_plan_candidate_organization_id": "8eae2bc1-ad00-4402-9f57-564258e493ca",
+    "rule": "A exceção não é ARBio. O tenant atual do perfil criador é a única evidência canônica disponível e concorda com os atores da atribuição/auditoria; owner NULL não é evidência de outro tenant. Qualquer evidência divergente deve manter a família NULL e negada."
+  },
+  "limits": [
+    "A organização atual do perfil não prova uma organização histórica diferente que não esteja registrada.",
+    "O log de criação não contém organization_id; não se inventa esse campo retroativamente.",
+    "A leitura FSF de seis planos e Atribuições vazia são fatos relatados pelo proprietário, não reexecução de sessão pelo agente.",
+    "Nenhuma escrita FSF foi executada; negações de writers foram testadas somente em PostgreSQL descartável."
+  ]
+}
