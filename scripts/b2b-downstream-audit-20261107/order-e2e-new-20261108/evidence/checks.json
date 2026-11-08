@@ -12,6 +12,10 @@
     "status": "PASS"
   },
   {
+    "test": "new B3 captured economic composition merged without dropped physical guards",
+    "status": "PASS"
+  },
+  {
     "test": "new composition",
     "status": "FAIL"
   }

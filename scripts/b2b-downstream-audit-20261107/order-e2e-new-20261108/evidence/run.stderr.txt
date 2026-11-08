@@ -1,22 +1,9 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-9a2pxe1s/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 76, in main
-    Q=commercial.apply(B,load,ROOT,OUT)
-  File "/tmp/new-order-e2e-9a2pxe1s/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 74, in apply
-    B.sql(f"""SET session_replication_role=replica;
-    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-     INSERT INTO public.saas_modules(id,key,name,active) VALUES
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<20 lines>...
-       FROM public.saas_plans WHERE key='local_b2b_e2e' ON CONFLICT(id) DO NOTHING;
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-     SET session_replication_role=origin;""")
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/new-order-e2e-9a2pxe1s/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
-    return pg.sql(statement)
-           ~~~~~~^^^^^^^^^^^
-  File "/tmp/new-order-e2e-9a2pxe1s/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
-    assert r.returncode==0,r.stderr[-3000:]
-           ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  new row for relation "saas_plan_versions" violates check constraint "saas_plan_versions_publish_shape"
-DETAIL:  Failing row contains (00000000-0000-0000-0000-000000000806, 00000000-0000-0000-0000-000000000805, 1, LOCAL B2B E2E, null, null, null, null, {}, [], 2026-11-07 13:58:59.035262+00, null, 2026-11-07 13:58:59.035262+00, null, 2026-11-08 13:58:59.035262+00, null, null, PUBLISHED, null, 1, null, null, 2026-11-08 13:58:59.035262+00, null, null, null).
-
+  File "/tmp/new-order-e2e-roxbulhr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 100, in main
+    data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],'NEW-E2E-ORDER-001',choice);assert data is not None,error
+                                                                                                ^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED
+CONTEXT:  PL/pgSQL function platform_private.c2_attempt_dispatch_guard(uuid,uuid,text) line 8 at RAISE
+SQL statement "SELECT platform_private.c2_attempt_dispatch_guard(v_uid,p_partner_id,v_idem)"
+PL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 91 at PERFORM
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
