@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-3qtt0e2d/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 170, in main
+    logistics=L.install(B,OUT)
+  File "/tmp/new-order-e2e-3qtt0e2d/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 239, in install
+    assert loaded.returncode == 0, loaded.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42601: syntax error at or near "CREATE"
+LINE 38: CREATE OR REPLACE FUNCTION platform_private.trg_lab_os_biolo...
+         ^
+LOCATION:  scanner_yyerror, scan.l:1248
+

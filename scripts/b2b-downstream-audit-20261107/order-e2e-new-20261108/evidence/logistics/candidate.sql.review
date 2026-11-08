@@ -158,8 +158,7 @@ BEGIN
  FROM public.programacao_producao pp WHERE pp.ordem_servico_id=NEW.id OR pp.ordem_servico_onfarm_id=NEW.id;
  END IF;
  RETURN NEW;
-END $function$
-
+END $function$;
 
 CREATE OR REPLACE FUNCTION platform_private.trg_lab_os_biological_only()
  RETURNS trigger
@@ -174,8 +173,7 @@ BEGIN
     AND NEW.microrganismo_id IS NOT DISTINCT FROM OLD.microrganismo_id THEN RETURN NEW; END IF;
   PERFORM platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id);
   RETURN NEW;
-END $function$
-
+END $function$;
 
 CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_itens jsonb, p_request_key text, p_dados jsonb, p_os_observed timestamp with time zone)
  RETURNS jsonb
@@ -303,8 +301,7 @@ BEGIN
  INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_request_key,v_actor,v_org,'group',v_fp,v_call);
  DELETE FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current();
  RETURN v_call;
-END $function$
-
+END $function$;
 
 CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb DEFAULT '{}'::jsonb)
  RETURNS jsonb
@@ -465,8 +462,7 @@ BEGIN
 
   RETURN jsonb_build_object('success', true, 'replay', false, 'entrega_id', v_id, 'status', 'separado', 'message', 'Entrega registrada. Confirme a entrega para concluir a OS.');
 END;
-$function$
-
+$function$;
 
 CREATE OR REPLACE FUNCTION platform_private.delivery_confirm_apply_v1(p_entrega uuid, p_observed timestamp with time zone, p_key text, p_recebedor jsonb)
  RETURNS jsonb
@@ -584,8 +580,7 @@ BEGIN
  DELETE FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current();
  DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();
  RETURN result;
-END $function$
-
+END $function$;
 
 CREATE OR REPLACE FUNCTION platform_private.delivery_send_apply_v1(p_entrega uuid, p_observed timestamp with time zone, p_key text)
  RETURNS jsonb
@@ -653,5 +648,4 @@ BEGIN
  result:=jsonb_build_object('success',true,'action','send','replay',false,'actor_id',v_actor,'organization_id',org,'entrega_id',e.id,'os_id',e.ordem_servico_id,'status','em_rota','updated_at',e.updated_at);
  INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_key,v_actor,org,'send',fp,result);
  DELETE FROM platform_private.delivery_send_permits_v1 WHERE txid=txid_current();DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();RETURN result;
- END $function$
-
+ END $function$;
