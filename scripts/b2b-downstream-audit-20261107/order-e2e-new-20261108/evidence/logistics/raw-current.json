@@ -36,6 +36,13 @@
   },
   {
     "acl": "{postgres=X/postgres}",
+    "md5": "4ae1fc905e52b02e28f8caa2927821d4",
+    "body": "CREATE OR REPLACE FUNCTION platform_private.delivery_proof_row_ok_20261030(p_e entregas, p_org uuid, p_action text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_uid uuid:=auth.uid(); BEGIN\n IF p_e.id IS NULL OR p_e.organization_id IS DISTINCT FROM p_org OR p_e.cliente_id IS NULL\n OR p_e.partner_order_id IS NOT NULL OR p_e.ordem_servico_onfarm_id IS NOT NULL THEN RETURN false; END IF;\n IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=p_e.cliente_id AND organization_id=p_org) THEN RETURN false; END IF;\n IF p_action='generate' THEN\n  IF p_e.status::text NOT IN ('separado','em_rota','entregue') THEN RETURN false; END IF;\n ELSIF p_e.status::text NOT IN ('separado','em_rota') THEN RETURN false; END IF;\n IF NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=v_uid AND role IN ('administrador','gestor','administrativo','producao','operador_onfarm'))\n AND NOT (p_e.cliente_id = ANY(public.get_cliente_ids_for_user(v_uid))) THEN RETURN false; END IF;\n RETURN true;\nEND $function$\n",
+    "owner": "postgres",
+    "signature": "platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
     "md5": "fbeeb019874548a81e01b7a181cd1bba",
     "body": "CREATE OR REPLACE FUNCTION platform_private.delivery_confirm_recheck_v1(p_id uuid, p_org uuid)\n RETURNS entregas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE e public.entregas; BEGIN\n IF platform_private.delivery_confirm_actor_v1() IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;\n SELECT * INTO e FROM public.entregas WHERE id=p_id AND organization_id=p_org;\n IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.partner_order_id IS NOT NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL\n OR NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL)\n OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)\n THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n RETURN e;\nEND $function$\n",
     "owner": "postgres",
