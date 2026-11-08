@@ -788,6 +788,44 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         with concurrent.futures.ThreadPoolExecutor(2) as pool:
             bridge_races = list(pool.map(lambda _: bridge_race(), range(2)))
         check("duas chamadas service-only concorrentes preservam um único título", all(r.returncode == 0 for r in bridge_races) and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_main}'").stdout.strip() == "1", [r.stderr[-500:] for r in bridge_races])
+
+        changed_amount = service_sql(f"BEGIN;UPDATE public.fiscal_invoices SET total_amount=total_amount+1 WHERE id='{invoice_main}';UPDATE public.fiscal_invoice_items SET net_value=net_value+1 WHERE fiscal_invoice_id='{invoice_main}';SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
+        if REVIEW_BEFORE:
+            check("ANTES: replay aceita valor cabeçalho/item alterado de forma consistente", changed_amount.returncode == 0, changed_amount.stderr)
+        else:
+            check("DEPOIS: replay com valor alterado diverge e preserva snapshot", changed_amount.returncode != 0 and "FISCAL_REPLAY_DIVERGENCE" in changed_amount.stderr, changed_amount.stderr)
+        check("ensaio monetário não altera a NF durável", B3.psql(f"SELECT total_amount::text FROM public.fiscal_invoices WHERE id='{invoice_main}'").stdout.strip() == str(monetary))
+        changed_reference = service_sql(f"BEGIN;UPDATE public.fiscal_invoices SET provider_reference='PROVIDER-DIVERGENT' WHERE id='{invoice_main}';SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
+        if REVIEW_BEFORE:
+            check("ANTES: replay aceita referência de provedor divergente", changed_reference.returncode == 0, changed_reference.stderr)
+        else:
+            check("DEPOIS: referência divergente é conflito de replay", changed_reference.returncode != 0 and "FISCAL_REPLAY_DIVERGENCE" in changed_reference.stderr, changed_reference.stderr)
+        changed_protocol = service_sql(f"SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','PROTOCOL-DIVERGENT',now(),'100','LOCAL','{tx_main}');")
+        if REVIEW_BEFORE:
+            check("ANTES: replay aceita protocolo divergente da transmissão", changed_protocol.returncode == 0, changed_protocol.stderr)
+        else:
+            check("DEPOIS: protocolo divergente é negado antes do replay", changed_protocol.returncode != 0 and "FISCAL_AUTHORIZATION_TRANSMISSION_MISMATCH" in changed_protocol.stderr, changed_protocol.stderr)
+        if not REVIEW_BEFORE:
+            snapshot_row = B3.psql(f"SELECT source_digest||'|'||(snapshot->>'total_amount')||'|'||(snapshot->>'protocol') FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_main}'").stdout.strip()
+            check("snapshot fiscal privado conserva digest, valor e protocolo", snapshot_row.endswith(f"|{monetary}|LOCAL-PROTOCOL") and len(snapshot_row.split('|')[0]) == 64, snapshot_row)
+        canceled_callback = service_sql(f"BEGIN;UPDATE public.fiscal_invoices SET normalized_status='CANCELED',status='CANCELED' WHERE id='{invoice_main}';SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
+        check("cancelamento continua sem reversão automática não homologada", canceled_callback.returncode == 0 and B3.psql(f"SELECT status FROM public.accounts_receivable WHERE id='{service_title}'").stdout.strip() == "OPEN", canceled_callback.stderr)
+
+        B3.psql("""CREATE FUNCTION public.b4_test_fail_after_title() RETURNS trigger LANGUAGE plpgsql AS $$
+ BEGIN RAISE EXCEPTION 'B4_TEST_POST_TITLE_FAILURE' USING ERRCODE='P0001'; END $$;
+ CREATE TRIGGER zz_b4_test_fail_after_title AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION public.b4_test_fail_after_title();""")
+        h13_patch = {"cStat":"100","nProt":"H13-PROTOCOL","chNFe":access_key,"xMotivo":"AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T13:00:00Z"}
+        h13_failed, h13_failed_error = real_record(tx_h13, "SUCCEEDED", h13_patch)
+        check("H13 preserva retorno autorizado quando título falha", h13_failed and h13_failed["reconciliationPending"] and h13_failed["reconciliationCode"] == "FISCAL_AUTHORIZATION_CLOSE_PENDING", h13_failed_error or h13_failed)
+        check("falha de título não apaga evidência externa nem deixa NF/título parcial", B3.psql(f"SELECT (SELECT outcome||'|'||error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}')||'|'||(SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip() == "AUTHORIZED|FISCAL_AUTHORIZATION_CLOSE_PENDING|PENDING|0")
+        B3.psql("DROP TRIGGER zz_b4_test_fail_after_title ON public.accounts_receivable;DROP FUNCTION public.b4_test_fail_after_title();")
+        h13_retry, h13_retry_error = real_record(tx_h13, "SUCCEEDED", h13_patch)
+        check("retry H13 recupera título sem reenviar emissão", h13_retry and not h13_retry["reconciliationPending"] and B3.psql(f"SELECT (SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip() == "AUTHORIZED|1", h13_retry_error or h13_retry)
+        if REVIEW_BEFORE:
+            check("ANTES: retry deixa erro de reconciliação obsoleto na transmissão", B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FISCAL_AUTHORIZATION_CLOSE_PENDING")
+        else:
+            check("DEPOIS: retry H13 limpa somente o pendente de fechamento recuperado", B3.psql(f"SELECT coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "")
+
         foreign = service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_foreign}');")
         check("NF com tenant divergente do pedido é negada", foreign.returncode != 0 and "B2B_FISCAL_ORDER_SCOPE_INVALID" in foreign.stderr, foreign.stderr[-800:])
         check("NF estrangeira não gera documento/título", B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_foreign}'").stdout.strip() == "0")
