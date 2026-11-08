@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "64498f65-3bfb-48bd-b744-c189e0a87f83"
+    "order_id": "53465f68-0d6e-4364-b032-6f548d957d8b"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "71e944f6-a492-4a7d-9c99-c60a0da9d408"
+    "os_id": "eff149b7-78d3-4b1b-8222-d1b1b275f856"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +68,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "665cf563-d63a-4911-866b-ce31159eaeef"
+    "delivery_id": "1ca0a2db-ae80-422b-a6c1-50101c285e6c"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "20abbdd5-a739-4516-af4d-c9929a3efddf"
+    "delivery_id": "d971ff1a-ed90-4710-8576-6de04773800b"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -197,7 +197,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "e96d59c5-e7d3-40b0-9831-26d4b7e96ee4"
+    "delivery_id": "912bed89-69db-418b-99a8-b097f9663055"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
@@ -229,7 +229,7 @@
     "status": "PASS"
   },
   {
-    "test": "new composition",
-    "status": "FAIL"
+    "test": "composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency close pending and all original ten receivable triggers",
+    "status": "PASS"
   }
 ]

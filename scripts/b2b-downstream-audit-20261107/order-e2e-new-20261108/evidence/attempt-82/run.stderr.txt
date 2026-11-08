@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-xjf8l2kd/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 538, in main
+    assert denied_after_bridge.returncode!=0 and 'permission denied' in denied_after_bridge.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
