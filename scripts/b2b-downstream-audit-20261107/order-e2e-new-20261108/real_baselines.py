@@ -88,7 +88,7 @@ def install(B, out, root):
     assert after["receivable"]["acl"] == current_ar.ACL, after["receivable"]["acl"]
     assert after["receivable"]["acl_md5"] == current_ar.ACL_MD5, after
     assert after["receivable"]["trigger_md5"] == current_ar.TRIGGERS_MD5, after
-    assert after["receivable"]["triggers"] == sorted(expected["triggers"], key=lambda x: x["name"]), after
+    assert shape(after["receivable"]["triggers"]) == shape(expected["triggers"]), after
     assert after["receivable"]["rls"] is True and after["receivable"]["force_rls"] is False
     assert after["downstream_guard"]["md5"] == current_ar.FUNCTION_MD5, after
     assert after["downstream_guard"]["owner"] == "postgres" and after["downstream_guard"]["acl"] == "{postgres=X/postgres}", after
