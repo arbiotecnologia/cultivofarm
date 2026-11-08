@@ -219,7 +219,7 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
 
     current_scope = {}
     for signature in sorted(required):
-        if signature in capture_functions:
+        if initial and signature in capture_functions:
             captured = capture_functions[signature]
             live = live_functions.get(signature)
             assert live is not None, f"LIVE_SCOPED_FUNCTION_UNRESOLVED:{signature}"
@@ -227,13 +227,20 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
             live = list(live)
             live[4], live[5] = captured["acl"], captured["owner"]
             current_scope[signature] = live
-        else:
+        elif initial:
             live = live_functions.get(signature)
             assert live is not None, f"CANDIDATE_DEPENDENCY_NOT_PROVEN_BY_DIFF:{signature}"
             # A changed dependency outside the 20 pins is admitted only when
             # the independent diff proves its old row is still LIVE.
             assert live == pre_functions[signature], f"UNPROVEN_CANDIDATE_DEPENDENCY:{signature}"
             current_scope[signature] = live
+        else:
+            current = pre_functions.get(signature)
+            assert current is not None, f"PRIOR_STAGE_FUNCTION_MISSING:{signature}"
+            if signature in capture_functions:
+                captured = capture_functions[signature]
+                assert _acl(current[4]) == _acl(captured["acl"]) and current[5] == captured["owner"], f"PRIOR_STAGE_ACL_DRIFT:{signature}"
+            current_scope[signature] = current
 
     pre_doc_functions = sorted((_function_doc(current_scope[key], key) for key in required), key=lambda row: row[0])
     post_doc_functions = sorted((_function_doc(post_functions[key], key) for key in required | added), key=lambda row: row[0])
