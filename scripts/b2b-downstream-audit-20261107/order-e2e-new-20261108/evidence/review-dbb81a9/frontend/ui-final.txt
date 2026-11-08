@@ -1,0 +1,27 @@
+$ vitest run --config "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/vitest.config.ts" "--maxWorkers=2"
+
+ RUN  v3.2.4 /dev-server
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx [ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx ]
+ FAIL  scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts [ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts ]
+ReferenceError: expect is not defined
+ ❯ node_modules/@testing-library/jest-dom/dist/index.mjs:9:1
+      7| import 'css.escape';
+      8| 
+      9| expect.extend(extensions);
+       | ^
+     10| 
+ ❯ src/test/setup.ts:1:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  no tests
+   Start at  21:22:11
+   Duration  2.28s (transform 54ms, setup 0ms, collect 0ms, tests 0ms, environment 2.52s, prepare 664ms)
+
+error: script "test" exited with code 1

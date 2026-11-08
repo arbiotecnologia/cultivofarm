@@ -1,0 +1,12 @@
+$ vitest run --config "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/vitest.config.ts" "--maxWorkers=2"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts (10 tests) 18ms
+ ✓ scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx (3 tests) 143ms
+
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+   Start at  21:22:27
+   Duration  2.62s (transform 194ms, setup 429ms, collect 587ms, tests 162ms, environment 2.11s, prepare 593ms)
+

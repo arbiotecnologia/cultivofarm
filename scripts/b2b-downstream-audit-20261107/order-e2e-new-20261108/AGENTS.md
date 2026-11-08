@@ -2,4 +2,5 @@
 - Copy generators into temporary project mirrors before running them; keep all source captures and prior evidence immutable.
 - Preserve current registration fence, receivable ten-trigger ACL baseline and delivery downstream prohibition; positive logistics must use real stock motor and current permits, never hide denied B2B as a passing full flow.
 - Reconstructed logistics remains inactive and non-installable until independent full-contract review; no hosted/Auth/data/publication/external effects.
+- Public OS caller candidates wrap the existing private core without granting it EXECUTE; local partial regression callers use SQL-role authenticated through the new public endpoint, never claim hosted JWT proof.
 - Resale confirmation locks the order before OS/delivery, preserves a ready OS for uncovered item demand, and only attempts terminal sync through exact full-order coverage; partial receipts replay without advancing OS — prevents premature aborts and concurrent under-completion.

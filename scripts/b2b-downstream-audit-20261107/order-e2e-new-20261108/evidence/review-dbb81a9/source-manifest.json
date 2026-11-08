@@ -1,0 +1,17 @@
+{
+  "kind": "NEW_FRESH_SQL_ROLE_NOT_HOSTED",
+  "sources": {
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py": "aba45cb4da661b6c210c100645f27400fd31a49cc1ba309e02e352e89bec20a0",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/os_endpoint.py": "d7ff516cf74407ef64582d56cf07fcf216a31c9531e34e320f49c4a7dc97b5af",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_os_endpoint.py": "a9dd3de270e9d7935e57f7f4dc1f711a4b03ec9b77769c089a291736423ef1b0",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py": "8895586e9339d5206aa7cccdc28a4542a15b6d595888ec0126adb96a4051e787",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py": "4648dd0c3cc13373f32e0746c88763f089ce7adb56c4e80e5ca62cb2cc7feb16",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py": "78e4cf2afdc6cdaf9a3ccc9a0e17b0293c0f2d423216f0aa1e7994e63f80b63d",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py": "37541d3af56a7a1f31e9d5df3d2f4daaf61adf37f4f7b0d1c14723f3d6986456",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.ts": "7380cbb14ddb8eb67eca5f16cc9f5eaf9583358948fdb430c3982cb2a5027a9d",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.tsx": "c619d8df0f382b7a83c5f78022735ef8258c55a03defeeb3a8983516097878a1",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/osRequest.test.ts": "42e633bd944cd39a0142c96032801da1de092037d0b0dd9f9b28c935c4ed42d6",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/vitest.config.ts": "5841ebbf2d2fa4220d2a9f73b89453e9833c6e49b3e0f7d3e66e691b4c72293f",
+    "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/ResaleOsAction.test.tsx": "9c150190895bf15114ae84bb789c4b6f7cc75d4607f88e67c90adb0198ddbf54"
+  }
+}

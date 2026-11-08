@@ -1,3 +1,10 @@
+## 08/11 21:12 — Continuação dbb81a9: caller OS e homologação
+- [x] Criação agronômica e programação biológica existentes incompatíveis com revenda; endpoint mínimo gerado com pins, UI fora do runtime, cliente/rotas/SQL B3 preservados e ACL helper privada inalterada.
+- [x] Primeira composição fresh 40/40 e final ampliada 41/41, 13/13 regressões parciais pelo endpoint público com SQL-role authenticated, nove provas específicas incluindo concorrência criação, negativos FSF/comprador/revogado/feature/pending e helper direto. FSF parou na feature; service_role parou no schema, POST também conferiu ausência EXECUTE helper — não tratar esses erros como prova isolada de tenant/ACL de função.
+- [x] Testes UI candidato 13/13, compatibilidade OS 73/73, tipos candidato exit 0 e build automático OK; rollback deny-only executado, gate fechado e fiscal real always-deny intacto. Evidências em evidence/review-dbb81a9/, install endpoint 21d40202…, logística 8ad4def8… inalterada.
+- [x] Plano corrigido de homolog existente vrlcdwmlytukrjezrrnf, configuração isolada proposta sem cliente paralelo ou alteração original; preflight/capturas/contratos/Storage/saídas/fixture e etapas autenticadas definidos. Nenhuma conexão/login/hosted/publicação.
+- [ ] Revisão independente e execução autenticada aguardam verificação do ambiente/capturas e instalação aprovada pelo auditor; nenhuma autorização hosted/publicação.
+
 ## 08/11 20:58 — Revisão 40186: fechamento local e PRE relatado pelo auditor
 - [x] Pacote SOMENTE planos cc1f6cc reexecutado em PostgreSQL 17.11 descartável: 79/79, exit 0; 28 capturas canônicas verificadas, gerador em espelho produz manifesto/SQL idênticos. Catálogo antes/depois/rollback e 25 assinaturas/retornos conferidos; ACL/RLS das quatro tabelas preservados, rollback fecha quatro policies.
 - [x] Compatibilidade frontend focada: seis arquivos/62 testes, exit 0; sem publicação/rede real. Evidências novas em scripts/commercial-plans-tenant-20261108/evidence/review-40186/; warnings preservados, suíte geral não declarada PASS.

@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Resale OS public caller candidates stay outside runtime and preserve private helper ACL, existing seller/stock authority and receipts; homolog isolation is plan-only until auditor environment verification — prevents grant shortcuts and unreviewed production binding changes.
 - Origin/partial/server candidates follow scripts/financial-price-generator-20261029/integration/AGENTS.md; local regressions use maxWorkers=2 with unchanged assertions/timeouts, and incomplete fiscal provenance stays deny-only — prevents resource saturation from masquerading as functional failure or synthetic release.
 - Receivable projections validate requested title and unique installment IDs before adoption; null KPI mode stays server-scoped and failed reads cannot authorize cached settlement — prevents foreign-target ACK without replacing RLS.
 - Catalog-only release preserves baseline finance; payment/origin candidates stay outside src until server review/tests — avoids missing-RPC regressions.
