@@ -377,6 +377,49 @@ def main():
   checks.append(dict(test='same DB deny-only rollback closes plan readers preserves plans and never restores global code uniqueness',status='PASS'))
   R.assert_current(B,OUT,'real-baselines-post-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
+
+  # ab904bf: B4 e ponte no MESMO banco, depois do fluxo comprador/vendedor e
+  # logística acima. A dependência contábil/fiscal real NÃO é substituída:
+  # instalação e contenção podem passar, mas o recebível positivo fica BLOCKED.
+  b4_dir=ROOT/'scripts/b2b-downstream-audit-20261107/b4'
+  bridge_dir=b4_dir/'fiscal-decision-20261108/service-bridge'
+  b4_pre=B.sql((b4_dir/'01-pre.sql.readonly').read_text())
+  B.sql((b4_dir/'02-install.sql.review').read_text())
+  b4_post=B.sql((b4_dir/'03-post.sql.readonly').read_text())
+  bridge_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'01-pre.sql.readonly').read_text())
+  B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'02-install.sql.review').read_text())
+  bridge_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'03-post.sql.readonly').read_text())
+  dependency=B.run_raw("RESET ROLE;SELECT platform_private.b2b_integration_dependencies();")
+  assert dependency.returncode!=0 and 'B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN' in dependency.stderr,dependency.stderr
+  client_bridge=B.run_raw("SET ROLE authenticated;SELECT platform_private.b2b_fiscal_invoice_bridge_v1(NULL);")
+  assert client_bridge.returncode!=0 and 'permission denied' in client_bridge.stderr,client_bridge.stderr
+  original=json.loads((OUT/'real-baselines.json').read_text())['after']['receivable']['triggers']
+  current=R.snapshot(B)
+  current_triggers={x['name']:x for x in current['receivable']['triggers']}
+  for trigger in original:
+   assert current_triggers.get(trigger['name'])==trigger,trigger['name']
+  assert current['receivable']['acl_md5']==json.loads((OUT/'real-baselines.json').read_text())['expected']['acl_md5']
+  assert current_triggers['b2b_fiscal_created_by_guard']['enabled']=='O'
+  current_counts=json.loads(B.last("SELECT jsonb_build_object('receivables',(SELECT count(*) FROM public.accounts_receivable),'fiscal_documents',(SELECT count(*) FROM public.fiscal_invoices))::text;"))
+  assert current_counts==effect_baseline,(current_counts,effect_baseline)
+  (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(
+   status='COMPOSED_BUT_FISCAL_RECEIVABLE_BLOCKED_BY_REAL_ALWAYS_DENY',hosted=False,
+   b4_pre=b4_pre,b4_post=b4_post,bridge_pre=bridge_pre,bridge_post=bridge_post,
+   dependency_denial=dependency.stderr,client_bridge_denial=client_bridge.stderr,
+   original_ten_triggers_preserved=True,current_trigger_count=len(current_triggers),
+   effect_baseline=effect_baseline,current_counts=current_counts,
+   positive_fiscal_receivable='NOT_RUN_BLOCKED',always_allow_substitution=False),indent=2)+'\n')
+  checks.append(dict(test='same fresh DB installs B4 and service bridge PRE POST after buyer seller logistics and plan controls; real always-deny preserved and positive fiscal receivable BLOCKED',status='PASS'))
+  B.sql((bridge_dir/'04-rollback-deny.sql.review').read_text())
+  B.sql((b4_dir/'04-rollback-deny.sql.review').read_text())
+  denied_after_bridge=B.run_raw("RESET ROLE;SELECT platform_private.b2b_fiscal_invoice_bridge_v1(NULL);")
+  denied_after_allocate=B.run_raw("RESET ROLE;SELECT platform_private.b2b_allocate_document(NULL);")
+  assert denied_after_bridge.returncode!=0 and 'permission denied' in denied_after_bridge.stderr
+  assert denied_after_allocate.returncode!=0 and 'permission denied' in denied_after_allocate.stderr
+  current=R.snapshot(B);after_triggers={x['name']:x for x in current['receivable']['triggers']}
+  for trigger in original: assert after_triggers.get(trigger['name'])==trigger,trigger['name']
+  assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='0'
+  checks.append(dict(test='integrated B4 bridge deny-only rollback closes writers preserves snapshots and all original ten receivable triggers',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:
