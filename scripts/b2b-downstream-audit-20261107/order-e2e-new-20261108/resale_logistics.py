@@ -22,12 +22,15 @@ CHANGED = [
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
     "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
     "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "public.trg_entrega_sync_partner_order_fn()",
+    "platform_private.b2b_internal_order_snapshot_guard()",
 ]
 NEW = [
     "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)",
     "platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)",
     "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
     "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)",
+    "platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)",
     "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
 ]
 
