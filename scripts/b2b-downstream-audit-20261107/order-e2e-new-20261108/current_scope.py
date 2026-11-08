@@ -302,7 +302,7 @@ def _guard(doc: dict, state_expression: str, label: str) -> str:
  FROM (VALUES {signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
     trigger_function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid))) ORDER BY v.signature),'[]'::jsonb)
  FROM (VALUES {trigger_signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
-    relation_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.relation_name,coalesce(c.relacl::text,''),CASE WHEN v.check_flags THEN c.relrowsecurity ELSE NULL END,CASE WHEN v.check_flags THEN c.relforcerowsecurity ELSE NULL END,pg_get_userbyid(c.relowner)) ORDER BY v.relation_name),'[]'::jsonb)
+    relation_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.relation_name,coalesce((SELECT string_agg(a::text,',' ORDER BY a::text) FROM unnest(c.relacl) a),''),CASE WHEN v.check_flags THEN c.relrowsecurity ELSE NULL END,CASE WHEN v.check_flags THEN c.relforcerowsecurity ELSE NULL END,pg_get_userbyid(c.relowner)) ORDER BY v.relation_name),'[]'::jsonb)
  FROM (VALUES {relations}) v(relation_name,check_flags) LEFT JOIN pg_class c ON c.oid=to_regclass(v.relation_name))"""
     trigger_actual = """(SELECT coalesce(jsonb_agg(jsonb_build_array(c.relname,t.tgname,t.tgenabled::text,p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid)),pg_get_triggerdef(t.oid)) ORDER BY c.relname,t.tgname),'[]'::jsonb)
  FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_proc p ON p.oid=t.tgfoid
