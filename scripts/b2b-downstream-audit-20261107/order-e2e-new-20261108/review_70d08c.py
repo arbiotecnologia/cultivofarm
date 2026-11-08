@@ -33,6 +33,7 @@ class Review:
             ("quantity_three_delivery_one_remainder_unreserved", self.quantity_three_delivery_one_remainder_unreserved),
             ("cancelled_partial_does_not_complete", self.cancelled_partial_does_not_complete),
             ("overdelivery_cannot_complete_or_rewrite_snapshots", self.overdelivery_cannot_complete_or_rewrite_snapshots),
+            ("last_two_deliveries_concurrent", self.last_two_deliveries_concurrent),
         ]
         for kind in ("role", "profile", "tenant", "gate"):
             cases.append((f"create_wait_revocation_{kind}", lambda kind=kind: self.create_wait_revocation(kind)))
@@ -147,7 +148,7 @@ class Review:
         delivery_status = self.B.last(f"SELECT status::text FROM public.entregas WHERE id='{delivery_id}';")
         if result.returncode == 0 or status != "aprovado":
             raise AssertionError(f"premature completion accepted: order={status}, delivery={delivery_status}, stdout={result.stdout[-800:]}, stderr={result.stderr[-800:]}")
-        if not any(token in result.stderr for token in ("DELIVERY_B2B_TRANSITION_CLOSED", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED")):
+        if not any(token in result.stderr for token in ("DELIVERY_B2B_TRANSITION_CLOSED", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED", "B2B_RESALE_OVERDELIVERY")):
             raise AssertionError("unexpected confirmation error: " + result.stderr[-1600:])
         assert delivery_status == "em_rota", delivery_status
         assert self.snapshots(order["id"]) == before_snapshots, "denied transition changed economic snapshots"

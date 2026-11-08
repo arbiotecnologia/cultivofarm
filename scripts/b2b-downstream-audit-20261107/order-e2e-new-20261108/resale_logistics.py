@@ -434,6 +434,32 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "send ledger origin")
         else:
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "confirm ledger origin", 2)
+            body = one(body, " PERFORM 1 FROM public.ordens_servico WHERE id=initial.ordem_servico_id AND organization_id=org FOR UPDATE;", """ IF initial.partner_order_id IS NOT NULL THEN
+  PERFORM 1 FROM public.partner_orders WHERE id=initial.partner_order_id FOR UPDATE;
+  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ END IF;
+ PERFORM 1 FROM public.ordens_servico WHERE id=initial.ordem_servico_id AND organization_id=org FOR UPDATE;""", "confirm serialize order before OS")
+            body = one(body, "IF os_status NOT IN ('entregue','finalizada') OR s.status", "IF (os_status NOT IN ('entregue','finalizada') AND NOT (e.partner_order_id IS NOT NULL AND os_status='pronto_entrega')) OR s.status", "partial replay preserves ready OS")
+            body = one(body, " image:=to_jsonb(e)||", """ -- Sob o lock do pedido, medir cobertura antes de qualquer confirmação.
+ IF e.partner_order_id IS NOT NULL AND EXISTS(
+  SELECT 1 FROM public.ordens_servico target_os
+  JOIN public.partner_order_items i ON i.id=target_os.partner_order_item_id AND i.order_id=e.partner_order_id
+  WHERE target_os.id=e.ordem_servico_id AND
+   coalesce((SELECT sum(d.quantidade_entregue) FROM public.entregas d
+    JOIN public.ordens_servico other_os ON other_os.id=d.ordem_servico_id
+    WHERE other_os.partner_order_item_id=i.id AND d.partner_order_id=e.partner_order_id
+     AND d.status::text='entregue' AND d.id<>e.id),0)+e.quantidade_entregue>i.quantidade
+ ) THEN RAISE EXCEPTION 'B2B_RESALE_OVERDELIVERY' USING ERRCODE='PT409'; END IF;
+ image:=to_jsonb(e)||""", "deny overdelivery independently of terminal sync")
+            body = one(body, " ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);", """ IF e.partner_order_id IS NULL OR EXISTS(
+  SELECT 1 FROM public.ordens_servico target_os
+  JOIN public.partner_order_items i ON i.id=target_os.partner_order_item_id AND i.order_id=e.partner_order_id
+  WHERE target_os.id=e.ordem_servico_id AND i.quantidade=(
+   SELECT coalesce(sum(d.quantidade_entregue),0) FROM public.entregas d
+   WHERE d.ordem_servico_id=target_os.id AND d.partner_order_id=e.partner_order_id AND d.status::text='entregue')
+ ) THEN
+ ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);""", "advance resale OS only at exact coverage")
+            body = one(body, " -- Coverage is independently measured", " END IF;\n -- Coverage is independently measured", "close partial OS advance branch")
             # O avanço canônico consulta vw_os_integridade_esteira, cuja família
             # de toda ordens_servico é 'manual'. A origem comercial B2B continua
             # em ordens_servico.origem, partner_order_id e no ledger acima.
@@ -443,6 +469,17 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     sig = "public.trg_entrega_sync_partner_order_fn()"
     body = defs[sig]["body"]
     body = one(body, "WHERE os.partner_order_id = v_partner_order_id;", "WHERE os.partner_order_id = v_partner_order_id AND e.status <> 'cancelada';", "delivered count excludes cancellations")
+    body = one(body, "  v_total int; v_delivered int;", "  v_total int; v_delivered int; v_order public.partner_orders; v_terminal public.partner_orders;", "sync order images")
+    body = one(body, "  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;", """  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;
+  IF EXISTS(SELECT 1 FROM public.ordens_servico os WHERE os.id=NEW.ordem_servico_id
+    AND os.origem='b2b' AND os.partner_order_id=v_partner_order_id)
+   AND EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE) THEN
+   SELECT * INTO v_order FROM public.partner_orders WHERE id=v_partner_order_id FOR UPDATE;
+   -- A entrega parcial já foi validada pelo permit; não tentar terminal cedo.
+   IF v_order.status::text='entregue' THEN RETURN NEW; END IF;
+   v_terminal:=jsonb_populate_record(v_order,jsonb_build_object('status','entregue'));
+   IF platform_private.b2b_resale_delivery_status_transition_valid_v1(v_order,v_terminal) IS NOT TRUE THEN RETURN NEW; END IF;
+  END IF;""", "sync partial success without premature order transition")
     defs[sig]["new"] = body
 
     sig = "platform_private.delivery_order_transition_guard_20261030()"
