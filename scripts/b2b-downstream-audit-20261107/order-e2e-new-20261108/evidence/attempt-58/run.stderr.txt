@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-v6udq8fr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 82, in main
+    R.install(B,OUT)
+    ~~~~~~~~~^^^^^^^
+  File "/tmp/new-order-e2e-v6udq8fr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py", line 50, in install
+    registration = json.loads(registration_path.read_text())
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/new-order-e2e-v6udq8fr/project/scripts/scripts/b2b-downstream-audit-20261107/registration-deferred-20261108/canonical-readonly.json'

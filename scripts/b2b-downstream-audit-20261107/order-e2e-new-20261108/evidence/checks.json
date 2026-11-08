@@ -16,13 +16,21 @@
     "status": "PASS"
   },
   {
+    "test": "real registration fence and exact receivable ACL with all ten triggers enabled before B2B order",
+    "status": "PASS"
+  },
+  {
+    "test": "direct settings write denied and delivery context forbids receivable INSERT UPDATE DELETE",
+    "status": "PASS"
+  },
+  {
     "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
     "status": "PASS"
   },
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "36ee2908-f552-4776-a58b-ff4535072bb8"
+    "order_id": "ba98ae57-318a-4f1f-a512-28b71a8822f2"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -43,7 +51,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "4a945f88-2af5-4af3-aea8-0462c0b6701a"
+    "os_id": "b55f9334-443b-4074-a5f5-1d8c9044f401"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -52,21 +60,25 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "4e72e6b5-2502-403c-ab82-176038bedb9a"
+    "delivery_id": "50e1016d-dccb-4277-b275-8540b66c51d7"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "8ffffa15-0dc7-4e21-bfbd-fb1cefc9b124"
+    "delivery_id": "d2ea48a8-72d1-4915-8568-84ce6a0e8364"
   },
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "479e4869-df7f-4f8e-bc61-baeb8a355659"
+    "delivery_id": "8554c96a-1ee2-4edc-a655-1d57983f527e"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
     "status": "PASS",
     "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3"
+  },
+  {
+    "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
+    "status": "PASS"
   }
 ]
