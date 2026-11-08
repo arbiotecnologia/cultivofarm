@@ -1,15 +1,16 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-lpjalb4e/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 76, in main
+  File "/tmp/new-order-e2e-eqjym63d/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 76, in main
     Q=commercial.apply(B,load,ROOT,OUT)
-  File "/tmp/new-order-e2e-lpjalb4e/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 40, in apply
+  File "/tmp/new-order-e2e-eqjym63d/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 40, in apply
     B.sql(f['body']+';')
     ~~~~~^^^^^^^^^^^^^^^
-  File "/tmp/new-order-e2e-lpjalb4e/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+  File "/tmp/new-order-e2e-eqjym63d/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
     return pg.sql(statement)
            ~~~~~~^^^^^^^^^^^
-  File "/tmp/new-order-e2e-lpjalb4e/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+  File "/tmp/new-order-e2e-eqjym63d/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
     assert r.returncode==0,r.stderr[-3000:]
            ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  cannot change name of input parameter "_user_id"
-HINT:  Use DROP FUNCTION has_role(uuid,app_role) first.
+AssertionError: ERROR:  cannot change return type of existing function
+DETAIL:  Row type defined by OUT parameters is different.
+HINT:  Use DROP FUNCTION platform_private.b2b_actor_scope(uuid) first.
 
