@@ -40,6 +40,7 @@ def install(B, out):
       JOIN pg_roles r ON r.oid=p.proowner;"""))
     assert len(raw) == len(CHANGED), (len(raw), raw)
     defs = {x["signature"]: x for x in raw}
+    (out / "raw-current.json").write_text(json.dumps(raw, indent=2) + "\n")
 
     ddl = r"""
 CREATE TABLE platform_private.b2b_resale_logistics_gate_v1(
