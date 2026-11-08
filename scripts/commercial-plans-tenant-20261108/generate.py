@@ -146,7 +146,7 @@ def build_functions() -> dict[str, str]:
 
     name = "b2b_payment_condition_config_list"
     s = source(name)
-    s = edit(s, "      WHERE v.organization_id = v_org AND v.version =", "      WHERE v.organization_id = v_org AND platform_private.commercial_plan_admin_allowed(v.plan_id) AND v.version =")
+    s = edit(s, "     WHERE v.organization_id = v_org AND v.version =", "     WHERE v.organization_id = v_org AND platform_private.commercial_plan_admin_allowed(v.plan_id) AND v.version =")
     s = edit(s, "FROM public.commercial_payment_plans p WHERE p.active IS TRUE AND p.superseded_by_id IS NULL)", "FROM public.commercial_payment_plans p WHERE p.organization_id = v_org AND p.active IS TRUE AND p.superseded_by_id IS NULL)")
     out[name] = s
 
