@@ -217,6 +217,14 @@ CREATE TABLE platform_private.b2b_fiscal_service_permits(
  created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(transaction_id,invoice_id));
 ALTER TABLE platform_private.b2b_fiscal_service_permits ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON platform_private.b2b_fiscal_service_permits FROM PUBLIC,anon,authenticated,service_role;
+CREATE TABLE platform_private.fiscal_close_pending(
+ transmission_id uuid PRIMARY KEY REFERENCES public.fiscal_sefaz_transmissions(id) ON DELETE RESTRICT,
+ fiscal_invoice_id uuid REFERENCES public.fiscal_invoices(id) ON DELETE RESTRICT,
+ error_code text NOT NULL CHECK(error_code IN ('FISCAL_AUTHORIZATION_CLOSE_PENDING','FISCAL_EVENT_RECONCILIATION_PENDING')),
+ first_error_at timestamptz NOT NULL DEFAULT now(),last_error_at timestamptz NOT NULL DEFAULT now(),
+ attempts integer NOT NULL DEFAULT 1 CHECK(attempts>=1));
+ALTER TABLE platform_private.fiscal_close_pending ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.fiscal_close_pending FROM PUBLIC,anon,authenticated,service_role;
 CREATE TABLE platform_private.b2b_fiscal_invoice_snapshots(
  invoice_id uuid PRIMARY KEY,transmission_id uuid NOT NULL,protocol text NOT NULL,
  source_digest text NOT NULL,snapshot jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
