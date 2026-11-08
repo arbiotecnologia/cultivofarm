@@ -57,9 +57,11 @@ def main():
   B.current_catalog.assert_current(B.last)
   # O gerador físico consome a composição atual medida, não a captura anterior ao catálogo.
   current_capture=OUT/'current-pre-physical.json';current_capture.write_text(json.dumps(B.restore.metadata(),indent=2)+'\n')
+  capture_module=load('new_current_baseline',physical/'capture_baseline.py')
+  current_baseline=OUT/'current-physical-baseline.json';current_baseline.write_text(json.dumps(capture_module.capture(B),indent=2)+'\n')
   physical_out=OUT/'physical-finished-product';physical_out.mkdir(exist_ok=True)
   os.environ['FINISHED_CURRENT_CAPTURE']=str(current_capture)
-  os.environ['FINISHED_BASELINE']=str(current_capture)
+  os.environ['FINISHED_BASELINE']=str(current_baseline)
   os.environ['FINISHED_REVIEW_OUT']=str(physical_out)
   F=load('new_finished_generator',physical/'assemble.py')
   rel=next(r for r in F.BASE['relations'] if r['name']=='authz_tickets')
