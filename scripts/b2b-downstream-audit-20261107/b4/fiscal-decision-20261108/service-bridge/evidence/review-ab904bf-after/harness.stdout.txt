@@ -149,10 +149,14 @@ PASS vínculo B2B parcial não escapa como não-B2B
 PASS DEPOIS: _c_stat divergente não autoriza nem cria título
 PASS DEPOIS: ausência de transmissão falha fechado
 PASS DEPOIS: NFS-e permanece fail-closed até callback específico
-FAIL autorização com falha pós-título aborta sem perder capacidade de retry :: ERROR:  FISCAL_AUTHORIZATION_PAYLOAD_INVALID
-CONTEXT:  PL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 7 at RAISE
+FAIL autorização com falha pós-título aborta sem perder capacidade de retry :: ERROR:  FISCAL_ITEMS_INVALID
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 45 at RAISE
+PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 76 at assignment
+PL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 69 at assignment
 
 PASS falha da autorização não deixa NF autorizada, documento ou título parcial
-FAIL retentativa autorizada gera um recebível B4 pela NF :: ERROR:  FISCAL_AUTHORIZATION_PAYLOAD_INVALID
-CONTEXT:  PL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 7 at RAISE
+FAIL retentativa autorizada gera um recebível B4 pela NF :: ERROR:  FISCAL_ITEMS_INVALID
+CONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 45 at RAISE
+PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 76 at assignment
+PL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 69 at assignment
 FAIL execução sem exceção de harness :: RuntimeError('ERROR:  invalid input syntax for type uuid: "None"\nLINE 1: ...by::text FROM public.accounts_receivable WHERE id=\'None\'),\'<...\n                                                             ^\n')

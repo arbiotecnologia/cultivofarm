@@ -637,7 +637,7 @@
     {
       "name": "autorização com falha pós-título aborta sem perder capacidade de retry",
       "ok": false,
-      "detail": "ERROR:  FISCAL_AUTHORIZATION_PAYLOAD_INVALID\nCONTEXT:  PL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 7 at RAISE\n"
+      "detail": "ERROR:  FISCAL_ITEMS_INVALID\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 45 at RAISE\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 76 at assignment\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 69 at assignment\n"
     },
     {
       "name": "falha da autorização não deixa NF autorizada, documento ou título parcial",
@@ -646,7 +646,7 @@
     {
       "name": "retentativa autorizada gera um recebível B4 pela NF",
       "ok": false,
-      "detail": "ERROR:  FISCAL_AUTHORIZATION_PAYLOAD_INVALID\nCONTEXT:  PL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 7 at RAISE"
+      "detail": "ERROR:  FISCAL_ITEMS_INVALID\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 45 at RAISE\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 76 at assignment\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 69 at assignment"
     },
     {
       "name": "execução sem exceção de harness",
