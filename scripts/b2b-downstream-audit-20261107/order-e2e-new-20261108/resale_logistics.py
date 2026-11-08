@@ -239,6 +239,11 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     body = one(body, "IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT EXISTS (", "IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT v_resale AND NOT EXISTS (", "stock row guard order")
     defs[sig]["new"] = body
 
+    sig = "platform_private.delivery_mutation_guard_20261030()"
+    body = defs[sig]["body"]
+    body = one(body, "OR NEW.partner_order_id IS NOT NULL OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "OR (NEW.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS NOT TRUE) OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "delivery mutation resale order")
+    defs[sig]["new"] = body
+
     sig = "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)"
     body = defs[sig]["body"]
     body = one(body, " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid;", " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid; v_partner uuid;", "group declaration")
