@@ -197,6 +197,25 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     body = one(body, "IF v_order IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN", "IF v_order IS NOT NULL AND NOT v_resale AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN", "stock refs order")
     defs[sig]["new"] = body
 
+    sig = "platform_private.stock_p1_guard()"
+    body = defs[sig]["body"]
+    body = one(body, " v_lote public.lotes%ROWTYPE;", " v_lote public.lotes%ROWTYPE;\n v_resale boolean:=false;", "stock row guard declaration")
+    body = one(body, "BEGIN\n IF auth.uid() IS NULL", """BEGIN
+ IF NEW.reservado_para_os_id IS NOT NULL AND NEW.reservado_para_os_tipo='b2b'
+  AND NEW.reservado_para_partner_id IS NOT NULL AND NEW.reservado_para_partner_order_id IS NOT NULL
+  AND platform_private.b2b_internal_commercial_actor() IS TRUE THEN
+  SELECT platform_private.b2b_resale_os_valid_v1(o) INTO v_resale
+   FROM public.ordens_servico o
+   WHERE o.id=NEW.reservado_para_os_id AND o.organization_id=v_org
+    AND o.partner_order_id=NEW.reservado_para_partner_order_id
+    AND EXISTS(SELECT 1 FROM public.partner_orders po WHERE po.id=o.partner_order_id AND po.partner_id=NEW.reservado_para_partner_id);
+ END IF;
+ v_resale:=coalesce(v_resale,false);
+ IF auth.uid() IS NULL""", "stock row guard seller resale")
+    body = one(body, "IF NEW.reservado_para_partner_id IS NOT NULL AND NOT coalesce(public.b2b_phase1_partner_visible(NEW.reservado_para_partner_id,false),false) THEN", "IF NEW.reservado_para_partner_id IS NOT NULL AND NOT v_resale AND NOT coalesce(public.b2b_phase1_partner_visible(NEW.reservado_para_partner_id,false),false) THEN", "stock row guard partner")
+    body = one(body, "IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT EXISTS (", "IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT v_resale AND NOT EXISTS (", "stock row guard order")
+    defs[sig]["new"] = body
+
     sig = "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)"
     body = defs[sig]["body"]
     body = one(body, " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid;", " v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid; v_partner uuid;", "group declaration")
