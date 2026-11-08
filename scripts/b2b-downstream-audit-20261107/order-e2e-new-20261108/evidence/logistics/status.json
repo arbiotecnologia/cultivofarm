@@ -1,0 +1,27 @@
+{
+  "status": "FAIL_INCOMPLETE_INACTIVE_NOT_APPROVED",
+  "run_exit_code": 1,
+  "checkpoints_passed_before_failure": 10,
+  "candidate_sha256": "72cd28ad68d97e64f7fa2f0f0abfddd015e74ccc381d308c329f029e8ccafd3b",
+  "positive_local_controls": [
+    "gate fechado e writer privado sem EXECUTE de cliente",
+    "inserção direta de OS pronta sem ticket negada por OS_APPROVAL_SCOPE_DENIED",
+    "comprador sem alçada negado; CAS stale e conflito de replay negados",
+    "pedido externo aprovado criou uma OS pronto_entrega sem programacao_producao ou production_order_link",
+    "compra canônica de três embalagens criou lote/estoque sem fabricação"
+  ],
+  "current_blocker": {
+    "function": "platform_private.stock_p1_guard()",
+    "captured_md5": "ad87685f4b7bc87bd8cc3f41f283966d",
+    "error": "ESTQ_REFERENCE_FORBIDDEN",
+    "reason": "a guarda de linha ainda usa b2b_phase1_partner_visible/order_visible, incompatíveis com o vendedor tenant-owner sem org_partner; helpers globais não foram alterados"
+  },
+  "not_run": [
+    "reserva B2B concluída",
+    "agrupamento/expedição/comprovante/confirmação/cancelamento B2B",
+    "POST/rollback do candidato logístico",
+    "regressão manual após o candidato",
+    "B4 integrado, NF, recebível, JWT/RLS/Storage/browser"
+  ],
+  "containment": "o gate nasce false; a ativação ocorreu somente no PG descartável. Nenhum hosted write, publicação, NF, cobrança, envio externo ou alteração do piloto/cinco títulos."
+}

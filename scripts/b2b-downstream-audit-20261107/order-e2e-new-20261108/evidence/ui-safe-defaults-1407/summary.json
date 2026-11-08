@@ -1,0 +1,44 @@
+{
+  "status": "PASS_LOCAL_UI_ONLY",
+  "hosted": false,
+  "published": false,
+  "scope": "Somente formulário de novo cadastro financeiro sem settings; configurações existentes e CAS preservados",
+  "audited_partner_fact": {
+    "source": "relato do proprietário, não nova consulta do agente",
+    "credit_limit": 10000,
+    "payment_terms_days": 30,
+    "default_payment_method": "Boleto bancário",
+    "billing_trigger": "manual",
+    "auto_generate_receivable": false,
+    "block_if_overdue": true,
+    "commercial_rule_changed": false,
+    "receivable_only_after_authorized_nf_still_pending": true
+  },
+  "new_defaults": {
+    "billing_trigger": "manual",
+    "auto_generate_receivable": false,
+    "payment_terms_days": 7,
+    "default_payment_method": null
+  },
+  "tests": {
+    "files": 3,
+    "tests": 47,
+    "passed": 47,
+    "exit_code": 0,
+    "coverage": [
+      "settings ausentes não gravam ao abrir/reabrir",
+      "novo formulário inicia manual e auto=false",
+      "salvar explícito usa RPC CAS com p_expected=NULL",
+      "salvar ausente persiste manual/auto=false somente após método ativo explícito",
+      "existentes na_entrega/auto=true e prazo 7 permanecem sem regressão",
+      "conflito CAS preserva rascunho e não regrava"
+    ]
+  },
+  "typecheck_exit_code": 0,
+  "preview_build": "build OK 2026-11-08T14:24:36Z",
+  "limits": [
+    "SDK/Auth/RPC sintéticos; não prova JWT/RLS/PostgREST/Storage nem sessão real",
+    "nenhuma escrita hospedada, publicação, envio, NF ou cobrança",
+    "nenhum título existente alterado"
+  ]
+}
