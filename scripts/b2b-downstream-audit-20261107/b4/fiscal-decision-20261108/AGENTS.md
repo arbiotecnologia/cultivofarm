@@ -1,0 +1,5 @@
+- Preparação inativa e somente local: não aplicar SQL hospedado, publicar, acionar provedores, emitir NF/cobrança, enviar mensagens ou registrar pagamentos reais.
+- Reutilizar o candidato B4, as capturas e o gerador de parcelas existentes; nunca criar financeiro paralelo nem alterar capturas/evidências históricas.
+- Resultados de PostgreSQL descartável são prova de componente com atestações fiscais sintéticas, não prova de integração com fiscal_invoices, JWT/RLS/Storage ou homologação real.
+- Manter b2b_integration_dependencies always-deny, dez gatilhos/ACL, delivery_no_downstream, cinco títulos MANUAL teste4, snapshots e histórico preservados.
+- A ponte fiscal real permanece bloqueada até revisar origem/tenant, ator do callback service-only, idempotência, recuperação pós-autorização, parcialidade e cancelamento; não inventar ticket, autorização ou contabilidade.

@@ -1,0 +1,112 @@
+{
+  "status": "INACTIVE_BLOCKED_COMPONENT_EVIDENCE_ONLY",
+  "requirements": [
+    {
+      "id": "R01",
+      "rule": "Pedido aprovado é previsão/reserva de crédito, não dívida definitiva.",
+      "local_status": "COVERED",
+      "covered_by": ["pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida"]
+    },
+    {
+      "id": "R02",
+      "rule": "Título e parcelas somente após NF-e autorizada ou NFS-e emitida confirmada.",
+      "local_status": "BLOCKED",
+      "component_evidence": ["primeira NF parcial autorizada fictícia gera título"],
+      "gap": "G1"
+    },
+    {
+      "id": "R03",
+      "rule": "Evento repetido ou concorrente gera uma única vez.",
+      "local_status": "COVERED",
+      "covered_by": [
+        "replay da mesma autorização devolve mesmo título",
+        "mesmo documento em duas sessões tem replay autorizado nos dois lados",
+        "mesmo documento concorrente mantém um título e uma alocação"
+      ]
+    },
+    {
+      "id": "R04",
+      "rule": "Nota pendente ou rejeitada não gera título.",
+      "local_status": "BLOCKED",
+      "gap": "G3"
+    },
+    {
+      "id": "R05",
+      "rule": "Falha após autorização é recuperável sem duplicação.",
+      "local_status": "COVERED_COMPONENT_ONLY",
+      "covered_by": [
+        "falha depois do INSERT aborta a alocação inteira",
+        "falha pós-autorização não deixa título, parcelas ou alocação parcial",
+        "retry após falha recupera o mesmo evento uma única vez",
+        "replay da recuperação preserva o mesmo título sem duplicar"
+      ],
+      "gap": "G3"
+    },
+    {
+      "id": "R06",
+      "rule": "Faturamento parcial é proporcional e não cobra saldo já faturado.",
+      "local_status": "COVERED",
+      "covered_by": [
+        "três documentos independentes fecham quantidade e residual",
+        "duas sessões: somente uma consome o saldo final",
+        "corrida não duplica título nem residual",
+        "quantidade acima do pedido negada"
+      ]
+    },
+    {
+      "id": "R07",
+      "rule": "Crédito migra de reserva para exposição sem dupla contagem.",
+      "local_status": "COVERED",
+      "covered_by": [
+        "conversão não duplica exposição",
+        "residual = pedido restante + títulos sem dupla contagem",
+        "crédito após parciais preserva total menos baixa"
+      ]
+    },
+    {
+      "id": "R08",
+      "rule": "Cancelamento/estorno preserva histórico e não altera informalmente valores recebidos.",
+      "local_status": "COVERED",
+      "covered_by": [
+        "cancelamento de NF paga exige reconciliação",
+        "cancelamento pago negado preserva histórico e saldo",
+        "histórico do título cancelado permanece",
+        "cancelamento restaura exatamente principal+juros do documento"
+      ]
+    },
+    {
+      "id": "R09",
+      "rule": "Exceção manual exige permissão, justificativa, origem, trilha e antiduplicidade.",
+      "local_status": "BLOCKED",
+      "gap": "G4"
+    },
+    {
+      "id": "R10",
+      "rule": "Gerar título não emite boleto/Pix, não envia mensagem e não registra pagamento.",
+      "local_status": "COVERED_COMPONENT_ONLY",
+      "covered_by": ["título não emite boleto/Pix nem registra pagamento"],
+      "gap": "G6"
+    },
+    {
+      "id": "R11",
+      "rule": "Entrega não gera outro título.",
+      "local_status": "COVERED_COMPONENT_ONLY",
+      "covered_by": [
+        "delivery context nega UPDATE em recebível",
+        "delivery context nega DELETE em recebível",
+        "delivery context nega INSERT em recebível"
+      ],
+      "gap": "G6"
+    },
+    {
+      "id": "R12",
+      "rule": "Títulos legados e snapshots ficam preservados para reconciliação.",
+      "local_status": "COVERED",
+      "covered_by": [
+        "shared fence preserva título MANUAL não B2B sem devedor parceiro",
+        "rollback preserva alocações, títulos e snapshots",
+        "rollback deny-only passa com PRE/POST e metadados íntegros"
+      ]
+    }
+  ]
+}

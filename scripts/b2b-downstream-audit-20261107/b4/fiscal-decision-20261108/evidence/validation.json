@@ -1,0 +1,14 @@
+{
+  "status": "INACTIVE_BLOCKED_COMPONENT_EVIDENCE_ONLY_NOT_APPROVED",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted": "NOT_RUN",
+  "commercial_plans_isolation_local": "63/63 PASS; release blocker remains",
+  "b4_component": "128/128 PASS, exit 0",
+  "decision_matrix": "38/38 PASS, exit 0; overall decision remains BLOCKED",
+  "b4_manifest": "61/61 PASS, exit 0",
+  "candidate_sha256": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
+  "full_vitest": "NOT_COMPLETED: environment timeout after 600 seconds; partial log preserved and not counted as pass",
+  "automatic_preview_build": "build OK",
+  "open_gaps": ["G1", "G2", "G3", "G4", "G5", "G6"],
+  "external_effects": "NONE"
+}

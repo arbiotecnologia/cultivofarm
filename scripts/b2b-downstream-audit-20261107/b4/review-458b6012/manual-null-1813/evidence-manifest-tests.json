@@ -2,8 +2,8 @@
   "kind": "STATIC_B4_REVIEW_MANUAL_NULL_1813_NO_HOSTED",
   "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "historical_63_added": false,
-  "passed": 59,
-  "total": 59,
+  "passed": 55,
+  "total": 61,
   "checks": [
     {
       "name": "gerado determinístico: b4-candidate.sql.review",
@@ -11,19 +11,23 @@
     },
     {
       "name": "gerado determinístico: 01-pre.sql.readonly",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: 02-install.sql.review",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: 03-post.sql.readonly",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: 04-rollback-deny.sql.review",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: b4-pins.json",
@@ -31,7 +35,8 @@
     },
     {
       "name": "gerado determinístico: SHA256SUMS",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "gerado determinístico: live-readonly-4097d4e2.json",
@@ -43,7 +48,8 @@
     },
     {
       "name": "gerado determinístico: b4-object-manifest.json",
-      "ok": true
+      "ok": false,
+      "detail": ""
     },
     {
       "name": "status permanece inativo/bloqueado/não aprovado",
@@ -138,7 +144,7 @@
       "ok": true
     },
     {
-      "name": "todos os triggers compartilhados entram no PRE/POST",
+      "name": "dez triggers compartilhados entram no PRE/POST",
       "ok": true
     },
     {
@@ -183,6 +189,14 @@
     },
     {
       "name": "crédito usa prova monetária interna no tenant vendedor",
+      "ok": true
+    },
+    {
+      "name": "limite zero é configuração válida; NULL/negativo/NaN continuam fechados",
+      "ok": true
+    },
+    {
+      "name": "limite zero positivo usa limite excedido, nunca NO_LIMIT_DEFINED",
       "ok": true
     },
     {

@@ -38,6 +38,7 @@ G = B3.g
 CHECKS = []
 CUSTOMER = B3.u(301)
 DOCS = [B3.u(310 + i) for i in range(10)]
+RECOVERY_DOC = B3.u(380)
 BOL = B3.ch("boleto", 1, 30)
 REAL_MANUAL = [B3.u(360 + i) for i in range(5)]
 AMBIGUOUS_TITLE = B3.u(365)
@@ -293,6 +294,15 @@ WHERE s.partner_id='{B3.P}';""")
         direct_item = B3.psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{direct_order}'").stdout.strip()
         approve_order(direct_order)
 
+        # Pedido independente para falha pós-INSERT/recuperação; não altera as
+        # quantidades nem os saldos esperados dos cenários históricos.
+        data, error = B3.sim(B3.UB, B3.P3, [B3.L(2)], BOL)
+        data, error = B3.create(B3.UB, B3.P3, [B3.L(2)], data and data["cart_hash"], "TESTE-B4-RECOVERY", BOL)
+        recovery_order = data and data["id"]
+        recovery_item = B3.psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{recovery_order}'").stdout.strip()
+        check("fixture independente de recuperação criada sem título", recovery_order is not None and recovery_item != "", error)
+        approve_order(recovery_order)
+
         # Pedido ainda pendente de contabilidade: fixture separada, nunca promovida artificialmente.
         B3.psql(f"DELETE FROM public.company_fiscal_settings WHERE organization_id='{B3.A}'")
         data, error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
@@ -371,6 +381,7 @@ WHERE s.partner_id='{B3.P}';""")
 
         document(DOCS[0], quote_order, quote_item, 1)
         deny("gate fiscal/contábil não comprovado permanece fechado", allocate(B3.UADM, DOCS[0]), "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN")
+        check("pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida", B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_type='B2B_ORDER' AND origin_id='{quote_order}'").stdout.strip() == "0" and residual(quote_order) > 0)
         deny("cliente não invoca alocador privado", B3.out(B3.as_user(B3.UADM, f"SELECT platform_private.b2b_allocate_document('{DOCS[0]}')::text;")), "permission denied")
         # Costura SOMENTE do harness: adaptador fictício sem rede, após provar a negação real.
         B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
@@ -520,6 +531,15 @@ WHERE s.partner_id='{B3.P}';""")
         data2, error2 = allocate(B3.UADM, DOCS[0])
         check("replay da mesma autorização devolve mesmo título", data2 and data2["replayed"] and data2["receivable_id"] == title1, error2 or data2)
         check("replay não duplica alocação", B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == "1")
+
+        def same_document_call(_):
+            return server_run(B3.UADM, f"SELECT platform_private.b2b_allocate_document('{DOCS[0]}');")
+        with concurrent.futures.ThreadPoolExecutor(2) as pool:
+            same_document_races = list(pool.map(same_document_call, [1, 2]))
+        check("mesmo documento em duas sessões tem replay autorizado nos dois lados", all(r.returncode == 0 for r in same_document_races), [r.stderr[-700:] for r in same_document_races])
+        check("mesmo documento concorrente mantém um título e uma alocação", B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{DOCS[0]}')||'|'||(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE document_id='{DOCS[0]}')").stdout.strip() == "1|1")
+        side_effects = B3.psql(f"SELECT (boleto_url IS NULL AND pix_copia_cola IS NULL AND pix_qr_code IS NULL AND external_payment_id IS NULL)::text||'|'||(SELECT count(*) FROM public.receivable_payments p JOIN public.accounts_receivable_installments i ON i.id=p.installment_id WHERE i.receivable_id='{title1}') FROM public.accounts_receivable WHERE id='{title1}'").stdout.strip()
+        check("título não emite boleto/Pix nem registra pagamento", side_effects == "true|0", side_effects)
         rows1 = sql_json(f"SELECT jsonb_agg(to_jsonb(i) ORDER BY installment_number) FROM public.accounts_receivable_installments i WHERE receivable_id='{title1}'")
         check("datas finais partem da emissão e calendário selado", rows1[0]["due_date"] == "2026-11-03", rows1)
         check("juros financiados não são somados duas vezes", all(Decimal(str(r["original_amount"])) == Decimal(str(r["net_amount"])) and Decimal(str(r["interest_amount"])) == 0 for r in rows1), rows1)
@@ -578,6 +598,22 @@ WHERE s.partner_id='{B3.P}';""")
             races = list(pool.map(race, [DOCS[8], DOCS[9]]))
         check("duas sessões: somente uma consome o saldo final", sum(r.returncode == 0 for r in races) == 1 and any("FISCAL_QUANTITY_OVERALLOCATED" in r.stderr for r in races), [r.stderr[-500:] for r in races])
         check("corrida não duplica título nem residual", residual(direct_order) == 0 and B3.psql(f"SELECT count(*) FROM platform_private.b2b_document_allocations WHERE order_id='{direct_order}'").stdout.strip() == "2")
+
+        # Falha injetada depois do INSERT do título: toda a transação deve desfazer
+        # título/parcelas/permit; a repetição do mesmo documento recupera uma vez.
+        document(RECOVERY_DOC, recovery_order, recovery_item, 1, issue="2027-02-01", event="recovery-after-title")
+        recovery_residual_before = residual(recovery_order)
+        B3.psql("""CREATE FUNCTION public.b4_test_fail_after_title() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN RAISE EXCEPTION 'B4_TEST_POST_TITLE_FAILURE' USING ERRCODE='P0001'; END $$;
+        CREATE TRIGGER zz_b4_test_fail_after_title AFTER INSERT ON public.accounts_receivable
+        FOR EACH ROW EXECUTE FUNCTION public.b4_test_fail_after_title();""")
+        deny("falha depois do INSERT aborta a alocação inteira", allocate(B3.UADM, RECOVERY_DOC), "B4_TEST_POST_TITLE_FAILURE")
+        check("falha pós-autorização não deixa título, parcelas ou alocação parcial", B3.psql(f"SELECT (SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{RECOVERY_DOC}')||'|'||(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE document_id='{RECOVERY_DOC}')").stdout.strip() == "0|0" and residual(recovery_order) == recovery_residual_before)
+        B3.psql("DROP TRIGGER zz_b4_test_fail_after_title ON public.accounts_receivable;DROP FUNCTION public.b4_test_fail_after_title();")
+        recovered, recovered_error = allocate(B3.UADM, RECOVERY_DOC)
+        check("retry após falha recupera o mesmo evento uma única vez", recovered and recovered["success"] and not recovered["replayed"], recovered_error or recovered)
+        recovered_replay, recovered_replay_error = allocate(B3.UADM, RECOVERY_DOC)
+        check("replay da recuperação preserva o mesmo título sem duplicar", recovered and recovered_replay and recovered_replay["replayed"] and recovered_replay["receivable_id"] == recovered["receivable_id"] and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{RECOVERY_DOC}'").stdout.strip() == "1", recovered_replay_error or recovered_replay)
 
         allocations_before = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
         for operation, statement in (
