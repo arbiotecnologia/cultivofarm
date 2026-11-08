@@ -378,7 +378,9 @@ def main():
   B.sql((endpoint_out/'04-rollback-deny.sql.review').read_text())
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'permission denied for function rpc_b2b_resale_os_create_v1' in after_rollback.stderr,after_rollback.stderr
-  checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
+  reader_after_rollback=B.run_raw(B.T.actor(Q.UADM)+f"SELECT public.rpc_b2b_resale_os_availability_v1('{order_id}');")
+  assert reader_after_rollback.returncode!=0 and 'permission denied for function rpc_b2b_resale_os_availability_v1' in reader_after_rollback.stderr,reader_after_rollback.stderr
+  checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers or reader',status='PASS',candidate_sha256=logistics['candidate_sha256']))
   plans_before_rollback=B.last('SELECT count(*) FROM public.commercial_payment_plans;')
   R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
