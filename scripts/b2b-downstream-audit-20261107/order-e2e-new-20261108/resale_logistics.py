@@ -381,7 +381,7 @@ END$$;""")
     (out / "postflight.sql.review").write_text(post_sql)
     checked = B.run_raw(post_sql)
     assert checked.returncode == 0, checked.stderr
-    rollback = "UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text),platform_private.b2b_resale_os_valid_v1(public.ordens_servico),platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes),platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: não apaga OS, estoque, entregas, recibos nem histórico e não restaura definições anteriores.\n"
+    rollback = "UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text),platform_private.b2b_resale_os_valid_v1(public.ordens_servico),platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico),platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes),platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: não apaga OS, estoque, entregas, recibos nem histórico e não restaura definições anteriores.\n"
     (out / "rollback.sql.review").write_text(rollback)
     rolled = B.run_raw(rollback)
     (out / "rollback.stdout.txt").write_text(rolled.stdout)
