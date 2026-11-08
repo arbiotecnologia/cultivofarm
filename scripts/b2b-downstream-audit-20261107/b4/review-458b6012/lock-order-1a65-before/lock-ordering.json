@@ -1,0 +1,14 @@
+{
+  "mode": "BEFORE_CANDIDATE_LOCK_CHARACTERIZATION",
+  "same_invoice_transmission": true,
+  "pause": "temporary BEFORE UPDATE trigger after H13 acquired transmission row lock; candidate locks/guards unchanged",
+  "h13_h12": {
+    "deadlock_detected": false,
+    "h13_exit": 3,
+    "h12_exit": 3,
+    "postgres_log": "2026-11-08 19:20:23.727 UTC [4063] ERROR:  permission denied to set parameter \"deadlock_timeout\"\n2026-11-08 19:20:23.727 UTC [4063] STATEMENT:  SET deadlock_timeout='100ms';\n2026-11-08 19:20:23.985 UTC [4066] ERROR:  permission denied to set parameter \"deadlock_timeout\"\n2026-11-08 19:20:23.985 UTC [4066] STATEMENT:  SET deadlock_timeout='100ms';\n"
+  },
+  "h13_direct_bridge": null,
+  "hosted": false,
+  "provider_called": false
+}
