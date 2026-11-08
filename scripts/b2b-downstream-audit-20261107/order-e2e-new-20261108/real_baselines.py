@@ -85,7 +85,7 @@ def install(B, out, root):
         B.sql("REVOKE ALL ON public.accounts_receivable FROM anon,authenticated,service_role; GRANT DELETE,INSERT,MAINTAIN,SELECT,UPDATE ON public.accounts_receivable TO anon,authenticated; GRANT DELETE,INSERT,MAINTAIN,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE ON public.accounts_receivable TO postgres,service_role;")
 
     after = snapshot(B)
-    assert after["receivable"]["acl"] == current_ar.ACL, after["receivable"]["acl"]
+    assert set(after["receivable"]["acl"].strip("{}").split(",")) == set(current_ar.ACL.strip("{}").split(",")), after["receivable"]["acl"]
     assert after["receivable"]["acl_md5"] == current_ar.ACL_MD5, after
     assert after["receivable"]["trigger_md5"] == current_ar.TRIGGERS_MD5, after
     assert shape(after["receivable"]["triggers"]) == shape(expected["triggers"]), after
