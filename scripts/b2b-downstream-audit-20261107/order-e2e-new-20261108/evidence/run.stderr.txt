@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-_zacaya8/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 19, in main
+    B.C.prepare_checkpoint(Path('/tmp')/'new-order-checkpoint.sql')
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-_zacaya8/project/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 76, in prepare_checkpoint
+    sentinels.seed(sys.modules[__name__]);ok('existing full-row downstream sentinels seeded in disposable fixture only')
+                   ~~~~~~~~~~~^^^^^^^^^^
+KeyError: 'finished_confirmation'
