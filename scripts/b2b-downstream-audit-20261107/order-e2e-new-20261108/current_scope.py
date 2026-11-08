@@ -121,11 +121,18 @@ def _live_relations() -> dict[str, list]:
     return rows
 
 
+def _acl(raw) -> str:
+    if not raw:
+        return ""
+    entries = raw.strip("{}").split(",")
+    return ",".join(sorted(entries))
+
+
 def _function_doc(row: list, signature: str | None = None) -> list:
     return [
         signature or _signature(row[0], row[1], row[2]),
         row[3],
-        row[4] or "",
+        _acl(row[4]),
         row[5],
         row[6],
         row[7],
@@ -133,7 +140,7 @@ def _function_doc(row: list, signature: str | None = None) -> list:
 
 
 def _relation_doc(row: list, name: str | None = None) -> list:
-    return [name or _relation_name(row[0]), row[1] or "", row[2], row[3], row[4]]
+    return [name or _relation_name(row[0]), _acl(row[1]), row[2], row[3], row[4]]
 
 
 def _trigger_function(definition: str) -> str:
