@@ -1,0 +1,127 @@
+DO $$DECLARE p oid:=to_regprocedure('private.guard_os_separate_approval()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '71d8237bb37c69f0d9995d09e704e327' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT private.guard_os_separate_approval()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT private.guard_os_separate_approval()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT private.guard_os_separate_approval()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.trg_lab_os_biological_only()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'a05f979cb43473ebd0ccd9eb8f7a5e22' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.trg_lab_os_biological_only()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.trg_lab_os_biological_only()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.trg_lab_os_biological_only()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0f4ae9965e993f506a64d56fa6ea03d7' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.stock_p1_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '1c2bc33e8d3d3e56de7756bd730f5e25' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.stock_p1_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.stock_p1_guard()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.stock_p1_guard()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_mutation_guard_20261030()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'aed46e3226264e59ea0d5f508a10d10f' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.delivery_mutation_guard_20261030()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.delivery_mutation_guard_20261030()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.delivery_mutation_guard_20261030()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'b9a837e8a40d21c1f05984d8271367dc' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_confirm_recheck_v1(uuid,uuid)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '15c0128e87fce4b311f6848477ddad56' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.delivery_confirm_recheck_v1(uuid,uuid)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.delivery_confirm_recheck_v1(uuid,uuid)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.delivery_confirm_recheck_v1(uuid,uuid)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '5e654bae21adc0f05b60d8dbaf4d6b2a' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '25cd07ec1e4d16c0cd16380cebe04a9f' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'd9621ef705e6585125087c84057b8230' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'b6ec03379e43338fe57f1f2cc7795ac5' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_send_apply_v1(uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'd8c6a53bb7d204ea5503cfa637157ea7' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.trg_entrega_sync_partner_order_fn()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'a24295a3fe797bdbd87c33deffb57589' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_order_transition_guard_20261030()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'aa01b7e77b9eca76ce52eea8a79c4bab' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.delivery_order_transition_guard_20261030()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.delivery_order_transition_guard_20261030()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.delivery_order_transition_guard_20261030()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_internal_order_snapshot_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '1c342be2cdaf7bf458a3cd1aa15e7ba5' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.b2b_internal_order_snapshot_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.b2b_internal_order_snapshot_guard()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_internal_order_snapshot_guard()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '84f7630cd2f6f51dff078222b95cadaf' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.b2b_resale_os_valid_v1(public.ordens_servico)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.b2b_resale_os_valid_v1(public.ordens_servico)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_resale_os_valid_v1(public.ordens_servico)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'ce8dd4dffb06fc7ca8f31a5dd82d33ff' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '37bee7e08a21f673c5adbe9b331a115a' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '79c7407838a0a5e6303c7b856c32600d' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '72d5d18157ffd837b89245bad19fc17e' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0cd104409e779858b64316da91ccd518' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)';END IF;
+END$$;
+
+DO $$BEGIN IF EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE enabled) THEN RAISE EXCEPTION 'B2B_RESALE_POST_GATE_OPEN';END IF;END$$;
