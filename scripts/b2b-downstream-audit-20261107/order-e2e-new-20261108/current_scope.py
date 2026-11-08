@@ -175,12 +175,14 @@ def _captured_trigger_function_pins() -> list[list]:
 def _state_triggers(state: dict, function_rows: dict[str, list]) -> list[list]:
     tables = {row["table"] for row in CAPTURE["relations"]}
     fallback_md5 = dict(_captured_trigger_function_pins())
+    captured = {(row["table"], row["name"]): row for row in CAPTURE["triggers"]}
     result = []
     for row in state["triggers"]:
         table = row[0].split(".")[-1]
         if table not in tables:
             continue
-        signature = _trigger_function(row[3])
+        captured_row = captured.get((table, row[1]))
+        signature = _from_signature(captured_row["function"]) if captured_row else _trigger_function(row[3])
         function = function_rows.get(signature)
         md5 = function[3] if function is not None else fallback_md5.get(signature)
         assert md5 is not None, f"POST_TRIGGER_FUNCTION_MD5_UNRESOLVED:{signature}"
