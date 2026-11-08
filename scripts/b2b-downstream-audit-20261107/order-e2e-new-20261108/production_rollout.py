@@ -148,6 +148,7 @@ ROLLBACK;
       'BEGIN READ ONLY;\n'+pre_from_install(physical/'install.sql.review',physical/'candidate.sql.review')+'ROLLBACK;\n')
     (OUT/'40-logistics-pre-after-physical.sql.readonly').write_text(
       'BEGIN READ ONLY;\n'+pre_from_install(E/'logistics/install.sql.review',E/'logistics/candidate.sql.review')+'ROLLBACK;\n')
+    b4_scope = json.loads((E/'integrated-b4-fiscal-bridge.json').read_text())
     evidence_summary = {
       'scope':'PostgreSQL 17.11 descartável e testes locais; não é prova JWT/RLS/Storage/hosted',
       'composition_checks':len(checks),
@@ -155,7 +156,8 @@ ROLLBACK;
       'endpoint_reader_checks':len(endpoint),
       'frontend':frontend,
       'full_reverse_rollback':rollback,
-      'positive_fiscal_receivable':'NOT_RUN_BLOCKED_REAL_ALWAYS_DENY',
+      'b4_fiscal_scope':b4_scope,
+      'positive_fiscal_receivable':'NOT_RUN_OUT_OF_SCOPE' if b4_scope.get('status')=='NOT_RUN_OUT_OF_SCOPE' else 'NOT_RUN_BLOCKED_REAL_ALWAYS_DENY',
     }
     (OUT/'evidence-summary.json').write_text(json.dumps(evidence_summary,indent=2)+'\n')
     files = {p.name:{'sha256':sha(p),'bytes':p.stat().st_size} for p in sorted(OUT.iterdir()) if p.is_file() and p.name!='manifest.json'}
