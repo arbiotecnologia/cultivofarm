@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-z1tlbyis/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 112, in main
+    B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET revoked_at=now() WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-z1tlbyis/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-z1tlbyis/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  new row for relation "partner_users" violates check constraint "partner_users_revocation_coherence_chk"
+DETAIL:  Failing row contains (f1074f89-816e-4675-91ef-92a18faf8090, 00000000-0000-0000-0000-000000000011, 00000000-0000-0000-0000-000000000021, 2026-11-08 14:04:26.238106+00, gestor, 2026-11-08 14:04:26.238106+00, 2026-11-08 14:04:34.468161+00, null, null, 00000000-0000-0000-0000-000000000001, 1).
+

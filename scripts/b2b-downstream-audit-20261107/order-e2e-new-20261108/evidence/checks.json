@@ -16,16 +16,7 @@
     "status": "PASS"
   },
   {
-    "test": "new buyer canonical B3 packaging order with chosen condition, no forged order row",
-    "status": "PASS",
-    "order_id": "a9641b8d-90b0-475f-9ffb-23e89577b2fe"
-  },
-  {
-    "test": "accounting pending approval denied atomically before synthetic promotion",
-    "status": "PASS"
-  },
-  {
-    "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
-    "status": "PASS"
+    "test": "new composition",
+    "status": "FAIL"
   }
 ]
