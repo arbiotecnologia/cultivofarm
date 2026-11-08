@@ -21,7 +21,7 @@ def run(B,Q,order,item,expected,out):
       ('not_approved',f"UPDATE public.partner_orders SET status='pendente' WHERE id='{order}';",'B2B_RESALE_ORDER_CONFLICT'),
       ('accounting_pending',f"UPDATE public.partner_orders SET financial_approval_status='pending' WHERE id='{order}';",'B2B_RESALE_ORDER_CONFLICT'),
       ('revoked',f"UPDATE public.profiles SET ativo=false WHERE user_id='{Q.UADM}';",'B2B_RESALE_ACTOR_DENIED'),
-      ('feature_closed',f"UPDATE public.organization_feature_overrides SET effective_to=now()-interval '1 minute' WHERE organization_id='{Q.A}' AND feature_key='estoque_embalagens';",'ESTQ_FEATURE_REQUIRED'),
+      ('feature_closed',"UPDATE public.saas_plan_version_features SET enabled=false WHERE feature_id IN (SELECT id FROM public.saas_features WHERE key='estoque_embalagens');",'ESTQ_FEATURE_REQUIRED'),
     ]
     for name,mutation,token in variants:
         sql='BEGIN;RESET ROLE;SET session_replication_role=replica;'+mutation+'SET session_replication_role=origin;'+call(Q.UADM)+'ROLLBACK;'

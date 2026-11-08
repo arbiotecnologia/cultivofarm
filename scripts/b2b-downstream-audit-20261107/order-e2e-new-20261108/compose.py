@@ -238,6 +238,11 @@ def main():
   checks.append(dict(test='public endpoint gate closed, private helper client EXECUTE denied and no direct ready OS bypass',status='PASS'))
 
   B.sql('UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;')
+  EndpointTests=load('endpoint_tests',H/'test_os_endpoint.py')
+  EndpointTests.run(B,Q,order_id,item['id'],accepted['updated_at'],OUT)
+  # Matrix uses a separate request key; preserve the original item's canonical
+  # idempotency receipt for the existing create/replay sequence below.
+  # Use a fresh order for the positive concurrent case in the matrix instead.
   direct_authenticated=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
   assert direct_authenticated.returncode==0,(direct_authenticated.stdout,direct_authenticated.stderr)
   assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
