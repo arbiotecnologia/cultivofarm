@@ -666,7 +666,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         def bridge_file(name):
             return service_sql("RESET ROLE;SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';" + (BRIDGE/name).read_text())
         seed_invoice(invoice_pending)
-        seed_invoice(invoice_main)
+        seed_invoice(invoice_main,with_item=True)
         seed_invoice(invoice_denied,"AUTHORIZED",with_item=True)
         seed_invoice(invoice_foreign,"AUTHORIZED",org=B3.F,company=company_f,with_item=True)
         pre_bridge = bridge_file("01-pre.sql.readonly")
