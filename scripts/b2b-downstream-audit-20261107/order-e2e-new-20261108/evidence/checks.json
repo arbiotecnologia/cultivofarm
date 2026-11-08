@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "53465f68-0d6e-4364-b032-6f548d957d8b"
+    "order_id": "3e173598-0707-4b4b-adea-0241e507c2b3"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "eff149b7-78d3-4b1b-8222-d1b1b275f856"
+    "os_id": "63edbcf2-6a20-4e91-8f32-3b17fb998a2e"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,41 +68,27 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "1ca0a2db-ae80-422b-a6c1-50101c285e6c"
+    "delivery_id": "91c7fbfb-f32e-4bba-97da-9b5fa5bc5438"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "d971ff1a-ed90-4710-8576-6de04773800b"
+    "delivery_id": "770f5c9b-1198-4318-81f3-7b88d6ce91dc"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
-    "status": "PASS",
-    "detail": {
-      "initial_denial": "entregue'\"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement \"UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
-      "completed_only_after_both_items": true
-    }
+    "status": "FAIL",
+    "detail": "('PARTIAL_MUST_SUCCEED', '', 'ERROR:  42501: DELIVERY_B2B_TRANSITION_CLOSED\\nCONTEXT:  PL/pgSQL function platform_private.delivery_order_transition_guard_20261030() line 5 at RAISE\\nSQL statement \"UPDATE public.partner_orders SET status = \\'entregue\\', updated_at = now()\\n      WHERE id = v_partner_order_id AND status <> \\'entregue\\'\"\\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\\nSQL statement \"UPDATE public.entregas SET status=\\'entregue\\',entregue_em=now(),recebido_por_nome=p->>\\'nome\\',recebido_por_cargo=coalesce(p->>\\'cargo\\',recebido_por_cargo),recebido_por_documento=coalesce(p->>\\'documento\\',recebido_por_documento),observacoes_confirmacao=coalesce(p->>\\'observacoes\\',observacoes_confirmacao),confirmado_por=v_actor,\\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status=\\'confirmado\\' WHERE id=e.id AND updated_at=p_observed\"\\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n')"
   },
   {
     "test": "review70 quantity_three_delivery_one_remainder_unreserved",
-    "status": "PASS",
-    "detail": {
-      "initial_denial": "entregue'\"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement \"UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
-      "delivered_quantities": [
-        1,
-        2
-      ],
-      "remainder_initially_unreserved": true
-    }
+    "status": "FAIL",
+    "detail": "('PARTIAL_MUST_SUCCEED', '', 'ERROR:  42501: DELIVERY_B2B_TRANSITION_CLOSED\\nCONTEXT:  PL/pgSQL function platform_private.delivery_order_transition_guard_20261030() line 5 at RAISE\\nSQL statement \"UPDATE public.partner_orders SET status = \\'entregue\\', updated_at = now()\\n      WHERE id = v_partner_order_id AND status <> \\'entregue\\'\"\\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\\nSQL statement \"UPDATE public.entregas SET status=\\'entregue\\',entregue_em=now(),recebido_por_nome=p->>\\'nome\\',recebido_por_cargo=coalesce(p->>\\'cargo\\',recebido_por_cargo),recebido_por_documento=coalesce(p->>\\'documento\\',recebido_por_documento),observacoes_confirmacao=coalesce(p->>\\'observacoes\\',observacoes_confirmacao),confirmado_por=v_actor,\\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status=\\'confirmado\\' WHERE id=e.id AND updated_at=p_observed\"\\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n')"
   },
   {
     "test": "review70 cancelled_partial_does_not_complete",
-    "status": "PASS",
-    "detail": {
-      "initial_denial": "entregue'\"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement \"UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
-      "cancelled_delivery_excluded": true,
-      "replacement_required_and_confirmed": true
-    }
+    "status": "FAIL",
+    "detail": "('PARTIAL_MUST_SUCCEED', '', 'ERROR:  42501: DELIVERY_B2B_TRANSITION_CLOSED\\nCONTEXT:  PL/pgSQL function platform_private.delivery_order_transition_guard_20261030() line 5 at RAISE\\nSQL statement \"UPDATE public.partner_orders SET status = \\'entregue\\', updated_at = now()\\n      WHERE id = v_partner_order_id AND status <> \\'entregue\\'\"\\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\\nSQL statement \"UPDATE public.entregas SET status=\\'entregue\\',entregue_em=now(),recebido_por_nome=p->>\\'nome\\',recebido_por_cargo=coalesce(p->>\\'cargo\\',recebido_por_cargo),recebido_por_documento=coalesce(p->>\\'documento\\',recebido_por_documento),observacoes_confirmacao=coalesce(p->>\\'observacoes\\',observacoes_confirmacao),confirmado_por=v_actor,\\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status=\\'confirmado\\' WHERE id=e.id AND updated_at=p_observed\"\\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n')"
   },
   {
     "test": "review70 overdelivery_cannot_complete_or_rewrite_snapshots",
@@ -197,7 +183,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "912bed89-69db-418b-99a8-b097f9663055"
+    "delivery_id": "5b1ac989-fa8d-446b-8eaa-e5f9b4931f82"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
