@@ -732,6 +732,41 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         rejected_result, rejected_error = service_json(f"platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_pending}')")
         check("evento rejeitado é ignorado sem título", rejected_result and rejected_result["skipped"], rejected_error or rejected_result)
         check("pendente/rejeitado não criam documento ou recebível", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_pending}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_pending}')").stdout.strip() == "0|0")
+
+        # Revisão ab904bf: o retorno real H13, não apenas normalized_status da fixture.
+        pending_record, pending_record_error = real_record(tx_h13_pending, "SENT", {"cStat":"103","xMotivo":"PROCESSANDO"})
+        check("callback H13 pendente não chama autorização nem cria título", pending_record and pending_record["outcome"] == "PENDING" and not pending_record["reconciliationPending"], pending_record_error or pending_record)
+        rejected_record, rejected_record_error = real_record(tx_h13_rejected, "SUCCEEDED", {"cStat":"610","nProt":"LOCAL-REJECT","xMotivo":"REJEITADO","tpAmb":"2"})
+        check("callback H13 rejeitado não promove NF nem cria título", rejected_record and rejected_record["outcome"] == "REJECTED" and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_h13_rejected}'").stdout.strip() == "PENDING", rejected_record_error or rejected_record)
+        check("callbacks reais pendente/rejeitado preservam zero documentos fiscais B4", B3.psql(f"SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id IN ('{invoice_h13_pending}','{invoice_h13_rejected}')").stdout.strip() == "0")
+
+        nonb2b_record, nonb2b_error = real_record(tx_nonb2b, "SUCCEEDED", {"cStat":"100","nProt":"LOCAL-NONB2B","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:00:00Z"})
+        if REVIEW_BEFORE:
+            check("ANTES: retorno autorizado não-B2B quebra no fechamento B2B incondicional", nonb2b_record and nonb2b_record["reconciliationPending"] and nonb2b_record["reconciliationCode"] == "FISCAL_AUTHORIZATION_CLOSE_PENDING", nonb2b_error or nonb2b_record)
+            check("ANTES: NF não-B2B permanece pendente apesar do retorno externo preservado", B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_nonb2b}'").stdout.strip() == "PENDING")
+        else:
+            check("DEPOIS: retorno não-B2B é classificado e autorizado sem título B2B", nonb2b_record and not nonb2b_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_nonb2b}'").stdout.strip() == "AUTHORIZED", nonb2b_error or nonb2b_record)
+            check("DEPOIS: classificação não-B2B não cria documento/título B4", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_nonb2b}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_nonb2b}')").stdout.strip() == "0|0")
+        check("retorno externo não-B2B permanece durável na transmissão", B3.psql(f"SELECT outcome||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_nonb2b}'").stdout.strip().startswith("AUTHORIZED|"))
+        partial_record, partial_error = real_record(tx_partial, "SUCCEEDED", {"cStat":"100","nProt":"LOCAL-PARTIAL","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:00:00Z"})
+        check("vínculo B2B parcial não escapa como não-B2B", partial_record and partial_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_partial}'").stdout.strip() == "PENDING", partial_error or partial_record)
+
+        bad_cstat = service_sql(f"SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_bad_cstat}','35261111111111111111111111111111111111111111','BAD-CSTAT',now(),'999','REJEITADO','{tx_bad_cstat}');")
+        if REVIEW_BEFORE:
+            check("ANTES: callback direto aceita _c_stat=999 e cria título", bad_cstat.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_bad_cstat}'").stdout.strip() == "1", bad_cstat.stderr)
+        else:
+            check("DEPOIS: _c_stat divergente não autoriza nem cria título", bad_cstat.returncode != 0 and "FISCAL_AUTHORIZATION_PAYLOAD_INVALID" in bad_cstat.stderr and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_bad_cstat}'").stdout.strip() == "0", bad_cstat.stderr)
+        no_tx = service_sql(f"SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_no_tx}','35261111111111111111111111111111111111111111','NO-TRANSMISSION',now(),'100','LOCAL',NULL);")
+        if REVIEW_BEFORE:
+            check("ANTES: callback sem transmissão autoriza e cria título", no_tx.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_no_tx}'").stdout.strip() == "1", no_tx.stderr)
+        else:
+            check("DEPOIS: ausência de transmissão falha fechado", no_tx.returncode != 0 and "FISCAL_AUTHORIZATION_PAYLOAD_INVALID" in no_tx.stderr and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_no_tx}'").stdout.strip() == "0", no_tx.stderr)
+        nfse_result = service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_nfse}');")
+        if REVIEW_BEFORE:
+            check("ANTES: NFS-e é promovida sem callback específico comprovado", nfse_result.returncode == 0 and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_nfse}'").stdout.strip() == "1", nfse_result.stderr)
+        else:
+            check("DEPOIS: NFS-e permanece fail-closed até callback específico", nfse_result.returncode != 0 and "B2B_FISCAL_NFSE_CALLBACK_UNPROVEN" in nfse_result.stderr and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_nfse}'").stdout.strip() == "0", nfse_result.stderr)
+
         B3.psql("""CREATE FUNCTION public.b4_test_fail_after_title() RETURNS trigger LANGUAGE plpgsql AS $$
  BEGIN RAISE EXCEPTION 'B4_TEST_POST_TITLE_FAILURE' USING ERRCODE='P0001'; END $$;
  CREATE TRIGGER zz_b4_test_fail_after_title AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION public.b4_test_fail_after_title();""")
