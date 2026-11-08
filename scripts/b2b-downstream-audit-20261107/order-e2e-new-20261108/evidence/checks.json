@@ -22,7 +22,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "b35f32d4-a0e7-4f66-b0fe-6112df33f7ae"
+    "order_id": "3de52ac2-2888-4da7-af24-1ab0a258e13e"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -31,5 +31,9 @@
   {
     "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
     "status": "PASS"
+  },
+  {
+    "test": "new composition",
+    "status": "FAIL"
   }
 ]
