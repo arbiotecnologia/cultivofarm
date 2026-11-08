@@ -632,6 +632,92 @@ WHERE s.partner_id='{B3.P}';""")
               and B3.psql("SELECT count(*) FROM platform_private.b2b_order_condition_snapshots").stdout.strip() >= "3")
         check("rollback fecha writer legado sem apagar projeção nem histórico", B3.psql("SELECT has_function_privilege('authenticated','public.generate_b2b_receivable_secure(uuid)','EXECUTE')").stdout.strip() == "f"
               and B3.psql("SELECT to_regprocedure('public.rpc_receivable_money_projection_v1(uuid,integer,integer)') IS NOT NULL").stdout.strip() == "t")
+
+        # Ponte fiscal service-only: instalada somente após a regressão e o
+        # rollback B4 acima. Nenhum auth.uid/ator humano é fabricado para o título.
+        BRIDGE = H / "fiscal-decision-20261108/service-bridge"
+        B3.psql("""ALTER TABLE public.fiscal_invoices ADD COLUMN receivable_id uuid,ADD COLUMN environment text,ADD COLUMN normalized_status text,
+ ADD COLUMN access_key text,ADD COLUMN authorized_at timestamptz,ADD COLUMN provider_status_raw text,ADD COLUMN tax_authority_notes text,
+ ADD COLUMN reconciliation_status text,ADD COLUMN updated_at timestamptz DEFAULT now(),ADD COLUMN status text DEFAULT 'PENDING',
+ ADD COLUMN company_settings_id uuid,ADD COLUMN organization_id uuid,ADD COLUMN partner_order_id uuid,ADD COLUMN debtor_partner_id uuid,
+ ADD COLUMN invoice_type text,ADD COLUMN issue_date date,ADD COLUMN total_amount numeric(14,2),ADD COLUMN provider_reference text;
+CREATE TABLE public.fiscal_invoice_items(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid NOT NULL,partner_order_item_id uuid,
+ item_sequence integer NOT NULL,item_kind text NOT NULL,quantity numeric(18,6),commercial_unit text,taxable_quantity numeric(18,6),taxable_unit text,net_value numeric(18,2));
+CREATE TABLE IF NOT EXISTS public.fiscal_xml_runs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid,signed_path text,access_key text,signed_at timestamptz,updated_at timestamptz);
+CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
+        company_a = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.A}' AND is_active").stdout.strip()
+        B3.psql(f"INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
+ SELECT '{B3.F}',true,'VALIDATED','FSF FIXTURE LOCAL','00000000000191',1 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active);")
+        company_f = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active").stdout.strip()
+        invoice_main, invoice_pending, invoice_denied, invoice_foreign = [B3.u(390+i) for i in range(4)]
+        monetary = B3.psql(f"SELECT principal+financed_interest FROM platform_private.b2b_document_allocations WHERE document_id='{RECOVERY_DOC}'").stdout.strip()
+        def seed_invoice(invoice_id, status="PENDING", org=None, company=None, order=None, partner=None, with_item=False):
+            org = org or B3.A; company = company or company_a; order = order or recovery_order; partner = partner or B3.P
+            B3.psql(f"""INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
+ partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference)
+ VALUES('{invoice_id}','NFE','{status}','{status}','HOMOLOGATION','{company}','{org}','{order}','{partner}','2027-02-01','{monetary}','{B3.UADM}','LOCAL-PROVIDER');""")
+            if with_item:
+                B3.psql(f"""INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
+ VALUES('{invoice_id}','{recovery_item}',1,'PRODUCT',1,'UN',1,'UN','{monetary}');""")
+        def service_sql(sql):
+            return server_run("", "SET ROLE service_role;" + sql)
+        def service_json(expression):
+            return B3.out(service_sql(f"SELECT ({expression})::text;"))
+        def bridge_file(name):
+            return service_sql("RESET ROLE;SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';" + (BRIDGE/name).read_text())
+        seed_invoice(invoice_pending)
+        seed_invoice(invoice_main)
+        seed_invoice(invoice_denied,"AUTHORIZED",with_item=True)
+        seed_invoice(invoice_foreign,"AUTHORIZED",org=B3.F,company=company_f,with_item=True)
+        pre_bridge = bridge_file("01-pre.sql.readonly")
+        check("ponte PRE confirma pins B4 e autorização capturada", pre_bridge.returncode == 0, pre_bridge.stderr[-1000:])
+        install_bridge = bridge_file("02-install.sql.review")
+        check("ponte service-only instala com POST e ACL fechada", install_bridge.returncode == 0, install_bridge.stderr[-1200:])
+        post_bridge = bridge_file("03-post.sql.readonly")
+        check("ponte POST íntegro", post_bridge.returncode == 0, post_bridge.stderr[-900:])
+        denied_client = B3.as_user(B3.UADM, f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');")
+        check("ponte não recebe EXECUTE de usuário autenticado", denied_client.returncode != 0 and "permission denied" in denied_client.stderr, denied_client.stderr)
+        denied_dependency = service_json(f"platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_denied}')")
+        deny("ponte mantém dependência fiscal/contábil real fechada antes da costura local", denied_dependency, "B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN")
+        check("dependência negada não deixa documento/título", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_denied}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_denied}')").stdout.strip() == "0|0")
+        B3.psql("CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies() RETURNS void LANGUAGE sql AS $$SELECT$$;")
+        pending_result, pending_error = service_json(f"platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_pending}')")
+        check("evento pendente é ignorado sem título", pending_result and pending_result["skipped"] and pending_result["receivable_id"] is None, pending_error or pending_result)
+        B3.psql(f"UPDATE public.fiscal_invoices SET normalized_status='REJECTED',status='REJECTED' WHERE id='{invoice_pending}'")
+        rejected_result, rejected_error = service_json(f"platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_pending}')")
+        check("evento rejeitado é ignorado sem título", rejected_result and rejected_result["skipped"], rejected_error or rejected_result)
+        check("pendente/rejeitado não criam documento ou recebível", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_pending}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_pending}')").stdout.strip() == "0|0")
+        B3.psql("""CREATE FUNCTION public.b4_test_fail_after_title() RETURNS trigger LANGUAGE plpgsql AS $$
+ BEGIN RAISE EXCEPTION 'B4_TEST_POST_TITLE_FAILURE' USING ERRCODE='P0001'; END $$;
+ CREATE TRIGGER zz_b4_test_fail_after_title AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION public.b4_test_fail_after_title();""")
+        access_key = "35261111111111111111111111111111111111111111"
+        failed_auth = service_sql(f"SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL);")
+        check("autorização com falha pós-título aborta sem perder capacidade de retry", failed_auth.returncode != 0 and "B4_TEST_POST_TITLE_FAILURE" in failed_auth.stderr, failed_auth.stderr[-1000:])
+        check("falha da autorização não deixa NF autorizada, documento ou título parcial", B3.psql(f"SELECT (SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_main}')||'|'||(SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_main}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_main}')").stdout.strip() == "PENDING|0|0")
+        B3.psql("DROP TRIGGER zz_b4_test_fail_after_title ON public.accounts_receivable;DROP FUNCTION public.b4_test_fail_after_title();")
+        authorized, authorized_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL)")
+        check("retentativa autorizada gera um recebível B4 pela NF", authorized and authorized["applied"] and authorized.get("receivableId"), authorized_error or authorized)
+        service_title = authorized and authorized["receivableId"]
+        check("título service-only não inventa ator humano e conserva vínculo NF", B3.psql(f"SELECT created_by IS NULL AND receivable_id='{service_title}' FROM public.fiscal_invoices WHERE id='{invoice_main}'").stdout.strip() == "t")
+        check("parcialidade service-only consome somente o restante do pedido", residual(recovery_order) == 0, residual(recovery_order))
+        replay, replay_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL)")
+        check("retentativa da NF autorizada é replay sem duplicação", replay and replay["applied"] is False and replay["b2bReplay"] and replay["receivableId"] == service_title, replay_error or replay)
+        def bridge_race():
+            return service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');")
+        with concurrent.futures.ThreadPoolExecutor(2) as pool:
+            bridge_races = list(pool.map(lambda _: bridge_race(), range(2)))
+        check("duas chamadas service-only concorrentes preservam um único título", all(r.returncode == 0 for r in bridge_races) and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_main}'").stdout.strip() == "1", [r.stderr[-500:] for r in bridge_races])
+        foreign, foreign_error = service_json(f"platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_foreign}')")
+        deny("NF com tenant divergente do pedido é negada", foreign, "B2B_FISCAL_TENANT_MISMATCH")
+        check("NF estrangeira não gera documento/título", B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_foreign}'").stdout.strip() == "0")
+        null_manual = server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable(id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
+ VALUES('{B3.u(399)}','{B3.A}','MANUAL','{CUSTOMER}','SEM AUTOR','{category_id}',1,CURRENT_DATE,CURRENT_DATE,1,'OPEN','{B3.M_BOL}',NULL);""")
+        check("origem manual sem ator continua fechada", null_manual.returncode != 0 and "B2B_SERVICE_ORIGIN_REQUIRED" in null_manual.stderr, null_manual.stderr[-800:])
+        bridge_allocations = B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip()
+        B3.psql(real_dependencies + ";")
+        bridge_rollback = bridge_file("04-rollback-deny.sql.review")
+        check("rollback deny-only da ponte fecha callback e preserva histórico", bridge_rollback.returncode == 0 and B3.psql("SELECT count(*) FROM platform_private.b2b_document_allocations").stdout.strip() == bridge_allocations, bridge_rollback.stderr[-900:])
+        check("rollback da ponte não reabre alocador nem exceção manual", B3.psql("SELECT has_function_privilege('service_role','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR has_function_privilege('authenticated','public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)','EXECUTE')").stdout.strip() == "f")
         result_code = 0 if all(c["ok"] for c in CHECKS) else 1
     except Exception as exc:
         check("execução sem exceção de harness", False, repr(exc))
