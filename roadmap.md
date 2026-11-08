@@ -1,7 +1,7 @@
 ## 08/11 16:03 — BLOCKER: isolamento por empresa nos planos comerciais
 - [x] Reprodução local ANTES: FSF leu planos ARBio por RPC admin/listagem/B3 e alterou metadados sintéticos; auditoria cobriu RLS, sete writers admin, atribuições, meios, matrizes, simulação/create/conversão/cotação. Nenhuma escrita FSF nem alteração hospedada.
 - [x] Pacote revisável `commercial-plans-tenant-20261108`: 25 funções-alvo pinadas, tenant por `created_by`/perfil familiar consistente, ambíguos/ausentes NULL e negados, comprador restrito ao vínculo publicado, atribuições/matrizes concordantes e `is_default` por tenant. Catálogos globais de meios/categorias preservados; snapshots/histórico intactos.
-- [x] PostgreSQL descartável final 58/58, exit 0: ARBio/FSF próprios, FSF negado em leitura/escrita, revogações, versões/padrões/atribuições cruzadas, PRE/POST e rollback deny-only. Candidato SHA256 `92053bcb…`; evidências e tentativas preservadas.
+- [x] PostgreSQL descartável final 58/58, exit 0: ARBio/FSF próprios, FSF negado em leitura/escrita, revogações, versões/padrões/atribuições cruzadas, PRE/POST e rollback deny-only. Vitest focado 31/31, typecheck e build exits 0. Candidato SHA256 `92053bcb…`; evidências e tentativas preservadas.
 - [ ] Bloqueio continua até revisão independente, instalação manual autorizada e reteste JWT/RLS real; nenhum SQL hospedado, publicação ou efeito externo. Fila B3/E2E/defaults permanece registrada abaixo.
 
 ## 08/11 15:38 — Novo parceiro no piloto B3 e escolha obrigatória do meio
