@@ -46,9 +46,6 @@ def apply(driver, load, root, out):
    if f['name'] in keep:continue
    B.sql(f['body']+';')
   # Fixture load only, before the tested create; cannot certify this as provisioning.
-  # O comprovante referencia auth.users; esta identidade existe SOMENTE no PG
-  # descartável. Nenhuma conta, credencial ou Auth hospedado é criado.
-  B.sql(f"INSERT INTO auth.users(id) VALUES('{Q.UADM}') ON CONFLICT DO NOTHING;")
   fixture_tables=['organizations','profiles','user_roles','partner_accounts','partner_users','produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','catalogo_precos_embalagem','commercial_payment_plans','commercial_payment_plan_assignments','commercial_price_rules','partner_financial_settings','payment_methods','financial_categories','seam_entitlements']
   B.sql('SET session_replication_role=replica;')
   for name in fixture_tables:
