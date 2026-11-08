@@ -8,6 +8,10 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
+
+REVIEW_BEFORE = os.environ.get("COMMERCIAL_PLAN_REVIEW_BEFORE") == "1"
+REVIEW_RESULTS = []
 
 H = Path(__file__).resolve().parent
 TMP = Path(tempfile.mkdtemp(prefix="commercial-plans-tenant-", dir="/tmp"))
