@@ -185,6 +185,8 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
     check("ANTES: FSF altera metadados ARBio", actor(B, f"SELECT public.rpc_admin_update_commercial_plan_metadata('{PLAN_A1}','ALTERADO POR B',NULL,NULL);"))
     check("ANTES: escrita indevida confirmada", f"SELECT name FROM public.commercial_payment_plans WHERE id='{PLAN_A1}';", "ALTERADO POR B")
     run(f"UPDATE public.commercial_payment_plans SET name='Plano A1' WHERE id='{PLAN_A1}';")
+    same_code_payload = json.dumps({"name":"Código compartilhado","code":"PLAN-A1","plan_type":"custom","max_days":30,"months_count":1,"installment_count":1,"discount_percent":0,"monthly_interest_percent":0,"interest_type":"none","pricing_mode":"discount_from_base","requires_credit_approval":False,"requires_guarantee":False,"requires_financial_approval":False}, separators=(",", ":"))
+    check("ANTES: mesmo código em outra empresa colide na constraint global", actor(B, f"SELECT public.rpc_admin_create_commercial_plan('{same_code_payload}'::jsonb);"), error="commercial_payment_plans_code_key")
 
     check("PRE íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "01-pre.sql.readonly").read_text(), "5|4|1|0")
     run("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "02-install.sql.review").read_text())
@@ -225,6 +227,16 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
 
     created_b = check("FSF cria plano com tenant próprio", actor(B, "SELECT public.rpc_admin_create_commercial_plan('{\"name\":\"Plano B2\",\"code\":\"PLAN-B2\",\"plan_type\":\"custom\",\"max_days\":30,\"months_count\":1,\"installment_count\":1,\"discount_percent\":0,\"monthly_interest_percent\":0,\"interest_type\":\"none\",\"pricing_mode\":\"discount_from_base\",\"requires_credit_approval\":false,\"requires_guarantee\":false,\"requires_financial_approval\":false}'::jsonb);"))
     check("plano criado por FSF não aparece para ARBio", actor(A, f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0) WHERE id='{created_b}';"), 0)
+    if not REVIEW_BEFORE:
+        shared_b = check("DEPOIS: FSF cria o mesmo código da ARBio sem colisão global", actor(B, f"SELECT public.rpc_admin_create_commercial_plan('{same_code_payload}'::jsonb);"))
+        check("código duplicado permanece isolado por tenant", f"SELECT string_agg(organization_id::text,',' ORDER BY organization_id::text) FROM public.commercial_payment_plans WHERE code='PLAN-A1' AND id IN('{PLAN_A1}','{shared_b}');", f"{OA},{OB}")
+        check("busca por código da ARBio não revela o plano FSF", actor(A, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans('PLAN-A1','all',100,0) WHERE code='PLAN-A1';"), 1)
+        check("busca por código da FSF não revela o plano ARBio", actor(B, f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans('PLAN-A1','all',100,0) WHERE code='PLAN-A1' AND id='{shared_b}';"), 1)
+        check("mesmo código dentro da mesma empresa é negado", actor(B, f"SELECT public.rpc_admin_create_commercial_plan('{same_code_payload}'::jsonb);"), error="uq_cpp_tenant_code")
+        cross_version_payload = json.dumps({"name":"Versão código cruzado","code":"PLAN-A2","plan_type":"custom","max_days":30,"months_count":1,"installment_count":1,"discount_percent":0,"monthly_interest_percent":0,"interest_type":"none","pricing_mode":"discount_from_base","requires_credit_approval":False,"requires_guarantee":False,"requires_financial_approval":False}, separators=(",", ":"))
+        cross_version = check("versionamento aceita código existente somente em outra empresa", actor(B, f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_B1}','{cross_version_payload}'::jsonb,'cross tenant');"))
+        check("versão cruzada conserva tenant e código", f"SELECT organization_id||'|'||code FROM public.commercial_payment_plans WHERE id='{cross_version}';", OB + "|PLAN-A2")
+        check("versionamento com colisão dentro do tenant é negado", actor(A, f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_A2}','{payload}'::jsonb,'collision');"), error="uq_cpp_tenant_code")
     check("tenant do plano é imutável", f"UPDATE public.commercial_payment_plans SET organization_id='{OB}' WHERE id='{PLAN_A1}';", error="COMMERCIAL_PLAN_TENANT_IMMUTABLE")
 
     check("atribuição cruzada B para plano A negada", actor(B, f"SELECT public.rpc_cc_upsert_assignment(NULL,'{PLAN_A1}','partner','{PB}',NULL,CURRENT_DATE,NULL,'x');"), error="C2P1_FORBIDDEN")
