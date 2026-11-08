@@ -204,6 +204,7 @@ ALTER TABLE platform_private.b2b_fiscal_invoice_snapshots ENABLE ROW LEVEL SECUR
 REVOKE ALL ON platform_private.b2b_fiscal_invoice_snapshots FROM PUBLIC,anon,authenticated,service_role;
 ALTER TABLE platform_private.b2b_title_permits ALTER COLUMN actor_id DROP NOT NULL;
 ALTER TABLE public.accounts_receivable ALTER COLUMN created_by DROP NOT NULL;
+ALTER TABLE public.fiscal_sefaz_transmissions ADD COLUMN protocol_c_stat text;
 """
 
     bridge = r"""
