@@ -690,10 +690,12 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         def seed_proof(invoice_id, transmission_id, key=access_key if 'access_key' in globals() else "35261111111111111111111111111111111111111111", protocol="LOCAL-PROTOCOL", cstat="100", outcome="AUTHORIZED", state="SUCCEEDED"):
             B3.psql(f"""INSERT INTO public.fiscal_xml_runs(fiscal_invoice_id,signed_path,access_key,signed_at,updated_at)
  VALUES('{invoice_id}','local/{invoice_id}.xml','{key}',now(),now());
- INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
- VALUES('{transmission_id}','{invoice_id}','{state}','{outcome}','{cstat}','LOCAL','{key}','{protocol}','2',now(),now());""")
+ INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,xml_run_id,idempotency_key,request_fingerprint,environment_code,endpoint_url,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
+ VALUES('{transmission_id}','{invoice_id}',gen_random_uuid(),'local-tx:{transmission_id}','local-fp:{transmission_id}','2','https://hnfe.fazenda.mg.gov.br/LOCAL-SYNTHETIC-NO-NETWORK','{state}','{outcome}','{cstat}','LOCAL','{key}','{protocol}','2',now(),now());""")
         def real_record(transmission_id, state, patch):
             return service_json(f"public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','{state}','{js(patch)}'::jsonb)")
+        def pending_code(transmission_id):
+            return B3.psql(f"SELECT coalesce(error_code,'') FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}'").stdout.strip()
         def service_sql(sql):
             return server_run("", "SET ROLE service_role;" + sql)
         def service_json(expression):
