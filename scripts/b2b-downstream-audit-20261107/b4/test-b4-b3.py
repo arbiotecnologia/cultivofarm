@@ -318,6 +318,15 @@ WHERE s.partner_id='{B3.P}';""")
         check("fixture independente do callback fiscal criada sem título", callback_order is not None and callback_item != "", error)
         approve_order(callback_order)
 
+        # Pedido exclusivo para as corridas de lock H13×H12/ponte. Nenhum outro
+        # cenário consome seu saldo ou depende do resultado financeiro da corrida.
+        data, error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
+        data, error = B3.create(B3.UB, B3.P3, [B3.L(1)], data and data["cart_hash"], "TESTE-B4-LOCK-ORDER", BOL)
+        lock_order = data and data["id"]
+        lock_item = B3.psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{lock_order}'").stdout.strip()
+        check("fixture independente para ordenação de locks criada sem título", lock_order is not None and lock_item != "", error)
+        approve_order(lock_order)
+
         # Pedido ainda pendente de contabilidade: fixture separada, nunca promovida artificialmente.
         B3.psql(f"DELETE FROM public.company_fiscal_settings WHERE organization_id='{B3.A}'")
         data, error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
