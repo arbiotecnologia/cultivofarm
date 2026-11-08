@@ -1,3 +1,6 @@
 CHECKPOINT initdb local
 CHECKPOINT sql_calls=1 elapsed=7.9s
 CHECKPOINT sql_calls=100 elapsed=15.8s
+CHECKPOINT sql_calls=200 elapsed=22.4s
+CHECKPOINT sql_calls=300 elapsed=25.9s
+CHECKPOINT sql_calls=400 elapsed=34.8s

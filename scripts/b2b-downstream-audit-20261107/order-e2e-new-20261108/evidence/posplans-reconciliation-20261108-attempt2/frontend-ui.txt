@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/pedidos/resaleOsRequest.test.ts (10 tests) 53ms
+ ✓ src/test/pedidos/resaleOsAttemptStore.test.ts (6 tests) 25ms
+ ✓ src/test/pedidos/resaleOsAvailabilityPanel.test.tsx (5 tests) 443ms
+
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+   Start at  22:38:24
+   Duration  9.91s (transform 632ms, setup 1.22s, collect 1.85s, tests 521ms, environment 7.22s, prepare 1.19s)
+
