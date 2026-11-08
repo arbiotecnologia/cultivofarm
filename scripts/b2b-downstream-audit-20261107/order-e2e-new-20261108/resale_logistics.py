@@ -275,6 +275,18 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     sig = "platform_private.delivery_mutation_guard_20261030()"
     body = defs[sig]["body"]
     body = one(body, "OR NEW.partner_order_id IS NOT NULL OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "OR (NEW.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS NOT TRUE) OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "delivery mutation resale order")
+    body = one(body, "  AND OLD.partner_order_id IS NULL AND NEW.partner_order_id IS NULL\n", "  AND (NEW.partner_order_id IS NULL OR platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS TRUE)\n", "delivery proof resale lineage")
+    defs[sig]["new"] = body
+
+    sig = "platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)"
+    body = defs[sig]["body"]
+    body = one(body, """ IF p_e.id IS NULL OR p_e.organization_id IS DISTINCT FROM p_org OR p_e.cliente_id IS NULL
+ OR p_e.partner_order_id IS NOT NULL OR p_e.ordem_servico_onfarm_id IS NOT NULL THEN RETURN false; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=p_e.cliente_id AND organization_id=p_org) THEN RETURN false; END IF;""", """ IF p_e.id IS NULL OR p_e.organization_id IS DISTINCT FROM p_org OR p_e.ordem_servico_onfarm_id IS NOT NULL THEN RETURN false; END IF;
+ IF p_e.partner_order_id IS NULL THEN
+  IF p_e.cliente_id IS NULL OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=p_e.cliente_id AND organization_id=p_org) THEN RETURN false; END IF;
+ ELSIF platform_private.b2b_resale_delivery_order_valid_v1(p_e) IS NOT TRUE THEN RETURN false;
+ END IF;""", "proof row resale lineage")
     defs[sig]["new"] = body
 
     sig = "platform_private.delivery_confirm_recheck_v1(uuid,uuid)"
