@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-full-capture-attempt14-lqgw3b/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 42, in main
+    B.current_catalog.apply(B.run_raw,B.last,B.ok,B.T.A)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-full-capture-attempt14-lqgw3b/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 349, in apply
+    state = assert_current(last)
+  File "/tmp/posplans-full-capture-attempt14-lqgw3b/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 255, in assert_current
+    raise AssertionError("CURRENT_LIVE_BASELINE_DRIFT\n" + "\n".join(errors))
+AssertionError: CURRENT_LIVE_BASELINE_DRIFT
+supplemental_function_md5:platform_private.delivery_mutation_guard_20261030():8c097fc9c12a173e9d2f823a9f5f1b12!=8fa73fc045c51addd05576597ecd4c88
+supplemental_function_md5:cf_user_guards_v1.acquire_gate():1f26021e202b2177be5cbca74499f012!=b0dd9a14d5fd799a40df0975baf4c5a6
+supplemental_function_md5:cf_user_guards_v1.block_truncate():2120d930ff5da74fb667bd71c3053fc4!=a919901eb1e045461a5bc6e4da178624
+supplemental_function_md5:cf_user_guards_v1.advance_stamp():92d2bd6c79feb239cf2977990360c674!=ce295ff5799d306ad81578047cd9bff5
+supplemental_function_md5:cf_user_guards_v1.require_admin():e541bc5f3b48e82ea4b993de5c19a199!=ec8e7077521cdee212be924bfb400e8a
+trigger_function_md5:entregas:zz_delivery_mutation_closed:8c097fc9c12a173e9d2f823a9f5f1b12!=8fa73fc045c51addd05576597ecd4c88
+trigger_function_md5:profiles:a00_cf_user_gate:1f26021e202b2177be5cbca74499f012!=b0dd9a14d5fd799a40df0975baf4c5a6
+trigger_function_md5:profiles:a00_cf_user_no_truncate:2120d930ff5da74fb667bd71c3053fc4!=a919901eb1e045461a5bc6e4da178624
+trigger_function_md5:profiles:z99_cf_profile_stamp:92d2bd6c79feb239cf2977990360c674!=ce295ff5799d306ad81578047cd9bff5
+trigger_function_md5:profiles:z99_cf_require_admin:e541bc5f3b48e82ea4b993de5c19a199!=ec8e7077521cdee212be924bfb400e8a
