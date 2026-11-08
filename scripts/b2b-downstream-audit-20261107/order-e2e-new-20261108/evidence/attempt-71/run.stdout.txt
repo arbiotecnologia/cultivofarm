@@ -1,0 +1,38 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.4s
+NEW_PHYSICAL_BOOT_OK
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=100 elapsed=16.8s
+CHECKPOINT sql_calls=200 elapsed=19.7s
+CHECKPOINT sql_calls=300 elapsed=22.7s
+CHECKPOINT sql_calls=400 elapsed=25.8s
+CHECKPOINT sql_calls=500 elapsed=28.8s
+CHECKPOINT sql_calls=600 elapsed=31.1s
+CHECKPOINT sql_calls=700 elapsed=33.8s
+CHECKPOINT sql_calls=800 elapsed=36.0s
+CHECKPOINT sql_calls=900 elapsed=37.7s
+CHECKPOINT sql_calls=1000 elapsed=45.9s
+REVIEW70 PASS two_items_only_one_os_and_delivery
+REVIEW70 PASS quantity_three_delivery_one_remainder_unreserved
+REVIEW70 PASS cancelled_partial_does_not_complete
+CHECKPOINT sql_calls=1100 elapsed=61.1s
+REVIEW70 PASS overdelivery_cannot_complete_or_rewrite_snapshots
+REVIEW70 PASS create_wait_revocation_role
+REVIEW70 PASS create_wait_revocation_profile
+REVIEW70 PASS create_wait_revocation_tenant
+REVIEW70 PASS create_wait_revocation_gate
+REVIEW70 PASS replay_wait_revocation_role
+REVIEW70 PASS replay_wait_revocation_profile
+REVIEW70 PASS replay_wait_revocation_tenant
+REVIEW70 PASS replay_wait_revocation_gate
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
