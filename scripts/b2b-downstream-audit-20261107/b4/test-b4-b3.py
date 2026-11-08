@@ -749,6 +749,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_proof(invoice_h13_pending,tx_h13_pending,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_h13_rejected,tx_h13_rejected,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_parser,tx_parser,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
+        seed_proof(invoice_lock_h12,tx_lock_h12,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
+        seed_proof(invoice_lock_bridge,tx_lock_bridge,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         if not REVIEW_BEFORE and not PARSER_BEFORE:
             # Erro estranho é gravado enquanto a transmissão ainda é mutável;
             # depois disso a guarda real proíbe qualquer alteração terminal.
