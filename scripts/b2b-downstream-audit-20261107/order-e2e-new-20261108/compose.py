@@ -186,11 +186,14 @@ def main():
   checks.append(dict(test='resale candidate gate closed, no client EXECUTE and no direct ready OS bypass',status='PASS'))
 
   B.sql('UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;')
-  direct_operational=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
-  (OUT/'resale-direct-status-denial.json').write_text(json.dumps(dict(returncode=direct_operational.returncode,stdout=direct_operational.stdout,stderr=direct_operational.stderr),indent=2)+'\n')
+  direct_authenticated=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  assert direct_authenticated.returncode==0,(direct_authenticated.stdout,direct_authenticated.stderr)
+  assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
+  direct_operational=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  (OUT/'resale-direct-status-denial.json').write_text(json.dumps(dict(authenticated_zero_rows=dict(returncode=direct_authenticated.returncode,stdout=direct_authenticated.stdout,stderr=direct_authenticated.stderr),privileged_guard=dict(returncode=direct_operational.returncode,stdout=direct_operational.stdout,stderr=direct_operational.stderr)),indent=2)+'\n')
   assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,(direct_operational.returncode,direct_operational.stdout,direct_operational.stderr)
   assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
-  checks.append(dict(test='direct operational order status remains denied with resale candidate active',status='PASS'))
+  checks.append(dict(test='authenticated direct status changes zero rows and privileged direct operational transition is explicitly denied',status='PASS'))
   denied=B.run_raw(resale_call(Q.UB,'resale-buyer-denied-0001'))
   assert denied.returncode!=0 and 'B2B_RESALE_ACTOR_DENIED' in denied.stderr,denied.stderr
   denied=B.run_raw(resale_call(Q.UADM,'resale-stale-cas-0001',expected='2000-01-01 00:00:00+00'))
