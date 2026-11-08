@@ -61,7 +61,7 @@
   },
   {
     "acl": "{postgres=X/postgres}",
-    "md5": "3043858d3777c1b5e23c71d74b7cd70f",
+    "md5": "b6ec03379e43338fe57f1f2cc7795ac5",
     "owner": "postgres",
     "signature": "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)"
   },
@@ -73,7 +73,7 @@
   },
   {
     "acl": "{postgres=X/postgres,service_role=X/postgres}",
-    "md5": "0f4eed016a97f9d4bb09311da134e297",
+    "md5": "39758c68832039dc98aba8903b7955c9",
     "owner": "postgres",
     "signature": "public.trg_entrega_sync_partner_order_fn()"
   },

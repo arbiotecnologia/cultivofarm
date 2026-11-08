@@ -1,0 +1,148 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.3s
+CHECKPOINT sql_calls=100 elapsed=4.6s
+CHECKPOINT sql_calls=200 elapsed=6.8s
+CHECKPOINT sql_calls=300 elapsed=8.8s
+CHECKPOINT sql_calls=400 elapsed=11.0s
+CHECKPOINT sql_calls=500 elapsed=13.3s
+CHECKPOINT sql_calls=600 elapsed=15.7s
+CHECKPOINT sql_calls=700 elapsed=18.0s
+CHECKPOINT sql_calls=800 elapsed=20.3s
+CHECKPOINT sql_calls=900 elapsed=22.6s
+CHECKPOINT sql_calls=1000 elapsed=24.8s
+CHECKPOINT sql_calls=1100 elapsed=27.2s
+CHECKPOINT sql_calls=1200 elapsed=29.5s
+CHECKPOINT sql_calls=1300 elapsed=32.1s
+CHECKPOINT sql_calls=1400 elapsed=34.4s
+CHECKPOINT sql_calls=1500 elapsed=36.7s
+CHECKPOINT sql_calls=1600 elapsed=39.0s
+CHECKPOINT sql_calls=1700 elapsed=41.3s
+CHECKPOINT sql_calls=1800 elapsed=43.8s
+CHECKPOINT sql_calls=1900 elapsed=46.1s
+CHECKPOINT sql_calls=2000 elapsed=48.6s
+CHECKPOINT sql_calls=2100 elapsed=50.8s
+CHECKPOINT sql_calls=2200 elapsed=52.9s
+CHECKPOINT sql_calls=2300 elapsed=55.0s
+CHECKPOINT sql_calls=2400 elapsed=57.3s
+CHECKPOINT sql_calls=2500 elapsed=59.5s
+CHECKPOINT sql_calls=2600 elapsed=61.6s
+CHECKPOINT sql_calls=2700 elapsed=64.1s
+CHECKPOINT sql_calls=2800 elapsed=66.5s
+CHECKPOINT sql_calls=2900 elapsed=69.2s
+CHECKPOINT sql_calls=3000 elapsed=71.9s
+CHECKPOINT sql_calls=3100 elapsed=74.6s
+CHECKPOINT sql_calls=3200 elapsed=77.2s
+CHECKPOINT sql_calls=3300 elapsed=79.8s
+CHECKPOINT sql_calls=3400 elapsed=82.1s
+CHECKPOINT sql_calls=3500 elapsed=84.6s
+CHECKPOINT sql_calls=3600 elapsed=87.1s
+CHECKPOINT sql_calls=3700 elapsed=89.8s
+CHECKPOINT sql_calls=3800 elapsed=92.3s
+CHECKPOINT sql_calls=3900 elapsed=94.8s
+CHECKPOINT sql_calls=4000 elapsed=97.4s
+CHECKPOINT sql_calls=4100 elapsed=99.9s
+CHECKPOINT sql_calls=4200 elapsed=102.9s
+CHECKPOINT sql_calls=4300 elapsed=105.6s
+CHECKPOINT sql_calls=4400 elapsed=108.6s
+CHECKPOINT sql_calls=4500 elapsed=111.6s
+CHECKPOINT sql_calls=4600 elapsed=114.8s
+CHECKPOINT sql_calls=4700 elapsed=117.6s
+CHECKPOINT sql_calls=4800 elapsed=120.5s
+CHECKPOINT sql_calls=4900 elapsed=123.5s
+CHECKPOINT sql_calls=5000 elapsed=126.5s
+CHECKPOINT sql_calls=5100 elapsed=129.4s
+CHECKPOINT sql_calls=5200 elapsed=132.1s
+CHECKPOINT sql_calls=5300 elapsed=135.0s
+CHECKPOINT sql_calls=5400 elapsed=137.8s
+CHECKPOINT sql_calls=5500 elapsed=140.6s
+CHECKPOINT sql_calls=5600 elapsed=143.5s
+CHECKPOINT sql_calls=5700 elapsed=146.6s
+CHECKPOINT sql_calls=5800 elapsed=149.5s
+CHECKPOINT sql_calls=5900 elapsed=152.2s
+CHECKPOINT sql_calls=6000 elapsed=155.4s
+CHECKPOINT sql_calls=6100 elapsed=158.7s
+CHECKPOINT sql_calls=6200 elapsed=161.7s
+CHECKPOINT sql_calls=6300 elapsed=164.1s
+CHECKPOINT sql_calls=6400 elapsed=166.4s
+CHECKPOINT sql_calls=6500 elapsed=169.1s
+CHECKPOINT sql_calls=6600 elapsed=172.2s
+CHECKPOINT sql_calls=6700 elapsed=175.3s
+CHECKPOINT sql_calls=6800 elapsed=178.6s
+CHECKPOINT sql_calls=6900 elapsed=182.3s
+CHECKPOINT sql_calls=7000 elapsed=185.8s
+CHECKPOINT sql_calls=7100 elapsed=189.1s
+CHECKPOINT sql_calls=7200 elapsed=192.0s
+CHECKPOINT sql_calls=7300 elapsed=194.4s
+CHECKPOINT sql_calls=7400 elapsed=197.2s
+CHECKPOINT sql_calls=7500 elapsed=199.9s
+CHECKPOINT sql_calls=7600 elapsed=202.4s
+CHECKPOINT sql_calls=7700 elapsed=204.5s
+CHECKPOINT sql_calls=7800 elapsed=206.7s
+CHECKPOINT sql_calls=7900 elapsed=208.9s
+CHECKPOINT sql_calls=8000 elapsed=211.1s
+CHECKPOINT sql_calls=8100 elapsed=213.2s
+CHECKPOINT sql_calls=8200 elapsed=215.5s
+CHECKPOINT sql_calls=8300 elapsed=217.8s
+CHECKPOINT sql_calls=8400 elapsed=220.1s
+CHECKPOINT sql_calls=8500 elapsed=222.2s
+CHECKPOINT sql_calls=8600 elapsed=224.3s
+CHECKPOINT sql_calls=8700 elapsed=226.4s
+CHECKPOINT sql_calls=8800 elapsed=228.5s
+CHECKPOINT sql_calls=8900 elapsed=230.9s
+CHECKPOINT sql_calls=9000 elapsed=233.3s
+CHECKPOINT sql_calls=9100 elapsed=235.4s
+CHECKPOINT sql_calls=9200 elapsed=237.4s
+CHECKPOINT sql_calls=9300 elapsed=240.1s
+CHECKPOINT sql_calls=9400 elapsed=242.3s
+CHECKPOINT sql_calls=9500 elapsed=244.7s
+CHECKPOINT sql_calls=9600 elapsed=246.4s
+CHECKPOINT sql_calls=9700 elapsed=248.4s
+CHECKPOINT sql_calls=9800 elapsed=250.7s
+CHECKPOINT sql_calls=9900 elapsed=252.7s
+CHECKPOINT sql_calls=10000 elapsed=255.0s
+CHECKPOINT sql_calls=10100 elapsed=257.6s
+CHECKPOINT sql_calls=10200 elapsed=260.2s
+CHECKPOINT sql_calls=10300 elapsed=262.5s
+CHECKPOINT sql_calls=10400 elapsed=264.9s
+CHECKPOINT sql_calls=10500 elapsed=267.2s
+CHECKPOINT sql_calls=10600 elapsed=269.8s
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+NEW_PHYSICAL_BOOT_OK
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
+CHECKPOINT sql_calls=10700 elapsed=279.5s
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=10800 elapsed=290.5s
+CHECKPOINT sql_calls=10900 elapsed=294.3s
+CHECKPOINT sql_calls=11000 elapsed=298.7s
+CHECKPOINT sql_calls=11100 elapsed=303.3s
+CHECKPOINT sql_calls=11200 elapsed=307.4s
+CHECKPOINT sql_calls=11300 elapsed=311.1s
+CHECKPOINT sql_calls=11400 elapsed=315.2s
+CHECKPOINT sql_calls=11500 elapsed=318.9s
+CHECKPOINT sql_calls=11600 elapsed=324.9s
+REVIEW70 FAIL two_items_only_one_os_and_delivery ('PARTIAL_MUST_SUCCEED', '', 'ERROR:  42501: DELIVERY_B2B_TRANSITION_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.delivery_order_transition_guard_20261030() line 5 at RAISE\nSQL statement "UPDATE public.partner_orders SET status = \'entregue\', updated_at = now()\n      WHERE id = v_partner_order_id AND status <> \'entregue\'"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement "UPDATE public.entregas SET status=\'entregue\',entregue_em=now(),recebido_por_nome=p->>\'nome\',recebido_por_cargo=coalesce(p->>\'cargo\',recebido_por_cargo),recebido_por_documento=coalesce(p->>\'documento\',recebido_por_documento),observacoes_confirmacao=coalesce(p->>\'observacoes\',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status=\'confirmado\' WHERE id=e.id AND updated_at=p_observed"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function "rpc_entrega_confirmar_manual_v1" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n')
+REVIEW70 FAIL quantity_three_delivery_one_remainder_unreserved ('PARTIAL_MUST_SUCCEED', '', 'ERROR:  42501: DELIVERY_B2B_TRANSITION_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.delivery_order_transition_guard_20261030() line 5 at RAISE\nSQL statement "UPDATE public.partner_orders SET status = \'entregue\', updated_at = now()\n      WHERE id = v_partner_order_id AND status <> \'entregue\'"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement "UPDATE public.entregas SET status=\'entregue\',entregue_em=now(),recebido_por_nome=p->>\'nome\',recebido_por_cargo=coalesce(p->>\'cargo\',recebido_por_cargo),recebido_por_documento=coalesce(p->>\'documento\',recebido_por_documento),observacoes_confirmacao=coalesce(p->>\'observacoes\',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status=\'confirmado\' WHERE id=e.id AND updated_at=p_observed"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function "rpc_entrega_confirmar_manual_v1" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n')
+CHECKPOINT sql_calls=11700 elapsed=345.0s
+REVIEW70 FAIL cancelled_partial_does_not_complete ('PARTIAL_MUST_SUCCEED', '', 'ERROR:  42501: DELIVERY_B2B_TRANSITION_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.delivery_order_transition_guard_20261030() line 5 at RAISE\nSQL statement "UPDATE public.partner_orders SET status = \'entregue\', updated_at = now()\n      WHERE id = v_partner_order_id AND status <> \'entregue\'"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement "UPDATE public.entregas SET status=\'entregue\',entregue_em=now(),recebido_por_nome=p->>\'nome\',recebido_por_cargo=coalesce(p->>\'cargo\',recebido_por_cargo),recebido_por_documento=coalesce(p->>\'documento\',recebido_por_documento),observacoes_confirmacao=coalesce(p->>\'observacoes\',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status=\'confirmado\' WHERE id=e.id AND updated_at=p_observed"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function "rpc_entrega_confirmar_manual_v1" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n')
+REVIEW70 PASS overdelivery_cannot_complete_or_rewrite_snapshots
+REVIEW70 PASS create_wait_revocation_role
+REVIEW70 PASS create_wait_revocation_profile
+REVIEW70 PASS create_wait_revocation_tenant
+REVIEW70 PASS create_wait_revocation_gate
+REVIEW70 PASS replay_wait_revocation_role
+REVIEW70 PASS replay_wait_revocation_profile
+REVIEW70 PASS replay_wait_revocation_tenant
+REVIEW70 PASS replay_wait_revocation_gate
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+CHECKPOINT sql_calls=11800 elapsed=361.2s
