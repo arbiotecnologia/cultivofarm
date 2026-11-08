@@ -8,5 +8,7 @@
     "04-rollback-deny.sql.review": "942e24a32b6169f6771e431a6fd68ca1ef78011f7e8c7718c96f3363213d8ad5"
   },
   "project_ref": "swzpzcwiasxmjutrmvkm",
-  "review": "ab904bf"
+  "review": "ab904bf+feb815603+1a65c9c",
+  "status": "INACTIVE_NOT_APPROVED",
+  "validation_record": "validation-1a65c9c.json"
 }

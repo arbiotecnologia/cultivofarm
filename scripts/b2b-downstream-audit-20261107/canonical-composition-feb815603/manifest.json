@@ -19,6 +19,8 @@
     "bridge install+POST",
     "composed POST"
   ],
+  "local_execution_checks": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/checks.json",
+  "local_execution_record": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/integrated-b4-fiscal-bridge.json",
   "outputs": {
     "01-pre.sql.readonly": "b23c99691c3b8b783076bde20cff2d2e63b9c2a30f28a02e7a6787be00398cdc",
     "02-install.sql.review": "2692a3423de3ef0b8a513e2d9cccf2b6a8a84e0cbcad8899cc44ac4fb65eb0cc",
@@ -51,6 +53,7 @@
       "B4 POST embedded in isolated rollback"
     ]
   },
+  "positive_integrated_fiscal_receivable": "NOT_RUN_BLOCKED_REAL_ALWAYS_DENY",
   "post_composition_baseline": {
     "b4_dependency_md5": {
       "public.b2b_list_payment_condition_options_secure(uuid,uuid)": "8a7f29c199e77e653966ebdb8a4b3ed3",
@@ -131,7 +134,7 @@
     "b4_install_sha256": "0d533f85731a782fa851868b41adf6e7f8e1bbfd729f156be7d6499ac6b6fee6",
     "plans_install_sha256": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40"
   },
-  "review": "feb815603",
+  "review": "feb815603+1a65c9c",
   "rollback_order": [
     "bridge deny-only",
     "B4 deny-only without stale POST",
