@@ -153,8 +153,8 @@ def main() -> None:
       'transmissionId',v_cur.id,'state',v_cur.state,'outcome',v_cur.outcome,
       'cStat',v_cur.c_stat,'protocolCStat',coalesce(v_cur.protocol_c_stat,v_cur.c_stat),
       'xMotivo',v_cur.x_motivo,'chNFe',v_cur.ch_nfe,'nProt',v_cur.n_prot,'nRec',v_cur.n_rec,
-      'reconciliationPending',v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING',
-      'reconciliationCode',CASE WHEN v_cur.error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' THEN v_cur.error_code ELSE NULL END);
+      'reconciliationPending',EXISTS(SELECT 1 FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_cur.id),
+      'reconciliationCode',(SELECT cp.error_code FROM platform_private.fiscal_close_pending cp WHERE cp.transmission_id=v_cur.id));
   END IF;
   IF v_cur.outcome = 'AUTHORIZED' AND (
     v_cur.ch_nfe IS DISTINCT FROM coalesce(_patch->>'chNFe',v_cur.ch_nfe)
