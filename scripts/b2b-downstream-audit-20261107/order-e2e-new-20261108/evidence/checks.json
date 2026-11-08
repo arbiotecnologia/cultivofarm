@@ -16,7 +16,8 @@
     "status": "PASS"
   },
   {
-    "test": "new composition",
-    "status": "FAIL"
+    "test": "new buyer canonical B3 packaging order with chosen condition, no forged order row",
+    "status": "PASS",
+    "order_id": "66f3afc2-f34e-4951-affd-4b8eca4bc0d4"
   }
 ]

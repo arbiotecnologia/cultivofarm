@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-roxbulhr/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 100, in main
+    data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],'NEW-E2E-ORDER-001',choice);assert data is not None,error
+                                                                                                ^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED
+CONTEXT:  PL/pgSQL function platform_private.c2_attempt_dispatch_guard(uuid,uuid,text) line 8 at RAISE
+SQL statement "SELECT platform_private.c2_attempt_dispatch_guard(v_uid,p_partner_id,v_idem)"
+PL/pgSQL function create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb) line 91 at PERFORM
+LOCATION:  exec_stmt_raise, pl_exec.c:3911
