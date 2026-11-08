@@ -43,7 +43,7 @@ def snapshot(B):
 
 
 def install(B, out):
-    root = B.C.H.parents[2]
+    root = B.C.H.parents[1]
     registration_path = root / "scripts/b2b-downstream-audit-20261107/registration-deferred-20261108/canonical-readonly.json"
     money_path = root / "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json"
     baseline_path = root / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py"
@@ -88,7 +88,6 @@ def install(B, out):
     assert after["registration"]["default_md5"] == default["definition_md5"], after
     assert after["registration"]["fence_md5"] == fence["definition_md5"], after
     assert after["registration"]["default_owner"] == default["owner"] and after["registration"]["default_acl"] == default["acl"], after
-    expected_registration_triggers = sorted(registration["triggers"], key=lambda x: "trg_create_default_pfs" if "trg_create_default_pfs" in x["definition"] else "c2p1_settings_fence")
     actual_registration_triggers = sorted(after["registration_triggers"], key=lambda x: x["name"])
     expected_registration_triggers = sorted((dict(name="trg_create_default_pfs" if "trg_create_default_pfs" in x["definition"] else "c2p1_settings_fence", **x) for x in registration["triggers"]), key=lambda x: x["name"])
     assert actual_registration_triggers == expected_registration_triggers, {"actual": actual_registration_triggers, "expected": expected_registration_triggers}
@@ -132,10 +131,10 @@ def negative_controls(B, Q, out):
 
 
 def assert_current(B, out, name):
-    current_ar = B.load("new_current_receivable_baseline_post", B.C.H.parents[2] / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py") if hasattr(B, "load") else None
+    current_ar = B.load("new_current_receivable_baseline_post", B.C.H.parents[1] / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py") if hasattr(B, "load") else None
     if current_ar is None:
         import importlib.util
-        path = B.C.H.parents[2] / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py"
+        path = B.C.H.parents[1] / "scripts/b2b-downstream-audit-20261107/b4/review-d6cd95c0/current_receivable_baseline.py"
         spec = importlib.util.spec_from_file_location("new_current_receivable_baseline_post", path)
         current_ar = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(current_ar)

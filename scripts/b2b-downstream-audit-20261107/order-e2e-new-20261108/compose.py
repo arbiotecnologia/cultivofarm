@@ -75,6 +75,14 @@ def main():
   commercial=load('new_commercial_merge',H/'commercial.py')
   Q=commercial.apply(B,load,ROOT,OUT)
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
+  # As baselines atuais são compostas antes do pedido B2B: o fluxo inteiro abaixo
+  # corre com a ACL e os dez gatilhos reais de recebíveis, além do cadastro sem
+  # configuração automática. Nenhum writer B4/NF é instalado por esta etapa.
+  R=load('new_real_baselines',H/'real_baselines.py')
+  R.install(B,OUT)
+  checks.append(dict(test='real registration fence and exact receivable ACL with all ten triggers enabled before B2B order',status='PASS'))
+  R.negative_controls(B,Q,OUT)
+  checks.append(dict(test='direct settings write denied and delivery context forbids receivable INSERT UPDATE DELETE',status='PASS'))
   # A restauração contém sentinelas reais das dez tabelas downstream. O oráculo
   # deve medir delta desta execução, não exigir banco global vazio.
   effect_baseline=json.loads(B.last("SELECT jsonb_build_object('receivables',(SELECT count(*) FROM public.accounts_receivable),'fiscal_documents',(SELECT count(*) FROM public.fiscal_invoices))::text;"))
@@ -307,6 +315,8 @@ def main():
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in after_rollback.stderr,after_rollback.stderr
   checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
+  R.assert_current(B,OUT,'real-baselines-post-rollback.json')
+  checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:
