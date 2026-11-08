@@ -6,7 +6,7 @@ O auditor instalou **somente** o isolamento de planos no projeto canônico `swzp
 
 Foram relatados: ref comprovado por `SET LOCAL`, `PRE_OK` antes, POST dentro da transação antes do COMMIT, instalação com sucesso e POST separado READ ONLY com `POST_OK`. O Lovable não executou essa instalação nem qualquer leitura/escrita hospedada nesta atualização.
 
-Preservados segundo o auditor: **6 planos** (cinco ARBio e um da organização `8eae2bc1-ad00-4402-9f57-564258e493ca`), **4 assignments**, **9 orders**, **10 receivables** e **5 fiscal invoices**. Usuário FSF real, na prévia conectada à produção e após reload, passou de seis planos para **zero**. O controle positivo ARBio ainda aguarda login; não presumir seu resultado.
+Preservados segundo o auditor: **6 planos** (cinco ARBio e um da organização `8eae2bc1-ad00-4402-9f57-564258e493ca`), **4 assignments**, **9 orders**, **10 receivables** e **5 fiscal invoices**. Usuário FSF real, na prévia conectada à produção e após reload, passou de seis planos para **zero**. Em validação posterior relatada pelo auditor, a sessão real de Renato leu os **5 planos próprios**, com a exceção não-ARBio oculta; isolamento UI positivo/negativo concluído. O controle comprador permanece pendente.
 
 Não houve publicação frontend nem instalação/ativação de B4, logística, ponte fiscal ou gates. Comunicação/envios, fiscal real, cobranças e pagamentos permanecem bloqueados.
 

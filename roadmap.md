@@ -1,3 +1,10 @@
+## 08/11 22:20 — Caller/leitor OS, UI escopada e rollout POSPLANOS completo
+- [x] FSF com feature estoque ON e papel válido negado contra ARBio por escopo no writer/leitor; controle FSF-own positivo e fixture revertida. ACL service_role medida separadamente no catálogo; helper privado permanece fechado.
+- [x] Leitor server-side e endpoint público candidatos com tenant/ator/CAS/feature/gate; UI montada no detalhe canônico, invisível sem disponibilidade, tentativa por escopo e reload sem auto-resend. Testes endpoint/leitor 15/15, UI 21/21, parciais 13/13, composição fresh 41/41, typecheck/build OK.
+- [x] Pacote `production-rollout-2154/` com 20 arquivos e manifesto: PRE POSPLANOS + confirmação fechada → envio fechado → físico OFF → logística OFF → leitor/endpoint OFF, POSTs e rollback deny-only inverso. Planos cc1f6cc não reaplicados; B4/fiscal/recebíveis/cobranças/envios/publicação excluídos.
+- [ ] Auditor: revisão independente dos 20 hashes, execução futura do PRE READ ONLY e instalação manual somente após autorização; nenhum SQL foi executado em produção pelo Lovable. Teste autenticado/piloto continua NOT_RUN.
+- [ ] Impacto do advisor `cpp_tenant_read` continua análise posterior, sem ampliar grants ou enfraquecer policy.
+
 ## 08/11 21:45 — POSPLANOS em produção e rollout incremental desativado
 - [x] Registrar como fato do auditor: isolamento `cc1f6cc…` instalado somente em `swzpzcwiasxmjutrmvkm` pela migration `commercial_plans_tenant_isolation_reviewed_20261108`, PRE_OK/POST_OK; seis planos, quatro assignments, nove orders, dez receivables e cinco fiscal invoices preservados. FSF real 6→0 após reload; controle ARBio aguarda login. Nenhuma operação hospedada pelo Lovable.
 - [x] Baseline comum atualizada em `production-postplans-baseline-20261108.md`: não reaplicar planos nem instalador combinado que os contenha; B4/ponte/logística/endpoint/UI continuam inativos e não aprovados, hashes preservados. Rollback nunca reabre vazamento.
