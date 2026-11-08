@@ -109,9 +109,9 @@ def main():
    result,err=Q.sim(uid,Q.P3,[Q.S(2)],choice,partner=partner)
    assert result is None and token in (err or ''),(label,result,err)
    negative[label]=err
-  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET revoked_at=now() WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
+  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET revoked_at=now(),revoked_by='{Q.UADM}',revoke_reason='LOCAL REVOCATION TEST' WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
   result,err=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice)
-  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET revoked_at=NULL WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
+  B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
   assert result is None and 'forbidden_partner' in (err or ''),err
   negative['revoked_link']=err
   B.sql(f"SET session_replication_role=replica;UPDATE public.partner_users SET tenant_id='{Q.F}' WHERE user_id='{Q.UB}' AND partner_id='{Q.P}';SET session_replication_role=origin;")
