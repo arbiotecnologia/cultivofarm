@@ -1,5 +1,5 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=2.8s
+CHECKPOINT sql_calls=1 elapsed=2.5s
 NEW_PHYSICAL_BOOT_OK
 {"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
 PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
@@ -12,12 +12,12 @@ PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
 PASS B3 01-pre.sql.readonly
 PASS B3 02-install.sql.review
 PASS B3 03-post.sql.readonly
-CHECKPOINT sql_calls=100 elapsed=17.4s
-CHECKPOINT sql_calls=200 elapsed=20.9s
-CHECKPOINT sql_calls=300 elapsed=24.5s
-CHECKPOINT sql_calls=400 elapsed=28.3s
-CHECKPOINT sql_calls=500 elapsed=31.8s
-CHECKPOINT sql_calls=600 elapsed=34.6s
-CHECKPOINT sql_calls=700 elapsed=37.5s
-CHECKPOINT sql_calls=800 elapsed=40.1s
-CHECKPOINT sql_calls=900 elapsed=42.5s
+CHECKPOINT sql_calls=100 elapsed=19.8s
+CHECKPOINT sql_calls=200 elapsed=24.0s
+CHECKPOINT sql_calls=300 elapsed=28.0s
+CHECKPOINT sql_calls=400 elapsed=31.8s
+CHECKPOINT sql_calls=500 elapsed=35.6s
+CHECKPOINT sql_calls=600 elapsed=38.6s
+CHECKPOINT sql_calls=700 elapsed=41.9s
+CHECKPOINT sql_calls=800 elapsed=45.2s
+CHECKPOINT sql_calls=900 elapsed=47.7s

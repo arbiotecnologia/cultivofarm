@@ -404,6 +404,23 @@ BEGIN
  RETURN NEW;
 END $function$;
 
+CREATE OR REPLACE FUNCTION platform_private.delivery_confirm_recheck_v1(p_id uuid, p_org uuid)
+ RETURNS entregas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE e public.entregas; BEGIN
+ IF platform_private.delivery_confirm_actor_v1() IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO e FROM public.entregas WHERE id=p_id AND organization_id=p_org;
+ IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL
+ OR (e.partner_order_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL))
+ OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS NOT TRUE)
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN e;
+END $function$;
+
 CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_v1(p_entrega_id uuid, p_motivo text, p_observed timestamp with time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
