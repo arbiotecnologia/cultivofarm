@@ -1347,3 +1347,9 @@
 - [ ] Recuperar artefatos exatos order-e2e e evidências/inventário dos dez gatilhos reais com ACL: bloqueio por arquivos ausentes; não fabricar hash nem reconstruir como se fosse o mesmo candidato.
 - [ ] Depois da recuperação, testar revenda não fabricável e biológicos, compra/reserva/expedição/confirmação/cancelamento, isolamento/revogação/concorrência/idempotência/saldos, documento parcial/recebível exclusivamente sintéticos locais. Fluxo completo permanece NOT_RUN nesta retomada.
 - [ ] Revisão independente e homologação real: candidatos INATIVOS; parceiro/comprador exclusivos ARBio serão cadastrados pelo proprietário no fluxo normal após login, sem Auth hospedado pelo agente.
+
+## 08/11 03:10 — cadastro primeiro, financeiro depois (reconciliação auditada)
+- [x] Registrar aplicação externa de partner_registration_defer_financial_settings_20261107; capturar somente leitura função completa/owner/ACL/search_path e os dois gatilhos habilitados no ref canônico. Hash novo 76bd832ba608662d84f1641f8a3b8226 e fence f87cc2894dc551d242c2586f17e2cdd4 confirmados; capturas históricas não substituídas.
+- [x] Separar relato de 10 testes PG17/UI admin real (zero settings/orders/receivables) de verificação local do agente; não criar parceiro, configuração, credenciais ou tocar cinco títulos.
+- [x] Exercitar consumidores com settings ausentes: 45/45 Vitest (3 arquivos, exit 0), dois novos casos integrados NULL/abrir/reabrir sem RPC e salvar explícito com CAS NULL; SDK sintético, build OK observado, sem typecheck independente ou JWT/RLS real. Registro aditivo em registration-deferred-20261108, sem alterar réplicas históricas/candidatos.
+- [ ] Composição financeira integral e E2E B2B: bloqueados por artefatos order-e2e ausentes e gates/revisão independente; cadastro aplicado não aprova B4/estoque/entregas nem autoriza novos efeitos hospedados.

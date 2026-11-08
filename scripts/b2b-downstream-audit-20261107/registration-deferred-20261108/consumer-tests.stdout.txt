@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/financeiro/partnerSettingsMutation.test.tsx (21 tests) 444ms
+ ✓ src/test/financeiro/partnerSettings.test.tsx (11 tests) 492ms
+ ✓ src/test/financeiro/partnerSettings.integration.test.tsx (13 tests) 1600ms
+
+ Test Files  3 passed (3)
+      Tests  45 passed (45)
+   Start at  03:12:32
+   Duration  4.87s (transform 319ms, setup 472ms, collect 1.86s, tests 2.54s, environment 2.94s, prepare 1.41s)
+
