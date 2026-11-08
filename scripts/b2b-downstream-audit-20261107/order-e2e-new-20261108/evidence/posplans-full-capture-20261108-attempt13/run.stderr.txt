@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/tmp/posplans-full-capture-attempt13-aDRXrc/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 42, in main
+    B.current_catalog.apply(B.run_raw,B.last,B.ok,B.T.A)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/posplans-full-capture-attempt13-aDRXrc/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 321, in apply
+    state = assert_current(last)
+  File "/tmp/posplans-full-capture-attempt13-aDRXrc/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/current_catalog.py", line 230, in assert_current
+    raise AssertionError("CURRENT_LIVE_BASELINE_DRIFT\n" + "\n".join(errors))
+AssertionError: CURRENT_LIVE_BASELINE_DRIFT
+function_md5:public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb):c4bdfcbd8fc732ffaf7a3fc3f45f811e!=a4d47ccf5d116141ed46e9de9ea7eeaa
+supplemental_function_md5:platform_private.delivery_mutation_guard_20261030():4940b1c33a48a1826d730f32800fea83!=8fa73fc045c51addd05576597ecd4c88
+trigger_function_md5:entregas:zz_delivery_mutation_closed:4940b1c33a48a1826d730f32800fea83!=8fa73fc045c51addd05576597ecd4c88
+trigger_function_md5:microrganismos:trg_set_codigo_micro_ins:22f33bb511f309ada40f710d017fcdb5!=83ce829faa1f08971c3e7264e0f89137
+trigger_function_md5:microrganismos:trg_set_codigo_micro_upd:22f33bb511f309ada40f710d017fcdb5!=83ce829faa1f08971c3e7264e0f89137
+trigger_function_md5:produtos:trg_set_codigo_produto_ins:e5ef4aa8489889e7d20e03dc62b455ae!=00e54398c3ff54dc6052b35b58b79627
+trigger_function_md5:produtos:trg_set_codigo_produto_upd:e5ef4aa8489889e7d20e03dc62b455ae!=00e54398c3ff54dc6052b35b58b79627
+trigger_function_md5:profiles:a00_cf_user_gate:1f26021e202b2177be5cbca74499f012!=b0dd9a14d5fd799a40df0975baf4c5a6
+trigger_function_md5:profiles:a00_cf_user_no_truncate:2120d930ff5da74fb667bd71c3053fc4!=a919901eb1e045461a5bc6e4da178624
+trigger_function_md5:profiles:z99_cf_profile_stamp:92d2bd6c79feb239cf2977990360c674!=ce295ff5799d306ad81578047cd9bff5
+trigger_function_md5:profiles:z99_cf_require_admin:e541bc5f3b48e82ea4b993de5c19a199!=ec8e7077521cdee212be924bfb400e8a
