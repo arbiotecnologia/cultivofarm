@@ -290,7 +290,7 @@ def _json_literal(value) -> str:
 def _guard(doc: dict, state_expression: str, label: str) -> str:
     signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["functions"])
     trigger_signatures = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["trigger_functions"])
-    relations = ",".join("('%s')" % row[0].replace("'", "''") for row in doc["relations"])
+    relations = ",".join("('%s',%s)" % (row[0].replace("'", "''"), "true" if row[2] is not None else "false") for row in doc["relations"])
     function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef) ORDER BY v.signature),'[]'::jsonb)
  FROM (VALUES {signatures}) v(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature))"""
     trigger_function_actual = f"""(SELECT coalesce(jsonb_agg(jsonb_build_array(v.signature,md5(pg_get_functiondef(p.oid))) ORDER BY v.signature),'[]'::jsonb)
