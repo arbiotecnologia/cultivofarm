@@ -12,6 +12,11 @@ B4 = ROOT / "scripts/b2b-downstream-audit-20261107/b4/b4-candidate.sql.review"
 CAPTURE = ROOT / "scripts/delivery-atomic-hardening-20261030/capture/current.json"
 REF = "swzpzcwiasxmjutrmvkm"
 EXPECTED_B4 = "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f"
+G = runpy.run_path(str(B4.parent / "generate-b4.py"))
+
+
+def md5_pg(text: str) -> str:
+    return G["md5_def"](G["canonical_function"](text))
 
 
 def extract(text: str, name: str) -> str:
