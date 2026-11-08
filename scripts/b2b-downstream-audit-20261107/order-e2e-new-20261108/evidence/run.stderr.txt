@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-5utwvf6a/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 169, in main
-    assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,direct_operational.stderr
+  File "/tmp/new-order-e2e-5zef_wpx/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 191, in main
+    assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,(direct_operational.returncode,direct_operational.stdout,direct_operational.stderr)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError
+AssertionError: (0, '', '')
