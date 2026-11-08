@@ -1344,12 +1344,18 @@
 - [x] Conferir arquivos disponíveis e histórico sem reexecutar as baterias anteriores: a pasta order-e2e, os dois geradores/harnesses e candidate-logistics.sql.review estão ausentes nesta cópia; também não há checkpoint temporário recuperável.
 - [x] Registrar interrupção anterior como response.status=error relatado pelo proprietário; causa técnica/stack trace não disponíveis. Histórico 4502 confirma 11/11 instalação e 34/34 parcial, sem execução da extensão logística; não são resultados revalidados nesta retomada.
 - [x] Consolidar lote fornecedor, NULL/camadas/UI e preservação teste4/cinco títulos, sem cadastro hospedado ou alterações nos candidatos existentes.
-- [ ] Recuperar artefatos exatos order-e2e e evidências/inventário dos dez gatilhos reais com ACL: bloqueio por arquivos ausentes; não fabricar hash nem reconstruir como se fosse o mesmo candidato.
-- [ ] Depois da recuperação, testar revenda não fabricável e biológicos, compra/reserva/expedição/confirmação/cancelamento, isolamento/revogação/concorrência/idempotência/saldos, documento parcial/recebível exclusivamente sintéticos locais. Fluxo completo permanece NOT_RUN nesta retomada.
+- [x] Recuperação histórica indisponível, superada pela autorização 03:13 para harness NOVO com procedência explícita; jamais declarar recuperação nem reutilizar 11/11+34/34.
+- [ ] Reconstruir e testar nova composição B3/B4/revenda/biológicos até compra/reserva/expedição/confirmação/cancelamento, isolamento/revogação/concorrência/idempotência/saldos; documento parcial/recebível apenas sintéticos locais, guards e baseline 3d6a9ce8 preservados.
 - [ ] Revisão independente e homologação real: candidatos INATIVOS; parceiro/comprador exclusivos ARBio serão cadastrados pelo proprietário no fluxo normal após login, sem Auth hospedado pelo agente.
 
 ## 08/11 03:10 — cadastro primeiro, financeiro depois (reconciliação auditada)
 - [x] Registrar aplicação externa de partner_registration_defer_financial_settings_20261107; capturar somente leitura função completa/owner/ACL/search_path e os dois gatilhos habilitados no ref canônico. Hash novo 76bd832ba608662d84f1641f8a3b8226 e fence f87cc2894dc551d242c2586f17e2cdd4 confirmados; capturas históricas não substituídas.
 - [x] Separar relato de 10 testes PG17/UI admin real (zero settings/orders/receivables) de verificação local do agente; não criar parceiro, configuração, credenciais ou tocar cinco títulos.
 - [x] Exercitar consumidores com settings ausentes: 45/45 Vitest (3 arquivos, exit 0), dois novos casos integrados NULL/abrir/reabrir sem RPC e salvar explícito com CAS NULL; SDK sintético, build OK observado, sem typecheck independente ou JWT/RLS real. Registro aditivo em registration-deferred-20261108, sem alterar réplicas históricas/candidatos.
-- [ ] Composição financeira integral e E2E B2B: bloqueados por artefatos order-e2e ausentes e gates/revisão independente; cadastro aplicado não aprova B4/estoque/entregas nem autoriza novos efeitos hospedados.
+- [ ] Composição financeira integral e E2E B2B: reconstrução local autorizada 03:13; gates/revisão independente seguem fechados para produção, cadastro aplicado não aprova B4/estoque/entregas.
+
+## 08/11 03:13 — reconstrução NOVA autorizada
+- [x] Criar infraestrutura nova de harness com procedência SHA256 e espelho temporário; restauração física integral e controle compra→reserva parcial→expedição→comprovante→entrega executados do zero, sem fabricação. Não é E2E B2B; evidências perdidas não contabilizadas.
+- [ ] Compor logística de revenda sem bioreator com pedido comprador canônico, autoridade local explicitamente sintética e candidato logístico revisável; executar positivos/negativos e preservar cada falha.
+- [ ] Registrar resultados novos, limites JWT/RLS/Storage e gates; sem alterar piloto/Auth/títulos hospedados, sem publicação ou efeitos externos.
+- [x] Registrar resultados parciais e todas as falhas em order-e2e-new-20261108: último exit 1 por assert_b2b_partner_scope/42501 forbidden_partner na simulação comprador da composição integral; próximo trabalho é fixture local de vínculo completo, não stub permissivo. Nenhuma dependência humana por arquivos ausentes; tarefa técnica permanece incompleta.

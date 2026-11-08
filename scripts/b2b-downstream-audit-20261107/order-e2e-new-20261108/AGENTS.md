@@ -1,0 +1,4 @@
+- New disposable composition only; source hash manifest and explicit synthetic seams distinguish it from lost order-e2e artifacts and hosted proof.
+- Copy generators into temporary project mirrors before running them; keep all source captures and prior evidence immutable.
+- Preserve current registration fence, receivable ten-trigger ACL baseline and delivery downstream prohibition; positive logistics must use real stock motor and current permits, never hide denied B2B as a passing full flow.
+- Reconstructed logistics remains inactive and non-installable until independent full-contract review; no hosted/Auth/data/publication/external effects.

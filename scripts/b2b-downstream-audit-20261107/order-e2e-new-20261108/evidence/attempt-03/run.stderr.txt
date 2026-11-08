@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-kztgtej_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 57, in main
+    acl=B.last("SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass;")
+  File "/tmp/new-order-e2e-kztgtej_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+    return sql(statement).splitlines()[-1]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^
+IndexError: list index out of range
