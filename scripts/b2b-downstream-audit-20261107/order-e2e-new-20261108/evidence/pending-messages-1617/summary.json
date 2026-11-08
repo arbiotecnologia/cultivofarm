@@ -19,6 +19,7 @@
     "total": 137,
     "exit_code": 0
   },
+  "preview_build": "build OK 2026-11-08T16:25:47Z",
   "date_fields": {
     "disposition": "NO_PRODUCT_BUG_PROVEN_NO_SQL_CHANGE",
     "cause": "Playwright.fill(date) DOM/state mismatch in automation; auditor saved V2 normally with correct dates"
