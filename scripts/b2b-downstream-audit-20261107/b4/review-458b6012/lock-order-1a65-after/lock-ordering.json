@@ -1,0 +1,19 @@
+{
+  "mode": "AFTER_CANDIDATE",
+  "same_invoice_transmission": true,
+  "pause": "temporary BEFORE UPDATE trigger after H13 acquired transmission row lock; candidate locks/guards unchanged",
+  "h13_h12": {
+    "deadlock_detected": false,
+    "h13_exit": 0,
+    "h12_exit": 0,
+    "postgres_log": ""
+  },
+  "h13_direct_bridge": {
+    "deadlock_detected": false,
+    "h13_exit": 0,
+    "bridge_exit": 0,
+    "postgres_log": ""
+  },
+  "hosted": false,
+  "provider_called": false
+}

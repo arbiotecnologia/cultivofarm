@@ -17,7 +17,7 @@ EXPECTED = {
     PLANS / "02-install.sql.review": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40",
     B4 / "02-install.sql.review": "0d533f85731a782fa851868b41adf6e7f8e1bbfd729f156be7d6499ac6b6fee6",
     B4 / "b4-candidate.sql.review": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
-    BRIDGE / "02-install.sql.review": "2b37eba4414ed300270f372d0ffdb3639f8e1d27046ec356896b4ffae48cab2f",
+    BRIDGE / "02-install.sql.review": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
 }
 SHARED = [
     "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)",
@@ -249,10 +249,13 @@ SELECT 'COMPOSED_ROLLBACK_OK' AS status;
         path.write_text(text)
 
     manifest = {
-        "review": "feb815603",
+        "review": "feb815603+1a65c9c",
         "status": "INACTIVE_NOT_APPROVED",
         "canonical_ref": REF,
         "hosted": False,
+        "local_execution_record": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/integrated-b4-fiscal-bridge.json",
+        "local_execution_checks": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/checks.json",
+        "positive_integrated_fiscal_receivable": "NOT_RUN_BLOCKED_REAL_ALWAYS_DENY",
         "source_sha256": {str(path.relative_to(ROOT)): expected for path, expected in EXPECTED.items()},
         "production_baseline": {
             "b4_dependency_md5": pins,

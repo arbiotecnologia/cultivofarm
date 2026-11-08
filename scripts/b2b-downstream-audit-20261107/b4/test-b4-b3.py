@@ -9,6 +9,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 from decimal import Decimal
 
 H = pathlib.Path(__file__).resolve().parent
@@ -20,6 +21,7 @@ MANUAL_LIVE = H / "live-readonly-manual-null-1813.json"
 OUT = pathlib.Path(os.environ.get("B4_EVIDENCE_OUT", str(H / "review-458b6012/manual-null-1813")))
 REVIEW_BEFORE = os.environ.get("B4_REVIEW_BEFORE") == "1"
 PARSER_BEFORE = os.environ.get("B4_PARSER_BEFORE") == "1"
+LOCK_BEFORE = os.environ.get("B4_LOCK_BEFORE") == "1"
 if json.loads(MONEY.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
     raise SystemExit("B4_MONEY_REF_DRIFT")
 if json.loads(MANUAL_LIVE.read_text()).get("canonical_ref") != "swzpzcwiasxmjutrmvkm":
@@ -315,6 +317,15 @@ WHERE s.partner_id='{B3.P}';""")
         callback_item = B3.psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{callback_order}'").stdout.strip()
         check("fixture independente do callback fiscal criada sem título", callback_order is not None and callback_item != "", error)
         approve_order(callback_order)
+
+        # Pedido exclusivo para as corridas de lock H13×H12/ponte. Nenhum outro
+        # cenário consome seu saldo ou depende do resultado financeiro da corrida.
+        data, error = B3.sim(B3.UB, B3.P3, [B3.L(1)], BOL)
+        data, error = B3.create(B3.UB, B3.P3, [B3.L(1)], data and data["cart_hash"], "TESTE-B4-LOCK-ORDER", BOL)
+        lock_order = data and data["id"]
+        lock_item = B3.psql(f"SELECT id FROM public.partner_order_items WHERE order_id='{lock_order}'").stdout.strip()
+        check("fixture independente para ordenação de locks criada sem título", lock_order is not None and lock_item != "", error)
+        approve_order(lock_order)
 
         # Pedido ainda pendente de contabilidade: fixture separada, nunca promovida artificialmente.
         B3.psql(f"DELETE FROM public.company_fiscal_settings WHERE organization_id='{B3.A}'")
@@ -680,6 +691,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         tx_main, tx_denied, tx_foreign, tx_nonb2b, tx_partial, tx_bad_cstat, tx_nfse, tx_h13, tx_h13_pending, tx_h13_rejected = [B3.u(420+i) for i in range(10)]
         invoice_parser = B3.u(440)
         tx_parser, tx_h13_repeat, tx_h13_divergent = [B3.u(441+i) for i in range(3)]
+        invoice_lock_h12, invoice_lock_bridge = B3.u(445), B3.u(446)
+        tx_lock_h12, tx_lock_bridge = B3.u(447), B3.u(448)
         monetary = B3.psql(f"SELECT principal+financed_interest FROM platform_private.b2b_document_allocations WHERE document_id='{RECOVERY_DOC}'").stdout.strip()
         def seed_invoice(invoice_id, status="PENDING", org=None, company=None, order=None, partner=None, with_item=False, item=None, invoice_type="NFE", provider_reference="LOCAL-PROVIDER"):
             org = org or B3.A; company = company or company_a; order = order or recovery_order; partner = partner or B3.P
@@ -720,8 +733,10 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_invoice(invoice_h13_pending,order=None,partner=None)
         seed_invoice(invoice_h13_rejected,order=None,partner=None)
         seed_invoice(invoice_parser,order=None,partner=None,provider_reference="PARSER-104-100")
-        B3.psql(f"""UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}','{invoice_nfse}');
- UPDATE public.fiscal_invoices SET partner_order_id=NULL,debtor_partner_id=NULL WHERE id IN ('{invoice_nonb2b}','{invoice_parser}');
+        seed_invoice(invoice_lock_h12,order=None,partner=None,provider_reference="LOCK-H13-H12")
+        seed_invoice(invoice_lock_bridge,"AUTHORIZED",order=lock_order,with_item=True,item=lock_item,provider_reference="LOCK-H13-BRIDGE")
+        B3.psql(f"""UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}','{invoice_nfse}','{invoice_lock_bridge}');
+ UPDATE public.fiscal_invoices SET partner_order_id=NULL,debtor_partner_id=NULL WHERE id IN ('{invoice_nonb2b}','{invoice_parser}','{invoice_lock_h12}');
  UPDATE public.fiscal_invoices SET debtor_partner_id=NULL WHERE id='{invoice_partial}';""")
         seed_proof(invoice_main,tx_main)
         seed_proof(invoice_denied,tx_denied)
@@ -734,6 +749,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_proof(invoice_h13_pending,tx_h13_pending,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_h13_rejected,tx_h13_rejected,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         seed_proof(invoice_parser,tx_parser,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
+        seed_proof(invoice_lock_h12,tx_lock_h12,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
+        seed_proof(invoice_lock_bridge,tx_lock_bridge,state="SENT",outcome="PENDING",cstat="103",protocol="PENDING")
         if not REVIEW_BEFORE and not PARSER_BEFORE:
             # Erro estranho é gravado enquanto a transmissão ainda é mutável;
             # depois disso a guarda real proíbe qualquer alteração terminal.
@@ -908,6 +925,61 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
                 concurrent_records = list(pool.map(lambda call: real_record(tx_h13,call[0],call[1]), [("SENT",{"cStat":"103","xMotivo":"ATRASADO CONCORRENTE"}),("SUCCEEDED",h13_patch)]))
             check("H13 concorrente fora de ordem termina autorizado, com protocolo estável e erro estranho preservado", all(row[0] for row in concurrent_records) and B3.psql(f"SELECT outcome||'|'||c_stat||'|'||protocol_c_stat||'|'||error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "AUTHORIZED|100|100|FOREIGN_PROVIDER_ERROR", [row[1] for row in concurrent_records])
             check("concorrência H13 não duplica NF, snapshot ou título", B3.psql(f"SELECT (SELECT count(*) FROM public.fiscal_invoices WHERE id='{invoice_h13}')||'|'||(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_h13}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_h13}')").stdout.strip() == "1|1|1")
+
+        # Revisão 1a65c9c: o gatilho temporário pausa H13 no UPDATE que já
+        # possui o row lock da transmissão. H12/ponte usam outra conexão real;
+        # nenhum lock ou guarda do candidato é removido ou substituído.
+        B3.psql("""CREATE FUNCTION public.b4_test_pause_authorized_tx() RETURNS trigger
+ LANGUAGE plpgsql SET search_path='' AS $$BEGIN
+ IF NEW.outcome='AUTHORIZED' AND OLD.outcome IS DISTINCT FROM 'AUTHORIZED' THEN PERFORM pg_sleep(1.2); END IF;
+ RETURN NEW;END $$;
+CREATE TRIGGER zz_b4_test_pause_authorized_tx BEFORE UPDATE ON public.fiscal_sefaz_transmissions
+ FOR EACH ROW EXECUTE FUNCTION public.b4_test_pause_authorized_tx();""")
+        def race_service_sql(sql):
+            # deadlock_timeout exige superusuário; configura antes de SET ROLE.
+            return server_run("", "SET deadlock_timeout='100ms';SET lock_timeout='6s';SET ROLE service_role;" + sql)
+        def lock_race(invoice_id, transmission_id, protocol, direct_sql):
+            patch = {"cStat":"100","nProt":protocol,"chNFe":access_key,"xMotivo":"AUTORIZADO LOCK RACE","tpAmb":"2","dhRecbto":"2027-02-01T14:00:00Z"}
+            log_path = tmp / "log"
+            log_offset = log_path.stat().st_size
+            with concurrent.futures.ThreadPoolExecutor(2) as pool:
+                h13_future = pool.submit(race_service_sql, f"SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','SUCCEEDED','{js(patch)}'::jsonb);")
+                time.sleep(0.25)
+                direct_future = pool.submit(race_service_sql, direct_sql)
+                h13_result = h13_future.result()
+                direct_result = direct_future.result()
+            with log_path.open("rb") as stream:
+                stream.seek(log_offset)
+                deadlock_log = stream.read().decode("utf-8", errors="replace")
+            return h13_result, direct_result, deadlock_log, patch
+
+        lock_h12_sql = f"SELECT public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_lock_h12}','{access_key}','LOCK-H12-PROTOCOL',now(),'100','LOCK RACE','{tx_lock_h12}');"
+        lock_h13_result, lock_h12_result, lock_h12_log, lock_h12_patch = lock_race(invoice_lock_h12, tx_lock_h12, "LOCK-H12-PROTOCOL", lock_h12_sql)
+        if LOCK_BEFORE:
+            check("ANTES: H13 transmissão→nota contra H12 nota→transmissão produz deadlock real", "deadlock detected" in lock_h12_log, lock_h12_log[-1600:])
+        else:
+            check("DEPOIS: H13 e H12 na mesma NF/transmissão seguem nota→transmissão sem deadlock", "deadlock detected" not in lock_h12_log and lock_h13_result.returncode == 0 and lock_h12_result.returncode == 0, [lock_h13_result.stderr, lock_h12_result.stderr, lock_h12_log[-1200:]])
+        lock_h12_recovery, lock_h12_recovery_error = real_record(tx_lock_h12, "SUCCEEDED", lock_h12_patch)
+        check("corrida H13/H12 é recuperável sem apagar retorno externo", lock_h12_recovery and lock_h12_recovery["outcome"] == "AUTHORIZED" and not lock_h12_recovery["reconciliationPending"] and pending_code(tx_lock_h12) == "", lock_h12_recovery_error or lock_h12_recovery)
+        check("corrida não-B2B não cria documento/título", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_lock_h12}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_lock_h12}')").stdout.strip() == "0|0")
+
+        lock_bridge_log = ""
+        lock_bridge_result = lock_bridge_direct = None
+        if not LOCK_BEFORE:
+            lock_bridge_sql = f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_lock_bridge}');"
+            lock_bridge_result, lock_bridge_direct, lock_bridge_log, lock_bridge_patch = lock_race(invoice_lock_bridge, tx_lock_bridge, "LOCK-BRIDGE-PROTOCOL", lock_bridge_sql)
+            check("DEPOIS: H13 e ponte direta que trava a nota não invertem locks nem fazem deadlock", "deadlock detected" not in lock_bridge_log and lock_bridge_result.returncode == 0 and lock_bridge_direct.returncode == 0, [lock_bridge_result.stderr, lock_bridge_direct.stderr, lock_bridge_log[-1200:]])
+            lock_bridge_recovery, lock_bridge_recovery_error = real_record(tx_lock_bridge, "SUCCEEDED", lock_bridge_patch)
+            check("ponte direta concorrente preserva evidência e fecha sem duplicar documento/título", lock_bridge_recovery and not lock_bridge_recovery["reconciliationPending"] and B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_lock_bridge}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_lock_bridge}')").stdout.strip() == "1|1", lock_bridge_recovery_error or lock_bridge_recovery)
+        B3.psql("DROP TRIGGER zz_b4_test_pause_authorized_tx ON public.fiscal_sefaz_transmissions;DROP FUNCTION public.b4_test_pause_authorized_tx();")
+        (OUT / "lock-ordering.json").write_text(json.dumps({
+            "mode": "BEFORE_CANDIDATE_LOCK_CHARACTERIZATION" if LOCK_BEFORE else "AFTER_CANDIDATE",
+            "same_invoice_transmission": True,
+            "pause": "temporary BEFORE UPDATE trigger after H13 acquired transmission row lock; candidate locks/guards unchanged",
+            "h13_h12": {"deadlock_detected": "deadlock detected" in lock_h12_log, "h13_exit": lock_h13_result.returncode, "h12_exit": lock_h12_result.returncode, "postgres_log": lock_h12_log[-3000:]},
+            "h13_direct_bridge": None if LOCK_BEFORE else {"deadlock_detected": "deadlock detected" in lock_bridge_log, "h13_exit": lock_bridge_result.returncode, "bridge_exit": lock_bridge_direct.returncode, "postgres_log": lock_bridge_log[-3000:]},
+            "hosted": False, "provider_called": False,
+        }, indent=2, ensure_ascii=False) + "\n")
 
         foreign = service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_foreign}');")
         check("NF com tenant divergente do pedido é negada", foreign.returncode != 0 and "B2B_FISCAL_ORDER_SCOPE_INVALID" in foreign.stderr, foreign.stderr[-800:])

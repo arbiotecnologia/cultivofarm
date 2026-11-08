@@ -145,9 +145,22 @@ def main() -> None:
     'signedXmlRunId', v_xml,
     'protocoledXmlStored', false);""")
 
-    # H13 separa o status do lote do status efetivo do protocolo, serializa o
-    # callback pela transmissão e nunca rebaixa uma autorização já persistida.
-    transmit = edit(transmit_source, "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;", "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;")
+    # H13 separa o status do lote do status efetivo do protocolo e nunca rebaixa
+    # uma autorização persistida. Todos os caminhos usam nota→transmissão:
+    # H12 já fazia isso; H13 e a ponte direta não podem inverter os row locks.
+    transmit = edit(transmit_source, "  v_close_error text := NULL;", "  v_close_error text := NULL;\n  v_invoice_id uuid;")
+    transmit = edit(transmit, """  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;""", """  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  v_invoice_id := v_cur.fiscal_invoice_id;
+  IF v_invoice_id IS NOT NULL THEN
+    PERFORM 1 FROM public.fiscal_invoices WHERE id=v_invoice_id FOR UPDATE;
+  END IF;
+  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  IF v_cur.fiscal_invoice_id IS DISTINCT FROM v_invoice_id THEN
+    RAISE EXCEPTION 'FISCAL_TRANSMISSION_LINK_CHANGED' USING ERRCODE='PT409';
+  END IF;""")
     transmit = edit(transmit, "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.c_stat);", "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.protocol_c_stat, v_cur.c_stat);")
     transmit = edit(transmit, """  UPDATE public.fiscal_sefaz_transmissions SET
     state            = _state,""", """  IF v_cur.outcome = 'AUTHORIZED' AND v_outcome IS DISTINCT FROM 'AUTHORIZED' THEN
@@ -281,12 +294,13 @@ BEGIN
  IF saved.invoice_id IS NOT NULL THEN
   SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
   WHERE t.id=saved.transmission_id AND t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
-   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2';
+   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
+  FOR UPDATE;
  ELSE
   SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
   WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
    AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
-  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1;
+  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1 FOR UPDATE;
  END IF;
  IF tx.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
    WHERE r.fiscal_invoice_id=inv.id AND r.signed_path IS NOT NULL AND (r.access_key IS NULL OR r.access_key=inv.access_key))
@@ -398,7 +412,15 @@ COMMIT;
     outputs = {"01-pre.sql.readonly":pre,"02-install.sql.review":install,"03-post.sql.readonly":post,"04-rollback-deny.sql.review":rollback}
     for name,text in outputs.items():
         (H/name).write_text(text)
-    manifest = {"project_ref":REF,"review":"ab904bf","b4_sha256":EXPECTED_B4,"capture_sha256":hashlib.sha256(CAPTURE.read_bytes()).hexdigest(),"outputs":{n:hashlib.sha256(t.encode()).hexdigest() for n,t in outputs.items()}}
+    manifest = {
+        "project_ref": REF,
+        "review": "ab904bf+feb815603+1a65c9c",
+        "status": "INACTIVE_NOT_APPROVED",
+        "validation_record": "validation-1a65c9c.json",
+        "b4_sha256": EXPECTED_B4,
+        "capture_sha256": hashlib.sha256(CAPTURE.read_bytes()).hexdigest(),
+        "outputs": {n: hashlib.sha256(t.encode()).hexdigest() for n, t in outputs.items()},
+    }
     (H/"manifest.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
     print(json.dumps(manifest["outputs"],indent=2))
 

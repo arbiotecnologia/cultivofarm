@@ -3465,12 +3465,13 @@ BEGIN
  IF saved.invoice_id IS NOT NULL THEN
   SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
   WHERE t.id=saved.transmission_id AND t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
-   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2';
+   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
+  FOR UPDATE;
  ELSE
   SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
   WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
    AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
-  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1;
+  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1 FOR UPDATE;
  END IF;
  IF tx.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
    WHERE r.fiscal_invoice_id=inv.id AND r.signed_path IS NOT NULL AND (r.access_key IS NULL OR r.access_key=inv.access_key))
@@ -3687,13 +3688,23 @@ DECLARE
   v_prot    text;
   v_outcome text;
   v_close_error text := NULL;
+  v_invoice_id uuid;
 BEGIN
   IF _state NOT IN ('SENT','SUCCEEDED','FAILED','BLOCKED') THEN
     RAISE EXCEPTION 'FISCAL_TRANSMISSION_STATE_INVALID';
   END IF;
 
+  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  v_invoice_id := v_cur.fiscal_invoice_id;
+  IF v_invoice_id IS NOT NULL THEN
+    PERFORM 1 FROM public.fiscal_invoices WHERE id=v_invoice_id FOR UPDATE;
+  END IF;
   SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_TRANSMISSION_NOT_FOUND'; END IF;
+  IF v_cur.fiscal_invoice_id IS DISTINCT FROM v_invoice_id THEN
+    RAISE EXCEPTION 'FISCAL_TRANSMISSION_LINK_CHANGED' USING ERRCODE='PT409';
+  END IF;
 
   v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.protocol_c_stat, v_cur.c_stat);
   v_prot  := coalesce(_patch->>'nProt', v_cur.n_prot);
@@ -3804,7 +3815,7 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM 'd75b9aff1d4c01c08869dfc24033f7af' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_POST_DRIFT'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '1c52d40031b79294adb6fa7f72bcdc61' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_POST_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '766fb81a3c7dafa71de7806e559f0730' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_POST_DRIFT'; END IF;
- IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM 'd5988ecf38307ca51d3e1b7c3f30cd7e' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM '766034ca6a25074dd5aeb6e57300c1d4' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_POST_DRIFT'; END IF;
  IF has_function_privilege('authenticated','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR has_function_privilege('anon','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR NOT has_function_privilege('service_role','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ACL_INVALID'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_POST_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='b2b_fiscal_created_by_guard' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_GUARD_MISSING'; END IF;
@@ -3862,7 +3873,7 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('platform_private.b2b_integration_actor(uuid,boolean)'::regprocedure)) IS DISTINCT FROM 'd75b9aff1d4c01c08869dfc24033f7af' THEN RAISE EXCEPTION 'B2B_FISCAL_ACTOR_POST_DRIFT'; END IF;
  IF md5(pg_get_functiondef('platform_private.b2b_title_insert_fence()'::regprocedure)) IS DISTINCT FROM '1c52d40031b79294adb6fa7f72bcdc61' THEN RAISE EXCEPTION 'B2B_FISCAL_FENCE_POST_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '766fb81a3c7dafa71de7806e559f0730' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_POST_DRIFT'; END IF;
- IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM 'd5988ecf38307ca51d3e1b7c3f30cd7e' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM '766034ca6a25074dd5aeb6e57300c1d4' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_POST_DRIFT'; END IF;
  IF has_function_privilege('authenticated','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR has_function_privilege('anon','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR NOT has_function_privilege('service_role','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FISCAL_BRIDGE_ACL_INVALID'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_POST_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='b2b_fiscal_created_by_guard' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_GUARD_MISSING'; END IF;

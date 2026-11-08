@@ -1,25 +1,30 @@
+## 08/11 19:17 — Complemento 1a65c9c: inversão de locks e evidência final
+- [x] ANTES **196/196, exit 0**: H13 transmissão→nota versus H12 nota→transmissão, na mesma NF/transmissão e em conexões distintas, reproduziu `deadlock detected` no log real; retry preservou o retorno autorizado e limpou a pendência. Tentativa inválida anterior preservada separadamente.
+- [x] DEPOIS **198/198, exit 0**: H13, H12 e ponte direta padronizados em nota→transmissão, com locks mantidos. H13×H12 e H13×ponte direta não apresentaram deadlock; documento/título não duplicaram. Componente positivo continua costurado e não é prova integrada.
+- [x] Rebuild fresh **39/39, exit 0**, com rollback deny-only medido pelos papéis corretos. Always-deny real manteve zero documento/alocação/snapshot/título; positivo fiscal integrado permanece `NOT_RUN_BLOCKED`. README/manifestos apontam para as execuções finais e limitações. Candidato `5db2c160…` INATIVO/NÃO APROVADO; sem hosted/publicação/provedor/NF/cobrança/envios/delegação.
+
 ## 08/11 18:49 — Rebuild integrado 1a65c9c: fixture fiscal completa e fechamento
-- [ ] Corrigir somente o harness: `fiscal_xml_runs.idempotency_key` obrigatória, determinística por operação e estável em replays; revisar previamente todos os campos NOT NULL/constraints das fixtures fiscais, sem relaxar contratos.
-- [ ] Executar rebuild fresh completo planos+B3+logística+B4+ponte, separando dependência real always-deny (zero documento/alocação/snapshot/título) do componente positivo com costura declarada; concluir PRE/POST/rollback composto e evidências/invariantes.
-- [ ] Revisar manifesto, hashes e rollout sem alterar whitespace do writer financeiro de produção; manter instalador mínimo de isolamento de planos separadamente revisável, independente das pendências fiscais. Nenhum pacote aprovado; sem hosted/publicação/envios/fiscal/cobranças/delegação.
+- [x] Harness corrigido: `fiscal_xml_runs.idempotency_key` obrigatória, determinística por operação e estável em replays; NOT NULL/CHECK/FK/triggers validados em preflight revertido, sem relaxar contratos.
+- [x] Rebuild fresh completo planos+B3+logística+B4+ponte concluído em **39/39**: dependência real always-deny separada do componente positivo costurado; PRE/POST/rollback e invariantes preservados.
+- [x] Manifestos, hashes e rollout revisados sem alterar whitespace do writer financeiro de produção; isolamento mínimo de planos continua separado/revisável. Nenhum pacote aprovado; sem hosted/publicação/envios/fiscal/cobranças/delegação.
 
 ## 08/11 18:23 — Complemento de revisão SQL feb815603: parser, identidade fiscal e H13
-- [ ] Reproduzir no contrato real `cStat=104` + `protocolCStat=100`: outcome não pode ficar AUTHORIZED com coluna `c_stat=104`; separar status do lote/protocolo sem trocar o payload por 100 artificial, testar mesmo envelope/replay/recuperação.
-- [ ] Reproduzir confirmação repetida da mesma chave/protocolo por nova transmissão: identidade fiscal estável e referência original preservadas, sem conflito artificial por `transmission_id`; protocolo/valor divergentes continuam negados.
-- [ ] Revisar H13 fora de ordem/concorrente: não rebaixar autorização persistida nem apagar `error_code` de outra origem; callback segue service-only, always-deny e demais bloqueios intactos.
-- [ ] Integrar antes/depois ao rebuild descartável em andamento; candidato continua INATIVO/NÃO APROVADO, sem hosted/publicação/provedores/NF/cobranças/envios/delegação.
+- [x] Envelope real `cStat=104` + `protocolCStat=100` separado em lote/protocolo, com replay/recuperação e sem trocar o payload por 100 artificial; resultado final incluído em 198/198 e 39/39.
+- [x] Mesma chave/protocolo por nova transmissão preserva identidade/referência original; protocolo/valor divergentes continuam negados.
+- [x] H13 fora de ordem/concorrente não rebaixa autorização nem apaga `error_code` estranho; callback service-only e always-deny preservados.
+- [x] Integrado ao rebuild final; candidato continua INATIVO/NÃO APROVADO, sem hosted/publicação/provedores/NF/cobranças/envios/delegação.
 
 ## 08/11 17:55 — Reconciliação canônica do bloqueio integrado feb815603
-- [ ] Inventariar TODAS as sobreposições entre baseline de produção, planos `cc1f6cc…`, B4 e ponte `3c0a2cdc…`; comparar semântica, tenant, revogação, locks e B3/B4 antes de novo rebuild.
-- [ ] Gerar candidato composto canônico com manifesto de baseline de produção versus baseline pós-planos, hashes/dependências e ordem PRE→install→POST→rollback conjunto.
-- [ ] Executar rebuild integral novo em PostgreSQL descartável: planos+B3+logística+B4+ponte, positivos, FSF negativa, cancelamento parcial, replay, crédito, dependência always-deny real e rollback, sem costura always-allow.
-- [ ] Se a integração fiscal permanecer bloqueada por dependência legítima, separar controle negativo real de componente com costura declarada; NFS-e/cancelamento automático continuam negados. Nenhum pacote aprovado, sem hosted/publicação/efeitos externos/delegação.
+- [x] Sobreposições baseline/planos `cc1f6cc…`/B4/ponte reconciliadas semanticamente; pins, tenant, revogação, locks e B3/B4 comparados sem trocar hash cegamente.
+- [x] Candidato composto canônico gerado com baselines, hashes/dependências e PRE→install→POST→rollback conjunto.
+- [x] Rebuild integral fresh executou planos+B3+logística+B4+ponte, FSF negativa, cancelamento parcial, replay, crédito, dependência always-deny e rollback, sem costura always-allow: **39/39**.
+- [x] Controle negativo real separado do componente positivo costurado; NFS-e/cancelamento automático negados. Nenhum pacote aprovado, sem hosted/publicação/efeitos externos/delegação.
 
 ## 08/11 17:37 — Revisão independente ab904bf: ponte fiscal e rebuild integral
 - [x] ANTES executou **174 checks de caracterização**, não “174 vulnerabilidades”: **nove checks reproduziram comportamentos indevidos** — dois para o fechamento não-B2B, `_c_stat=999`, ausência de transmissão, NFS-e sem contrato, três replays divergentes (valor, referência e protocolo) e erro H13 obsoleto após retry. DEPOIS **175/175**: classificação não-B2B segura, vínculo parcial fechado, `created_by=NULL` somente no permit B2B fiscal e regressões legadas preservadas.
 - [x] Snapshot privado imutável contém totais e líquidos por item, referência, protocolo, transmissão, ambiente e origem; callback exige `_c_stat=100/150`, transmissão H13 vinculada/homologada e XML assinado também no replay. NFS-e e cancelamento automático seguem fail-closed.
 - [x] H13 preserva retorno externo em `FISCAL_AUTHORIZATION_CLOSE_PENDING`, retry gera uma vez sem reemissão e limpa somente esse pendente recuperado. Candidato INATIVO SHA256 `3c0a2cdc80a3f3050355e8e13c6afc96abb397cf5511d5ccd71ac91eb9a31ba4`.
-- [ ] Rebuild integral do zero executou planos+B3+logística com **34 PASS**, mas B4/ponte não instalaram: `B4_PRE_DRIFT` em `b2b_payment_condition_publish`; planos gera MD5 `c6fbe159…` e B4 exige o antigo `5d410cd…`. Não se contornou PRE nem sempre-deny; composição fiscal e rollback integrado permanecem NOT_RUN/BLOCKED.
+- [x] SUPERADO pelo rebuild final 1a65c9c: o antigo `B4_PRE_DRIFT` foi reconciliado semanticamente, sem contornar PRE/always-deny; composição fiscal e rollback integrado concluíram **39/39**. O registro histórico de 34 PASS não é somado nem tratado como resultado atual.
 - [ ] Candidatos continuam INATIVOS/NÃO APROVADOS; revisão independente e homologação real pendentes, sem hosted writes, publicação, provedores, emissão, envios ou cobranças.
 
 ## 08/11 17:13 — Revisão independente f32c4f3: planos, composição única e ponte fiscal

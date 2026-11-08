@@ -1432,11 +1432,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/02-install.sql.review",
-      "sha256": "2b37eba4414ed300270f372d0ffdb3639f8e1d27046ec356896b4ffae48cab2f"
+      "sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/03-post.sql.readonly",
-      "sha256": "7cb4b6c966c9938b4afb6ab9cc1870c4b0c2a73216b48e8217a5896d52b1d890"
+      "sha256": "823dd23b590e29f9e4e46ce1e9bd243320328aca56b83770e250d9e482460e17"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/04-rollback-deny.sql.review",
@@ -1520,11 +1520,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/generate.py",
-      "sha256": "de0f50ff46a32f8177622384e74512aa78eceb854556f565c3dc291048c524ee"
+      "sha256": "9b12fba2b7890e6d0840528f37d4fd42f2d91f6b9aeba5d19e3c98a49697db08"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/manifest.json",
-      "sha256": "6783d0b51d46603462986789c2985f5aa86a83e5b26b2f1763a36eb0a23431c1"
+      "sha256": "6db9182855d103452f3111a2895052976d5cadb166b1aa6e614db300f2a38da2"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py",
@@ -1743,6 +1743,30 @@
       "sha256": "523682bf32c49cb1b9b052805d525d18863d5bec186a07a635e75c4e734071c0"
     },
     {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/lock-order-1a65-after/evidence-b4-shared-impact.json",
+      "sha256": "7cd9df415cdd121ab76e1848ea1c64f0ce5bc33a944f32cc138a95abba6e21a7"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/lock-order-1a65-after/lock-ordering.json",
+      "sha256": "9890ee48987743506734e851d6f64db007640bc79d4686a0c4e573aa1da5f2d1"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/lock-order-1a65-before/evidence-b4-shared-impact.json",
+      "sha256": "657e54713089d683f143595893a9424bd9fa387ee30b9ef9d465911e29930885"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/lock-order-1a65-before/lock-ordering.json",
+      "sha256": "77bdde56085b70b852946df110c03d4e0aaaf24ac485eb6c6214ca853ab2eaa2"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/lock-order-1a65-before-attempt-01/evidence-b4-shared-impact.json",
+      "sha256": "6cbc4f727dc5c93b8eed96aa64f292f061172631c4c75136deea683a5f234e42"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/lock-order-1a65-before-attempt-01/lock-ordering.json",
+      "sha256": "e554efed7f4f535ddf6ec36852f8640f7ecdddbdfb357ffc84384775ddfeecd0"
+    },
+    {
       "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/manual-null-1813/before/evidence-b4-shared-impact.crash.json",
       "sha256": "b347a93b95e77e0ed26b0b2a043f85a737417c849f2e7ad3318bb9a0be504eba"
     },
@@ -1888,7 +1912,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/test-b4-b3.py",
-      "sha256": "6ef59024920cc98991f1063ebc207331a11291dd28e11daa368de55375a997d4"
+      "sha256": "c91a0d14550712dc9318f079b7d98aa97c1b40603c33ef8c606ea12609d0d770"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/test-b4-fiscal-units.py",
@@ -1920,11 +1944,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/02-install.sql.review",
-      "sha256": "9e13a75a98a71b090792176c968090535c92d0acd69a1579244cd9305ae7918c"
+      "sha256": "2692a3423de3ef0b8a513e2d9cccf2b6a8a84e0cbcad8899cc44ac4fb65eb0cc"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/03-post.sql.readonly",
-      "sha256": "761a9d694bca023abe745d519099495a41be072796772178abf57e29caf8292e"
+      "sha256": "85b0736d03cc5b2a6a5347b2575e88241cfc40be0ba6be5808b77ea31957854d"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/04-rollback-deny.sql.review",
@@ -1932,7 +1956,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generate.py",
-      "sha256": "299112af5387841be984b9cfbbb71f042aac1d17410d4d9b2036ddba45821ba1"
+      "sha256": "462efe814d5d6d0bac98f669b6b14538c8180aeb0eace7bd7e06d9254ed7b254"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generator.stdout.json",
@@ -1940,7 +1964,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/manifest.json",
-      "sha256": "a6b300e92625dcf880812402b07f7a170c2993a2d5fd9c18dc33b292f6e9747a"
+      "sha256": "77d1f5d4343193a3e222d7e6bc0ef176721752a6fe21b2edfa49a9e4b537fc02"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/reconciliation.json",
@@ -1968,7 +1992,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/04-bridge-install.sql.review",
-      "sha256": "2b37eba4414ed300270f372d0ffdb3639f8e1d27046ec356896b4ffae48cab2f"
+      "sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/captured/auth-scoping/platform_private.b2b_actor_scope.c3f29977.sql",
@@ -2084,7 +2108,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "941d357a8ec1169d53bc8c24153ee24aa4b1a0b273ead4c15ce2029c547a23c7"
+      "sha256": "7d7eb2112ae3f222d9d207b568660c363e937d4d524fead799747ea8fdbc8b14"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",
