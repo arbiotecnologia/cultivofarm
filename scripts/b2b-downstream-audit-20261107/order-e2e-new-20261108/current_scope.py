@@ -202,13 +202,9 @@ def _pair(pre_state: dict, post_state: dict) -> tuple[dict, dict, dict]:
         else:
             live = live_functions.get(signature)
             assert live is not None, f"CANDIDATE_DEPENDENCY_NOT_PROVEN_BY_DIFF:{signature}"
-            if signature in trigger_functions:
-                expected = next(row["function_md5"] for row in CAPTURE["triggers"] if _from_signature(row["function"]) == signature)
-                assert live[3] == expected, (signature, live[3], expected)
-            else:
-                # A changed dependency outside the 20/89 pins is admitted only
-                # when the independent diff proves its old row is still LIVE.
-                assert live == pre_functions[signature], f"UNPROVEN_CANDIDATE_DEPENDENCY:{signature}"
+            # A changed dependency outside the 20 pins is admitted only when
+            # the independent diff proves its old row is still LIVE.
+            assert live == pre_functions[signature], f"UNPROVEN_CANDIDATE_DEPENDENCY:{signature}"
             current_scope[signature] = live
 
     pre_doc_functions = sorted((_function_doc(current_scope[key], key) for key in required), key=lambda row: row[0])
