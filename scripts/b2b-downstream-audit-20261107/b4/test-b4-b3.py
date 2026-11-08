@@ -646,8 +646,8 @@ CREATE TABLE public.fiscal_invoice_items(id uuid PRIMARY KEY DEFAULT gen_random_
 CREATE TABLE IF NOT EXISTS public.fiscal_xml_runs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid,signed_path text,access_key text,signed_at timestamptz,updated_at timestamptz);
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
         company_a = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.A}' AND is_active").stdout.strip()
-        B3.psql(f"INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
- SELECT '{B3.F}',true,'VALIDATED','FSF FIXTURE LOCAL','00000000000191',1 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active);")
+        B3.psql(f"""INSERT INTO public.company_fiscal_settings(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)
+ SELECT '{B3.F}',true,'VALIDATED','FSF FIXTURE LOCAL','00000000000191',1 WHERE NOT EXISTS(SELECT 1 FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active);""")
         company_f = B3.psql(f"SELECT id FROM public.company_fiscal_settings WHERE organization_id='{B3.F}' AND is_active").stdout.strip()
         invoice_main, invoice_pending, invoice_denied, invoice_foreign = [B3.u(390+i) for i in range(4)]
         monetary = B3.psql(f"SELECT principal+financed_interest FROM platform_private.b2b_document_allocations WHERE document_id='{RECOVERY_DOC}'").stdout.strip()
