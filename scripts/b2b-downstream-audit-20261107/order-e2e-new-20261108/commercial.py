@@ -55,6 +55,13 @@ def apply(driver, load, root, out):
     if name=='profiles':row.update(nome='LOCAL B3',senha_provisoria=False)
     if name=='organizations':row.update(nome='LOCAL B3',status='ativa')
     if name=='partner_accounts':row.update(razao_social='LOCAL B3 PARTNER')
+    # Shape real c40a13b8: comprador é vínculo externo no tenant VENDEDOR;
+    # organizations.partner_account_id do vendedor permanece NULL. A fixture B3
+    # reduzida não tinha tenant_id e session_replication_role impede o trigger
+    # canônico de derivá-lo, portanto o dado completo é explícito nesta costura.
+    if name=='partner_users':
+     row.update(tenant_id=Q.F if row['partner_id']==Q.PF else Q.A,
+                papel='tecnico' if row['user_id']==Q.UT else 'gestor')
     if name=='produtos':row.update(tipo='solo' if row['id']==Q.SP.SOL else 'inseticida',familia_catalogo='fertilizante_adubo' if row['id']==Q.SP.SOL else 'quimico')
     if name=='microrganismos':row.update(tipo='bacteria')
     if name=='commercial_payment_plans':row.update(plan_type='custom')
