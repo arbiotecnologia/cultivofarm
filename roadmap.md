@@ -1,3 +1,9 @@
+## 08/11 20:13 — Revisão a1f275: confirmação parcial funcional e rollout separado
+- [ ] Reproduzir ANTES com oráculo funcional: confirmação parcial deve retornar sucesso/persistir 1, pedido aprovado, snapshots e financeiro preservados; initial_denial histórico não aprova parcial.
+- [ ] Corrigir sincronizador específico de revenda sem transição terminal prematura; excesso e status forçado continuam negados. Testar dois itens/uma OS, 3→1 sem reserva, cancelada/substituição, replay e últimas duas entregas concorrentes.
+- [ ] Rebuild fresh planos+B3+logística+B4+ponte com PRE/POST/rollback e baselines; fiscal positivo integrado continua bloqueado pela dependência real always-deny.
+- [ ] Entregar roteiro mínimo separado de rollout SOMENTE planos cc1f6cc: PRE baseline, advisors atuais a conferir pelo auditor, impacto frontend e testes exatos, sem instalação hospedada/publicação.
+
 ## 08/11 19:17 — Complemento 1a65c9c: inversão de locks e evidência final
 - [x] ANTES **196/196, exit 0**: H13 transmissão→nota versus H12 nota→transmissão, na mesma NF/transmissão e em conexões distintas, reproduziu `deadlock detected` no log real; retry preservou o retorno autorizado e limpou a pendência. Tentativa inválida anterior preservada separadamente.
 - [x] DEPOIS **198/198, exit 0**: H13, H12 e ponte direta padronizados em nota→transmissão, com locks mantidos. H13×H12 e H13×ponte direta não apresentaram deadlock; documento/título não duplicaram. Componente positivo continua costurado e não é prova integrada.
