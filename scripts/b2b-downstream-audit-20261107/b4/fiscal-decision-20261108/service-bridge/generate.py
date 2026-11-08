@@ -352,6 +352,7 @@ DO $$ BEGIN
  IF md5(pg_get_functiondef('public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(apply_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_AUTH_PIN_DRIFT'; END IF;
  IF md5(pg_get_functiondef('public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)'::regprocedure)) IS DISTINCT FROM '{hashlib.md5(transmit_source.encode()).hexdigest()}' THEN RAISE EXCEPTION 'B2B_FISCAL_H13_PIN_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='NO') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_BASELINE_DRIFT'; END IF;
+ IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='fiscal_sefaz_transmissions' AND column_name='protocol_c_stat') THEN RAISE EXCEPTION 'B2B_FISCAL_PROTOCOL_CSTAT_ALREADY_EXISTS'; END IF;
 END $$;
 """
     post = f"""-- READONLY POST da ponte; não certifica provedor/JWT/RLS hosted.
@@ -365,6 +366,7 @@ DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='created_by' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_POST_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='b2b_fiscal_created_by_guard' AND tgrelid='public.accounts_receivable'::regclass AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_FISCAL_CREATED_BY_GUARD_MISSING'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.b2b_fiscal_invoice_snapshots'::regclass AND relrowsecurity) THEN RAISE EXCEPTION 'B2B_FISCAL_SNAPSHOT_RLS_MISSING'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='fiscal_sefaz_transmissions' AND column_name='protocol_c_stat' AND is_nullable='YES') THEN RAISE EXCEPTION 'B2B_FISCAL_PROTOCOL_CSTAT_POST_DRIFT'; END IF;
 END $$;
 """
     install = "-- REVIEW ONLY; ponte service-only inativa até revisão e autorização.\nBEGIN;\nSET LOCAL lock_timeout='3s';\n" + pre + schema + bridge + "\n" + actor + ";\n" + fence + ";\n" + apply_auth + ";\n" + transmit + ";\n" + post + "\nCOMMIT;\n"
