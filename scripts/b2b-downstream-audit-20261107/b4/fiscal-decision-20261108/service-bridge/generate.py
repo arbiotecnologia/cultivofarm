@@ -43,6 +43,7 @@ def main() -> None:
     apply_auth = next(x["body"] for x in captured["functions"] if x["name"] == "rpc_fiscal_invoice_apply_authorization_v1")
 
     actor = extract(b4text, "b2b_integration_actor")
+    actor = re.sub(r"^CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", actor, count=1)
     actor = edit(actor, "BEGIN\n IF current_setting('transaction_isolation')<>'read committed'", """BEGIN
  IF current_setting('transaction_isolation')<>'read committed'""")
     actor = edit(actor, " IF u IS NULL OR org IS NULL THEN RAISE EXCEPTION 'B2B_ACTOR_DENIED' USING ERRCODE='42501'; END IF;", """ IF u IS NULL AND org IS NULL AND p_internal THEN
