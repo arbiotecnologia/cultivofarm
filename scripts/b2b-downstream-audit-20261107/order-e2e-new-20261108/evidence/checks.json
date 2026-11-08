@@ -34,7 +34,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "cfdc9a4f-fa19-4eee-b28e-50aa8225b0e5"
+    "order_id": "7ce5515e-5a2a-4a92-9a38-6246c27531fd"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -55,7 +55,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "15749207-a9f5-41d4-9be3-63bb20bdb33f"
+    "os_id": "c3d2b908-5df0-4ff8-837e-2be3b4d7a998"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -64,22 +64,141 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "69fa09c1-a609-467c-8d52-8ec23bac557c"
+    "delivery_id": "f9883a0d-6014-442f-abc2-2909d7630122"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "ed77fbea-b646-4672-ada7-a42a2baf9431"
+    "delivery_id": "402fb3e1-bfd9-4b14-aa75-5fb6322a2a7e"
+  },
+  {
+    "test": "review70 two_items_only_one_os_and_delivery",
+    "status": "PASS",
+    "detail": {
+      "initial_denial": "entregue'\"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement \"UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "completed_only_after_both_items": true
+    }
+  },
+  {
+    "test": "review70 quantity_three_delivery_one_remainder_unreserved",
+    "status": "PASS",
+    "detail": {
+      "initial_denial": "entregue'\"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement \"UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "delivered_quantities": [
+        1,
+        2
+      ],
+      "remainder_initially_unreserved": true
+    }
+  },
+  {
+    "test": "review70 cancelled_partial_does_not_complete",
+    "status": "PASS",
+    "detail": {
+      "initial_denial": "entregue'\"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement \"UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "cancelled_delivery_excluded": true,
+      "replacement_required_and_confirmed": true
+    }
+  },
+  {
+    "test": "review70 overdelivery_cannot_complete_or_rewrite_snapshots",
+    "status": "PASS",
+    "detail": {
+      "initial_denial": "entregue'\"\nPL/pgSQL function trg_entrega_sync_partner_order_fn() line 17 at SQL statement\nSQL statement \"UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,\n recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed\"\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 79 at SQL statement\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "ordered": 2,
+      "attempted": 3,
+      "confirmed_overdelivery": false
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_role",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 42 at RAISE\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_profile",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 42 at RAISE\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_tenant",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 43 at IF\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_gate",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 44 at RAISE\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_role",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  ESTQ_SEM_PERMISSAO\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 5 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_profile",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_tenant",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_gate",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 15 at RAISE\n",
+      "explicit_candidate_reauth": true
+    }
   },
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "fb2b21b4-dcd4-4ca1-9f2f-30469ea4d48a"
+    "delivery_id": "a64ccaa4-b609-4602-8552-5e0f44e20c3a"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
     "status": "PASS",
-    "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3"
+    "candidate_sha256": "db36815b2aad673a2f9e09823f90eb4c1014856df191e06374d1b701cbb8beea"
   },
   {
     "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",

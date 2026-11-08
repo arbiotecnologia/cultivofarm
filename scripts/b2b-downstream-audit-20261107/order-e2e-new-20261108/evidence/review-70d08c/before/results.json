@@ -1,0 +1,107 @@
+{
+  "review": "70d08c",
+  "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+  "hosted": false,
+  "results": [
+    {
+      "name": "two_items_only_one_os_and_delivery",
+      "status": "FAIL",
+      "error": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"c48aef05-b46a-467e-9fe1-89c2921832a8\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"320b40fb-bf0a-4826-b9a2-d48915961d25\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:16.332975+00:00\", \"comprovante_id\": \"459beed6-8511-4d16-af00-327b7310c8b0\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 43, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 171, in two_items_only_one_os_and_delivery\n    denial = self.deny_premature_completion(order, flow[\"delivery\"], before, \"two-items-premature\")\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 149, in deny_premature_completion\n    raise AssertionError(f\"premature completion accepted: order={status}, delivery={delivery_status}, stdout={result.stdout[-800:]}, stderr={result.stderr[-800:]}\")\nAssertionError: premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"c48aef05-b46a-467e-9fe1-89c2921832a8\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"320b40fb-bf0a-4826-b9a2-d48915961d25\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:16.332975+00:00\", \"comprovante_id\": \"459beed6-8511-4d16-af00-327b7310c8b0\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=\n"
+    },
+    {
+      "name": "quantity_three_delivery_one_remainder_unreserved",
+      "status": "FAIL",
+      "error": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"cf0e0295-954f-4805-b695-97dd1e92f7d6\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"7e5e5c19-8e32-431c-8c96-400feb386199\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:19.481401+00:00\", \"comprovante_id\": \"3919546d-390d-4534-a3fd-757c0674f4c7\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 43, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 191, in quantity_three_delivery_one_remainder_unreserved\n    denial = self.deny_premature_completion(order, first, before, \"qty-three-premature\")\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 149, in deny_premature_completion\n    raise AssertionError(f\"premature completion accepted: order={status}, delivery={delivery_status}, stdout={result.stdout[-800:]}, stderr={result.stderr[-800:]}\")\nAssertionError: premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"cf0e0295-954f-4805-b695-97dd1e92f7d6\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"7e5e5c19-8e32-431c-8c96-400feb386199\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:19.481401+00:00\", \"comprovante_id\": \"3919546d-390d-4534-a3fd-757c0674f4c7\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=\n"
+    },
+    {
+      "name": "cancelled_partial_does_not_complete",
+      "status": "FAIL",
+      "error": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"d2b3adfc-89d8-424b-9a86-d41cf5fa81bf\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"5b8ca111-4821-4ad3-b72b-670d2e36a3c2\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:23.407042+00:00\", \"comprovante_id\": \"0475a84b-8d15-4c61-9592-b17cf1f29ee7\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 43, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 214, in cancelled_partial_does_not_complete\n    denial = self.deny_premature_completion(order, first, before, \"cancel-partial-premature\")\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 149, in deny_premature_completion\n    raise AssertionError(f\"premature completion accepted: order={status}, delivery={delivery_status}, stdout={result.stdout[-800:]}, stderr={result.stderr[-800:]}\")\nAssertionError: premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"d2b3adfc-89d8-424b-9a86-d41cf5fa81bf\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"5b8ca111-4821-4ad3-b72b-670d2e36a3c2\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:23.407042+00:00\", \"comprovante_id\": \"0475a84b-8d15-4c61-9592-b17cf1f29ee7\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=\n"
+    },
+    {
+      "name": "overdelivery_cannot_complete_or_rewrite_snapshots",
+      "status": "FAIL",
+      "error": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"45f9da23-1581-4629-82a5-85cf90a974d7\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"6b5835ea-0d9d-479e-9593-2fed0eba02b0\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:26.411694+00:00\", \"comprovante_id\": \"35055586-a796-454b-aa8c-554c149e5f43\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 43, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 231, in overdelivery_cannot_complete_or_rewrite_snapshots\n    denial = self.deny_premature_completion(order, flow[\"delivery\"], before, \"overdelivery-confirm\")\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 149, in deny_premature_completion\n    raise AssertionError(f\"premature completion accepted: order={status}, delivery={delivery_status}, stdout={result.stdout[-800:]}, stderr={result.stderr[-800:]}\")\nAssertionError: premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"45f9da23-1581-4629-82a5-85cf90a974d7\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"6b5835ea-0d9d-479e-9593-2fed0eba02b0\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:26.411694+00:00\", \"comprovante_id\": \"35055586-a796-454b-aa8c-554c149e5f43\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr=\n"
+    },
+    {
+      "name": "create_wait_revocation_role",
+      "status": "FAIL",
+      "error": "revocation during row lock was not contained: kind=role, stdout={\"ok\": true, \"os_id\": \"461e82b1-6e1a-4bc5-9f3a-b02cd0627942\", \"replay\": false, \"contract\": \"B2B_RESALE_OS_V1\", \"order_id\": \"a259c6d7-fa20-42da-b517-64d0c23a92db\", \"order_item_id\": \"6eeeb081-b4d5-4229-bf3d-216e6752e923\"}\n, stderr=, before={'os': 0, 'ledger': 32, 'tickets': 0, 'receipts': 0, 'lab_events': 14}, after={'os': 1, 'ledger': 32, 'tickets': 0, 'receipts': 1, 'lab_events': 14}",
+      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 43, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 38, in <lambda>\n    cases.append((f\"create_wait_revocation_{kind}\", lambda kind=kind: self.create_wait_revocation(kind)))\n                                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/tmp/new-order-e2e-xs851llp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 277, in create_wait_revocation\n    raise AssertionError(f\"revocation during row lock was not contained: kind={kind}, stdout={out[-800:]}, stderr={err[-800:]}, before={before}, after={after}\")\nAssertionError: revocation during row lock was not contained: kind=role, stdout={\"ok\": true, \"os_id\": \"461e82b1-6e1a-4bc5-9f3a-b02cd0627942\", \"replay\": false, \"contract\": \"B2B_RESALE_OS_V1\", \"order_id\": \"a259c6d7-fa20-42da-b517-64d0c23a92db\", \"order_item_id\": \"6eeeb081-b4d5-4229-bf3d-216e6752e923\"}\n, stderr=, before={'os': 0, 'ledger': 32, 'tickets': 0, 'receipts': 0, 'lab_events': 14}, after={'os': 1, 'ledger': 32, 'tickets': 0, 'receipts': 1, 'lab_events': 14}\n"
+    },
+    {
+      "name": "create_wait_revocation_profile",
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "E\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": false
+      }
+    },
+    {
+      "name": "create_wait_revocation_tenant",
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "E\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": false
+      }
+    },
+    {
+      "name": "create_wait_revocation_gate",
+      "status": "PASS",
+      "detail": {
+        "actual_row_wait": true,
+        "error": "E\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n",
+        "zero_os_ticket_ledger_event_receipt_delta": true,
+        "explicit_candidate_reauth": false
+      }
+    },
+    {
+      "name": "replay_wait_revocation_role",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  ESTQ_SEM_PERMISSAO\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 5 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+        "explicit_candidate_reauth": false
+      }
+    },
+    {
+      "name": "replay_wait_revocation_profile",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+        "explicit_candidate_reauth": false
+      }
+    },
+    {
+      "name": "replay_wait_revocation_tenant",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+        "explicit_candidate_reauth": false
+      }
+    },
+    {
+      "name": "replay_wait_revocation_gate",
+      "status": "PASS",
+      "detail": {
+        "actual_advisory_wait": true,
+        "receipt_not_returned": true,
+        "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 15 at RAISE\n",
+        "explicit_candidate_reauth": true
+      }
+    }
+  ]
+}

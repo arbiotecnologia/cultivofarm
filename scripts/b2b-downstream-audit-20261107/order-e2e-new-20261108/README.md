@@ -1,5 +1,11 @@
 # Reconstrução nova — composição local concluída, NÃO APROVADO
 
+## Revisão independente 70d08c — 08/11 16:30 UTC
+
+A revisão foi reproduzida ANTES no candidato `6452c8ce…`: dois itens com uma OS, item 3 com entrega 1 e restante sem reserva, parcial cancelada e excesso concluíram pedidos indevidamente; revogação do papel durante o row lock criou OS/recibo. Perfil, tenant e gate já foram contidos por guards independentes, e replays revogados já foram negados.
+
+O gerador foi corrigido sem hosted/publicação. Cada item agora exige quantidade entregue exata, canceladas não somam, excesso/itens estranhos bloqueiam e snapshots permanecem imutáveis. O writer revalida autoridade/tenant/escopo/gate após o último lock. DEPOIS passou **32/32 checkpoints e 12/12 casos, exit 0**, com zero efeitos nas revogações e conclusão somente após cobertura total. Novo candidato SHA256 `db36815b2aad673a2f9e09823f90eb4c1014856df191e06374d1b701cbb8beea`. Evidência ANTES/DEPOIS e tentativas de oráculo em `evidence/review-70d08c/`. Continua INATIVO/NÃO APROVADO; isolamento dos planos segue BLOCKER prioritário.
+
 Autorização Renato 08/11/2026 03:13 UTC. Este diretório é novo, não recuperação de `order-e2e/`; nenhum 11/11 ou 34/34 histórico entra nos resultados.
 
 ## Executado nesta rodada

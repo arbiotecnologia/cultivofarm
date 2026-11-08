@@ -321,6 +321,15 @@ def main():
   (OUT/'resale-delivery.json').write_text(json.dumps(dict(group=grouped,group_replay=group_replay,send=sent,send_replay=sent_replay,confirm=confirmed,confirm_replay=confirmed_replay,containment=containment),indent=2)+'\n')
   checks.append(dict(test='resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase',status='PASS',delivery_id=delivery))
 
+  # Revisão independente 70d08c: cada caso exige contenção/conclusão somente
+  # completa e reautorização após waits reais. Na execução ANTES, os oito casos
+  # de quantidade/lock devem falhar sem interromper a evidência dos demais.
+  Review70=load('review_70d08c',H/'review_70d08c.py')
+  review70=Review70.run(B,Q,A,choice,dict(order_id=order_id,item_id=item['id'],expected=accepted['updated_at'],key='resale-os-create-0001'))
+  (OUT/'review-70d08c.json').write_text(json.dumps(dict(review='70d08c',candidate_sha256=logistics['candidate_sha256'],hosted=False,results=review70),indent=2)+'\n')
+  for row in review70:
+   checks.append(dict(test='review70 '+row['name'],status=row['status'],detail=row.get('detail') or row.get('error')))
+
   manual=A.finished('quimico','kg',25,2)
   manual_reserved=json.loads(B.last(B.reserve(manual['os'],manual['stock'],2,'resale-manual-regression-reserve')))['itens'][0]
   manual_group=json.loads(B.last(B.group(manual['os'],manual_reserved,2,'resale-manual-regression-group')))

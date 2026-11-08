@@ -1,0 +1,183 @@
+[
+  {
+    "test": "fresh full physical catalog restoration and reviewed upstream composition",
+    "status": "PASS"
+  },
+  {
+    "test": "physical revised install PRE POST; fresh confirmation/send generated pins",
+    "status": "PASS"
+  },
+  {
+    "test": "new physical control purchase reserve send proof confirm without manufacture",
+    "status": "PASS"
+  },
+  {
+    "test": "new B3 captured economic composition merged without dropped physical guards",
+    "status": "PASS"
+  },
+  {
+    "test": "real registration fence and exact receivable ACL with all ten triggers enabled before B2B order",
+    "status": "PASS"
+  },
+  {
+    "test": "direct settings write denied and delivery context forbids receivable INSERT UPDATE DELETE",
+    "status": "PASS"
+  },
+  {
+    "test": "additive pilot targeting keeps old and new required; legacy writer denied; outside partner and tenant unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
+    "status": "PASS",
+    "order_id": "6c264522-5adb-4610-a267-2fefc37c9a41"
+  },
+  {
+    "test": "accounting pending approval denied atomically before synthetic promotion",
+    "status": "PASS"
+  },
+  {
+    "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
+    "status": "PASS"
+  },
+  {
+    "test": "resale candidate gate closed, no client EXECUTE and no direct ready OS bypass",
+    "status": "PASS"
+  },
+  {
+    "test": "authenticated direct status changes zero rows and privileged direct operational transition is explicitly denied",
+    "status": "PASS"
+  },
+  {
+    "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
+    "status": "PASS",
+    "os_id": "fe2b4491-d61a-4fe8-b279-d86a322d1eba"
+  },
+  {
+    "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
+    "status": "PASS"
+  },
+  {
+    "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
+    "status": "PASS",
+    "delivery_id": "c048fc20-1eeb-4347-9208-6497e09b9e13"
+  },
+  {
+    "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
+    "status": "PASS",
+    "delivery_id": "82fe4dcc-8f75-45bc-b43c-d4199662fee0"
+  },
+  {
+    "test": "review70 two_items_only_one_os_and_delivery",
+    "status": "FAIL",
+    "detail": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"c48aef05-b46a-467e-9fe1-89c2921832a8\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"320b40fb-bf0a-4826-b9a2-d48915961d25\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:16.332975+00:00\", \"comprovante_id\": \"459beed6-8511-4d16-af00-327b7310c8b0\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr="
+  },
+  {
+    "test": "review70 quantity_three_delivery_one_remainder_unreserved",
+    "status": "FAIL",
+    "detail": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"cf0e0295-954f-4805-b695-97dd1e92f7d6\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"7e5e5c19-8e32-431c-8c96-400feb386199\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:19.481401+00:00\", \"comprovante_id\": \"3919546d-390d-4534-a3fd-757c0674f4c7\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr="
+  },
+  {
+    "test": "review70 cancelled_partial_does_not_complete",
+    "status": "FAIL",
+    "detail": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"d2b3adfc-89d8-424b-9a86-d41cf5fa81bf\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"5b8ca111-4821-4ad3-b72b-670d2e36a3c2\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:23.407042+00:00\", \"comprovante_id\": \"0475a84b-8d15-4c61-9592-b17cf1f29ee7\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr="
+  },
+  {
+    "test": "review70 overdelivery_cannot_complete_or_rewrite_snapshots",
+    "status": "FAIL",
+    "detail": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"45f9da23-1581-4629-82a5-85cf90a974d7\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"6b5835ea-0d9d-479e-9593-2fed0eba02b0\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:45:26.411694+00:00\", \"comprovante_id\": \"35055586-a796-454b-aa8c-554c149e5f43\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr="
+  },
+  {
+    "test": "review70 create_wait_revocation_role",
+    "status": "FAIL",
+    "detail": "revocation during row lock was not contained: kind=role, stdout={\"ok\": true, \"os_id\": \"461e82b1-6e1a-4bc5-9f3a-b02cd0627942\", \"replay\": false, \"contract\": \"B2B_RESALE_OS_V1\", \"order_id\": \"a259c6d7-fa20-42da-b517-64d0c23a92db\", \"order_item_id\": \"6eeeb081-b4d5-4229-bf3d-216e6752e923\"}\n, stderr=, before={'os': 0, 'ledger': 32, 'tickets': 0, 'receipts': 0, 'lab_events': 14}, after={'os': 1, 'ledger': 32, 'tickets': 0, 'receipts': 1, 'lab_events': 14}"
+  },
+  {
+    "test": "review70 create_wait_revocation_profile",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "E\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_tenant",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "E\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 create_wait_revocation_gate",
+    "status": "PASS",
+    "detail": {
+      "actual_row_wait": true,
+      "error": "E\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n",
+      "zero_os_ticket_ledger_event_receipt_delta": true,
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_role",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  ESTQ_SEM_PERMISSAO\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 5 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_profile",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_tenant",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+      "explicit_candidate_reauth": false
+    }
+  },
+  {
+    "test": "review70 replay_wait_revocation_gate",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 15 at RAISE\n",
+      "explicit_candidate_reauth": true
+    }
+  },
+  {
+    "test": "manual agronomic physical flow still passes after resale candidate",
+    "status": "PASS",
+    "delivery_id": "28111e79-41b4-4ad9-93ec-97a8d4d6d584"
+  },
+  {
+    "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
+    "status": "PASS",
+    "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3"
+  },
+  {
+    "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
+    "status": "PASS"
+  }
+]
