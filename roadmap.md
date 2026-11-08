@@ -1,3 +1,10 @@
+## 08/11 20:13 — Revisão a1f275: confirmação parcial funcional e rollout separado
+- [x] ANTES reproduziu três falhas funcionais; initial_denial histórico classificado como oráculo superado, não PASS funcional. Iteração intermediária de evento duplicado preservada.
+- [x] Corrigido sincronizador específico, cobertura de OS e lock pedido→OS; parciais válidas persistem com sucesso/aprovado, restante completa, excesso/status direto negados. Replays e duas últimas entregas em conexões distintas sem duplicação: 13/13 regressões.
+- [x] Rebuild fresh 40/40, exit 0, planos+B3+logística+B4+ponte e PRE/POST/rollback, baselines intactas; fiscal real always-deny, zero documento/alocação/snapshot/título. Evidências e hashes em review-a1f275/summary.json.
+- [x] Roteiro mínimo separado SOMENTE planos cc1f6cc em rollout-security-only.md: PRE baseline/current advisors/impacto frontend e testes exatos.
+- [ ] Revisão independente e retestes reais pelo auditor antes de instalação; advisors atuais e PRE de produção NÃO EXECUTADOS nesta rodada. Fiscal/contabilidade/provedores/envios/cobranças/publicação permanecem bloqueados.
+
 ## 08/11 19:17 — Complemento 1a65c9c: inversão de locks e evidência final
 - [x] ANTES **196/196, exit 0**: H13 transmissão→nota versus H12 nota→transmissão, na mesma NF/transmissão e em conexões distintas, reproduziu `deadlock detected` no log real; retry preservou o retorno autorizado e limpou a pendência. Tentativa inválida anterior preservada separadamente.
 - [x] DEPOIS **198/198, exit 0**: H13, H12 e ponte direta padronizados em nota→transmissão, com locks mantidos. H13×H12 e H13×ponte direta não apresentaram deadlock; documento/título não duplicaram. Componente positivo continua costurado e não é prova integrada.

@@ -33,6 +33,7 @@ class Review:
             ("quantity_three_delivery_one_remainder_unreserved", self.quantity_three_delivery_one_remainder_unreserved),
             ("cancelled_partial_does_not_complete", self.cancelled_partial_does_not_complete),
             ("overdelivery_cannot_complete_or_rewrite_snapshots", self.overdelivery_cannot_complete_or_rewrite_snapshots),
+            ("last_two_deliveries_concurrent", self.last_two_deliveries_concurrent),
         ]
         for kind in ("role", "profile", "tenant", "gate"):
             cases.append((f"create_wait_revocation_{kind}", lambda kind=kind: self.create_wait_revocation(kind)))
@@ -147,7 +148,7 @@ class Review:
         delivery_status = self.B.last(f"SELECT status::text FROM public.entregas WHERE id='{delivery_id}';")
         if result.returncode == 0 or status != "aprovado":
             raise AssertionError(f"premature completion accepted: order={status}, delivery={delivery_status}, stdout={result.stdout[-800:]}, stderr={result.stderr[-800:]}")
-        if not any(token in result.stderr for token in ("DELIVERY_B2B_TRANSITION_CLOSED", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED")):
+        if not any(token in result.stderr for token in ("DELIVERY_B2B_TRANSITION_CLOSED", "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED", "B2B_RESALE_OVERDELIVERY")):
             raise AssertionError("unexpected confirmation error: " + result.stderr[-1600:])
         assert delivery_status == "em_rota", delivery_status
         assert self.snapshots(order["id"]) == before_snapshots, "denied transition changed economic snapshots"
@@ -162,20 +163,46 @@ class Review:
         self.proof(delivery, label + "-proof")
         return {"os": os_id, "stock": stock, "delivery_stock": delivery_stock, "delivery": delivery}
 
+    def assert_partial_success(self, order, delivery, before, label):
+        sql = self.confirm_sql(delivery, label)
+        result = self.B.run_raw(sql)
+        assert result.returncode == 0, ("PARTIAL_MUST_SUCCEED", result.stdout, result.stderr)
+        ack = json.loads(result.stdout.strip().splitlines()[-1])
+        assert ack["success"] is True and ack["replay"] is False, ack
+        assert self.status(order["id"]) == "aprovado"
+        state = self.persisted(delivery)
+        assert state["delivery"] == "entregue" and state["proof"] == "confirmado", state
+        assert state["stock"] == "expedido" and state["expedition"] == 1 and state["receipt"] == 1, state
+        replay = self.B.run_raw(sql)
+        assert replay.returncode == 0, replay.stderr
+        assert json.loads(replay.stdout.strip().splitlines()[-1])["replay"] is True
+        assert self.persisted(delivery) == state, "replay duplicated persistence"
+        assert self.snapshots(order["id"]) == before
+        return {"confirmation_success": True, "persisted": state, "replay_no_delta": True, "order_status": "aprovado"}
+
+    def persisted(self, delivery):
+        return json.loads(self.B.last(f"""SELECT jsonb_build_object(
+          'delivery',e.status,'proof',c.status,'stock',s.status,
+          'quantity',e.quantidade_entregue,
+          'expedition',(SELECT count(*) FROM public.estoque_movimentacoes m WHERE m.referencia_id=e.id AND m.acao='expedicao'),
+          'receipt',(SELECT count(*) FROM platform_private.delivery_requests_20261030 r WHERE r.action='confirm' AND r.result->>'entrega_id'=e.id::text),
+          'receivables',(SELECT count(*) FROM public.accounts_receivable))::text
+          FROM public.entregas e JOIN public.entrega_comprovantes c ON c.id=e.comprovante_id
+          JOIN public.estoque_produto s ON s.id=e.estoque_produto_id WHERE e.id='{delivery}';"""))
+
     def two_items_only_one_os_and_delivery(self):
         second_packaging = {"item_id": self.Q.SP.SOL, "item_tipo": "produto", "packaging_id": self.Q.SP.PK40, "quantidade": 1}
         order = self.make_order([self.Q.S(1), second_packaging], "two-items")
         first, second = order["items"]
         before = self.snapshots(order["id"])
         flow = self.prepare_sent_delivery(order, first, 1, "two-items-first")
-        denial = self.deny_premature_completion(order, flow["delivery"], before, "two-items-premature")
+        partial = self.assert_partial_success(order, flow["delivery"], before, "two-items-partial")
+        assert self.B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{order['id']}';") == '1'
         second_flow = self.prepare_sent_delivery(order, second, 1, "two-items-second")
-        confirmed_second = self.confirm(second_flow["delivery"], "two-items-second-confirm")
-        assert confirmed_second["success"] is True and self.status(order["id"]) == "aprovado", confirmed_second
-        confirmed_first = self.confirm(flow["delivery"], "two-items-first-retry")
-        assert confirmed_first["success"] is True and self.status(order["id"]) == "entregue", confirmed_first
+        assert self.confirm(second_flow["delivery"], "two-items-second-confirm")["success"] is True
+        assert self.status(order["id"]) == "entregue"
         assert self.snapshots(order["id"]) == before
-        return {"initial_denial": denial, "completed_only_after_both_items": True}
+        return {"partial": partial, "completed_only_after_both_items": True}
 
     def quantity_three_delivery_one_remainder_unreserved(self):
         order = self.make_order([self.Q.S(3)], "qty-three")
@@ -185,19 +212,18 @@ class Review:
         stock = self.purchase(item, 3, "qty-three-purchase")
         first_stock = self.reserve(order, os_id, stock, 1, "qty-three-first-reserve")
         first = self.group(os_id, first_stock, 1, "qty-three-first-group")
-        assert self.B.last(f"SELECT quantidade=2 AND status='disponivel' AND reservado_para_os_id IS NULL FROM public.estoque_produto WHERE id='{stock}';") == "t"
         self.send(first, "qty-three-first-send")
         self.proof(first, "qty-three-first-proof")
-        denial = self.deny_premature_completion(order, first, before, "qty-three-premature")
+        partial = self.assert_partial_success(order, first, before, "qty-three-partial")
+        assert self.B.last(f"SELECT quantidade=2 AND status='disponivel' AND reservado_para_os_id IS NULL FROM public.estoque_produto WHERE id='{stock}';") == "t"
+        assert self.B.last(f"SELECT status::text FROM public.ordens_servico WHERE id='{os_id}';") == 'pronto_entrega'
         second = self.group(os_id, stock, 2, "qty-three-remainder-group")
         self.send(second, "qty-three-remainder-send")
         self.proof(second, "qty-three-remainder-proof")
         assert self.confirm(second, "qty-three-remainder-confirm")["success"] is True
-        assert self.status(order["id"]) == "aprovado"
-        assert self.confirm(first, "qty-three-first-retry")["success"] is True
         assert self.status(order["id"]) == "entregue"
         assert self.snapshots(order["id"]) == before
-        return {"initial_denial": denial, "delivered_quantities": [1, 2], "remainder_initially_unreserved": True}
+        return {"partial": partial, "delivered_quantities": [1, 2], "remainder_initially_unreserved": True}
 
     def cancelled_partial_does_not_complete(self):
         order = self.make_order([self.Q.S(2)], "cancel-partial")
@@ -211,17 +237,15 @@ class Review:
         self.cancel(second, "cancel-partial-second")
         self.send(first, "cancel-partial-first-send")
         self.proof(first, "cancel-partial-first-proof")
-        denial = self.deny_premature_completion(order, first, before, "cancel-partial-premature")
+        partial = self.assert_partial_success(order, first, before, "cancel-partial-confirm")
         replacement = self.group(os_id, stock, 1, "cancel-partial-replacement-group")
         self.send(replacement, "cancel-partial-replacement-send")
         self.proof(replacement, "cancel-partial-replacement-proof")
         assert self.confirm(replacement, "cancel-partial-replacement-confirm")["success"] is True
-        assert self.status(order["id"]) == "aprovado"
-        assert self.confirm(first, "cancel-partial-first-retry")["success"] is True
         assert self.status(order["id"]) == "entregue"
         assert self.B.last(f"SELECT status::text FROM public.entregas WHERE id='{second}';") == "cancelada"
         assert self.snapshots(order["id"]) == before
-        return {"initial_denial": denial, "cancelled_delivery_excluded": True, "replacement_required_and_confirmed": True}
+        return {"partial": partial, "cancelled_delivery_excluded": True, "replacement_required_and_confirmed": True}
 
     def overdelivery_cannot_complete_or_rewrite_snapshots(self):
         order = self.make_order([self.Q.S(2)], "overdelivery")
@@ -233,6 +257,35 @@ class Review:
         assert self.status(order["id"]) == "aprovado"
         assert self.snapshots(order["id"]) == before
         return {"initial_denial": denial, "ordered": 2, "attempted": 3, "confirmed_overdelivery": False}
+
+    def last_two_deliveries_concurrent(self):
+        second_packaging = {"item_id": self.Q.SP.SOL, "item_tipo": "produto", "packaging_id": self.Q.SP.PK40, "quantidade": 1}
+        order = self.make_order([self.Q.S(1), second_packaging], "concurrent-last")
+        before = self.snapshots(order["id"])
+        flows = [self.prepare_sent_delivery(order, item, 1, f"concurrent-last-{index}") for index, item in enumerate(order["items"])]
+        commands = [self.confirm_sql(flow["delivery"], f"concurrent-last-confirm-{index}") for index, flow in enumerate(flows)]
+        holder = self.B.T.session(f"BEGIN;SELECT 1 FROM public.partner_orders WHERE id='{order['id']}' FOR UPDATE;")
+        time.sleep(0.15)
+        workers = [self.B.T.session(command) for command in commands]
+        self.B.T.wait()
+        self.B.T.finish(holder, "COMMIT;")
+        responses = [self.B.T.finish(worker) for worker in workers]
+        for out, err in responses:
+            assert not err, (out, err)
+            assert json.loads(out.strip().splitlines()[-1])["success"] is True, out
+        assert self.status(order["id"]) == "entregue"
+        states = [self.persisted(flow["delivery"]) for flow in flows]
+        for state in states:
+            assert state["delivery"] == "entregue" and state["proof"] == "confirmado"
+            assert state["expedition"] == 1 and state["receipt"] == 1
+        for command, state, flow in zip(commands, states, flows):
+            replay = self.B.run_raw(command)
+            assert replay.returncode == 0, replay.stderr
+            assert json.loads(replay.stdout.strip().splitlines()[-1])["replay"] is True
+            assert self.persisted(flow["delivery"]) == state
+        assert self.B.last(f"SELECT count(*) FROM public.production_timeline_events WHERE partner_order_id='{order['id']}' AND event_type='entrega_realizada';") == '1'
+        assert self.snapshots(order["id"]) == before
+        return {"distinct_connections_and_OS": True, "actual_lock_wait": True, "both_success": True, "terminal_event_count": 1, "states": states, "replays_no_delta": True}
 
     def mutations(self, kind):
         Q = self.Q

@@ -1520,11 +1520,15 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/generate.py",
-      "sha256": "9b12fba2b7890e6d0840528f37d4fd42f2d91f6b9aeba5d19e3c98a49697db08"
+      "sha256": "a176922dc021181bfb252dcafec87c02e1d6b9b51dc8337a4f10b4cbb0ba8724"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/manifest.json",
-      "sha256": "6db9182855d103452f3111a2895052976d5cadb166b1aa6e614db300f2a38da2"
+      "sha256": "8a5fd99cbf236570148e3f6121ee4130cdeb4019d59aca24a1c73a26ef0c9a9d"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/validation-1a65c9c.json",
+      "sha256": "d91eb63a6bbf4afea7be0afe8a267fbcc35e9192fa605a0ad5723d863b35eb00"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py",
@@ -1956,7 +1960,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generate.py",
-      "sha256": "462efe814d5d6d0bac98f669b6b14538c8180aeb0eace7bd7e06d9254ed7b254"
+      "sha256": "155851cbb19e570dece7494cd151557e64f3557bca74f7577d698c724a54823f"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generator.stdout.json",
@@ -1964,7 +1968,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/manifest.json",
-      "sha256": "77d1f5d4343193a3e222d7e6bc0ef176721752a6fe21b2edfa49a9e4b537fc02"
+      "sha256": "0f09097b2e3c4608390b66227a9043c5aa33c79d7c8b125cccdf4cccd171a5ef"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/reconciliation.json",
@@ -2124,11 +2128,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py",
-      "sha256": "56545af4bc0af6fcfb190b63191e04b32b99282c4b95bf5641bc44d922c34b12"
+      "sha256": "4648dd0c3cc13373f32e0746c88763f089ce7adb56c4e80e5ca62cb2cc7feb16"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py",
-      "sha256": "1b90084e66b62a976b8c85b4a3b4f8ff7a7beb6fce5a141f7223cb9705dacf39"
+      "sha256": "7ab1573096995d430249a9b3f92912a0241ecc14afc8b1ca52d28e36ef0422cb"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",

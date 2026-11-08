@@ -1,3 +1,7 @@
+## Resultado atual — revisão a1f275
+
+Rebuild fresh **40/40, exit 0**, regressões funcionais **13/13**. Parciais válidas agora persistem com sucesso e pedido aprovado; restante completa, excesso/status forçado negados, últimas duas entregas concorrentes e replays sem duplicação. Candidato inativo/não aprovado. Evidência e hashes em `evidence/review-a1f275/summary.json` e README. As contagens abaixo são histórico; `initial_denial` antigo não valida operação parcial. Fiscal positivo integrado permanece bloqueado pela dependência real always-deny, zero documento/alocação/snapshot/título.
+
 # Reconstrução nova — composição local concluída, NÃO APROVADO
 
 ## Revisão independente 70d08c — 08/11 16:30 UTC
