@@ -449,7 +449,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
   invoice_id=Q.u(900);transmission_id=Q.u(901);access_key='35261111111111111111111111111111111111111111'
   company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
-  B.sql(f"""INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
+  B.sql(f"""SET ROLE service_role;
+ INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
    partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference,access_key)
   VALUES('{invoice_id}','NFE','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-01','{accepted['total']}','{Q.UADM}','LOCAL-INTEGRATED','{access_key}');
  INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
