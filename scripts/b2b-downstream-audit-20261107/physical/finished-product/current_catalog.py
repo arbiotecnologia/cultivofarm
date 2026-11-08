@@ -154,12 +154,17 @@ def assert_current(last):
 def _canonical_dependency_sql():
     rpc = _module("current_catalog_rpc", CATALOG / "rpc_section.py")
     fence = _module("current_catalog_fence", CATALOG / "fence_section.py")
-    codigo = _module("current_catalog_codigo", CATALOG / "codigo_section.py")
     fence.FENCED = [row for row in fence.FENCED if row[0] in CANONICAL_DEPENDENCIES]
     assert len(fence.FENCED) == 2
     statements = []
     fence.fence_sql(statements.append, "platform_private.local_current_catalog_ledger", rpc.lit)
-    codigo.codigo_sql(statements.append, "platform_private.local_current_catalog_ledger", rpc.lit)
+    migration = (CATALOG / "01-migrate.sql.review").read_text()
+    start = migration.index("CREATE OR REPLACE FUNCTION public.proximo_codigo(_prefixo text, _tabela text)")
+    end = migration.index("REVOKE ALL ON FUNCTION public.proximo_codigo(text,text) FROM PUBLIC, anon, authenticated;", start)
+    end = migration.index(";", end) + 1
+    # Somente o gerador global fechado é dependência dos cinco instaladores.
+    # A migração de sequências/triggers não é necessária e exigiria schema fora do recorte.
+    statements.append(migration[start:end])
     return "\n".join(statements)
 
 
