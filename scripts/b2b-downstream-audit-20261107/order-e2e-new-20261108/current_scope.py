@@ -69,7 +69,10 @@ def _identity_args(raw: str) -> str:
             types.append(remainder.strip())
         else:
             types.append(remainder.strip())
-    return ",".join(types)
+    normalized = ",".join(types)
+    normalized = re.sub(r"\btimestamptz\b", "timestamp with time zone", normalized)
+    normalized = re.sub(r"\btimetz\b", "time with time zone", normalized)
+    return normalized
 
 
 def _signature(schema: str, name: str, args: str) -> str:
