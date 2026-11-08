@@ -57,7 +57,6 @@ SUPPLEMENTAL_SOURCES = {
     "platform_private.b2b_packaging_item_snapshot_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/02-install.sql.review",
     "platform_private.catalog_owner_immutable()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
     "platform_private.catalogo_volumes_owner_consistent()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.catalogo_volumes_owner_consistent.a4cfde90.live-20261106.sql",
-    "platform_private.delivery_mutation_guard_20261030()": SCRIPTS / "delivery-atomic-hardening-20261030/confirmation/install.sql.review",
     "platform_private.partner_order_items_catalog_tenant_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/platform_private.partner_order_items_catalog_tenant_guard.211a5c4d.live-20261106.sql",
     "platform_private.solid_mass_immutable()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_immutable.b0611f3e.live-20261106.sql",
     "platform_private.solid_mass_packaging_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_packaging_guard.1494933c.live-20261106.sql",
@@ -67,10 +66,6 @@ SUPPLEMENTAL_SOURCES = {
     "platform_private.stock_envase_reservation_root_v1()": SCRIPTS / "stock-envase-recovery-20261027/isolated/candidate.sql.review",
     "public.set_codigo_produto()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
     "public.set_codigo_microrganismo()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
-    "cf_user_guards_v1.acquire_gate()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
-    "cf_user_guards_v1.advance_stamp()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
-    "cf_user_guards_v1.block_truncate()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
-    "cf_user_guards_v1.require_admin()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
 }
 SUPPLEMENTAL_MD5 = {
     (row["function"] if "." in row["function"].split("(")[0] else "public." + row["function"]): row["function_md5"]
@@ -78,6 +73,19 @@ SUPPLEMENTAL_MD5 = {
     if (row["function"] if "." in row["function"].split("(")[0] else "public." + row["function"]) in SUPPLEMENTAL_SOURCES
 }
 assert set(SUPPLEMENTAL_MD5) == set(SUPPLEMENTAL_SOURCES)
+JSON_BODY_SOURCE = SCRIPTS / "delivery-atomic-hardening-20261030/capture/current.json"
+JSON_BODY_SIGNATURES = {
+    "cf_user_guards_v1.acquire_gate()",
+    "cf_user_guards_v1.advance_stamp()",
+    "cf_user_guards_v1.block_truncate()",
+    "cf_user_guards_v1.require_admin()",
+}
+_json_rows = json.loads(JSON_BODY_SOURCE.read_text())["functions"]
+JSON_BODIES = {}
+for _signature in JSON_BODY_SIGNATURES:
+    _name = _signature.split(".")[-1].split("(")[0]
+    _expected = next(row["function_md5"] for row in CAPTURE["triggers"] if row["function"] == _signature)
+    JSON_BODIES[_signature] = next(row["body"] for row in _json_rows if row.get("name") == _name and row.get("md5") == _expected)
 
 SHORT_DELIVERY_SIGNATURE = "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
 SHORT_DELIVERY_SOURCE = SCRIPTS / "delivery-atomic-hardening-20261030/capture/current.json"
@@ -162,7 +170,7 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
 FROM (VALUES {values}) v(signature)
 LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);
 """)
-    additional_signatures = sorted(set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES))
+    additional_signatures = sorted(set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES) | set(JSON_BODIES))
     additional_values = ",".join("(%s)" % _literal(signature) for signature in additional_signatures)
     additional = _json(last, f"""
 SELECT COALESCE(jsonb_agg(jsonb_build_object(
@@ -231,6 +239,10 @@ def assert_current(last):
     for signature, expected in SUPPLEMENTAL_MD5.items():
         if additional.get(signature) != expected:
             errors.append(f"supplemental_function_md5:{signature}:{additional.get(signature)}!={expected}")
+    for signature, body in JSON_BODIES.items():
+        expected = next(row["function_md5"] for row in CAPTURE["triggers"] if row["function"] == signature)
+        if additional.get(signature) != expected:
+            errors.append(f"json_function_md5:{signature}:{additional.get(signature)}!={expected}")
     if _expected_additional_pins:
         for signature, expected in _expected_additional_pins.items():
             if additional.get(signature) != expected:
@@ -289,10 +301,11 @@ def _extract_function(source, signature):
 
 
 def _supplemental_function_sql():
-    return "\n".join(
+    sql_bodies = [
         _extract_function(SUPPLEMENTAL_SOURCES[signature], signature)
         for signature in sorted(SUPPLEMENTAL_SOURCES)
-    )
+    ]
+    return "\n".join(sql_bodies + [JSON_BODIES[signature].rstrip() + ";" for signature in sorted(JSON_BODIES)])
 
 
 def _captured_trigger_sql():
@@ -359,7 +372,7 @@ CREATE TABLE IF NOT EXISTS platform_private.local_current_catalog_ledger(step te
         "additional_capture_sha256": hashlib.sha256(ADDITIONAL_CAPTURE.read_bytes()).hexdigest(),
         "additional_pin_provenance": "MD5 medido localmente dos corpos SQL fornecidos; ACL adicional não foi presumida como LIVE",
         "body_reconciliation": {signature: {key: value for key, value in row.items() if key != "body"} for signature, row in BODY_RECONCILIATION.items()},
-        "counts": {"functions": 20, "triggers": 120, "relations": 17, "additional_dependencies": 4, "supplemental_trigger_functions": len(SUPPLEMENTAL_SOURCES)},
+        "counts": {"functions": 20, "triggers": 120, "relations": 17, "additional_dependencies": 4, "supplemental_trigger_functions": len(SUPPLEMENTAL_SOURCES) + len(JSON_BODIES)},
         "supplemental_sources": {signature: str(path.relative_to(SCRIPTS)) for signature, path in SUPPLEMENTAL_SOURCES.items()},
         "synthetic_seam": "schema canônico mínimo de apresentação e ledger local; corpos suplementares versionados validados pelos MD5 dos triggers LIVE; nenhuma costura entra nos candidatos",
         **state,
