@@ -193,7 +193,14 @@ def _state_triggers(state: dict, function_rows: dict[str, list]) -> list[list]:
 def _merged_triggers(state: dict, function_rows: dict[str, list]) -> list[list]:
     rows = {(row[0], row[1]): row for row in _captured_triggers()}
     for row in _state_triggers(state, function_rows):
-        rows[(row[0], row[1])] = row
+        key = (row[0], row[1])
+        if key in rows:
+            captured = rows[key]
+            # Preserve the byte-proven pg_get_triggerdef(..., true) capture;
+            # only the candidate trigger-function MD5 may change.
+            rows[key] = [captured[0], captured[1], captured[2], captured[3], row[4], captured[5]]
+        else:
+            rows[key] = row
     return sorted(rows.values(), key=lambda row: (row[0], row[1]))
 
 
