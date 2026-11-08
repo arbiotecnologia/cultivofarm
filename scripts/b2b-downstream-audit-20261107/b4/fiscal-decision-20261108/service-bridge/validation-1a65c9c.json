@@ -1,0 +1,52 @@
+{
+  "review": "1a65c9c",
+  "status": "INACTIVE_NOT_APPROVED",
+  "candidate_sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
+  "component_before": {
+    "run": "../review-458b6012/lock-order-1a65-before/",
+    "exit_code": 0,
+    "checks": "196/196",
+    "meaning": "CHARACTERIZATION_NOT_VULNERABILITY_COUNT",
+    "deadlock_reproduced": true,
+    "connections": "H13 versus direct H12 on the same invoice/transmission",
+    "oracle": "PostgreSQL deadlock log; H13 can catch the SQL error",
+    "recovery": "authorized external response preserved; private close pending retried and cleared"
+  },
+  "component_after": {
+    "run": "../review-458b6012/lock-order-1a65-after/",
+    "exit_code": 0,
+    "checks": "198/198",
+    "lock_order": "invoice then transmission in H13, H12 and direct bridge",
+    "h13_h12_deadlock": false,
+    "h13_direct_bridge_deadlock": false,
+    "same_invoice_transmission": true,
+    "positive_receivable_uses_declared_dependency_seam": true
+  },
+  "integrated_fresh_rebuild": {
+    "run": "../../../order-e2e-new-20261108/evidence/",
+    "exit_code": 0,
+    "checks": "39/39",
+    "scope": "plans+B3+logistics+B4+service bridge in one fresh disposable PostgreSQL",
+    "fixture_contract": "NOT NULL/CHECK/FK/trigger preflight rolled back before deterministic idempotency fixture",
+    "callback_envelope": "cStat=104 and protocolCStat=100",
+    "callback_replays": 2,
+    "real_always_deny_preserved": true,
+    "documents": 0,
+    "allocations": 0,
+    "snapshots": 0,
+    "receivables": 0,
+    "positive_integrated_fiscal_receivable": "NOT_RUN_BLOCKED",
+    "deny_only_rollback": "PASS; service_role/authenticated execution used rather than superuser RESET ROLE"
+  },
+  "limitations": [
+    "Component positive paths use a declared local dependency substitution and are not integrated fiscal proof.",
+    "The integrated run proves the real always-deny negative path, not a positive fiscal receivable.",
+    "No JWT/RLS/Storage/browser/provider/hosted homologation was performed.",
+    "NFS-e and automatic cancellation remain closed.",
+    "No candidate is approved or installed."
+  ],
+  "hosted": false,
+  "provider_called": false,
+  "published": false,
+  "external_effects": false
+}

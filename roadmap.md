@@ -1,7 +1,12 @@
+## 08/11 19:17 — Complemento 1a65c9c: inversão de locks e evidência final
+- [x] ANTES **196/196, exit 0**: H13 transmissão→nota versus H12 nota→transmissão, na mesma NF/transmissão e em conexões distintas, reproduziu `deadlock detected` no log real; retry preservou o retorno autorizado e limpou a pendência. Tentativa inválida anterior preservada separadamente.
+- [x] DEPOIS **198/198, exit 0**: H13, H12 e ponte direta padronizados em nota→transmissão, com locks mantidos. H13×H12 e H13×ponte direta não apresentaram deadlock; documento/título não duplicaram. Componente positivo continua costurado e não é prova integrada.
+- [x] Rebuild fresh **39/39, exit 0**, com rollback deny-only medido pelos papéis corretos. Always-deny real manteve zero documento/alocação/snapshot/título; positivo fiscal integrado permanece `NOT_RUN_BLOCKED`. README/manifestos apontam para as execuções finais e limitações. Candidato `5db2c160…` INATIVO/NÃO APROVADO; sem hosted/publicação/provedor/NF/cobrança/envios/delegação.
+
 ## 08/11 18:49 — Rebuild integrado 1a65c9c: fixture fiscal completa e fechamento
-- [ ] Corrigir somente o harness: `fiscal_xml_runs.idempotency_key` obrigatória, determinística por operação e estável em replays; revisar previamente todos os campos NOT NULL/constraints das fixtures fiscais, sem relaxar contratos.
-- [ ] Executar rebuild fresh completo planos+B3+logística+B4+ponte, separando dependência real always-deny (zero documento/alocação/snapshot/título) do componente positivo com costura declarada; concluir PRE/POST/rollback composto e evidências/invariantes.
-- [ ] Revisar manifesto, hashes e rollout sem alterar whitespace do writer financeiro de produção; manter instalador mínimo de isolamento de planos separadamente revisável, independente das pendências fiscais. Nenhum pacote aprovado; sem hosted/publicação/envios/fiscal/cobranças/delegação.
+- [x] Harness corrigido: `fiscal_xml_runs.idempotency_key` obrigatória, determinística por operação e estável em replays; NOT NULL/CHECK/FK/triggers validados em preflight revertido, sem relaxar contratos.
+- [x] Rebuild fresh completo planos+B3+logística+B4+ponte concluído em **39/39**: dependência real always-deny separada do componente positivo costurado; PRE/POST/rollback e invariantes preservados.
+- [x] Manifestos, hashes e rollout revisados sem alterar whitespace do writer financeiro de produção; isolamento mínimo de planos continua separado/revisável. Nenhum pacote aprovado; sem hosted/publicação/envios/fiscal/cobranças/delegação.
 
 ## 08/11 18:23 — Complemento de revisão SQL feb815603: parser, identidade fiscal e H13
 - [ ] Reproduzir no contrato real `cStat=104` + `protocolCStat=100`: outcome não pode ficar AUTHORIZED com coluna `c_stat=104`; separar status do lote/protocolo sem trocar o payload por 100 artificial, testar mesmo envelope/replay/recuperação.

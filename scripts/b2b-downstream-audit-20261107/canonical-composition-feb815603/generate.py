@@ -249,10 +249,13 @@ SELECT 'COMPOSED_ROLLBACK_OK' AS status;
         path.write_text(text)
 
     manifest = {
-        "review": "feb815603",
+        "review": "feb815603+1a65c9c",
         "status": "INACTIVE_NOT_APPROVED",
         "canonical_ref": REF,
         "hosted": False,
+        "local_execution_record": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/integrated-b4-fiscal-bridge.json",
+        "local_execution_checks": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/checks.json",
+        "positive_integrated_fiscal_receivable": "NOT_RUN_BLOCKED_REAL_ALWAYS_DENY",
         "source_sha256": {str(path.relative_to(ROOT)): expected for path, expected in EXPECTED.items()},
         "production_baseline": {
             "b4_dependency_md5": pins,

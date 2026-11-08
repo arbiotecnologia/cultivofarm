@@ -412,7 +412,15 @@ COMMIT;
     outputs = {"01-pre.sql.readonly":pre,"02-install.sql.review":install,"03-post.sql.readonly":post,"04-rollback-deny.sql.review":rollback}
     for name,text in outputs.items():
         (H/name).write_text(text)
-    manifest = {"project_ref":REF,"review":"ab904bf","b4_sha256":EXPECTED_B4,"capture_sha256":hashlib.sha256(CAPTURE.read_bytes()).hexdigest(),"outputs":{n:hashlib.sha256(t.encode()).hexdigest() for n,t in outputs.items()}}
+    manifest = {
+        "project_ref": REF,
+        "review": "ab904bf+feb815603+1a65c9c",
+        "status": "INACTIVE_NOT_APPROVED",
+        "validation_record": "validation-1a65c9c.json",
+        "b4_sha256": EXPECTED_B4,
+        "capture_sha256": hashlib.sha256(CAPTURE.read_bytes()).hexdigest(),
+        "outputs": {n: hashlib.sha256(t.encode()).hexdigest() for n, t in outputs.items()},
+    }
     (H/"manifest.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
     print(json.dumps(manifest["outputs"],indent=2))
 
