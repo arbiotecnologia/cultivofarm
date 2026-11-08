@@ -1892,7 +1892,39 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "cf7dd2ef9df30a66caa8fd78765e9853231545d670daa82636b70855d1d77d78"
+      "sha256": "ed8674c4cb18a62d94ede723e3e61f360a6ded7e6dd78fd922c619e68e1abf41"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-01/checks.json",
+      "sha256": "54f7ec342de73d6f6047cbad3ef23f7038be1309549a9ad9d4d578485100e2c9"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-01/restore-results.json",
+      "sha256": "a247233701a4728ec802f3834b9ba904ec0501e4b1c4128da55a6853f26166bb"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-01/source-manifest.json",
+      "sha256": "2f369012354e37e1727071e9edd3c32158c1a260cf7e5a62776e69f30b213c03"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-01/workspace.json",
+      "sha256": "c4decb959b5f165b1a1bf2146354285196bcbd50d20d7e710c45e39a0e22d5fe"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/checks.json",
+      "sha256": "54f7ec342de73d6f6047cbad3ef23f7038be1309549a9ad9d4d578485100e2c9"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/restore-results.json",
+      "sha256": "a247233701a4728ec802f3834b9ba904ec0501e4b1c4128da55a6853f26166bb"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/source-manifest.json",
+      "sha256": "2f369012354e37e1727071e9edd3c32158c1a260cf7e5a62776e69f30b213c03"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/workspace.json",
+      "sha256": "c4decb959b5f165b1a1bf2146354285196bcbd50d20d7e710c45e39a0e22d5fe"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/rebuild.py",
