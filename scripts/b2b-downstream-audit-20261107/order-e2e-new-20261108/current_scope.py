@@ -147,6 +147,8 @@ def _trigger_function(definition: str) -> str:
     match = re.search(r"EXECUTE FUNCTION\s+([^\s(]+)\((.*)\)\s*$", definition)
     assert match, definition
     schema_name = match.group(1)
+    if "." not in schema_name:
+        schema_name = "public." + schema_name
     schema, name = schema_name.rsplit(".", 1)
     return _signature(schema, name, match.group(2))
 
