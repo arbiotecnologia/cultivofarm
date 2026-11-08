@@ -36,6 +36,16 @@ def main():
     physical = E/'physical-finished-product'
     assert (E/'current-catalog-baseline.json').is_file()
     assert (E/'current-catalog-posplans.json').is_file()
+    partial = json.loads((E/'review-70d08c.json').read_text())['results']
+    endpoint = json.loads((E/'os-endpoint-tests.json').read_text())['results']
+    assert len(partial) == 13 and all(x['status'] == 'PASS' for x in partial)
+    assert len(endpoint) == 15 and all(x['status'] == 'PASS' for x in endpoint)
+    frontend = {}
+    for name in ('frontend-ui','frontend-candidate','frontend-os-compat','typecheck'):
+        assert (E/f'{name}.exitcode').read_text().strip() == '0', name
+        frontend[name] = {'exitcode': 0, 'sha256': sha(E/f'{name}.txt')}
+    rollback = json.loads((E/'full-logistics-rollback.json').read_text())
+    assert rollback['current_catalog_preserved'] is True
     OUT.mkdir(exist_ok=True)
     delivery = E/'delivery-confirmation'
     send = E/'delivery-send'
