@@ -1,0 +1,46 @@
+{
+  "kind": "LOCAL_ARTIFACT_AVAILABILITY_NOT_SQL_OR_E2E_TEST",
+  "prior_execution": "umsg_01m6vh9b8wfyebzpsjsyfjrdg9",
+  "prior_error": "USER_REPORTED_RESPONSE_STATUS_ERROR",
+  "prior_technical_cause": "UNKNOWN_NO_STACK_TRACE",
+  "status": "BLOCKED_MISSING_EXACT_ARTIFACTS",
+  "missing": [
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e/test_composition.py",
+      "exists": false
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e/generate_candidate.py",
+      "exists": false
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e/candidate-logistics.sql.review",
+      "exists": false
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/order-e2e/evidence/actual-accounts-receivable-triggers.json",
+      "exists": false
+    }
+  ],
+  "available": [
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/physical/finished-product/README.md",
+      "sha256": "5142bad9f88f4c259a53b6343d118beaaf6360977db41193c3792b43d241892e"
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/physical/finished-product/candidate.sql.review",
+      "sha256": "597ed21f32c07f0dfe844d6df3677f3867623c3d0acaec9ab9710fc6e3fd2fef"
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/physical/finished-product/baseline.json",
+      "sha256": "e212c238e54d3d5bc5c9922af20e29876a88c0e71fb71f9e1fc74296e8053afc"
+    },
+    {
+      "path": "scripts/b2b-downstream-audit-20261107/physical/finished-product/review-093712ec/ui-resale/README.md",
+      "sha256": "b391fe8dbced0150a9b53e5279acdd0017f53288e9d2b41546db5eb59e637d3d"
+    }
+  ],
+  "e2e_this_resume": "NOT_RUN",
+  "hosted_operations": false,
+  "delegation": false
+}
