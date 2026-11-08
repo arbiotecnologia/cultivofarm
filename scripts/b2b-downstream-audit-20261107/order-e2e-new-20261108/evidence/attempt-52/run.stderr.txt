@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-rmlpix8a/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 278, in main
+    assert containment['order_status']=='entregue' and containment['receivable_generated'] is False,containment
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'cq': 0, 'envase': 0, 'receivables': 1, 'order_status': 'aprovado', 'fiscal_documents': 1, 'production_links': 0, 'delivery_receivable': None, 'production_programs': 0, 'expedition_movements': 1, 'receivable_generated': False}
