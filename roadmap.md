@@ -11,7 +11,7 @@
 - [x] Registrar a decisão aprovada: motor único sobre as estruturas atuais; título/parcelas ARBio somente após NF-e autorizada ou NFS-e emitida confirmada; pedido aprovado é previsão/reserva de crédito e entrega não gera outro título; exceção manual exige autoridade, justificativa, origem e trilha.
 - [x] Inventariar writers/triggers/RPCs, tabelas reutilizadas e lacunas em `b4/fiscal-decision-20261108/`; matriz de doze requisitos validada em **38/38**, componente B4 ampliado em **128/128** e manifesto em **61/61**, incluindo mesma NF concorrente, falha pós-INSERT/retry, parcialidade, crédito, cancelamento, rollback e ausência de boleto/Pix/pagamento.
 - [x] Preservar snapshots/condições, dez gatilhos/ACL/fence, cinco títulos MANUAL teste4 e histórico; regenerar PRE/POST/rollback somente pelo gerador com a baseline real, sem taxas de referência, efeitos externos, aprovação contábil/fiscal ou operação hospedada.
-- [ ] Manter bloqueadas a ponte real `fiscal_invoices`→B4, o ator service-only do callback, estados pendente/rejeitado e recuperação H13, a exceção manual completa e a homologação JWT/RLS/Storage/browser; nenhum SQL instalável da ponte foi produzido.
+- [x] Ponte candidata local registrada na fila f32c4f3 acima; manter bloqueadas instalação/integração real, recuperação H13, exceção manual completa e homologação JWT/RLS/Storage/browser. O SQL produzido é somente revisável e inativo.
 - [ ] Revisão logística `db36815b…`: 32/32 checkpoints e 12/12 regressões locais já executados, porém candidato segue INATIVO/NÃO APROVADO; composição financeiro/físico e sessões reais permanecem bloqueios independentes.
 
 ## 08/11 16:30 — Revisão independente 70d08c da logística de revenda
