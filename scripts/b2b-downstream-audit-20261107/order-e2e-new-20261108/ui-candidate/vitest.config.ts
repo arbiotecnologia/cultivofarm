@@ -1,2 +1,4 @@
 import { defineConfig } from 'vitest/config';
-export default defineConfig({ test: { environment: 'node', include: ['scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/*.test.ts'] } });
+import react from '@vitejs/plugin-react-swc';
+import path from 'node:path';
+export default defineConfig({ plugins: [react()], resolve: { alias: { '@': path.resolve('src') } }, test: { environment: 'jsdom', setupFiles: ['./src/test/setup.ts'], include: ['scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/*.test.{ts,tsx}'] } });
