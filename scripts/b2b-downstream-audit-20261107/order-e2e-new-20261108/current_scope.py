@@ -397,7 +397,7 @@ def write_final_confirmation_rollback(confirmation_out: Path, send_out: Path, fi
         "functions": sorted((_function_doc(functions[key], key) for key in function_names), key=lambda row: row[0]),
         "trigger_functions": sorted([[key, value] for key, value in trigger_pins.items()], key=lambda row: row[0]),
         "relations": sorted((_relation_doc(relations[key], key) for key in relation_names), key=lambda row: row[0]),
-        "triggers": _state_triggers(final_state, functions),
+        "triggers": _merged_triggers(final_state, functions),
         "structural": _structural(final_state),
     }
     (confirmation_out / "rollback-scope.json").write_text(json.dumps(doc, indent=2) + "\n")
