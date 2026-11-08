@@ -276,6 +276,18 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     body = one(body, "OR NEW.partner_order_id IS NOT NULL OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "OR (NEW.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS NOT TRUE) OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "delivery mutation resale order")
     defs[sig]["new"] = body
 
+    sig = "platform_private.delivery_confirm_recheck_v1(uuid,uuid)"
+    body = defs[sig]["body"]
+    body = one(body, """IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.partner_order_id IS NOT NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL
+ OR NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL)
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;""", """IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL
+ OR (e.partner_order_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL))
+ OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS NOT TRUE)
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;""", "confirmation recheck resale")
+    defs[sig]["new"] = body
+
     sig = "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)"
     body = defs[sig]["body"]
     body = one(body, """IF v_e.ordem_servico_onfarm_id IS NOT NULL OR v_e.partner_order_id IS NOT NULL OR v_e.receivable_id IS NOT NULL OR v_e.status::text='entregue'
