@@ -26,7 +26,7 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 148,
+  "passed": 149,
   "total": 149,
   "checks": [
     {
@@ -607,8 +607,7 @@
     },
     {
       "name": "NF com tenant divergente do pedido é negada",
-      "ok": false,
-      "detail": "ERROR:  B2B_FISCAL_ORDER_SCOPE_INVALID\nCONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 22 at RAISE\n"
+      "ok": true
     },
     {
       "name": "NF estrangeira não gera documento/título",

@@ -1,0 +1,117 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/catalogo/unifiedProducts.realClient.test.tsx (35 tests) 23224ms
+   ✓ administrador cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  3160ms
+   ✓ gestor cadastra, edita, arquiva e reativa no mesmo cadastro, SDK real  2346ms
+   ✓ Financeiro conserva consulta via redirect e link fiscal, sem CRUD ou abas irmãs  749ms
+   ✓ parcial montado mantém diálogo e input congelados; retry exato não cria outra raiz  2162ms
+   ✓ novo produto com resposta perdida da composição mantém ACK/componentes e replay único  2049ms
+   ✓ recusa definitiva persistente: sem replay inútil, rascunho exportável e volta ao MESMO produto após leitura fresca  2440ms
+   ✓ resposta perdida: saída explícita mantém pendência/chaves, bloqueia novas intenções e retomada faz replay único  2471ms
+   ✓ troca de escopo descarta rascunho/exportação pendentes sem reutilizar em outro tenant  1564ms
+   ✓ capability de unidade absent mantém cadastro fechado com zero dispatch  321ms
+   ✓ capability de unidade denied mantém cadastro fechado com zero dispatch  350ms
+   ✓ capability positiva sem unidade escolhida não despacha cadastro  378ms
+   ✓ unidade canônica: A→B, fechar/reabrir com cache, escolha do usuário sobrevive a refetch e novo produto vazio  4752ms
+ ✓ src/test/pedidos/novoPedidoAttemptClosure.test.tsx (16 tests) 38730ms
+   ✓ nunca encerra automaticamente após falha/timeout: só por clique  3064ms
+   ✓ closed validado: mesma chave/parceiro na RPC, libera nova chave e envia o carrinho editado mantido  2351ms
+   ✓ committed com schema válido: mostra número e navega pelo caminho canônico; não cria outro  2462ms
+   ✓ committed sem número não é conclusivo: bloqueio preservado  2512ms
+   ✓ committed com id inválido não é conclusivo: bloqueio preservado  2525ms
+   ✓ in_progress não é conclusivo: bloqueio preservado  2249ms
+   ✓ contrato desconhecido não é conclusivo: bloqueio preservado  2217ms
+   ✓ vazio não é conclusivo: bloqueio preservado  2372ms
+   ✓ erro PostgREST mantém bloqueio  2479ms
+   ✓ exceção de rede mantém bloqueio  2371ms
+   ✓ duplo clique em verificar: uma única RPC  2371ms
+   ✓ revogação durante a verificação: closed tardio NÃO libera e carrinho editado permanece  3045ms
+   ✓ desmontagem durante a verificação: resposta antiga não libera; remontado continua bloqueado  3077ms
+   ✓ troca de empresa durante a verificação: nada liberado para nenhum dos dois contextos  2093ms
+   ✓ logout e espera não descartam a tentativa; outro ator não a vê  3518ms
+ ✓ src/test/b2b/novoPedidoPaymentMethod.test.tsx (18 tests) 21276ms
+   ✓ sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio  1542ms
+   ✓ meio escolhido: simulação e criação levam meio/versão/prazo; cliente não envia parcelas nem vencimento; datas rotuladas como estimadas  1241ms
+   ✓ falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por clique  1031ms
+   ✓ leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio  922ms
+   ✓ ativação legacy → required aposenta a simulação antiga durante a releitura e volta a exigir meio  2342ms
+   ✓ releitura da capability com o diálogo aberto não mantém envio legado habilitado  1716ms
+   ✓ outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado  936ms
+   ✓ empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global  860ms
+   ✓ resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)  873ms
+   ✓ promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)  784ms
+   ✓ Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas  1210ms
+   ✓ Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18  1259ms
+   ✓ plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de versão/meio aposenta economia anterior  1352ms
+   ✓ crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado  1012ms
+   ✓ resposta com credit null não é aceita como apta: erro visível e envio bloqueado  1036ms
+   ✓ Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado  1021ms
+   ✓ ACK com total diferente da simulação não é sucesso (sem navegação)  1135ms
+   ✓ ACK com outro meio/versão não é tratado como sucesso (sem navegação)  999ms
+ ✓ src/test/pedidos/novoPedidoAckDialog.test.tsx (9 tests) 9420ms
+   ✓ nunca usa window.confirm; diálogo cita o número e Voltar não chama RPC nem limpa carrinho  1634ms
+   ✓ duplo clique em confirmar avança uma única vez com key/geração/pedido capturados  1414ms
+   ✓ estado do servidor muda com o diálogo aberto (outra aba): não confirma geração errada  835ms
+   ✓ revogação/troca de contexto com o diálogo aberto nega o avanço  838ms
+   ✓ troca de papel com o diálogo aberto fecha sem avançar  676ms
+   ✓ comprador novo: reserva inicial conserva a chave e não oferece encerramento nem avança ao montar  1371ms
+   ✓ envio incerto só encerra após clique e conserva a geração terminal até novo clique  1494ms
+   ✓ closed não avança na montagem; clique usa CAS sem confirmação fictícia de pedido  626ms
+   ✓ troca de conta do committed para comprador novo fecha ACK e não encerra nem avança a reserva  527ms
+ ✓ src/test/b2b/novoPedidoSimulationFence.test.tsx (7 tests) 6412ms
+   ✓ A→B→A: resposta atrasada do primeiro A não é adotada; só a do A atual  1545ms
+   ✓ erro fica visível com código; nova tentativa é manual e só ela dispara nova leitura  895ms
+   ✓ revogação/troca de época na mesma identidade descarta resultado e resposta em voo  991ms
+   ✓ referência à vista atrasada de contexto anterior não aparece como diferença  842ms
+   ✓ fechar e reabrir aposenta resposta em voo e exige simulação nova antes do envio  697ms
+   ✓ mudar itens com o mesmo plano invalida o resultado e a resposta antiga  715ms
+   ✓ clique de envio com resultado de época antiga não chama o criador de pedido  723ms
+ ✓ src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx (16 tests) 16113ms
+   ✓ resposta perdida + remontagem: reenvio idêntico reutiliza a MESMA chave  2191ms
+   ✓ payload alterado após resultado incerto NÃO gera outra chave: envio bloqueado  1887ms
+   ✓ pedido aceito com resposta tardia durante desmontagem: aviso, carrinho novo preservado e nova chave só após confirmação  1534ms
+   ✓ rejeição conclusiva do servidor no primeiro envio descarta a tentativa  712ms
+   ✓ outro ator não herda a tentativa; logout NÃO libera a do ator original  2071ms
+   ✓ sucesso tardio não apaga data editada enquanto a RPC estava pendente  794ms
+   ✓ sucesso tardio não apaga observação editada enquanto a RPC estava pendente  810ms
+   ✓ erro não conclusivo {"code":"PGRST301","message":"JWT expired"} mantém a tentativa incerta  740ms
+   ✓ erro não conclusivo {"code":"","message":"Failed to fetch"} mantém a tentativa incerta  647ms
+   ✓ erro não conclusivo {"code":"08006","message":"conn"} mantém a tentativa incerta  649ms
+   ✓ erro não conclusivo {"code":"57P01","message":"shutdown"} mantém a tentativa incerta  642ms
+   ✓ erro não conclusivo {"code":"XX000","message":"internal"} mantém a tentativa incerta  680ms
+   ✓ erro não conclusivo {"code":"P0001","message":"idempotency_conflict"} mantém a tentativa incerta  765ms
+   ✓ erro não conclusivo {"message":"502 Bad Gateway"} mantém a tentativa incerta  884ms
+   ✓ dois cliques no mesmo tick: a reserva síncrona bloqueia o segundo envio (1 RPC)  1096ms
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > same-identity token refresh hides old authority then restores cart choices and modal from fresh reads
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > effective revocation retires modal/cart; observed restoration never revives draft
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+stdout | src/test/catalogo/partnerCatalogMonitor.integration.test.tsx > real tenant change retires modal and cart
+cultivo-authz-renewal {"event":"auth_refresh","state":"pending","reason":null,"visible":true,"online":true,"rttMs":null,"leaseRemainingMs":null,"requestRemainingMs":null}
+
+ ✓ src/test/catalogo/partnerCatalogMonitor.integration.test.tsx (14 tests) 7095ms
+   ✓ same confirmed probes retain the real modal DOM and cart without profile reload/cache reset  841ms
+   ✓ same-vector context/partner/entitlement refetches preserve the actual modal and cart without cache clearing  383ms
+   ✓ a confirmed missing feature switches to Cliente comercial without a transport error  427ms
+   ✓ a confirmed missing capability switches to Cliente comercial without a transport error  441ms
+   ✓ focus/visibility revalidation still hides uncertain authority, even when the eventual vector is unchanged  435ms
+   ✓ deadline retires authority and a late healthy response cannot resurrect the modal  508ms
+   ✓ offline retires authority and a late healthy response cannot resurrect the modal  510ms
+   ✓ same-identity token refresh hides old authority then restores cart choices and modal from fresh reads  656ms
+   ✓ effective revocation retires modal/cart; observed restoration never revives draft  620ms
+   ✓ real partner change retires modal and cart  680ms
+   ✓ real tenant change retires modal and cart  589ms
+   ✓ observed A-B-A partner transitions never resurrect the A cart or modal  624ms
+ ✓ src/test/fluxo-tecnico/decisoes.interaction.test.tsx (35 tests) 3646ms
+   ✓ Sheet existente executa Aprovar recomendação sem writes diretos  685ms
+   ✓ Sheet existente executa Solicitar ajuste sem writes diretos  470ms
+   ✓ Sheet existente executa Reprovar recomendação sem writes diretos  368ms
+
+ Test Files  8 passed (8)
+      Tests  150 passed (150)
+   Start at  17:31:32
+   Duration  149.55s (transform 3.38s, setup 1.02s, collect 11.47s, tests 125.92s, environment 6.28s, prepare 1.07s)
+

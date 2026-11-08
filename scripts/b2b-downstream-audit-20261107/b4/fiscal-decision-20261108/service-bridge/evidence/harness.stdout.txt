@@ -142,9 +142,7 @@ PASS título service-only não inventa ator humano e conserva vínculo NF
 PASS parcialidade service-only consome somente o restante do pedido
 PASS retentativa da NF autorizada é replay sem duplicação
 PASS duas chamadas service-only concorrentes preservam um único título
-FAIL NF com tenant divergente do pedido é negada :: ERROR:  B2B_FISCAL_ORDER_SCOPE_INVALID
-CONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 22 at RAISE
-
+PASS NF com tenant divergente do pedido é negada
 PASS NF estrangeira não gera documento/título
 PASS origem manual sem ator continua fechada
 PASS rollback deny-only da ponte fecha callback e preserva histórico
