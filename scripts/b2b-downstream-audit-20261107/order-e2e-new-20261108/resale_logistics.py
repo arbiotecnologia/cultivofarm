@@ -201,7 +201,7 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     body = defs[sig]["body"]
     body = one(body, " v_lote public.lotes%ROWTYPE;", " v_lote public.lotes%ROWTYPE;\n v_resale boolean:=false;", "stock row guard declaration")
     body = one(body, "BEGIN\n IF auth.uid() IS NULL", """BEGIN
- IF NEW.reservado_para_os_id IS NOT NULL AND NEW.reservado_para_os_tipo='b2b'
+ IF TG_OP IN ('INSERT','UPDATE') AND NEW.reservado_para_os_id IS NOT NULL AND NEW.reservado_para_os_tipo='b2b'
   AND NEW.reservado_para_partner_id IS NOT NULL AND NEW.reservado_para_partner_order_id IS NOT NULL
   AND platform_private.b2b_internal_commercial_actor() IS TRUE THEN
   SELECT platform_private.b2b_resale_os_valid_v1(o) INTO v_resale

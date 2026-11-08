@@ -212,6 +212,14 @@ def main():
    return B.T.actor(Q.UADM)+f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
   wrong=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":0.5}}]'::jsonb,'resale-fractional-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':order_id})}'::jsonb);"
   rejected=B.run_raw(wrong);assert rejected.returncode!=0 and 'FINISHED_PRODUCT_WHOLE_PACK_REQUIRED' in rejected.stderr,rejected.stderr
+  wrong_partner=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]'::jsonb,'resale-wrong-partner-0001','{json.dumps({'partner_id':Q.PO,'partner_order_id':order_id})}'::jsonb);"
+  rejected=B.run_raw(wrong_partner);assert rejected.returncode!=0 and 'ESTQ_REFERENCE_FORBIDDEN' in rejected.stderr,rejected.stderr
+  wrong_order=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]'::jsonb,'resale-wrong-order-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':'00000000-0000-0000-0000-000000000001'})}'::jsonb);"
+  rejected=B.run_raw(wrong_order);assert rejected.returncode!=0 and 'ESTQ_REFERENCE_FORBIDDEN' in rejected.stderr,rejected.stderr
+  wrong_actor=B.T.actor(Q.UB)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]'::jsonb,'resale-wrong-actor-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':order_id})}'::jsonb);"
+  rejected=B.run_raw(wrong_actor);assert rejected.returncode!=0,rejected.stderr
+  assert B.last(f"SELECT quantidade=3 AND status='disponivel' AND reservado_para_os_id IS NULL FROM public.estoque_produto WHERE id='{stock}';")=='t'
+  checks.append(dict(test='fractional pack, mismatched partner/order and buyer reservation all fail without changing stock',status='PASS'))
   reserved=json.loads(B.last(reserve_resale('resale-reserve-cancel-0001')))['itens'][0]
   grouped=json.loads(B.last(group_resale(reserved,'resale-group-cancel-0001')))
   cancel_delivery=grouped['itens'][0]['entrega_id']
