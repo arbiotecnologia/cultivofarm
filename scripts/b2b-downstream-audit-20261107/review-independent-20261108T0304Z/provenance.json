@@ -1,0 +1,14 @@
+{
+  "kind": "LOCAL_RERUN_PLUS_USER_REPORTED_COMPONENT_EVIDENCE",
+  "hosted": false,
+  "hosted_pre": "USER_REPORTED_READONLY_PASS_NOT_AGENT_QUERY",
+  "terms_passed": 187,
+  "terms_total": 187,
+  "real_triggers": 38,
+  "null_passed": 51,
+  "null_total": 51,
+  "physical_candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf",
+  "source_change_this_review": false,
+  "manual_titles": "USER_REPORTED_ALL_FIVE_BELONG_TO_TESTE4_CUSTOMER_PARTNER_UNCHANGED",
+  "status": "INACTIVE_NOT_APPROVED"
+}

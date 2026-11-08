@@ -1,0 +1,55 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.6s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS candidato instalado para matriz isolada de nulidade
+PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase
+PASS gate True: helper nega origem inesperada sem NULL
+PASS gate True: CHECK nega origem inesperada
+PASS gate True: helper nega embalagem_versao NULL sem NULL
+PASS gate True: CHECK nega embalagem_versao NULL
+PASS gate True: helper nega conteudo_por_unidade NULL sem NULL
+PASS gate True: CHECK nega conteudo_por_unidade NULL
+PASS gate True: helper nega unidade_conteudo NULL sem NULL
+PASS gate True: CHECK nega unidade_conteudo NULL
+PASS gate True: helper nega quantidade_conteudo NULL sem NULL
+PASS gate True: CHECK nega quantidade_conteudo NULL
+PASS gate True: helper nega quantidade NULL sem NULL
+PASS gate True: CHECK nega quantidade NULL
+PASS gate True: helper nega embalagem_id NULL sem NULL
+PASS gate True: CHECK nega embalagem_id NULL
+PASS gate True: helper nega dimensão sólida com volume sem NULL
+PASS gate True: CHECK nega dimensão sólida com volume
+PASS gate True: helper nega dimensão de conteúdo incoerente sem NULL
+PASS gate True: CHECK nega dimensão de conteúdo incoerente
+PASS gate True: helper nega unidade comercial NULL sem NULL
+PASS gate True: CHECK nega unidade comercial NULL
+PASS gate False: helper nega origem inesperada sem NULL
+PASS gate False: CHECK nega origem inesperada
+PASS gate False: helper nega embalagem_versao NULL sem NULL
+PASS gate False: CHECK nega embalagem_versao NULL
+PASS gate False: helper nega conteudo_por_unidade NULL sem NULL
+PASS gate False: CHECK nega conteudo_por_unidade NULL
+PASS gate False: helper nega unidade_conteudo NULL sem NULL
+PASS gate False: CHECK nega unidade_conteudo NULL
+PASS gate False: helper nega quantidade_conteudo NULL sem NULL
+PASS gate False: CHECK nega quantidade_conteudo NULL
+PASS gate False: helper nega quantidade NULL sem NULL
+PASS gate False: CHECK nega quantidade NULL
+PASS gate False: helper nega embalagem_id NULL sem NULL
+PASS gate False: CHECK nega embalagem_id NULL
+PASS gate False: helper nega dimensão sólida com volume sem NULL
+PASS gate False: CHECK nega dimensão sólida com volume
+PASS gate False: helper nega dimensão de conteúdo incoerente sem NULL
+PASS gate False: CHECK nega dimensão de conteúdo incoerente
+PASS gate False: helper nega unidade comercial NULL sem NULL
+PASS gate False: CHECK nega unidade comercial NULL
+PASS caller usa IS NOT TRUE: public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)
+PASS caller usa IS NOT TRUE: public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)
+PASS caller usa IS NOT TRUE: platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)
+PASS caller usa IS NOT TRUE: platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)
+PASS caller usa IS NOT TRUE: platform_private.delivery_send_apply_v1(uuid,timestamptz,text)
+PASS caller usa IS NOT TRUE: public.validate_estoque_entrada()
+PASS controle válido permanece aceito com gate ligado
+PASS controle válido é negado com gate desligado
+RESULT 51 / 51 exit 0
