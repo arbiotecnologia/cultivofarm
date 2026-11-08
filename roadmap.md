@@ -1,3 +1,8 @@
+## 08/11 21:27 — Preflight homolog relatado: dependências ausentes
+- [x] Registrar relato READONLY homolog vrlcdwmlytukrjezrrnf/PG17.11: confirmação manual, helper OS revenda e gate ausentes; login não resolve. Sem consulta hospedada pelo agente.
+- [x] Inventário mínimo/ordem candidata por dependências, fontes exatas, gates/rebase/rollback e exclusão fiscal/B4; checklist mantém homolog permitida para planejamento isolado e produção intacta.
+- [ ] Teste autenticado NOT_RUN_BLOCKED_ENVIRONMENT_AND_CALLER: exige capturas homolog/deltas aprovados/callers OS+compra/leitores/capabilities/Storage e isolamento, somente auditor instala após autorização; não pedir login agora.
+
 ## 08/11 21:12 — Continuação dbb81a9: caller OS e homologação
 - [x] Criação agronômica e programação biológica existentes incompatíveis com revenda; endpoint mínimo gerado com pins, UI fora do runtime, cliente/rotas/SQL B3 preservados e ACL helper privada inalterada.
 - [x] Primeira composição fresh 40/40 e final ampliada 41/41, 13/13 regressões parciais pelo endpoint público com SQL-role authenticated, nove provas específicas incluindo concorrência criação, negativos FSF/comprador/revogado/feature/pending e helper direto. FSF parou na feature; service_role parou no schema, POST também conferiu ausência EXECUTE helper — não tratar esses erros como prova isolada de tenant/ACL de função.

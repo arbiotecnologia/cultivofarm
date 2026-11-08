@@ -9,6 +9,8 @@
 
 ## Verificação prévia pelo auditor — obrigatória antes de configurar
 
+**Atualização 08/11, 21:27 UTC — relato READONLY do auditor:** homolog `vrlcdwmlytukrjezrrnf`, PostgreSQL 17.11, sem `public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)`, helper OS revenda ou gate. Estes objetos estão ausentes, não meramente sem login. Demais contratos/isolamento ainda não comprovados. Inventário mínimo e ordem candidata em `homolog-dependencies-2127.md`; não é autorização nem SQL pronto para instalar na homolog.
+
 1. Comprovar projeto/nome/ref pelo painel/listagem existente e URL exata; registrar evidência sanitizada. Verificar que não é produção, clone com dados privados ou ambiente sem autorização de fixtures.
 2. Conferir Auth próprio, contas de teste autorizadas, organizações/vínculos segregados, callbacks/redirects, buckets e políticas, grants/owners, migrations e funções atuais. Não criar contas pelo agente ou importar usuários/tokens produção.
 3. Conferir estado relatado de homolog em `scripts/homolog-alignment-20261102/AGENTS.md`; **não reaplicar** 00/01/04/06/10 nem assumir catálogo/logística/B3 instalados. Capturar catálogo, helpers e triggers atuais; diff homolog × dependências candidatas; recompor descartável com essas capturas. Pins de produção não viram pins homolog por substituição de string.
@@ -34,4 +36,4 @@ Definir conjunto mínimo permitido para teste apenas depois de conferir contrato
 8. Registrar ACKs e screenshots sanitizados + leituras servidor autorizadas; zero títulos/documentos/alocações/efeitos externos novos. Não guardar JWT/cookies/URLs assinadas/credenciais. Preservar histórico da fixture.
 9. Exercitar rollback deny-only em homolog e nova tentativa = negação; sem apagar histórico. Somente depois da revisão independente dessas evidências considerar **outra autorização** para produção. PRE_OK anterior não é autorização.
 
-Estado atual: ambiente/contratos homolog **NÃO VERIFICADOS**, conexão apenas planejada, teste autenticado NOT_RUN_BLOCKED. Nenhum pedido de login agora. Fiscal real/contabilidade real não atestados; positivo fiscal integrado segue NOT_RUN_BLOCKED_REAL_ALWAYS_DENY.
+Estado atual: três dependências ausentes segundo leitura do auditor; demais contratos/isolamento **NÃO VERIFICADOS**, conexão apenas planejada, teste autenticado **NOT_RUN_BLOCKED_ENVIRONMENT_AND_CALLER**. Nenhum pedido de login agora. Fiscal real/contabilidade real não atestados; positivo fiscal integrado segue NOT_RUN_BLOCKED_REAL_ALWAYS_DENY.
