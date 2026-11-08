@@ -238,7 +238,7 @@ ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.b2b
 CREATE FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(p_invoice uuid)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
 DECLARE inv public.fiscal_invoices; po public.partner_orders; tx public.fiscal_sefaz_transmissions;
- org uuid; items jsonb; snapshot_items jsonb; canonical_snapshot jsonb; digest text; result jsonb;
+ org uuid; items jsonb; snapshot_items jsonb; canonical_snapshot jsonb; digest_snapshot jsonb; digest text; result jsonb;
  existing platform_private.b2b_authorized_documents; saved platform_private.b2b_fiscal_invoice_snapshots;
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'B2B_READ_COMMITTED_REQUIRED' USING ERRCODE='0A000'; END IF;
@@ -261,10 +261,17 @@ BEGIN
  IF inv.invoice_type IS DISTINCT FROM 'NFE' OR inv.authorized_at IS NULL OR inv.issue_date IS NULL
   OR inv.environment IS DISTINCT FROM 'HOMOLOGATION' OR coalesce(inv.access_key,'')!~'^[0-9]{44}$'
  THEN RAISE EXCEPTION 'B2B_FISCAL_CONFIRMATION_UNPROVEN' USING ERRCODE='42501'; END IF;
- SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
- WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
-  AND t.c_stat IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
- ORDER BY t.completed_at DESC NULLS LAST,t.id LIMIT 1;
+ SELECT * INTO saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=inv.id;
+ IF saved.invoice_id IS NOT NULL THEN
+  SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
+  WHERE t.id=saved.transmission_id AND t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
+   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2';
+ ELSE
+  SELECT * INTO tx FROM public.fiscal_sefaz_transmissions t
+  WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED'
+   AND coalesce(t.protocol_c_stat,t.c_stat) IN ('100','150') AND t.ch_nfe=inv.access_key AND t.n_prot IS NOT NULL AND t.ambiente_retorno='2'
+  ORDER BY t.completed_at ASC NULLS LAST,t.id ASC LIMIT 1;
+ END IF;
  IF tx.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.fiscal_xml_runs r
    WHERE r.fiscal_invoice_id=inv.id AND r.signed_path IS NOT NULL AND (r.access_key IS NULL OR r.access_key=inv.access_key))
  THEN RAISE EXCEPTION 'B2B_FISCAL_CONFIRMATION_UNPROVEN' USING ERRCODE='42501'; END IF;
@@ -296,11 +303,19 @@ BEGIN
   'partner_order_id',inv.partner_order_id,'debtor_partner_id',inv.debtor_partner_id,'debtor_customer_id',inv.debtor_customer_id,
   'issue_date',inv.issue_date,'total_amount',inv.total_amount,'provider_reference',inv.provider_reference,
   'provider_status_raw',inv.provider_status_raw,'tax_authority_notes',inv.tax_authority_notes,
-  'transmission_id',tx.id,'protocol',tx.n_prot,'transmission_c_stat',tx.c_stat,
+  'transmission_id',tx.id,'protocol',tx.n_prot,'transmission_c_stat',coalesce(tx.protocol_c_stat,tx.c_stat),
   'transmission_outcome',tx.outcome,'transmission_environment',tx.ambiente_retorno,'items',snapshot_items);
- digest:=encode(extensions.digest(convert_to(canonical_snapshot::text,'UTF8'),'sha256'),'hex');
+ -- O ID identifica a evidência original, mas não a identidade fiscal do evento.
+ -- Nova confirmação da mesma chave/protocolo não altera digest nem referência.
+ digest_snapshot:=canonical_snapshot-'transmission_id';
+ digest:=encode(extensions.digest(convert_to(digest_snapshot::text,'UTF8'),'sha256'),'hex');
  SELECT * INTO existing FROM platform_private.b2b_authorized_documents WHERE id=inv.id;
- SELECT * INTO saved FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id=inv.id;
+ IF saved.invoice_id IS NOT NULL AND EXISTS(
+  SELECT 1 FROM public.fiscal_sefaz_transmissions t
+  WHERE t.fiscal_invoice_id=inv.id AND t.state='SUCCEEDED' AND t.outcome='AUTHORIZED' AND t.ch_nfe=inv.access_key
+   AND (t.n_prot,coalesce(t.protocol_c_stat,t.c_stat),t.ambiente_retorno)
+    IS DISTINCT FROM (saved.protocol,saved.snapshot->>'transmission_c_stat',saved.snapshot->>'transmission_environment')
+ ) THEN RAISE EXCEPTION 'FISCAL_REPLAY_DIVERGENCE' USING ERRCODE='PT409'; END IF;
  IF existing.id IS NOT NULL AND (saved.invoice_id IS NULL OR saved.source_digest IS DISTINCT FROM digest OR saved.snapshot IS DISTINCT FROM canonical_snapshot
    OR (existing.organization_id,existing.partner_id,existing.order_id,existing.kind,existing.issue_date,existing.event_key,existing.source_digest,existing.items,existing.state)
    IS DISTINCT FROM (org,po.partner_id,po.id,inv.invoice_type,inv.issue_date,'fiscal_invoice:'||inv.id::text,digest,items,'AUTHORIZED'))
