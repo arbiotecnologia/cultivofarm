@@ -78,6 +78,12 @@ DO $$DECLARE p oid:=to_regprocedure('public.trg_entrega_sync_partner_order_fn()'
  IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_PRE_ACL_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
 END$$;
 
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_order_transition_guard_20261030()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'c6a1ddec57760c482e2eff3fc21ea25d' THEN RAISE EXCEPTION 'B2B_RESALE_PRE_FUNCTION_DRIFT platform_private.delivery_order_transition_guard_20261030()';END IF;
+ IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_PRE_OWNER_DRIFT platform_private.delivery_order_transition_guard_20261030()';END IF;
+ IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_PRE_ACL_DRIFT platform_private.delivery_order_transition_guard_20261030()';END IF;
+END$$;
+
 DO $$DECLARE p oid:=to_regprocedure('platform_private.b2b_internal_order_snapshot_guard()');BEGIN
  IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '9cad2aaa995277b913f8b40816fea504' THEN RAISE EXCEPTION 'B2B_RESALE_PRE_FUNCTION_DRIFT platform_private.b2b_internal_order_snapshot_guard()';END IF;
  IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_PRE_OWNER_DRIFT platform_private.b2b_internal_order_snapshot_guard()';END IF;
@@ -1132,6 +1138,20 @@ BEGIN
     VALUES (v_partner_order_id, 'entrega_realizada', jsonb_build_object('total', v_total));
   END IF;
   RETURN NEW;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_order_transition_guard_20261030()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF NEW.status IS DISTINCT FROM OLD.status AND EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current())
+  AND (TG_TABLE_SCHEMA IS DISTINCT FROM 'public' OR TG_TABLE_NAME IS DISTINCT FROM 'partner_orders' OR platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN
+  RAISE EXCEPTION 'DELIVERY_B2B_TRANSITION_CLOSED' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
 END $function$;
 
 CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()

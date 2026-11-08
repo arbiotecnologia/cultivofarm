@@ -1046,6 +1046,20 @@ BEGIN
   RETURN NEW;
 END $function$;
 
+CREATE OR REPLACE FUNCTION platform_private.delivery_order_transition_guard_20261030()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF NEW.status IS DISTINCT FROM OLD.status AND EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current())
+  AND (TG_TABLE_SCHEMA IS DISTINCT FROM 'public' OR TG_TABLE_NAME IS DISTINCT FROM 'partner_orders' OR platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN
+  RAISE EXCEPTION 'DELIVERY_B2B_TRANSITION_CLOSED' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $function$;
+
 CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()
  RETURNS trigger
  LANGUAGE plpgsql
