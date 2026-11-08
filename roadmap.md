@@ -1,3 +1,9 @@
+## 08/11 21:12 — Continuação dbb81a9: caller OS e homologação
+- [ ] Auditar criação/programação canônica; preparar caller mínimo/UI candidato sem alterar runtime produção nem ACL do helper privado.
+- [ ] Executar endpoint público real em PG descartável: permitido/FSF/comprador/revogado/feature/pending/CAS/replay/concorrência/parcial 1+2; preservar fiscal always-deny e rollback.
+- [ ] Planejar configuração isolada do homolog existente vrlcdwmlytukrjezrrnf, dependências e etapas autenticadas, sem conexão ou login até verificação do auditor.
+- [ ] Revisão independente e execução autenticada aguardam verificação do ambiente/capturas e instalação aprovada pelo auditor; nenhuma autorização hosted/publicação.
+
 ## 08/11 20:58 — Revisão 40186: fechamento local e PRE relatado pelo auditor
 - [x] Pacote SOMENTE planos cc1f6cc reexecutado em PostgreSQL 17.11 descartável: 79/79, exit 0; 28 capturas canônicas verificadas, gerador em espelho produz manifesto/SQL idênticos. Catálogo antes/depois/rollback e 25 assinaturas/retornos conferidos; ACL/RLS das quatro tabelas preservados, rollback fecha quatro policies.
 - [x] Compatibilidade frontend focada: seis arquivos/62 testes, exit 0; sem publicação/rede real. Evidências novas em scripts/commercial-plans-tenant-20261108/evidence/review-40186/; warnings preservados, suíte geral não declarada PASS.
