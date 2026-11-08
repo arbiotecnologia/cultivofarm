@@ -203,7 +203,7 @@ def _pair(pre_state: dict, post_state: dict) -> tuple[dict, dict, dict]:
     post_doc_functions = sorted((_function_doc(post_functions[key], key) for key in required | added), key=lambda row: row[0])
 
     pre_relations, post_relations = _relation_rows(pre_state), _relation_rows(post_state)
-    live_relations = _live_relations(pre_state)
+    live_relations = _live_relations()
     capture_relations = {f"public.{row['table']}": row for row in CAPTURE["relations"]}
     private_pre = {key for key in pre_relations if key.startswith("platform_private.")}
     required_relations = set(capture_relations) | private_pre
