@@ -185,10 +185,9 @@ def _pair(pre_state: dict, post_state: dict) -> tuple[dict, dict, dict]:
     pre_functions, post_functions = _function_rows(pre_state), _function_rows(post_state)
     live_functions = _live_functions()
     capture_functions = {_from_signature(row["signature"]): row for row in CAPTURE["functions"]}
-    trigger_functions = {_from_signature(row["function"]) for row in CAPTURE["triggers"]}
     changed = {key for key in pre_functions.keys() & post_functions.keys() if pre_functions[key] != post_functions[key]}
     added = post_functions.keys() - pre_functions.keys()
-    required = set(capture_functions) | trigger_functions | changed
+    required = set(capture_functions) | changed
 
     current_scope = {}
     for signature in sorted(required):
