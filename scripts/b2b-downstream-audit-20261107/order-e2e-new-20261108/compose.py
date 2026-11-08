@@ -215,7 +215,7 @@ def main():
   reserved=json.loads(B.last(reserve_resale('resale-reserve-cancel-0001')))['itens'][0]
   grouped=json.loads(B.last(group_resale(reserved,'resale-group-cancel-0001')))
   cancel_delivery=grouped['itens'][0]['entrega_id']
-  cancelled=json.loads(B.last(B.T.actor(Q.UADM)+B.cancel(cancel_delivery,'resale-cancel-0001').split('SELECT ',1)[1].join(['SELECT ','']) if False else B.cancel(cancel_delivery,'resale-cancel-0001')))
+  cancelled=json.loads(B.last(B.cancel(cancel_delivery,'resale-cancel-0001')))
   assert cancelled['success'] is True and cancelled['replay'] is False,cancelled
   assert B.last(f"SELECT quantidade=3 AND status='disponivel' FROM public.estoque_produto WHERE id='{stock}';")=='t'
   assert B.last(f"SELECT receivable_id IS NULL AND partner_order_id='{order_id}' FROM public.entregas WHERE id='{cancel_delivery}';")=='t'
