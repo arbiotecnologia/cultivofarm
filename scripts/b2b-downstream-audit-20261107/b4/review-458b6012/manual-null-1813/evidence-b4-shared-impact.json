@@ -544,7 +544,7 @@
     {
       "name": "execução sem exceção de harness",
       "ok": false,
-      "detail": "RuntimeError('ERROR:  column \"created_by\" of relation \"fiscal_invoices\" does not exist\\nLINE 2: ...rder_id,debtor_partner_id,issue_date,total_amount,created_by...\\n                                                             ^\\n')"
+      "detail": "RuntimeError('ERROR:  invalid input syntax for type uuid: \"\"\\nLINE 3: ...0000391\\',\\'NFE\\',\\'PENDING\\',\\'PENDING\\',\\'HOMOLOGATION\\',\\'\\',\\'000000...\\n                                                             ^\\n')"
     }
   ],
   "hosted": "NOT_RUN",

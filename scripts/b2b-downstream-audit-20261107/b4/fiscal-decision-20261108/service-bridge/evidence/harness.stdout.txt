@@ -126,4 +126,4 @@ PASS delivery context nega INSERT em recebível
 PASS rollback deny-only passa com PRE/POST e metadados íntegros
 PASS rollback preserva alocações, títulos e snapshots
 PASS rollback fecha writer legado sem apagar projeção nem histórico
-FAIL execução sem exceção de harness :: RuntimeError('ERROR:  column "created_by" of relation "fiscal_invoices" does not exist\nLINE 2: ...rder_id,debtor_partner_id,issue_date,total_amount,created_by...\n                                                             ^\n')
+FAIL execução sem exceção de harness :: RuntimeError('ERROR:  invalid input syntax for type uuid: ""\nLINE 3: ...0000391\',\'NFE\',\'PENDING\',\'PENDING\',\'HOMOLOGATION\',\'\',\'000000...\n                                                             ^\n')
