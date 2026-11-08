@@ -30,7 +30,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "d537223d-33e6-4fb4-8e71-1cea153cc888"
+    "order_id": "ba98ae57-318a-4f1f-a512-28b71a8822f2"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -51,7 +51,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "3bd0ed6b-1219-4a1f-b222-6173da7f6530"
+    "os_id": "b55f9334-443b-4074-a5f5-1d8c9044f401"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -60,17 +60,17 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "1e9c8650-3f2e-4289-95ce-9d6c7040b05f"
+    "delivery_id": "50e1016d-dccb-4277-b275-8540b66c51d7"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "2c99f76d-8b05-46c7-83ab-0f6a61f2e954"
+    "delivery_id": "d2ea48a8-72d1-4915-8568-84ce6a0e8364"
   },
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "0cb54db5-6e65-4b3c-9723-b97b8d0915dc"
+    "delivery_id": "8554c96a-1ee2-4edc-a655-1d57983f527e"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
