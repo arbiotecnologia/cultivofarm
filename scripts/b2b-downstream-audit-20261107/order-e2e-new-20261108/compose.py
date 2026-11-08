@@ -80,6 +80,18 @@ def main():
   data,error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',1);assert data is not None,error
   data,error=Q.activation(Q.UADM,'pilot',[Q.P],0);assert data is not None,error
   choice=Q.ch('boleto',1,30)
+  diagnostic=Q.psql(f"""SELECT set_config('request.jwt.claim.sub','{Q.UB}',false);
+    SELECT jsonb_build_object(
+      'seller_org_partner_is_null',(SELECT partner_account_id IS NULL FROM public.organizations WHERE id='{Q.A}'),
+      'buyer_links',(SELECT jsonb_agg(to_jsonb(pu)) FROM public.partner_users pu WHERE pu.user_id='{Q.UB}'),
+      'valid_partner_user',public.is_valid_b2b_partner_user('{Q.UB}','{Q.P}'),
+      'actor_scope',(SELECT to_jsonb(s) FROM platform_private.b2b_actor_scope('{Q.UB}') s),
+      'commercial_context',platform_private.b2b_commercial_context(),
+      'owner_order_allowed',platform_private.c2_owner_order_create_allowed('{Q.UB}','{Q.P}'),
+      'owner_plan_assigned',platform_private.c2_owner_plan_assigned('{Q.P}','{Q.P3}'),
+      'entitlements',(SELECT jsonb_agg(to_jsonb(e)) FROM platform_private.entitlements_for_user('{Q.UB}') e)
+    )::text;""").stdout.strip().splitlines()[-1]
+  (OUT/'buyer-scope-diagnostic.json').write_text(json.dumps(json.loads(diagnostic),indent=2)+'\n')
   data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error
   data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],'NEW-E2E-ORDER-001',choice);assert data is not None,error
   (OUT/'buyer-order.json').write_text(json.dumps(data,indent=2)+'\n')
