@@ -1896,7 +1896,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "fb15d12c4109d2529cd53d5976247bc31c57ac5644613aea7779f27eaa573ddf"
+      "sha256": "c917fd987fe08238ec7cca2f8276d59e7458c1d7c8d7132fe31007407bf616fd"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",
+      "sha256": "a51d822c51e6be0db73b6e96112e1b79607168069a3ba280b41d0a3708f5577b"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py",

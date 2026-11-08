@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-k9p37lfo/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 104, in main
+    assert out_options and out_options['mode']=='legacy' and foreign_options and foreign_options['mode']=='legacy',(out_error,foreign_error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (None, 'ERROR:  42501: forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.b2b_partner_catalog_reader(uuid) line 19 at RAISE\nPL/pgSQL function platform_private.b2b_condition_seller(uuid) line 12 at RETURN\nPL/pgSQL function public.b2b_list_payment_condition_options_secure(uuid,uuid) line 8 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911')

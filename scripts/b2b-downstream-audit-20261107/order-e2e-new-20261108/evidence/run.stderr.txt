@@ -1,5 +1,14 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-k9p37lfo/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 104, in main
-    assert out_options and out_options['mode']=='legacy' and foreign_options and foreign_options['mode']=='legacy',(out_error,foreign_error)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: (None, 'ERROR:  42501: forbidden_partner\nCONTEXT:  PL/pgSQL function platform_private.b2b_partner_catalog_reader(uuid) line 19 at RAISE\nPL/pgSQL function platform_private.b2b_condition_seller(uuid) line 12 at RETURN\nPL/pgSQL function public.b2b_list_payment_condition_options_secure(uuid,uuid) line 8 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911')
+  File "/tmp/new-order-e2e-dbcr617c/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 30, in main
+    B.sql(checkpoint.read_text())
+          ~~~~~~~~~~~~~~~~~~~~^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/new-order-checkpoint.sql'

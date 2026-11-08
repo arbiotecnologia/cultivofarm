@@ -1,29 +1,5 @@
 [
   {
-    "test": "fresh full physical catalog restoration and reviewed upstream composition",
-    "status": "PASS"
-  },
-  {
-    "test": "physical revised install PRE POST; fresh confirmation/send generated pins",
-    "status": "PASS"
-  },
-  {
-    "test": "new physical control purchase reserve send proof confirm without manufacture",
-    "status": "PASS"
-  },
-  {
-    "test": "new B3 captured economic composition merged without dropped physical guards",
-    "status": "PASS"
-  },
-  {
-    "test": "real registration fence and exact receivable ACL with all ten triggers enabled before B2B order",
-    "status": "PASS"
-  },
-  {
-    "test": "direct settings write denied and delivery context forbids receivable INSERT UPDATE DELETE",
-    "status": "PASS"
-  },
-  {
     "test": "new composition",
     "status": "FAIL"
   }
