@@ -63,6 +63,8 @@ def main():
   os.environ['FINISHED_CURRENT_CAPTURE']=str(current_capture)
   os.environ['FINISHED_BASELINE']=str(current_baseline)
   os.environ['FINISHED_REVIEW_OUT']=str(physical_out)
+  os.environ['FINISHED_CONFIRMATION_CANDIDATE']=str(confirmation_out/'candidate.sql.review')
+  os.environ['FINISHED_SEND_CANDIDATE']=str(send_out/'candidate.sql.review')
   F=load('new_finished_generator',physical/'assemble.py')
   rel=next(r for r in F.BASE['relations'] if r['name']=='authz_tickets')
   acl=B.sql("SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass;").strip()

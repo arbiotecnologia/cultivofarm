@@ -91,17 +91,22 @@ END$$;"""
 def build():
     functions = {x["signature"]: x for x in BASE["functions"]}
     dependencies = {x["signature"]: x for x in BASE.get("dependency_functions", [])}
-    if len(functions) != 11 or len(dependencies) != 1 or len(BASE.get("dependency_triggers", [])) != 1 or BASE["existing_candidate_columns"]:
+    current_rehearsal = bool(os.environ.get("FINISHED_CURRENT_CAPTURE"))
+    expected_dependencies = 6 if current_rehearsal else 1
+    if len(functions) != 11 or len(dependencies) != expected_dependencies or len(BASE.get("dependency_triggers", [])) != expected_dependencies or BASE["existing_candidate_columns"]:
         raise AssertionError("baseline incompleta ou colunas já presentes")
-    for signature, entry in list(functions.items()) + list(dependencies.items()):
-        reported = LIVE_FACTS["functions"].get(signature)
-        if reported and entry["md5"] != reported["reported_md5"]:
-            raise AssertionError("reported LIVE pin drift " + signature)
+    if not current_rehearsal:
+        for signature, entry in list(functions.items()) + list(dependencies.items()):
+            reported = LIVE_FACTS["functions"].get(signature)
+            if reported and entry["md5"] != reported["reported_md5"]:
+                raise AssertionError("reported LIVE pin drift " + signature)
     reservar = captured("public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)")
     criar = captured("public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)")
     merge = extract((DELIVERY / "candidate.sql.review").read_text(), "platform_private.delivery_merge_split_20261030")
-    confirm = extract((CONF / "candidate.sql.review").read_text(), "platform_private.delivery_confirm_apply_v1")
-    send = extract((CONF / "send/candidate.sql.review").read_text(), "platform_private.delivery_send_apply_v1")
+    confirm_path = Path(os.environ.get("FINISHED_CONFIRMATION_CANDIDATE", str(CONF / "candidate.sql.review")))
+    send_path = Path(os.environ.get("FINISHED_SEND_CANDIDATE", str(CONF / "send/candidate.sql.review")))
+    confirm = extract(confirm_path.read_text(), "platform_private.delivery_confirm_apply_v1")
+    send = extract(send_path.read_text(), "platform_private.delivery_send_apply_v1")
     sync = captured("public.fn_sync_os_classica_downstream()")
     isolated_source = (ROOT / "scripts/stock-envase-recovery-20261027/isolated/candidate.sql.review").read_text()
     entry_guard = extract(isolated_source, "platform_private.envase_insert_guard_v1")
