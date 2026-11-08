@@ -75,6 +75,30 @@ def main():
   commercial=load('new_commercial_merge',H/'commercial.py')
   Q=commercial.apply(B,load,ROOT,OUT)
   checks.append(dict(test='new B3 captured economic composition merged without dropped physical guards',status='PASS'))
+  # f32c4f3: o candidato de planos é instalado no MESMO banco da B3/logística.
+  # PRE/POST permanecem integrais; divergência de pin aborta sem stub ou bypass.
+  plan_dir=ROOT/'scripts/commercial-plans-tenant-20261108'
+  plan_pre=Q.psql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';"+(plan_dir/'01-pre.sql.readonly').read_text()).stdout.strip()
+  B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';"+(plan_dir/'02-install.sql.review').read_text())
+  plan_post=Q.psql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';"+(plan_dir/'03-post.sql.readonly').read_text()).stdout.strip()
+  arb_plans=Q.as_user(Q.UADM,"SELECT coalesce(jsonb_agg(id),'[]'::jsonb) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);")
+  fsf_plans=Q.as_user(Q.UADMF,"SELECT coalesce(jsonb_agg(id),'[]'::jsonb) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);")
+  assert arb_plans.returncode==0 and Q.P3 in json.loads(arb_plans.stdout.strip()),(arb_plans.stdout,arb_plans.stderr)
+  assert fsf_plans.returncode==0 and Q.P3 not in json.loads(fsf_plans.stdout.strip()),(fsf_plans.stdout,fsf_plans.stderr)
+  fsf_write=Q.as_user(Q.UADMF,f"SELECT public.rpc_admin_update_commercial_plan_metadata('{Q.P3}','FSF DENIED',NULL,NULL);")
+  assert fsf_write.returncode!=0 and 'plan_not_found' in fsf_write.stderr,fsf_write.stderr
+  shared_code=B.last(f"SELECT code FROM public.commercial_payment_plans WHERE id='{Q.P3}';").replace("'","''")
+  shared=Q.as_user(Q.UADMF,f"""SELECT public.rpc_admin_create_commercial_plan(jsonb_build_object(
+   'name','LOCAL FSF SAME CODE','code','{shared_code}',
+   'plan_type','custom','max_days',30,'months_count',1,'installment_count',1,'discount_percent',0,
+   'monthly_interest_percent',0,'interest_type','none','pricing_mode','discount_from_base',
+   'requires_credit_approval',false,'requires_guarantee',false,'requires_financial_approval',false));""")
+  assert shared.returncode==0,shared.stderr
+  shared_id=shared.stdout.strip().splitlines()[-1]
+  arb_code=Q.as_user(Q.UADM,f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans('{shared_code}','all',100,0) WHERE id='{shared_id}';")
+  assert arb_code.returncode==0 and arb_code.stdout.strip()=='0',(arb_code.stdout,arb_code.stderr)
+  (OUT/'plan-isolation-composition.json').write_text(json.dumps(dict(pre=plan_pre,post=plan_post,arbio_plan_visible=True,fsf_arbio_plan_visible=False,fsf_write_denied=fsf_write.stderr,shared_code_plan_id=shared_id,shared_code_invisible_to_arbio=True),indent=2)+'\n')
+  checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
   # As baselines atuais são compostas antes do pedido B2B: o fluxo inteiro abaixo
   # corre com a ACL e os dez gatilhos reais de recebíveis, além do cadastro sem
   # configuração automática. Nenhum writer B4/NF é instalado por esta etapa.
@@ -343,6 +367,14 @@ def main():
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in after_rollback.stderr,after_rollback.stderr
   checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
+  plans_before_rollback=B.last('SELECT count(*) FROM public.commercial_payment_plans;')
+  B.sql((plan_dir/'04-rollback-deny.sql.review').read_text())
+  denied_plan_read=Q.as_user(Q.UADM,"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);")
+  assert denied_plan_read.returncode!=0 and 'permission denied' in denied_plan_read.stderr,denied_plan_read.stderr
+  assert B.last('SELECT count(*) FROM public.commercial_payment_plans;')==plans_before_rollback
+  assert B.last("SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_payment_plans'::regclass AND conname='commercial_payment_plans_code_key';")=='0'
+  assert B.last("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code';")=='1'
+  checks.append(dict(test='same DB deny-only rollback closes plan readers preserves plans and never restores global code uniqueness',status='PASS'))
   R.assert_current(B,OUT,'real-baselines-post-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
  except Exception:

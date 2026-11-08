@@ -1,6 +1,6 @@
 {
-  "kind": "DISPOSABLE_B4_REVIEW_MANUAL_NULL_1813_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
-  "review": "458b6012+4097d4e2+manual-null-1813",
+  "kind": "DISPOSABLE_B4_FINAL_CREDIT_TERMS_1833_PRE_INSTALL_POST_ROLLBACK_NOT_HOSTED_E2E",
+  "review": "458b6012+4097d4e2+manual-null-1813+fiscal-units-grams-1f4073+final-credit-terms-1833",
   "status": "INACTIVE_BLOCKED_PENDING_LIVE_DATA_IMPACT_AND_HOMOLOGATION_NOT_APPROVED",
   "historical_63_not_added": "review-458b6012/historical-63/evidence-b4-b3.json",
   "object_manifest": "b4-object-manifest.json",
@@ -9,7 +9,13 @@
     "USER_REPORTED_READONLY_MANUAL_NULL_1813; cinco títulos não lidos nem alterados pelo agente"
   ],
   "installation": "DISPOSABLE_PRE_INSTALL_POST_PASS; operation dependency remains real always-deny until harness-only stub",
+  "credit_limit_zero_review": {
+    "zero": "VALID_LIMIT_ZERO_POSITIVE_EXPOSURE_LIMIT_EXCEEDED",
+    "null_negative_nan": "CREDIT_SETTINGS_INCOMPLETE",
+    "live_settings_changed": false
+  },
   "shared_impact_scope": [
+    "credit_limit zero/NULL/negativo/NaN em parceiro isolado sem exposição",
     "cinco MANUAL partner_id NULL + cliente único, 4 OPEN/1 OVERDUE",
     "múltiplos parceiros no mesmo cliente",
     "conflito partner_id/customer_id/owner",
@@ -20,8 +26,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 100,
-  "total": 100,
+  "passed": 128,
+  "total": 128,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -108,7 +114,27 @@
       "ok": true
     },
     {
+      "name": "fixture independente de recuperação criada sem título",
+      "ok": true
+    },
+    {
+      "name": "aprovação comercial canônica do pedido",
+      "ok": true
+    },
+    {
+      "name": "plano sem aprovação financeira adicional preserva not_required",
+      "ok": true
+    },
+    {
+      "name": "pedido aprovado e economicamente selado",
+      "ok": true
+    },
+    {
       "name": "fixture contábil pendente separada",
+      "ok": true
+    },
+    {
+      "name": "guard downstream real tem MD5 exato",
       "ok": true
     },
     {
@@ -164,11 +190,63 @@
       "ok": true
     },
     {
+      "name": "pedido aprovado sem evento fiscal alocado permanece previsão, sem dívida",
+      "ok": true
+    },
+    {
       "name": "cliente não invoca alocador privado",
       "ok": true
     },
     {
       "name": "stub operacional existe só no harness depois da negação real",
+      "ok": true
+    },
+    {
+      "name": "crédito: zero é configuração válida, não limite_nao_definido",
+      "ok": true
+    },
+    {
+      "name": "crédito: limite zero sem exposição positiva não é NO_LIMIT_DEFINED",
+      "ok": true
+    },
+    {
+      "name": "crédito: limite zero bloqueia exposição positiva como limite excedido",
+      "ok": true
+    },
+    {
+      "name": "crédito: limite zero com aprovação mantém LIMIT_EXCEEDED_APPROVAL",
+      "ok": true
+    },
+    {
+      "name": "crédito: título local positivo com limite zero é negado sem nascer",
+      "ok": true
+    },
+    {
+      "name": "crédito: NULL permanece configuração ausente/inválida e fechada",
+      "ok": true
+    },
+    {
+      "name": "crédito: exposição com limite NULL falha fechado",
+      "ok": true
+    },
+    {
+      "name": "crédito: negativo permanece configuração ausente/inválida e fechada",
+      "ok": true
+    },
+    {
+      "name": "crédito: exposição com limite negativo falha fechado",
+      "ok": true
+    },
+    {
+      "name": "crédito: NaN permanece configuração ausente/inválida e fechada",
+      "ok": true
+    },
+    {
+      "name": "crédito: exposição com limite NaN falha fechado",
+      "ok": true
+    },
+    {
+      "name": "crédito: configuração original da fixture local restaurada",
       "ok": true
     },
     {
@@ -316,6 +394,18 @@
       "ok": true
     },
     {
+      "name": "mesmo documento em duas sessões tem replay autorizado nos dois lados",
+      "ok": true
+    },
+    {
+      "name": "mesmo documento concorrente mantém um título e uma alocação",
+      "ok": true
+    },
+    {
+      "name": "título não emite boleto/Pix nem registra pagamento",
+      "ok": true
+    },
+    {
       "name": "datas finais partem da emissão e calendário selado",
       "ok": true
     },
@@ -412,6 +502,34 @@
       "ok": true
     },
     {
+      "name": "falha depois do INSERT aborta a alocação inteira",
+      "ok": true
+    },
+    {
+      "name": "falha pós-autorização não deixa título, parcelas ou alocação parcial",
+      "ok": true
+    },
+    {
+      "name": "retry após falha recupera o mesmo evento uma única vez",
+      "ok": true
+    },
+    {
+      "name": "replay da recuperação preserva o mesmo título sem duplicar",
+      "ok": true
+    },
+    {
+      "name": "delivery context nega UPDATE em recebível",
+      "ok": true
+    },
+    {
+      "name": "delivery context nega DELETE em recebível",
+      "ok": true
+    },
+    {
+      "name": "delivery context nega INSERT em recebível",
+      "ok": true
+    },
+    {
       "name": "rollback deny-only passa com PRE/POST e metadados íntegros",
       "ok": true
     },
@@ -430,7 +548,7 @@
     "Auth por GUC/roles locais",
     "adaptador servidor local sem SET ROLE para funções privadas; negação cliente testada separadamente",
     "schema financeiro capturado com FK/RLS externos omitidos",
-    "títulos históricos criados antes do trigger candidato com os nove gatilhos capturados ativos; nenhum backfill",
+    "títulos históricos criados antes do trigger candidato com dez gatilhos atuais ativos; nenhum backfill",
     "company_fiscal_settings fictícia VALIDATED",
     "autorização/cancelamento fiscal privado fictício sem rede",
     "b2b_integration_dependencies substituída somente após prova de negação",

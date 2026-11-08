@@ -1,0 +1,180 @@
+{
+  "review": "f32c4f3",
+  "mode": "BEFORE",
+  "candidate_sha256": "92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6",
+  "results": [
+    {
+      "name": "default_target_role",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 5,
+      "audit_ids_before": [
+        "5fd21309-50d1-4201-94a2-9981008384da",
+        "fc661d6c-3db4-4b84-89ee-eb15a08bf579",
+        "7449086d-f31d-435c-bff7-8d99d4ba6a99",
+        "d6f24a58-06e1-4526-ae84-27c8416dd19f",
+        "6f6ebcac-37c9-4857-979d-6e14604d5b37"
+      ],
+      "observed_default": "aaaaaaaa-4444-0000-0000-000000000002",
+      "audit_after": 7
+    },
+    {
+      "name": "default_previous_profile",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "035f9437-bf7f-49bb-9269-bf01e4d2bbf5",
+        "stderr": ""
+      },
+      "audit_before": 5,
+      "audit_ids_before": [
+        "5fd21309-50d1-4201-94a2-9981008384da",
+        "fc661d6c-3db4-4b84-89ee-eb15a08bf579",
+        "7449086d-f31d-435c-bff7-8d99d4ba6a99",
+        "d6f24a58-06e1-4526-ae84-27c8416dd19f",
+        "6f6ebcac-37c9-4857-979d-6e14604d5b37"
+      ],
+      "observed_default": "aaaaaaaa-4444-0000-0000-000000000002",
+      "audit_after": 7
+    },
+    {
+      "name": "reorder_second_row_tenant",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 5,
+      "audit_ids_before": [
+        "5fd21309-50d1-4201-94a2-9981008384da",
+        "fc661d6c-3db4-4b84-89ee-eb15a08bf579",
+        "7449086d-f31d-435c-bff7-8d99d4ba6a99",
+        "d6f24a58-06e1-4526-ae84-27c8416dd19f",
+        "6f6ebcac-37c9-4857-979d-6e14604d5b37"
+      ],
+      "observed_sort": "aaaaaaaa-4444-0000-0000-000000000001:91,aaaaaaaa-4444-0000-0000-000000000002:92",
+      "audit_after": 6
+    },
+    {
+      "name": "metadata_role",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer) line 8 at RAISE"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 5,
+      "audit_ids_before": [
+        "5fd21309-50d1-4201-94a2-9981008384da",
+        "fc661d6c-3db4-4b84-89ee-eb15a08bf579",
+        "7449086d-f31d-435c-bff7-8d99d4ba6a99",
+        "d6f24a58-06e1-4526-ae84-27c8416dd19f",
+        "6f6ebcac-37c9-4857-979d-6e14604d5b37"
+      ],
+      "observed_name": "Plano A2",
+      "audit_after": 5
+    },
+    {
+      "name": "active_profile",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function rpc_admin_set_commercial_plan_active(uuid,boolean,text) line 8 at RAISE"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 5,
+      "audit_ids_before": [
+        "5fd21309-50d1-4201-94a2-9981008384da",
+        "fc661d6c-3db4-4b84-89ee-eb15a08bf579",
+        "7449086d-f31d-435c-bff7-8d99d4ba6a99",
+        "d6f24a58-06e1-4526-ae84-27c8416dd19f",
+        "6f6ebcac-37c9-4857-979d-6e14604d5b37"
+      ],
+      "observed_active": "t",
+      "audit_after": 5
+    },
+    {
+      "name": "version_tenant",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function rpc_admin_version_commercial_plan(uuid,jsonb,text) line 10 at RAISE"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 5,
+      "audit_ids_before": [
+        "5fd21309-50d1-4201-94a2-9981008384da",
+        "fc661d6c-3db4-4b84-89ee-eb15a08bf579",
+        "7449086d-f31d-435c-bff7-8d99d4ba6a99",
+        "d6f24a58-06e1-4526-ae84-27c8416dd19f",
+        "6f6ebcac-37c9-4857-979d-6e14604d5b37"
+      ],
+      "observed_old_version": "t",
+      "audit_after": 5
+    },
+    {
+      "name": "create_unique_wait_role",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 0,
+        "stdout": "b7302ac9-d1c2-44dc-ba15-dad6e7f433b1",
+        "stderr": ""
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "audit_before": 5,
+      "audit_ids_before": [
+        "5fd21309-50d1-4201-94a2-9981008384da",
+        "fc661d6c-3db4-4b84-89ee-eb15a08bf579",
+        "7449086d-f31d-435c-bff7-8d99d4ba6a99",
+        "d6f24a58-06e1-4526-ae84-27c8416dd19f",
+        "6f6ebcac-37c9-4857-979d-6e14604d5b37"
+      ],
+      "observed_created": "1",
+      "audit_after": 6
+    }
+  ],
+  "hosted": false,
+  "not_proven": [
+    "JWT/RLS/Storage hospedados",
+    "instalação em produção"
+  ]
+}

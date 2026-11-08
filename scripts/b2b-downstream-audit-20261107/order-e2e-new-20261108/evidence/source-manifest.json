@@ -1360,19 +1360,19 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/01-pre.sql.readonly",
-      "sha256": "fe2b495bd40dcea6a1665bfdb16c98740bc89aaecc18150b7fa315a036edd0d4"
+      "sha256": "caaf2bb96305cabd1f14448fa3db85563060db335888153f68e65151c1c49229"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/02-install.sql.review",
-      "sha256": "88e4d394b8719ddd0ddaed3a323a0be8ce89e62c7cc89834c48aaced066ecb5f"
+      "sha256": "0d533f85731a782fa851868b41adf6e7f8e1bbfd729f156be7d6499ac6b6fee6"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/03-post.sql.readonly",
-      "sha256": "f4cb39845f9a5cad0f0d967ff6052d252e7d3b8285f42a0ed5d8acbd0bb728a4"
+      "sha256": "2b9e665765c85e3f9cc6ffb0fc9fcd59cb8272fcf60833bf257da33935af2ae4"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/04-rollback-deny.sql.review",
-      "sha256": "4b4ff9ca852aae78af4be95d6ddf568e55db71952881038b796eaf4545f53ac4"
+      "sha256": "a131b77868e00e3c9292dfbade4f037a73e44fefef58d577d5f78840377e5f29"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/b4-candidate.sql.review",
@@ -1380,7 +1380,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/b4-object-manifest.json",
-      "sha256": "4512b4c78f144ca0ab4831e60a54c1eacd526250d8d084da75a26661649189db"
+      "sha256": "4b2093cd3eea556085bd675915adfa233885528a0ce2928265c9e91a0602ec40"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/b4-pins.json",
@@ -1397,6 +1397,38 @@
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/evidence-manifest.json",
       "sha256": "bd8326f6fc3b400486e2a698463cca504c33fad7f9a4f7a308ea2d4ffb673ffc"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/build_inventory.py",
+      "sha256": "d370f21dd83ebc5b2f11ba03de6eb7322458814d66d2186cc836126f14db5833"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/evidence/component/evidence-b4-shared-impact.json",
+      "sha256": "17c7e08cff444bba15f90265e2552b914f49c34cd25a7a1c6ee847ccd00cdb42"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/evidence/decision-results.json",
+      "sha256": "edb9e82817c48b457f1ce7493fa404760fbc4ab0f92e669ce94032d0b597ba27"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/evidence/manifest/evidence-manifest-tests.json",
+      "sha256": "c72f57cc64354ba6b8de26020649ef41b51f94a2d84f9c6de82f98ff3fb4361a"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/evidence/validation.json",
+      "sha256": "99fc7b60cce446a54b50f7e67fc56a4ebc07e920182edca978184155b563ec69"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/inventory.json",
+      "sha256": "ba4745f48d573930f7bdd2bb6a725026120b0778ca7bd8670379ad43d6e1170d"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/matrix.json",
+      "sha256": "86564492603f2a869f3fb9ff772b4c7b34343e8d65a9eef0ad18b6971b16801b"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py",
+      "sha256": "515d6d7a5c11b8581ed134b253d162d745bd31210037c1ae48efbe696ee2874d"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/generate-b4-review.py",
@@ -1640,7 +1672,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/manual-null-1813/evidence-manifest-tests.json",
-      "sha256": "adda5f5519bab773dccb4d511ddfae4e33cda397e7444b62bb025f791a70084a"
+      "sha256": "817f9432086880b4d008d30b16bf084cd1abfc2234631cc4a92ad28dca0a664f"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/review-458b6012/manual-null-1813/historical-fiscal-units-evidence-before.json",
@@ -1756,7 +1788,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/test-b4-b3.py",
-      "sha256": "71935b4f368a10b37553f192c9ddfc9a2f836e7dc2c51e7b92f47678af8db05d"
+      "sha256": "b9ce11d649006bd38e8f9007977955cb985be567c73c1ac46164db9b71aa15da"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/b4/test-b4-fiscal-units.py",
@@ -1896,7 +1928,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "796d364f9151b9385eb3bfafb2b6f5c846fc29b9ec6da8381ce78ff482dd211e"
+      "sha256": "0d5e4b6a5c57430191757aa948e0c66c8ca33eddfb5478c782c21cb242d360b8"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",
@@ -3672,19 +3704,19 @@
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/01-pre.sql.readonly",
-      "sha256": "63789b9fece1693c3b069e839d76cb0c06844d7965e7fd9d22278c47d8493d63"
+      "sha256": "2708c69b6633745205d12d811d8d7b89022d535aee28614d94afe7d917f8d7f8"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/02-install.sql.review",
-      "sha256": "92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6"
+      "sha256": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/03-post.sql.readonly",
-      "sha256": "8d5e212772bac0083090ff3f6c015d446223f05a2db23ad20e865dfcd268a1da"
+      "sha256": "033312331dd757c72c625f027d24176efa33931c8881ab002122a4e56867e894"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/04-rollback-deny.sql.review",
-      "sha256": "ed8299557f9d62682a3f92468e906a70e41d94f65c7162e1bd0369b2434784b0"
+      "sha256": "6af8ffdda88c6b0026d427f4b0459c3d86a74f25e3083abe44d4ad05675531a3"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/capture/functions/b2b_payment_condition_assign.sql",
@@ -3812,19 +3844,27 @@
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/evidence/local-pg.json",
-      "sha256": "ec381b3c1a45274e3969b6891296ee13ea3c86d14484a477946ea9ae2dd6328d"
+      "sha256": "c2b1cad7cfd1b7623c8c74a1e7b0a039b888fcc340969ca877e55142122133fe"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/evidence/project-validation.json",
       "sha256": "cccd5c4345e17e44a5332e07e952b2c95edd89cebf78282f93cef0bb232b98fe"
     },
     {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-f32c4f3/after.json",
+      "sha256": "39e1ec00cfa4c3a074260d3a8f2b3eef359231206020001c7ddda2b382fd029e"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-f32c4f3/before.json",
+      "sha256": "a017a24e534fb9f9d1d3b8973d71519da8128a4a44f9e868a82331c13cbaaf45"
+    },
+    {
       "file": "scripts/commercial-plans-tenant-20261108/generate.py",
-      "sha256": "d894473aba939f755c1205308c9361c3d09ec6610e126585f7b6c13082eef837"
+      "sha256": "25875a9ccc39eb60e5504ccff297f0c92661cb358c01ee4fadfe15a1b7fa5e3a"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/manifest.json",
-      "sha256": "7f319b984ce96d8ea7b9753e95fa256a2b80bb13b69d94415ddfcfb195abc642"
+      "sha256": "068f570eb0036c163f82a9f1802c469648ebfba6e96e49c624aecdb3cdd3a035"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/test-fixture.sql",
@@ -3832,7 +3872,7 @@
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/test-local-pg.py",
-      "sha256": "f9beb9bac74cb6ebc5078f4143c9b9a45738d381d19480e258f881990d341daf"
+      "sha256": "3c2f447e4d0f7045552a634c5c175e7f0d5d451da1c63328c5d60339a2b15e2e"
     },
     {
       "file": "scripts/contracts-c2-20261022/candidate.sql.review",

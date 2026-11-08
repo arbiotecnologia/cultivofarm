@@ -53,18 +53,21 @@ Resultado em PostgreSQL 17 descartável: **128/128 checks**, exit 0. Inclui parc
 
 Esses resultados são **prova de componente com atestações fiscais sintéticas**. Não são somados a execuções históricas e não certificam a ponte fiscal real.
 
-A suíte geral `bun run test` também foi iniciada, mas excedeu o limite de dez minutos do ambiente e não produziu resumo final; o log parcial está preservado em `evidence/vitest.txt` e não é contado como PASS. Nenhum arquivo TypeScript foi alterado nesta etapa. O build automático da prévia permaneceu `build OK`.
+A suíte geral `bun run test` também foi iniciada, mas excedeu o limite de dez minutos do ambiente e não produziu resumo final; o log parcial está preservado em `evidence/vitest.txt` e não é contado como PASS. Os oito arquivos que falharam nessa execução foram repetidos com um worker e passaram **8 arquivos/150 testes, exit 0** (`evidence/vitest-focused.*`); `envasePageReadOnly` também passou isolado 2/2. Isso caracteriza problema de execução concorrente/recursos, sem declarar a suíte geral aprovada. O build automático da prévia permaneceu `build OK`.
+
+## Ponte fiscal mínima preparada
+
+`service-bridge/` contém agora um candidato separado, inativo e não aprovado, gerado das fontes B4/H12 pinadas. A execução final no PostgreSQL descartável passou **149/149**, incluindo regressão B4 e 21 checks da ponte na mesma rodada: pendente/rejeitado sem título, autorização, falha pós-título/retry, replay concorrente, parcialidade, tenant estrangeiro, origem service-only sem ator inventado e rollback deny-only. Candidato SHA256 `b43550403d368b68e897de11778a142b09a4f142ba0d6646fb9a35d0ed6ae4c9`. Detalhes e tentativas estão no README/evidências do subdiretório.
 
 ## Lacunas que continuam bloqueando
 
-- **G1 — ponte ausente:** a autorização de `fiscal_invoices` ainda não cria a alocação B4.
-- **G2 — ator do callback:** o retorno SEFAZ é service-only, enquanto o alocador exige ator interno do tenant. Não se pode inventar `auth.uid()`, ticket ou contabilidade.
-- **G3 — estados/recuperação reais:** faltam testes da ponte para pendente, rejeitado, autorizado e `FISCAL_AUTHORIZATION_CLOSE_PENDING`.
+- **G1/G2 — ponte candidata, não instalada:** a autorização `fiscal_invoices`→B4 e o permit service-only foram exercitados localmente; não há integração real nem autorização de instalação.
+- **G3 — estados/recuperação reais:** pendente, rejeitado, autorizado e retry foram simulados; `FISCAL_AUTHORIZATION_CLOSE_PENDING`/H13, NFS-e e provedor real permanecem NOT_RUN.
 - **G4 — exceção manual:** faltam justificativa e origem explícitas e antiduplicidade por operação faturada.
 - **G5 — direção manual:** o writer fiscal atual parte do título, não da confirmação fiscal.
 - **G6 — homologação:** JWT/RLS/Storage/browser, callback concorrente e sessões reais ARBio/FSF permanecem `NOT_RUN`.
 
-Por essas lacunas, esta etapa **não produz um novo SQL instalável da ponte fiscal**. O próximo candidato mínimo deve ser revisto depois do isolamento de planos, preservando o callback service-only, o alocador e seus guards, sem transformar testes sintéticos em autoridade fiscal.
+O SQL da ponte é somente candidato de revisão, não instalável sem autorização específica. O callback service-only, o alocador e seus guards foram preservados; testes sintéticos não concedem autoridade fiscal nem liberam exceção manual.
 
 ## Ordem de liberação
 

@@ -39,17 +39,23 @@ def build_functions() -> dict[str, str]:
 
     name = "rpc_admin_create_commercial_plan"
     s = owner_check(source(name), "DECLARE v_id uuid;")
+    s = edit(s, "  PERFORM public._cpp_validate_payload(p_payload);", "  PERFORM public._cpp_validate_payload(p_payload);\n  PERFORM pg_advisory_xact_lock(hashtext('cpp_create:' || v_org::text));\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     s = edit(s, "active, sort_order, created_by, updated_by, valid_from, valid_until, version, version_reason\n", "active, sort_order, created_by, updated_by, valid_from, valid_until, version, version_reason, organization_id\n")
     s = edit(s, "    nullif(p_payload->>'valid_until','')::timestamptz, 1, nullif(btrim(coalesce(p_payload->>'motivo','')),'')\n", "    nullif(p_payload->>'valid_until','')::timestamptz, 1, nullif(btrim(coalesce(p_payload->>'motivo','')),''), v_org\n")
+    s = edit(s, "  ) RETURNING id INTO v_id;", "  ) RETURNING id INTO v_id;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+    s = edit(s, "  UPDATE public.commercial_payment_plans SET root_plan_id = v_id WHERE id = v_id;", "  UPDATE public.commercial_payment_plans SET root_plan_id = v_id WHERE id = v_id;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     out[name] = s
 
     name = "rpc_admin_version_commercial_plan"
     s = owner_check(source(name), "DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_new_id uuid; v_next integer; v_code text;")
     s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
     marker = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;"
-    s = edit(s, marker, marker + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+    s = edit(s, marker, marker + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+    s = edit(s, "    FROM public.commercial_payment_plans WHERE root_plan_id = coalesce(v_old.root_plan_id, v_old.id);", "    FROM public.commercial_payment_plans WHERE root_plan_id = coalesce(v_old.root_plan_id, v_old.id) AND organization_id = v_org;")
     s = edit(s, "    version, root_plan_id, version_reason\n", "    version, root_plan_id, version_reason, organization_id\n")
     s = edit(s, "    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'')\n", "    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'') , v_org\n")
+    s = edit(s, "  ) RETURNING id INTO v_new_id;", "  ) RETURNING id INTO v_new_id;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+    s = edit(s, "  PERFORM public._cpp_audit('commercial_plan_versioned'", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM public._cpp_audit('commercial_plan_versioned'")
     out[name] = s
 
     for name in ("rpc_admin_update_commercial_plan_metadata", "rpc_admin_set_commercial_plan_active"):
@@ -57,17 +63,20 @@ def build_functions() -> dict[str, str]:
         needle = "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE"
         s = edit(s, needle, "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
         marker = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;"
-        s = edit(s, marker, marker + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+        s = edit(s, marker, marker + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+        s = edit(s, "  PERFORM public._cpp_audit(", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM public._cpp_audit(")
         out[name] = s
 
     name = "rpc_admin_set_default_commercial_plan"
     s = owner_check(source(name), "DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_prev public.commercial_payment_plans%ROWTYPE;")
     s = edit(s, "hashtext('cpp_default_plan')", "hashtext('cpp_default_plan:' || v_org::text)")
     needle = "  PERFORM pg_advisory_xact_lock(hashtext('cpp_default_plan:' || v_org::text));"
-    s = edit(s, needle, needle + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+    s = edit(s, needle, needle + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
     s = edit(s, "   WHERE is_default AND id <> p_plan_id FOR UPDATE", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id FOR UPDATE")
+    s = edit(s, "  UPDATE public.commercial_payment_plans SET is_default = false", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  UPDATE public.commercial_payment_plans SET is_default = false")
     s = edit(s, "   WHERE is_default AND id <> p_plan_id;", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id;")
+    s = edit(s, "  IF v_prev.id IS NOT NULL THEN", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  IF v_prev.id IS NOT NULL THEN")
     out[name] = s
 
     name = "rpc_admin_reorder_commercial_plans"
@@ -77,8 +86,9 @@ def build_functions() -> dict[str, str]:
     s = edit(s, needle, needle + "\n  SELECT array_agg((x->>'id')::uuid), count(*) INTO v_ids, v_requested FROM jsonb_array_elements(p_orders) x;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
     s = edit(s, "hashtext('cpp_reorder')", "hashtext('cpp_reorder:' || v_org::text)")
     needle = "  PERFORM pg_advisory_xact_lock(hashtext('cpp_reorder:' || v_org::text));"
-    s = edit(s, needle, needle + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+    s = edit(s, needle, needle + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM p.id FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org ORDER BY p.id FOR UPDATE;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     s = edit(s, "     WHERE id = (v_item->>'id')::uuid;", "     WHERE id = (v_item->>'id')::uuid AND organization_id = v_org;")
+    s = edit(s, "  PERFORM public._cpp_audit('commercial_plan_reordered'", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM public._cpp_audit('commercial_plan_reordered'")
     out[name] = s
 
     name = "rpc_b2b_list_selectable_payment_plans"
@@ -206,6 +216,22 @@ def build_functions() -> dict[str, str]:
 
 
 HELPERS = r"""
+CREATE OR REPLACE FUNCTION platform_private.commercial_plan_revalidate_actor(p_expected uuid)
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid;
+BEGIN
+ IF auth.uid() IS NULL OR NOT EXISTS(
+   SELECT 1 FROM public.user_roles ur
+   WHERE ur.user_id=auth.uid() AND ur.role IN ('administrador','financeiro','gestor_comercial')
+ ) THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
+ SELECT pr.organization_id INTO v_org
+ FROM public.profiles pr JOIN public.organizations o ON o.id=pr.organization_id
+ WHERE pr.user_id=auth.uid() AND pr.ativo IS TRUE AND o.ativo IS TRUE AND o.status='ativa';
+ IF v_org IS NULL OR v_org IS DISTINCT FROM p_expected THEN
+   RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501';
+ END IF;
+END $$;
+
 CREATE OR REPLACE FUNCTION platform_private.commercial_plan_actor_organization()
 RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]);
@@ -296,7 +322,7 @@ BEGIN
  RETURN NEW;
 END $$;
 
-REVOKE ALL ON FUNCTION platform_private.commercial_plan_actor_organization(),platform_private.commercial_plan_target_organization(text,uuid,uuid),platform_private.commercial_plan_partner_visible(uuid,uuid),platform_private.commercial_plan_tenant_guard(),platform_private.commercial_b3_version_tenant_guard() FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.commercial_plan_revalidate_actor(uuid),platform_private.commercial_plan_actor_organization(),platform_private.commercial_plan_target_organization(text,uuid,uuid),platform_private.commercial_plan_partner_visible(uuid,uuid),platform_private.commercial_plan_tenant_guard(),platform_private.commercial_b3_version_tenant_guard() FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.commercial_plan_admin_allowed(uuid),platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid),platform_private.commercial_plan_buyer_visible(uuid,uuid) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION platform_private.commercial_plan_admin_allowed(uuid),platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid),platform_private.commercial_plan_buyer_visible(uuid,uuid) TO authenticated;
 """
@@ -335,7 +361,15 @@ WITH evidence AS (
 UPDATE public.commercial_payment_plans p SET organization_id=r.organization_id
 FROM resolved r WHERE COALESCE(p.root_plan_id,p.id)=r.family_id;
 
+DO $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM public.commercial_payment_plans WHERE organization_id IS NOT NULL GROUP BY organization_id,code HAVING count(*)>1) THEN
+   RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_CODE_COLLISION';
+ END IF;
+END $$;
+ALTER TABLE public.commercial_payment_plans DROP CONSTRAINT commercial_payment_plans_code_key;
 DROP INDEX public.uq_cpp_single_default;
+CREATE UNIQUE INDEX uq_cpp_tenant_code ON public.commercial_payment_plans(organization_id,code) WHERE organization_id IS NOT NULL;
 CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans(organization_id) NULLS NOT DISTINCT WHERE is_default;
 CREATE INDEX idx_cpp_tenant_sort ON public.commercial_payment_plans(organization_id,active,sort_order);
 """
@@ -363,7 +397,7 @@ REVOKE ALL ON FUNCTION public._cpp_validate_payload(jsonb),public._cpp_audit(tex
 
 
 def preflight(new_hashes: dict[str, str] | None = None) -> str:
-    lines = ["-- READONLY PRE: gerado; nenhum dado ou objeto é alterado.", "DO $$", "DECLARE sig text; expected text; BEGIN", f"  IF current_setting('commercial_plans.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_REF_NOT_VERIFIED'; END IF;", "  IF to_regclass('public.commercial_payment_plans') IS NULL OR to_regclass('platform_private.b2b_condition_versions') IS NULL THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_BASE_MISSING'; END IF;", "  IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_payment_plans' AND column_name='organization_id') THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_ALREADY_INSTALLED'; END IF;", "  IF (SELECT md5(string_agg(column_name||':'||data_type,',' ORDER BY ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_payment_plans') IS DISTINCT FROM 'fa11d3b5c4d1737c9a5e98cdece94c55' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_COLUMNS_DRIFT'; END IF;", "  IF (SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_single_default') IS DISTINCT FROM 'CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans USING btree ((true)) WHERE is_default' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_DEFAULT_INDEX_DRIFT'; END IF;"]
+    lines = ["-- READONLY PRE: gerado; nenhum dado ou objeto é alterado.", "DO $$", "DECLARE sig text; expected text; BEGIN", f"  IF current_setting('commercial_plans.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_REF_NOT_VERIFIED'; END IF;", "  IF to_regclass('public.commercial_payment_plans') IS NULL OR to_regclass('platform_private.b2b_condition_versions') IS NULL THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_BASE_MISSING'; END IF;", "  IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_payment_plans' AND column_name='organization_id') THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_ALREADY_INSTALLED'; END IF;", "  IF (SELECT md5(string_agg(column_name||':'||data_type,',' ORDER BY ordinal_position)) FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_payment_plans') IS DISTINCT FROM 'fa11d3b5c4d1737c9a5e98cdece94c55' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_COLUMNS_DRIFT'; END IF;", "  IF (SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_single_default') IS DISTINCT FROM 'CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans USING btree ((true)) WHERE is_default' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_DEFAULT_INDEX_DRIFT'; END IF;", "  IF (SELECT pg_get_constraintdef(c.oid) FROM pg_constraint c WHERE c.conrelid='public.commercial_payment_plans'::regclass AND c.conname='commercial_payment_plans_code_key' AND c.contype='u') IS DISTINCT FROM 'UNIQUE (code)' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_CODE_CONSTRAINT_DRIFT'; END IF;"]
     for signature, expected in sorted(PINS["functions"].items()):
         qualified = signature if "." in signature.split("(", 1)[0] else "public." + signature
         lines.append(f"  IF to_regprocedure('{qualified}') IS NULL OR md5(pg_get_functiondef('{qualified}'::regprocedure)) IS DISTINCT FROM '{expected}' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_PIN_DRIFT: {qualified}'; END IF;")
@@ -372,7 +406,7 @@ def preflight(new_hashes: dict[str, str] | None = None) -> str:
 
 
 def postflight(new_hashes: dict[str, str]) -> str:
-    lines = ["-- READONLY POST: estrutura e corpos candidatos; não certifica JWT/RLS hosted.", "DO $$", "BEGIN", f"  IF current_setting('commercial_plans.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_REF_NOT_VERIFIED'; END IF;", "  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_payment_plans' AND column_name='organization_id') THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_COLUMN_MISSING'; END IF;", "  IF (SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_single_default') IS DISTINCT FROM 'CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans USING btree (organization_id) NULLS NOT DISTINCT WHERE is_default' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_DEFAULT_INDEX_MISSING'; END IF;", "  IF EXISTS(SELECT 1 FROM public.commercial_payment_plans p LEFT JOIN public.organizations o ON o.id=p.organization_id WHERE p.organization_id IS NOT NULL AND o.id IS NULL) THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_ORPHAN_TENANT'; END IF;"]
+    lines = ["-- READONLY POST: estrutura e corpos candidatos; não certifica JWT/RLS hosted.", "DO $$", "BEGIN", f"  IF current_setting('commercial_plans.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_REF_NOT_VERIFIED'; END IF;", "  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_payment_plans' AND column_name='organization_id') THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_COLUMN_MISSING'; END IF;", "  IF (SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_single_default') IS DISTINCT FROM 'CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans USING btree (organization_id) NULLS NOT DISTINCT WHERE is_default' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_DEFAULT_INDEX_MISSING'; END IF;", "  IF (SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code') IS DISTINCT FROM 'CREATE UNIQUE INDEX uq_cpp_tenant_code ON public.commercial_payment_plans USING btree (organization_id, code) WHERE (organization_id IS NOT NULL)' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_TENANT_CODE_INDEX_MISSING'; END IF;", "  IF EXISTS(SELECT 1 FROM pg_constraint c WHERE c.conrelid='public.commercial_payment_plans'::regclass AND c.conname='commercial_payment_plans_code_key') THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_GLOBAL_CODE_CONSTRAINT_REMAINS'; END IF;", "  IF EXISTS(SELECT 1 FROM public.commercial_payment_plans p LEFT JOIN public.organizations o ON o.id=p.organization_id WHERE p.organization_id IS NOT NULL AND o.id IS NULL) THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_ORPHAN_TENANT'; END IF;"]
     for signature, expected in sorted(new_hashes.items()):
         qualified = signature if "." in signature.split("(", 1)[0] else "public." + signature
         lines.append(f"  IF md5(pg_get_functiondef('{qualified}'::regprocedure)) IS DISTINCT FROM '{expected}' THEN RAISE EXCEPTION 'COMMERCIAL_PLAN_POST_DRIFT: {qualified}'; END IF;")
@@ -383,7 +417,7 @@ def postflight(new_hashes: dict[str, str]) -> str:
 def rollback() -> str:
     functions = [
         "public.rpc_admin_list_commercial_plans(text,text,integer,integer)","public.rpc_admin_create_commercial_plan(jsonb)","public.rpc_admin_version_commercial_plan(uuid,jsonb,text)","public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)","public.rpc_admin_set_commercial_plan_active(uuid,boolean,text)","public.rpc_admin_set_default_commercial_plan(uuid)","public.rpc_admin_reorder_commercial_plans(jsonb)","public.rpc_b2b_list_selectable_payment_plans()","public.rpc_cc_list_assignments(text)","public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)","public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)","public.b2b_payment_condition_config_list()","public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)","public.b2b_payment_condition_retire(uuid,text,integer)","public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)","public.b2b_list_payment_condition_options_secure(uuid,uuid)","public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)","public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)","public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)","public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)"]
-    return "-- DENY-ONLY: não restaura funções nem índice global vulneráveis; preserva dados, versões e cercas.\nBEGIN;\n" + "\n".join(f"REVOKE ALL ON FUNCTION {f} FROM PUBLIC,anon,authenticated;" for f in functions) + "\nALTER POLICY cpp_tenant_read ON public.commercial_payment_plans USING(false);\nALTER POLICY cppa_admin_read ON public.commercial_payment_plan_assignments USING(false);\nALTER POLICY ccip_admin_read ON public.commercial_condition_item_prices USING(false);\nALTER POLICY cpr_internal_select ON public.commercial_price_rules USING(false);\nCOMMIT;\n"
+    return "-- DENY-ONLY: não restaura funções, unicidade global de código nem índice global vulneráveis; preserva dados, versões e cercas.\nBEGIN;\n" + "\n".join(f"REVOKE ALL ON FUNCTION {f} FROM PUBLIC,anon,authenticated;" for f in functions) + "\nALTER POLICY cpp_tenant_read ON public.commercial_payment_plans USING(false);\nALTER POLICY cppa_admin_read ON public.commercial_payment_plan_assignments USING(false);\nALTER POLICY ccip_admin_read ON public.commercial_condition_item_prices USING(false);\nALTER POLICY cpr_internal_select ON public.commercial_price_rules USING(false);\nCOMMIT;\n"
 
 
 def main() -> None:

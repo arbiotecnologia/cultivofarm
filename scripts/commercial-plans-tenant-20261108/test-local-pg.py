@@ -8,6 +8,10 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
+
+REVIEW_BEFORE = os.environ.get("COMMERCIAL_PLAN_REVIEW_BEFORE") == "1"
+REVIEW_RESULTS = []
 
 H = Path(__file__).resolve().parent
 TMP = Path(tempfile.mkdtemp(prefix="commercial-plans-tenant-", dir="/tmp"))
@@ -38,6 +42,47 @@ def check(name, sql, expected=None, error=None):
 
 def actor(uid, sql):
     return f"SET request.jwt.claim.sub='{uid}';SET ROLE authenticated;\n{sql}"
+
+
+def async_sql(sql):
+    process = subprocess.Popen(PSQL, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    process.stdin.write(sql)
+    process.stdin.close()
+    return process
+
+
+def finish_async(process):
+    stdout = process.stdout.read()
+    stderr = process.stderr.read()
+    returncode = process.wait(timeout=25)
+    return {"returncode": returncode, "stdout": stdout.strip(), "stderr": stderr.strip()}
+
+
+def lock_revocation(name, holder_sql, worker_sql, revoke_sql, holder_end="COMMIT"):
+    marker = "f32c4f3_" + name
+    holder = async_sql("BEGIN;" + holder_sql + "SELECT pg_sleep(3);" + holder_end + ";")
+    worker = async_sql(actor(A, "/*" + marker + "*/ " + worker_sql))
+    observed = False
+    for _ in range(100):
+        waiting = run(f"SELECT count(*) FROM pg_stat_activity WHERE query LIKE '%{marker}%' AND wait_event_type='Lock';")
+        if waiting == "1":
+            observed = True
+            break
+        if worker.poll() is not None:
+            break
+        time.sleep(0.05)
+    if not observed:
+        finish_async(holder)
+        finish_async(worker)
+        raise AssertionError("Lock não observado: " + name)
+    audit_before = int(run("SELECT count(*) FROM public.commercial_audit_log;"))
+    audit_ids_before = json.loads(run("SELECT coalesce(jsonb_agg(id),'[]'::jsonb) FROM public.commercial_audit_log;"))
+    run(revoke_sql)
+    worker_result = finish_async(worker)
+    holder_result = finish_async(holder)
+    row = {"name": name, "lock_observed": observed, "worker": worker_result, "holder": holder_result, "audit_before": audit_before, "audit_ids_before": audit_ids_before}
+    REVIEW_RESULTS.append(row)
+    return row
 
 
 def extract(path, name):
@@ -141,6 +186,8 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
     check("ANTES: FSF altera metadados ARBio", actor(B, f"SELECT public.rpc_admin_update_commercial_plan_metadata('{PLAN_A1}','ALTERADO POR B',NULL,NULL);"))
     check("ANTES: escrita indevida confirmada", f"SELECT name FROM public.commercial_payment_plans WHERE id='{PLAN_A1}';", "ALTERADO POR B")
     run(f"UPDATE public.commercial_payment_plans SET name='Plano A1' WHERE id='{PLAN_A1}';")
+    same_code_payload = json.dumps({"name":"Código compartilhado","code":"PLAN-A1","plan_type":"custom","max_days":30,"months_count":1,"installment_count":1,"discount_percent":0,"monthly_interest_percent":0,"interest_type":"none","pricing_mode":"discount_from_base","requires_credit_approval":False,"requires_guarantee":False,"requires_financial_approval":False}, separators=(",", ":"))
+    check("ANTES: mesmo código em outra empresa colide na constraint global", actor(B, f"SELECT public.rpc_admin_create_commercial_plan('{same_code_payload}'::jsonb);"), error="commercial_payment_plans_code_key")
 
     check("PRE íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "01-pre.sql.readonly").read_text(), "5|4|1|0")
     run("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "02-install.sql.review").read_text())
@@ -181,6 +228,16 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
 
     created_b = check("FSF cria plano com tenant próprio", actor(B, "SELECT public.rpc_admin_create_commercial_plan('{\"name\":\"Plano B2\",\"code\":\"PLAN-B2\",\"plan_type\":\"custom\",\"max_days\":30,\"months_count\":1,\"installment_count\":1,\"discount_percent\":0,\"monthly_interest_percent\":0,\"interest_type\":\"none\",\"pricing_mode\":\"discount_from_base\",\"requires_credit_approval\":false,\"requires_guarantee\":false,\"requires_financial_approval\":false}'::jsonb);"))
     check("plano criado por FSF não aparece para ARBio", actor(A, f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0) WHERE id='{created_b}';"), 0)
+    if not REVIEW_BEFORE:
+        shared_b = check("DEPOIS: FSF cria o mesmo código da ARBio sem colisão global", actor(B, f"SELECT public.rpc_admin_create_commercial_plan('{same_code_payload}'::jsonb);"))
+        check("código duplicado permanece isolado por tenant", f"SELECT string_agg(organization_id::text,',' ORDER BY organization_id::text) FROM public.commercial_payment_plans WHERE code='PLAN-A1' AND id IN('{PLAN_A1}','{shared_b}');", f"{OA},{OB}")
+        check("busca por código da ARBio não revela o plano FSF", actor(A, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans('PLAN-A1','all',100,0) WHERE code='PLAN-A1';"), 1)
+        check("busca por código da FSF não revela o plano ARBio", actor(B, f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans('PLAN-A1','all',100,0) WHERE code='PLAN-A1' AND id='{shared_b}';"), 1)
+        check("mesmo código dentro da mesma empresa é negado", actor(B, f"SELECT public.rpc_admin_create_commercial_plan('{same_code_payload}'::jsonb);"), error="uq_cpp_tenant_code")
+        cross_version_payload = json.dumps({"name":"Versão código cruzado","code":"PLAN-A2","plan_type":"custom","max_days":30,"months_count":1,"installment_count":1,"discount_percent":0,"monthly_interest_percent":0,"interest_type":"none","pricing_mode":"discount_from_base","requires_credit_approval":False,"requires_guarantee":False,"requires_financial_approval":False}, separators=(",", ":"))
+        cross_version = check("versionamento aceita código existente somente em outra empresa", actor(B, f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_B1}','{cross_version_payload}'::jsonb,'cross tenant');"))
+        check("versão cruzada conserva tenant e código", f"SELECT organization_id||'|'||code FROM public.commercial_payment_plans WHERE id='{cross_version}';", OB + "|PLAN-A2")
+        check("versionamento com colisão dentro do tenant é negado", actor(A, f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_A2}','{payload}'::jsonb,'collision');"), error="uq_cpp_tenant_code")
     check("tenant do plano é imutável", f"UPDATE public.commercial_payment_plans SET organization_id='{OB}' WHERE id='{PLAN_A1}';", error="COMMERCIAL_PLAN_TENANT_IMMUTABLE")
 
     check("atribuição cruzada B para plano A negada", actor(B, f"SELECT public.rpc_cc_upsert_assignment(NULL,'{PLAN_A1}','partner','{PB}',NULL,CURRENT_DATE,NULL,'x');"), error="C2P1_FORBIDDEN")
@@ -208,6 +265,75 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
     check("perfil admin revogado fecha escrita", actor(B, f"SELECT public.rpc_admin_set_commercial_plan_active('{PLAN_B1}',false,'x');"), error="not_authorized")
     run(f"UPDATE public.profiles SET ativo=true WHERE user_id='{B}';")
 
+    def review_assert(row, vulnerability_required=False):
+        row["audit_after"] = int(run("SELECT count(*) FROM public.commercial_audit_log;"))
+        if REVIEW_BEFORE:
+            passed = row["worker"]["returncode"] == 0 if vulnerability_required else True
+        else:
+            passed = row["worker"]["returncode"] != 0 and "not_authorized" in row["worker"]["stderr"] and row["audit_after"] == row["audit_before"]
+        assert passed, row
+        results.append({"name": ("ANTES " if REVIEW_BEFORE else "DEPOIS ") + row["name"], "status": "PASS"})
+        print("PASS", results[-1]["name"])
+
+    def cleanup_audit(row):
+        ids = ",".join("'" + value + "'" for value in row["audit_ids_before"])
+        run(f"DELETE FROM public.commercial_audit_log WHERE NOT (id = ANY(ARRAY[{ids}]::uuid[]));")
+
+    # f32c4f3: cada espera é observada em pg_stat_activity antes da revogação.
+    row = lock_revocation("default_target_role", f"SELECT id FROM public.commercial_payment_plans WHERE id='{PLAN_A2}' FOR UPDATE;", f"SELECT public.rpc_admin_set_default_commercial_plan('{PLAN_A2}');", f"DELETE FROM public.user_roles WHERE user_id='{A}' AND role='administrador';")
+    row["observed_default"] = run(f"SELECT id FROM public.commercial_payment_plans WHERE organization_id='{OA}' AND is_default;")
+    if not REVIEW_BEFORE: assert row["observed_default"] == new_version, row
+    run(f"INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador');UPDATE public.commercial_payment_plans SET is_default=false WHERE organization_id='{OA}';UPDATE public.commercial_payment_plans SET is_default=true WHERE id='{new_version}';")
+    review_assert(row, vulnerability_required=True);cleanup_audit(row)
+
+    row = lock_revocation("default_previous_profile", f"SELECT id FROM public.commercial_payment_plans WHERE id='{new_version}' FOR UPDATE;", f"SELECT public.rpc_admin_set_default_commercial_plan('{PLAN_A2}');", f"UPDATE public.profiles SET ativo=false WHERE user_id='{A}';")
+    row["observed_default"] = run(f"SELECT id FROM public.commercial_payment_plans WHERE organization_id='{OA}' AND is_default;")
+    if not REVIEW_BEFORE: assert row["observed_default"] == new_version, row
+    run(f"UPDATE public.profiles SET ativo=true WHERE user_id='{A}';UPDATE public.commercial_payment_plans SET is_default=false WHERE organization_id='{OA}';UPDATE public.commercial_payment_plans SET is_default=true WHERE id='{new_version}';")
+    review_assert(row);cleanup_audit(row)
+
+    orders = json.dumps([{"id":PLAN_A1,"sort_order":91},{"id":PLAN_A2,"sort_order":92}], separators=(",", ":"))
+    row = lock_revocation("reorder_second_row_tenant", f"SELECT id FROM public.commercial_payment_plans WHERE id='{PLAN_A2}' FOR UPDATE;", f"SELECT public.rpc_admin_reorder_commercial_plans('{orders}'::jsonb);", f"UPDATE public.profiles SET organization_id='{OB}' WHERE user_id='{A}';")
+    row["observed_sort"] = run(f"SELECT string_agg(id||':'||sort_order,',' ORDER BY id) FROM public.commercial_payment_plans WHERE id IN('{PLAN_A1}','{PLAN_A2}');")
+    if not REVIEW_BEFORE: assert row["observed_sort"] == f"{PLAN_A1}:1,{PLAN_A2}:2", row
+    run(f"UPDATE public.profiles SET organization_id='{OA}' WHERE user_id='{A}';UPDATE public.commercial_payment_plans SET sort_order=CASE id WHEN '{PLAN_A1}' THEN 1 ELSE 2 END WHERE id IN('{PLAN_A1}','{PLAN_A2}');")
+    review_assert(row, vulnerability_required=True);cleanup_audit(row)
+
+    row = lock_revocation("metadata_role", f"SELECT id FROM public.commercial_payment_plans WHERE id='{PLAN_A2}' FOR UPDATE;", f"SELECT public.rpc_admin_update_commercial_plan_metadata('{PLAN_A2}','LOCK CHANGE',NULL,NULL);", f"DELETE FROM public.user_roles WHERE user_id='{A}' AND role='administrador';")
+    row["observed_name"] = run(f"SELECT name FROM public.commercial_payment_plans WHERE id='{PLAN_A2}';")
+    if not REVIEW_BEFORE: assert row["observed_name"] == "Plano A2", row
+    run(f"INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador');UPDATE public.commercial_payment_plans SET name='Plano A2' WHERE id='{PLAN_A2}';")
+    review_assert(row);cleanup_audit(row)
+
+    row = lock_revocation("active_profile", f"SELECT id FROM public.commercial_payment_plans WHERE id='{PLAN_A2}' FOR UPDATE;", f"SELECT public.rpc_admin_set_commercial_plan_active('{PLAN_A2}',false,'lock');", f"UPDATE public.profiles SET ativo=false WHERE user_id='{A}';")
+    row["observed_active"] = run(f"SELECT active FROM public.commercial_payment_plans WHERE id='{PLAN_A2}';")
+    if not REVIEW_BEFORE: assert row["observed_active"] == "t", row
+    run(f"UPDATE public.profiles SET ativo=true WHERE user_id='{A}';UPDATE public.commercial_payment_plans SET active=true,is_default=false WHERE id='{PLAN_A2}';")
+    review_assert(row);cleanup_audit(row)
+
+    lock_version_payload = json.dumps({"name":"Versão sob lock","code":"LOCK-VERSION","plan_type":"custom","max_days":30,"months_count":1,"installment_count":1,"discount_percent":0,"monthly_interest_percent":0,"interest_type":"none","pricing_mode":"discount_from_base","requires_credit_approval":False,"requires_guarantee":False,"requires_financial_approval":False}, separators=(",", ":"))
+    row = lock_revocation("version_tenant", f"SELECT id FROM public.commercial_payment_plans WHERE id='{PLAN_A2}' FOR UPDATE;", f"SELECT public.rpc_admin_version_commercial_plan('{PLAN_A2}','{lock_version_payload}'::jsonb,'lock');", f"UPDATE public.profiles SET organization_id='{OB}' WHERE user_id='{A}';")
+    row["observed_old_version"] = run(f"SELECT superseded_by_id IS NULL AND active FROM public.commercial_payment_plans WHERE id='{PLAN_A2}';")
+    if not REVIEW_BEFORE: assert row["observed_old_version"] == "t", row
+    if row["worker"]["returncode"] == 0:
+        created_under_lock = row["worker"]["stdout"].splitlines()[-1]
+        run(f"DELETE FROM public.commercial_payment_plans WHERE id='{created_under_lock}';")
+    run(f"UPDATE public.profiles SET organization_id='{OA}' WHERE user_id='{A}';UPDATE public.commercial_payment_plans SET superseded_by_id=NULL,active=true,valid_until=NULL WHERE id='{PLAN_A2}';")
+    review_assert(row);cleanup_audit(row)
+
+    create_lock_payload = json.dumps({"name":"Criação sob lock","code":"LOCK-CREATE","plan_type":"custom","max_days":30,"months_count":1,"installment_count":1,"discount_percent":0,"monthly_interest_percent":0,"interest_type":"none","pricing_mode":"discount_from_base","requires_credit_approval":False,"requires_guarantee":False,"requires_financial_approval":False}, separators=(",", ":"))
+    holder_create = f"INSERT INTO public.commercial_payment_plans(name,code,plan_type,max_days,months_count,installment_count,discount_percent,monthly_interest_percent,interest_type,requires_credit_approval,requires_guarantee,requires_financial_approval,active,sort_order,created_by,pricing_mode,version,valid_from,is_default,organization_id) SELECT 'HOLDER','LOCK-CREATE',plan_type,max_days,months_count,installment_count,discount_percent,monthly_interest_percent,interest_type,requires_credit_approval,requires_guarantee,requires_financial_approval,true,99,'{A}',pricing_mode,1,now(),false,'{OA}' FROM public.commercial_payment_plans WHERE id='{PLAN_A2}';"
+    row = lock_revocation("create_unique_wait_role", holder_create, f"SELECT public.rpc_admin_create_commercial_plan('{create_lock_payload}'::jsonb);", f"DELETE FROM public.user_roles WHERE user_id='{A}' AND role='administrador';", holder_end="ROLLBACK")
+    row["observed_created"] = run("SELECT count(*) FROM public.commercial_payment_plans WHERE code='LOCK-CREATE';")
+    if not REVIEW_BEFORE: assert row["observed_created"] == "0", row
+    run(f"INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador');DELETE FROM public.commercial_payment_plans WHERE code='LOCK-CREATE';")
+    review_assert(row, vulnerability_required=True);cleanup_audit(row)
+
+    review_dir = H / "evidence" / "review-f32c4f3"
+    review_dir.mkdir(parents=True, exist_ok=True)
+    review_document = {"review": "f32c4f3", "mode": "BEFORE" if REVIEW_BEFORE else "AFTER", "candidate_sha256": hashlib.sha256((H / "02-install.sql.review").read_bytes()).hexdigest(), "results": REVIEW_RESULTS, "hosted": False, "not_proven": ["JWT/RLS/Storage hospedados", "instalação em produção"]}
+    (review_dir / ("before.json" if REVIEW_BEFORE else "after.json")).write_text(json.dumps(review_document, indent=2, ensure_ascii=False) + "\n")
+
     before = run("SELECT (SELECT count(*) FROM public.commercial_payment_plans)||'|'||(SELECT count(*) FROM public.commercial_payment_plan_assignments)||'|'||(SELECT count(*) FROM platform_private.b2b_condition_versions);")
     run("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "04-rollback-deny.sql.review").read_text())
     check("rollback fecha RPC admin", actor(A, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);"), error="permission denied")
@@ -218,7 +344,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
 
     evidence = {
         "project_ref": "swzpzcwiasxmjutrmvkm",
-        "status": "PASS",
+        "status": "VULNERABILITIES_REPRODUCED" if REVIEW_BEFORE else "PASS",
         "checks": len(results),
         "results": results,
         "synthetic_seams": ["Auth por request.jwt.claim.sub", "h15/platform_actor_access_ready reduzidos", "C2 order guards e feature flag mínimos", "resolver de preço e tabelas fora do recorte reduzidos", "GRANT SELECT em fixture para exercitar RLS; produção não recebe GRANT"],

@@ -1,0 +1,194 @@
+{
+  "review": "f32c4f3",
+  "mode": "AFTER",
+  "candidate_sha256": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40",
+  "results": [
+    {
+      "name": "default_target_role",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_revalidate_actor(uuid) line 7 at RAISE\nSQL statement \"SELECT platform_private.commercial_plan_revalidate_actor(v_org)\"\nPL/pgSQL function rpc_admin_set_default_commercial_plan(uuid) line 15 at PERFORM"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 7,
+      "audit_ids_before": [
+        "c9c4b327-9cee-461c-88be-65ddccfe563a",
+        "e2c446e6-ad03-4c0d-89d2-81580d8cfa54",
+        "bae46ceb-3139-4e27-a4b1-c72cffe71cea",
+        "f182a65f-4a57-4b89-9b3f-45121a4956db",
+        "8cc41e9a-5c52-48a2-bfb9-d8aae71b3070",
+        "a8e8b8e6-a968-4913-b34d-9c73d8179853",
+        "9be92e56-5186-44cd-9d4e-53fcafd5f14b"
+      ],
+      "observed_default": "d367bc6b-1d91-4ccd-a565-c184790e6ae4",
+      "audit_after": 7
+    },
+    {
+      "name": "default_previous_profile",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_revalidate_actor(uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.commercial_plan_revalidate_actor(v_org)\"\nPL/pgSQL function rpc_admin_set_default_commercial_plan(uuid) line 15 at PERFORM"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "d367bc6b-1d91-4ccd-a565-c184790e6ae4",
+        "stderr": ""
+      },
+      "audit_before": 7,
+      "audit_ids_before": [
+        "c9c4b327-9cee-461c-88be-65ddccfe563a",
+        "e2c446e6-ad03-4c0d-89d2-81580d8cfa54",
+        "bae46ceb-3139-4e27-a4b1-c72cffe71cea",
+        "f182a65f-4a57-4b89-9b3f-45121a4956db",
+        "8cc41e9a-5c52-48a2-bfb9-d8aae71b3070",
+        "a8e8b8e6-a968-4913-b34d-9c73d8179853",
+        "9be92e56-5186-44cd-9d4e-53fcafd5f14b"
+      ],
+      "observed_default": "d367bc6b-1d91-4ccd-a565-c184790e6ae4",
+      "audit_after": 7
+    },
+    {
+      "name": "reorder_second_row_tenant",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_revalidate_actor(uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.commercial_plan_revalidate_actor(v_org)\"\nPL/pgSQL function rpc_admin_reorder_commercial_plans(jsonb) line 15 at PERFORM"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 7,
+      "audit_ids_before": [
+        "c9c4b327-9cee-461c-88be-65ddccfe563a",
+        "e2c446e6-ad03-4c0d-89d2-81580d8cfa54",
+        "bae46ceb-3139-4e27-a4b1-c72cffe71cea",
+        "f182a65f-4a57-4b89-9b3f-45121a4956db",
+        "8cc41e9a-5c52-48a2-bfb9-d8aae71b3070",
+        "a8e8b8e6-a968-4913-b34d-9c73d8179853",
+        "9be92e56-5186-44cd-9d4e-53fcafd5f14b"
+      ],
+      "observed_sort": "aaaaaaaa-4444-0000-0000-000000000001:1,aaaaaaaa-4444-0000-0000-000000000002:2",
+      "audit_after": 7
+    },
+    {
+      "name": "metadata_role",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_revalidate_actor(uuid) line 7 at RAISE\nSQL statement \"SELECT platform_private.commercial_plan_revalidate_actor(v_org)\"\nPL/pgSQL function rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer) line 8 at PERFORM"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 7,
+      "audit_ids_before": [
+        "c9c4b327-9cee-461c-88be-65ddccfe563a",
+        "e2c446e6-ad03-4c0d-89d2-81580d8cfa54",
+        "bae46ceb-3139-4e27-a4b1-c72cffe71cea",
+        "f182a65f-4a57-4b89-9b3f-45121a4956db",
+        "8cc41e9a-5c52-48a2-bfb9-d8aae71b3070",
+        "a8e8b8e6-a968-4913-b34d-9c73d8179853",
+        "9be92e56-5186-44cd-9d4e-53fcafd5f14b"
+      ],
+      "observed_name": "Plano A2",
+      "audit_after": 7
+    },
+    {
+      "name": "active_profile",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_revalidate_actor(uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.commercial_plan_revalidate_actor(v_org)\"\nPL/pgSQL function rpc_admin_set_commercial_plan_active(uuid,boolean,text) line 8 at PERFORM"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 7,
+      "audit_ids_before": [
+        "c9c4b327-9cee-461c-88be-65ddccfe563a",
+        "e2c446e6-ad03-4c0d-89d2-81580d8cfa54",
+        "bae46ceb-3139-4e27-a4b1-c72cffe71cea",
+        "f182a65f-4a57-4b89-9b3f-45121a4956db",
+        "8cc41e9a-5c52-48a2-bfb9-d8aae71b3070",
+        "a8e8b8e6-a968-4913-b34d-9c73d8179853",
+        "9be92e56-5186-44cd-9d4e-53fcafd5f14b"
+      ],
+      "observed_active": "t",
+      "audit_after": 7
+    },
+    {
+      "name": "version_tenant",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_revalidate_actor(uuid) line 12 at RAISE\nSQL statement \"SELECT platform_private.commercial_plan_revalidate_actor(v_org)\"\nPL/pgSQL function rpc_admin_version_commercial_plan(uuid,jsonb,text) line 10 at PERFORM"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "aaaaaaaa-4444-0000-0000-000000000002",
+        "stderr": ""
+      },
+      "audit_before": 7,
+      "audit_ids_before": [
+        "c9c4b327-9cee-461c-88be-65ddccfe563a",
+        "e2c446e6-ad03-4c0d-89d2-81580d8cfa54",
+        "bae46ceb-3139-4e27-a4b1-c72cffe71cea",
+        "f182a65f-4a57-4b89-9b3f-45121a4956db",
+        "8cc41e9a-5c52-48a2-bfb9-d8aae71b3070",
+        "a8e8b8e6-a968-4913-b34d-9c73d8179853",
+        "9be92e56-5186-44cd-9d4e-53fcafd5f14b"
+      ],
+      "observed_old_version": "t",
+      "audit_after": 7
+    },
+    {
+      "name": "create_unique_wait_role",
+      "lock_observed": true,
+      "worker": {
+        "returncode": 3,
+        "stdout": "",
+        "stderr": "ERROR:  not_authorized\nCONTEXT:  PL/pgSQL function platform_private.commercial_plan_revalidate_actor(uuid) line 7 at RAISE\nSQL statement \"SELECT platform_private.commercial_plan_revalidate_actor(v_org)\"\nPL/pgSQL function rpc_admin_create_commercial_plan(jsonb) line 27 at PERFORM"
+      },
+      "holder": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "audit_before": 7,
+      "audit_ids_before": [
+        "c9c4b327-9cee-461c-88be-65ddccfe563a",
+        "e2c446e6-ad03-4c0d-89d2-81580d8cfa54",
+        "bae46ceb-3139-4e27-a4b1-c72cffe71cea",
+        "f182a65f-4a57-4b89-9b3f-45121a4956db",
+        "8cc41e9a-5c52-48a2-bfb9-d8aae71b3070",
+        "a8e8b8e6-a968-4913-b34d-9c73d8179853",
+        "9be92e56-5186-44cd-9d4e-53fcafd5f14b"
+      ],
+      "observed_created": "0",
+      "audit_after": 7
+    }
+  ],
+  "hosted": false,
+  "not_proven": [
+    "JWT/RLS/Storage hospedados",
+    "instalação em produção"
+  ]
+}
