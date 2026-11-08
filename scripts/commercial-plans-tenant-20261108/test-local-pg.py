@@ -76,6 +76,7 @@ def lock_revocation(name, holder_sql, worker_sql, revoke_sql, holder_end="COMMIT
         finish_async(worker)
         raise AssertionError("Lock não observado: " + name)
     audit_before = int(run("SELECT count(*) FROM public.commercial_audit_log;"))
+    audit_ids_before = json.loads(run("SELECT coalesce(jsonb_agg(id),'[]'::jsonb) FROM public.commercial_audit_log;"))
     run(revoke_sql)
     worker_result = finish_async(worker)
     holder_result = finish_async(holder)
