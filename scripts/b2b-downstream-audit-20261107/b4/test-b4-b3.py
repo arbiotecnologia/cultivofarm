@@ -702,11 +702,13 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_invoice(invoice_partial,order=callback_order,partner=None,with_item=True,item=callback_item)
         seed_invoice(invoice_bad_cstat,order=callback_order,with_item=True,item=callback_item)
         seed_invoice(invoice_no_tx,order=callback_order,with_item=True,item=callback_item)
-        seed_invoice(invoice_nfse,order=callback_order,with_item=True,item=callback_item,invoice_type="NFSE",provider_reference="NFSE-LOCAL-1")
+        seed_invoice(invoice_nfse,"AUTHORIZED",order=callback_order,with_item=True,item=callback_item,invoice_type="NFSE",provider_reference="NFSE-LOCAL-1")
         seed_invoice(invoice_h13,order=callback_order,with_item=True,item=callback_item)
         seed_invoice(invoice_h13_pending,order=None,partner=None)
         seed_invoice(invoice_h13_rejected,order=None,partner=None)
-        B3.psql(f"UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}','{invoice_nfse}');")
+        B3.psql(f"""UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}','{invoice_nfse}');
+ UPDATE public.fiscal_invoices SET partner_order_id=NULL,debtor_partner_id=NULL WHERE id='{invoice_nonb2b}';
+ UPDATE public.fiscal_invoices SET debtor_partner_id=NULL WHERE id='{invoice_partial}';""")
         seed_proof(invoice_main,tx_main)
         seed_proof(invoice_denied,tx_denied)
         seed_proof(invoice_foreign,tx_foreign)
@@ -792,13 +794,13 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
             bridge_races = list(pool.map(lambda _: bridge_race(), range(2)))
         check("duas chamadas service-only concorrentes preservam um único título", all(r.returncode == 0 for r in bridge_races) and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_main}'").stdout.strip() == "1", [r.stderr[-500:] for r in bridge_races])
 
-        changed_amount = service_sql(f"BEGIN;UPDATE public.fiscal_invoices SET total_amount=total_amount+1 WHERE id='{invoice_main}';UPDATE public.fiscal_invoice_items SET net_value=net_value+1 WHERE fiscal_invoice_id='{invoice_main}';SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
+        changed_amount = server_run("", f"BEGIN;UPDATE public.fiscal_invoices SET total_amount=total_amount+1 WHERE id='{invoice_main}';UPDATE public.fiscal_invoice_items SET net_value=net_value+1 WHERE fiscal_invoice_id='{invoice_main}';SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
         if REVIEW_BEFORE:
             check("ANTES: replay aceita valor cabeçalho/item alterado de forma consistente", changed_amount.returncode == 0, changed_amount.stderr)
         else:
             check("DEPOIS: replay com valor alterado diverge e preserva snapshot", changed_amount.returncode != 0 and "FISCAL_REPLAY_DIVERGENCE" in changed_amount.stderr, changed_amount.stderr)
         check("ensaio monetário não altera a NF durável", B3.psql(f"SELECT total_amount::text FROM public.fiscal_invoices WHERE id='{invoice_main}'").stdout.strip() == str(monetary))
-        changed_reference = service_sql(f"BEGIN;UPDATE public.fiscal_invoices SET provider_reference='PROVIDER-DIVERGENT' WHERE id='{invoice_main}';SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
+        changed_reference = server_run("", f"BEGIN;UPDATE public.fiscal_invoices SET provider_reference='PROVIDER-DIVERGENT' WHERE id='{invoice_main}';SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
         if REVIEW_BEFORE:
             check("ANTES: replay aceita referência de provedor divergente", changed_reference.returncode == 0, changed_reference.stderr)
         else:
@@ -811,7 +813,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         if not REVIEW_BEFORE:
             snapshot_row = B3.psql(f"SELECT source_digest||'|'||(snapshot->>'total_amount')||'|'||(snapshot->>'protocol') FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_main}'").stdout.strip()
             check("snapshot fiscal privado conserva digest, valor e protocolo", snapshot_row.endswith(f"|{monetary}|LOCAL-PROTOCOL") and len(snapshot_row.split('|')[0]) == 64, snapshot_row)
-        canceled_callback = service_sql(f"BEGIN;UPDATE public.fiscal_invoices SET normalized_status='CANCELED',status='CANCELED' WHERE id='{invoice_main}';SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
+        canceled_callback = server_run("", f"BEGIN;UPDATE public.fiscal_invoices SET normalized_status='CANCELED',status='CANCELED' WHERE id='{invoice_main}';SET ROLE service_role;SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_main}');ROLLBACK;")
         check("cancelamento continua sem reversão automática não homologada", canceled_callback.returncode == 0 and B3.psql(f"SELECT status FROM public.accounts_receivable WHERE id='{service_title}'").stdout.strip() == "OPEN", canceled_callback.stderr)
 
         B3.psql("""CREATE FUNCTION public.b4_test_fail_after_title() RETURNS trigger LANGUAGE plpgsql AS $$
