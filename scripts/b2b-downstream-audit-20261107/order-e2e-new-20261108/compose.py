@@ -37,26 +37,30 @@ def main():
   # Capture the new checkpoint under the path used by existing local helper.
   # Subsequent composition is continued in this same database; no source evidence reused.
   print('NEW_PHYSICAL_BOOT_OK',flush=True)
+  # A migração canônica pós-catálogo antecede todos os pins dos candidatos.
+  B.current_catalog.apply(B.run_raw,B.last,B.ok)
+  shutil.copyfile(physical/'evidence/current-catalog-baseline.json',OUT/'current-catalog-baseline.json')
+  checks.append(dict(test='canonical post-catalog migration matches nine LIVE bodies six guards and eight ACLs before candidate generation',status='PASS'))
   # Install confirmation/send in the current fresh database using measured exact pins.
   C=B.C
   pre=C.state();delta=C.G.candidate()
   post=json.loads([x for x in B.sql('BEGIN;'+delta+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   released=json.loads([x for x in B.sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {C.G.RPC} TO authenticated;'+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
-  C.G.write(pre,post,released);B.sql((C.H/'install.sql.review').read_text())
   confirmation_out=OUT/'delivery-confirmation';confirmation_out.mkdir(exist_ok=True)
-  for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
-   shutil.copyfile(C.H/name,confirmation_out/name)
+  C.G.write(pre,post,released,out=confirmation_out);B.sql((confirmation_out/'install.sql.review').read_text())
   S=load('new_send',C.H/'send/assemble.py')
   pre=json.loads(B.last(S.STATE+'::text;'))
   post=json.loads([x for x in B.sql('BEGIN;'+S.candidate()+S.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
-  S.write(pre,post);B.sql((C.H/'send/install.sql.review').read_text())
   send_out=OUT/'delivery-send';send_out.mkdir(exist_ok=True)
-  for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
-   shutil.copyfile(C.H/'send'/name,send_out/name)
+  S.write(pre,post,out=send_out);B.sql((send_out/'install.sql.review').read_text())
   B.sql('GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;')
-  B.apply_current_catalog(B.sql,B.T.A)
-  # Captured NULL ACL vs restore's explicit postgres-only ACL: same effective
-  # owner-only permissions. Measure representation in TEMP generator, never hosted pins.
+  B.current_catalog.assert_current(B.last)
+  # O gerador físico consome a composição atual medida, não a captura anterior ao catálogo.
+  current_capture=OUT/'current-pre-physical.json';current_capture.write_text(json.dumps(B.restore.metadata(),indent=2)+'\n')
+  physical_out=OUT/'physical-finished-product';physical_out.mkdir(exist_ok=True)
+  os.environ['FINISHED_CURRENT_CAPTURE']=str(current_capture)
+  os.environ['FINISHED_BASELINE']=str(current_capture)
+  os.environ['FINISHED_REVIEW_OUT']=str(physical_out)
   F=load('new_finished_generator',physical/'assemble.py')
   rel=next(r for r in F.BASE['relations'] if r['name']=='authz_tickets')
   acl=B.sql("SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass;").strip()
@@ -64,7 +68,7 @@ def main():
   rel['acl']=acl
   (OUT/'acl-normalization.json').write_text(json.dumps(dict(relation='platform_private.authz_tickets',historical='',restored=acl,client_grants=False,seam='restorer explicit owner ACL vs NULL default, local generator only'))+'\n')
   F.build()
-  B.sql((physical/'install.sql.review').read_text())
+  B.sql((physical_out/'install.sql.review').read_text())
   checks.append(dict(test='physical revised install PRE POST; fresh confirmation/send generated pins',status='PASS'))
   # No new production behavior: closed gate first, disposable activation second.
   assert B.last('SELECT enabled FROM platform_private.finished_product_gate_v1 WHERE singleton;')=='f'

@@ -514,20 +514,22 @@ GRANT EXECUTE ON FUNCTION public.rpc_finished_product_purchase_entry_v1(uuid,uui
     downstream_pre = ["-- Camada downstream INATIVA: exige as dependências de confirmação/envio e o POST exato da entrada."]
     downstream_pre += [dependency_pin(x) for x in downstream_entries] + foundation_post + [gate_closed]
 
-    (HERE / "candidate.sql.review").write_text(candidate)
-    (HERE / "candidate-foundation.sql.review").write_text(foundation_candidate)
-    (HERE / "candidate-downstream.sql.review").write_text(downstream_candidate)
-    (HERE / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
-    (HERE / "install-foundation.sql.review").write_text("\n\n".join(foundation_pre) + "\n\n" + foundation_candidate)
-    (HERE / "install-downstream.sql.review").write_text("\n\n".join(downstream_pre) + "\n\n" + downstream_candidate)
-    (HERE / "postflight.sql.review").write_text("\n".join(post) + "\n" + gate_closed + "\n")
-    (HERE / "postflight-foundation.sql.review").write_text("\n".join(foundation_post) + "\n" + gate_closed + "\n")
-    (HERE / "postflight-downstream.sql.review").write_text("\n".join(downstream_post) + "\n" + gate_closed + "\n")
-    (HERE / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
+    OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / "baseline.json").write_text(json.dumps(BASE, indent=2) + "\n")
+    (OUT / "candidate.sql.review").write_text(candidate)
+    (OUT / "candidate-foundation.sql.review").write_text(foundation_candidate)
+    (OUT / "candidate-downstream.sql.review").write_text(downstream_candidate)
+    (OUT / "install.sql.review").write_text("\n\n".join(pre) + "\n\n" + candidate)
+    (OUT / "install-foundation.sql.review").write_text("\n\n".join(foundation_pre) + "\n\n" + foundation_candidate)
+    (OUT / "install-downstream.sql.review").write_text("\n\n".join(downstream_pre) + "\n\n" + downstream_candidate)
+    (OUT / "postflight.sql.review").write_text("\n".join(post) + "\n" + gate_closed + "\n")
+    (OUT / "postflight-foundation.sql.review").write_text("\n".join(foundation_post) + "\n" + gate_closed + "\n")
+    (OUT / "postflight-downstream.sql.review").write_text("\n".join(downstream_post) + "\n" + gate_closed + "\n")
+    (OUT / "rollback.sql.review").write_text("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;\nREVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date),public.rpc_finished_product_purchase_capability_v1(),public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) FROM PUBLIC,anon,authenticated,service_role;\n-- Deny-only: preserva corpos, colunas, estoque, entregas e histórico; nenhum grant é restaurado.\n")
     manifest = {"status": "INACTIVE_NOT_APPROVED", "hosted": False, "operation_default": False, "changed_functions": [x["signature"] for x in BASE["functions"]], "new_objects": ["platform_private.finished_product_gate_v1", "platform_private.finished_product_stock_valid_v1", "platform_private.finished_product_delivery_valid_v1", "platform_private.finished_product_purchase_entry_v1", "public.rpc_finished_product_purchase_capability_v1", "public.rpc_finished_product_purchase_entry_v1"], "catalog_dependencies": ["public.produtos.owner_organization_id", "public.microrganismos.owner_organization_id", "public.product_sale_units", "public.product_packagings", "public.catalogo_volumes"], "dependency_functions": [x["signature"] for x in BASE.get("dependency_functions", [])], "dependency_triggers": [x["name"] for x in BASE.get("dependency_triggers", [])], "new_columns": ["origem_estoque", "unidade_comercial", "conteudo_por_unidade", "unidade_conteudo", "quantidade_conteudo", "embalagem_id", "embalagem_versao"], "new_grants": ["public.rpc_finished_product_purchase_capability_v1():authenticated", "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date):authenticated"], "layers": {"foundation": {"changed_functions": [x["signature"] for x in foundation_entries], "requires_delivery_confirmation_or_send": False}, "downstream": {"changed_functions": [x["signature"] for x in downstream_entries], "requires_delivery_confirmation_or_send": True, "requires_foundation_postflight": True}}, "reported_live_state": {"delivery_confirm_apply_v1": "ABSENT", "delivery_send_apply_v1": "ABSENT", "other_six_bodies_owners_acls": "REPORTED_MATCH_REMAINING_PRE_PINS_RETAINED"}, "files": {}}
     for name in ["baseline.json", "candidate.sql.review", "candidate-foundation.sql.review", "candidate-downstream.sql.review", "install.sql.review", "install-foundation.sql.review", "install-downstream.sql.review", "postflight.sql.review", "postflight-foundation.sql.review", "postflight-downstream.sql.review", "rollback.sql.review"]:
-        data = (HERE / name).read_bytes(); manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
-    (HERE / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+        data = (OUT / name).read_bytes(); manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+    (OUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({"candidate_sha256": manifest["files"]["candidate.sql.review"]["sha256"], "functions": len(functions), "enabled_by_default": False}))
 
 if __name__ == "__main__":
