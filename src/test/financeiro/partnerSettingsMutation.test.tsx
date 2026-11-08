@@ -41,7 +41,8 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   },
 } }));
 import { useUpdatePartnerFinancialSettings, useFinancialSettingsPartners } from "@/hooks/useB2BFinanceiro";
-const row = () => ({ ...emptyPartnerSettings("P"), id: "S", updated_at: "2026-10-23T20:00:00Z", default_payment_method: "AUDIT-AR-20260922 - Sem transferencia" });
+const row = () => ({ ...emptyPartnerSettings("P"), id: "S", updated_at: "2026-10-23T20:00:00Z", default_payment_method: "AUDIT-AR-20260922 - Sem transferencia",
+  billing_trigger: "na_entrega", payment_terms_days: 7, auto_generate_receivable: true });
 function setup(listEnabled = true) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;

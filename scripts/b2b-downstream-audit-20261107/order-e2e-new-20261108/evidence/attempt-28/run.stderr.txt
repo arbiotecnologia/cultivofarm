@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-2m26mtnv/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 170, in main
+    logistics=L.install(B,OUT)
+  File "/tmp/new-order-e2e-2m26mtnv/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 196, in install
+    body = one(body, "v_batch:=public.rpc_estoque_reservar_v1(p_os_id,'manual',(SELECT jsonb_agg(value-'observed_updated_at') FROM jsonb_array_elements(v_items)),'delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text),jsonb_build_object('cliente_id',v_os.cliente_id));", "v_batch:=public.rpc_estoque_reservar_v1(p_os_id,p_origem,(SELECT jsonb_agg(value-'observed_updated_at') FROM jsonb_array_elements(v_items)),'delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text),CASE WHEN p_origem='b2b' THEN jsonb_build_object('partner_id',v_partner,'partner_order_id',v_os.partner_order_id) ELSE jsonb_build_object('cliente_id',v_os.cliente_id) END);", "group reserve")
+  File "/tmp/new-order-e2e-2m26mtnv/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 28, in one
+    assert body.count(old) == count, f"anchor drift {label}: {body.count(old)} != {count}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: anchor drift group reserve: 0 != 1

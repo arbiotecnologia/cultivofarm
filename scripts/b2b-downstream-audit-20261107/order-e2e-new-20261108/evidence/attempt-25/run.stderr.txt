@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-wrapvd6i/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 170, in main
+    logistics=L.install(B,OUT)
+  File "/tmp/new-order-e2e-wrapvd6i/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 170, in install
+      body = one(body, " IF TG_OP='INSERT' THEN\n  -- Criação normal", """ IF TG_OP='INSERT' THEN
+             ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    IF EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='b2b_resale_os_create_v1' AND t.target=NEW.id)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     AND platform_private.b2b_resale_os_valid_v1(NEW) IS TRUE THEN RETURN NEW;END IF;
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    -- Criação normal""", "OS separate approval ticket")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-wrapvd6i/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 28, in one
+    assert body.count(old) == count, f"anchor drift {label}: {body.count(old)} != {count}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: anchor drift OS separate approval ticket: 0 != 1

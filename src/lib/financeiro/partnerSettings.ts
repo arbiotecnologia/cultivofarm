@@ -22,9 +22,9 @@ export const settingsFields = [
 ] as const;
 
 export function emptyPartnerSettings(partner_id: string): PartnerSettings {
-  return { partner_id, billing_trigger: "na_entrega", payment_terms_days: 7,
+  return { partner_id, billing_trigger: "manual", payment_terms_days: 7,
     default_payment_method: null, credit_limit: null, block_if_overdue: false,
-    auto_generate_receivable: true, active: true, credit_limit_action: "block",
+    auto_generate_receivable: false, active: true, credit_limit_action: "block",
     overdue_tolerance_days: 0, credit_alert_threshold_1: 80, credit_alert_threshold_2: 90 };
 }
 

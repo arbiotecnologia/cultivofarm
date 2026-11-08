@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-_bdw2ees/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 170, in main
+    logistics=L.install(B,OUT)
+  File "/tmp/new-order-e2e-_bdw2ees/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 215, in install
+    body = one(body, " PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;\n IF NOT FOUND THEN", " IF e.cliente_id IS NOT NULL THEN PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE;\n IF NOT FOUND THEN", label + " optional client")
+  File "/tmp/new-order-e2e-_bdw2ees/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py", line 28, in one
+    assert body.count(old) == count, f"anchor drift {label}: {body.count(old)} != {count}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: anchor drift confirm optional client: 0 != 1

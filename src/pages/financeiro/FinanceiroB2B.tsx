@@ -278,8 +278,8 @@ export function PartnerFinancialSettingsDialog({
                 <SelectContent>
                   <SelectItem value="na_aprovacao">Na aprovação</SelectItem>
                   <SelectItem value="na_producao_finalizada">Produção finalizada</SelectItem>
-                  <SelectItem value="na_entrega">Na entrega (padrão)</SelectItem>
-                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="na_entrega">Na entrega</SelectItem>
+                  <SelectItem value="manual">Manual (padrão para novo cadastro)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

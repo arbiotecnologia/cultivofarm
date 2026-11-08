@@ -1,0 +1,36 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-w3j5mkj3/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 215, in main
+    reserved=json.loads(B.last(reserve_resale('resale-reserve-cancel-0001')))['itens'][0]
+                        ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-w3j5mkj3/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-w3j5mkj3/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-w3j5mkj3/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  ESTQ_REFERENCE_FORBIDDEN
+CONTEXT:  PL/pgSQL function platform_private.stock_p1_guard() line 31 at RAISE
+SQL statement "INSERT INTO public.estoque_produto (
+      produto_id, lote_id, microrganismo_id, envase_id,
+      quantidade, volume_total, validade, status,
+      reservado_para_os_id, reservado_para_os_tipo,
+      reservado_para_cliente_id, reservado_para_partner_id, reservado_para_partner_order_id,
+      quantidade_reservada, observacao_reserva,
+      origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
+    ) VALUES (
+      v_item.produto_id, v_item.lote_id, v_item.microrganismo_id, v_item.envase_id,
+      p_qty, v_volume_reservado, v_item.validade, 'reservado',
+      p_os_id, p_os_tipo,
+      CASE WHEN p_os_tipo = 'b2b' THEN NULL ELSE p_cliente_id END,
+      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_id ELSE NULL END,
+      CASE WHEN p_os_tipo = 'b2b' THEN p_partner_order_id ELSE NULL END,
+      p_qty, p_observacao,
+      v_item.origem_estoque,v_item.unidade_comercial,v_item.conteudo_por_unidade,v_item.unidade_conteudo,p_qty*v_item.conteudo_por_unidade,v_item.embalagem_id,v_item.embalagem_versao
+    ) RETURNING id"
+PL/pgSQL function reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text) line 81 at SQL statement
+PL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 108 at assignment
+PL/pgSQL function public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) line 51 at assignment
+

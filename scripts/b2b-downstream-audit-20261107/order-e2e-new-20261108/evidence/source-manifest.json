@@ -1892,15 +1892,19 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py",
-      "sha256": "5c2603bb6fdcb866c1ae74fb4c3fcc363c8b0f01e597e3849f57dc12c504e50a"
+      "sha256": "f9406dd1fa35888e111245db238ad8fda8bb53152cc2104c7903ab202cec8b18"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "1716f6f871845ff49cdeb4cacae43c68b50fcfebce7a17e4dd5c6ed64f1f9cc6"
+      "sha256": "b13208ae34720c5d229b86e42920006cd78d539b2600434a2b0403591fc5b2aa"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/rebuild.py",
       "sha256": "9a4184a0344b50f29b9bc7c781b90804fdb37d9f90601f7189aa9c3fd36528e1"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py",
+      "sha256": "ca918030192531c0bba3e1f29f9beea9ff3731455cc192b944580242f3936d62"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",
