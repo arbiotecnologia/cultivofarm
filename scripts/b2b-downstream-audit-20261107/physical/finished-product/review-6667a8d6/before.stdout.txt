@@ -1,0 +1,17 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.9s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS UNIQUE global codigo_lote continua instalada sem alteração
+FAIL regressão lote fornecedor Traceback (most recent call last):
+  File "/tmp/resale-6667a8d6/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_supplier_lot.py", line 35, in main
+    other = json.loads(B.last(A.purchase(fsf, 2, "supplier-lot-fsf-001", actor=B.T.V, supplier_lot=external)))
+                       ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/resale-6667a8d6/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/resale-6667a8d6/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/resale-6667a8d6/scripts/de
+RESULT 3/4 exit 1

@@ -1,0 +1,413 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "f03ac5fab7dc93b54b5edc205c685fa8aaf72bab79b0717624afa339d62e4fe0"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "candidato instalado com todos os PRE pins e grants somente na capability/wrapper públicos",
+      "status": "PASS"
+    },
+    {
+      "name": "instalação permanece operacionalmente desligada",
+      "status": "PASS"
+    },
+    {
+      "name": "aplicativo não tem EXECUTE na entrada privada de compra",
+      "status": "PASS",
+      "detail": "permission denied for function finished_product_purchase_entry_v1"
+    },
+    {
+      "name": "anon não consulta a capability de compra",
+      "status": "PASS",
+      "detail": "permission denied for function rpc_finished_product_purchase_capability_v1"
+    },
+    {
+      "name": "capability confirma contrato fechado enquanto o gate estiver desligado",
+      "status": "PASS",
+      "detail": {
+        "contract": "FINISHED_PRODUCT_PURCHASE_V1",
+        "available": false
+      }
+    },
+    {
+      "name": "wrapper público também permanece fechado pelo gate",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
+    },
+    {
+      "name": "gate fechado nega compra/entrada interna",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
+    },
+    {
+      "name": "aplicativo não pode forjar ticket de compra",
+      "status": "PASS",
+      "detail": "permission denied for table authz_tickets"
+    },
+    {
+      "name": "API própria permanece sem EXECUTE para anon/authenticated/service_role",
+      "status": "PASS"
+    },
+    {
+      "name": "somente capability e wrapper públicos recebem EXECUTE authenticated; anon/service_role ficam fechados",
+      "status": "PASS"
+    },
+    {
+      "name": "capability positiva exige ator autorizado e gate ligado",
+      "status": "PASS",
+      "detail": {
+        "contract": "FINISHED_PRODUCT_PURCHASE_V1",
+        "available": true
+      }
+    },
+    {
+      "name": "wrapper público grava 2 UN de 500 g como 1.000 g, sem tenant/conteúdo do cliente",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "de1e8162-23bf-49e8-9fce-b6f343a59f8b",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "bd9bbcc7-4167-43ae-944d-5c70a0d3c1bf",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "g",
+        "estoque_produto_id": "4cf30c26-e607-4cba-83df-bca69ac54a5b",
+        "quantidade_conteudo": 1000.0,
+        "conteudo_por_unidade": 500.0
+      }
+    },
+    {
+      "name": "replay pelo wrapper devolve snapshot completo e não duplica lote/estoque/ledger",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": true,
+        "lote_id": "de1e8162-23bf-49e8-9fce-b6f343a59f8b",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "bd9bbcc7-4167-43ae-944d-5c70a0d3c1bf",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "g",
+        "estoque_produto_id": "4cf30c26-e607-4cba-83df-bca69ac54a5b",
+        "quantidade_conteudo": 1000.0,
+        "conteudo_por_unidade": 500.0
+      }
+    },
+    {
+      "name": "wrapper público não permite produto do tenant de outro ator",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_CATALOG_DENIED"
+    },
+    {
+      "name": "lote do fornecedor é obrigatório na API de compra",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_PURCHASE_PARAMS_INVALID"
+    },
+    {
+      "name": "produto de outro tenant é negado antes de criar lote/estoque",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_CATALOG_DENIED"
+    },
+    {
+      "name": "compra de 0,5 embalagem é negada",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED"
+    },
+    {
+      "name": "quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "42b2c5f8-38ee-4811-a0fd-e23ef7e39be6",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "1a35fc4e-5135-41c4-b7ca-3b978ef78291",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "kg",
+        "estoque_produto_id": "fe0c459d-23fa-49cb-ba5b-44e8ec2fa1d3",
+        "quantidade_conteudo": 50.0,
+        "conteudo_por_unidade": 25.0
+      }
+    },
+    {
+      "name": "quimico kg: compra → reserva → baixa; 2 UN = 50 kg; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "kg",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 50.0
+      }
+    },
+    {
+      "name": "quimico kg: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante g: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "805fa0d3-6a9f-4b80-9f74-59dc7bcfae01",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "c04c18af-5f4b-4aa3-9cd9-f1f161d81b76",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "g",
+        "estoque_produto_id": "f7784406-b662-427c-ac22-06c15df1986a",
+        "quantidade_conteudo": 50000.0,
+        "conteudo_por_unidade": 25000.0
+      }
+    },
+    {
+      "name": "fertilizante g: compra → reserva → baixa; 2 UN = 50000 g; volume_ml=NULL",
+      "status": "PASS",
+      "detail": {
+        "ml": null,
+        "qty": 2,
+        "unit": "g",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 50000.0
+      }
+    },
+    {
+      "name": "fertilizante g: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "ce3fe06e-c756-401a-8955-f0acf46f8f7c",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "79340644-1290-4557-92f3-4547c46e3cbf",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "l",
+        "estoque_produto_id": "48d2ba01-dbb0-4c80-8999-434ff16a2064",
+        "quantidade_conteudo": 2.0,
+        "conteudo_por_unidade": 1.0
+      }
+    },
+    {
+      "name": "quimico l: compra → reserva → baixa; 2 UN = 2 l; volume_ml=2000",
+      "status": "PASS",
+      "detail": {
+        "ml": 2000.0,
+        "qty": 2,
+        "unit": "l",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 2.0
+      }
+    },
+    {
+      "name": "quimico l: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante ml: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "9c125383-e449-4f84-8d16-9a0fdc92d2ac",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "99e437fe-9551-45fd-b41c-b4e615e7fa2e",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "ml",
+        "estoque_produto_id": "8906f686-6980-4867-9b8f-84000e1c266e",
+        "quantidade_conteudo": 1000.0,
+        "conteudo_por_unidade": 500.0
+      }
+    },
+    {
+      "name": "fertilizante ml: compra → reserva → baixa; 2 UN = 1000 ml; volume_ml=1000",
+      "status": "PASS",
+      "detail": {
+        "ml": 1000.0,
+        "qty": 2,
+        "unit": "ml",
+        "origin": "compra_produto_acabado_revenda",
+        "content": 1000.0
+      }
+    },
+    {
+      "name": "fertilizante ml: expedição/entrega/replays sem fabricação e sem segunda baixa",
+      "status": "PASS"
+    },
+    {
+      "name": "replay exato da compra retorna o mesmo lote/estoque sem duplicar entrada",
+      "status": "PASS"
+    },
+    {
+      "name": "mesma chave de compra com quantidade diversa conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "mesma chave com lote do fornecedor divergente conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "mesma chave com fornecedor divergente conflita",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "name": "retorno antecipado de reserva não autoriza compra fora do contexto canônico",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_RESERVATION_CONTEXT_DENIED"
+    },
+    {
+      "name": "entrada agregada biológica sem envase preserva a negação original",
+      "status": "PASS",
+      "detail": "não possui registro de envase"
+    },
+    {
+      "name": "retorno antecipado legado de reserva não foi alterado para itens sem origem de compra",
+      "status": "PASS"
+    },
+    {
+      "name": "composição real dos guards nega entrada de compra disfarçada de reserva",
+      "status": "PASS",
+      "detail": "ENVASE_INSERT_CLOSED"
+    },
+    {
+      "name": "guard de tenant deriva do lote e nega produto de outra empresa",
+      "status": "PASS",
+      "detail": "tenant_catalog_cross_tenant_reference"
+    },
+    {
+      "name": "guard de tenant também nega microrganismo de outra empresa no lote",
+      "status": "PASS",
+      "detail": "tenant_catalog_cross_tenant_reference"
+    },
+    {
+      "name": "produto e microrganismo ficam vinculados ao tenant real do lote, sem exceção para revenda",
+      "status": "PASS"
+    },
+    {
+      "name": "fertilizante kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "8611ca76-f31f-4f03-bdf1-617efa8764a0",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "55121e12-6a2c-4919-8b08-a541dfd9cf42",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "kg",
+        "estoque_produto_id": "33e96ca0-8563-4206-9434-69e0ffeba4cf",
+        "quantidade_conteudo": 75.0,
+        "conteudo_por_unidade": 25.0
+      }
+    },
+    {
+      "name": "divisão parcial usa quantidade_reservada somente no writer canônico de reserva",
+      "status": "PASS"
+    },
+    {
+      "name": "parcial 2 de 3 sacos 25 kg: split, cancelamento e merge preservam 75 kg, não litros",
+      "status": "PASS"
+    },
+    {
+      "name": "quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "73d2a53d-2f57-42e4-9ecd-5e459645f903",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "743a256c-486d-41eb-9d4f-d9a34f9b276f",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "kg",
+        "estoque_produto_id": "417b57fd-30ae-4bae-b9aa-3895da51697a",
+        "quantidade_conteudo": 50.0,
+        "conteudo_por_unidade": 25.0
+      }
+    },
+    {
+      "name": "0,5 embalagem é negada na reserva whole-pack",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_WHOLE_PACK_REQUIRED"
+    },
+    {
+      "name": "peso não pode ser gravado como volume_total",
+      "status": "PASS",
+      "detail": "finished_product_unit_contract"
+    },
+    {
+      "name": "quimico l: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase",
+      "status": "PASS",
+      "detail": {
+        "ok": true,
+        "replay": false,
+        "lote_id": "74ccb63f-4626-4c22-83cb-cada5a40f47c",
+        "origem_estoque": "compra_produto_acabado_revenda",
+        "movimentacao_id": "4c27d4db-bf4e-4f59-a4e0-71aa4cfe0ca0",
+        "embalagem_versao": 1,
+        "unidade_conteudo": "l",
+        "estoque_produto_id": "9ed0e45d-25df-4e4c-9e23-2021f33a8d4a",
+        "quantidade_conteudo": 2.0,
+        "conteudo_por_unidade": 1.0
+      }
+    },
+    {
+      "name": "B2B permanece fechado mesmo com compra e produto acabado válidos",
+      "status": "PASS",
+      "detail": "DELIVERY_SCOPE_DENIED"
+    },
+    {
+      "name": "nenhuma abertura B2B/OnFarm, fiscal, financeira ou de comunicação",
+      "status": "PASS"
+    },
+    {
+      "name": "revogação durante espera da compra é revalidada antes de criar lote/estoque",
+      "status": "PASS"
+    },
+    {
+      "name": "duas compras concorrentes com a mesma chave geram uma única entrada e replay",
+      "status": "PASS"
+    },
+    {
+      "name": "POST confirma gate fechado após a bateria",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback deny-only executa sem restaurar grants ou apagar objetos",
+      "status": "PASS"
+    },
+    {
+      "name": "compra interna após rollback permanece fechada",
+      "status": "PASS",
+      "detail": "FINISHED_PRODUCT_GATE_CLOSED"
+    },
+    {
+      "name": "wrapper público após rollback perde EXECUTE sem reabrir writer",
+      "status": "PASS",
+      "detail": "permission denied for function rpc_finished_product_purchase_entry_v1"
+    },
+    {
+      "name": "rollback preserva compras, estoque, entregas e histórico integralmente",
+      "status": "PASS"
+    }
+  ],
+  "hosted": false,
+  "real_nf_or_receivable": false,
+  "purchase_origin": "compra_produto_acabado_revenda",
+  "synthetic_seams": [
+    "Auth/claims e chamada interna privilegiada somente no PG descartável",
+    "schema de catálogo atual reconciliado na captura antiga; sem writers Owned ou preços",
+    "guard de tenant capturado e pinado; sonda isolada só para a função de entrada, além da composição real dos triggers",
+    "produtos/demanda/comprovantes fictícios; entrada e downstream com triggers reais"
+  ]
+}

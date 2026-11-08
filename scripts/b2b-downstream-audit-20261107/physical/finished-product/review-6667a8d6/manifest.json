@@ -1,0 +1,127 @@
+{
+  "status": "INACTIVE_NOT_APPROVED",
+  "hosted": false,
+  "operation_default": false,
+  "changed_functions": [
+    "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+    "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+    "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)",
+    "platform_private.envase_insert_final_v1()",
+    "platform_private.envase_insert_guard_v1()",
+    "platform_private.guard_manual_lot_write_v1()",
+    "platform_private.trg_lab_lot_biological_only()",
+    "public.fn_sync_os_classica_downstream()",
+    "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+    "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+    "public.validate_estoque_entrada()"
+  ],
+  "new_objects": [
+    "platform_private.finished_product_gate_v1",
+    "platform_private.finished_product_stock_valid_v1",
+    "platform_private.finished_product_delivery_valid_v1",
+    "platform_private.finished_product_purchase_entry_v1",
+    "public.rpc_finished_product_purchase_capability_v1",
+    "public.rpc_finished_product_purchase_entry_v1"
+  ],
+  "catalog_dependencies": [
+    "public.produtos.owner_organization_id",
+    "public.microrganismos.owner_organization_id",
+    "public.product_sale_units",
+    "public.product_packagings",
+    "public.catalogo_volumes"
+  ],
+  "dependency_functions": [
+    "platform_private.estoque_produto_catalog_tenant_guard()"
+  ],
+  "dependency_triggers": [
+    "a000_estoque_produto_catalog_tenant_guard"
+  ],
+  "new_columns": [
+    "origem_estoque",
+    "unidade_comercial",
+    "conteudo_por_unidade",
+    "unidade_conteudo",
+    "quantidade_conteudo",
+    "embalagem_id",
+    "embalagem_versao"
+  ],
+  "new_grants": [
+    "public.rpc_finished_product_purchase_capability_v1():authenticated",
+    "public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date):authenticated"
+  ],
+  "layers": {
+    "foundation": {
+      "changed_functions": [
+        "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+        "platform_private.envase_insert_final_v1()",
+        "platform_private.envase_insert_guard_v1()",
+        "platform_private.guard_manual_lot_write_v1()",
+        "platform_private.trg_lab_lot_biological_only()",
+        "public.fn_sync_os_classica_downstream()",
+        "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+        "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+        "public.validate_estoque_entrada()"
+      ],
+      "requires_delivery_confirmation_or_send": false
+    },
+    "downstream": {
+      "changed_functions": [
+        "platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)",
+        "platform_private.delivery_send_apply_v1(uuid,timestamptz,text)"
+      ],
+      "requires_delivery_confirmation_or_send": true,
+      "requires_foundation_postflight": true
+    }
+  },
+  "reported_live_state": {
+    "delivery_confirm_apply_v1": "ABSENT",
+    "delivery_send_apply_v1": "ABSENT",
+    "other_six_bodies_owners_acls": "REPORTED_MATCH_REMAINING_PRE_PINS_RETAINED"
+  },
+  "files": {
+    "baseline.json": {
+      "sha256": "e212c238e54d3d5bc5c9922af20e29876a88c0e71fb71f9e1fc74296e8053afc",
+      "bytes": 10949
+    },
+    "candidate.sql.review": {
+      "sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf",
+      "bytes": 73931
+    },
+    "candidate-foundation.sql.review": {
+      "sha256": "91fe78bc2501a720f1382e2c1372e709cdf3f43affd962a1c437356192ea955c",
+      "bytes": 53171
+    },
+    "candidate-downstream.sql.review": {
+      "sha256": "a0773d2d4061e21394ef763050a696021fa9becc0030113f99613c671ddb19a7",
+      "bytes": 20759
+    },
+    "install.sql.review": {
+      "sha256": "485a1ab75235f3293d0c96ed2fcb088258f33730a4b905bf77143e0bc670b843",
+      "bytes": 105372
+    },
+    "install-foundation.sql.review": {
+      "sha256": "cd6b79dae032f327313e2e55cae9722ff564afd0777ff6f001c4b10bb613a6d2",
+      "bytes": 82786
+    },
+    "install-downstream.sql.review": {
+      "sha256": "e66cb8912c2c812a6166ed30342e13f75a98aaad979df755a68030c0f4e8c026",
+      "bytes": 35709
+    },
+    "postflight.sql.review": {
+      "sha256": "394436d52993202a42b576090bdffb94a36785b78f18897c4c0a6eb1e7935f97",
+      "bytes": 14564
+    },
+    "postflight-foundation.sql.review": {
+      "sha256": "ebee49e8b4b9dfe7f8563e5e26a4eb84dad4ffa77e819c9539b8bd2cfaace187",
+      "bytes": 12936
+    },
+    "postflight-downstream.sql.review": {
+      "sha256": "6bea34e5b2cbfd15717cc9a5632aaa1d28f1c71bb5a74278c185c8b43bd93cb1",
+      "bytes": 1789
+    },
+    "rollback.sql.review": {
+      "sha256": "d81b5b423e69a55672c5e7d7d4c7cb14ef6f556ce11360a51db04232780edc0d",
+      "bytes": 557
+    }
+  }
+}
