@@ -712,7 +712,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
             bridge_races = list(pool.map(lambda _: bridge_race(), range(2)))
         check("duas chamadas service-only concorrentes preservam um único título", all(r.returncode == 0 for r in bridge_races) and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_main}'").stdout.strip() == "1", [r.stderr[-500:] for r in bridge_races])
         foreign = service_sql(f"SELECT platform_private.b2b_fiscal_invoice_bridge_v1('{invoice_foreign}');")
-        check("NF com tenant divergente do pedido é negada", foreign.returncode != 0 and "B2B_FISCAL_TENANT_MISMATCH" in foreign.stderr, foreign.stderr[-800:])
+        check("NF com tenant divergente do pedido é negada", foreign.returncode != 0 and "B2B_FISCAL_ORDER_SCOPE_INVALID" in foreign.stderr, foreign.stderr[-800:])
         check("NF estrangeira não gera documento/título", B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_foreign}'").stdout.strip() == "0")
         null_manual = server_run(B3.UFIN, f"""INSERT INTO public.accounts_receivable(id,organization_id,origin_type,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,status,payment_method_id,created_by)
  VALUES('{B3.u(399)}','{B3.A}','MANUAL','{CUSTOMER}','SEM AUTOR','{category_id}',1,CURRENT_DATE,CURRENT_DATE,1,'OPEN','{B3.M_BOL}',NULL);""")
