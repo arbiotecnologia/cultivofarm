@@ -80,6 +80,9 @@ def apply(driver, load, root, out):
    INSERT INTO public.saas_features(id,module_id,key,name,active)
     SELECT '{Q.u(802)}',id,'catalogo_precos','LOCAL catálogo preços',true FROM public.saas_modules WHERE key='local_b2b_e2e'
     ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_features(id,module_id,key,name,active)
+    SELECT '{Q.u(803)}',id,'estoque_embalagens','LOCAL estoque embalagens',true FROM public.saas_modules WHERE key='local_b2b_e2e'
+    ON CONFLICT(key) DO NOTHING;
    INSERT INTO public.saas_plans(id,key,name,active,is_default) VALUES
     ('{Q.u(805)}','local_b2b_e2e','LOCAL B2B E2E',true,false) ON CONFLICT(key) DO NOTHING;
    INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,published_at,features_snapshot,

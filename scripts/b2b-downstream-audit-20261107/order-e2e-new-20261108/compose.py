@@ -173,11 +173,11 @@ def main():
    expected=expected or accepted['updated_at'];item_id=item_id or item['id']
    prefix=(f"SET ROLE authenticated;SET request.jwt.claim.sub='{uid}';" if role else f"RESET ROLE;SET request.jwt.claim.sub='{uid}';SET request.jwt.claims='{{\"sub\":\"{uid}\",\"iat\":1}}';")
    return prefix+f"SELECT platform_private.b2b_resale_os_create_v1('{order_id}','{item_id}','{expected}'::timestamptz,'{key}');"
-  denied=B.run_raw(resale_call(B.T.U,'resale-gate-closed-0001'))
+  denied=B.run_raw(resale_call(Q.UADM,'resale-gate-closed-0001'))
   assert denied.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in denied.stderr,denied.stderr
-  denied=B.run_raw(resale_call(B.T.U,'resale-client-grant-0001',role=True))
+  denied=B.run_raw(resale_call(Q.UADM,'resale-client-grant-0001',role=True))
   assert denied.returncode!=0 and 'permission denied for function b2b_resale_os_create_v1' in denied.stderr,denied.stderr
-  direct=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{B.T.U}';INSERT INTO public.ordens_servico(organization_id,produto_id,status,prioridade,tipo_item,partner_order_id,partner_order_item_id,origem) VALUES('{Q.A}','{item['product_id']}','pronto_entrega','media','produto','{order_id}','{item['id']}','b2b');")
+  direct=B.run_raw(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';INSERT INTO public.ordens_servico(organization_id,produto_id,status,prioridade,tipo_item,partner_order_id,partner_order_item_id,origem) VALUES('{Q.A}','{item['product_id']}','pronto_entrega','media','produto','{order_id}','{item['id']}','b2b');")
   assert direct.returncode!=0 and 'OS_APPROVAL_SCOPE_DENIED' in direct.stderr,direct.stderr
   assert B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_id='{order_id}';")=='0'
   checks.append(dict(test='resale candidate gate closed, no client EXECUTE and no direct ready OS bypass',status='PASS'))
@@ -185,32 +185,32 @@ def main():
   B.sql('UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;')
   denied=B.run_raw(resale_call(Q.UB,'resale-buyer-denied-0001'))
   assert denied.returncode!=0 and 'B2B_RESALE_ACTOR_DENIED' in denied.stderr,denied.stderr
-  denied=B.run_raw(resale_call(B.T.U,'resale-stale-cas-0001',expected='2000-01-01 00:00:00+00'))
+  denied=B.run_raw(resale_call(Q.UADM,'resale-stale-cas-0001',expected='2000-01-01 00:00:00+00'))
   assert denied.returncode!=0 and 'B2B_RESALE_ORDER_CONFLICT' in denied.stderr,denied.stderr
-  created=json.loads(B.last(resale_call(B.T.U,'resale-os-create-0001')))
+  created=json.loads(B.last(resale_call(Q.UADM,'resale-os-create-0001')))
   assert created['ok'] is True and created['replay'] is False,created
   os_id=created['os_id']
-  replay=json.loads(B.last(resale_call(B.T.U,'resale-os-create-0001')))
+  replay=json.loads(B.last(resale_call(Q.UADM,'resale-os-create-0001')))
   assert replay['replay'] is True and replay['os_id']==os_id,replay
-  conflict=B.run_raw(resale_call(B.T.U,'resale-os-create-0001',expected='2000-01-01 00:00:00+00'))
+  conflict=B.run_raw(resale_call(Q.UADM,'resale-os-create-0001',expected='2000-01-01 00:00:00+00'))
   assert conflict.returncode!=0 and 'B2B_RESALE_REPLAY_CONFLICT' in conflict.stderr,conflict.stderr
   assert B.last(f"SELECT count(*) FROM public.ordens_servico WHERE partner_order_item_id='{item['id']}';")=='1'
   assert B.last(f"SELECT NOT EXISTS(SELECT 1 FROM public.programacao_producao WHERE ordem_servico_id='{os_id}') AND NOT EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id='{os_id}');")=='t'
   (OUT/'resale-os.json').write_text(json.dumps(dict(created=created,replay=replay),indent=2)+'\n')
   checks.append(dict(test='approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial',status='PASS',os_id=os_id))
 
-  purchased=A.purchase({'product':item['product_id'],'packaging':item['packaging_id_snapshot']},3,'resale-order-purchase-0001',actor=B.T.U)
+  purchased=A.purchase({'product':item['product_id'],'packaging':item['packaging_id_snapshot']},3,'resale-order-purchase-0001',actor=Q.UADM)
   received=json.loads(B.last(purchased));assert received['ok'] is True and received['replay'] is False,received
   stock=received['estoque_produto_id']
   def reserve_resale(key,quantity=2):
    items=json.dumps([{'item_id':stock,'quantidade':quantity}]);data=json.dumps({'partner_id':Q.P,'partner_order_id':order_id})
-   return B.T.actor(B.T.U)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{data}'::jsonb);"
+   return B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{data}'::jsonb);"
   def group_resale(stock_id,key):
    observed_os=B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';")
    observed_stock=B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';")
    items=json.dumps([{'item_id':stock_id,'quantidade':2,'observed_updated_at':observed_stock}])
-   return B.T.actor(B.T.U)+f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
-  wrong=B.T.actor(B.T.U)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":0.5}}]'::jsonb,'resale-fractional-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':order_id})}'::jsonb);"
+   return B.T.actor(Q.UADM)+f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
+  wrong=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":0.5}}]'::jsonb,'resale-fractional-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':order_id})}'::jsonb);"
   rejected=B.run_raw(wrong);assert rejected.returncode!=0 and 'FINISHED_PRODUCT_WHOLE_PACK_REQUIRED' in rejected.stderr,rejected.stderr
   reserved=json.loads(B.last(reserve_resale('resale-reserve-cancel-0001')))['itens'][0]
   grouped=json.loads(B.last(group_resale(reserved,'resale-group-cancel-0001')))
@@ -228,15 +228,15 @@ def main():
   group_replay=json.loads(B.last(group_resale(reserved,'resale-group-final-0001')))
   assert group_replay['replay'] is True and group_replay['itens'][0]['entrega_id']==delivery,group_replay
   observed=B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
-  sent=json.loads(B.last(B.T.actor(B.T.U)+f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{observed}','resale-send-0001');"))
+  sent=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{observed}','resale-send-0001');"))
   assert sent['success'] is True and sent['status']=='em_rota',sent
-  sent_replay=json.loads(B.last(B.T.actor(B.T.U)+f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{observed}','resale-send-0001');"))
+  sent_replay=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_enviar_manual_v1('{delivery}','{observed}','resale-send-0001');"))
   assert sent_replay['replay'] is True,sent_replay
   B.prove(delivery,'resale-proof-0001')
   observed=B.last(f"SELECT updated_at FROM public.entregas WHERE id='{delivery}';")
-  confirmed=json.loads(B.last(B.T.actor(B.T.U)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}','resale-confirm-0001','{{\"nome\":\"LOCAL REVENDA\"}}'::jsonb);"))
+  confirmed=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}','resale-confirm-0001','{{\"nome\":\"LOCAL REVENDA\"}}'::jsonb);"))
   assert confirmed['success'] is True and confirmed['status']=='entregue',confirmed
-  confirmed_replay=json.loads(B.last(B.T.actor(B.T.U)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}','resale-confirm-0001','{{\"nome\":\"LOCAL REVENDA\"}}'::jsonb);"))
+  confirmed_replay=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_confirmar_manual_v1('{delivery}','{observed}','resale-confirm-0001','{{\"nome\":\"LOCAL REVENDA\"}}'::jsonb);"))
   assert confirmed_replay['replay'] is True,confirmed_replay
   containment=json.loads(B.last(f"""SELECT jsonb_build_object(
    'order_status',(SELECT status::text FROM public.partner_orders WHERE id='{order_id}'),
@@ -265,7 +265,7 @@ def main():
   checks.append(dict(test='manual agronomic physical flow still passes after resale candidate',status='PASS',delivery_id=manual_delivery))
   manifest=L.finish(B,OUT)
   assert manifest['default_enabled'] is False and manifest['new_client_grants']==[]
-  after_rollback=B.run_raw(resale_call(B.T.U,'resale-after-rollback-0001'))
+  after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in after_rollback.stderr,after_rollback.stderr
   checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
  except Exception:
