@@ -114,6 +114,25 @@ it("piloto envia só os parceiros marcados com CAS da ativação", async () => {
   expect(calls("b2b_payment_condition_activation_set")[0]).toEqual({ p_mode: "pilot", p_pilot_partner_ids: [PARTNER], p_expected_version: 0 });
 });
 
+it("inclusão de novo parceiro preserva o piloto existente e envia somente o array escopado com CAS atual", async () => {
+  const OLD = "33333333-3333-4333-8333-333333333333";
+  const NEW = "5c4f35f8-5555-4555-8555-555555555555";
+  state.rpc.mockImplementation((n: string) => n === "b2b_payment_condition_config_list" ? ok(list({
+    activation: { mode: "pilot", pilot_partner_ids: [OLD], version: 7 },
+    conditions: [{ ...COND, partner_ids: [OLD, NEW] }], partners: [OLD, NEW],
+  })) : Promise.resolve({ data: { contract: "B2B_PAYMENT_CONDITION_V1", activation: { mode: "pilot" } }, error: null }));
+  mount();
+  const card = (await screen.findByText("Exigência no pedido")).closest("div")!.parentElement!;
+  expect(within(card).getByRole("button", { name: `Parceiro ${OLD.slice(0, 8)}` })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(within(card).getByRole("button", { name: `Parceiro ${NEW.slice(0, 8)}` }));
+  fireEvent.click(within(card).getByRole("button", { name: "Ativar piloto" }));
+  await waitFor(() => expect(calls("b2b_payment_condition_activation_set")).toHaveLength(1));
+  expect(calls("b2b_payment_condition_activation_set")[0]).toEqual({
+    p_mode: "pilot", p_pilot_partner_ids: [OLD, NEW], p_expected_version: 7,
+  });
+  expect(calls("b2b_payment_condition_activation_set")[0].p_mode).not.toBe("enforced");
+});
+
 it("resposta fora do contrato vira erro com nova leitura manual (nunca lista vazia)", async () => {
   state.rpc.mockImplementation(() => ok({ contract: "B2B_PAYMENT_METHOD_V1" }));
   mount();

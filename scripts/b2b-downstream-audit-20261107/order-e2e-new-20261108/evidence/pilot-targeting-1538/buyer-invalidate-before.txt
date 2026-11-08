@@ -1,0 +1,58 @@
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/b2b/novoPedidoPaymentMethod.test.tsx > releitura da capability com o diálogo aberto não mantém envio legado habilitado
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ src/test/b2b/novoPedidoPaymentMethod.test.tsx (18 tests | 1 failed | 17 skipped) 2265ms
+   ↓ sem escolha explícita do meio: envio bloqueado e nenhuma simulação/criação com meio
+   ↓ meio escolhido: simulação e criação levam meio/versão/prazo; cliente não envia parcelas nem vencimento; datas rotuladas como estimadas
+   ↓ falha ao ler meios: erro persistente, envio bloqueado e nova leitura só por clique
+   ↓ leitor ausente (pré-instalação exata): servidor ainda sem exigência, segue o contrato atual sem seletor de meio
+   ↓ ativação legacy → required aposenta a simulação antiga durante a releitura e volta a exigir meio
+   × releitura da capability com o diálogo aberto não mantém envio legado habilitado 2261ms
+     → [2mexpect([22m[31melement[39m[2m).toBeDisabled()[22m
+
+Received element is not disabled:
+  [31m<button
+  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"
+/>[39m
+   ↓ outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado
+   ↓ empresa não ativada (mode legacy no leitor instalado): contrato atual, sem bloqueio global
+   ↓ resposta sem modo explícito é contrato indisponível (nunca lista vazia silenciosa)
+   ↓ promissória configurada pelo vendedor é selecionável (todos os meios personalizáveis)
+   ↓ Price: tela mostra o MESMO total do servidor (1.036,22) e as três parcelas devolvidas
+   ↓ Price em parcela única: tela aceita taxa explícita e mostra 1018, principal 1000 e juros 18
+   ↓ plano legado 1x: cartão, cronograma e total seguem V1 3x/1,8%; troca de versão/meio aposenta economia anterior
+   ↓ crédito incompleto: tela informa condição financeira indisponível e envio permanece bloqueado
+   ↓ resposta com credit null não é aceita como apta: erro visível e envio bloqueado
+   ↓ Price incoerente (soma das parcelas ≠ total) é resposta inválida: erro e envio bloqueado
+   ↓ ACK com total diferente da simulação não é sucesso (sem navegação)
+   ↓ ACK com outro meio/versão não é tratado como sucesso (sem navegação)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/b2b/novoPedidoPaymentMethod.test.tsx > releitura da capability com o diálogo aberto não mantém envio legado habilitado
+Error: [2mexpect([22m[31melement[39m[2m).toBeDisabled()[22m
+
+Received element is not disabled:
+  [31m<button
+  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"
+/>[39m
+ ❯ src/test/b2b/novoPedidoPaymentMethod.test.tsx:251:29
+    249|   void mounted.client.invalidateQueries({ queryKey: ["b2b-payment-cond…
+    250|   await waitFor(() => expect(calls("b2b_list_payment_condition_options…
+    251|   expect(await submitBtn()).toBeDisabled();
+       |                             ^
+    252|   finish();
+    253|   expect(await screen.findByRole("radio", { name: /Pix/ })).toBeInTheD…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 skipped (18)
+   Start at  15:44:08
+   Duration  7.88s (transform 1.46s, setup 169ms, collect 2.68s, tests 2.27s, environment 1.07s, prepare 140ms)
+

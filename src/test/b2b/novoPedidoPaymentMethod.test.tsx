@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { withPaymentMethod, pickTestPix, TEST_PIX, TEST_CONTRACT, condEnvelope } from "@/test/helpers/b2bPaymentMethodMock";
+import { withPaymentMethod, pickTestPix, TEST_PIX, TEST_PIX_OPTION, TEST_CONTRACT, condEnvelope } from "@/test/helpers/b2bPaymentMethodMock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -111,12 +111,13 @@ beforeEach(() => {
 afterEach(cleanup);
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
+  const view = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
     <Route path="/portal-parceiro" element={<B2BRouteGuard><Layout /></B2BRouteGuard>}>
       <Route element={<EntitlementOutlet />}><Route path="catalogo" element={<NovoPedido />} /></Route>
       <Route path="pedidos" element={<p>MeusPedidos legado não deve montar</p>} />
     </Route><Route path="/sem-permissao" element={<p>Negado</p>} />
   </Routes></MemoryRouter></QueryClientProvider>);
+  return { view, client };
 }
 
 
@@ -127,12 +128,13 @@ function overrideOptions(fn: (args: Record<string, unknown>) => unknown) {
 }
 const abortable = (p: Promise<unknown>) => Object.assign(p, { abortSignal: () => p });
 async function toPayment() {
-  mount();
+  const mounted = mount();
   await screen.findByText("Produto local");
   fireEvent.click(screen.getByRole("button", { name: "Adicionar ao pedido" }));
   fireEvent.click(await screen.findByRole("button", { name: "Adicionar ao carrinho" }));
   fireEvent.click(screen.getAllByRole("button", { name: "Continuar para condição de pagamento" })[0]);
   fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
+  return mounted;
 }
 const calls = (n: string) => state.rpc.mock.calls.filter(([x]) => x === n).map(([, a]) => a as Record<string, unknown>);
 const submitBtn = () => screen.findByRole("button", { name: "Enviar pedido para análise" });
@@ -188,6 +190,69 @@ it("leitor ausente (pré-instalação exata): servidor ainda sem exigência, seg
   await waitFor(() => expect(calls("create_partner_order_secure")).toHaveLength(1));
   expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(0);
   expect(calls("create_partner_order_condition_secure")).toHaveLength(0);
+});
+
+it("ativação legacy → required aposenta a simulação antiga durante a releitura e volta a exigir meio", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation(withPaymentMethod((n, a) => {
+    if (n === "simulate_b2b_payment_plan_secure") {
+      return Promise.resolve(base(n, a) as { data: Record<string, unknown>; error: null }).then((r) => ({ ...r, data: {
+        ...r.data,
+        amounts: { table_amount: 10, discount_amount: 1, net_amount_after_discount: 9, financial_interest_amount: 0, final_amount: 9 },
+        schedule: [{ installment_number: 1, due_date: "2026-12-08", amount: 9, principal_amount: 9, interest_amount: 0 }],
+      } }));
+    }
+    return base(n, a);
+  }, undefined, { mode: "legacy" }));
+  await toPayment();
+  await waitFor(() => expect(screen.getByRole("button", { name: "Enviar pedido para análise" })).toBeEnabled());
+  expect(screen.getAllByText(/R\$ 9,00/).length).toBeGreaterThan(0);
+  const legacyCalls = calls("simulate_b2b_payment_plan_secure").length;
+
+  let activate!: () => void;
+  overrideOptions((a) => {
+    const pending = new Promise((resolve) => {
+      activate = () => resolve({ data: { contract: TEST_CONTRACT, partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,
+        mode: "required", due_basis: "nf_issue", options: [TEST_PIX_OPTION] }, error: null });
+    });
+    return abortable(pending);
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  fireEvent.click(screen.getAllByRole("button", { name: "Continuar para condição de pagamento" })[0]);
+  await waitFor(() => expect(calls("b2b_list_payment_condition_options_secure").length).toBeGreaterThan(1));
+  await new Promise((r) => setTimeout(r, 40));
+  expect(await submitBtn()).toBeDisabled();
+  expect(calls("simulate_b2b_payment_plan_secure")).toHaveLength(legacyCalls);
+
+  activate();
+  await pickTestPix();
+  await waitFor(() => expect(calls("simulate_b2b_payment_condition_secure")).toHaveLength(1));
+  fireEvent.click(screen.getByText(/Parcelas estimadas/));
+  expect(await screen.findByTestId("b2b-estimated-dates-note")).toHaveTextContent("emissão da nota fiscal");
+  expect(await submitBtn()).toBeEnabled();
+  expect(calls("create_partner_order_secure")).toHaveLength(0);
+});
+
+it("releitura da capability com o diálogo aberto não mantém envio legado habilitado", async () => {
+  const base = wrapped();
+  state.rpc.mockImplementation(withPaymentMethod((n, a) => base(n, a), undefined, { mode: "legacy" }));
+  const mounted = await toPayment();
+  await waitFor(() => expect(screen.getByRole("button", { name: "Enviar pedido para análise" })).toBeEnabled());
+  let finish!: () => void;
+  overrideOptions((a) => {
+    const pending = new Promise((resolve) => {
+      finish = () => resolve({ data: { contract: TEST_CONTRACT, partner_id: a.p_partner_id, payment_plan_id: a.p_payment_plan_id,
+        mode: "required", due_basis: "nf_issue", options: [TEST_PIX_OPTION] }, error: null });
+    });
+    return abortable(pending);
+  });
+  void mounted.client.invalidateQueries({ queryKey: ["b2b-payment-condition-options"] });
+  await waitFor(() => expect(calls("b2b_list_payment_condition_options_secure").length).toBeGreaterThan(1));
+  expect(await submitBtn()).toBeDisabled();
+  finish();
+  expect(await screen.findByRole("radio", { name: /Pix/ })).toBeInTheDocument();
+  expect(await submitBtn()).toBeDisabled();
+  expect(calls("create_partner_order_secure")).toHaveLength(0);
 });
 
 it("outro erro com código de ausência mas endpoint diferente (42883/PGRST202 sem o nome exato) falha fechado", async () => {

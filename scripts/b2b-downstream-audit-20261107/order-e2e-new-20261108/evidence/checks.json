@@ -24,13 +24,17 @@
     "status": "PASS"
   },
   {
+    "test": "additive pilot targeting keeps old and new required; legacy writer denied; outside partner and tenant unchanged",
+    "status": "PASS"
+  },
+  {
     "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
     "status": "PASS"
   },
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "ba98ae57-318a-4f1f-a512-28b71a8822f2"
+    "order_id": "30e04410-e0a6-43c9-b41a-62110bba580b"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -51,7 +55,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "b55f9334-443b-4074-a5f5-1d8c9044f401"
+    "os_id": "2ff42f57-d50f-4293-8b83-ae294beed55d"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -60,17 +64,17 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "50e1016d-dccb-4277-b275-8540b66c51d7"
+    "delivery_id": "35fcf39a-b776-4b4c-8b6c-3b029aada9c2"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "d2ea48a8-72d1-4915-8568-84ce6a0e8364"
+    "delivery_id": "eeee345e-ba4e-4167-930f-adde7de44166"
   },
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "8554c96a-1ee2-4edc-a655-1d57983f527e"
+    "delivery_id": "93e9a8e3-6b57-4fd1-8786-d721b80a2482"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",

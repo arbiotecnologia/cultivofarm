@@ -1,0 +1,84 @@
+[
+  {
+    "test": "fresh full physical catalog restoration and reviewed upstream composition",
+    "status": "PASS"
+  },
+  {
+    "test": "physical revised install PRE POST; fresh confirmation/send generated pins",
+    "status": "PASS"
+  },
+  {
+    "test": "new physical control purchase reserve send proof confirm without manufacture",
+    "status": "PASS"
+  },
+  {
+    "test": "new B3 captured economic composition merged without dropped physical guards",
+    "status": "PASS"
+  },
+  {
+    "test": "real registration fence and exact receivable ACL with all ten triggers enabled before B2B order",
+    "status": "PASS"
+  },
+  {
+    "test": "direct settings write denied and delivery context forbids receivable INSERT UPDATE DELETE",
+    "status": "PASS"
+  },
+  {
+    "test": "real NULL seller org shape; global guards unchanged; role tenant inactive revocation and multilink negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
+    "status": "PASS",
+    "order_id": "ba98ae57-318a-4f1f-a512-28b71a8822f2"
+  },
+  {
+    "test": "accounting pending approval denied atomically before synthetic promotion",
+    "status": "PASS"
+  },
+  {
+    "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
+    "status": "PASS"
+  },
+  {
+    "test": "resale candidate gate closed, no client EXECUTE and no direct ready OS bypass",
+    "status": "PASS"
+  },
+  {
+    "test": "authenticated direct status changes zero rows and privileged direct operational transition is explicitly denied",
+    "status": "PASS"
+  },
+  {
+    "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
+    "status": "PASS",
+    "os_id": "b55f9334-443b-4074-a5f5-1d8c9044f401"
+  },
+  {
+    "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
+    "status": "PASS"
+  },
+  {
+    "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
+    "status": "PASS",
+    "delivery_id": "50e1016d-dccb-4277-b275-8540b66c51d7"
+  },
+  {
+    "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
+    "status": "PASS",
+    "delivery_id": "d2ea48a8-72d1-4915-8568-84ce6a0e8364"
+  },
+  {
+    "test": "manual agronomic physical flow still passes after resale candidate",
+    "status": "PASS",
+    "delivery_id": "8554c96a-1ee2-4edc-a655-1d57983f527e"
+  },
+  {
+    "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
+    "status": "PASS",
+    "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3"
+  },
+  {
+    "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
+    "status": "PASS"
+  }
+]

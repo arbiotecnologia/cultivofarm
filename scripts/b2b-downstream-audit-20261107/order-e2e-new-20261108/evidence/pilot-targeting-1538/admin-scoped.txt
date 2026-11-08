@@ -1,0 +1,11 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/comercial/meiosPagamentoTab.test.tsx (9 tests | 8 skipped) 499ms
+   ✓ inclusão de novo parceiro preserva o piloto existente e envia somente o array escopado com CAS atual  498ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 8 skipped (9)
+   Start at  15:40:44
+   Duration  5.39s (transform 455ms, setup 159ms, collect 1.19s, tests 499ms, environment 1.00s, prepare 1.16s)
+

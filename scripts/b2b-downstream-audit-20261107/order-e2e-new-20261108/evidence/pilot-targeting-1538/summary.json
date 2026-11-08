@@ -1,0 +1,39 @@
+{
+  "status": "LOCAL_PASS_PREPARATION_ONLY_NOT_APPLIED",
+  "production_report": {
+    "source": "owner authenticated report, not independently queried by agent",
+    "partner_prefix": "5c4f35f8",
+    "plan_code": "TESTE-FLUXO-20261108-V2",
+    "order_submitted": false,
+    "observed": "legacy simulation R$9, one installment 2026-12-08 and enabled submit without method"
+  },
+  "code_diagnosis": {
+    "required_rule": "enforced OR pilot array contains partner_id",
+    "outside_target_rule": "legacy",
+    "reported_behavior_matches": "new partner outside current pilot array; LIVE value not queried",
+    "global_legacy_fallback_removed": false
+  },
+  "frontend_fix": {
+    "file": "src/pages/portal-parceiro/NovoPedido.tsx",
+    "before": "cached legacy mode kept submit enabled during invalidated capability refetch",
+    "after": "isFetching makes method mode indeterminate; simulation and submit contained until fresh mode",
+    "due_date_presentation": "V1 schedule remains estimated and based on NF issue"
+  },
+  "results": {
+    "b3_disposable_pg": { "passed": 231, "total": 231, "exit": 0 },
+    "ui_focused": { "files": 3, "passed": 34, "total": 34, "exit": 0 },
+    "typecheck_exit": 0,
+    "new_e2e": { "passed": 20, "total": 20, "exit": 0 },
+    "legacy_denial": "B2B_PAYMENT_CONDITION_REQUIRED",
+    "denied_attempt_orders": 0,
+    "new_receivables": 0,
+    "new_fiscal_documents": 0
+  },
+  "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
+  "compose_sha256": "c917fd987fe08238ec7cca2f8276d59e7458c1d7c8d7132fe31007407bf616fd",
+  "b3_test_sha256": "6a82400ec175c8f7d448eb5c9a5ee528f6e0d150de4a976c24a816468e1a298a",
+  "hosted_writes": false,
+  "published": false,
+  "real_JWT_RLS_Storage_browser": "NOT_RUN",
+  "candidate_active_or_approved": false
+}

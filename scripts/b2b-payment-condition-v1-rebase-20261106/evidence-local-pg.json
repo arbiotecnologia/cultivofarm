@@ -2,8 +2,8 @@
   "contract": "B2B_PAYMENT_CONDITION_V1",
   "rebase_of": "financial-price-generator-20261029/integration (sha256 b1416978)",
   "kind": "DISPOSABLE_PG_REAL_CREATE_c34e7404_WITH_DECLARED_SEAMS_NOT_HOSTED_PROOF",
-  "passed": 226,
-  "total": 226,
+  "passed": 231,
+  "total": 231,
   "checks": [
     {
       "name": "estado instalado B2: 01-pre.sql.readonly",
@@ -751,6 +751,26 @@
     },
     {
       "name": "piloto: comprador P vê mode required",
+      "ok": true
+    },
+    {
+      "name": "novo parceiro tem condição vigente atribuída antes da ativação",
+      "ok": true
+    },
+    {
+      "name": "expansão do piloto com CAS antigo não altera escopo",
+      "ok": true
+    },
+    {
+      "name": "novo parceiro entra no piloto sem remover o antigo nem enforced global",
+      "ok": true
+    },
+    {
+      "name": "targeting após expansão: antigo e novo required; parceiro fora do array legacy",
+      "ok": true
+    },
+    {
+      "name": "novo parceiro no piloto: fallback legado negado sem pedido/idempotência",
       "ok": true
     },
     {

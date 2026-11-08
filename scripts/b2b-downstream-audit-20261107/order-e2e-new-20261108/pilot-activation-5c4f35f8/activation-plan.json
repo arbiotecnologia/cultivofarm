@@ -1,0 +1,46 @@
+{
+  "status": "PREPARATION_ONLY_NOT_APPLIED_NOT_APPROVED",
+  "contract": "B2B_PAYMENT_CONDITION_V1",
+  "reported_target": {
+    "partner_id_prefix": "5c4f35f8",
+    "full_partner_id": "REQUIRED_FROM_FRESH_ADMIN_CONFIG_LIST",
+    "plan_code": "TESTE-FLUXO-20261108-V2",
+    "condition_assignment": "REPORTED_ACTIVE_BY_AUDITOR_RECHECK_REQUIRED"
+  },
+  "required_preflight": [
+    "Use the normal admin ARBio session and the canonical payment-condition configuration reader.",
+    "Match the complete UUID beginning 5c4f35f8; never cast or complete the prefix by assumption.",
+    "Confirm that the active condition assigned to this exact partner is the intended V2 synthetic plan.",
+    "Read the current activation mode, complete pilot_partner_ids and version immediately before saving.",
+    "Confirm that every existing pilot partner remains selected."
+  ],
+  "scoped_action_by_admin_ui": {
+    "rpc_called_by_existing_ui": "b2b_payment_condition_activation_set",
+    "p_mode": "pilot",
+    "p_pilot_partner_ids": "CURRENT_COMPLETE_PILOT_IDS_PLUS_THE_CONFIRMED_FULL_NEW_PARTNER_UUID",
+    "p_expected_version": "CURRENT_OBSERVED_ACTIVATION_VERSION",
+    "submit": "Ativar piloto"
+  },
+  "forbidden": [
+    "Tornar obrigatória / enforced global",
+    "SQL or hosted writes by the agent",
+    "Replacing the current pilot array with only the new partner",
+    "Automatic retry after payment_condition_activation_stale",
+    "Treating partner financial defaults as a buyer payment choice",
+    "Sending an order without the buyer explicitly choosing the payment method"
+  ],
+  "buyer_acceptance_after_admin_activation": [
+    "Reopen or refresh the condition so the options reader returns mode=required for the new partner.",
+    "The payment-method selector must remain visible and no legacy simulation may be reused while it is refetched.",
+    "Select Boleto explicitly; financial configuration never selects it for the buyer.",
+    "Confirm one installment, the server-computed total and the label Parcelas estimadas.",
+    "Confirm that the note states that the definitive due date counts from fiscal-invoice issue, not from the order date.",
+    "Only then may the UI enable Enviar pedido; the auditor decides whether any real submission is separately authorized."
+  ],
+  "negative_acceptance": [
+    "The legacy writer for the newly activated partner must fail with B2B_PAYMENT_CONDITION_REQUIRED and create no order.",
+    "Partners outside the pilot and other tenants must remain in their prior mode.",
+    "A stale activation CAS must change nothing and must not retry automatically."
+  ],
+  "external_effects": "NF, receivables, collections, external delivery and communication remain blocked"
+}
