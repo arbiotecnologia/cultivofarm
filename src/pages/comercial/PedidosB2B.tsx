@@ -51,6 +51,7 @@ import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialO
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
 import { usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
+import { ResaleOsAvailabilityPanel } from "@/components/comercial/ResaleOsAvailabilityPanel";
 
 
 
