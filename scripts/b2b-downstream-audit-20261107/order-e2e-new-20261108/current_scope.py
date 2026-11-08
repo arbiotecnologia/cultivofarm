@@ -364,7 +364,7 @@ def rewrite_send(out: Path, state_expression: str) -> None:
     out = Path(out)
     pre_state = json.loads((out / "pre-state.json").read_text())
     post_state = json.loads((out / "post-state.json").read_text())
-    pre, post, metadata = _pair(pre_state, post_state)
+    pre, post, metadata = _pair(pre_state, post_state, initial=False)
     candidate = (out / "candidate.sql.review").read_text()
     (out / "scope-pre.json").write_text(json.dumps(pre, indent=2) + "\n")
     (out / "scope-post.json").write_text(json.dumps(post, indent=2) + "\n")
