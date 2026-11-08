@@ -126,6 +126,13 @@ ROLLBACK;
       'status':'REVIEW_ONLY_INACTIVE_NOT_APPROVED', 'production_ref':REF,
       'baseline':'POSPLANOS; plan cc1f6cc already installed; never reinstall or roll it back',
       'hosted_io':False,'gates':'all closed after every install and rollback',
+      'live_readonly_reported_2026_11_08':{
+        'rpc_entrega_confirmar_manual_v1':'ABSENT_BY_PRONAME_ANY_OVERLOAD',
+        'rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)':'a4d47ccf5d116141ed46e9de9ea7eeaa',
+        'rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)':'97d476cc795d75b829f305f1e64d4e62',
+        'rpc_programar_os_v1(uuid,text,date)':'e374f0ba1698b37523b890dc91682eaf',
+        'resale_os_and_gates':'ABSENT',
+      },
       'order':['00 production PRE','11/12 confirmation closed','20/21/22 send closed','30/31/32 physical gate OFF','40/41/42 resale logistics gate OFF','50/51/52 public reader+OS endpoint gate OFF'],
       'excluded':['commercial plan reinstall/rollback','B4','fiscal bridge','NF/NFS-e','receivables','payments','communication','frontend publication','automatic gate activation'],
       'rollback_order':['90 endpoint+reader','94 logistics','93 physical','92 send','91 confirmation'],

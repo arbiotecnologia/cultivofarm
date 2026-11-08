@@ -22,7 +22,7 @@ O auditor deve revisar hashes e executar cada PRE/POST. Qualquer drift, overload
 
 O PRE inicial confere explicitamente os três hashes acima, já presentes na captura integral. A etapa física candidata altera semanticamente a sobrecarga curta de criação de entrega; por isso o PRE logístico posterior espera o corpo pós-físico `1e7b2fcf4b7b703fe3d533d01df72eed`, e não o hash LIVE inicial. A sobrecarga longa `97d476cc…` permanece a dependência canônica da logística. Nenhum hash de candidato/instalador foi alterado neste complemento; mudaram apenas o PRE de produção, sua documentação e o manifesto.
 
-Rollback deny-only, em ordem inversa: `90`, `94`, `93`, `92`, `91`. Preserva histórico e não reabre writers. Não inclui nem desfaz planos comerciais. `manifest.json` contém os 20 hashes/tamanhos exatos.
+Rollback deny-only, em ordem inversa: `90`, `94`, `93`, `92`, `91`. Preserva histórico e não reabre writers. Não inclui nem desfaz planos comerciais. `manifest.json` contém os 21 hashes/tamanhos exatos, incluindo este README e excluindo o próprio manifesto.
 
 ## Frontend candidato integrado, não publicado
 
