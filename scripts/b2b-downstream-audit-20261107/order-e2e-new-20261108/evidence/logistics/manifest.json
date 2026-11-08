@@ -58,8 +58,8 @@
       "bytes": 183520
     },
     "status.json": {
-      "sha256": "d48db2137d15dff53b57d7e4653dedcfdd9fc990c3601f2f63125d295dcfd95b",
-      "bytes": 1862
+      "sha256": "ed5e36b2469511ee110c5bc0d00c91a9b9fc781803609fa004167ca90df72b4f",
+      "bytes": 1898
     },
     "postflight.sql.review": {
       "sha256": "6b894d8a8e58645c307b1498f0bc510a4e7540a7079706036809e87756686fff",
@@ -86,8 +86,8 @@
       "bytes": 4340
     },
     "manifest.json": {
-      "sha256": "191e90e1cfd3647fb12cb8342015d1fa3d61020516f4a12d7de7d42b5c915869",
-      "bytes": 3640
+      "sha256": "8b4cd1d7da2dac47ec2f50da5e6914c0849c4786abf52292414a3a29be7f2541",
+      "bytes": 3774
     }
   }
 }
