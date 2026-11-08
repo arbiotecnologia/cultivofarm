@@ -1,3 +1,5 @@
 CHECKPOINT initdb local
 CHECKPOINT sql_calls=1 elapsed=1.7s
 NEW_PHYSICAL_BOOT_OK
+{"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
+PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
