@@ -34,6 +34,43 @@ DECLARE sig text; expected text; BEGIN
 END $$;
 WITH evidence AS (SELECT COALESCE(p.root_plan_id,p.id) AS family_id,pr.organization_id FROM public.commercial_payment_plans p JOIN public.profiles pr ON pr.user_id=p.created_by WHERE pr.organization_id IS NOT NULL UNION SELECT COALESCE(p.root_plan_id,p.id),pa.commercial_owner_organization_id FROM public.commercial_payment_plans p JOIN public.commercial_payment_plan_assignments a ON a.plan_id=p.id JOIN public.partner_accounts pa ON pa.id=a.partner_id WHERE pa.commercial_owner_organization_id IS NOT NULL UNION SELECT COALESCE(p.root_plan_id,p.id),c.organization_id FROM public.commercial_payment_plans p JOIN public.commercial_payment_plan_assignments a ON a.plan_id=p.id JOIN public.clientes c ON c.id=a.customer_id WHERE c.organization_id IS NOT NULL UNION SELECT COALESCE(p.root_plan_id,p.id),v.organization_id FROM public.commercial_payment_plans p JOIN platform_private.b2b_condition_versions v ON v.plan_id=p.id), families AS (SELECT COALESCE(root_plan_id,id) AS family_id FROM public.commercial_payment_plans), candidates AS (SELECT f.family_id,count(DISTINCT e.organization_id) n FROM families f LEFT JOIN evidence e ON e.family_id=f.family_id GROUP BY f.family_id) SELECT count(*) AS families,count(*) FILTER(WHERE n=1) AS unambiguous,count(*) FILTER(WHERE n>1) AS denied_ambiguous,count(*) FILTER(WHERE n=0) AS denied_without_evidence FROM candidates;
 
+ALTER TABLE public.commercial_payment_plans
+  ADD COLUMN organization_id uuid REFERENCES public.organizations(id) ON DELETE RESTRICT;
+
+WITH evidence AS (
+  SELECT COALESCE(p.root_plan_id,p.id) AS family_id,pr.organization_id
+  FROM public.commercial_payment_plans p JOIN public.profiles pr ON pr.user_id=p.created_by
+  WHERE pr.organization_id IS NOT NULL
+  UNION
+  SELECT COALESCE(p.root_plan_id,p.id),pa.commercial_owner_organization_id
+  FROM public.commercial_payment_plans p
+  JOIN public.commercial_payment_plan_assignments a ON a.plan_id=p.id
+  JOIN public.partner_accounts pa ON pa.id=a.partner_id
+  WHERE pa.commercial_owner_organization_id IS NOT NULL
+  UNION
+  SELECT COALESCE(p.root_plan_id,p.id),c.organization_id
+  FROM public.commercial_payment_plans p
+  JOIN public.commercial_payment_plan_assignments a ON a.plan_id=p.id
+  JOIN public.clientes c ON c.id=a.customer_id
+  WHERE c.organization_id IS NOT NULL
+  UNION
+  SELECT COALESCE(p.root_plan_id,p.id),v.organization_id
+  FROM public.commercial_payment_plans p
+  JOIN platform_private.b2b_condition_versions v ON v.plan_id=p.id
+), families AS (
+  SELECT COALESCE(root_plan_id,id) AS family_id FROM public.commercial_payment_plans
+), resolved AS (
+  SELECT f.family_id,min(e.organization_id::text)::uuid AS organization_id
+  FROM families f JOIN evidence e ON e.family_id=f.family_id
+  GROUP BY f.family_id HAVING count(DISTINCT e.organization_id)=1
+)
+UPDATE public.commercial_payment_plans p SET organization_id=r.organization_id
+FROM resolved r WHERE COALESCE(p.root_plan_id,p.id)=r.family_id;
+
+DROP INDEX public.uq_cpp_single_default;
+CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans(organization_id) NULLS NOT DISTINCT WHERE is_default;
+CREATE INDEX idx_cpp_tenant_sort ON public.commercial_payment_plans(organization_id,active,sort_order);
+
 CREATE OR REPLACE FUNCTION platform_private.commercial_plan_actor_organization()
 RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]);
@@ -80,7 +117,8 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE AND o.status='ativa'
  JOIN public.partner_users pu ON pu.partner_id=pa.id AND pu.user_id=p_user_id AND pu.tenant_id=p.organization_id
  AND pu.revoked_at IS NULL AND COALESCE(pu.valid_from,'-infinity'::timestamptz)<=now()
- WHERE p.id=p_plan_id AND p.organization_id IS NOT NULL),false);
+ WHERE p.id=p_plan_id AND p.organization_id IS NOT NULL AND p.active IS TRUE AND p.superseded_by_id IS NULL
+ AND p.valid_from<=now() AND (p.valid_until IS NULL OR p.valid_until>now())),false);
 $$;
 
 CREATE OR REPLACE FUNCTION platform_private.commercial_plan_partner_visible(p_plan_id uuid,p_partner_id uuid)
@@ -126,43 +164,6 @@ END $$;
 REVOKE ALL ON FUNCTION platform_private.commercial_plan_actor_organization(),platform_private.commercial_plan_target_organization(text,uuid,uuid),platform_private.commercial_plan_partner_visible(uuid,uuid),platform_private.commercial_plan_tenant_guard(),platform_private.commercial_b3_version_tenant_guard() FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.commercial_plan_admin_allowed(uuid),platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid),platform_private.commercial_plan_buyer_visible(uuid,uuid) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION platform_private.commercial_plan_admin_allowed(uuid),platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid),platform_private.commercial_plan_buyer_visible(uuid,uuid) TO authenticated;
-
-ALTER TABLE public.commercial_payment_plans
-  ADD COLUMN organization_id uuid REFERENCES public.organizations(id) ON DELETE RESTRICT;
-
-WITH evidence AS (
-  SELECT COALESCE(p.root_plan_id,p.id) AS family_id,pr.organization_id
-  FROM public.commercial_payment_plans p JOIN public.profiles pr ON pr.user_id=p.created_by
-  WHERE pr.organization_id IS NOT NULL
-  UNION
-  SELECT COALESCE(p.root_plan_id,p.id),pa.commercial_owner_organization_id
-  FROM public.commercial_payment_plans p
-  JOIN public.commercial_payment_plan_assignments a ON a.plan_id=p.id
-  JOIN public.partner_accounts pa ON pa.id=a.partner_id
-  WHERE pa.commercial_owner_organization_id IS NOT NULL
-  UNION
-  SELECT COALESCE(p.root_plan_id,p.id),c.organization_id
-  FROM public.commercial_payment_plans p
-  JOIN public.commercial_payment_plan_assignments a ON a.plan_id=p.id
-  JOIN public.clientes c ON c.id=a.customer_id
-  WHERE c.organization_id IS NOT NULL
-  UNION
-  SELECT COALESCE(p.root_plan_id,p.id),v.organization_id
-  FROM public.commercial_payment_plans p
-  JOIN platform_private.b2b_condition_versions v ON v.plan_id=p.id
-), families AS (
-  SELECT COALESCE(root_plan_id,id) AS family_id FROM public.commercial_payment_plans
-), resolved AS (
-  SELECT f.family_id,min(e.organization_id::text)::uuid AS organization_id
-  FROM families f JOIN evidence e ON e.family_id=f.family_id
-  GROUP BY f.family_id HAVING count(DISTINCT e.organization_id)=1
-)
-UPDATE public.commercial_payment_plans p SET organization_id=r.organization_id
-FROM resolved r WHERE COALESCE(p.root_plan_id,p.id)=r.family_id;
-
-DROP INDEX public.uq_cpp_single_default;
-CREATE UNIQUE INDEX uq_cpp_single_default ON public.commercial_payment_plans(organization_id) NULLS NOT DISTINCT WHERE is_default;
-CREATE INDEX idx_cpp_tenant_sort ON public.commercial_payment_plans(organization_id,active,sort_order);
 
 CREATE TRIGGER commercial_plan_tenant_guard BEFORE INSERT OR UPDATE ON public.commercial_payment_plans
 FOR EACH ROW EXECUTE FUNCTION platform_private.commercial_plan_tenant_guard();
@@ -261,6 +262,7 @@ BEGIN
 
   SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   IF v_old.superseded_by_id IS NOT NULL THEN RAISE EXCEPTION 'plan_already_superseded'; END IF;
 
   SELECT coalesce(max(version),0) + 1 INTO v_next
@@ -317,6 +319,7 @@ BEGIN
   IF v_org IS NULL THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   IF p_sort_order IS NOT NULL AND p_sort_order < 0 THEN RAISE EXCEPTION 'sort_order_invalid'; END IF;
   IF p_name IS NOT NULL AND btrim(p_name) = '' THEN RAISE EXCEPTION 'plan_name_required'; END IF;
 
@@ -344,6 +347,7 @@ BEGIN
   IF v_org IS NULL THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   IF p_active AND v_old.superseded_by_id IS NOT NULL THEN RAISE EXCEPTION 'plan_superseded_cannot_activate'; END IF;
 
   UPDATE public.commercial_payment_plans
@@ -368,6 +372,7 @@ BEGIN
   IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
   IF v_org IS NULL THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   PERFORM pg_advisory_xact_lock(hashtext('cpp_default_plan:' || v_org::text));
+  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
   IF NOT public.fn_b2b_plan_selectable(p_plan_id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;
@@ -413,6 +418,7 @@ BEGIN
   SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;
   IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   PERFORM pg_advisory_xact_lock(hashtext('cpp_reorder:' || v_org::text));
+  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
   SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;
   IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;
 
@@ -759,6 +765,7 @@ BEGIN
    ORDER BY v.version DESC LIMIT 1 FOR UPDATE;
   IF COALESCE(cur.version,0) <> p_expected_version THEN RAISE EXCEPTION 'payment_condition_config_stale' USING ERRCODE='PT409'; END IF;
   SELECT p.active, p.superseded_by_id, p.max_days, p.monthly_interest_percent INTO pl FROM public.commercial_payment_plans p WHERE p.id=p_plan_id AND p.organization_id=v_org FOR SHARE;
+  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
   IF pl.active IS NOT TRUE OR pl.superseded_by_id IS NOT NULL THEN RAISE EXCEPTION 'plan_inactive' USING ERRCODE='P0001'; END IF;
   IF COALESCE(pl.monthly_interest_percent,0) <> 0 THEN RAISE EXCEPTION 'payment_condition_plan_interest_conflict' USING ERRCODE='P0001'; END IF;
   IF p_deadline_days > COALESCE(pl.max_days,0) THEN RAISE EXCEPTION 'payment_condition_deadline_exceeds_plan' USING ERRCODE='P0001'; END IF;
@@ -798,6 +805,7 @@ BEGIN
   IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
   SELECT * INTO cur FROM platform_private.b2b_condition_versions v WHERE v.organization_id=v_org AND v.plan_id=p_plan_id AND v.method=p_method
    ORDER BY v.version DESC LIMIT 1 FOR UPDATE;
+  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
   IF cur.version IS NULL OR cur.version <> p_expected_version THEN RAISE EXCEPTION 'payment_condition_config_stale' USING ERRCODE='PT409'; END IF;
   IF EXISTS (SELECT 1 FROM platform_private.b2b_condition_retirements r WHERE (r.organization_id,r.plan_id,r.version,r.method)=(v_org,p_plan_id,cur.version,p_method)) THEN
     RAISE EXCEPTION 'payment_condition_already_retired' USING ERRCODE='PT409'; END IF;
@@ -822,6 +830,7 @@ BEGIN
     RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501'; END IF;
   SELECT * INTO cur FROM platform_private.b2b_condition_versions v WHERE v.organization_id=v_org AND v.plan_id=p_plan_id AND v.method=p_method
    ORDER BY v.version DESC LIMIT 1 FOR UPDATE;
+  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;
   IF cur.version IS NULL OR cur.version <> p_version
      OR EXISTS (SELECT 1 FROM platform_private.b2b_condition_retirements r WHERE (r.organization_id,r.plan_id,r.version,r.method)=(v_org,p_plan_id,cur.version,p_method)) THEN
     RAISE EXCEPTION 'payment_condition_config_stale' USING ERRCODE='PT409'; END IF;
