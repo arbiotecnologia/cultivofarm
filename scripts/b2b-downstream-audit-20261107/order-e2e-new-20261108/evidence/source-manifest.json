@@ -1891,8 +1891,12 @@
       "sha256": "8537bafdd70caf5d567e4a706ea8d23bbcb42ec5a62b810b3c9d1ce91aeb4d5d"
     },
     {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py",
+      "sha256": "f8852b0fd38c9b136c17083643b114251c4f6801f4e0cf1381013f06878a3749"
+    },
+    {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "54b165bf78244259354389ce204e490f30d15ee552afee4d6461edd3520dc81a"
+      "sha256": "f7630e4de6963b45a40b9ea11e85d5f9cd27c9028def77916de9a425753f34e2"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/rebuild.py",
