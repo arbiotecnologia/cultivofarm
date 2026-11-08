@@ -1,3 +1,8 @@
+## 08/11 23:07 — Captura LIVE integral a7b973949 em duas partes
+- [x] PARTE 1 gravada sem alterar o pacote anterior: `live-current-metadata-part1-a7b973949.json`, com 120 triggers, 17 relações e as primeiras 10 funções; ref relatado `swzpzcwiasxmjutrmvkm`, candidatos ainda ausentes.
+- [ ] Aguardar PARTE 2 e concatenar somente o array `functions`, sem sobrescrever a PARTE 1; validar 20 funções/120 triggers/17 relações e hashes antes de reconciliar.
+- [ ] Após a captura integral, repetir ensaio e rollback, preservando seis guards, ACLs e planos; gerar pacote REVIEW_ONLY com gates OFF somente se todas as barreiras passarem. Nenhuma migração ampla, escrita hospedada ou publicação.
+
 ## 08/11 22:25 — Reconciliação semântica pós-catálogo/unidades/Price/planos
 - [x] Incorporar o PRE LIVE `CONFIRM_PRE_DRIFT`: pacote antigo preservado; nenhum grant/guard antigo restaurado. Typecheck exit 0, UI 21/21, candidata 13/13, compatibilidade OS 73/73 e build OK.
 - [x] Preparar SQL READ ONLY restrito em `reconciliation-posplans-20261108/00-current-live-capture.sql.readonly`; nenhuma operação hospedada.
