@@ -139,16 +139,23 @@ def _trigger_function(definition: str) -> str:
     return _signature(schema, name, match.group(2))
 
 
-def _captured_triggers(function_rows: dict[str, list]) -> list[list]:
+def _captured_triggers() -> list[list]:
     result = []
     for row in CAPTURE["triggers"]:
         signature = _from_signature(row["function"])
-        assert function_rows[signature][3] == row["function_md5"], signature
         result.append([
             row["table"], row["name"], row["enabled"], signature,
             row["function_md5"], row["definition"],
         ])
     return sorted(result, key=lambda row: (row[0], row[1]))
+
+
+def _captured_trigger_function_pins() -> list[list]:
+    rows = {
+        _from_signature(row["function"]): row["function_md5"]
+        for row in CAPTURE["triggers"]
+    }
+    return sorted([[signature, md5] for signature, md5 in rows.items()], key=lambda row: row[0])
 
 
 def _state_triggers(state: dict, function_rows: dict[str, list]) -> list[list]:
