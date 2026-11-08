@@ -258,6 +258,35 @@ class Review:
         assert self.snapshots(order["id"]) == before
         return {"initial_denial": denial, "ordered": 2, "attempted": 3, "confirmed_overdelivery": False}
 
+    def last_two_deliveries_concurrent(self):
+        second_packaging = {"item_id": self.Q.SP.SOL, "item_tipo": "produto", "packaging_id": self.Q.SP.PK40, "quantidade": 1}
+        order = self.make_order([self.Q.S(1), second_packaging], "concurrent-last")
+        before = self.snapshots(order["id"])
+        flows = [self.prepare_sent_delivery(order, item, 1, f"concurrent-last-{index}") for index, item in enumerate(order["items"])]
+        commands = [self.confirm_sql(flow["delivery"], f"concurrent-last-confirm-{index}") for index, flow in enumerate(flows)]
+        holder = self.B.T.session(f"BEGIN;SELECT 1 FROM public.partner_orders WHERE id='{order['id']}' FOR UPDATE;")
+        time.sleep(0.15)
+        workers = [self.B.T.session(command) for command in commands]
+        self.B.T.wait()
+        self.B.T.finish(holder, "COMMIT;")
+        responses = [self.B.T.finish(worker) for worker in workers]
+        for out, err in responses:
+            assert not err, (out, err)
+            assert json.loads(out.strip().splitlines()[-1])["success"] is True, out
+        assert self.status(order["id"]) == "entregue"
+        states = [self.persisted(flow["delivery"]) for flow in flows]
+        for state in states:
+            assert state["delivery"] == "entregue" and state["proof"] == "confirmado"
+            assert state["expedition"] == 1 and state["receipt"] == 1
+        for command, state, flow in zip(commands, states, flows):
+            replay = self.B.run_raw(command)
+            assert replay.returncode == 0, replay.stderr
+            assert json.loads(replay.stdout.strip().splitlines()[-1])["replay"] is True
+            assert self.persisted(flow["delivery"]) == state
+        assert self.B.last(f"SELECT count(*) FROM public.production_timeline_events WHERE partner_order_id='{order['id']}' AND event_type='entrega_realizada';") == '1'
+        assert self.snapshots(order["id"]) == before
+        return {"distinct_connections_and_OS": True, "actual_lock_wait": True, "both_success": True, "terminal_event_count": 1, "states": states, "replays_no_delta": True}
+
     def mutations(self, kind):
         Q = self.Q
         if kind == "role":
