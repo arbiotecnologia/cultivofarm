@@ -895,6 +895,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
             check("DEPOIS: retorno atrasado não rebaixa autorização nem apaga erro de outra origem", stale_record and stale_record["outcome"] == "AUTHORIZED" and stale_state == "AUTHORIZED|100|FOREIGN_PROVIDER_ERROR", stale_error or stale_state)
         foreign_error_replay, foreign_error_replay_error = real_record(tx_h13,"SUCCEEDED",h13_patch)
         check("replay autorizado não limpa error_code estranho ao fechamento", foreign_error_replay and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR", foreign_error_replay_error or foreign_error_replay)
+        if not REVIEW_BEFORE and not PARSER_BEFORE:
+            terminal_mutation = service_sql(f"UPDATE public.fiscal_sefaz_transmissions SET error_code='MUTACAO_PROIBIDA' WHERE id='{tx_h13}';")
+            check("guarda real continua negando UPDATE terminal após os replays", terminal_mutation.returncode != 0 and "FISCAL_TRANSMISSION_IMMUTABLE" in terminal_mutation.stderr and B3.psql(f"SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{tx_h13}'").stdout.strip() == "FOREIGN_PROVIDER_ERROR", terminal_mutation.stderr)
         if not PARSER_BEFORE:
             with concurrent.futures.ThreadPoolExecutor(2) as pool:
                 concurrent_records = list(pool.map(lambda call: real_record(tx_h13,call[0],call[1]), [("SENT",{"cStat":"103","xMotivo":"ATRASADO CONCORRENTE"}),("SUCCEEDED",h13_patch)]))
