@@ -133,9 +133,16 @@ def main():
   assert journal['contract']=='C2_ORDER_JOURNAL_V1' and journal['state']=='reserved',journal
   (OUT/'buyer-attempt.json').write_text(json.dumps(journal,indent=2)+'\n')
   data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error
-  (OUT/'buyer-order.json').write_text(json.dumps(data,indent=2)+'\n')
-  checks.append(dict(test='new buyer canonical B3 packaging order with chosen condition, no forged order row',status='PASS',order_id=data['id']))
   order_id=data['id']
+  replay,replay_error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice)
+  assert replay is not None,replay_error
+  assert replay['id']==order_id and B.last(f"SELECT count(*) FROM public.partner_orders WHERE id='{order_id}';")=='1',replay
+  recovered,recovery_error=Q.call(Q.UB,f"public.recover_partner_order_attempt_v1('{Q.P}',NULL,NULL,false,NULL)")
+  assert recovered is not None,recovery_error
+  assert recovered['state']=='committed' and recovered['order_id']==order_id,recovered
+  (OUT/'buyer-attempt.json').write_text(json.dumps(dict(initial=journal,replay_order_id=replay['id'],recovered=recovered),indent=2)+'\n')
+  (OUT/'buyer-order.json').write_text(json.dumps(data,indent=2)+'\n')
+  checks.append(dict(test='new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery',status='PASS',order_id=order_id))
   before=json.loads(Q.psql(f"SELECT to_jsonb(o)::text FROM public.partner_orders o WHERE id='{order_id}'").stdout.strip())
   denied=Q.as_user(Q.UADM,f"SELECT public.approve_partner_order('{order_id}',NULL,NULL);")
   assert denied.returncode!=0 and 'C2_ACCOUNTING_PENDING' in denied.stderr,denied.stderr
