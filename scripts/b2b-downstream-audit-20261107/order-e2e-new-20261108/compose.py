@@ -542,7 +542,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   for trigger in original: assert after_triggers.get(trigger['name'])==trigger,trigger['name']
   assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='0'
   assert B.last(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}';")=='PENDING'
-  checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence and all original ten receivable triggers',status='PASS'))
+  assert B.last(f"SELECT count(*) FROM public.fiscal_xml_runs WHERE id='{xml_run_id}' AND idempotency_key='{xml_idem}';")=='1'
+  assert B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}' AND idempotency_key='{transmission_idem}' AND request_fingerprint='{transmission_fingerprint}';")=='1'
+  checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence deterministic idempotency and all original ten receivable triggers',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:
