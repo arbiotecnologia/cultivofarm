@@ -86,6 +86,14 @@ def apply(driver, load, root, out):
    INSERT INTO public.organization_feature_overrides(id,organization_id,feature_id,mode,starts_at,reason,created_by)
     SELECT '{Q.u(804)}','{Q.A}',id,'GRANT',now()-interval '1 day','FIXTURE LOCAL E2E','{Q.UADM}'
      FROM public.saas_features WHERE key='catalogo_precos' ON CONFLICT DO NOTHING;
+   INSERT INTO public.saas_plans(id,key,name,active,is_default) VALUES
+    ('{Q.u(805)}','local_b2b_e2e','LOCAL B2B E2E',true,false) ON CONFLICT(key) DO NOTHING;
+   INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,published_at,features_snapshot)
+    SELECT '{Q.u(806)}',id,1,'LOCAL B2B E2E','PUBLISHED',now()-interval '1 day',now()-interval '1 day','[]'::jsonb
+     FROM public.saas_plans WHERE key='local_b2b_e2e' ON CONFLICT(id) DO NOTHING;
+   INSERT INTO public.organization_subscriptions(id,organization_id,plan_id,plan_version_id,status,started_at)
+    SELECT '{Q.u(807)}','{Q.A}',id,'{Q.u(806)}','ACTIVE',now()-interval '1 hour'
+     FROM public.saas_plans WHERE key='local_b2b_e2e' ON CONFLICT(id) DO NOTHING;
    SET session_replication_role=origin;""")
   for t in meta['triggers']:
    B.sql('DROP TRIGGER IF EXISTS "'+t['name']+'" ON public.'+t['table']+';'+t['definition']+';')
