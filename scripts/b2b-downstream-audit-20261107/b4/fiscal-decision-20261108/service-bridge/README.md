@@ -17,7 +17,7 @@ Revisão `ab904bf`, preparada em 08/11/2026 sobre B4 `7dde7f07…` e as capturas
 
 ## Evidência descartável
 
-- ANTES: **174/174**, exit 0, como caracterização das vulnerabilidades — não como aprovação. Reproduziu não-B2B quebrado, `_c_stat=999` e ausência de transmissão criando título, NFS-e promovida sem contrato e replay com valor/referência/protocolo alterado aceito.
+- ANTES: **174/174 checks de caracterização**, exit 0 — não “174 vulnerabilidades” nem aprovação. **Nove checks reproduziram comportamentos indevidos**: dois para o fechamento não-B2B, `_c_stat=999`, ausência de transmissão, NFS-e promovida sem contrato, três replays com valor/referência/protocolo alterado e erro H13 obsoleto após retry.
 - DEPOIS: **175/175**, exit 0, na mesma bateria B4+ponte. Cobriu callbacks reais H12/H13 pendente/rejeitado/autorizado, falha pós-título, retry H13 sem reemissão, concorrência, parcialidade, digest completo, tenant estrangeiro, inserção/update legados e rollback deny-only.
 - A contabilidade e os eventos fiscais são sintéticos. A dependência real foi comprovadamente negada antes da costura local e substituída somente no harness componente para exercitar os demais caminhos. Isso não certifica integração fiscal, JWT/RLS/Storage ou homologação real.
 

@@ -368,27 +368,48 @@ def main():
   assert after_rollback.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in after_rollback.stderr,after_rollback.stderr
   checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
   plans_before_rollback=B.last('SELECT count(*) FROM public.commercial_payment_plans;')
-  B.sql((plan_dir/'04-rollback-deny.sql.review').read_text())
-  denied_plan_read=Q.as_user(Q.UADM,"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);")
-  assert denied_plan_read.returncode!=0 and 'permission denied' in denied_plan_read.stderr,denied_plan_read.stderr
-  assert B.last('SELECT count(*) FROM public.commercial_payment_plans;')==plans_before_rollback
-  assert B.last("SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_payment_plans'::regclass AND conname='commercial_payment_plans_code_key';")=='0'
-  assert B.last("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code';")=='1'
-  checks.append(dict(test='same DB deny-only rollback closes plan readers preserves plans and never restores global code uniqueness',status='PASS'))
-  R.assert_current(B,OUT,'real-baselines-post-rollback.json',ROOT)
+  R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
 
-  # ab904bf: B4 e ponte no MESMO banco, depois do fluxo comprador/vendedor e
-  # logística acima. A dependência contábil/fiscal real NÃO é substituída:
-  # instalação e contenção podem passar, mas o recebível positivo fica BLOCKED.
+  # feb815603: B4 reconciliado com TODAS as cinco dependências pós-planos.
+  # O corpo B4 e a ponte continuam byte-pinados; o PRE isolado antigo não é usado.
   b4_dir=ROOT/'scripts/b2b-downstream-audit-20261107/b4'
   bridge_dir=b4_dir/'fiscal-decision-20261108/service-bridge'
-  b4_pre=B.sql((b4_dir/'01-pre.sql.readonly').read_text())
-  B.sql((b4_dir/'02-install.sql.review').read_text())
-  b4_post=B.sql((b4_dir/'03-post.sql.readonly').read_text())
+  composed_dir=ROOT/'scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603'
+  composed_manifest=json.loads((composed_dir/'manifest.json').read_text())
+  assert composed_manifest['post_plans_baseline']['overridden_dependency_count']==5
+  assert composed_manifest['overlap_analysis']['always_allow_substitution'] is False
+  # Costura declarada do harness: a restauração local perdeu somente o EXECUTE de
+  # service_role já capturado em produção. Qualquer outra ACL aborta; o candidato não recebe GRANT.
+  tg_acl=B.last("SELECT coalesce(proacl::text,'') FROM pg_proc WHERE oid='public.tg_auto_b2b_receivable()'::regprocedure;")
+  acl_repairs=[]
+  if tg_acl!='{postgres=X/postgres,service_role=X/postgres}':
+   assert tg_acl=='{postgres=X/postgres}',('UNEXPECTED_TG_AUTO_ACL',tg_acl)
+   B.sql('GRANT EXECUTE ON FUNCTION public.tg_auto_b2b_receivable() TO service_role;')
+   acl_repairs.append({'signature':'public.tg_auto_b2b_receivable()','before':tg_acl,'after':'{postgres=X/postgres,service_role=X/postgres}','candidate_install_changed':False})
+  (OUT/'harness-baseline-repairs.json').write_text(json.dumps(acl_repairs,indent=2)+'\n')
+  diagnostic_sigs=sorted(set(composed_manifest['production_baseline']['b4_dependency_md5'])|{
+   'public.fn_generate_receivable_installments()','public.rpc_register_receivable_payment(uuid,jsonb)'})
+  diagnostic_values=','.join("('"+x.replace("'","''")+"')" for x in diagnostic_sigs)
+  acl_diagnostic=json.loads(B.last(f"""SELECT coalesce(jsonb_agg(jsonb_build_object('signature',v.signature,'owner',pg_get_userbyid(p.proowner),'acl',coalesce(p.proacl::text,''),
+   'body_md5',md5(pg_get_functiondef(p.oid)),'body',pg_get_functiondef(p.oid),
+   'entries',(SELECT coalesce(jsonb_agg(CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END||'='||a.privilege_type||'/'||a.grantor::regrole::text ORDER BY 1),'[]'::jsonb)
+    FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a)) ORDER BY v.signature),'[]'::jsonb)::text
+   FROM (VALUES {diagnostic_values}) v(signature) JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);"""))
+  expected_diagnostic=composed_manifest['post_composition_baseline']['b4_dependency_md5']
+  for row in acl_diagnostic:
+   row['expected_body_md5']=expected_diagnostic.get(row['signature'])
+   row['body_matches']=row['expected_body_md5'] is None or row['body_md5']==row['expected_body_md5']
+  (OUT/'b4-pre-acl-diagnostic.json').write_text(json.dumps(acl_diagnostic,indent=2)+'\n')
+  b4_pre=B.sql((composed_dir/'stages/01-b4-pre-post-composition.sql.readonly').read_text())
+  B.sql((composed_dir/'stages/02-b4-install-post-composition.sql.review').read_text())
+  b4_post=B.sql((composed_dir/'stages/03-b4-post.sql.readonly').read_text())
   bridge_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'01-pre.sql.readonly').read_text())
-  B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'02-install.sql.review').read_text())
+  B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'stages/04-bridge-install.sql.review').read_text())
   bridge_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(bridge_dir/'03-post.sql.readonly').read_text())
+  composed_post=B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'03-post.sql.readonly').read_text())
+  (OUT/'canonical-composition-manifest.json').write_text(json.dumps(composed_manifest,indent=2)+'\n')
+  checks.append(dict(test='composed PRE post-plans reconciles five dependencies then B4 bridge and composed POST pass without changing B4 body or always-deny',status='PASS'))
   dependency=B.run_raw("RESET ROLE;SELECT platform_private.b2b_integration_dependencies();")
   assert dependency.returncode!=0 and 'B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN' in dependency.stderr,dependency.stderr
   client_bridge=B.run_raw("SET ROLE authenticated;SELECT platform_private.b2b_fiscal_invoice_bridge_v1(NULL);")
@@ -402,24 +423,89 @@ def main():
   assert current_triggers['b2b_fiscal_created_by_guard']['enabled']=='O'
   current_counts=json.loads(B.last("SELECT jsonb_build_object('receivables',(SELECT count(*) FROM public.accounts_receivable),'fiscal_documents',(SELECT count(*) FROM public.fiscal_invoices))::text;"))
   assert current_counts==effect_baseline,(current_counts,effect_baseline)
+
+  # Crédito do pedido aprovado/entregue continua previsão, não dívida. Nenhuma
+  # costura de dependência é usada neste controle integrado.
+  credit=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims='{{\"sub\":\"{Q.UADM}\",\"iat\":1}}';SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
+  assert credit['reason_code']=='OK' and float(credit['exposicao_atual'])>=float(accepted['total']),credit
+  assert B.last('SELECT count(*) FROM public.accounts_receivable;')==str(effect_baseline['receivables'])
+  (OUT/'integrated-credit-without-receivable.json').write_text(json.dumps(dict(credit=credit,receivables=effect_baseline['receivables'],fiscal_confirmation=False),indent=2)+'\n')
+  checks.append(dict(test='B4 credit exposure includes approved unbilled orders without creating receivable or using dependency seam',status='PASS'))
+
+  # Costura apenas de schema/eventos fiscais sintéticos. O callback H13/H12 e a
+  # dependência always-deny são os corpos reais candidatos, sem substituição.
+  B.sql("""CREATE TABLE IF NOT EXISTS public.fiscal_invoices(id uuid PRIMARY KEY);
+ALTER TABLE public.fiscal_invoices ADD COLUMN IF NOT EXISTS receivable_id uuid,ADD COLUMN IF NOT EXISTS environment text,ADD COLUMN IF NOT EXISTS normalized_status text,
+ ADD COLUMN IF NOT EXISTS access_key text,ADD COLUMN IF NOT EXISTS authorized_at timestamptz,ADD COLUMN IF NOT EXISTS provider_status_raw text,ADD COLUMN IF NOT EXISTS tax_authority_notes text,
+ ADD COLUMN IF NOT EXISTS reconciliation_status text,ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now(),ADD COLUMN IF NOT EXISTS status text DEFAULT 'PENDING',
+ ADD COLUMN IF NOT EXISTS company_settings_id uuid,ADD COLUMN IF NOT EXISTS organization_id uuid,ADD COLUMN IF NOT EXISTS partner_order_id uuid,ADD COLUMN IF NOT EXISTS debtor_partner_id uuid,ADD COLUMN IF NOT EXISTS debtor_customer_id uuid,
+ ADD COLUMN IF NOT EXISTS invoice_type text,ADD COLUMN IF NOT EXISTS issue_date date,ADD COLUMN IF NOT EXISTS total_amount numeric(14,2),ADD COLUMN IF NOT EXISTS provider_reference text,ADD COLUMN IF NOT EXISTS created_by uuid;
+CREATE TABLE IF NOT EXISTS public.fiscal_invoice_items(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid NOT NULL,partner_order_item_id uuid,
+ item_sequence integer NOT NULL,item_kind text NOT NULL,quantity numeric(18,6),commercial_unit text,taxable_quantity numeric(18,6),taxable_unit text,net_value numeric(18,2));
+CREATE TABLE IF NOT EXISTS public.fiscal_xml_runs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),fiscal_invoice_id uuid,signed_path text,access_key text,signed_at timestamptz,updated_at timestamptz);
+CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY,service text NOT NULL DEFAULT 'NFeAutorizacao4',fiscal_event_id uuid,fiscal_invoice_id uuid,
+ state text,outcome text,c_stat text,x_motivo text,ch_nfe text,n_prot text,n_rec text,ambiente_retorno text,dh_recbto timestamptz,
+ error_code text,response_summary jsonb,completed_at timestamptz);
+CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
+  invoice_id=Q.u(900);transmission_id=Q.u(901);access_key='35261111111111111111111111111111111111111111'
+  company_settings_id=accepted['internal_economic_snapshot']['origin']['company_settings_id']
+  B.sql(f"""INSERT INTO public.fiscal_invoices(id,invoice_type,status,normalized_status,environment,company_settings_id,organization_id,
+   partner_order_id,debtor_partner_id,issue_date,total_amount,created_by,provider_reference,access_key)
+  VALUES('{invoice_id}','NFE','PENDING','PENDING','HOMOLOGATION','{company_settings_id}','{Q.A}','{order_id}','{Q.P}','2027-02-01','{accepted['total']}','{Q.UADM}','LOCAL-INTEGRATED','{access_key}');
+ INSERT INTO public.fiscal_invoice_items(fiscal_invoice_id,partner_order_item_id,item_sequence,item_kind,quantity,commercial_unit,taxable_quantity,taxable_unit,net_value)
+  VALUES('{invoice_id}','{item['id']}',1,'PRODUCT','{item['quantidade']}','UN','{float(item['quantidade'])*float(item['packaging_peso_liquido_kg_snapshot'])}','KG','{accepted['total']}');
+ INSERT INTO public.fiscal_xml_runs(fiscal_invoice_id,signed_path,access_key,signed_at,updated_at)
+  VALUES('{invoice_id}','local/{invoice_id}.xml','{access_key}',now(),now());
+ INSERT INTO public.fiscal_sefaz_transmissions(id,fiscal_invoice_id,state,outcome,c_stat,x_motivo,ch_nfe,n_prot,ambiente_retorno,dh_recbto,completed_at)
+  VALUES('{transmission_id}','{invoice_id}','SENT','PENDING','103','PROCESSANDO','{access_key}','PENDING','2',now(),now());""")
+  patch=json.dumps({'cStat':'100','nProt':'LOCAL-INTEGRATED-PROTOCOL','chNFe':access_key,'xMotivo':'AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-01T12:00:00Z'}).replace("'","''")
+  def authorized_callback():
+   return B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','SUCCEEDED','{patch}'::jsonb);")
+  callback=authorized_callback()
+  assert callback.returncode==0,(callback.stdout,callback.stderr)
+  callback_data=json.loads(callback.stdout.strip().splitlines()[-1])
+  assert callback_data['outcome']=='AUTHORIZED' and callback_data['reconciliationPending'] is True and callback_data['reconciliationCode']=='FISCAL_AUTHORIZATION_CLOSE_PENDING',callback_data
+  replay_callback=authorized_callback()
+  assert replay_callback.returncode==0,(replay_callback.stdout,replay_callback.stderr)
+  replay_data=json.loads(replay_callback.stdout.strip().splitlines()[-1])
+  assert replay_data['reconciliationPending'] is True,replay_data
+  blocked=json.loads(B.last(f"""SELECT jsonb_build_object(
+   'invoice_status',(SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}'),
+   'invoice_receivable',(SELECT receivable_id FROM public.fiscal_invoices WHERE id='{invoice_id}'),
+   'transmission_outcome',(SELECT outcome FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
+   'transmission_error',(SELECT error_code FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}'),
+   'transmissions',(SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{invoice_id}'),
+   'documents',(SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_id}'),
+   'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE document_id='{invoice_id}'),
+   'snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_id}'),
+   'receivables',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_id}'))::text;"""))
+  assert blocked=={'invoice_status':'PENDING','invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_error':'FISCAL_AUTHORIZATION_CLOSE_PENDING','transmissions':1,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked
+  (OUT/'integrated-always-deny-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,blocked=blocked,schema_and_fiscal_events_synthetic=True,dependency_substituted=False),indent=2)+'\n')
+  checks.append(dict(test='real H13 authorized callback and replay preserve one durable transmission with close pending; always-deny yields zero B4 document allocation snapshot or receivable',status='PASS'))
+
   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(
    status='COMPOSED_BUT_FISCAL_RECEIVABLE_BLOCKED_BY_REAL_ALWAYS_DENY',hosted=False,
-   b4_pre=b4_pre,b4_post=b4_post,bridge_pre=bridge_pre,bridge_post=bridge_post,
+   b4_pre=b4_pre,b4_post=b4_post,bridge_pre=bridge_pre,bridge_post=bridge_post,composed_post=composed_post,
    dependency_denial=dependency.stderr,client_bridge_denial=client_bridge.stderr,
    original_ten_triggers_preserved=True,current_trigger_count=len(current_triggers),
-   effect_baseline=effect_baseline,current_counts=current_counts,
+   effect_baseline=effect_baseline,current_counts=current_counts,credit=credit,h13_always_deny=blocked,
    positive_fiscal_receivable='NOT_RUN_BLOCKED',always_allow_substitution=False),indent=2)+'\n')
   checks.append(dict(test='same fresh DB installs B4 and service bridge PRE POST after buyer seller logistics and plan controls; real always-deny preserved and positive fiscal receivable BLOCKED',status='PASS'))
-  B.sql((bridge_dir/'04-rollback-deny.sql.review').read_text())
-  B.sql((b4_dir/'04-rollback-deny.sql.review').read_text())
+  B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'04-rollback-deny.sql.review').read_text())
   denied_after_bridge=B.run_raw("RESET ROLE;SELECT platform_private.b2b_fiscal_invoice_bridge_v1(NULL);")
   denied_after_allocate=B.run_raw("RESET ROLE;SELECT platform_private.b2b_allocate_document(NULL);")
   assert denied_after_bridge.returncode!=0 and 'permission denied' in denied_after_bridge.stderr
   assert denied_after_allocate.returncode!=0 and 'permission denied' in denied_after_allocate.stderr
+  denied_plan_read=Q.as_user(Q.UADM,"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);")
+  assert denied_plan_read.returncode!=0 and 'permission denied' in denied_plan_read.stderr,denied_plan_read.stderr
+  assert B.last('SELECT count(*) FROM public.commercial_payment_plans;')==plans_before_rollback
+  assert B.last("SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_payment_plans'::regclass AND conname='commercial_payment_plans_code_key';")=='0'
+  assert B.last("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code';")=='1'
   current=R.snapshot(B);after_triggers={x['name']:x for x in current['receivable']['triggers']}
   for trigger in original: assert after_triggers.get(trigger['name'])==trigger,trigger['name']
   assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='0'
-  checks.append(dict(test='integrated B4 bridge deny-only rollback closes writers preserves snapshots and all original ten receivable triggers',status='PASS'))
+  assert B.last(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}';")=='PENDING'
+  checks.append(dict(test='composed reverse deny-only rollback closes bridge B4 and plans without stale B4 POST; preserves plans fiscal evidence and all original ten receivable triggers',status='PASS'))
  except Exception:
   traceback.print_exc();checks.append(dict(test='new composition',status='FAIL'))
  finally:

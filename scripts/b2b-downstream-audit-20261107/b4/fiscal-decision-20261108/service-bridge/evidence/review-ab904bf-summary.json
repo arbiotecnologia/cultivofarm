@@ -3,7 +3,7 @@
   "hosted": false,
   "candidate_status": "INACTIVE_NOT_APPROVED",
   "candidate_install_sha256": "3c0a2cdc80a3f3050355e8e13c6afc96abb397cf5511d5ccd71ac91eb9a31ba4",
-  "component_before": {"checks": 174, "passed": 174, "exit_code": 0, "meaning": "vulnerability characterization, not approval"},
+  "component_before": {"checks": 174, "passed": 174, "reproduced_undesired_behavior_checks": 9, "distinct_from_vulnerability_count": true, "exit_code": 0, "meaning": "behavior characterization, not approval and not 174 vulnerabilities"},
   "component_after": {"checks": 175, "passed": 175, "exit_code": 0, "synthetic_accounting_and_fiscal_events": true},
   "integrated_fresh_rebuild": {
     "controls_passed_before_b4": 34,
