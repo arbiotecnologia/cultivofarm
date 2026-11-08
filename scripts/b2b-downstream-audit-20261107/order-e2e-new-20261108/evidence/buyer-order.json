@@ -1,5 +1,5 @@
 {
-  "id": "0573ae38-a372-4017-ad45-cfbd933f5945",
+  "id": "a3bf0444-f6dc-4c1f-9045-c836fe9e0653",
   "total": 373.04,
   "numero": "PB-001001",
   "status": "em_analise_comercial",
@@ -49,8 +49,8 @@
   },
   "quote_required": false,
   "discount_amount": 0.0,
-  "idempotency_key": "ce9a63ad-5cd0-476e-b456-fc9009ff918a",
-  "payment_terms_id": "f3e1e52e-9e4b-48b4-a7b4-e64c12bc6260",
+  "idempotency_key": "2337896d-7ec4-4c69-8bee-8961d0e9c5ef",
+  "payment_terms_id": "7ac75038-9d2a-4ca5-9984-948f307816a5",
   "installment_count": 3,
   "payment_condition": {
     "due_basis": "nf_issue",

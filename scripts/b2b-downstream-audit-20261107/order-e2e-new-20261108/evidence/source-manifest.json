@@ -2112,7 +2112,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "aba45cb4da661b6c210c100645f27400fd31a49cc1ba309e02e352e89bec20a0"
+      "sha256": "e3e9aa627234d803bde1324650c6858594945a3b7e0d4e3a4c2faf26f42804ba"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/os_endpoint.py",
@@ -2121,6 +2121,10 @@
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",
       "sha256": "a51d822c51e6be0db73b6e96112e1b79607168069a3ba280b41d0a3708f5577b"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production_rollout.py",
+      "sha256": "137419a6bd619761d287da36d507d0d622ed29ebbe1adf9133e8c884e61984b7"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py",

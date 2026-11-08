@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-a69e1xws/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 231, in main
+    endpoint_out=E.install(B,OUT)
+  File "/tmp/new-order-e2e-a69e1xws/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/os_endpoint.py", line 15, in install
+    out = Path(out) / 'os-endpoint'; out.mkdir()
+                                     ~~~~~~~~~^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 722, in mkdir
+    os.mkdir(self, mode)
+    ~~~~~~~~^^^^^^^^^^^^
+FileExistsError: [Errno 17] File exists: '/dev-server/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/os-endpoint'
