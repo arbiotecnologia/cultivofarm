@@ -160,13 +160,17 @@ def _captured_trigger_function_pins() -> list[list]:
 
 def _state_triggers(state: dict, function_rows: dict[str, list]) -> list[list]:
     tables = {row["table"] for row in CAPTURE["relations"]}
+    fallback_md5 = dict(_captured_trigger_function_pins())
     result = []
     for row in state["triggers"]:
         table = row[0].split(".")[-1]
         if table not in tables:
             continue
         signature = _trigger_function(row[3])
-        result.append([table, row[1], row[2], signature, function_rows[signature][3], row[3]])
+        function = function_rows.get(signature)
+        md5 = function[3] if function is not None else fallback_md5.get(signature)
+        assert md5 is not None, f"POST_TRIGGER_FUNCTION_MD5_UNRESOLVED:{signature}"
+        result.append([table, row[1], row[2], signature, md5, row[3]])
     return sorted(result, key=lambda row: (row[0], row[1]))
 
 
