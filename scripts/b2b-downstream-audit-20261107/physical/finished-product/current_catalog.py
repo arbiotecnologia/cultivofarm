@@ -242,7 +242,7 @@ REVOKE ALL ON FUNCTION platform_private.catalog_tenant_agree(uuid[]) FROM PUBLIC
             "fence_section.py": hashlib.sha256((CATALOG / "fence_section.py").read_bytes()).hexdigest(),
             "01-migrate.sql.review#proximo_codigo": hashlib.sha256((CATALOG / "01-migrate.sql.review").read_bytes()).hexdigest(),
         },
-        "synthetic_seam": "ledger local e substituição dos seis triggers nomeados; nenhuma costura entra nos candidatos",
+        "synthetic_seam": "schema canônico mínimo de apresentação, ledger local e substituição dos seis triggers nomeados; nenhuma costura entra nos candidatos",
         **state,
     }
     (HERE / "evidence").mkdir(exist_ok=True)

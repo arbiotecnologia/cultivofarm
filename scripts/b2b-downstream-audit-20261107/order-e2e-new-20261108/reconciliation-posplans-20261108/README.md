@@ -20,7 +20,7 @@ O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor 
 4. as oito ACLs restritas relatadas;
 5. medição dos nove corpos após a composição, sem pins provisórios.
 
-A antiga costura sintética do guard de estoque é substituída somente no PostgreSQL descartável. O ledger usado pelos geradores canônicos é uma costura local declarada; nada dessa montagem entra nos candidatos de instalação.
+A costura de schema canônico mínimo de apresentação (`catalog_foundation.py`) precede a captura; a antiga costura sintética do guard de estoque é substituída pelo corpo LIVE somente no PostgreSQL descartável. O ledger usado pelos geradores canônicos também é local e declarado; nada dessa montagem entra nos candidatos de instalação.
 
 ## Validação exigida
 
