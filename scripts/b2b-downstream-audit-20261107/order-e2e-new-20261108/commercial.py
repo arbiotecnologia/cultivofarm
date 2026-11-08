@@ -51,6 +51,7 @@ def apply(driver, load, root, out):
     if name=='organizations':row.update(nome='LOCAL B3',status='ativa')
     if name=='partner_accounts':row.update(razao_social='LOCAL B3 PARTNER')
     if name=='produtos':row.update(tipo='solo' if row['id']==Q.SP.SOL else 'inseticida',familia_catalogo='fertilizante_adubo' if row['id']==Q.SP.SOL else 'quimico')
+    if name=='microrganismos':row.update(tipo='bacteria')
     cols=list(row)
     # JSONB populate keeps native arrays/json/numeric casts intact.
     B.sql('SET session_replication_role=replica; INSERT INTO '+obj+' ('+','.join('"'+c+'"' for c in cols)+') SELECT '+','.join('"'+c+'"' for c in cols)+' FROM jsonb_populate_record(NULL::'+obj+','+lit(json.dumps(row))+'::jsonb) ON CONFLICT DO NOTHING; SET session_replication_role=origin;')
