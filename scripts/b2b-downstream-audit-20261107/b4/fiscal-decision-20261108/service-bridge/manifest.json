@@ -3,7 +3,7 @@
   "capture_sha256": "e1ac1e925f0f10f072910e66ffa183fd1fb3f2f1863061270188df64ad2dab88",
   "outputs": {
     "01-pre.sql.readonly": "258c49577164fa125c3f3960caa2e436b05364b5abd52d2664f8590686e9da0d",
-    "02-install.sql.review": "24ef3a4c0a1431cb15daf40175916bb9fad3a32fcee160f49e0f2eda98e8e895",
+    "02-install.sql.review": "3c0a2cdc80a3f3050355e8e13c6afc96abb397cf5511d5ccd71ac91eb9a31ba4",
     "03-post.sql.readonly": "02b61506d4b25e81deaef370081080b3e3d7521672d073876106dc58dbde16e5",
     "04-rollback-deny.sql.review": "942e24a32b6169f6771e431a6fd68ca1ef78011f7e8c7718c96f3363213d8ad5"
   },

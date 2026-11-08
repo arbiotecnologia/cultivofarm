@@ -27,8 +27,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 152,
-  "total": 155,
+  "passed": 175,
+  "total": 175,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -636,8 +636,7 @@
     },
     {
       "name": "autorização com falha pós-título aborta sem perder capacidade de retry",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_ITEMS_INVALID\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 45 at RAISE\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 76 at assignment\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 69 at assignment\n"
+      "ok": true
     },
     {
       "name": "falha da autorização não deixa NF autorizada, documento ou título parcial",
@@ -645,13 +644,91 @@
     },
     {
       "name": "retentativa autorizada gera um recebível B4 pela NF",
-      "ok": false,
-      "detail": "ERROR:  FISCAL_ITEMS_INVALID\nCONTEXT:  PL/pgSQL function platform_private.b2b_allocate_document(uuid) line 45 at RAISE\nPL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 76 at assignment\nPL/pgSQL function rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid) line 69 at assignment"
+      "ok": true
     },
     {
-      "name": "execução sem exceção de harness",
-      "ok": false,
-      "detail": "RuntimeError('ERROR:  invalid input syntax for type uuid: \"None\"\\nLINE 1: ...by::text FROM public.accounts_receivable WHERE id=\\'None\\'),\\'<...\\n                                                             ^\\n')"
+      "name": "título service-only não inventa ator humano e conserva vínculo NF",
+      "ok": true
+    },
+    {
+      "name": "parcialidade service-only consome somente o restante do pedido",
+      "ok": true
+    },
+    {
+      "name": "retentativa da NF autorizada é replay sem duplicação",
+      "ok": true
+    },
+    {
+      "name": "duas chamadas service-only concorrentes preservam um único título",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: replay com valor alterado diverge e preserva snapshot",
+      "ok": true
+    },
+    {
+      "name": "ensaio monetário não altera a NF durável",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: referência divergente é conflito de replay",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: protocolo divergente é negado antes do replay",
+      "ok": true
+    },
+    {
+      "name": "snapshot fiscal privado conserva digest, valor e protocolo",
+      "ok": true
+    },
+    {
+      "name": "cancelamento continua sem reversão automática não homologada",
+      "ok": true
+    },
+    {
+      "name": "H13 preserva retorno autorizado quando título falha",
+      "ok": true
+    },
+    {
+      "name": "falha de título não apaga evidência externa nem deixa NF/título parcial",
+      "ok": true
+    },
+    {
+      "name": "retry H13 recupera título sem reenviar emissão",
+      "ok": true
+    },
+    {
+      "name": "DEPOIS: retry H13 limpa somente o pendente de fechamento recuperado",
+      "ok": true
+    },
+    {
+      "name": "NF com tenant divergente do pedido é negada",
+      "ok": true
+    },
+    {
+      "name": "NF estrangeira não gera documento/título",
+      "ok": true
+    },
+    {
+      "name": "inserção não-B2B com ator preserva recorrência/importação legada",
+      "ok": true
+    },
+    {
+      "name": "UPDATE de título legado não exige permit fiscal B2B",
+      "ok": true
+    },
+    {
+      "name": "origem manual sem ator continua fechada sem afrouxar NOT NULL legado",
+      "ok": true
+    },
+    {
+      "name": "rollback deny-only da ponte fecha callback e preserva histórico",
+      "ok": true
+    },
+    {
+      "name": "rollback da ponte não reabre alocador nem exceção manual",
+      "ok": true
     }
   ],
   "hosted": "NOT_RUN",
