@@ -46,18 +46,25 @@ def build_functions() -> dict[str, str]:
     name = "rpc_admin_version_commercial_plan"
     s = owner_check(source(name), "DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_new_id uuid; v_next integer; v_code text;")
     s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
+    marker = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;"
+    s = edit(s, marker, marker + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
     s = edit(s, "    version, root_plan_id, version_reason\n", "    version, root_plan_id, version_reason, organization_id\n")
     s = edit(s, "    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'')\n", "    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'') , v_org\n")
     out[name] = s
 
     for name in ("rpc_admin_update_commercial_plan_metadata", "rpc_admin_set_commercial_plan_active"):
         s = owner_check(source(name), "DECLARE v_old public.commercial_payment_plans%ROWTYPE;")
-        s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
+        needle = "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE"
+        s = edit(s, needle, "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
+        marker = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;"
+        s = edit(s, marker, marker + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
         out[name] = s
 
     name = "rpc_admin_set_default_commercial_plan"
     s = owner_check(source(name), "DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_prev public.commercial_payment_plans%ROWTYPE;")
     s = edit(s, "hashtext('cpp_default_plan')", "hashtext('cpp_default_plan:' || v_org::text)")
+    needle = "  PERFORM pg_advisory_xact_lock(hashtext('cpp_default_plan:' || v_org::text));"
+    s = edit(s, needle, needle + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
     s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
     s = edit(s, "   WHERE is_default AND id <> p_plan_id FOR UPDATE", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id FOR UPDATE")
     s = edit(s, "   WHERE is_default AND id <> p_plan_id;", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id;")
@@ -70,7 +77,7 @@ def build_functions() -> dict[str, str]:
     s = edit(s, needle, needle + "\n  SELECT array_agg((x->>'id')::uuid), count(*) INTO v_ids, v_requested FROM jsonb_array_elements(p_orders) x;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
     s = edit(s, "hashtext('cpp_reorder')", "hashtext('cpp_reorder:' || v_org::text)")
     needle = "  PERFORM pg_advisory_xact_lock(hashtext('cpp_reorder:' || v_org::text));"
-    s = edit(s, needle, needle + "\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+    s = edit(s, needle, needle + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
     s = edit(s, "     WHERE id = (v_item->>'id')::uuid;", "     WHERE id = (v_item->>'id')::uuid AND organization_id = v_org;")
     out[name] = s
 
@@ -164,6 +171,11 @@ def build_functions() -> dict[str, str]:
         s = edit(s, needle, needle + "\n  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;")
         if name == "b2b_payment_condition_publish":
             s = edit(s, "FROM public.commercial_payment_plans p WHERE p.id=p_plan_id FOR SHARE", "FROM public.commercial_payment_plans p WHERE p.id=p_plan_id AND p.organization_id=v_org FOR SHARE")
+            marker = "  IF pl.active IS NOT TRUE OR pl.superseded_by_id IS NOT NULL THEN RAISE EXCEPTION 'plan_inactive' USING ERRCODE='P0001'; END IF;"
+            s = edit(s, marker, "  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;\n" + marker)
+        else:
+            marker = "   ORDER BY v.version DESC LIMIT 1 FOR UPDATE;"
+            s = edit(s, marker, marker + "\n  IF NOT platform_private.commercial_plan_admin_allowed(p_plan_id) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='42501'; END IF;")
         out[name] = s
 
     name = "simulate_b2b_payment_plan_secure"
@@ -228,7 +240,8 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE AND o.status='ativa'
  JOIN public.partner_users pu ON pu.partner_id=pa.id AND pu.user_id=p_user_id AND pu.tenant_id=p.organization_id
  AND pu.revoked_at IS NULL AND COALESCE(pu.valid_from,'-infinity'::timestamptz)<=now()
- WHERE p.id=p_plan_id AND p.organization_id IS NOT NULL),false);
+ WHERE p.id=p_plan_id AND p.organization_id IS NOT NULL AND p.active IS TRUE AND p.superseded_by_id IS NULL
+ AND p.valid_from<=now() AND (p.valid_until IS NULL OR p.valid_until>now())),false);
 $$;
 
 CREATE OR REPLACE FUNCTION platform_private.commercial_plan_partner_visible(p_plan_id uuid,p_partner_id uuid)
