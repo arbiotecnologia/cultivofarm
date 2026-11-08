@@ -129,6 +129,7 @@ def main():
   (OUT/'plan-isolation-composition.json').write_text(json.dumps(dict(pre=plan_pre,post=plan_post,arbio_plan_visible=True,fsf_arbio_plan_visible=False,fsf_write_denied=fsf_write.stderr,shared_code_plan_id=shared_id,shared_code_invisible_to_arbio=True),indent=2)+'\n')
   checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
   current_state=B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS)
+  current_state['allowed_candidate_trigger_function_deltas']=sorted(list(x) for x in CURRENT_CANDIDATE_TRIGGER_DELTAS)
   (OUT/'current-catalog-posplans.json').write_text(json.dumps(current_state,indent=2)+'\n')
   checks.append(dict(test='post catalog Price plans preserve twenty LIVE bodies 120 triggers 17 relation ACLs and four captured dependencies',status='PASS'))
   # As baselines atuais são compostas antes do pedido B2B: o fluxo inteiro abaixo
