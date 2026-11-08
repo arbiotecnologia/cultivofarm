@@ -1900,7 +1900,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/02-install.sql.review",
-      "sha256": "ef63058cffe9b67513646a0d503d890605c39be255c9166f17d5000f3808efb4"
+      "sha256": "3f587be543c731a58db846f55e3e5e291fb525c066acc0ef6687e0f9c3515dd4"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/03-post.sql.readonly",
@@ -1912,19 +1912,19 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generate.py",
-      "sha256": "3082a5be71aed9ccbbf8cafd1d5ccde0a7b7e56c2ad6225314f71962400b6155"
+      "sha256": "4a461cec58a101056f83901aca69ba686e3fc41f82abab25153c7792757480a5"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/generator.stdout.json",
-      "sha256": "c61a93c9387a94407676707fee97259fca2338ee32d8240d8a106444ad002f76"
+      "sha256": "f6d91a8484de51537ded104ac2ebb357a0b6b151a5c1df40acff6f2e0380d7ee"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/manifest.json",
-      "sha256": "2bcc9020a4cd37ca5d785e50737ca4f06dcea1e7c71b1d2f7b7ab4e76ad6525b"
+      "sha256": "55a774540ac379426d74bac01cefc358e773238c4cfb801ca9f87328cf652b34"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/reconciliation.json",
-      "sha256": "254b1ba70873e4affda5c6150ab63b56bfbe5def99f615e6290a9a987093c67c"
+      "sha256": "05d1e80ea381dc9adb66dc00075a04941666b11c291e324452dd91b9ded67593"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/references/provenance.json",
@@ -1936,11 +1936,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/01-b4-pre-post-composition.sql.readonly",
-      "sha256": "1657b72351415c8904fc79dafd590850bfab61a8c3b4dfb82928c5dd683bdb69"
+      "sha256": "f495866d7628858360fa409247f929862360939091b216f289af9cf4e39d5464"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/02-b4-install-post-composition.sql.review",
-      "sha256": "bc2f2b4650e1fa9dafd5bb2fce3d39fe6570be9d4837c35853e1c104a04fcc9e"
+      "sha256": "6500bf54b5df05c753e75ada0f6ed12948e81f0e86f274222a2eae481a681f54"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/canonical-composition-feb815603/stages/03-b4-post.sql.readonly",

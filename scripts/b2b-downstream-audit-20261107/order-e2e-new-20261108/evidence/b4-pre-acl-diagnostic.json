@@ -221,7 +221,7 @@
     ],
     "body_md5": "db41f7e2cfcb196ef64536f62746f365",
     "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
-    "expected_body_md5": null,
+    "expected_body_md5": "db41f7e2cfcb196ef64536f62746f365",
     "body_matches": true
   },
   {

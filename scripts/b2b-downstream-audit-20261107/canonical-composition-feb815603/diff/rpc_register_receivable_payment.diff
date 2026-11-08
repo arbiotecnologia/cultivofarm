@@ -1,5 +1,5 @@
 --- production/rpc_register_receivable_payment
-+++ post-composition/rpc_register_receivable_payment
++++ measured-alternate/rpc_register_receivable_payment
 @@ -71,9 +71,9 @@
    v_notes    := NULLIF(p_payload->>'notes','');
    v_has_receipt := COALESCE((p_payload->>'has_receipt')::boolean, false);
