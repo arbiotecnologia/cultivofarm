@@ -1,0 +1,28 @@
+{
+  "status": "LOCAL_PASS_INACTIVE_NOT_APPROVED",
+  "production_baseline": "POSPLANOS_REPORTED_BY_AUDITOR",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "hosted_by_agent": false,
+  "fresh_checks": 41,
+  "partial_regressions": 13,
+  "endpoint_specific_tests": 9,
+  "ui_candidate_tests": 13,
+  "canonical_os_compatibility_tests": 73,
+  "typecheck_exit": 0,
+  "run_exit": 0,
+  "candidate_hashes": {
+    "logistics_candidate": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20",
+    "logistics_install": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09",
+    "os_endpoint_install": "21d40202d32e70dfbb44c7eb2a54a4135ebace840b301c15ab37b910cbfa0ee3",
+    "plans_installed_by_auditor": "cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40"
+  },
+  "authenticated_production": "NOT_RUN_BLOCKED_CALLER_REVIEW_AND_PRODUCTION_APPROVAL",
+  "positive_fiscal": "NOT_RUN_BLOCKED_REAL_ALWAYS_DENY",
+  "limits": [
+    "Synthetic Auth/schema/Storage; not hosted JWT/RLS/PostgREST/browser proof",
+    "FSF stopped at feature; not isolated tenant proof",
+    "service_role stopped at schema; helper ACL measured separately",
+    "UI outside runtime; capability/readers/durable continuity pending",
+    "ARBio positive plan control pending auditor login"
+  ]
+}
