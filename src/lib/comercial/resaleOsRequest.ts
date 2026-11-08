@@ -54,7 +54,7 @@ export function decodeResaleOsAvailability(raw: unknown, expected: { orderId: st
   return {
     contract: "B2B_RESALE_OS_AVAILABILITY_V1", order_id: expected.orderId,
     actor_id: expected.actor, organization_id: expected.tenant,
-    observed_updated_at: row.observed_updated_at, available: row.available, items,
+    observed_updated_at: row.observed_updated_at as string, available: row.available, items,
   };
 }
 
