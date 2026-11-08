@@ -85,7 +85,7 @@ try:
         run("SET check_function_bodies=off;" + extract(p1 / "core.sql.review", name))
     run("SET check_function_bodies=off;" + extract(p1 / "channels-core.sql.review", "c2p1_snapshot_allowed"))
     b3 = Path("scripts/b2b-payment-condition-v1-rebase-20261106/02-install.sql.review")
-    for name in ("b2b_condition_cfg_actor", "b2b_condition_seller", "b2b_choice"):
+    for name in ("b2b_condition_cfg_actor", "b2b_condition_seller", "b2b_choice", "b2b_condition_mode", "b2b_list_payment_condition_options_secure"):
         run("SET check_function_bodies=off;" + extract(b3, name))
     for file in sorted((H / "capture" / "functions").glob("*.sql")):
         run("SET check_function_bodies=off;" + file.read_text() + ";")
