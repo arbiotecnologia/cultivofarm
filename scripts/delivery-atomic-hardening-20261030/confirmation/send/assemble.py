@@ -5,6 +5,7 @@ H=Path(__file__).resolve().parent
 spec=importlib.util.spec_from_file_location('confirm',H.parent/'assemble.py');G=importlib.util.module_from_spec(spec);spec.loader.exec_module(G)
 RPC='public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text)'
 STATE=G.STATE[:-1]+",'send_functions',(SELECT jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),p.proacl::text,pg_get_userbyid(p.proowner)) ORDER BY n.nspname COLLATE \"C\",p.proname COLLATE \"C\") FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.proname LIKE 'delivery_send_%' OR p.proname IN ('rpc_entrega_enviar_manual_v1','rpc_entrega_envio_capability_v1')))"
+STATE=STATE.replace("relname IN ('envase_insert_permits_v1','delivery_confirm_permits_v1')", "relname IN ('envase_insert_permits_v1','delivery_confirm_permits_v1','delivery_send_permits_v1')")
 def candidate():
  s=(H.parent/'core.sql.review').read_text();a=s.index('CREATE FUNCTION platform_private.delivery_confirm_apply_v1');b=s.index(' PERFORM 1 FROM public.entrega_comprovantes',a)
  prefix=s[a:b].replace('delivery_confirm_apply_v1(p_entrega uuid,p_observed timestamptz,p_key text,p_recebedor jsonb)','delivery_send_apply_v1(p_entrega uuid,p_observed timestamptz,p_key text)')
