@@ -1,4 +1,4 @@
--- DENY-ONLY: não restaura funções nem índice global vulneráveis; preserva dados, versões e cercas.
+-- DENY-ONLY: não restaura funções, unicidade global de código nem índice global vulneráveis; preserva dados, versões e cercas.
 BEGIN;
 REVOKE ALL ON FUNCTION public.rpc_admin_list_commercial_plans(text,text,integer,integer) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.rpc_admin_create_commercial_plan(jsonb) FROM PUBLIC,anon,authenticated;
