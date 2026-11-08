@@ -1,3 +1,8 @@
+## 08/11 22:25 — Reconciliação semântica pós-catálogo/unidades/Price/planos
+- [ ] Incorporar o PRE LIVE `CONFIRM_PRE_DRIFT` relatado pelo auditor: seis guards de tenant adicionados, funções/ACLs e oito relações mais restritas; preservar toda mudança atual e nunca restaurar grants ou guards antigos.
+- [ ] Reconciliar confirmação, envio, físico, logística, leitor/endpoint e rollbacks com as capturas recentes; identificar explicitamente qualquer corpo LIVE ainda ausente e preparar SQL READ ONLY restrito, sem operação hospedada.
+- [ ] Gerar pacote/manifest/PRE/POST novo e repetir fresh rehearsal pós-catálogo/Price/planos com ACL+seis guards, parciais 13, leitor/OS 15, UI 21, concorrência, typecheck/build. Gates OFF, fiscal/recebíveis/cobranças/envios/publicação fechados.
+
 ## 08/11 22:18 — Complemento LIVE READONLY da cadeia mínima
 - [x] Registrar como relato do auditor: confirmação manual ausente por `proname`; duas sobrecargas canônicas de criação de entrega presentes (`a4d47ccf…`, `97d476cc…`) e programação biológica presente (`e374f0ba…`); OS/gates de revenda ausentes. Nenhum writer executado.
 - [x] PRE/documentação ajustados sem alterar candidatos: ausência por nome, pins das dependências reais e distinção da mudança semântica física na sobrecarga curta. Pacote regerado com 21 arquivos rastreados; cinco hashes de instalação conferidos inalterados. Nenhum SQL hosted executado.
