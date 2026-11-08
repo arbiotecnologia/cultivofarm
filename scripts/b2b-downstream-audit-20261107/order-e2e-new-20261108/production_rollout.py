@@ -57,20 +57,33 @@ DO $$BEGIN
  THEN RAISE EXCEPTION 'PRODUCTION_POSPLANOS_COUNT_DRIFT_RECAPTURE_REQUIRED'; END IF;
 END$$;
 {(delivery/'preflight.sql.review').read_text()}
+-- Pins LIVE relatados pelo auditor em 08/11/2026: dependências existentes, não candidatos.
+DO $$DECLARE p oid;BEGIN
+ p:=to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)');
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'a4d47ccf5d116141ed46e9de9ea7eeaa'
+ THEN RAISE EXCEPTION 'PRODUCTION_LIVE_DELIVERY_SHORT_OVERLOAD_DRIFT'; END IF;
+ p:=to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)');
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '97d476cc795d75b829f305f1e64d4e62'
+ THEN RAISE EXCEPTION 'PRODUCTION_LIVE_DELIVERY_ITEMS_OVERLOAD_DRIFT'; END IF;
+ p:=to_regprocedure('public.rpc_programar_os_v1(uuid,text,date)');
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'e374f0ba1698b37523b890dc91682eaf'
+ THEN RAISE EXCEPTION 'PRODUCTION_LIVE_BIOLOGICAL_OS_DRIFT'; END IF;
+END$$;
+-- A confirmação candidata está ausente por pronome, inclusive em qualquer overload.
+-- Os callers/helpers de revenda também não podem existir sob outra assinatura.
 DO $$BEGIN
- IF to_regprocedure('public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb)') IS NOT NULL
+ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+   WHERE (n.nspname='public' AND p.proname IN ('rpc_entrega_confirmar_manual_v1','rpc_b2b_resale_os_create_v1','rpc_b2b_resale_os_availability_v1'))
+      OR (n.nspname='platform_private' AND p.proname='b2b_resale_os_create_v1'))
  OR to_regclass('platform_private.b2b_resale_logistics_gate_v1') IS NOT NULL
  OR to_regclass('platform_private.b2b_resale_os_requests_v1') IS NOT NULL
- OR to_regprocedure('platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)') IS NOT NULL
- OR to_regprocedure('public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)') IS NOT NULL
- OR to_regprocedure('public.rpc_b2b_resale_os_availability_v1(uuid)') IS NOT NULL
  OR to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL
  THEN RAISE EXCEPTION 'PRODUCTION_REPORTED_ABSENCE_DRIFT_RECAPTURE_REQUIRED'; END IF;
 END$$;
--- Inventário de overloads para anexar à evidência; qualquer ausência/presença exigida acima já foi validada.
+-- Inventário completo dos nomes relevantes para anexar à evidência READ ONLY.
 SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),pg_get_userbyid(p.proowner),p.proacl::text
  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
- WHERE p.proname IN ('rpc_entrega_confirmar_manual_v1','rpc_entrega_enviar_manual_v1','rpc_b2b_resale_os_create_v1','rpc_b2b_resale_os_availability_v1','b2b_resale_os_create_v1')
+ WHERE p.proname IN ('rpc_entrega_confirmar_manual_v1','rpc_entrega_enviar_manual_v1','rpc_cockpit_criar_entrega_v1','rpc_programar_os_v1','rpc_b2b_resale_os_create_v1','rpc_b2b_resale_os_availability_v1','b2b_resale_os_create_v1')
  ORDER BY 1,2,3;
 ROLLBACK;
 """
