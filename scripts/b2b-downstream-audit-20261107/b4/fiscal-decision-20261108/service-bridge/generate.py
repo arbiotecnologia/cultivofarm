@@ -147,7 +147,12 @@ def main() -> None:
     # callback pela transmissão e nunca rebaixa uma autorização já persistida.
     transmit = edit(transmit_source, "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id;", "  SELECT * INTO v_cur FROM public.fiscal_sefaz_transmissions WHERE id = _transmission_id FOR UPDATE;")
     transmit = edit(transmit, "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.c_stat);", "  v_cstat := coalesce(_patch->>'protocolCStat', _patch->>'cStat', v_cur.protocol_c_stat, v_cur.c_stat);")
-    transmit = edit(transmit, """  UPDATE public.fiscal_sefaz_transmissions SET
+    transmit = edit(transmit, """  IF v_cur.state IN ('SUCCEEDED','FAILED','BLOCKED') THEN
+    -- A guarda canonica torna a transmissao terminal imutavel. O replay exato
+    -- reutiliza a evidencia; somente o fechamento documental pode ser retentado.
+    v_row := v_cur;
+  ELSE
+    UPDATE public.fiscal_sefaz_transmissions SET
     state            = _state,""", """  IF v_cur.outcome = 'AUTHORIZED' AND v_outcome IS DISTINCT FROM 'AUTHORIZED' THEN
     RETURN jsonb_build_object(
       'transmissionId',v_cur.id,'state',v_cur.state,'outcome',v_cur.outcome,
