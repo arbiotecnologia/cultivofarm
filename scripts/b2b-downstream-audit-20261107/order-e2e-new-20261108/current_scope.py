@@ -63,6 +63,8 @@ def _identity_args(raw: str) -> str:
         first, separator, remainder = arg.partition(" ")
         if not separator:
             types.append(first)
+        elif first.lower() in {"timestamp", "time", "character", "double", "bit", "national"}:
+            types.append(arg)
         elif first.upper() in {"IN", "OUT", "INOUT", "VARIADIC"}:
             types.append(remainder.strip())
         else:
