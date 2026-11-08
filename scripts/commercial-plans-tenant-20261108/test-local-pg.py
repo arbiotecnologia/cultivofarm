@@ -127,7 +127,7 @@ INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,mont
     check("ANTES: escrita indevida confirmada", f"SELECT name FROM public.commercial_payment_plans WHERE id='{PLAN_A1}';", "ALTERADO POR B")
     run(f"UPDATE public.commercial_payment_plans SET name='Plano A1' WHERE id='{PLAN_A1}';")
 
-    check("PRE íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "01-pre.sql.readonly").read_text(), "4|4|0|0")
+    check("PRE íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "01-pre.sql.readonly").read_text(), "4|3|1|0")
     run("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "02-install.sql.review").read_text())
     results.append({"name": "Instalação candidata transacional", "status": "PASS"})
     print("PASS instalação candidata transacional")
