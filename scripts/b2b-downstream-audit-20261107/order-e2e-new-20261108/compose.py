@@ -54,8 +54,8 @@ def main():
   # owner-only permissions. Measure representation in TEMP generator, never hosted pins.
   F=load('new_finished_generator',physical/'assemble.py')
   rel=next(r for r in F.BASE['relations'] if r['name']=='authz_tickets')
-  acl=B.last("SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass;")
-  assert acl=='{postgres=arwdDxtm/postgres}',acl
+  acl=B.sql("SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass;").strip()
+  assert acl in ('','{postgres=arwdDxtm/postgres}'),acl
   rel['acl']=acl
   (OUT/'acl-normalization.json').write_text(json.dumps(dict(relation='platform_private.authz_tickets',historical='',restored=acl,client_grants=False,seam='restorer explicit owner ACL vs NULL default, local generator only'))+'\n')
   F.build()
