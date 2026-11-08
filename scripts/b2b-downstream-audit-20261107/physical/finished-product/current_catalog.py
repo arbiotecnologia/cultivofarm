@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -48,6 +49,29 @@ ADDITIONAL_DEPENDENCIES = (
 EXPECTED_FUNCTION_ACL = {name: row["acl"] for name, row in FUNCTION_ROWS.items()}
 EXPECTED_TABLE_ACL = {name: row["acl"] for name, row in RELATION_ROWS.items()}
 _expected_additional_pins: dict[str, str] = {}
+
+# A captura integral traz os MD5 das funções de trigger, mas não todos os corpos.
+# Estas origens versionadas já continham capturas/candidatos exatos. O ensaio só
+# prossegue se o pg_get_functiondef resultante coincidir com o MD5 LIVE do trigger.
+SUPPLEMENTAL_SOURCES = {
+    "platform_private.b2b_packaging_item_snapshot_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/02-install.sql.review",
+    "platform_private.catalog_owner_immutable()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
+    "platform_private.catalogo_volumes_owner_consistent()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.catalogo_volumes_owner_consistent.a4cfde90.live-20261106.sql",
+    "platform_private.delivery_mutation_guard_20261030()": SCRIPTS / "delivery-atomic-hardening-20261030/candidate.sql.review",
+    "platform_private.partner_order_items_catalog_tenant_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/platform_private.partner_order_items_catalog_tenant_guard.211a5c4d.live-20261106.sql",
+    "platform_private.solid_mass_immutable()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_immutable.b0611f3e.live-20261106.sql",
+    "platform_private.solid_mass_packaging_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_packaging_guard.1494933c.live-20261106.sql",
+    "platform_private.solid_pack_presentation_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.solid_pack_presentation_guard.0906ab6b.live-20261106.sql",
+    "platform_private.solid_pack_presentation_link()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.solid_pack_presentation_link.a912476c.live-20261106.sql",
+    "platform_private.stock_envase_mutation_gate_v1()": SCRIPTS / "stock-envase-recovery-20261027/isolated/candidate.sql.review",
+    "platform_private.stock_envase_reservation_root_v1()": SCRIPTS / "stock-envase-recovery-20261027/isolated/candidate.sql.review",
+}
+SUPPLEMENTAL_MD5 = {
+    row["function"]: row["function_md5"]
+    for row in CAPTURE["triggers"]
+    if row["function"] in SUPPLEMENTAL_SOURCES
+}
+assert set(SUPPLEMENTAL_MD5) == set(SUPPLEMENTAL_SOURCES)
 
 ACL_PRIVILEGES = {
     "r": "SELECT",
@@ -113,7 +137,8 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
 FROM (VALUES {values}) v(signature)
 LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);
 """)
-    additional_values = ",".join("(%s)" % _literal(signature) for signature in ADDITIONAL_DEPENDENCIES)
+    additional_signatures = sorted(set(ADDITIONAL_DEPENDENCIES) | set(SUPPLEMENTAL_SOURCES))
+    additional_values = ",".join("(%s)" % _literal(signature) for signature in additional_signatures)
     additional = _json(last, f"""
 SELECT COALESCE(jsonb_agg(jsonb_build_object(
   'signature', v.signature,
@@ -178,6 +203,9 @@ def assert_current(last):
         if _acl_set(actual.get("acl", "")) != _acl_set(expected["acl"]):
             errors.append(f"function_acl:{signature}:{actual.get('acl')}!={expected['acl']}")
     additional = {row["signature"]: row["md5"] for row in state["additional_dependencies"]}
+    for signature, expected in SUPPLEMENTAL_MD5.items():
+        if additional.get(signature) != expected:
+            errors.append(f"supplemental_function_md5:{signature}:{additional.get(signature)}!={expected}")
     if _expected_additional_pins:
         for signature, expected in _expected_additional_pins.items():
             if additional.get(signature) != expected:
@@ -208,6 +236,32 @@ def _captured_function_sql():
     # corpos reais no PostgreSQL. Nenhum corpo é reconstruído ou concatenado por pin.
     definitions = [row["definition"].rstrip() + ";" for row in CAPTURE["functions"]]
     return "\n".join(definitions)
+
+
+def _extract_function(source, signature):
+    text = source.read_text()
+    match = re.search(r"CREATE(?: OR REPLACE)? FUNCTION\s+" + re.escape(signature), text)
+    if not match:
+        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_NOT_FOUND:{signature}:{source}")
+    delimiter = re.search(r"\$[A-Za-z_]*\$", text[match.end():])
+    if not delimiter:
+        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_DELIMITER_MISSING:{signature}")
+    start = match.end() + delimiter.start()
+    tag = delimiter.group(0)
+    end = text.find(tag, start + len(tag))
+    if end < 0:
+        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_UNTERMINATED:{signature}")
+    end = text.find(";", end + len(tag))
+    if end < 0:
+        raise AssertionError(f"SUPPLEMENTAL_FUNCTION_SEMICOLON_MISSING:{signature}")
+    return text[match.start():end + 1]
+
+
+def _supplemental_function_sql():
+    return "\n".join(
+        _extract_function(SUPPLEMENTAL_SOURCES[signature], signature)
+        for signature in sorted(SUPPLEMENTAL_SOURCES)
+    )
 
 
 def _captured_trigger_sql():
@@ -247,6 +301,7 @@ def apply(run_raw, last, ok, organization_id):
     setup = f"""
 CREATE TABLE IF NOT EXISTS platform_private.local_current_catalog_ledger(step text,detail jsonb);
 {additional_sql}
+{_supplemental_function_sql()}
 {_captured_function_sql()}
 {chr(10).join(_captured_trigger_sql())}
 {chr(10).join(_restricted_acl_sql())}
@@ -272,8 +327,9 @@ CREATE TABLE IF NOT EXISTS platform_private.local_current_catalog_ledger(step te
         "additional_capture": ADDITIONAL_CAPTURE.name,
         "additional_capture_sha256": hashlib.sha256(ADDITIONAL_CAPTURE.read_bytes()).hexdigest(),
         "additional_pin_provenance": "MD5 medido localmente dos corpos SQL fornecidos; ACL adicional não foi presumida como LIVE",
-        "counts": {"functions": 20, "triggers": 120, "relations": 17, "additional_dependencies": 4},
-        "synthetic_seam": "schema canônico mínimo de apresentação e ledger local; triggers/corpos/ACLs capturados; nenhuma costura entra nos candidatos",
+        "counts": {"functions": 20, "triggers": 120, "relations": 17, "additional_dependencies": 4, "supplemental_trigger_functions": len(SUPPLEMENTAL_SOURCES)},
+        "supplemental_sources": {signature: str(path.relative_to(SCRIPTS)) for signature, path in SUPPLEMENTAL_SOURCES.items()},
+        "synthetic_seam": "schema canônico mínimo de apresentação e ledger local; corpos suplementares versionados validados pelos MD5 dos triggers LIVE; nenhuma costura entra nos candidatos",
         **state,
     }
     (HERE / "evidence").mkdir(exist_ok=True)
