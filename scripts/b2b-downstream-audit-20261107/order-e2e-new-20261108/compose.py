@@ -213,13 +213,20 @@ def main():
    items=json.dumps([{'item_id':stock_id,'quantidade':2,'observed_updated_at':observed_stock}])
    return B.T.actor(Q.UADM)+f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
   def prove_resale(delivery_id,key):
+   denied=B.run_raw(B.T.actor(Q.UB)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery_id}','resale-buyer-proof-{key}');")
+   assert denied.returncode!=0 and 'DELIVERY_PROOF_ACTOR_DENIED' in denied.stderr,denied.stderr
    generated=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery_id}','resale-generate-{key}');"))
    assert generated['success'] is True,generated
+   generated_replay=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{delivery_id}','resale-generate-{key}');"))
+   assert generated_replay['replayed'] is True and generated_replay['comprovante_id']==generated['comprovante_id'],generated_replay
    path=f"entregas/{delivery_id}/comprovantes/{uuid.uuid4()}.pdf"
    B.sql(f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{path}','{Q.UADM}','{Q.UADM}');")
    payload=json.dumps({'arquivo_path':path,'arquivo_nome':'local.pdf','arquivo_mime':'application/pdf','recebedor_nome':'LOCAL REVENDA'})
    attached=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_comprovante_anexar_v1('{delivery_id}','resale-proof-{key}','{payload}'::jsonb);"))
    assert attached['success'] is True,attached
+   attached_replay=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.rpc_entrega_comprovante_anexar_v1('{delivery_id}','resale-proof-{key}','{payload}'::jsonb);"))
+   assert attached_replay['replayed'] is True and attached_replay['comprovante_id']==attached['comprovante_id'],attached_replay
+   (OUT/'resale-proof.json').write_text(json.dumps(dict(generate=generated,generate_replay=generated_replay,attach=attached,attach_replay=attached_replay),indent=2)+'\n')
   wrong=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":0.5}}]'::jsonb,'resale-fractional-0001','{json.dumps({'partner_id':Q.P,'partner_order_id':order_id})}'::jsonb);"
   rejected=B.run_raw(wrong);assert rejected.returncode!=0 and 'FINISHED_PRODUCT_WHOLE_PACK_REQUIRED' in rejected.stderr,rejected.stderr
   wrong_partner=B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]'::jsonb,'resale-wrong-partner-0001','{json.dumps({'partner_id':Q.PO,'partner_order_id':order_id})}'::jsonb);"

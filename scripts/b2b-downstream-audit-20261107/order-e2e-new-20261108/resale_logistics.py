@@ -15,6 +15,7 @@ CHANGED = [
     "platform_private.stock_motor_refs(uuid,uuid,uuid,jsonb)",
     "platform_private.stock_p1_guard()",
     "platform_private.delivery_mutation_guard_20261030()",
+    "platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)",
     "platform_private.delivery_confirm_recheck_v1(uuid,uuid)",
     "public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)",
     "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
@@ -274,6 +275,18 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     sig = "platform_private.delivery_mutation_guard_20261030()"
     body = defs[sig]["body"]
     body = one(body, "OR NEW.partner_order_id IS NOT NULL OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "OR (NEW.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS NOT TRUE) OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL", "delivery mutation resale order")
+    body = one(body, "  AND OLD.partner_order_id IS NULL AND NEW.partner_order_id IS NULL\n", "  AND (NEW.partner_order_id IS NULL OR platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS TRUE)\n", "delivery proof resale lineage")
+    defs[sig]["new"] = body
+
+    sig = "platform_private.delivery_proof_row_ok_20261030(public.entregas,uuid,text)"
+    body = defs[sig]["body"]
+    body = one(body, """ IF p_e.id IS NULL OR p_e.organization_id IS DISTINCT FROM p_org OR p_e.cliente_id IS NULL
+ OR p_e.partner_order_id IS NOT NULL OR p_e.ordem_servico_onfarm_id IS NOT NULL THEN RETURN false; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=p_e.cliente_id AND organization_id=p_org) THEN RETURN false; END IF;""", """ IF p_e.id IS NULL OR p_e.organization_id IS DISTINCT FROM p_org OR p_e.ordem_servico_onfarm_id IS NOT NULL THEN RETURN false; END IF;
+ IF p_e.partner_order_id IS NULL THEN
+  IF p_e.cliente_id IS NULL OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=p_e.cliente_id AND organization_id=p_org) THEN RETURN false; END IF;
+ ELSIF platform_private.b2b_resale_delivery_order_valid_v1(p_e) IS NOT TRUE THEN RETURN false;
+ END IF;""", "proof row resale lineage")
     defs[sig]["new"] = body
 
     sig = "platform_private.delivery_confirm_recheck_v1(uuid,uuid)"
@@ -349,6 +362,9 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
         body = one(body, " OR s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL", " OR (e.partner_order_id IS NULL AND (s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL))\n OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_lineage_valid_v1(s,e,l) IS NOT TRUE)", label + " resale lineage")
         if label == "send":
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "send ledger origin")
+        else:
+            body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "confirm ledger origin", 2)
+            body = one(body, "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);", "ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END,'enviar_entrega',NULL);", "confirm canonical advance origin")
         defs[sig]["new"] = body
 
     candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"].rstrip().rstrip(";") + ";" for x in CHANGED) + "\n"

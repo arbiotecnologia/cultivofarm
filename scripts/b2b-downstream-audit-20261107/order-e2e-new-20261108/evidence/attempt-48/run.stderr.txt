@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-wdddvipy/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 80, in main
+    data,error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',1);assert data is not None,error
+                                                           ^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: forbidden
+CONTEXT:  PL/pgSQL function platform_private.b2b_condition_cfg_actor(boolean) line 9 at RAISE
+PL/pgSQL function public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) line 4 at assignment
+LOCATION:  exec_stmt_raise, pl_exec.c:3911

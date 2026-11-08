@@ -46,6 +46,9 @@ def apply(driver, load, root, out):
    if f['name'] in keep:continue
    B.sql(f['body']+';')
   # Fixture load only, before the tested create; cannot certify this as provisioning.
+  # Identidade exigida pelo FK do comprovante, SOMENTE no PG descartável. O
+  # trigger real cria o perfil; a carga abaixo completa seus dados explícitos.
+  B.sql(f"INSERT INTO auth.users(id) VALUES('{Q.UADM}') ON CONFLICT DO NOTHING;")
   fixture_tables=['organizations','profiles','user_roles','partner_accounts','partner_users','produtos','microrganismos','catalogo_volumes','product_sale_units','product_packagings','catalogo_precos_embalagem','commercial_payment_plans','commercial_payment_plan_assignments','commercial_price_rules','partner_financial_settings','payment_methods','financial_categories','seam_entitlements']
   B.sql('SET session_replication_role=replica;')
   for name in fixture_tables:
@@ -68,6 +71,7 @@ def apply(driver, load, root, out):
     cols=list(row)
     # JSONB populate keeps native arrays/json/numeric casts intact.
     B.sql('SET session_replication_role=replica; INSERT INTO '+obj+' ('+','.join('"'+c+'"' for c in cols)+') SELECT '+','.join('"'+c+'"' for c in cols)+' FROM jsonb_populate_record(NULL::'+obj+','+lit(json.dumps(row))+'::jsonb) ON CONFLICT DO NOTHING; SET session_replication_role=origin;')
+  B.sql(f"UPDATE public.profiles SET organization_id='{Q.A}',nome='LOCAL B3 ADMIN',ativo=true,senha_provisoria=false WHERE user_id='{Q.UADM}';")
   # Entitlements reais: a tabela seam_entitlements do harness B3 não é lida
   # pelo resolvedor canônico mantido da base física. Concessões GRANT apenas
   # no tenant A; nenhuma versão publicada é alterada e F não recebe o grant.
