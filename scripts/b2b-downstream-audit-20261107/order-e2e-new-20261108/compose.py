@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Composition driver, executes only in /tmp mirror; all experiments are local."""
-import importlib.util,json,os,sys,traceback,uuid
+import hashlib,importlib.util,json,os,sys,traceback,uuid
 from pathlib import Path
 H=Path(__file__).resolve().parent;ROOT=H.parents[2]
 assert ROOT.is_relative_to(Path('/tmp')), 'TEMP_MIRROR_REQUIRED'
