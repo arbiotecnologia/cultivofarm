@@ -1,3 +1,10 @@
+## 08/11 17:37 — Revisão independente ab904bf: ponte fiscal e rebuild integral
+- [ ] Reproduzir ANTES e corrigir: classificação explícita de NF não-B2B sem esconder B2B inválida; regra `created_by=NULL` estritamente B2B fiscal, sem quebrar recorrência/importação/ajustes/updates legados.
+- [ ] Snapshot/digest fiscal completo e verificável, incluindo valores monetários, referência/protocolo/ambiente; callback real deve comprovar `_c_stat`, transmissão e evidência autorizada, sem promover pendente/rejeitado.
+- [ ] Integrar H13 `FISCAL_AUTHORIZATION_CLOSE_PENDING` com falha de título, preservando autorização externa e permitindo retry sem reemissão; NFS-e/cancelamento permanecem fail-closed se não houver prova exata.
+- [ ] Fechar planos com PRE/POST independente e executar rebuild integral do zero com planos+B3+logística+B4+ponte; manter `b2b_integration_dependencies` always-deny e reportar separadamente a costura sintética, sem always-allow.
+- [ ] Candidatos continuam INATIVOS/NÃO APROVADOS; sem hosted writes, publicação, provedores, emissão, envios ou cobranças.
+
 ## 08/11 17:13 — Revisão independente f32c4f3: planos, composição única e ponte fiscal
 - [x] **PRIORIDADE/BLOCKER:** ANTES reproduziu constraint global e quatro efeitos após revogação sob locks; gerador corrigiu código único por `organization_id`, reautorização pós-lock e reordenação com locks ordenados. DEPOIS **79/79**, sem auditoria/mutação parcial; metadata/ativação/versão já contidos também registrados.
 - [x] PRE/POST/pins/rollback cobrem constraint global removida, índice `(organization_id,code)` e padrão por tenant; exceção não-ARBio, planos/snapshots e cinco títulos preservados. Novo candidato INATIVO/NÃO APROVADO SHA256 `cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40`.
