@@ -79,7 +79,17 @@ Falhas de construção do harness e suas correções ficam em `evidence/attempts
 7. Homologar comprador autorizado e comprador revogado em sessões reais, sem alterar dados existentes.
 8. Em incidente, `04-rollback-deny.sql.review` fecha os acessos; não é retorno ao comportamento vulnerável.
 
-Candidato SHA256: `92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6`.
+Candidato SHA256 superseded: `92053bcba29f7896f9a16cb311b8eff5fc28ed73af5e0a9fcae7afd5dc494af6`.
+
+## Revisão independente f32c4f3 — 08/11 17:20 UTC
+
+ANTES reproduziu colisão global de código e quatro escritas após revogação durante lock: padrão alvo/papel, padrão anterior/perfil, reordenação/tenant e criação aguardando unicidade/papel. Metadata/papel, ativação/perfil e versão/tenant já eram contidos por guards posteriores. Evidências em `evidence/review-f32c4f3/before.json`.
+
+O gerador agora remove `commercial_payment_plans_code_key`, cria unicidade parcial `(organization_id,code)` para tenants determinados e revalida ator/papel/perfil/tenant após os locks relevantes e antes de efeitos/auditoria. Reordenação bloqueia IDs em ordem determinada. DEPOIS passou **79/79**, com códigos iguais permitidos entre empresas, duplicidade interna negada, zero efeitos após revogação e auditoria preservada. PRE/POST/rollback pinam constraint e índices; rollback mantém a contenção.
+
+Novo candidato SHA256: `cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40`.
+
+A composição no MESMO PostgreSQL descartável com B3 e logística `db36815b…` passou **34/34**, incluindo comprador/vendedor positivos, FSF negativa, código compartilhado, dez gatilhos/ACL/fence e rollback conjunto. Evidência: `scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/checks.json`. Foi uma iteração com checkpoint novo identificado, não uma restauração integral adicional do zero.
 
 ## Não comprovado / ainda bloqueado
 
