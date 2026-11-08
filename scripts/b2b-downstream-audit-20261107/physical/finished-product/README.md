@@ -2,6 +2,10 @@
 
 **Status: INATIVO / BLOQUEADO / NÃO APROVADO.** Somente PostgreSQL descartável; nenhuma operação hospedada, publicação, NF, cobrança, aprovação contábil, envio externo ou delegação.
 
+## Revisão posterior 6667a8d6 — lote fornecedor separado
+
+O gerador agora usa código interno `BUY-<UUID servidor>`, preservando o UNIQUE global e o lote fornecedor nos snapshots/ledger. Artefatos gerados e provas atuais estão em `review-6667a8d6/`: reprodução anterior 3/4 exit 1 (colisão global), correção 14/14, regressão 58/58 e camadas 16/16, exits 0. SQL/resultados abaixo são históricos preservados da revisão anterior; não foram sobrescritos nem somados. Esta revisão não encerra E2E B2B nem autoriza instalação/publicação.
+
 ## Decisão de origem incorporada
 
 Químicos e fertilizantes ARBio entram por **COMPRA DE PRODUTO ACABADO PARA REVENDA**. O fluxo positivo deste recorte é:

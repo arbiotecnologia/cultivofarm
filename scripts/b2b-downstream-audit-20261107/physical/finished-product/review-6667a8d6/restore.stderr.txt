@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "/tmp/resale-6667a8d6/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 8, in <module>
+    sys.path.insert(0,str(S/'stock-envase-recovery-20261027'));import test_v2_pg as T
+                                                               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/resale-6667a8d6/scripts/stock-envase-recovery-20261027/test_v2_pg.py", line 22, in <module>
+    u = T.u
+        ^^^
+AttributeError: partially initialized module 'test_pg' from '/tmp/resale-6667a8d6/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py' has no attribute 'u' (most likely due to a circular import)

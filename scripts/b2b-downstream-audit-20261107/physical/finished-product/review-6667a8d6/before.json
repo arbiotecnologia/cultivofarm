@@ -1,0 +1,31 @@
+{
+  "status": "FAIL",
+  "exit_code": 1,
+  "checks": [
+    {
+      "name": "checkpoint descartável da composição capturada restaurado",
+      "status": "PASS",
+      "detail": "f03ac5fab7dc93b54b5edc205c685fa8aaf72bab79b0717624afa339d62e4fe0"
+    },
+    {
+      "name": "writers de confirmação/envio ativados somente no PostgreSQL descartável",
+      "status": "PASS"
+    },
+    {
+      "name": "UNIQUE global codigo_lote continua instalada sem alteração",
+      "status": "PASS"
+    },
+    {
+      "name": "regressão lote fornecedor",
+      "status": "FAIL",
+      "detail": "Traceback (most recent call last):\n  File \"/tmp/resale-6667a8d6/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_supplier_lot.py\", line 35, in main\n    other = json.loads(B.last(A.purchase(fsf, 2, \"supplier-lot-fsf-001\", actor=B.T.V, supplier_lot=external)))\n                       ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/resale-6667a8d6/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 61, in last\n    return sql(statement).splitlines()[-1]\n           ~~~^^^^^^^^^^^\n  File \"/tmp/resale-6667a8d6/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py\", line 57, in sql\n    return pg.sql(statement)\n           ~~~~~~^^^^^^^^^^^\n  File \"/tmp/resale-6667a8d6/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  duplicate key value violates unique constraint \"lotes_codigo_lote_key\"\nDETAIL:  Key (codigo_lote)=(FORN-LOTE-COMPARTILHADO-2026) already exists.\nCONTEXT:  SQL statement \"INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)\n -- Código interno globalmente único vem do UUID servidor; lote externo permanece nos snapshots/ledger.\n VALUES(v_lote,btrim(p_lote_fornecedor),p_produto_id,NULL,NULL,'aprovado',v_org,\n  jsonb_build_object('origem','compra_produto_acabado_revenda','compra_referencia',btrim(p_compra_referencia),'fornecedor',btrim(p_fornecedor_nome),'lote_fornecedor',btrim(p_lote_fornecedor),'embalagem_id',p_embalagem_id,'embalagem_versao',v_version)::text)\"\nPL/pgSQL function platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date) line 83 at SQL statement\n\n"
+    }
+  ],
+  "raw": [],
+  "hosted": false,
+  "synthetic_seams": [
+    "Auth/claims e fixtures ARBio/FSF locais, não identidades reais",
+    "catálogo/apresentação upstream com replica; compra executa todos os triggers habilitados",
+    "PostgreSQL descartável, não JWT/RLS/Storage hosted nem E2E de pedido B2B"
+  ]
+}

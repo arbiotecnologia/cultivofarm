@@ -1,0 +1,17 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.8s
+PASS checkpoint descartável da composição capturada restaurado
+PASS writers de confirmação/envio ativados somente no PostgreSQL descartável
+PASS UNIQUE global codigo_lote continua instalada sem alteração
+PASS ARBio/FSF sintéticos recebem mesmo lote externo com códigos internos distintos
+PASS mesmo tenant/produto/apresentação aceita recebimento diferente do mesmo lote externo
+PASS apresentações distintas preservam conteúdo e referência externa exata; código é UUID servidor
+PASS quatro recebimentos têm exatamente quatro entradas com lote fornecedor intacto no ledger
+PASS mesma chave/payload retorna mesmos IDs sem gerar outro lote
+PASS mesma chave com quantidade divergente conflita
+PASS mesma chave com referência externa divergente conflita
+PASS mesma chave com apresentação divergente conflita
+PASS ator FSF não compra produto ARBio
+PASS ator FSF não recupera receipt ARBio pela mesma chave
+PASS replay e conflitos não duplicam saldo, lote ou ledger; ARBio mantém 9 UN/165 kg
+RESULT 14/14 exit 0
