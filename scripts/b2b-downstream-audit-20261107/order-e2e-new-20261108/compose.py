@@ -205,9 +205,11 @@ def main():
   def reserve_resale(key,quantity=2):
    items=json.dumps([{'item_id':stock,'quantidade':quantity}]);data=json.dumps({'partner_id':Q.P,'partner_order_id':order_id})
    return B.T.actor(Q.UADM)+f"SELECT public.rpc_estoque_reservar_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{data}'::jsonb);"
+  group_observations={}
   def group_resale(stock_id,key):
-   observed_os=B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';")
-   observed_stock=B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';")
+   if key not in group_observations:
+    group_observations[key]=(B.last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os_id}';"),B.last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{stock_id}';"))
+   observed_os,observed_stock=group_observations[key]
    items=json.dumps([{'item_id':stock_id,'quantidade':2,'observed_updated_at':observed_stock}])
    return B.T.actor(Q.UADM)+f"SELECT public.rpc_cockpit_criar_entrega_v1('{os_id}','b2b','{items}'::jsonb,'{key}','{{}}'::jsonb,'{observed_os}'::timestamptz);"
   def prove_resale(delivery_id,key):
