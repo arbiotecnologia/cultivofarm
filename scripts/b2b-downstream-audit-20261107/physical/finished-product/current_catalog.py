@@ -57,7 +57,7 @@ SUPPLEMENTAL_SOURCES = {
     "platform_private.b2b_packaging_item_snapshot_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/02-install.sql.review",
     "platform_private.catalog_owner_immutable()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
     "platform_private.catalogo_volumes_owner_consistent()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.catalogo_volumes_owner_consistent.a4cfde90.live-20261106.sql",
-    "platform_private.delivery_mutation_guard_20261030()": SCRIPTS / "delivery-atomic-hardening-20261030/candidate.sql.review",
+    "platform_private.delivery_mutation_guard_20261030()": SCRIPTS / "delivery-atomic-hardening-20261030/confirmation/install.sql.review",
     "platform_private.partner_order_items_catalog_tenant_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/platform_private.partner_order_items_catalog_tenant_guard.211a5c4d.live-20261106.sql",
     "platform_private.solid_mass_immutable()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_immutable.b0611f3e.live-20261106.sql",
     "platform_private.solid_mass_packaging_guard()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/triggers/platform_private.solid_mass_packaging_guard.1494933c.live-20261106.sql",
@@ -65,6 +65,12 @@ SUPPLEMENTAL_SOURCES = {
     "platform_private.solid_pack_presentation_link()": SCRIPTS / "b2b-solid-packaging-order-20261106/captured/solid-pack/platform_private.solid_pack_presentation_link.a912476c.live-20261106.sql",
     "platform_private.stock_envase_mutation_gate_v1()": SCRIPTS / "stock-envase-recovery-20261027/isolated/candidate.sql.review",
     "platform_private.stock_envase_reservation_root_v1()": SCRIPTS / "stock-envase-recovery-20261027/isolated/candidate.sql.review",
+    "public.set_codigo_produto()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
+    "public.set_codigo_microrganismo()": SCRIPTS / "tenant-exclusive-catalog-20261101/01-migrate.sql.review",
+    "cf_user_guards_v1.acquire_gate()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
+    "cf_user_guards_v1.advance_stamp()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
+    "cf_user_guards_v1.block_truncate()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
+    "cf_user_guards_v1.require_admin()": SCRIPTS / "contracts-c2-20261022/integral/replica.sql",
 }
 SUPPLEMENTAL_MD5 = {
     row["function"]: row["function_md5"]
@@ -72,6 +78,25 @@ SUPPLEMENTAL_MD5 = {
     if row["function"] in SUPPLEMENTAL_SOURCES
 }
 assert set(SUPPLEMENTAL_MD5) == set(SUPPLEMENTAL_SOURCES)
+
+SHORT_DELIVERY_SIGNATURE = "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)"
+SHORT_DELIVERY_SOURCE = SCRIPTS / "delivery-atomic-hardening-20261030/capture/current.json"
+_short_capture = next(row for row in FUNCTION_ROWS.values() if row["signature"] == SHORT_DELIVERY_SIGNATURE)
+_short_prior = next(
+    row for row in json.loads(SHORT_DELIVERY_SOURCE.read_text())["functions"]
+    if row.get("md5") == _short_capture["md5"] and row.get("name") == "rpc_cockpit_criar_entrega_v1"
+)
+assert _short_prior["body"] != _short_capture["definition"]
+assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDO" in _short_capture["definition"]
+assert "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA" in _short_prior["body"]
+BODY_RECONCILIATION = {
+    SHORT_DELIVERY_SIGNATURE: {
+        "reason": "A definição da PARTE 2 contém ORIGEM_INVALIDO, mas o MD5 informado e duas capturas anteriores correspondem a ORIGEM_INVALIDA; a captura integral permanece imutável e a divergência é explícita.",
+        "prior_capture": str(SHORT_DELIVERY_SOURCE.relative_to(SCRIPTS)),
+        "md5": _short_capture["md5"],
+        "body": _short_prior["body"],
+    }
+}
 
 ACL_PRIVILEGES = {
     "r": "SELECT",
@@ -234,7 +259,10 @@ def assert_current(last):
 def _captured_function_sql():
     # A ordem evita apenas dependências de criação; plpgsql continua validando os
     # corpos reais no PostgreSQL. Nenhum corpo é reconstruído ou concatenado por pin.
-    definitions = [row["definition"].rstrip() + ";" for row in CAPTURE["functions"]]
+    definitions = [
+        BODY_RECONCILIATION.get(row["signature"], {}).get("body", row["definition"]).rstrip() + ";"
+        for row in CAPTURE["functions"]
+    ]
     return "\n".join(definitions)
 
 
@@ -330,6 +358,7 @@ CREATE TABLE IF NOT EXISTS platform_private.local_current_catalog_ledger(step te
         "additional_capture": ADDITIONAL_CAPTURE.name,
         "additional_capture_sha256": hashlib.sha256(ADDITIONAL_CAPTURE.read_bytes()).hexdigest(),
         "additional_pin_provenance": "MD5 medido localmente dos corpos SQL fornecidos; ACL adicional não foi presumida como LIVE",
+        "body_reconciliation": {signature: {key: value for key, value in row.items() if key != "body"} for signature, row in BODY_RECONCILIATION.items()},
         "counts": {"functions": 20, "triggers": 120, "relations": 17, "additional_dependencies": 4, "supplemental_trigger_functions": len(SUPPLEMENTAL_SOURCES)},
         "supplemental_sources": {signature: str(path.relative_to(SCRIPTS)) for signature, path in SUPPLEMENTAL_SOURCES.items()},
         "synthetic_seam": "schema canônico mínimo de apresentação e ledger local; corpos suplementares versionados validados pelos MD5 dos triggers LIVE; nenhuma costura entra nos candidatos",
