@@ -1,8 +1,8 @@
 ## 08/11 16:03 — BLOCKER: isolamento por empresa nos planos comerciais
-- [ ] Reproduzir localmente a leitura FSF dos planos ARBio e auditar listagem/leitura direta, criação, versões, metadados, ativação, padrão, reordenação, atribuições, meios e matrizes; não executar escrita FSF nem alterar dados hospedados.
-- [ ] Preparar migração revisável com propriedade por tenant comprovada por `created_by`/perfil e atribuições, negando proveniência ambígua; comprador só vê versão publicada vinculada a ele. Preservar snapshots e histórico, sem inferir tenant pelo nome.
-- [ ] Testar antes/depois: ARBio próprio, FSF negado em leitura/escrita, revogação, `is_default` por tenant, versões e atribuições cruzadas; PRE/POST e rollback deny-only em PostgreSQL descartável.
-- [ ] Manter bloqueio de liberação até revisão independente e reteste JWT/RLS real; nenhum SQL hospedado, publicação ou efeito externo. Fila B3/E2E/defaults permanece registrada abaixo.
+- [x] Reprodução local ANTES: FSF leu planos ARBio por RPC admin/listagem/B3 e alterou metadados sintéticos; auditoria cobriu RLS, sete writers admin, atribuições, meios, matrizes, simulação/create/conversão/cotação. Nenhuma escrita FSF nem alteração hospedada.
+- [x] Pacote revisável `commercial-plans-tenant-20261108`: 25 funções-alvo pinadas, tenant por `created_by`/perfil familiar consistente, ambíguos/ausentes NULL e negados, comprador restrito ao vínculo publicado, atribuições/matrizes concordantes e `is_default` por tenant. Catálogos globais de meios/categorias preservados; snapshots/histórico intactos.
+- [x] PostgreSQL descartável final 58/58, exit 0: ARBio/FSF próprios, FSF negado em leitura/escrita, revogações, versões/padrões/atribuições cruzadas, PRE/POST e rollback deny-only. Candidato SHA256 `92053bcb…`; evidências e tentativas preservadas.
+- [ ] Bloqueio continua até revisão independente, instalação manual autorizada e reteste JWT/RLS real; nenhum SQL hospedado, publicação ou efeito externo. Fila B3/E2E/defaults permanece registrada abaixo.
 
 ## 08/11 15:38 — Novo parceiro no piloto B3 e escolha obrigatória do meio
 - [x] Auditoria local do contrato confirmou: `required` só com `enforced` ou ID no array do piloto; fora dele, o fluxo legado explica R$ 9 e 08/12/2026 sem meio. O valor LIVE não foi consultado pelo agente e nenhum pedido foi enviado.
