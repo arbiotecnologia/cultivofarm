@@ -1,8 +1,18 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-wdddvipy/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 80, in main
-    data,error=Q.assign(Q.UADM,Q.P,Q.P3,'boleto',1);assert data is not None,error
-                                                           ^^^^^^^^^^^^^^^^
-AssertionError: ERROR:  42501: forbidden
-CONTEXT:  PL/pgSQL function platform_private.b2b_condition_cfg_actor(boolean) line 9 at RAISE
-PL/pgSQL function public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean) line 4 at assignment
-LOCATION:  exec_stmt_raise, pl_exec.c:3911
+  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 76, in main
+    Q=commercial.apply(B,load,ROOT,OUT)
+  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 74, in apply
+    B.sql(f"INSERT INTO auth.users(id) VALUES('{Q.UADM}') ON CONFLICT DO NOTHING;")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-byk7u4nf/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  duplicate key value violates unique constraint "profiles_user_id_key"
+DETAIL:  Key (user_id)=(00000000-0000-0000-0000-000000000024) already exists.
+CONTEXT:  SQL statement "INSERT INTO public.profiles (user_id, nome, email)
+  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'nome', ''), NEW.email)"
+PL/pgSQL function handle_new_user() line 3 at SQL statement
+
