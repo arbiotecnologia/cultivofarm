@@ -95,7 +95,7 @@ def main():
    'requires_credit_approval',false,'requires_guarantee',false,'requires_financial_approval',false));""")
   assert shared.returncode==0,shared.stderr
   shared_id=shared.stdout.strip().splitlines()[-1]
-  arb_code=Q.as_user(Q.UADM,f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans((SELECT code FROM public.commercial_payment_plans WHERE id='{shared_id}'),'all',100,0) WHERE id='{shared_id}';")
+  arb_code=Q.as_user(Q.UADM,f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans('{shared_code}','all',100,0) WHERE id='{shared_id}';")
   assert arb_code.returncode==0 and arb_code.stdout.strip()=='0',(arb_code.stdout,arb_code.stderr)
   (OUT/'plan-isolation-composition.json').write_text(json.dumps(dict(pre=plan_pre,post=plan_post,arbio_plan_visible=True,fsf_arbio_plan_visible=False,fsf_write_denied=fsf_write.stderr,shared_code_plan_id=shared_id,shared_code_invisible_to_arbio=True),indent=2)+'\n')
   checks.append(dict(test='plan tenant candidate PRE POST in same DB; seller positive FSF read write negative and cross tenant same code',status='PASS'))
