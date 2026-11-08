@@ -165,10 +165,7 @@ def main():
   assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted
   assert accepted['ready_for_production'] is False,'external resale must not open biological production'
   (OUT/'seller-acceptance.json').write_text(json.dumps(dict(promotion=promoted,order=accepted),indent=2)+'\n')
-  direct_operational=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
-  assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,direct_operational.stderr
-  assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
-  checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production and direct operational status stay closed',status='PASS'))
+  checks.append(dict(test='synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed',status='PASS'))
 
   # Nova ponte de revenda: gerada no espelho a partir dos corpos recém-instalados.
   # Nenhum writer privado recebe grant de cliente; o gate começa e termina fechado.
@@ -189,6 +186,11 @@ def main():
   checks.append(dict(test='resale candidate gate closed, no client EXECUTE and no direct ready OS bypass',status='PASS'))
 
   B.sql('UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;')
+  direct_operational=B.run_raw(B.T.actor(Q.UADM)+f"UPDATE public.partner_orders SET status='entregue' WHERE id='{order_id}';")
+  (OUT/'resale-direct-status-denial.json').write_text(json.dumps(dict(returncode=direct_operational.returncode,stdout=direct_operational.stdout,stderr=direct_operational.stderr),indent=2)+'\n')
+  assert direct_operational.returncode!=0 and 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in direct_operational.stderr,(direct_operational.returncode,direct_operational.stdout,direct_operational.stderr)
+  assert B.last(f"SELECT status::text FROM public.partner_orders WHERE id='{order_id}';")=='aprovado'
+  checks.append(dict(test='direct operational order status remains denied with resale candidate active',status='PASS'))
   denied=B.run_raw(resale_call(Q.UB,'resale-buyer-denied-0001'))
   assert denied.returncode!=0 and 'B2B_RESALE_ACTOR_DENIED' in denied.stderr,denied.stderr
   denied=B.run_raw(resale_call(Q.UADM,'resale-stale-cas-0001',expected='2000-01-01 00:00:00+00'))
