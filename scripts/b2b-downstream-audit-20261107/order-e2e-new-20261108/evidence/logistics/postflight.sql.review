@@ -71,7 +71,7 @@ DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_send_apply_v1(uui
 END$$;
 
 DO $$DECLARE p oid:=to_regprocedure('public.trg_entrega_sync_partner_order_fn()');BEGIN
- IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '39758c68832039dc98aba8903b7955c9' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'a24295a3fe797bdbd87c33deffb57589' THEN RAISE EXCEPTION 'B2B_RESALE_POST_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
  IF (SELECT r.rolname FROM pg_proc f JOIN pg_roles r ON r.oid=f.proowner WHERE f.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'B2B_RESALE_POST_OWNER_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
  IF (SELECT coalesce(f.proacl::text,'') FROM pg_proc f WHERE f.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'B2B_RESALE_POST_ACL_DRIFT public.trg_entrega_sync_partner_order_fn()';END IF;
 END$$;

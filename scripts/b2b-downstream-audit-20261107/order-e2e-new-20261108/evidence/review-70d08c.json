@@ -1,6 +1,6 @@
 {
   "review": "70d08c",
-  "candidate_sha256": "9c01d96a02cd5cb941ab19f3cbd1b718af4ad7949f30d370f382a82508ac5eb4",
+  "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20",
   "hosted": false,
   "results": [
     {
@@ -83,9 +83,34 @@
     },
     {
       "name": "last_two_deliveries_concurrent",
-      "status": "FAIL",
-      "error": "",
-      "traceback": "Traceback (most recent call last):\n  File \"/tmp/new-order-e2e-h5ev5hv6/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 44, in run\n    detail = fn()\n  File \"/tmp/new-order-e2e-h5ev5hv6/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py\", line 286, in last_two_deliveries_concurrent\n    assert self.B.last(f\"SELECT count(*) FROM public.production_timeline_events WHERE partner_order_id='{order['id']}' AND event_type='entrega_realizada';\") == '1'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+      "status": "PASS",
+      "detail": {
+        "distinct_connections_and_OS": true,
+        "actual_lock_wait": true,
+        "both_success": true,
+        "terminal_event_count": 1,
+        "states": [
+          {
+            "proof": "confirmado",
+            "stock": "expedido",
+            "receipt": 1,
+            "delivery": "entregue",
+            "quantity": 1,
+            "expedition": 1,
+            "receivables": 1
+          },
+          {
+            "proof": "confirmado",
+            "stock": "expedido",
+            "receipt": 1,
+            "delivery": "entregue",
+            "quantity": 1,
+            "expedition": 1,
+            "receivables": 1
+          }
+        ],
+        "replays_no_delta": true
+      }
     },
     {
       "name": "create_wait_revocation_role",

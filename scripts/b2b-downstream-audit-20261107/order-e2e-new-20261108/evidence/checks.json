@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "b945aba7-8fe4-43e2-8e94-5c079c3416b8"
+    "order_id": "263c83a4-13b2-43cc-bc67-2dc1cbed03ba"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "a2230fd4-5c19-4547-8959-fc6ea7083550"
+    "os_id": "56cbb5f0-c844-465a-9d30-ac88263898f4"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +68,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "3d20fccc-7a8c-45b5-9b69-c6de1c3d9952"
+    "delivery_id": "c686b248-be0b-421e-9a71-2af3d926259b"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "74d898c1-7a3b-4653-84b6-93600f5df036"
+    "delivery_id": "9d75d311-d70c-44d3-9a90-5d6292c07cb3"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -155,8 +155,34 @@
   },
   {
     "test": "review70 last_two_deliveries_concurrent",
-    "status": "FAIL",
-    "detail": ""
+    "status": "PASS",
+    "detail": {
+      "distinct_connections_and_OS": true,
+      "actual_lock_wait": true,
+      "both_success": true,
+      "terminal_event_count": 1,
+      "states": [
+        {
+          "proof": "confirmado",
+          "stock": "expedido",
+          "receipt": 1,
+          "delivery": "entregue",
+          "quantity": 1,
+          "expedition": 1,
+          "receivables": 1
+        },
+        {
+          "proof": "confirmado",
+          "stock": "expedido",
+          "receipt": 1,
+          "delivery": "entregue",
+          "quantity": 1,
+          "expedition": 1,
+          "receivables": 1
+        }
+      ],
+      "replays_no_delta": true
+    }
   },
   {
     "test": "review70 create_wait_revocation_role",
@@ -241,12 +267,12 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "e23c1d16-c232-4692-a382-b499865c27b7"
+    "delivery_id": "a53a8fdd-e173-4e44-ac74-cd5fe2776ceb"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
     "status": "PASS",
-    "candidate_sha256": "9c01d96a02cd5cb941ab19f3cbd1b718af4ad7949f30d370f382a82508ac5eb4"
+    "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20"
   },
   {
     "test": "ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback",
