@@ -1,0 +1,143 @@
+{
+  "status": "PASS",
+  "scope": "PostgreSQL descartável; baseline restrita POSPLANOS; não é prova JWT/RLS/Storage",
+  "source": "seis corpos LIVE fornecidos pelo proprietário + geradores canônicos versionados; migração ampla NÃO reaplicada",
+  "guard_capture": "live-catalog-guards-20261108.sql.capture",
+  "guard_capture_sha256": "8e7c2859843d6f4eb39e09e37d49be19c16a8a0c8c530b61ab6cbf26ebe4addb",
+  "canonical_generator_sha256": {
+    "fence_section.py": "e229297ba8b7965caab923cb935dea4fbc36a7fa7a64969e1c6ec2595006d561",
+    "01-migrate.sql.review#proximo_codigo": "b1ccce80d8a49cd34dc31d8e3d41e5322b942ab8c3da65b70287cad840bea032"
+  },
+  "synthetic_seam": "schema canônico mínimo de apresentação, ledger local e substituição dos seis triggers nomeados; nenhuma costura entra nos candidatos",
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "86711a2f96fee0a3d0f9c02b55c55bcd",
+      "signature": "platform_private.entregas_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "874c9ca8b5b4e307cf995a0197f98efc",
+      "signature": "platform_private.estoque_produto_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "319c7132fc1db027c3b1cb27b0fed525",
+      "signature": "platform_private.lab_assert_manufacturable(uuid,uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "6be8ec990e68be52e98eb7e08743865d",
+      "signature": "platform_private.lab_item_is_manufacturable(uuid,uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "0fc1d2741a73a92ade8e558e3dd58c20",
+      "signature": "platform_private.lotes_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "8abd58791e7e27336b07e648cdef35e7",
+      "signature": "platform_private.ordens_servico_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "d53f9827e3b5504e632fffe9949fa8c4",
+      "signature": "platform_private.produto_etiquetas_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "2e25fe68cf66a79fbc1d2eecee8b20e9",
+      "signature": "platform_private.programacao_producao_catalog_tenant_guard()"
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "000c3dca88749872a462cf441bca8495",
+      "signature": "public.proximo_codigo(text,text)"
+    }
+  ],
+  "relations": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres,anon=r/postgres,authenticated=r/postgres}",
+      "table": "clientes"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres}",
+      "table": "entrega_comprovantes"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres}",
+      "table": "entregas"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres}",
+      "table": "ordens_servico"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}",
+      "table": "organizations"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres}",
+      "table": "produto_etiquetas"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres,anon=r/postgres,authenticated=r/postgres}",
+      "table": "profiles"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxt/postgres}",
+      "table": "programacao_producao"
+    }
+  ],
+  "triggers": [
+    {
+      "name": "a000_entregas_catalog_tenant_guard",
+      "table": "entregas",
+      "enabled": "O",
+      "function": "platform_private.entregas_catalog_tenant_guard()",
+      "definition": "CREATE TRIGGER a000_entregas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.entregas_catalog_tenant_guard()",
+      "function_md5": "86711a2f96fee0a3d0f9c02b55c55bcd"
+    },
+    {
+      "name": "a000_estoque_produto_catalog_tenant_guard",
+      "table": "estoque_produto",
+      "enabled": "O",
+      "function": "platform_private.estoque_produto_catalog_tenant_guard()",
+      "definition": "CREATE TRIGGER a000_estoque_produto_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.estoque_produto_catalog_tenant_guard()",
+      "function_md5": "874c9ca8b5b4e307cf995a0197f98efc"
+    },
+    {
+      "name": "a000_lotes_catalog_tenant_guard",
+      "table": "lotes",
+      "enabled": "O",
+      "function": "platform_private.lotes_catalog_tenant_guard()",
+      "definition": "CREATE TRIGGER a000_lotes_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.lotes_catalog_tenant_guard()",
+      "function_md5": "0fc1d2741a73a92ade8e558e3dd58c20"
+    },
+    {
+      "name": "a000_ordens_servico_catalog_tenant_guard",
+      "table": "ordens_servico",
+      "enabled": "O",
+      "function": "platform_private.ordens_servico_catalog_tenant_guard()",
+      "definition": "CREATE TRIGGER a000_ordens_servico_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.ordens_servico_catalog_tenant_guard()",
+      "function_md5": "8abd58791e7e27336b07e648cdef35e7"
+    },
+    {
+      "name": "a000_produto_etiquetas_catalog_tenant_guard",
+      "table": "produto_etiquetas",
+      "enabled": "O",
+      "function": "platform_private.produto_etiquetas_catalog_tenant_guard()",
+      "definition": "CREATE TRIGGER a000_produto_etiquetas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.produto_etiquetas FOR EACH ROW EXECUTE FUNCTION platform_private.produto_etiquetas_catalog_tenant_guard()",
+      "function_md5": "d53f9827e3b5504e632fffe9949fa8c4"
+    },
+    {
+      "name": "a000_programacao_producao_catalog_tenant_guard",
+      "table": "programacao_producao",
+      "enabled": "O",
+      "function": "platform_private.programacao_producao_catalog_tenant_guard()",
+      "definition": "CREATE TRIGGER a000_programacao_producao_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.programacao_producao_catalog_tenant_guard()",
+      "function_md5": "2e25fe68cf66a79fbc1d2eecee8b20e9"
+    }
+  ]
+}
