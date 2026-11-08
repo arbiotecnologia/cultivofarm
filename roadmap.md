@@ -1,3 +1,8 @@
+## 08/11 14:26 — Achados reais na prévia original ARBio
+- [ ] Continuar primeiro o E2E local: corrigir no candidato a autoridade vendedora em `stock_p1_guard` e repetir reserva→expedição→entrega/cancelamento, negativos, regressão manual e POST/rollback.
+- [ ] Investigar a perda de `valid_until=2026-11-15` no plano sintético `TESTE-FLUXO-20261108`: separar DOM/estado/evento/payload/servidor e automação, preparar regressão com datas preenchidas, submit e reabertura. Não alterar o plano LIVE nem completar sua desativação; sem hosted/publicação.
+- [ ] Investigar comprador novo sem condições e botão Enviar desabilitado; carrinho local de 1 saco 25 kg/R$10 não foi enviado. Não criar condição, pedido ou efeito externo.
+
 ## 08/11 14:07 — Configuração financeira nova com contenção manual
 - [x] E2E local foi executado primeiro e suas evidências ficaram separadas. A ponte avançou até OS/compra positivas, mas a reserva B2B falhou em `stock_p1_guard`/`ESTQ_REFERENCE_FORBIDDEN`; run exit 1, sem expedição/entrega/cancelamento ou POST/rollback logístico concluídos.
 - [x] Formulário sem configuração inicia `auto_generate_receivable=false` e `billing_trigger=manual`; demais valores, existentes e CAS preservados. Ausência/abertura não gravam; salvar explícito usa `p_expected=NULL`. Três arquivos/47 testes PASS, typecheck exit 0 e build OK 14:24:36. Evidência separada `ui-safe-defaults-1407/`; sem hosted/publicação/envios/cobranças. Fato auditado do parceiro é configuração sintética específica, não nova regra comercial: recebível somente por NF autorizada continua pendente.
