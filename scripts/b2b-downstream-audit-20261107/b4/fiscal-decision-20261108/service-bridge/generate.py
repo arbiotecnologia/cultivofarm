@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib
 import json
 import re
+import runpy
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[4]
