@@ -80,7 +80,7 @@ def lock_revocation(name, holder_sql, worker_sql, revoke_sql, holder_end="COMMIT
     run(revoke_sql)
     worker_result = finish_async(worker)
     holder_result = finish_async(holder)
-    row = {"name": name, "lock_observed": observed, "worker": worker_result, "holder": holder_result, "audit_before": audit_before}
+    row = {"name": name, "lock_observed": observed, "worker": worker_result, "holder": holder_result, "audit_before": audit_before, "audit_ids_before": audit_ids_before}
     REVIEW_RESULTS.append(row)
     return row
 
