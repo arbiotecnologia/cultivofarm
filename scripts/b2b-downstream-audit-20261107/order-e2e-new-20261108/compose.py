@@ -55,7 +55,7 @@ def main():
   released=json.loads([x for x in B.sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {C.G.RPC} TO authenticated;'+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   confirmation_out=OUT/'delivery-confirmation';confirmation_out.mkdir(exist_ok=True)
   C.G.write(pre,post,released,out=confirmation_out)
-  current_scope.rewrite_confirmation(confirmation_out,C.STATE)
+  current_scope.rewrite_confirmation(confirmation_out,C.G.STATE)
   B.sql((confirmation_out/'install.sql.review').read_text())
   S=load('new_send',C.H/'send/assemble.py')
   pre=json.loads(B.last(S.STATE+'::text;'))
