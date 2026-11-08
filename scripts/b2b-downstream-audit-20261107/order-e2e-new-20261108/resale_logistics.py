@@ -228,9 +228,9 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
     body = one(body, " IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN", " SELECT partner_id INTO v_partner FROM public.partner_orders WHERE id=v_os.partner_order_id;\n IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN", "group partner")
     body = one(body, " PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org FOR SHARE;\n IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", " IF p_origem='manual' THEN PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org FOR SHARE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n ELSIF v_os.cliente_id IS NOT NULL OR v_partner IS NULL THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;", "group client")
     body = one(body, """IF v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'manual'
-     OR v_row.reservado_para_cliente_id IS DISTINCT FROM v_os.cliente_id OR v_row.reservado_para_partner_id IS NOT NULL
-     OR v_row.reservado_para_partner_order_id IS NOT NULL OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
-     OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric THEN RAISE EXCEPTION 'DELIVERY_RESERVATION_NOT_OWNED' USING ERRCODE='PT409'; END IF;""", """IF (p_origem='manual' AND (v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'manual'
+    OR v_row.reservado_para_cliente_id IS DISTINCT FROM v_os.cliente_id OR v_row.reservado_para_partner_id IS NOT NULL
+    OR v_row.reservado_para_partner_order_id IS NOT NULL OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
+    OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric THEN RAISE EXCEPTION 'DELIVERY_RESERVATION_NOT_OWNED' USING ERRCODE='PT409'; END IF;""", """IF (p_origem='manual' AND (v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'manual'
       OR v_row.reservado_para_cliente_id IS DISTINCT FROM v_os.cliente_id OR v_row.reservado_para_partner_id IS NOT NULL
       OR v_row.reservado_para_partner_order_id IS NOT NULL OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
       OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric))
