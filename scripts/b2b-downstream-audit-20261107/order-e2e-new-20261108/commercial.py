@@ -34,7 +34,7 @@ def apply(driver, load, root, out):
      if B.last(f"SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='{t['schema']}' AND table_name='{t['name']}' AND column_name='{c['name']}');")=='f':
       B.sql(f'ALTER TABLE {obj} ADD COLUMN "{c["name"]}" {c["type"]}'+((' DEFAULT '+c['default']) if c['default'] else '')+';')
   # Economic functions retain their exact B3 bodies. h15 and physical helpers stay original.
-  keep={'h15_actor_organization','tg_create_default_pfs'}
+  keep={'h15_actor_organization','tg_create_default_pfs','has_role','is_platform_superadmin','get_user_partner_id','update_updated_at_column'}
   for f in meta['functions']:
    if f['name'] in keep:continue
    B.sql(f['body']+';')
@@ -49,7 +49,7 @@ def apply(driver, load, root, out):
     if name=='organizations':row.update(nome='LOCAL B3',status='ativa')
     if name=='partner_accounts':row.update(razao_social='LOCAL B3 PARTNER')
     if name=='produtos':row.update(tipo='solo' if row['id']==Q.SP.SOL else 'inseticida',familia_catalogo='fertilizante_adubo' if row['id']==Q.SP.SOL else 'quimico')
-    cols=list(row);values=','.join(lit(row[c])+'::'+next(c0['type'] for t in meta['tables'] if t['name']==name for c0 in t['columns'] if c0['name']==c) if row[c] is not None and c not in ('nome','senha_provisoria','razao_social','tipo','familia_catalogo') else ('NULL' if row[c] is None else lit(row[c])) for c in cols)
+    cols=list(row)
     # JSONB populate keeps native arrays/json/numeric casts intact.
     B.sql('SET session_replication_role=replica; INSERT INTO '+obj+' ('+','.join('"'+c+'"' for c in cols)+') SELECT '+','.join('"'+c+'"' for c in cols)+' FROM jsonb_populate_record(NULL::'+obj+','+lit(json.dumps(row))+'::jsonb) ON CONFLICT DO NOTHING; SET session_replication_role=origin;')
   for t in meta['triggers']:
