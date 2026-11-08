@@ -1,0 +1,253 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "status": "PASS",
+  "checks": 58,
+  "results": [
+    {
+      "name": "ANTES: FSF lê planos ARBio pela RPC admin",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES: FSF lê ARBio pela listagem operacional admin",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES: configuração B3 FSF expõe plano ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES: FSF altera metadados ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "ANTES: escrita indevida confirmada",
+      "status": "PASS"
+    },
+    {
+      "name": "PRE íntegro",
+      "status": "PASS"
+    },
+    {
+      "name": "Instalação candidata transacional",
+      "status": "PASS"
+    },
+    {
+      "name": "proveniência A resolvida",
+      "status": "PASS"
+    },
+    {
+      "name": "proveniência B resolvida",
+      "status": "PASS"
+    },
+    {
+      "name": "família ambígua permanece NULL",
+      "status": "PASS"
+    },
+    {
+      "name": "POST íntegro",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: ARBio lista somente seus dois planos",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: FSF lista somente seu plano",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: FSF não lê ARBio operacionalmente",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: configuração B3 FSF não expõe ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: leitura direta FSF isolada por RLS",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: comprador ARBio só lê plano publicado vinculado",
+      "status": "PASS"
+    },
+    {
+      "name": "DEPOIS: comprador FSF só lê seu plano",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF nega versão ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF nega metadados ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF nega ativação ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF nega padrão ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF nega reordenação mista",
+      "status": "PASS"
+    },
+    {
+      "name": "reordenação negada não altera A",
+      "status": "PASS"
+    },
+    {
+      "name": "metadados negados não alteram A",
+      "status": "PASS"
+    },
+    {
+      "name": "ARBio cria versão própria",
+      "status": "PASS"
+    },
+    {
+      "name": "versão herda tenant ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "versão ARBio invisível para FSF",
+      "status": "PASS"
+    },
+    {
+      "name": "ARBio define padrão próprio",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF define e lê somente seu padrão",
+      "status": "PASS"
+    },
+    {
+      "name": "padrões pertencem a tenants distintos",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF cria plano com tenant próprio",
+      "status": "PASS"
+    },
+    {
+      "name": "plano criado por FSF não aparece para ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "tenant do plano é imutável",
+      "status": "PASS"
+    },
+    {
+      "name": "atribuição cruzada B para plano A negada",
+      "status": "PASS"
+    },
+    {
+      "name": "atribuição A para plano B negada",
+      "status": "PASS"
+    },
+    {
+      "name": "matriz cruzada negada",
+      "status": "PASS"
+    },
+    {
+      "name": "simulação de matriz cruzada negada",
+      "status": "PASS"
+    },
+    {
+      "name": "simulação legada comprador A com plano B negada",
+      "status": "PASS"
+    },
+    {
+      "name": "leitura direta de atribuição ambígua fechada",
+      "status": "PASS"
+    },
+    {
+      "name": "histórico de atribuição ambígua fechado",
+      "status": "PASS"
+    },
+    {
+      "name": "FSF não publica condição para plano ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "ARBio publica condição própria",
+      "status": "PASS"
+    },
+    {
+      "name": "ARBio atribui condição ao próprio parceiro",
+      "status": "PASS"
+    },
+    {
+      "name": "ARBio cria atribuição comercial própria",
+      "status": "PASS"
+    },
+    {
+      "name": "ARBio publica atribuição comercial própria",
+      "status": "PASS"
+    },
+    {
+      "name": "comprador ARBio resolve meio publicado",
+      "status": "PASS"
+    },
+    {
+      "name": "comprador FSF não resolve condição ARBio",
+      "status": "PASS"
+    },
+    {
+      "name": "revogação B3 fecha meio",
+      "status": "PASS"
+    },
+    {
+      "name": "comprador perde condição após revogação",
+      "status": "PASS"
+    },
+    {
+      "name": "revogação do vínculo comprador fecha leitura",
+      "status": "PASS"
+    },
+    {
+      "name": "perfil admin revogado fecha leitura",
+      "status": "PASS"
+    },
+    {
+      "name": "perfil admin revogado fecha escrita",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback fecha RPC admin",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback fecha leitura comprador",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback fecha configuração B3",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback fecha leitura direta",
+      "status": "PASS"
+    },
+    {
+      "name": "rollback preserva planos/atribuições/versões",
+      "status": "PASS"
+    }
+  ],
+  "synthetic_seams": [
+    "Auth por request.jwt.claim.sub",
+    "h15/platform_actor_access_ready reduzidos",
+    "C2 order guards e feature flag mínimos",
+    "resolver de preço e tabelas fora do recorte reduzidos",
+    "GRANT SELECT em fixture para exercitar RLS; produção não recebe GRANT"
+  ],
+  "not_proven": [
+    "JWT/PostgREST/RLS/Storage hospedados",
+    "concorrência real de três sessões",
+    "E2E de pedido",
+    "instalação em produção"
+  ],
+  "candidate_sha256": "1d6839b25c533282feee3844cbb69039958b263c249f67c15b6929429ce5b4d9"
+}
