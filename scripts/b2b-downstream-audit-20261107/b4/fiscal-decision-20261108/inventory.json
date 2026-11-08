@@ -52,7 +52,7 @@
       "owner": "postgres",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
       "source": "scripts/delivery-atomic-hardening-20261030/capture/current.json",
-      "current_role": "EXCECAO_MANUAL_GENERICa",
+      "current_role": "EXCECAO_MANUAL_GENERICA",
       "decision_use": "Reutilizar somente após contrato de justificativa/origem/antiduplicidade"
     },
     {
