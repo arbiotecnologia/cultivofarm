@@ -88,7 +88,7 @@ SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_
 ROLLBACK;
 """
     for fragment in (
-      "p.proname='rpc_entrega_confirmar_manual_v1'",
+      "p.proname IN ('rpc_entrega_confirmar_manual_v1','rpc_b2b_resale_os_create_v1','rpc_b2b_resale_os_availability_v1')",
       "'a4d47ccf5d116141ed46e9de9ea7eeaa'",
       "'97d476cc795d75b829f305f1e64d4e62'",
       "'e374f0ba1698b37523b890dc91682eaf'",
