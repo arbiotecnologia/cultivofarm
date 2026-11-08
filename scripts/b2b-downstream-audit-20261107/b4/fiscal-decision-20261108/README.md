@@ -53,6 +53,8 @@ Resultado em PostgreSQL 17 descartável: **128/128 checks**, exit 0. Inclui parc
 
 Esses resultados são **prova de componente com atestações fiscais sintéticas**. Não são somados a execuções históricas e não certificam a ponte fiscal real.
 
+A suíte geral `bun run test` também foi iniciada, mas excedeu o limite de dez minutos do ambiente e não produziu resumo final; o log parcial está preservado em `evidence/vitest.txt` e não é contado como PASS. Nenhum arquivo TypeScript foi alterado nesta etapa. O build automático da prévia permaneceu `build OK`.
+
 ## Lacunas que continuam bloqueando
 
 - **G1 — ponte ausente:** a autorização de `fiscal_invoices` ainda não cria a alocação B4.
