@@ -661,6 +661,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_sefaz_transmissions(id uuid PRIMARY KEY
  xml_run_id uuid,idempotency_key text,request_fingerprint text,environment_code text DEFAULT '2',endpoint_url text,correlation_id uuid DEFAULT gen_random_uuid(),created_at timestamptz DEFAULT now(),
  state text,outcome text,c_stat text,x_motivo text,ch_nfe text,n_prot text,n_rec text,ambiente_retorno text,dh_recbto timestamptz,
  error_code text,response_summary jsonb,completed_at timestamptz);
+ALTER TABLE public.fiscal_sefaz_transmissions ADD COLUMN IF NOT EXISTS xml_run_id uuid,ADD COLUMN IF NOT EXISTS idempotency_key text,
+ ADD COLUMN IF NOT EXISTS request_fingerprint text,ADD COLUMN IF NOT EXISTS environment_code text DEFAULT '2',ADD COLUMN IF NOT EXISTS endpoint_url text,
+ ADD COLUMN IF NOT EXISTS correlation_id uuid DEFAULT gen_random_uuid(),ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),table_name text,record_id uuid,action text,old_values jsonb,new_values jsonb,changed_by uuid);""")
         captured_tx_guard = next(x["body"] for x in json.loads(CAPTURE.read_text())["functions"] if x["name"] == "fn_fiscal_sefaz_tx_guard")
         B3.psql(captured_tx_guard + ";DROP TRIGGER IF EXISTS trg_fiscal_sefaz_tx_guard ON public.fiscal_sefaz_transmissions;CREATE TRIGGER trg_fiscal_sefaz_tx_guard BEFORE DELETE OR UPDATE ON public.fiscal_sefaz_transmissions FOR EACH ROW EXECUTE FUNCTION public.fn_fiscal_sefaz_tx_guard();")
