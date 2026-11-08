@@ -40,7 +40,7 @@ def main():
     functions = {row["signature"]: row for row in inventory["reused_functions"]}
     capture = json.loads(builder.CURRENT.read_text())
     bodies = {f["signature"]: f.get("body", "") for f in capture.get("functions", [])}
-    authorization = "public.rpc_fiscal_invoice_apply_authorization_v1(_invoice_id uuid, _ch_nfe text, _n_prot text, _dh_recbto timestamptz, _c_stat text, _x_motivo text, _transmission_id uuid)"
+    authorization = "public.rpc_fiscal_invoice_apply_authorization_v1(_invoice_id uuid, _access_key text, _protocol text, _dh_recbto timestamp with time zone, _c_stat text, _x_motivo text, _transmission_id uuid)"
     body = bodies[authorization]
     check("lacuna da ponte fiscal reproduzida na captura", "b2b_allocate_document" not in body and "accounts_receivable" not in body)
     manual = bodies["public.rpc_create_financial_title(p_kind text, p_payload jsonb)"]

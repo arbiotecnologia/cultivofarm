@@ -41,7 +41,7 @@ def build():
         "public.rpc_create_financial_title(p_kind text, p_payload jsonb)",
         "public.fn_generate_recurring_title(_template_id uuid, _reference_date date, _is_manual boolean)",
         "public.fn_generate_receivable_installments()",
-        "public.rpc_fiscal_invoice_apply_authorization_v1(_invoice_id uuid, _ch_nfe text, _n_prot text, _dh_recbto timestamptz, _c_stat text, _x_motivo text, _transmission_id uuid)",
+        "public.rpc_fiscal_invoice_apply_authorization_v1(_invoice_id uuid, _access_key text, _protocol text, _dh_recbto timestamp with time zone, _c_stat text, _x_motivo text, _transmission_id uuid)",
         "public.rpc_fiscal_sefaz_transmit_record_v1(_transmission_id uuid, _state text, _patch jsonb)",
         "public.rpc_upsert_fiscal_invoice_manual(p_receivable_id uuid, p_payload jsonb)",
         "public.rpc_cancel_accounts_receivable(p_id uuid, p_reason text)",
