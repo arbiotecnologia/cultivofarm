@@ -1,0 +1,38 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "source": "supabase.read_query SELECT pg_get_functiondef/pg_get_triggerdef, 2026-11-08",
+  "postgres_version": "17.6",
+  "functions": [
+    {
+      "signature": "public.tg_create_default_pfs()",
+      "definition": "CREATE OR REPLACE FUNCTION public.tg_create_default_pfs()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n -- Registration does not authorize financial configuration. The explicit, guarded writer owns that step.\n RETURN NEW;\nEND\n$function$\n",
+      "definition_md5": "76bd832ba608662d84f1641f8a3b8226",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "proconfig": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.c2p1_settings_fence()",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.c2p1_settings_fence()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF TG_OP='DELETE' OR NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true)\n OR NOT platform_private.has_ticket('c2p1_settings_write',NEW.partner_id) THEN\n RAISE EXCEPTION 'C2P1_SETTINGS_WRITE_CLOSED' USING ERRCODE='42501'; END IF;\n IF TG_OP='UPDATE' AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.partner_id IS DISTINCT FROM OLD.partner_id\n OR NEW.created_at IS DISTINCT FROM OLD.created_at) THEN\n RAISE EXCEPTION 'C2P1_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;\n IF (SELECT count(*) FROM public.payment_methods WHERE active IS TRUE AND name=NEW.default_payment_method)<>1\n THEN RAISE EXCEPTION 'C2P1_PAYMENT_METHOD_INVALID' USING ERRCODE='22023'; END IF;\n IF NEW.credit_limit::text IN ('NaN','Infinity','-Infinity') OR NEW.credit_limit<0\n OR NEW.credit_alert_threshold_1::text IN ('NaN','Infinity','-Infinity')\n OR NEW.credit_alert_threshold_2::text IN ('NaN','Infinity','-Infinity')\n OR NEW.credit_alert_threshold_1 NOT BETWEEN 0 AND 100 OR NEW.credit_alert_threshold_2 NOT BETWEEN 0 AND 100\n OR NEW.credit_alert_threshold_1>NEW.credit_alert_threshold_2\n THEN RAISE EXCEPTION 'C2P1_FINANCIAL_VALUES_INVALID' USING ERRCODE='22023'; END IF;\n RETURN NEW;\nEND $function$\n",
+      "definition_md5": "f87cc2894dc551d242c2586f17e2cdd4",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "proconfig": [
+        "search_path=\"\""
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "definition": "CREATE TRIGGER trg_create_default_pfs AFTER INSERT ON public.partner_accounts FOR EACH ROW EXECUTE FUNCTION tg_create_default_pfs()",
+      "enabled": "O"
+    },
+    {
+      "definition": "CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR DELETE OR UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence()",
+      "enabled": "O"
+    }
+  ],
+  "scope": "metadata only; no data writes or row-level fixture queries"
+}
