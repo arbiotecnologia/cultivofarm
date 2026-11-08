@@ -936,7 +936,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
 CREATE TRIGGER zz_b4_test_pause_authorized_tx BEFORE UPDATE ON public.fiscal_sefaz_transmissions
  FOR EACH ROW EXECUTE FUNCTION public.b4_test_pause_authorized_tx();""")
         def race_service_sql(sql):
-            return server_run("", "SET ROLE service_role;SET deadlock_timeout='100ms';SET lock_timeout='6s';" + sql)
+            # deadlock_timeout exige superusuário; configura antes de SET ROLE.
+            return server_run("", "SET deadlock_timeout='100ms';SET lock_timeout='6s';SET ROLE service_role;" + sql)
         def lock_race(invoice_id, transmission_id, protocol, direct_sql):
             patch = {"cStat":"100","nProt":protocol,"chNFe":access_key,"xMotivo":"AUTORIZADO LOCK RACE","tpAmb":"2","dhRecbto":"2027-02-01T14:00:00Z"}
             log_path = tmp / "log"
