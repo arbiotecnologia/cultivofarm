@@ -2,13 +2,14 @@
 """Assemble review-only POSPLANOS rollout from fresh disposable evidence; no hosted I/O."""
 import hashlib
 import json
+import os
 import shutil
 from pathlib import Path
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[2]
-E = H / 'evidence'
-OUT = H / 'production-rollout-2154'
+E = Path(os.environ.get('NEW_E2E_OUT', str(H / 'evidence')))
+OUT = H / 'production-rollout-posplans-20261108'
 REF = 'swzpzcwiasxmjutrmvkm'
 
 

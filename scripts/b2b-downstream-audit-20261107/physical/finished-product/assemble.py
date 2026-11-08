@@ -2,6 +2,7 @@
 """Gera o candidato de produto acabado com corpos/pins capturados, sem hosted."""
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -9,9 +10,10 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
 DELIVERY = ROOT / "scripts/delivery-atomic-hardening-20261030"
 CONF = DELIVERY / "confirmation"
-BASE = json.loads((HERE / "baseline.json").read_text())
+BASE = json.loads(Path(os.environ.get("FINISHED_BASELINE", str(HERE / "baseline.json"))).read_text())
 LIVE_FACTS = json.loads((HERE / "live-entry-guards-20261107T1737Z.json").read_text())
-CURRENT = json.loads((DELIVERY / "capture/current.json").read_text())
+CURRENT = json.loads(Path(os.environ.get("FINISHED_CURRENT_CAPTURE", str(DELIVERY / "capture/current.json"))).read_text())
+OUT = Path(os.environ.get("FINISHED_REVIEW_OUT", str(HERE)))
 
 
 def extract(text, qualified):

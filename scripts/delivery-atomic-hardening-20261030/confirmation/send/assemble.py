@@ -63,7 +63,8 @@ def candidate():
  CREATE TRIGGER zzzzz_send_exact AFTER INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_send_exact_guard_v1();
  """
  return permits+body+barrier.replace(anchor,branch+anchor)
-def write(pre,post):
+def write(pre,post,out=None):
+ out=Path(out) if out is not None else H;out.mkdir(parents=True,exist_ok=True)
  guard=lambda s,n:"DO $guard$ BEGIN IF ("+STATE+") IS DISTINCT FROM '"+json.dumps(s).replace("'","''")+"'::jsonb THEN RAISE EXCEPTION '"+n+"';END IF;END $guard$;\n"
- for name,text in [('candidate',candidate()),('preflight',guard(pre,'SEND_PRE_DRIFT')),('postflight',guard(post,'SEND_POST_DRIFT')),('install','BEGIN;\n'+guard(pre,'SEND_PRE_DRIFT')+candidate()+guard(post,'SEND_POST_DRIFT')+'COMMIT;'),('release',"DO $closed$ BEGIN RAISE EXCEPTION 'SEND_RELEASE_NO_GO_INDEPENDENT_REVIEW';END $closed$;"),('rollback',f'BEGIN;REVOKE EXECUTE ON FUNCTION {RPC} FROM PUBLIC,anon,authenticated,service_role;COMMIT;')]: (H/(name+'.sql.review')).write_text(text+'\n')
- for name,data in [('pre-state',pre),('post-state',post)]: (H/(name+'.json')).write_text(json.dumps(data,indent=2)+'\n')
+ for name,text in [('candidate',candidate()),('preflight',guard(pre,'SEND_PRE_DRIFT')),('postflight',guard(post,'SEND_POST_DRIFT')),('install','BEGIN;\n'+guard(pre,'SEND_PRE_DRIFT')+candidate()+guard(post,'SEND_POST_DRIFT')+'COMMIT;'),('release',"DO $closed$ BEGIN RAISE EXCEPTION 'SEND_RELEASE_NO_GO_INDEPENDENT_REVIEW';END $closed$;"),('rollback',f'BEGIN;REVOKE EXECUTE ON FUNCTION {RPC} FROM PUBLIC,anon,authenticated,service_role;COMMIT;')]: (out/(name+'.sql.review')).write_text(text+'\n')
+ for name,data in [('pre-state',pre),('post-state',post)]: (out/(name+'.json')).write_text(json.dumps(data,indent=2)+'\n')
