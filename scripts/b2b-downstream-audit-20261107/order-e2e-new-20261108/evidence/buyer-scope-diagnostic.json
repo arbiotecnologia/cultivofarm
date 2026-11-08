@@ -1,4 +1,43 @@
 {
+  "versions": null,
+  "overrides": [
+    {
+      "id": "00000000-0000-0000-0000-000000000803",
+      "mode": "GRANT",
+      "reason": "FIXTURE LOCAL E2E",
+      "ends_at": null,
+      "ended_at": null,
+      "ended_by": null,
+      "starts_at": "2026-11-07T13:58:08.818461+00:00",
+      "created_at": "2026-11-08T13:58:08.818461+00:00",
+      "created_by": "00000000-0000-0000-0000-000000000024",
+      "end_reason": null,
+      "feature_id": "00000000-0000-0000-0000-000000000801",
+      "updated_at": "2026-11-08T13:58:08.818461+00:00",
+      "limit_value": null,
+      "idempotency_key": null,
+      "organization_id": "00000000-0000-0000-0000-000000000001",
+      "end_idempotency_key": null
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000804",
+      "mode": "GRANT",
+      "reason": "FIXTURE LOCAL E2E",
+      "ends_at": null,
+      "ended_at": null,
+      "ended_by": null,
+      "starts_at": "2026-11-07T13:58:08.822157+00:00",
+      "created_at": "2026-11-08T13:58:08.822157+00:00",
+      "created_by": "00000000-0000-0000-0000-000000000024",
+      "end_reason": null,
+      "feature_id": "00000000-0000-0000-0000-000000000802",
+      "updated_at": "2026-11-08T13:58:08.822157+00:00",
+      "limit_value": null,
+      "idempotency_key": null,
+      "organization_id": "00000000-0000-0000-0000-000000000001",
+      "end_idempotency_key": null
+    }
+  ],
   "actor_scope": {
     "profile_ok": true,
     "has_catalog": false,
@@ -9,20 +48,21 @@
   },
   "buyer_links": [
     {
-      "id": "bf0769ac-58bd-4b45-9e0f-2ca22f87e330",
+      "id": "4aee1ad9-4d80-435f-b97f-eda8f26cdc73",
       "papel": "gestor",
       "user_id": "00000000-0000-0000-0000-000000000021",
       "version": 1,
       "tenant_id": "00000000-0000-0000-0000-000000000001",
-      "created_at": "2026-11-08T13:57:14.036858+00:00",
+      "created_at": "2026-11-08T13:58:06.020367+00:00",
       "partner_id": "00000000-0000-0000-0000-000000000011",
       "revoked_at": null,
       "revoked_by": null,
-      "valid_from": "2026-11-08T13:57:14.036858+00:00",
+      "valid_from": "2026-11-08T13:58:06.020367+00:00",
       "revoke_reason": null
     }
   ],
   "entitlements": null,
+  "subscriptions": null,
   "commercial_context": {
     "mode": "commercial_owner",
     "role": "parceiro_b2b",
@@ -34,7 +74,7 @@
     "partner_id": "00000000-0000-0000-0000-000000000011",
     "technician": false,
     "link_version": 1,
-    "profile_stamp": "2026-11-08T13:57:13.3471+00:00",
+    "profile_stamp": "2026-11-08T13:58:05.241287+00:00",
     "external_roles": [
       "parceiro_b2b"
     ],
@@ -45,5 +85,6 @@
   "valid_partner_user": true,
   "owner_order_allowed": false,
   "owner_plan_assigned": true,
+  "entitlement_resolver_md5": "7f4ec7facaebbdf35444dd490fdebe56",
   "seller_org_partner_is_null": true
 }
