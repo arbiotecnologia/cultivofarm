@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "85a5f28e-cc61-486d-9d5a-40baeda84c47"
+    "order_id": "64498f65-3bfb-48bd-b744-c189e0a87f83"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "7a43c84b-6df8-45c7-8122-36075c9c7973"
+    "os_id": "71e944f6-a492-4a7d-9c99-c60a0da9d408"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +68,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "52849e27-8710-4b14-a6c4-f25b3ade6bea"
+    "delivery_id": "665cf563-d63a-4911-866b-ce31159eaeef"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "e0212433-c1c8-4000-8751-def3ce97d6b1"
+    "delivery_id": "20abbdd5-a739-4516-af4d-c9929a3efddf"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -197,7 +197,7 @@
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "663d5eed-f863-476c-9c0f-40ab92655b59"
+    "delivery_id": "e96d59c5-e7d3-40b0-9831-26d4b7e96ee4"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
@@ -218,6 +218,14 @@
   },
   {
     "test": "fiscal fixture satisfies every required column and passes real NOT NULL CHECK FK trigger preflight in rolled back transaction",
+    "status": "PASS"
+  },
+  {
+    "test": "real H13 authorized callback and replay preserve one durable transmission with close pending; always-deny yields zero B4 document allocation snapshot or receivable",
+    "status": "PASS"
+  },
+  {
+    "test": "same fresh DB installs B4 and service bridge PRE POST after buyer seller logistics and plan controls; real always-deny preserved and positive fiscal receivable BLOCKED",
     "status": "PASS"
   },
   {
