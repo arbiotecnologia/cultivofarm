@@ -701,7 +701,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         authorized, authorized_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL)")
         check("retentativa autorizada gera um recebível B4 pela NF", authorized and authorized["applied"] and authorized.get("receivableId"), authorized_error or authorized)
         service_title = authorized and authorized["receivableId"]
-        check("título service-only não inventa ator humano e conserva vínculo NF", B3.psql(f"SELECT created_by IS NULL AND receivable_id='{service_title}' FROM public.fiscal_invoices WHERE id='{invoice_main}'").stdout.strip() == "t")
+        service_origin = B3.psql(f"SELECT coalesce((SELECT created_by::text FROM public.accounts_receivable WHERE id='{service_title}'),'<NULL>')||'|'||coalesce(receivable_id::text,'<NULL>') FROM public.fiscal_invoices WHERE id='{invoice_main}'").stdout.strip()
+        check("título service-only não inventa ator humano e conserva vínculo NF", service_origin == f"<NULL>|{service_title}", service_origin)
         check("parcialidade service-only consome somente o restante do pedido", residual(recovery_order) == 0, residual(recovery_order))
         replay, replay_error = service_json(f"public.rpc_fiscal_invoice_apply_authorization_v1('{invoice_main}','{access_key}','LOCAL-PROTOCOL',now(),'100','LOCAL',NULL)")
         check("retentativa da NF autorizada é replay sem duplicação", replay and replay["applied"] is False and replay["b2bReplay"] and replay["receivableId"] == service_title, replay_error or replay)
