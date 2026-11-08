@@ -18,7 +18,8 @@ def apply(driver, load, root, out):
     'types',(SELECT jsonb_agg(jsonb_build_object('schema',n.nspname,'name',t.typname,'labels',(SELECT jsonb_agg(e.enumlabel ORDER BY e.enumsortorder) FROM pg_enum e WHERE e.enumtypid=t.oid))) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE t.typtype='e' AND n.nspname='public'),
     'tables',(SELECT jsonb_agg(jsonb_build_object('schema',n.nspname,'name',c.relname,'columns',(SELECT jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull) ORDER BY a.attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped))) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='r' AND n.nspname IN ('public','platform_private')),
     'functions',(SELECT jsonb_agg(jsonb_build_object('schema',n.nspname,'name',p.proname,'signature',p.oid::regprocedure::text,'body',pg_get_functiondef(p.oid),'md5',md5(pg_get_functiondef(p.oid)),'acl',p.proacl::text)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private') AND p.prokind='f'),
-    'triggers',(SELECT jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid))) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal)
+    'triggers',(SELECT jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'definition',pg_get_triggerdef(t.oid))) FROM pg_trigger t JOIN pg_class c ON c.oid=c.oid AND c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal),
+    'constraints',(SELECT jsonb_agg(jsonb_build_object('schema',n.nspname,'table',r.relname,'name',c.conname,'definition',pg_get_constraintdef(c.oid))) FROM pg_constraint c JOIN pg_class r ON r.oid=c.conrelid JOIN pg_namespace n ON n.oid=r.relnamespace WHERE n.nspname IN ('public','platform_private') AND c.contype IN ('p','u'))
   )::text""").stdout.strip())
   (out/'new-b3-metadata.json').write_text(json.dumps(meta,indent=2)+'\n')
   def lit(s):return "'"+str(s).replace("'","''")+"'"
@@ -33,6 +34,10 @@ def apply(driver, load, root, out):
     for c in t['columns']:
      if B.last(f"SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='{t['schema']}' AND table_name='{t['name']}' AND column_name='{c['name']}');")=='f':
       B.sql(f'ALTER TABLE {obj} ADD COLUMN "{c["name"]}" {c["type"]}'+((' DEFAULT '+c['default']) if c['default'] else '')+';')
+  for c in meta['constraints'] or []:
+   obj=c['schema']+'.'+c['table']
+   if B.last(f"SELECT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='{obj}'::regclass AND conname='{c['name']}');")=='f':
+    B.sql(f'ALTER TABLE {obj} ADD CONSTRAINT "{c["name"]}" '+c['definition']+';')
   # Economic functions retain their exact B3 bodies. h15 and physical helpers stay original.
   keep={'h15_actor_organization','tg_create_default_pfs','has_role','is_platform_superadmin','get_user_partner_id','update_updated_at_column','b2b_actor_scope','b2b_internal_commercial_actor','c2_internal_order_target_reason','c2_order_actor_scope','c2_owner_order_guard','c2_attempt_dispatch_guard','c2_partner_order_attempt_authz','c2_order_internal_recipients','c2_owner_order_create_allowed','platform_actor_access_ready','entitlements_for_user','issue_ticket','has_ticket','c2_accounting_promotion_ok','c2p1_internal_actor','c2p1_settings_allowed','_notify_role','_saas_user_has_feature'}
   keep.update(f['name'] for f in meta['functions'] if ' LANGUAGE c' in f['body'])
