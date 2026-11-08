@@ -77,6 +77,8 @@ def _signature(schema: str, name: str, args: str) -> str:
 def _from_signature(signature: str) -> str:
     schema_name, args = signature.split("(", 1)
     assert args.endswith(")")
+    if "." not in schema_name:
+        schema_name = "public." + schema_name
     schema, name = schema_name.rsplit(".", 1)
     return _signature(schema, name, args[:-1])
 
