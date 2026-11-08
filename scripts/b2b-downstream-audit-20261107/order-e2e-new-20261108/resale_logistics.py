@@ -92,6 +92,35 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
 $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_valid_v1(public.ordens_servico) FROM PUBLIC,anon,authenticated,service_role;
 
+CREATE FUNCTION platform_private.b2b_resale_os_operational_valid_v1(o public.ordens_servico)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
+  AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
+  AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
+  AND o.fazenda_id IS NULL AND o.talhao_id IS NULL AND o.volume_total_ml IS NULL AND o.area_hectares IS NULL
+  AND EXISTS(
+   SELECT 1 FROM public.partner_orders po
+    JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=o.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   JOIN public.partner_order_items i ON i.id=o.partner_order_item_id AND i.order_id=po.id
+   JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=o.organization_id
+    AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+   WHERE po.id=o.partner_order_id AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+    AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
+    AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+    AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+    AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+    AND ((i.packaging_unidade_conteudo_snapshot IN ('kg','g') AND i.packaging_peso_liquido_kg_snapshot>0)
+      OR (i.packaging_unidade_conteudo_snapshot IN ('l','ml') AND i.packaging_peso_liquido_kg_snapshot IS NULL))
+  )) IS TRUE;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico) FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE FUNCTION platform_private.b2b_resale_delivery_lineage_valid_v1(s public.estoque_produto,e public.entregas,l public.lotes)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
