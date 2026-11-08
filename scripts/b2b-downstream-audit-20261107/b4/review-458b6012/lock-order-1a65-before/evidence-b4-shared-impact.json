@@ -27,7 +27,7 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 194,
+  "passed": 196,
   "total": 196,
   "checks": [
     {
@@ -776,13 +776,11 @@
     },
     {
       "name": "ANTES: H13 transmissão→nota contra H12 nota→transmissão produz deadlock real",
-      "ok": false,
-      "detail": "2026-11-08 19:20:23.727 UTC [4063] ERROR:  permission denied to set parameter \"deadlock_timeout\"\n2026-11-08 19:20:23.727 UTC [4063] STATEMENT:  SET deadlock_timeout='100ms';\n2026-11-08 19:20:23.985 UTC [4066] ERROR:  permission denied to set parameter \"deadlock_timeout\"\n2026-11-08 19:20:23.985 UTC [4066] STATEMENT:  SET deadlock_timeout='100ms';\n"
+      "ok": true
     },
     {
       "name": "corrida H13/H12 é recuperável sem apagar retorno externo",
-      "ok": false,
-      "detail": "{'nRec': None, 'cStat': '100', 'chNFe': '35261111111111111111111111111111111111111111', 'nProt': 'LOCK-H12-PROTOCOL', 'state': 'SUCCEEDED', 'outcome': 'AUTHORIZED', 'xMotivo': 'AUTORIZADO LOCK RACE', 'protocolCStat': '100', 'transmissionId': '00000000-0000-0000-0000-000000000447', 'reconciliationCode': 'FISCAL_AUTHORIZATION_CLOSE_PENDING', 'reconciliationPending': True}"
+      "ok": true
     },
     {
       "name": "corrida não-B2B não cria documento/título",

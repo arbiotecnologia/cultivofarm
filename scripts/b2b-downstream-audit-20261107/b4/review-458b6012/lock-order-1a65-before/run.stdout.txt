@@ -184,12 +184,8 @@ PASS replay autorizado não limpa error_code estranho ao fechamento
 PASS guarda real continua negando UPDATE terminal após os replays
 PASS H13 concorrente fora de ordem termina autorizado, com protocolo estável e erro estranho preservado
 PASS concorrência H13 não duplica NF, snapshot ou título
-FAIL ANTES: H13 transmissão→nota contra H12 nota→transmissão produz deadlock real :: 2026-11-08 19:20:23.727 UTC [4063] ERROR:  permission denied to set parameter "deadlock_timeout"
-2026-11-08 19:20:23.727 UTC [4063] STATEMENT:  SET deadlock_timeout='100ms';
-2026-11-08 19:20:23.985 UTC [4066] ERROR:  permission denied to set parameter "deadlock_timeout"
-2026-11-08 19:20:23.985 UTC [4066] STATEMENT:  SET deadlock_timeout='100ms';
-
-FAIL corrida H13/H12 é recuperável sem apagar retorno externo :: {'nRec': None, 'cStat': '100', 'chNFe': '35261111111111111111111111111111111111111111', 'nProt': 'LOCK-H12-PROTOCOL', 'state': 'SUCCEEDED', 'outcome': 'AUTHORIZED', 'xMotivo': 'AUTORIZADO LOCK RACE', 'protocolCStat': '100', 'transmissionId': '00000000-0000-0000-0000-000000000447', 'reconciliationCode': 'FISCAL_AUTHORIZATION_CLOSE_PENDING', 'reconciliationPending': True}
+PASS ANTES: H13 transmissão→nota contra H12 nota→transmissão produz deadlock real
+PASS corrida H13/H12 é recuperável sem apagar retorno externo
 PASS corrida não-B2B não cria documento/título
 PASS NF com tenant divergente do pedido é negada
 PASS NF estrangeira não gera documento/título
