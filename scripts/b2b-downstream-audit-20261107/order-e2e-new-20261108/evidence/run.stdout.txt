@@ -1,118 +1,118 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=3.0s
-CHECKPOINT sql_calls=100 elapsed=5.7s
-CHECKPOINT sql_calls=200 elapsed=8.6s
-CHECKPOINT sql_calls=300 elapsed=11.7s
-CHECKPOINT sql_calls=400 elapsed=14.7s
-CHECKPOINT sql_calls=500 elapsed=17.6s
-CHECKPOINT sql_calls=600 elapsed=20.3s
-CHECKPOINT sql_calls=700 elapsed=22.8s
-CHECKPOINT sql_calls=800 elapsed=25.2s
-CHECKPOINT sql_calls=900 elapsed=27.8s
-CHECKPOINT sql_calls=1000 elapsed=30.5s
-CHECKPOINT sql_calls=1100 elapsed=33.1s
-CHECKPOINT sql_calls=1200 elapsed=35.7s
-CHECKPOINT sql_calls=1300 elapsed=38.5s
-CHECKPOINT sql_calls=1400 elapsed=41.2s
-CHECKPOINT sql_calls=1500 elapsed=43.9s
-CHECKPOINT sql_calls=1600 elapsed=46.2s
-CHECKPOINT sql_calls=1700 elapsed=48.4s
-CHECKPOINT sql_calls=1800 elapsed=50.3s
-CHECKPOINT sql_calls=1900 elapsed=51.9s
-CHECKPOINT sql_calls=2000 elapsed=53.9s
-CHECKPOINT sql_calls=2100 elapsed=55.9s
-CHECKPOINT sql_calls=2200 elapsed=58.0s
-CHECKPOINT sql_calls=2300 elapsed=60.0s
-CHECKPOINT sql_calls=2400 elapsed=61.9s
-CHECKPOINT sql_calls=2500 elapsed=63.7s
-CHECKPOINT sql_calls=2600 elapsed=65.4s
-CHECKPOINT sql_calls=2700 elapsed=67.1s
-CHECKPOINT sql_calls=2800 elapsed=68.8s
-CHECKPOINT sql_calls=2900 elapsed=70.8s
-CHECKPOINT sql_calls=3000 elapsed=72.9s
-CHECKPOINT sql_calls=3100 elapsed=74.9s
-CHECKPOINT sql_calls=3200 elapsed=76.9s
-CHECKPOINT sql_calls=3300 elapsed=79.2s
-CHECKPOINT sql_calls=3400 elapsed=81.3s
-CHECKPOINT sql_calls=3500 elapsed=83.5s
-CHECKPOINT sql_calls=3600 elapsed=85.6s
-CHECKPOINT sql_calls=3700 elapsed=87.8s
-CHECKPOINT sql_calls=3800 elapsed=89.8s
-CHECKPOINT sql_calls=3900 elapsed=91.9s
-CHECKPOINT sql_calls=4000 elapsed=94.1s
-CHECKPOINT sql_calls=4100 elapsed=96.4s
-CHECKPOINT sql_calls=4200 elapsed=99.0s
-CHECKPOINT sql_calls=4300 elapsed=101.9s
-CHECKPOINT sql_calls=4400 elapsed=104.6s
-CHECKPOINT sql_calls=4500 elapsed=106.8s
-CHECKPOINT sql_calls=4600 elapsed=109.6s
-CHECKPOINT sql_calls=4700 elapsed=112.1s
-CHECKPOINT sql_calls=4800 elapsed=114.5s
-CHECKPOINT sql_calls=4900 elapsed=117.2s
-CHECKPOINT sql_calls=5000 elapsed=120.0s
-CHECKPOINT sql_calls=5100 elapsed=122.5s
-CHECKPOINT sql_calls=5200 elapsed=124.9s
-CHECKPOINT sql_calls=5300 elapsed=127.3s
-CHECKPOINT sql_calls=5400 elapsed=130.2s
-CHECKPOINT sql_calls=5500 elapsed=133.0s
-CHECKPOINT sql_calls=5600 elapsed=135.5s
-CHECKPOINT sql_calls=5700 elapsed=138.1s
-CHECKPOINT sql_calls=5800 elapsed=140.7s
-CHECKPOINT sql_calls=5900 elapsed=143.4s
-CHECKPOINT sql_calls=6000 elapsed=146.2s
-CHECKPOINT sql_calls=6100 elapsed=149.0s
-CHECKPOINT sql_calls=6200 elapsed=151.6s
-CHECKPOINT sql_calls=6300 elapsed=154.3s
-CHECKPOINT sql_calls=6400 elapsed=157.1s
-CHECKPOINT sql_calls=6500 elapsed=160.0s
-CHECKPOINT sql_calls=6600 elapsed=163.3s
-CHECKPOINT sql_calls=6700 elapsed=166.4s
-CHECKPOINT sql_calls=6800 elapsed=169.4s
-CHECKPOINT sql_calls=6900 elapsed=172.2s
-CHECKPOINT sql_calls=7000 elapsed=175.0s
-CHECKPOINT sql_calls=7100 elapsed=177.7s
-CHECKPOINT sql_calls=7200 elapsed=180.8s
-CHECKPOINT sql_calls=7300 elapsed=183.5s
-CHECKPOINT sql_calls=7400 elapsed=186.1s
-CHECKPOINT sql_calls=7500 elapsed=188.9s
-CHECKPOINT sql_calls=7600 elapsed=191.7s
-CHECKPOINT sql_calls=7700 elapsed=194.8s
-CHECKPOINT sql_calls=7800 elapsed=197.8s
-CHECKPOINT sql_calls=7900 elapsed=200.5s
-CHECKPOINT sql_calls=8000 elapsed=203.3s
-CHECKPOINT sql_calls=8100 elapsed=206.0s
-CHECKPOINT sql_calls=8200 elapsed=208.7s
-CHECKPOINT sql_calls=8300 elapsed=211.2s
-CHECKPOINT sql_calls=8400 elapsed=213.8s
-CHECKPOINT sql_calls=8500 elapsed=216.4s
-CHECKPOINT sql_calls=8600 elapsed=218.9s
-CHECKPOINT sql_calls=8700 elapsed=221.6s
-CHECKPOINT sql_calls=8800 elapsed=224.2s
-CHECKPOINT sql_calls=8900 elapsed=227.0s
-CHECKPOINT sql_calls=9000 elapsed=230.0s
-CHECKPOINT sql_calls=9100 elapsed=232.6s
-CHECKPOINT sql_calls=9200 elapsed=235.2s
-CHECKPOINT sql_calls=9300 elapsed=237.9s
-CHECKPOINT sql_calls=9400 elapsed=240.6s
-CHECKPOINT sql_calls=9500 elapsed=243.3s
-CHECKPOINT sql_calls=9600 elapsed=246.0s
-CHECKPOINT sql_calls=9700 elapsed=248.6s
-CHECKPOINT sql_calls=9800 elapsed=251.1s
-CHECKPOINT sql_calls=9900 elapsed=253.5s
-CHECKPOINT sql_calls=10000 elapsed=256.1s
-CHECKPOINT sql_calls=10100 elapsed=258.6s
-CHECKPOINT sql_calls=10200 elapsed=261.3s
-CHECKPOINT sql_calls=10300 elapsed=263.9s
-CHECKPOINT sql_calls=10400 elapsed=266.0s
-CHECKPOINT sql_calls=10500 elapsed=268.2s
-CHECKPOINT sql_calls=10600 elapsed=270.3s
+CHECKPOINT sql_calls=1 elapsed=2.1s
+CHECKPOINT sql_calls=100 elapsed=4.3s
+CHECKPOINT sql_calls=200 elapsed=6.4s
+CHECKPOINT sql_calls=300 elapsed=8.4s
+CHECKPOINT sql_calls=400 elapsed=10.5s
+CHECKPOINT sql_calls=500 elapsed=13.2s
+CHECKPOINT sql_calls=600 elapsed=16.2s
+CHECKPOINT sql_calls=700 elapsed=19.2s
+CHECKPOINT sql_calls=800 elapsed=22.0s
+CHECKPOINT sql_calls=900 elapsed=24.6s
+CHECKPOINT sql_calls=1000 elapsed=27.1s
+CHECKPOINT sql_calls=1100 elapsed=29.8s
+CHECKPOINT sql_calls=1200 elapsed=32.6s
+CHECKPOINT sql_calls=1300 elapsed=35.5s
+CHECKPOINT sql_calls=1400 elapsed=38.3s
+CHECKPOINT sql_calls=1500 elapsed=41.2s
+CHECKPOINT sql_calls=1600 elapsed=43.9s
+CHECKPOINT sql_calls=1700 elapsed=46.9s
+CHECKPOINT sql_calls=1800 elapsed=49.7s
+CHECKPOINT sql_calls=1900 elapsed=52.2s
+CHECKPOINT sql_calls=2000 elapsed=54.9s
+CHECKPOINT sql_calls=2100 elapsed=57.3s
+CHECKPOINT sql_calls=2200 elapsed=59.8s
+CHECKPOINT sql_calls=2300 elapsed=62.1s
+CHECKPOINT sql_calls=2400 elapsed=64.8s
+CHECKPOINT sql_calls=2500 elapsed=67.4s
+CHECKPOINT sql_calls=2600 elapsed=70.0s
+CHECKPOINT sql_calls=2700 elapsed=72.5s
+CHECKPOINT sql_calls=2800 elapsed=75.0s
+CHECKPOINT sql_calls=2900 elapsed=77.5s
+CHECKPOINT sql_calls=3000 elapsed=80.0s
+CHECKPOINT sql_calls=3100 elapsed=82.4s
+CHECKPOINT sql_calls=3200 elapsed=84.6s
+CHECKPOINT sql_calls=3300 elapsed=86.9s
+CHECKPOINT sql_calls=3400 elapsed=89.4s
+CHECKPOINT sql_calls=3500 elapsed=92.0s
+CHECKPOINT sql_calls=3600 elapsed=94.7s
+CHECKPOINT sql_calls=3700 elapsed=97.1s
+CHECKPOINT sql_calls=3800 elapsed=99.2s
+CHECKPOINT sql_calls=3900 elapsed=101.2s
+CHECKPOINT sql_calls=4000 elapsed=103.3s
+CHECKPOINT sql_calls=4100 elapsed=105.7s
+CHECKPOINT sql_calls=4200 elapsed=108.1s
+CHECKPOINT sql_calls=4300 elapsed=110.1s
+CHECKPOINT sql_calls=4400 elapsed=112.3s
+CHECKPOINT sql_calls=4500 elapsed=114.7s
+CHECKPOINT sql_calls=4600 elapsed=117.5s
+CHECKPOINT sql_calls=4700 elapsed=120.0s
+CHECKPOINT sql_calls=4800 elapsed=122.6s
+CHECKPOINT sql_calls=4900 elapsed=125.0s
+CHECKPOINT sql_calls=5000 elapsed=127.3s
+CHECKPOINT sql_calls=5100 elapsed=129.5s
+CHECKPOINT sql_calls=5200 elapsed=131.7s
+CHECKPOINT sql_calls=5300 elapsed=134.2s
+CHECKPOINT sql_calls=5400 elapsed=136.9s
+CHECKPOINT sql_calls=5500 elapsed=139.4s
+CHECKPOINT sql_calls=5600 elapsed=142.0s
+CHECKPOINT sql_calls=5700 elapsed=144.8s
+CHECKPOINT sql_calls=5800 elapsed=147.6s
+CHECKPOINT sql_calls=5900 elapsed=150.2s
+CHECKPOINT sql_calls=6000 elapsed=152.6s
+CHECKPOINT sql_calls=6100 elapsed=155.0s
+CHECKPOINT sql_calls=6200 elapsed=157.2s
+CHECKPOINT sql_calls=6300 elapsed=159.4s
+CHECKPOINT sql_calls=6400 elapsed=161.7s
+CHECKPOINT sql_calls=6500 elapsed=163.9s
+CHECKPOINT sql_calls=6600 elapsed=166.8s
+CHECKPOINT sql_calls=6700 elapsed=169.6s
+CHECKPOINT sql_calls=6800 elapsed=172.4s
+CHECKPOINT sql_calls=6900 elapsed=175.2s
+CHECKPOINT sql_calls=7000 elapsed=177.9s
+CHECKPOINT sql_calls=7100 elapsed=180.7s
+CHECKPOINT sql_calls=7200 elapsed=183.5s
+CHECKPOINT sql_calls=7300 elapsed=185.9s
+CHECKPOINT sql_calls=7400 elapsed=187.9s
+CHECKPOINT sql_calls=7500 elapsed=190.0s
+CHECKPOINT sql_calls=7600 elapsed=192.1s
+CHECKPOINT sql_calls=7700 elapsed=194.4s
+CHECKPOINT sql_calls=7800 elapsed=196.4s
+CHECKPOINT sql_calls=7900 elapsed=198.5s
+CHECKPOINT sql_calls=8000 elapsed=201.0s
+CHECKPOINT sql_calls=8100 elapsed=203.4s
+CHECKPOINT sql_calls=8200 elapsed=205.7s
+CHECKPOINT sql_calls=8300 elapsed=208.3s
+CHECKPOINT sql_calls=8400 elapsed=211.0s
+CHECKPOINT sql_calls=8500 elapsed=213.7s
+CHECKPOINT sql_calls=8600 elapsed=216.3s
+CHECKPOINT sql_calls=8700 elapsed=218.9s
+CHECKPOINT sql_calls=8800 elapsed=221.5s
+CHECKPOINT sql_calls=8900 elapsed=224.0s
+CHECKPOINT sql_calls=9000 elapsed=226.6s
+CHECKPOINT sql_calls=9100 elapsed=229.0s
+CHECKPOINT sql_calls=9200 elapsed=231.4s
+CHECKPOINT sql_calls=9300 elapsed=234.1s
+CHECKPOINT sql_calls=9400 elapsed=236.8s
+CHECKPOINT sql_calls=9500 elapsed=239.5s
+CHECKPOINT sql_calls=9600 elapsed=241.8s
+CHECKPOINT sql_calls=9700 elapsed=244.7s
+CHECKPOINT sql_calls=9800 elapsed=247.4s
+CHECKPOINT sql_calls=9900 elapsed=249.9s
+CHECKPOINT sql_calls=10000 elapsed=252.4s
+CHECKPOINT sql_calls=10100 elapsed=255.2s
+CHECKPOINT sql_calls=10200 elapsed=257.7s
+CHECKPOINT sql_calls=10300 elapsed=260.3s
+CHECKPOINT sql_calls=10400 elapsed=263.2s
+CHECKPOINT sql_calls=10500 elapsed=265.9s
+CHECKPOINT sql_calls=10600 elapsed=268.6s
 PASS reported applied composition including isolated install closure release restored without regeneration
 PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
 PASS existing full-row downstream sentinels seeded in disposable fixture only
 NEW_PHYSICAL_BOOT_OK
 {"candidate_sha256": "93aa96092d2e7210bfc8ae7e6741db41bd439c1ac737fc8301248ce1ff9dabbf", "functions": 11, "enabled_by_default": false}
 PASS quimico kg: compra/entrada canônica cria lote e 3 UN sem bioreator, CQ ou envase
-CHECKPOINT sql_calls=10700 elapsed=278.2s
+CHECKPOINT sql_calls=10700 elapsed=277.1s
 PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
 PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
 PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
@@ -122,13 +122,57 @@ PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
 PASS B3 01-pre.sql.readonly
 PASS B3 02-install.sql.review
 PASS B3 03-post.sql.readonly
-CHECKPOINT sql_calls=10800 elapsed=287.8s
-CHECKPOINT sql_calls=10900 elapsed=291.4s
-CHECKPOINT sql_calls=11000 elapsed=295.0s
-CHECKPOINT sql_calls=11100 elapsed=298.3s
-CHECKPOINT sql_calls=11200 elapsed=301.3s
-CHECKPOINT sql_calls=11300 elapsed=304.1s
-CHECKPOINT sql_calls=11400 elapsed=307.0s
-CHECKPOINT sql_calls=11500 elapsed=309.5s
-CHECKPOINT sql_calls=11600 elapsed=313.2s
+CHECKPOINT sql_calls=10800 elapsed=286.9s
+CHECKPOINT sql_calls=10900 elapsed=291.0s
+CHECKPOINT sql_calls=11000 elapsed=294.9s
+CHECKPOINT sql_calls=11100 elapsed=298.7s
+CHECKPOINT sql_calls=11200 elapsed=302.0s
+CHECKPOINT sql_calls=11300 elapsed=305.2s
+CHECKPOINT sql_calls=11400 elapsed=309.0s
+CHECKPOINT sql_calls=11500 elapsed=311.8s
+CHECKPOINT sql_calls=11600 elapsed=316.8s
+REVIEW70 FAIL two_items_only_one_os_and_delivery ('two-items', 'ERROR:  P0001: product_unavailable\nCONTEXT:  PL/pgSQL function platform_private.b2b_packaging_line(uuid,uuid,jsonb,date) line 35 at RAISE\nPL/pgSQL function fn_resolve_b2b_cart(uuid,uuid,jsonb,date) line 20 at assignment\nPL/pgSQL function simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) line 56 at assignment\nLOCATION:  exec_stmt_raise, pl_exec.c:3911')
+REVIEW70 FAIL quantity_three_delivery_one_remainder_unreserved premature completion accepted: order=entregue, delivery=entregue, stdout={"os_id": "9d9a1acc-c0e9-4f8d-bc5d-1e18091ab04f", "action": "confirm", "replay": false, "status": "entregue", "success": true, "actor_id": "00000000-0000-0000-0000-000000000024", "os_status": "entregue", "entrega_id": "a017c936-c4be-4669-b218-49ea14ec329f", "finalizada": false, "updated_at": "2026-11-08T16:39:04.064739+00:00", "comprovante_id": "982471be-0bbf-483b-a048-6c4453fc392c", "organization_id": "00000000-0000-0000-0000-000000000001"}
+, stderr=
+REVIEW70 FAIL cancelled_partial_does_not_complete premature completion accepted: order=entregue, delivery=entregue, stdout={"os_id": "7191f4c9-067d-41ef-a18b-e55069998f82", "action": "confirm", "replay": false, "status": "entregue", "success": true, "actor_id": "00000000-0000-0000-0000-000000000024", "os_status": "entregue", "entrega_id": "f42f8f33-4a94-4c56-820c-62eb7907cb4a", "finalizada": false, "updated_at": "2026-11-08T16:39:08.701937+00:00", "comprovante_id": "ace8408f-eb56-404e-ad35-1718641b3bbd", "organization_id": "00000000-0000-0000-0000-000000000001"}
+, stderr=
+CHECKPOINT sql_calls=11700 elapsed=336.4s
+REVIEW70 FAIL overdelivery_cannot_complete_or_rewrite_snapshots premature completion accepted: order=entregue, delivery=entregue, stdout={"os_id": "6522c623-0228-420e-ae77-0edd21087078", "action": "confirm", "replay": false, "status": "entregue", "success": true, "actor_id": "00000000-0000-0000-0000-000000000024", "os_status": "entregue", "entrega_id": "44c4f284-e2fb-4c3b-933e-73b4652ba7b3", "finalizada": false, "updated_at": "2026-11-08T16:39:12.335642+00:00", "comprovante_id": "8b5a9235-b474-4a11-8aea-71e85a625aeb", "organization_id": "00000000-0000-0000-0000-000000000001"}
+, stderr=
+REVIEW70 FAIL create_wait_revocation_role revocation during row lock was not denied: kind=role, stdout={"ok": true, "os_id": "5c7ba17f-3671-42a2-8ffc-54504437b763", "replay": false, "contract": "B2B_RESALE_OS_V1", "order_id": "8bbe1fc4-8d38-4d24-8d80-3134c0e47943", "order_item_id": "880cc0ae-6314-49f2-9161-f1714ae63ac4"}
+, stderr=, effects={'os': 1, 'ledger': 29, 'tickets': 0, 'receipts': 1, 'lab_events': 12}
+REVIEW70 FAIL create_wait_revocation_profile revocation during row lock was not denied: kind=profile, stdout=, stderr=ERROR:  tenant_context_required
+CONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 9 at RAISE
+SQL statement "INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,
+  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)
+ VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')"
+PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement
+, effects={'os': 0, 'ledger': 29, 'tickets': 0, 'receipts': 0, 'lab_events': 12}
+REVIEW70 FAIL create_wait_revocation_tenant revocation during row lock was not denied: kind=tenant, stdout=, stderr=ERROR:  tenant_scope_violation
+CONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE
+SQL statement "INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,
+  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)
+ VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')"
+PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement
+, effects={'os': 0, 'ledger': 29, 'tickets': 0, 'receipts': 0, 'lab_events': 12}
+REVIEW70 FAIL create_wait_revocation_gate revocation during row lock was not denied: kind=gate, stdout=, stderr=ERROR:  OS_APPROVAL_SCOPE_DENIED
+CONTEXT:  PL/pgSQL function private.guard_os_separate_approval() line 10 at RAISE
+SQL statement "INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,
+  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)
+ VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')"
+PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement
+, effects={'os': 0, 'ledger': 29, 'tickets': 0, 'receipts': 0, 'lab_events': 12}
+REVIEW70 FAIL replay_wait_revocation_role replay returned after revocation: kind=role, stdout=, stderr=ERROR:  ESTQ_SEM_PERMISSAO
+CONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 5 at RAISE
+PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment
+
+REVIEW70 FAIL replay_wait_revocation_profile replay returned after revocation: kind=profile, stdout=, stderr=ERROR:  ESTQ_IDENTIDADE_INATIVA
+CONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE
+PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment
+
+REVIEW70 FAIL replay_wait_revocation_tenant replay returned after revocation: kind=tenant, stdout=, stderr=ERROR:  ESTQ_FEATURE_REQUIRED
+CONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE
+PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment
+
+REVIEW70 PASS replay_wait_revocation_gate
 PASS quimico kg: compra/entrada canônica cria lote e 2 UN sem bioreator, CQ ou envase

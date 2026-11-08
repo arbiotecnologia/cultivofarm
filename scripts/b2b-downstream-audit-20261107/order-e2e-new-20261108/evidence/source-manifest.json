@@ -1896,7 +1896,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "c917fd987fe08238ec7cca2f8276d59e7458c1d7c8d7132fe31007407bf616fd"
+      "sha256": "796d364f9151b9385eb3bfafb2b6f5c846fc29b9ec6da8381ce78ff482dd211e"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",
@@ -1913,6 +1913,10 @@
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/resale_logistics.py",
       "sha256": "517b42251ac93008e136a0229e74b9e877ce2fcfe522cf2e6b3a85d966abefc7"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py",
+      "sha256": "2eea5428d1532be0239b758e720c3ba89899c655a363e2685e86b6a5644cedf9"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",
@@ -3799,12 +3803,20 @@
       "sha256": "c3b5a7f24f809c4f7aee7be2e7f8e842814e28df8c045c2d55f3ae3e12682b17"
     },
     {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/provenance-20261108T1626Z.json",
+      "sha256": "26ed9c09aa3881b95537e9b543f41a2928a631d8e654af9fd24e9240afe90998"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/capture/provenance-20261108T1626Z.sql.readonly",
+      "sha256": "d8abefe06ce3fbac02a8422aa213fadbb324e8f7593a44edf4f4cade17320d96"
+    },
+    {
       "file": "scripts/commercial-plans-tenant-20261108/evidence/local-pg.json",
-      "sha256": "c1fa614813838d7b122d8095fa9250a8e83c8c15c2e84cc8709f078f1f1baab5"
+      "sha256": "ec381b3c1a45274e3969b6891296ee13ea3c86d14484a477946ea9ae2dd6328d"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/evidence/project-validation.json",
-      "sha256": "e23989c81013f181296f77cb27d069d542dffba5340a09015510cfeead082d11"
+      "sha256": "cccd5c4345e17e44a5332e07e952b2c95edd89cebf78282f93cef0bb232b98fe"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/generate.py",
@@ -3816,11 +3828,11 @@
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/test-fixture.sql",
-      "sha256": "068c67e37aac52d43a3eafb946050ca6106ca07bfe7188803f6ec905752ca3fe"
+      "sha256": "10fe32246f9cb08422d85cf1a5f3aa05349c770d426bd8c3366941572ac3ccbd"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/test-local-pg.py",
-      "sha256": "e6ed4792169856ee57a81bbb3c1fc1d74cb095e9f84265866ee38e0f734c64ef"
+      "sha256": "f9beb9bac74cb6ebc5078f4143c9b9a45738d381d19480e258f881990d341daf"
     },
     {
       "file": "scripts/contracts-c2-20261022/candidate.sql.review",

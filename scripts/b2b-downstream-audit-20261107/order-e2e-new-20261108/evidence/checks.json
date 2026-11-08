@@ -34,7 +34,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "cfdc9a4f-fa19-4eee-b28e-50aa8225b0e5"
+    "order_id": "91ddd664-8119-43b3-9b0d-9d4588074480"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -55,7 +55,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "15749207-a9f5-41d4-9be3-63bb20bdb33f"
+    "os_id": "c05be506-7990-408a-82a5-abde47210fc5"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -64,17 +64,81 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "69fa09c1-a609-467c-8d52-8ec23bac557c"
+    "delivery_id": "08b9dce7-9c8c-4aeb-80f7-5eae406a4ba2"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "ed77fbea-b646-4672-ada7-a42a2baf9431"
+    "delivery_id": "ab5d3ad5-0669-43a6-8c5b-a963f8fb85e3"
+  },
+  {
+    "test": "review70 two_items_only_one_os_and_delivery",
+    "status": "FAIL",
+    "detail": "('two-items', 'ERROR:  P0001: product_unavailable\\nCONTEXT:  PL/pgSQL function platform_private.b2b_packaging_line(uuid,uuid,jsonb,date) line 35 at RAISE\\nPL/pgSQL function fn_resolve_b2b_cart(uuid,uuid,jsonb,date) line 20 at assignment\\nPL/pgSQL function simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb) line 56 at assignment\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911')"
+  },
+  {
+    "test": "review70 quantity_three_delivery_one_remainder_unreserved",
+    "status": "FAIL",
+    "detail": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"9d9a1acc-c0e9-4f8d-bc5d-1e18091ab04f\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"a017c936-c4be-4669-b218-49ea14ec329f\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:39:04.064739+00:00\", \"comprovante_id\": \"982471be-0bbf-483b-a048-6c4453fc392c\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr="
+  },
+  {
+    "test": "review70 cancelled_partial_does_not_complete",
+    "status": "FAIL",
+    "detail": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"7191f4c9-067d-41ef-a18b-e55069998f82\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"f42f8f33-4a94-4c56-820c-62eb7907cb4a\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:39:08.701937+00:00\", \"comprovante_id\": \"ace8408f-eb56-404e-ad35-1718641b3bbd\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr="
+  },
+  {
+    "test": "review70 overdelivery_cannot_complete_or_rewrite_snapshots",
+    "status": "FAIL",
+    "detail": "premature completion accepted: order=entregue, delivery=entregue, stdout={\"os_id\": \"6522c623-0228-420e-ae77-0edd21087078\", \"action\": \"confirm\", \"replay\": false, \"status\": \"entregue\", \"success\": true, \"actor_id\": \"00000000-0000-0000-0000-000000000024\", \"os_status\": \"entregue\", \"entrega_id\": \"44c4f284-e2fb-4c3b-933e-73b4652ba7b3\", \"finalizada\": false, \"updated_at\": \"2026-11-08T16:39:12.335642+00:00\", \"comprovante_id\": \"8b5a9235-b474-4a11-8aea-71e85a625aeb\", \"organization_id\": \"00000000-0000-0000-0000-000000000001\"}\n, stderr="
+  },
+  {
+    "test": "review70 create_wait_revocation_role",
+    "status": "FAIL",
+    "detail": "revocation during row lock was not denied: kind=role, stdout={\"ok\": true, \"os_id\": \"5c7ba17f-3671-42a2-8ffc-54504437b763\", \"replay\": false, \"contract\": \"B2B_RESALE_OS_V1\", \"order_id\": \"8bbe1fc4-8d38-4d24-8d80-3134c0e47943\", \"order_item_id\": \"880cc0ae-6314-49f2-9161-f1714ae63ac4\"}\n, stderr=, effects={'os': 1, 'ledger': 29, 'tickets': 0, 'receipts': 1, 'lab_events': 12}"
+  },
+  {
+    "test": "review70 create_wait_revocation_profile",
+    "status": "FAIL",
+    "detail": "revocation during row lock was not denied: kind=profile, stdout=, stderr=ERROR:  tenant_context_required\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 9 at RAISE\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n, effects={'os': 0, 'ledger': 29, 'tickets': 0, 'receipts': 0, 'lab_events': 12}"
+  },
+  {
+    "test": "review70 create_wait_revocation_tenant",
+    "status": "FAIL",
+    "detail": "revocation during row lock was not denied: kind=tenant, stdout=, stderr=ERROR:  tenant_scope_violation\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n, effects={'os': 0, 'ledger': 29, 'tickets': 0, 'receipts': 0, 'lab_events': 12}"
+  },
+  {
+    "test": "review70 create_wait_revocation_gate",
+    "status": "FAIL",
+    "detail": "revocation during row lock was not denied: kind=gate, stdout=, stderr=ERROR:  OS_APPROVAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function private.guard_os_separate_approval() line 10 at RAISE\nSQL statement \"INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b')\"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 39 at SQL statement\n, effects={'os': 0, 'ledger': 29, 'tickets': 0, 'receipts': 0, 'lab_events': 12}"
+  },
+  {
+    "test": "review70 replay_wait_revocation_role",
+    "status": "FAIL",
+    "detail": "replay returned after revocation: kind=role, stdout=, stderr=ERROR:  ESTQ_SEM_PERMISSAO\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 5 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n"
+  },
+  {
+    "test": "review70 replay_wait_revocation_profile",
+    "status": "FAIL",
+    "detail": "replay returned after revocation: kind=profile, stdout=, stderr=ERROR:  ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n"
+  },
+  {
+    "test": "review70 replay_wait_revocation_tenant",
+    "status": "FAIL",
+    "detail": "replay returned after revocation: kind=tenant, stdout=, stderr=ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n"
+  },
+  {
+    "test": "review70 replay_wait_revocation_gate",
+    "status": "PASS",
+    "detail": {
+      "actual_advisory_wait": true,
+      "receipt_not_returned": true,
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 15 at RAISE\n"
+    }
   },
   {
     "test": "manual agronomic physical flow still passes after resale candidate",
     "status": "PASS",
-    "delivery_id": "fb2b21b4-dcd4-4ca1-9f2f-30469ea4d48a"
+    "delivery_id": "b83bbeee-704d-4cc0-82fd-8756e9b9fc4e"
   },
   {
     "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
