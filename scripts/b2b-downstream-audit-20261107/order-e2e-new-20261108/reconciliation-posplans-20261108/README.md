@@ -1,29 +1,37 @@
-# Reconciliação POSPLANOS — fresh rehearsal com guards LIVE
+# Reconciliação POSPLANOS — concluída localmente
 
-**Estado: ensaio local attempt 3 em andamento. Nenhum pacote novo está aprovado ou foi aplicado/publicado.**
+**Estado: pacote REVIEW_ONLY_INACTIVE_NOT_APPROVED. Nada foi aplicado, ativado ou publicado.**
 
-O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor não instalou a cadeia de entregas. A tentativa 2 também foi preservada: a migração ampla abortou no próprio PRE por ACLs históricas fora do recorte, antes dos candidatos. Esse PRE não foi enfraquecido.
+O PRE anterior `4f68d404` falhou corretamente em `CONFIRM_PRE_DRIFT`; o auditor não instalou a cadeia de entregas. Todas as tentativas desta reconciliação foram preservadas em `evidence/posplans-reconciliation-20261108-attempt*`, inclusive as falhas.
 
-## Nova evidência fornecida pelo proprietário
+## Evidência LIVE fornecida
 
-- `live-catalog-guards-20261108.sql.capture`: seis corpos LIVE reais de `*_catalog_tenant_guard`, fornecidos em 08/11/2026 para a produção canônica relatada `swzpzcwiasxmjutrmvkm`.
-- `live-catalog-guards-20261108.json`: hashes medidos por `md5(pg_get_functiondef(oid))` em PostgreSQL 17.11 descartável e SHA256 da captura.
-- Esclarecimento factual: nenhuma das 114 funções alteradas é diretamente redefinida pelos cinco instaladores; o problema é a baseline antiga e suas dependências/guards.
+- `live-catalog-guards-20261108.sql.capture`: seis corpos reais fornecidos pelo proprietário para a produção canônica relatada `swzpzcwiasxmjutrmvkm`.
+- `live-catalog-guards-20261108.json`: SHA256 `8e7c2859843d6f4eb39e09e37d49be19c16a8a0c8c530b61ab6cbf26ebe4addb` e MD5s medidos por `pg_get_functiondef` em PostgreSQL 17.11 descartável.
+- Esclarecimento aceito como fato relatado: nenhuma das 114 funções alteradas é diretamente redefinida pelos cinco instaladores.
 
-## Correção do ensaio
+## Resultado final — attempt 10
 
-`physical/finished-product/current_catalog.py` não reaplica mais a migração ampla. Ele monta uma baseline restrita com:
+- Fresh rehearsal logístico: **38/38**, exit 0.
+- Parciais/revogação/concorrência: **13/13**.
+- Endpoint/leitor: **15/15**.
+- UI integrada **21/21**, candidata **13/13**, compatibilidade OS **73/73**; typecheck e build OK.
+- Seis guards LIVE e oito ACLs restritas preservados antes/depois e após rollback.
+- Histórico preservado; gates e writers fechados após rollback deny-only.
+- B4/fiscal: **NOT_RUN_OUT_OF_SCOPE**. As tentativas 7/8 preservam `B4_PRE_SHARED_BODY` sem enfraquecer o PRE.
 
-1. os seis corpos capturados, sem alteração semântica;
-2. os seis triggers `a000_*_catalog_tenant_guard` habilitados;
-3. as três dependências necessárias geradas pela fonte canônica `fence_section.py` e pelo trecho exato de `proximo_codigo` na migração versionada;
-4. as oito ACLs restritas relatadas;
-5. medição dos nove corpos após a composição, sem pins provisórios.
+A baseline restrita usa o schema mínimo de apresentação já declarado, os seis corpos capturados e dependências geradas por fontes canônicas. A migração ampla não foi reaplicada. Claims sintéticos completos foram necessários porque o fence atual valida `role`, `sub`, `iat` e `exp`; nenhum fence foi desabilitado.
 
-A costura de schema canônico mínimo de apresentação (`catalog_foundation.py`) precede a captura; a antiga costura sintética do guard de estoque é substituída pelo corpo LIVE somente no PostgreSQL descartável. O ledger usado pelos geradores canônicos também é local e declarado; nada dessa montagem entra nos candidatos de instalação.
+O rollback da confirmação é composto: exige o estado integral medido após os rollbacks posteriores e executa somente REVOKE. Isso corrige a comparação isolada que incluía funções de estágios futuros sem aceitar estado arbitrário.
 
-## Validação exigida
+## Pacote para revisão
 
-O pacote `production-rollout-posplans-20261108/` só pode ser montado após o fresh rehearsal integral terminar com exit 0, incluindo PRE/POST, parciais 13/13, leitor/endpoint 15/15, concorrência, rollbacks deny-only, preservação dos seis guards/oito ACLs e gates OFF. As provas locais de interface desta tentativa já registram 21/21, 13/13 e 73/73; typecheck exit 0.
+`../production-rollout-posplans-20261108/`
 
-`00-current-live-capture.sql.readonly` permanece disponível para complementação READONLY de metadados caso alguma dependência ainda divergir. Resultados de PostgreSQL descartável não provam JWT/RLS/Storage/hosted e não autorizam instalação, ativação, fiscal, recebíveis, cobranças, envios ou publicação.
+- 23 arquivos rastreados.
+- Manifesto SHA256: `7fc669b8d5402c025b19daf8575aa8227e04ca4de9641d383343115485aaf8c2`.
+- Ordem: PRE READONLY → confirmação → envio → físico OFF → logística OFF → leitor/endpoint OFF.
+- Rollbacks em ordem inversa, deny-only.
+- Planos `cc1f6cc…`, B4, ponte fiscal, NF/NFS-e, recebíveis, pagamentos, comunicação, publicação e ativação automática estão excluídos.
+
+O auditor deve revisar independentemente os hashes e executar o PRE somente em `swzpzcwiasxmjutrmvkm`. Qualquer instalação futura exige autorização específica. PostgreSQL descartável e testes locais não provam JWT/RLS/Storage/hosted nem liberam operação real.

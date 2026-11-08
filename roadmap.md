@@ -3,7 +3,10 @@
 - [x] Preparar SQL READ ONLY restrito em `reconciliation-posplans-20261108/00-current-live-capture.sql.readonly`; nenhuma operação hospedada.
 - [x] Tentativa fresh 2 preservada: migração ampla abortou no próprio PRE por ACLs históricas fora do recorte; nenhum candidato foi gerado e o PRE não foi enfraquecido.
 - [x] Incorporar os seis corpos LIVE fornecidos pelo proprietário em `live-catalog-guards-20261108.sql.capture`; hashes PostgreSQL medidos, pins provisórios eliminados. Baseline restrita usa geradores canônicos para as três dependências e não reaplica a migração ampla.
-- [ ] **EM EXECUÇÃO — attempt 3:** fresh rehearsal com seis guards reais, oito ACLs, parciais 13, leitor/OS 15, concorrência e rollbacks. Pacote novo somente após PASS integral e evidências de frontend/typecheck; gates OFF, fiscal/recebíveis/cobranças/envios/publicação fechados.
+- [x] Tentativas 3–9 preservadas com falhas reais de schema/ACL/Auth/B4/rollback; nenhum PRE foi enfraquecido. Claims sintéticos completos, writers financeiros fora do escopo preservados e rollback composto pinam o estado integral, mantendo ação deny-only.
+- [x] **Attempt 10 exit 0:** 38/38 checkpoints, parciais 13/13, leitor/endpoint 15/15, UI 21/21 + 13/13 + 73/73, typecheck/build OK. Seis guards LIVE e oito ACLs preservados; concorrência, revogação, histórico e rollback deny-only verificados; gates OFF.
+- [x] Novo pacote `production-rollout-posplans-20261108/` com 23 arquivos e manifesto SHA256 `7fc669b8d5402c025b19daf8575aa8227e04ca4de9641d383343115485aaf8c2`. B4/fiscal NOT_RUN_OUT_OF_SCOPE; planos não reaplicados. Nenhum hosted/publicação.
+- [ ] Auditor: revisão independente e PRE READONLY em `swzpzcwiasxmjutrmvkm`; instalação futura somente por autorização específica. PASS local não é prova JWT/RLS/Storage/hosted nem liberação operacional.
 
 ## 08/11 22:18 — Complemento LIVE READONLY da cadeia mínima
 - [x] Registrar como relato do auditor: confirmação manual ausente por `proname`; duas sobrecargas canônicas de criação de entrega presentes (`a4d47ccf…`, `97d476cc…`) e programação biológica presente (`e374f0ba…`); OS/gates de revenda ausentes. Nenhum writer executado.
