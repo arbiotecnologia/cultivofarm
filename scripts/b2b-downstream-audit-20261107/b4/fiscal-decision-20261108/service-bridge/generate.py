@@ -42,6 +42,8 @@ def main() -> None:
     captured = json.loads(CAPTURE.read_text())
     apply_source = next(x["body"] for x in captured["functions"] if x["name"] == "rpc_fiscal_invoice_apply_authorization_v1")
     transmit_source = next(x["body"] for x in captured["functions"] if x["name"] == "rpc_fiscal_sefaz_transmit_record_v1")
+    transmit_guard_source = next(x["body"] for x in captured["functions"] if x["name"] == "fn_fiscal_sefaz_tx_guard")
+    assert hashlib.md5(transmit_guard_source.encode()).hexdigest() == "1661123d056217810d8fb175b46fdd8b"
     assert "v_close_error" in transmit_source and "FISCAL_AUTHORIZATION_CLOSE_PENDING" in transmit_source, "H13_EXACT_SOURCE_REQUIRED"
 
     actor = extract(b4text, "b2b_integration_actor")
