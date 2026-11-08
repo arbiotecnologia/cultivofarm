@@ -39,17 +39,23 @@ def build_functions() -> dict[str, str]:
 
     name = "rpc_admin_create_commercial_plan"
     s = owner_check(source(name), "DECLARE v_id uuid;")
+    s = edit(s, "  PERFORM public._cpp_validate_payload(p_payload);", "  PERFORM public._cpp_validate_payload(p_payload);\n  PERFORM pg_advisory_xact_lock(hashtext('cpp_create:' || v_org::text));\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     s = edit(s, "active, sort_order, created_by, updated_by, valid_from, valid_until, version, version_reason\n", "active, sort_order, created_by, updated_by, valid_from, valid_until, version, version_reason, organization_id\n")
     s = edit(s, "    nullif(p_payload->>'valid_until','')::timestamptz, 1, nullif(btrim(coalesce(p_payload->>'motivo','')),'')\n", "    nullif(p_payload->>'valid_until','')::timestamptz, 1, nullif(btrim(coalesce(p_payload->>'motivo','')),''), v_org\n")
+    s = edit(s, "  ) RETURNING id INTO v_id;", "  ) RETURNING id INTO v_id;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+    s = edit(s, "  UPDATE public.commercial_payment_plans SET root_plan_id = v_id WHERE id = v_id;", "  UPDATE public.commercial_payment_plans SET root_plan_id = v_id WHERE id = v_id;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     out[name] = s
 
     name = "rpc_admin_version_commercial_plan"
     s = owner_check(source(name), "DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_new_id uuid; v_next integer; v_code text;")
     s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
     marker = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;"
-    s = edit(s, marker, marker + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+    s = edit(s, marker, marker + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+    s = edit(s, "    FROM public.commercial_payment_plans WHERE root_plan_id = coalesce(v_old.root_plan_id, v_old.id);", "    FROM public.commercial_payment_plans WHERE root_plan_id = coalesce(v_old.root_plan_id, v_old.id) AND organization_id = v_org;")
     s = edit(s, "    version, root_plan_id, version_reason\n", "    version, root_plan_id, version_reason, organization_id\n")
     s = edit(s, "    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'')\n", "    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'') , v_org\n")
+    s = edit(s, "  ) RETURNING id INTO v_new_id;", "  ) RETURNING id INTO v_new_id;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+    s = edit(s, "  PERFORM public._cpp_audit('commercial_plan_versioned'", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM public._cpp_audit('commercial_plan_versioned'")
     out[name] = s
 
     for name in ("rpc_admin_update_commercial_plan_metadata", "rpc_admin_set_commercial_plan_active"):
@@ -57,17 +63,20 @@ def build_functions() -> dict[str, str]:
         needle = "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE"
         s = edit(s, needle, "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
         marker = "  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;"
-        s = edit(s, marker, marker + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+        s = edit(s, marker, marker + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
+        s = edit(s, "  PERFORM public._cpp_audit(", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM public._cpp_audit(")
         out[name] = s
 
     name = "rpc_admin_set_default_commercial_plan"
     s = owner_check(source(name), "DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_prev public.commercial_payment_plans%ROWTYPE;")
     s = edit(s, "hashtext('cpp_default_plan')", "hashtext('cpp_default_plan:' || v_org::text)")
     needle = "  PERFORM pg_advisory_xact_lock(hashtext('cpp_default_plan:' || v_org::text));"
-    s = edit(s, needle, needle + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+    s = edit(s, needle, needle + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     s = edit(s, "FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE", "FROM public.commercial_payment_plans WHERE id = p_plan_id AND organization_id = v_org FOR UPDATE")
-    s = edit(s, "   WHERE is_default AND id <> p_plan_id FOR UPDATE", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id FOR UPDATE")
+    s = edit(s, "   WHERE is_default AND id <> p_plan_id FOR UPDATE", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id FOR UPDATE;")
+    s = edit(s, "  UPDATE public.commercial_payment_plans SET is_default = false", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  UPDATE public.commercial_payment_plans SET is_default = false")
     s = edit(s, "   WHERE is_default AND id <> p_plan_id;", "   WHERE organization_id = v_org AND is_default AND id <> p_plan_id;")
+    s = edit(s, "  IF v_prev.id IS NOT NULL THEN", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  IF v_prev.id IS NOT NULL THEN")
     out[name] = s
 
     name = "rpc_admin_reorder_commercial_plans"
@@ -77,8 +86,9 @@ def build_functions() -> dict[str, str]:
     s = edit(s, needle, needle + "\n  SELECT array_agg((x->>'id')::uuid), count(*) INTO v_ids, v_requested FROM jsonb_array_elements(p_orders) x;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
     s = edit(s, "hashtext('cpp_reorder')", "hashtext('cpp_reorder:' || v_org::text)")
     needle = "  PERFORM pg_advisory_xact_lock(hashtext('cpp_reorder:' || v_org::text));"
-    s = edit(s, needle, needle + "\n  IF platform_private.commercial_plan_actor_organization() IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;")
+    s = edit(s, needle, needle + "\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM p.id FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org ORDER BY p.id FOR UPDATE;\n  SELECT count(*) INTO v_matched FROM public.commercial_payment_plans p WHERE p.id = ANY(v_ids) AND p.organization_id = v_org;\n  IF v_matched IS DISTINCT FROM v_requested THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501'; END IF;\n  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);")
     s = edit(s, "     WHERE id = (v_item->>'id')::uuid;", "     WHERE id = (v_item->>'id')::uuid AND organization_id = v_org;")
+    s = edit(s, "  PERFORM public._cpp_audit('commercial_plan_reordered'", "  PERFORM platform_private.commercial_plan_revalidate_actor(v_org);\n  PERFORM public._cpp_audit('commercial_plan_reordered'")
     out[name] = s
 
     name = "rpc_b2b_list_selectable_payment_plans"
