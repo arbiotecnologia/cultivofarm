@@ -8,7 +8,7 @@ CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(
 CREATE TYPE public.app_role AS ENUM('administrador','financeiro','gestor_comercial','gestor','administrativo','parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','superadmin');
 CREATE TYPE public.partner_order_status AS ENUM('rascunho','pendente','solicitado','em_analise_comercial','aprovado','reprovado','aguardando_aprovacao_credito','aguardando_ajuste_comercial','cancelado');
 CREATE TABLE public.organizations(id uuid PRIMARY KEY,partner_account_id uuid,ativo boolean NOT NULL DEFAULT true,status text NOT NULL DEFAULT 'ativa');
-CREATE TABLE public.profiles(user_id uuid PRIMARY KEY,organization_id uuid,ativo boolean NOT NULL DEFAULT true,senha_provisoria boolean NOT NULL DEFAULT false);
+CREATE TABLE public.profiles(id uuid PRIMARY KEY,user_id uuid NOT NULL UNIQUE,organization_id uuid,ativo boolean NOT NULL DEFAULT true,senha_provisoria boolean NOT NULL DEFAULT false);
 CREATE TABLE public.user_roles(user_id uuid NOT NULL,role public.app_role NOT NULL);
 CREATE TABLE public.partner_accounts(id uuid PRIMARY KEY,commercial_owner_organization_id uuid,ativo boolean NOT NULL DEFAULT true,deleted_at timestamptz,client_id uuid);
 CREATE TABLE public.clientes(id uuid PRIMARY KEY,organization_id uuid,status_cliente text NOT NULL DEFAULT 'ativo');

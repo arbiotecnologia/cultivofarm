@@ -1,0 +1,35 @@
+-- READONLY: executar somente após confirmar project ref swzpzcwiasxmjutrmvkm.
+-- Não concede autorização de instalação nem altera planos, atribuições ou histórico.
+
+SELECT p.id, p.code, p.name, p.root_plan_id, p.version, p.created_by,
+       pr.organization_id AS creator_current_organization_id, p.active, p.is_default
+FROM public.commercial_payment_plans p
+LEFT JOIN public.profiles pr ON pr.user_id = p.created_by
+ORDER BY p.created_at, p.id;
+
+SELECT a.plan_id, a.id AS assignment_id, a.buyer_scope, a.partner_id, a.customer_id,
+       a.status, pa.commercial_owner_organization_id AS assigned_partner_owner,
+       c.organization_id AS assigned_customer_owner
+FROM public.commercial_payment_plan_assignments a
+LEFT JOIN public.partner_accounts pa ON pa.id = a.partner_id
+LEFT JOIN public.clientes c ON c.id = a.customer_id
+ORDER BY a.created_at, a.id;
+
+SELECT l.acao, l.usuario_id, pr.organization_id AS actor_current_organization_id,
+       l.created_at, l.dados_novos->>'origem' AS origem,
+       l.dados_novos->>'motivo' AS motivo
+FROM public.commercial_audit_log l
+LEFT JOIN public.profiles pr ON pr.user_id = l.usuario_id
+WHERE l.dados_novos->>'plan_id' = 'd89ce2b4-9f68-4b0e-b78e-5009b6119a4f'
+   OR l.dados_novos->>'id' = 'd89ce2b4-9f68-4b0e-b78e-5009b6119a4f'
+ORDER BY l.created_at, l.id;
+
+SELECT a.id, a.plan_id, a.created_by, a.submitted_by, a.published_by,
+       pc.organization_id AS created_by_current_org,
+       ps.organization_id AS submitted_by_current_org,
+       pp.organization_id AS published_by_current_org
+FROM public.commercial_payment_plan_assignments a
+LEFT JOIN public.profiles pc ON pc.user_id = a.created_by
+LEFT JOIN public.profiles ps ON ps.user_id = a.submitted_by
+LEFT JOIN public.profiles pp ON pp.user_id = a.published_by
+WHERE a.plan_id = 'd89ce2b4-9f68-4b0e-b78e-5009b6119a4f';

@@ -58,17 +58,21 @@ A = "aaaaaaaa-0000-0000-0000-000000000001"
 B = "bbbbbbbb-0000-0000-0000-000000000001"
 UA = "aaaaaaaa-0000-0000-0000-000000000002"
 UB = "bbbbbbbb-0000-0000-0000-000000000002"
+UC = "cccccccc-0000-0000-0000-000000000002"
 OA = "aaaaaaaa-1111-0000-0000-000000000001"
 OB = "bbbbbbbb-1111-0000-0000-000000000001"
 PA = "aaaaaaaa-2222-0000-0000-000000000001"
 PB = "bbbbbbbb-2222-0000-0000-000000000001"
+PNULL = "cccccccc-2222-0000-0000-000000000001"
 PLAN_A1 = "aaaaaaaa-4444-0000-0000-000000000001"
 PLAN_A2 = "aaaaaaaa-4444-0000-0000-000000000002"
 PLAN_B1 = "bbbbbbbb-4444-0000-0000-000000000001"
 PLAN_AMBIG = "cccccccc-4444-0000-0000-000000000001"
+PLAN_SPECIAL = "dddddddd-4444-0000-0000-000000000001"
 ASN_A = "aaaaaaaa-5555-0000-0000-000000000001"
 ASN_B = "bbbbbbbb-5555-0000-0000-000000000001"
 ASN_AMBIG = "cccccccc-5555-0000-0000-000000000001"
+ASN_SPECIAL = "dddddddd-5555-0000-0000-000000000001"
 METHOD = "dddddddd-6666-0000-0000-000000000001"
 CATEGORY = "dddddddd-7777-0000-0000-000000000001"
 
@@ -90,6 +94,30 @@ try:
     for file in sorted((H / "capture" / "functions").glob("*.sql")):
         run("SET check_function_bodies=off;" + file.read_text() + ";")
 
+    # A exceção histórica sem owner é semeada antes das cercas P1; nenhuma guarda é desabilitada.
+    run(f"""
+INSERT INTO public.organizations(id,partner_account_id) VALUES('{OA}',NULL),('{OB}',NULL);
+INSERT INTO public.profiles(id,user_id,organization_id,ativo) VALUES
+('10000000-0000-0000-0000-000000000001','{A}','{OA}',true),
+('10000000-0000-0000-0000-000000000002','{B}','{OB}',true),
+('10000000-0000-0000-0000-000000000003','{UA}','{OA}',true),
+('10000000-0000-0000-0000-000000000004','{UB}','{OB}',true),
+('10000000-0000-0000-0000-000000000005','{UC}','{OB}',false);
+INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador'),('{B}','administrador'),('{UA}','parceiro_b2b'),('{UB}','parceiro_b2b');
+INSERT INTO public.partner_accounts(id,commercial_owner_organization_id) VALUES('{PA}','{OA}'),('{PB}','{OB}'),('{PNULL}',NULL);
+INSERT INTO public.partner_users(partner_id,user_id,papel,tenant_id) VALUES('{PA}','{UA}','gestor','{OA}'),('{PB}','{UB}','gestor','{OB}');
+INSERT INTO public.payment_methods(id,name) VALUES('{METHOD}','Boleto sintético');
+INSERT INTO public.financial_categories(id,name,type) VALUES('{CATEGORY}','Receita sintética','RECEITA');
+INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,months_count,installment_count,discount_percent,monthly_interest_percent,interest_type,requires_credit_approval,requires_guarantee,requires_financial_approval,active,sort_order,created_by,pricing_mode,version,root_plan_id,valid_from,is_default) VALUES
+('{PLAN_A1}','Plano A1','PLAN-A1','custom',30,1,1,10,0,'none',false,false,false,true,1,'{A}','discount_from_base',1,'{PLAN_A1}',now()-interval '1 day',false),
+('{PLAN_A2}','Plano A2','PLAN-A2','custom',30,1,1,0,0,'none',false,false,false,true,2,'{A}','discount_from_base',1,'{PLAN_A2}',now()-interval '1 day',false),
+('{PLAN_B1}','Plano B1','PLAN-B1','custom',30,1,1,0,0,'none',false,false,false,true,1,'{B}','discount_from_base',1,'{PLAN_B1}',now()-interval '1 day',false),
+('{PLAN_AMBIG}','Plano ambíguo','PLAN-AMBIG','custom',30,1,1,0,0,'none',false,false,false,true,3,'{A}','discount_from_base',1,'{PLAN_AMBIG}',now()-interval '1 day',false),
+('{PLAN_SPECIAL}','AUDIT-CF exceção','AUDIT-CF-FIX-20260912','custom',30,1,1,0,0,'none',false,false,false,true,4,'{UC}','discount_from_base',1,'{PLAN_SPECIAL}',now()-interval '1 day',false);
+INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by,submitted_by,published_by)
+VALUES('{ASN_SPECIAL}','{PLAN_SPECIAL}','partner','{PNULL}','published','{UC}','{UC}','{UC}');
+""")
+
     run("""
 CREATE TRIGGER trg_cpp_guard_financial BEFORE UPDATE OR DELETE ON public.commercial_payment_plans FOR EACH ROW EXECUTE FUNCTION public.tg_cpp_guard_financial_immutability();
 CREATE TRIGGER c2p1_assignment_fence BEFORE INSERT OR UPDATE OR DELETE ON public.commercial_payment_plan_assignments FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_assignment_fence();
@@ -103,44 +131,35 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private TO authenticated;
 """)
 
-    run(f"""
-INSERT INTO public.organizations(id,partner_account_id) VALUES('{OA}',NULL),('{OB}',NULL);
-INSERT INTO public.profiles(user_id,organization_id) VALUES('{A}','{OA}'),('{B}','{OB}'),('{UA}','{OA}'),('{UB}','{OB}');
-INSERT INTO public.user_roles(user_id,role) VALUES('{A}','administrador'),('{B}','administrador'),('{UA}','parceiro_b2b'),('{UB}','parceiro_b2b');
-INSERT INTO public.partner_accounts(id,commercial_owner_organization_id) VALUES('{PA}','{OA}'),('{PB}','{OB}');
-INSERT INTO public.partner_users(partner_id,user_id,papel,tenant_id) VALUES('{PA}','{UA}','gestor','{OA}'),('{PB}','{UB}','gestor','{OB}');
-INSERT INTO public.payment_methods(id,name) VALUES('{METHOD}','Boleto sintético');
-INSERT INTO public.financial_categories(id,name,type) VALUES('{CATEGORY}','Receita sintética','RECEITA');
-INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,months_count,installment_count,discount_percent,monthly_interest_percent,interest_type,requires_credit_approval,requires_guarantee,requires_financial_approval,active,sort_order,created_by,pricing_mode,version,root_plan_id,valid_from,is_default) VALUES
-('{PLAN_A1}','Plano A1','PLAN-A1','custom',30,1,1,10,0,'none',false,false,false,true,1,'{A}','discount_from_base',1,'{PLAN_A1}',now()-interval '1 day',false),
-('{PLAN_A2}','Plano A2','PLAN-A2','custom',30,1,1,0,0,'none',false,false,false,true,2,'{A}','discount_from_base',1,'{PLAN_A2}',now()-interval '1 day',false),
-('{PLAN_B1}','Plano B1','PLAN-B1','custom',30,1,1,0,0,'none',false,false,false,true,1,'{B}','discount_from_base',1,'{PLAN_B1}',now()-interval '1 day',false),
-('{PLAN_AMBIG}','Plano ambíguo','PLAN-AMBIG','custom',30,1,1,0,0,'none',false,false,false,true,3,'{A}','discount_from_base',1,'{PLAN_AMBIG}',now()-interval '1 day',false);
-""")
     run(f"SET request.jwt.claim.sub='{A}';INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by) VALUES('{ASN_A}','{PLAN_A1}','partner','{PA}','published','{A}');")
     run(f"SET request.jwt.claim.sub='{B}';INSERT INTO public.commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status,created_by) VALUES('{ASN_B}','{PLAN_B1}','partner','{PB}','published','{B}'),('{ASN_AMBIG}','{PLAN_AMBIG}','partner','{PB}','published','{B}');")
 
-    check("ANTES: FSF lê planos ARBio pela RPC admin", actor(B, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);"), 4)
+    check("ANTES: FSF lê todos os planos sem recorte pela RPC admin", actor(B, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);"), 5)
+    check("ANTES: atribuição da exceção sem owner não aparece, isolada do leak de Planos", actor(B, f"SELECT count(*) FROM public.rpc_cc_list_assignments(NULL) WHERE id='{ASN_SPECIAL}';"), 0)
     check("ANTES: FSF lê ARBio pela listagem operacional admin", actor(B, f"SELECT count(*) FROM public.rpc_b2b_list_selectable_payment_plans() WHERE id='{PLAN_A1}';"), 1)
     check("ANTES: configuração B3 FSF expõe plano ARBio", actor(B, f"SELECT jsonb_array_length(b2b_payment_condition_config_list()->'plans')>=1 AND EXISTS(SELECT 1 FROM jsonb_array_elements(b2b_payment_condition_config_list()->'plans') x WHERE x->>'id'='{PLAN_A1}');"), "t")
     check("ANTES: FSF altera metadados ARBio", actor(B, f"SELECT public.rpc_admin_update_commercial_plan_metadata('{PLAN_A1}','ALTERADO POR B',NULL,NULL);"))
     check("ANTES: escrita indevida confirmada", f"SELECT name FROM public.commercial_payment_plans WHERE id='{PLAN_A1}';", "ALTERADO POR B")
     run(f"UPDATE public.commercial_payment_plans SET name='Plano A1' WHERE id='{PLAN_A1}';")
 
-    check("PRE íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "01-pre.sql.readonly").read_text(), "4|3|1|0")
+    check("PRE íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "01-pre.sql.readonly").read_text(), "5|4|1|0")
     run("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "02-install.sql.review").read_text())
     results.append({"name": "Instalação candidata transacional", "status": "PASS"})
     print("PASS instalação candidata transacional")
-    check("proveniência A resolvida", f"SELECT organization_id FROM public.commercial_payment_plans WHERE id='{PLAN_A1}';", OA)
-    check("proveniência B resolvida", f"SELECT organization_id FROM public.commercial_payment_plans WHERE id='{PLAN_B1}';", OB)
+    check("proveniência A resolvida por profiles.user_id", f"SELECT organization_id FROM public.commercial_payment_plans WHERE id='{PLAN_A1}';", OA)
+    check("proveniência B resolvida por profiles.user_id", f"SELECT organization_id FROM public.commercial_payment_plans WHERE id='{PLAN_B1}';", OB)
+    check("exceção AUDIT-CF fica na organização do próprio criador, não ARBio", f"SELECT organization_id FROM public.commercial_payment_plans WHERE id='{PLAN_SPECIAL}';", OB)
     check("família ambígua permanece NULL", f"SELECT organization_id IS NULL FROM public.commercial_payment_plans WHERE id='{PLAN_AMBIG}';", "t")
-    check("POST íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "03-post.sql.readonly").read_text(), "4|3|1")
+    check("POST íntegro", "SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';" + (H / "03-post.sql.readonly").read_text(), "5|4|1")
 
     check("DEPOIS: ARBio lista somente seus dois planos", actor(A, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);"), 2)
-    check("DEPOIS: FSF lista somente seu plano", actor(B, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);"), 1)
+    check("DEPOIS: FSF lista somente seu plano e a exceção de sua organização", actor(B, "SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);"), 2)
+    check("DEPOIS: exceção é legível por FSF e invisível para ARBio", actor(B, f"SELECT (SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0) WHERE id='{PLAN_SPECIAL}')::text;"), 1)
+    check("DEPOIS: ARBio não lê a exceção de outra organização", actor(A, f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0) WHERE id='{PLAN_SPECIAL}';"), 0)
     check("DEPOIS: FSF não lê ARBio operacionalmente", actor(B, f"SELECT count(*) FROM public.rpc_b2b_list_selectable_payment_plans() WHERE id='{PLAN_A1}';"), 0)
     check("DEPOIS: configuração B3 FSF não expõe ARBio", actor(B, f"SELECT EXISTS(SELECT 1 FROM jsonb_array_elements(b2b_payment_condition_config_list()->'plans') x WHERE x->>'id'='{PLAN_A1}');"), "f")
     check("DEPOIS: leitura direta FSF isolada por RLS", actor(B, f"SELECT count(*) FROM public.commercial_payment_plans WHERE id IN('{PLAN_A1}','{PLAN_B1}','{PLAN_AMBIG}');"), 1)
+    check("DEPOIS: atribuição sem owner continua invisível após candidato", actor(B, f"SELECT count(*) FROM public.rpc_cc_list_assignments(NULL) WHERE id='{ASN_SPECIAL}';"), 0)
     check("DEPOIS: comprador ARBio só lê plano publicado vinculado", actor(UA, f"SELECT id FROM public.rpc_b2b_list_selectable_payment_plans();"), PLAN_A1)
     check("DEPOIS: comprador FSF só lê seu plano", actor(UB, f"SELECT id FROM public.rpc_b2b_list_selectable_payment_plans();"), PLAN_B1)
 
