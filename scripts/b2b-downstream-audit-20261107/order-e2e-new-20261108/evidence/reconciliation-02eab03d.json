@@ -1,0 +1,66 @@
+{
+  "request": "E2E 02eab03d",
+  "kind": "LOCAL_DISPOSABLE_RECONCILIATION_NOT_HOSTED_NOT_APPROVED",
+  "previous_result_boundary": "16/16 não incluía validação explícita da ACL/dez gatilhos nem da versão reconciliada do cadastro; permanece histórico.",
+  "failures_and_corrections": [
+    {
+      "attempt": 58,
+      "failure": "FileNotFoundError por caminho scripts/scripts ao abrir canonical-readonly.json",
+      "correction": "Passar a raiz ROOT já validada do espelho ao módulo real_baselines.py; nenhum SQL/candidato alterado."
+    },
+    {
+      "attempt": 59,
+      "failure": "Comparação de gatilhos incluía corpos, ACLs e hashes das funções presentes na captura histórica; o checkpoint já continha a00_delivery_no_downstream.",
+      "correction": "Comparar somente nome, definição e enabled; aceitar décimo já existente apenas com trigger MD5 e guard MD5 exatos, sem recriar a guarda."
+    },
+    {
+      "attempt": 60,
+      "failure": "Mesma ACL com ordem textual diferente na representação relacl.",
+      "correction": "Comparar o conjunto de entradas e exigir ACL MD5 normalizado 93490607307bc83e36605d2c0e7dc4ec."
+    },
+    {
+      "attempt": 61,
+      "failure": "FileNotFoundError ao calcular SHA256 da origem por ROOT histórico relativo ao diretório review.",
+      "correction": "Fixar current_ar.SOURCE na origem explícita do espelho; pacote B4 histórico não editado."
+    }
+  ],
+  "passing_reuse_checkpoint_run": {
+    "archived_attempt": 62,
+    "exit_code": 0,
+    "checkpoints": "19/19"
+  },
+  "final_from_scratch_run": {
+    "exit_code": 0,
+    "checkpoints": "19/19",
+    "workspace": "/tmp/new-order-e2e-p4zo_yef",
+    "stderr_bytes": 0,
+    "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3"
+  },
+  "real_baseline_hashes": {
+    "accounts_receivable_triggers_md5": "7c65f3e7fed5e102fd6c8b96bc9fe8e0",
+    "accounts_receivable_acl_md5": "93490607307bc83e36605d2c0e7dc4ec",
+    "delivery_no_downstream_md5": "95e0e5a84ef511cd72d7807351f61cf4",
+    "tg_create_default_pfs_md5": "76bd832ba608662d84f1641f8a3b8226",
+    "c2p1_settings_fence_md5": "f87cc2894dc551d242c2586f17e2cdd4"
+  },
+  "negative_evidence": {
+    "partner_financial_settings_direct_insert": "C2P1_SETTINGS_WRITE_CLOSED",
+    "accounts_receivable_in_delivery_context": {
+      "INSERT": "DELIVERY_DOWNSTREAM_FORBIDDEN",
+      "UPDATE": "DELIVERY_DOWNSTREAM_FORBIDDEN",
+      "DELETE": "DELIVERY_DOWNSTREAM_FORBIDDEN"
+    }
+  },
+  "effects": {
+    "new_receivables": 0,
+    "new_fiscal_documents": 0,
+    "new_production_CQ_or_envase": 0,
+    "sentinel_receivables_before_after": 1,
+    "sentinel_fiscal_documents_before_after": 1
+  },
+  "limits": [
+    "Auth/claims/Storage são costuras sintéticas locais; não provam JWT/RLS/Storage/browser real.",
+    "B4, documento fiscal autorizado, recebível por NF, cobrança e comunicação não foram instalados nem executados.",
+    "Candidato logístico continua inativo, não aprovado e sem instalação/publicação."
+  ]
+}

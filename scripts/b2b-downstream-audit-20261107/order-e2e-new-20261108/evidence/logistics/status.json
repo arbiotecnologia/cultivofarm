@@ -2,11 +2,23 @@
   "status": "LOCAL_COMPOSITION_PASS_CANDIDATE_INACTIVE_NOT_APPROVED",
   "local_only": true,
   "hosted": false,
+  "fresh_full_rebuild": "PASS",
   "run_exit_code": 0,
-  "checkpoints_passed": 16,
+  "checkpoints_passed": 19,
   "candidate_sha256": "6452c8ce4c61dbc52222d2081fe2a9c0d0099dc5c11ecad11cae48849b61cbb3",
   "default_enabled": false,
   "new_client_grants": [],
+  "real_baselines": {
+    "receivable_triggers_enabled": 10,
+    "receivable_triggers_md5": "7c65f3e7fed5e102fd6c8b96bc9fe8e0",
+    "receivable_acl_md5": "93490607307bc83e36605d2c0e7dc4ec",
+    "downstream_guard_md5": "95e0e5a84ef511cd72d7807351f61cf4",
+    "registration_default_md5": "76bd832ba608662d84f1641f8a3b8226",
+    "registration_fence_md5": "f87cc2894dc551d242c2586f17e2cdd4",
+    "direct_settings_write": "C2P1_SETTINGS_WRITE_CLOSED",
+    "delivery_context_receivable_denials": ["INSERT", "UPDATE", "DELETE"],
+    "post_rollback": "PASS_UNCHANGED"
+  },
   "positive_path": [
     "canonical_buyer_B3_order_and_durable_recovery",
     "accounting_pending_denial_then_synthetic_CAS_promotion_and_seller_acceptance",
@@ -23,6 +35,8 @@
     "buyer_OS_reservation_and_proof_denied",
     "fractional_pack_mismatched_partner_and_mismatched_order_denied",
     "cancelled_or_manufacturing_lineage_denied",
+    "direct_financial_settings_write_denied",
+    "delivery_receivable_INSERT_UPDATE_DELETE_denied",
     "biological_and_agronomic_paths_preserved"
   ],
   "manual_agronomic_regression": "PASS",
@@ -43,5 +57,5 @@
     "B4_document_receivable_generation",
     "NF_or_external_collection_or_delivery"
   ],
-  "scope": "Nova composição descartável local; não recupera nem reutiliza contagens do harness anterior ausente. Candidato permanece inativo, não aprovado e pendente de revisão independente."
+  "scope": "Nova composição descartável local, reconstruída do zero, com dez gatilhos/ACL de recebíveis e fence de cadastro; não recupera nem reutiliza contagens do harness anterior ausente. Candidato permanece inativo, não aprovado e pendente de revisão independente."
 }
