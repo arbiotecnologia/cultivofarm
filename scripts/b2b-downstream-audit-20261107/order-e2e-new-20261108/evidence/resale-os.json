@@ -1,18 +1,18 @@
 {
   "created": {
     "ok": true,
-    "os_id": "5f6457dd-1405-4c4f-bb28-785cadf96f28",
+    "os_id": "150142ca-9139-4ac4-9240-a5bbfcd56044",
     "replay": false,
     "contract": "B2B_RESALE_OS_V1",
-    "order_id": "56baa5b8-e60e-4d2d-9b22-51169e04fae8",
-    "order_item_id": "771eaa82-005d-423f-8dee-4717e115a567"
+    "order_id": "f6c149d9-7b09-496d-8ec2-90a01d98cd89",
+    "order_item_id": "afb67663-2591-4985-aa64-023fe5ba9964"
   },
   "replay": {
     "ok": true,
-    "os_id": "5f6457dd-1405-4c4f-bb28-785cadf96f28",
+    "os_id": "150142ca-9139-4ac4-9240-a5bbfcd56044",
     "replay": true,
     "contract": "B2B_RESALE_OS_V1",
-    "order_id": "56baa5b8-e60e-4d2d-9b22-51169e04fae8",
-    "order_item_id": "771eaa82-005d-423f-8dee-4717e115a567"
+    "order_id": "f6c149d9-7b09-496d-8ec2-90a01d98cd89",
+    "order_item_id": "afb67663-2591-4985-aa64-023fe5ba9964"
   }
 }
