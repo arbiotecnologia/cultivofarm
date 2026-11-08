@@ -23,6 +23,7 @@ CHANGED = [
 NEW = [
     "platform_private.b2b_resale_os_valid_v1(public.ordens_servico)",
     "platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes)",
+    "platform_private.b2b_resale_delivery_order_valid_v1(public.entregas)",
     "platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text)",
 ]
 
