@@ -757,6 +757,24 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
             check("DEPOIS: retorno não-B2B é classificado e autorizado sem título B2B", nonb2b_record and not nonb2b_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_nonb2b}'").stdout.strip() == "AUTHORIZED", nonb2b_error or nonb2b_record)
             check("DEPOIS: classificação não-B2B não cria documento/título B4", B3.psql(f"SELECT (SELECT count(*) FROM platform_private.b2b_authorized_documents WHERE id='{invoice_nonb2b}')||'|'||(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_nonb2b}')").stdout.strip() == "0|0")
         check("retorno externo não-B2B permanece durável na transmissão", B3.psql(f"SELECT outcome||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_nonb2b}'").stdout.strip().startswith("AUTHORIZED|"))
+
+        # Complemento feb815603: envelope real com status do lote 104 e protocolo 100.
+        # Não se substitui cStat por 100 para fazer o teste passar.
+        parser_patch = {"cStat":"104","protocolCStat":"100","nProt":"PARSER-PROTOCOL-100","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"LOTE PROCESSADO; PROTOCOLO AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:30:00Z"}
+        parser_record, parser_error = real_record(tx_parser,"SUCCEEDED",parser_patch)
+        parser_state = B3.psql(f"SELECT outcome||'|'||c_stat||'|'||coalesce(error_code,'') FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip()
+        if REVIEW_BEFORE:
+            check("ANTES: parser calcula AUTHORIZED por protocolCStat=100 mas persiste c_stat=104", parser_record and parser_record["outcome"] == "AUTHORIZED" and parser_state.startswith("AUTHORIZED|104|FISCAL_AUTHORIZATION_CLOSE_PENDING"), parser_error or parser_state)
+            check("ANTES: H12 recebe 104 e deixa autorização não-B2B em CLOSE_PENDING", parser_record and parser_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_parser}'").stdout.strip() == "PENDING", parser_error or parser_record)
+        else:
+            check("DEPOIS: parser preserva lote 104 e protocolo 100 em campos separados", parser_record and parser_record["outcome"] == "AUTHORIZED" and parser_record["cStat"] == "104" and parser_record["protocolCStat"] == "100" and parser_state == "AUTHORIZED|104|", parser_error or parser_state)
+            check("DEPOIS: H12 consome protocolo 100 e fecha não-B2B sem título", parser_record and not parser_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_parser}'").stdout.strip() == "AUTHORIZED" and B3.psql(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_parser}'").stdout.strip() == "0", parser_error or parser_record)
+            check("DEPOIS: coluna protocol_c_stat conserva evidência efetiva 100", B3.psql(f"SELECT protocol_c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip() == "100")
+        parser_replay, parser_replay_error = real_record(tx_parser,"SUCCEEDED",parser_patch)
+        check("replay do mesmo envelope 104/100 não duplica transmissão nem efeito fiscal", parser_replay and parser_replay["outcome"] == "AUTHORIZED" and B3.psql(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE fiscal_invoice_id='{invoice_parser}'").stdout.strip() == "1", parser_replay_error or parser_replay)
+        if not REVIEW_BEFORE:
+            check("replay 104/100 recuperado permanece sem pendência e sem rebaixar evidência", not parser_replay["reconciliationPending"] and parser_replay["protocolCStat"] == "100" and B3.psql(f"SELECT c_stat||'|'||protocol_c_stat FROM public.fiscal_sefaz_transmissions WHERE id='{tx_parser}'").stdout.strip() == "104|100", parser_replay_error or parser_replay)
+
         partial_record, partial_error = real_record(tx_partial, "SUCCEEDED", {"cStat":"100","nProt":"LOCAL-PARTIAL","chNFe":"35261111111111111111111111111111111111111111","xMotivo":"AUTORIZADO","tpAmb":"2","dhRecbto":"2027-02-01T12:00:00Z"})
         check("vínculo B2B parcial não escapa como não-B2B", partial_record and partial_record["reconciliationPending"] and B3.psql(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_partial}'").stdout.strip() == "PENDING", partial_error or partial_record)
 
