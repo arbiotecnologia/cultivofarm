@@ -351,8 +351,13 @@ def write_final_confirmation_rollback(confirmation_out: Path, send_out: Path, fi
     function_names = {row[0] for row in confirm_scope["functions"]} | {row[0] for row in send_scope["functions"]}
     relations = _relation_rows(final_state)
     relation_names = {row[0] for row in confirm_scope["relations"] if row[0] in relations}
+    trigger_pins = {
+        row[0]: functions[row[0]][3] if row[0] in functions else row[1]
+        for row in send_scope["trigger_functions"]
+    }
     doc = {
         "functions": sorted((_function_doc(functions[key], key) for key in function_names), key=lambda row: row[0]),
+        "trigger_functions": sorted([[key, value] for key, value in trigger_pins.items()], key=lambda row: row[0]),
         "relations": sorted((_relation_doc(relations[key], key) for key in relation_names), key=lambda row: row[0]),
         "triggers": _state_triggers(final_state, functions),
         "structural": _structural(final_state),
