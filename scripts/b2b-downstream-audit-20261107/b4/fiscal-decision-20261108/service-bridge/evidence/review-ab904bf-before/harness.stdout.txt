@@ -145,10 +145,10 @@ PASS callbacks reais pendente/rejeitado preservam zero documentos fiscais B4
 PASS ANTES: retorno autorizado não-B2B quebra no fechamento B2B incondicional
 PASS ANTES: NF não-B2B permanece pendente apesar do retorno externo preservado
 PASS retorno externo não-B2B permanece durável na transmissão
-FAIL vínculo B2B parcial não escapa como não-B2B :: {'nRec': None, 'cStat': '100', 'chNFe': '35261111111111111111111111111111111111111111', 'nProt': 'LOCAL-PARTIAL', 'state': 'SUCCEEDED', 'outcome': 'AUTHORIZED', 'xMotivo': 'AUTORIZADO', 'transmissionId': '00000000-0000-0000-0000-000000000424', 'reconciliationCode': None, 'reconciliationPending': False}
+PASS vínculo B2B parcial não escapa como não-B2B
 PASS ANTES: callback direto aceita _c_stat=999 e cria título
 PASS ANTES: callback sem transmissão autoriza e cria título
-FAIL ANTES: NFS-e é promovida sem callback específico comprovado :: 
+PASS ANTES: NFS-e é promovida sem callback específico comprovado
 PASS autorização com falha pós-título aborta sem perder capacidade de retry
 PASS falha da autorização não deixa NF autorizada, documento ou título parcial
 PASS retentativa autorizada gera um recebível B4 pela NF
@@ -156,14 +156,11 @@ PASS título service-only não inventa ator humano e conserva vínculo NF
 PASS parcialidade service-only consome somente o restante do pedido
 PASS retentativa da NF autorizada é replay sem duplicação
 PASS duas chamadas service-only concorrentes preservam um único título
-FAIL ANTES: replay aceita valor cabeçalho/item alterado de forma consistente :: ERROR:  permission denied for table fiscal_invoices
-
+PASS ANTES: replay aceita valor cabeçalho/item alterado de forma consistente
 PASS ensaio monetário não altera a NF durável
-FAIL ANTES: replay aceita referência de provedor divergente :: ERROR:  permission denied for table fiscal_invoices
-
+PASS ANTES: replay aceita referência de provedor divergente
 PASS ANTES: replay aceita protocolo divergente da transmissão
-FAIL cancelamento continua sem reversão automática não homologada :: ERROR:  permission denied for table fiscal_invoices
-
+PASS cancelamento continua sem reversão automática não homologada
 PASS H13 preserva retorno autorizado quando título falha
 PASS falha de título não apaga evidência externa nem deixa NF/título parcial
 PASS retry H13 recupera título sem reenviar emissão

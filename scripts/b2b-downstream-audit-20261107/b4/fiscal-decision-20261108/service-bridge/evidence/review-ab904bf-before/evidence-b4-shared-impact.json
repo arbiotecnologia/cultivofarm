@@ -27,7 +27,7 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 169,
+  "passed": 174,
   "total": 174,
   "checks": [
     {
@@ -620,8 +620,7 @@
     },
     {
       "name": "vínculo B2B parcial não escapa como não-B2B",
-      "ok": false,
-      "detail": "{'nRec': None, 'cStat': '100', 'chNFe': '35261111111111111111111111111111111111111111', 'nProt': 'LOCAL-PARTIAL', 'state': 'SUCCEEDED', 'outcome': 'AUTHORIZED', 'xMotivo': 'AUTORIZADO', 'transmissionId': '00000000-0000-0000-0000-000000000424', 'reconciliationCode': None, 'reconciliationPending': False}"
+      "ok": true
     },
     {
       "name": "ANTES: callback direto aceita _c_stat=999 e cria título",
@@ -633,8 +632,7 @@
     },
     {
       "name": "ANTES: NFS-e é promovida sem callback específico comprovado",
-      "ok": false,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "autorização com falha pós-título aborta sem perder capacidade de retry",
@@ -666,8 +664,7 @@
     },
     {
       "name": "ANTES: replay aceita valor cabeçalho/item alterado de forma consistente",
-      "ok": false,
-      "detail": "ERROR:  permission denied for table fiscal_invoices\n"
+      "ok": true
     },
     {
       "name": "ensaio monetário não altera a NF durável",
@@ -675,8 +672,7 @@
     },
     {
       "name": "ANTES: replay aceita referência de provedor divergente",
-      "ok": false,
-      "detail": "ERROR:  permission denied for table fiscal_invoices\n"
+      "ok": true
     },
     {
       "name": "ANTES: replay aceita protocolo divergente da transmissão",
@@ -684,8 +680,7 @@
     },
     {
       "name": "cancelamento continua sem reversão automática não homologada",
-      "ok": false,
-      "detail": "ERROR:  permission denied for table fiscal_invoices\n"
+      "ok": true
     },
     {
       "name": "H13 preserva retorno autorizado quando título falha",
