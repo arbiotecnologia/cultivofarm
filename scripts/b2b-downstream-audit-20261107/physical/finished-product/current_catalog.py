@@ -176,6 +176,7 @@ LEFT JOIN pg_proc p ON p.oid=to_regprocedure(v.signature);
 SELECT COALESCE(jsonb_agg(jsonb_build_object(
   'signature', v.signature,
   'md5', md5(pg_get_functiondef(p.oid)),
+  'definition', pg_get_functiondef(p.oid),
   'owner', pg_get_userbyid(p.proowner),
   'acl', COALESCE(p.proacl::text,'')
 ) ORDER BY v.signature),'[]'::jsonb)
@@ -223,7 +224,8 @@ WHERE NOT t.tgisinternal AND n.nspname='public'
     }
 
 
-def assert_current(last):
+def assert_current(last, allowed_trigger_function_deltas=()):
+    allowed_trigger_function_deltas = set(allowed_trigger_function_deltas)
     state = measure(last)
     errors = []
     by_signature = {row["signature"]: row for row in state["functions"]}
@@ -261,6 +263,8 @@ def assert_current(last):
             errors.append(f"trigger_missing:{key[0]}:{key[1]}")
             continue
         for field in ("schema", "enabled", "type", "function", "function_md5", "definition"):
+            if field == "function_md5" and key in allowed_trigger_function_deltas:
+                continue
             if actual.get(field) != expected[field]:
                 errors.append(f"trigger_{field}:{key[0]}:{key[1]}:{actual.get(field)}!={expected[field]}")
     if errors:
