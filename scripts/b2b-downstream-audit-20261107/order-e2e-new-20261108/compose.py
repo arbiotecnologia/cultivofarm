@@ -488,6 +488,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   (OUT/'fiscal-fixture-contract.json').write_text(json.dumps(dict(status='PREFLIGHT_ROLLBACK_OK',tables=fixture_contract,invoice_id=invoice_id,xml_run_id=xml_run_id,transmission_id=transmission_id,invoice_idempotency_key=invoice_idem,xml_idempotency_key=xml_idem,transmission_idempotency_key=transmission_idem,xml_payload_sha256=xml_sha256,transmission_request_fingerprint=transmission_fingerprint,network=False,provider_called=False),indent=2)+'\n')
   checks.append(dict(test='fiscal fixture satisfies every required column and passes real NOT NULL CHECK FK trigger preflight in rolled back transaction',status='PASS'))
   B.sql(fixture_sql)
+  invoice_initial=json.loads(B.last(f"SELECT jsonb_build_object('status',status,'normalized_status',normalized_status,'receivable_id',receivable_id)::text FROM public.fiscal_invoices WHERE id='{invoice_id}';"))
+  assert invoice_initial=={'status':'PENDING','normalized_status':'DRAFT','receivable_id':None},invoice_initial
+  (OUT/'fiscal-invoice-before-callback.json').write_text(json.dumps(invoice_initial,indent=2)+'\n')
   patch=json.dumps({'cStat':'104','protocolCStat':'100','nProt':'LOCAL-INTEGRATED-PROTOCOL','chNFe':access_key,'xMotivo':'LOTE PROCESSADO; PROTOCOLO AUTORIZADO','tpAmb':'2','dhRecbto':'2027-02-01T12:00:00Z'}).replace("'","''")
   def authorized_callback():
    return B.run_raw(f"SET ROLE service_role;SELECT public.rpc_fiscal_sefaz_transmit_record_v1('{transmission_id}','SUCCEEDED','{patch}'::jsonb);")
@@ -517,7 +520,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
    'allocations',(SELECT count(*) FROM platform_private.b2b_document_allocations WHERE document_id='{invoice_id}'),
    'snapshots',(SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots WHERE invoice_id='{invoice_id}'),
    'receivables',(SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_id}'))::text;"""))
-  assert blocked=={'invoice_status':'PENDING','invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_c_stat':'104','transmission_protocol_c_stat':'100','transmission_error':None,'close_pending':'FISCAL_AUTHORIZATION_CLOSE_PENDING','close_pending_attempts':2,'transmissions':1,'invoices':1,'xml_runs':1,'transmission_idempotency':transmission_idem,'transmission_fingerprint':transmission_fingerprint,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked
+  assert blocked=={'invoice_status':invoice_initial['normalized_status'],'invoice_receivable':None,'transmission_outcome':'AUTHORIZED','transmission_c_stat':'104','transmission_protocol_c_stat':'100','transmission_error':None,'close_pending':'FISCAL_AUTHORIZATION_CLOSE_PENDING','close_pending_attempts':2,'transmissions':1,'invoices':1,'xml_runs':1,'transmission_idempotency':transmission_idem,'transmission_fingerprint':transmission_fingerprint,'documents':0,'allocations':0,'snapshots':0,'receivables':0},blocked
   (OUT/'integrated-always-deny-callback.json').write_text(json.dumps(dict(callback=callback_data,replay=replay_data,blocked=blocked,schema_and_fiscal_events_synthetic=True,dependency_substituted=False),indent=2)+'\n')
   checks.append(dict(test='real H13 authorized callback and replay preserve one durable transmission with close pending; always-deny yields zero B4 document allocation snapshot or receivable',status='PASS'))
 
@@ -542,7 +545,7 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   current=R.snapshot(B);after_triggers={x['name']:x for x in current['receivable']['triggers']}
   for trigger in original: assert after_triggers.get(trigger['name'])==trigger,trigger['name']
   assert B.last("SELECT count(*) FROM platform_private.b2b_fiscal_invoice_snapshots;")=='0'
-  assert B.last(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}';")=='PENDING'
+  assert B.last(f"SELECT normalized_status FROM public.fiscal_invoices WHERE id='{invoice_id}';")==invoice_initial['normalized_status']
   assert B.last(f"SELECT count(*) FROM public.fiscal_xml_runs WHERE id='{xml_run_id}' AND idempotency_key='{xml_idem}';")=='1'
   assert B.last(f"SELECT count(*) FROM public.fiscal_sefaz_transmissions WHERE id='{transmission_id}' AND idempotency_key='{transmission_idem}' AND request_fingerprint='{transmission_fingerprint}';")=='1'
   assert B.last(f"SELECT count(*) FROM platform_private.fiscal_close_pending WHERE transmission_id='{transmission_id}' AND error_code='FISCAL_AUTHORIZATION_CLOSE_PENDING' AND attempts=2;")=='1'
