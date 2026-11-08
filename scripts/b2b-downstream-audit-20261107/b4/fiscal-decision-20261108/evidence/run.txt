@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py", line 73, in <module>
+    main()
+    ~~~~^^
+  File "/dev-server/scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/test-decision.py", line 30, in main
+    result = component["results"]
+             ~~~~~~~~~^^^^^^^^^^^
+KeyError: 'results'
