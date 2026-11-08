@@ -733,7 +733,9 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
         seed_invoice(invoice_h13_pending,order=None,partner=None)
         seed_invoice(invoice_h13_rejected,order=None,partner=None)
         seed_invoice(invoice_parser,order=None,partner=None,provider_reference="PARSER-104-100")
-        B3.psql(f"""UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}','{invoice_nfse}');
+        seed_invoice(invoice_lock_h12,order=None,partner=None,provider_reference="LOCK-H13-H12")
+        seed_invoice(invoice_lock_bridge,"AUTHORIZED",order=lock_order,with_item=True,item=lock_item,provider_reference="LOCK-H13-BRIDGE")
+        B3.psql(f"""UPDATE public.fiscal_invoices SET authorized_at=now(),access_key='35261111111111111111111111111111111111111111' WHERE id IN ('{invoice_denied}','{invoice_foreign}','{invoice_nfse}','{invoice_lock_bridge}');
  UPDATE public.fiscal_invoices SET partner_order_id=NULL,debtor_partner_id=NULL WHERE id IN ('{invoice_nonb2b}','{invoice_parser}');
  UPDATE public.fiscal_invoices SET debtor_partner_id=NULL WHERE id='{invoice_partial}';""")
         seed_proof(invoice_main,tx_main)
