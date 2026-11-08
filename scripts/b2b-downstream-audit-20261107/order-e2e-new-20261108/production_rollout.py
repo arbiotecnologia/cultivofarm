@@ -160,7 +160,7 @@ ROLLBACK;
     manifest = {
       'status':'REVIEW_ONLY_INACTIVE_NOT_APPROVED', 'production_ref':REF,
       'baseline':'POSPLANOS + catálogo exclusivo atual; plan cc1f6cc already installed; never reinstall or roll it back',
-      'current_catalog_evidence':{'pre':sha(E/'current-catalog-baseline.json'),'post_plans':sha(E/'current-catalog-posplans.json'),'function_pins':9,'tenant_guards':6,'restricted_relation_acls':8},
+      'current_catalog_evidence':{'pre':sha(E/'current-catalog-baseline.json'),'post_plans':sha(E/'current-catalog-posplans.json'),'function_pins':9,'tenant_guards':6,'restricted_relation_acls':8,'live_guard_capture_sha256':guard_source['capture_sha256'],'live_guard_function_md5':guard_source['functions']},
       'previous_failed_pre':'CONFIRM_PRE_DRIFT em 4f68d404; pacote anterior preservado e não reutilizado como baseline',
       'hosted_io':False,'gates':'all closed after every install and rollback',
       'live_readonly_reported_2026_11_08':{
