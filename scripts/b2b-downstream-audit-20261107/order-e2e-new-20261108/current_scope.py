@@ -293,6 +293,7 @@ def _guard(doc: dict, state_expression: str, label: str) -> str:
     structural_actual = f"(({state_expression})-'functions'-'relations'-'triggers'-'send_functions')"
     return f"""DO $scope$ BEGIN
  IF {function_actual} IS DISTINCT FROM {_json_literal(doc['functions'])} THEN RAISE EXCEPTION '{label}_SCOPED_FUNCTIONS'; END IF;
+ IF {trigger_function_actual} IS DISTINCT FROM {_json_literal(doc['trigger_functions'])} THEN RAISE EXCEPTION '{label}_TRIGGER_FUNCTION_PINS'; END IF;
  IF {relation_actual} IS DISTINCT FROM {_json_literal(doc['relations'])} THEN RAISE EXCEPTION '{label}_SCOPED_RELATIONS'; END IF;
  IF {trigger_actual} IS DISTINCT FROM {_json_literal(doc['triggers'])} THEN RAISE EXCEPTION '{label}_SCOPED_TRIGGERS'; END IF;
  IF {structural_actual} IS DISTINCT FROM {_json_literal(doc['structural'])} THEN RAISE EXCEPTION '{label}_STRUCTURE'; END IF;
