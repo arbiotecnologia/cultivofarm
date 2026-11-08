@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Composition driver, executes only in /tmp mirror; all experiments are local."""
-import hashlib,importlib.util,json,os,sys,traceback,uuid
+import hashlib,importlib.util,json,os,shutil,sys,traceback,uuid
 from pathlib import Path
 H=Path(__file__).resolve().parent;ROOT=H.parents[2]
 assert ROOT.is_relative_to(Path('/tmp')), 'TEMP_MIRROR_REQUIRED'
@@ -43,10 +43,16 @@ def main():
   post=json.loads([x for x in B.sql('BEGIN;'+delta+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   released=json.loads([x for x in B.sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {C.G.RPC} TO authenticated;'+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   C.G.write(pre,post,released);B.sql((C.H/'install.sql.review').read_text())
+  confirmation_out=OUT/'delivery-confirmation';confirmation_out.mkdir(exist_ok=True)
+  for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
+   shutil.copyfile(C.H/name,confirmation_out/name)
   S=load('new_send',C.H/'send/assemble.py')
   pre=json.loads(B.last(S.STATE+'::text;'))
   post=json.loads([x for x in B.sql('BEGIN;'+S.candidate()+S.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   S.write(pre,post);B.sql((C.H/'send/install.sql.review').read_text())
+  send_out=OUT/'delivery-send';send_out.mkdir(exist_ok=True)
+  for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
+   shutil.copyfile(C.H/'send'/name,send_out/name)
   B.sql('GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;')
   B.apply_current_catalog(B.sql,B.T.A)
   # Captured NULL ACL vs restore's explicit postgres-only ACL: same effective
@@ -372,7 +378,9 @@ def main():
   B.sql((endpoint_out/'04-rollback-deny.sql.review').read_text())
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'permission denied for function rpc_b2b_resale_os_create_v1' in after_rollback.stderr,after_rollback.stderr
-  checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
+  reader_after_rollback=B.run_raw(B.T.actor(Q.UADM)+f"SELECT public.rpc_b2b_resale_os_availability_v1('{order_id}');")
+  assert reader_after_rollback.returncode!=0 and 'permission denied for function rpc_b2b_resale_os_availability_v1' in reader_after_rollback.stderr,reader_after_rollback.stderr
+  checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers or reader',status='PASS',candidate_sha256=logistics['candidate_sha256']))
   plans_before_rollback=B.last('SELECT count(*) FROM public.commercial_payment_plans;')
   R.assert_current(B,OUT,'real-baselines-post-logistics-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))

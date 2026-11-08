@@ -2112,11 +2112,19 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "7d7eb2112ae3f222d9d207b568660c363e937d4d524fead799747ea8fdbc8b14"
+      "sha256": "2a979c83349cbf2e6092611898019ae41cf8e172dc6d144f89c06f5c8af0573b"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/os_endpoint.py",
+      "sha256": "22039c51ee70902f48b123a2ece68e94011774dffbe6693605d0d0d1b20ddb3a"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot-activation-5c4f35f8/activation-plan.json",
       "sha256": "a51d822c51e6be0db73b6e96112e1b79607168069a3ba280b41d0a3708f5577b"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production_rollout.py",
+      "sha256": "137419a6bd619761d287da36d507d0d622ed29ebbe1adf9133e8c884e61984b7"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py",
@@ -2132,7 +2140,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/review_70d08c.py",
-      "sha256": "7ab1573096995d430249a9b3f92912a0241ecc14afc8b1ca52d28e36ef0422cb"
+      "sha256": "8895586e9339d5206aa7cccdc28a4542a15b6d595888ec0126adb96a4051e787"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_os_endpoint.py",
+      "sha256": "c70aab6a690e894ca486f957c950cba7a599a1a1550010f09e1773a03fc5b4ba"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",
@@ -4033,6 +4045,46 @@
     {
       "file": "scripts/commercial-plans-tenant-20261108/evidence/project-validation.json",
       "sha256": "cccd5c4345e17e44a5332e07e952b2c95edd89cebf78282f93cef0bb232b98fe"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/catalog-contract-verification.json",
+      "sha256": "31cb58c706c1c4a3c2a8eb05df6843095e9e51e9ee7a02ea051c29c210d8c414"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/local-pg.json",
+      "sha256": "c2b1cad7cfd1b7623c8c74a1e7b0a039b888fcc340969ca877e55142122133fe"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/lock-revocations.json",
+      "sha256": "927999a11a7bb5ce9cf765f5bcb09a57ae58b6f17b4e5fe027b6ea4667151670"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/logistics-evidence-inventory.json",
+      "sha256": "f07462ff7f36a1f01a218e29cc18e8f8e71e5885691d947aed880db61b50e5f2"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/permissions-after.json",
+      "sha256": "d6ed8be1b736fc5a3ad97ee2c9e3475e57bd64307e6672a1c1a95ebfc020e47a"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/permissions-before.json",
+      "sha256": "8d50d04b5e1a70782659ce4cb9ecf5b482202f75263293e15883fbaf8f78f8a4"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/permissions-diff.json",
+      "sha256": "2646e07e6a0dddfb3a531fbf6b27684cd741a55fe49c13d91359f536b32d13bb"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/permissions-rollback.json",
+      "sha256": "413adcaef8977467160e71260ca6bbd6d8821ded9c124c70e262853732938f71"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/summary.json",
+      "sha256": "3b81843a904ff4ca5862cfdddb111f29d7e7d1a3dad02e4ae1a3afecc10650a6"
+    },
+    {
+      "file": "scripts/commercial-plans-tenant-20261108/evidence/review-40186/verification.json",
+      "sha256": "b8b5a8235c47ac1d968fb142ca53e566e409204b72c9bcb15ec42a0b63db802b"
     },
     {
       "file": "scripts/commercial-plans-tenant-20261108/evidence/review-f32c4f3/after.json",

@@ -38,7 +38,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "263c83a4-13b2-43cc-bc67-2dc1cbed03ba"
+    "order_id": "f847891e-b4db-4fb0-996a-a325c707e54e"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -49,7 +49,7 @@
     "status": "PASS"
   },
   {
-    "test": "resale candidate gate closed, no client EXECUTE and no direct ready OS bypass",
+    "test": "public endpoint gate closed, private helper client EXECUTE denied and no direct ready OS bypass",
     "status": "PASS"
   },
   {
@@ -59,7 +59,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "56cbb5f0-c844-465a-9d30-ac88263898f4"
+    "os_id": "c8c17c72-5ca7-43e7-8777-34c0953d1e22"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
@@ -68,12 +68,12 @@
   {
     "test": "resale purchase partial reserve group cancellation restores three whole packs and preserves order link without receivable",
     "status": "PASS",
-    "delivery_id": "c686b248-be0b-421e-9a71-2af3d926259b"
+    "delivery_id": "d2416efa-9692-4ac5-bbf8-3cabad0dd6b9"
   },
   {
     "test": "resale second reserve group send proof confirm and replays complete local B2B order with zero new NF receivable manufacture CQ envase",
     "status": "PASS",
-    "delivery_id": "9d75d311-d70c-44d3-9a90-5d6292c07cb3"
+    "delivery_id": "3b981e98-5d66-4002-b12e-b16d7b72e877"
   },
   {
     "test": "review70 two_items_only_one_os_and_delivery",
@@ -189,7 +189,7 @@
     "status": "PASS",
     "detail": {
       "actual_row_wait": true,
-      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 42 at RAISE\n",
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
       "zero_os_ticket_ledger_event_receipt_delta": true,
       "explicit_candidate_reauth": true
     }
@@ -199,7 +199,7 @@
     "status": "PASS",
     "detail": {
       "actual_row_wait": true,
-      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 42 at RAISE\n",
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
       "zero_os_ticket_ledger_event_receipt_delta": true,
       "explicit_candidate_reauth": true
     }
@@ -209,7 +209,7 @@
     "status": "PASS",
     "detail": {
       "actual_row_wait": true,
-      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 43 at IF\n",
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 22 at IF\n",
       "zero_os_ticket_ledger_event_receipt_delta": true,
       "explicit_candidate_reauth": true
     }
@@ -219,7 +219,7 @@
     "status": "PASS",
     "detail": {
       "actual_row_wait": true,
-      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 44 at RAISE\n",
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\n",
       "zero_os_ticket_ledger_event_receipt_delta": true,
       "explicit_candidate_reauth": true
     }
@@ -230,8 +230,8 @@
     "detail": {
       "actual_advisory_wait": true,
       "receipt_not_returned": true,
-      "error": "ERROR:  ESTQ_SEM_PERMISSAO\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 5 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
-      "explicit_candidate_reauth": false
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+      "explicit_candidate_reauth": true
     }
   },
   {
@@ -240,8 +240,8 @@
     "detail": {
       "actual_advisory_wait": true,
       "receipt_not_returned": true,
-      "error": "ERROR:  ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
-      "explicit_candidate_reauth": false
+      "error": "ERROR:  B2B_RESALE_SCOPE_CHANGED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 24 at RAISE\n",
+      "explicit_candidate_reauth": true
     }
   },
   {
@@ -250,7 +250,7 @@
     "detail": {
       "actual_advisory_wait": true,
       "receipt_not_returned": true,
-      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 13 at assignment\n",
+      "error": "ERROR:  ESTQ_FEATURE_REQUIRED\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 22 at IF\n",
       "explicit_candidate_reauth": false
     }
   },
@@ -260,17 +260,21 @@
     "detail": {
       "actual_advisory_wait": true,
       "receipt_not_returned": true,
-      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 15 at RAISE\n",
+      "error": "ERROR:  B2B_RESALE_GATE_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 26 at RAISE\n",
       "explicit_candidate_reauth": true
     }
   },
   {
-    "test": "manual agronomic physical flow still passes after resale candidate",
-    "status": "PASS",
-    "delivery_id": "a53a8fdd-e173-4e44-ac74-cd5fe2776ceb"
+    "test": "public OS endpoint FSF buyer revoked feature pending helper ACL and concurrent creation",
+    "status": "PASS"
   },
   {
-    "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers",
+    "test": "manual agronomic physical flow still passes after resale candidate",
+    "status": "PASS",
+    "delivery_id": "56dd6236-d3a9-4dc9-a0d2-41a745b03d2b"
+  },
+  {
+    "test": "resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers or reader",
     "status": "PASS",
     "candidate_sha256": "8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20"
   },

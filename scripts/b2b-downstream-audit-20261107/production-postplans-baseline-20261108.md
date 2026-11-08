@@ -6,7 +6,7 @@ O auditor instalou **somente** o isolamento de planos no projeto canônico `swzp
 
 Foram relatados: ref comprovado por `SET LOCAL`, `PRE_OK` antes, POST dentro da transação antes do COMMIT, instalação com sucesso e POST separado READ ONLY com `POST_OK`. O Lovable não executou essa instalação nem qualquer leitura/escrita hospedada nesta atualização.
 
-Preservados segundo o auditor: **6 planos** (cinco ARBio e um da organização `8eae2bc1-ad00-4402-9f57-564258e493ca`), **4 assignments**, **9 orders**, **10 receivables** e **5 fiscal invoices**. Usuário FSF real, na prévia conectada à produção e após reload, passou de seis planos para **zero**. O controle positivo ARBio ainda aguarda login; não presumir seu resultado.
+Preservados segundo o auditor: **6 planos** (cinco ARBio e um da organização `8eae2bc1-ad00-4402-9f57-564258e493ca`), **4 assignments**, **9 orders**, **10 receivables** e **5 fiscal invoices**. Usuário FSF real, na prévia conectada à produção e após reload, passou de seis planos para **zero**. Em validação posterior relatada pelo auditor, a sessão real de Renato leu os **5 planos próprios**, com a exceção não-ARBio oculta; isolamento UI positivo/negativo concluído. O controle comprador permanece pendente.
 
 Não houve publicação frontend nem instalação/ativação de B4, logística, ponte fiscal ou gates. Comunicação/envios, fiscal real, cobranças e pagamentos permanecem bloqueados.
 
@@ -25,8 +25,8 @@ Não houve publicação frontend nem instalação/ativação de B4, logística, 
 | Planos | `commercial-plans-tenant-20261108/02-install.sql.review` | `cc1f6cc837e29377b6b6fa4deaa334257cdab5484025a519dfd5833b8a12cd40` | **INSTALADO PELO AUDITOR; não reaplicar** |
 | Logística de revenda | evidência fresh `review-postplans-2145/logistics/candidate.sql.review` | `8ad4def8d4ae3c2e86518f2d82bf57f053cee66b0d7e165b84472cb586812c20` | INATIVO/NÃO APROVADO |
 | Instalador logístico | evidência fresh `review-postplans-2145/logistics/install.sql.review` | `56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09` | REVISÁVEL; gate OFF |
-| Caller público de OS | evidência fresh `review-postplans-2145/os-endpoint/02-install.sql.review` | `21d40202d32e70dfbb44c7eb2a54a4135ebace840b301c15ab37b910cbfa0ee3` | INATIVO/NÃO APROVADO |
-| UI de OS | `order-e2e-new-20261108/ui-candidate/` | fontes/testes pinados na evidência | FORA DO RUNTIME |
+| Leitor + caller público de OS | `order-e2e-new-20261108/production-rollout-2154/51-endpoint-reader-install.sql.review` | `617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb` | INATIVO/NÃO APROVADO; gate OFF |
+| UI de OS | `ResaleOsAvailabilityPanel.tsx` montado em `PedidosB2B.tsx` | fontes locais; testes 21/21 | CANDIDATA NO RUNTIME LOCAL, NÃO PUBLICADA; invisível sem leitor/gate |
 | B4 | `b4/b4-candidate.sql.review` | `7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f` | INATIVO/NÃO APROVADO |
 | Ponte fiscal | `b4/fiscal-decision-20261108/service-bridge/02-install.sql.review` | `5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964` | INATIVA/NÃO APROVADA; dependência real always-deny |
 
@@ -34,7 +34,9 @@ A composição `canonical-composition-feb815603/manifest.json` já reconcilia ci
 
 ## Evidência local nova
 
-A composição PostgreSQL descartável `review-postplans-2145` instalou o isolamento antes do B3/logística, reproduzindo a ordem POSPLANOS sem operar produção. Resultado: **41/41 checks**, **13/13 regressões de parciais**, **9/9 testes específicos do endpoint**, **13/13 testes da UI candidata**, **73/73 testes canônicos de OS** e typecheck exit 0. Os três hashes logísticos/endpoint acima permaneceram idênticos. Build automático da prévia: OK.
+A composição PostgreSQL descartável fresh atual reproduziu POSPLANOS sem operar produção: **41/41 checks**, **13/13 regressões de parciais**, **15/15 testes de endpoint/leitor**, **21/21 testes da UI integrada**, **73/73 testes canônicos de OS** na preparação e typecheck/build OK. FSF com feature ON/papel válido foi negada por tenant contra ARBio, com controle FSF-own positivo e fixture revertida; ACL de `service_role` foi medida separadamente. O candidato logístico permanece `8ad4def8…`/install `56631263…`; leitor+endpoint passou a `617ee527…`.
+
+O inventário completo e os PRE/POST por estágio estão em `order-e2e-new-20261108/production-rollout-2154/` (20 arquivos, manifesto SHA256 `07beeac6e225734fe90fbe9cc9ec64f5df568ed975ae380184f513055f0c102d`): confirmação fechada → envio fechado → físico OFF → logística OFF → leitor/endpoint OFF. Nenhum arquivo foi executado em produção pelo Lovable.
 
 Esses testes usam Auth/schema/Storage sintéticos declarados. Não provam JWT, RLS, PostgREST, Storage ou browser de produção. O positivo fiscal integrado continua `NOT_RUN_BLOCKED_REAL_ALWAYS_DENY`; zero título/documento/alocação foi criado pelo fluxo físico.
 

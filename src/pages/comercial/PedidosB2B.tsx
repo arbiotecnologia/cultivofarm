@@ -51,6 +51,7 @@ import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialO
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
 import { usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
+import { ResaleOsAvailabilityPanel } from "@/components/comercial/ResaleOsAvailabilityPanel";
 
 
 
@@ -422,6 +423,7 @@ export default function PedidosB2B() {
                   </div>
                 </div>
 
+                <ResaleOsAvailabilityPanel orderId={detail.id} actorScope={actorScope} />
                 {isAccountingPending(detail) && <AccountingPendingNotice audience="commercial" />}
                 <PromoteAccountingPendingButton order={detail} canAttempt={canAttemptPromotion} />
                 {detail.status === "aguardando_aprovacao_credito" && (
