@@ -157,7 +157,7 @@ INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,max_days,mont
     check("versão herda tenant ARBio", f"SELECT organization_id FROM public.commercial_payment_plans WHERE id='{new_version}';", OA)
     check("versão ARBio invisível para FSF", actor(B, f"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0) WHERE id='{new_version}';"), 0)
     check("ARBio define padrão próprio", actor(A, f"SELECT public.rpc_admin_set_default_commercial_plan('{new_version}');"))
-    check("FSF define padrão próprio sem limpar ARBio", actor(B, f"SELECT public.rpc_admin_set_default_commercial_plan('{PLAN_B1}');SELECT count(*) FROM public.commercial_payment_plans WHERE is_default;"), 2)
+    check("FSF define e lê somente seu padrão", actor(B, f"SELECT public.rpc_admin_set_default_commercial_plan('{PLAN_B1}');SELECT count(*) FROM public.commercial_payment_plans WHERE is_default;"), 1)
     check("padrões pertencem a tenants distintos", f"SELECT string_agg(organization_id::text,',' ORDER BY organization_id::text) FROM public.commercial_payment_plans WHERE is_default;", f"{OA},{OB}")
 
     created_b = check("FSF cria plano com tenant próprio", actor(B, "SELECT public.rpc_admin_create_commercial_plan('{\"name\":\"Plano B2\",\"code\":\"PLAN-B2\",\"plan_type\":\"custom\",\"max_days\":30,\"months_count\":1,\"installment_count\":1,\"discount_percent\":0,\"monthly_interest_percent\":0,\"interest_type\":\"none\",\"pricing_mode\":\"discount_from_base\",\"requires_credit_approval\":false,\"requires_guarantee\":false,\"requires_financial_approval\":false}'::jsonb);"))
