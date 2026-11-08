@@ -197,7 +197,27 @@ BEGIN
    SELECT 1 FROM public.entregas e JOIN public.ordens_servico os ON os.id=e.ordem_servico_id
    WHERE os.partner_order_id=n.id AND e.status::text NOT IN ('entregue','cancelada')
   )
- ) IS TRUE;
+  -- TODOS os itens precisam ter exatamente sua quantidade confirmada. Uma OS ou
+  -- entrega de outro item nunca completa este item; canceladas não somam, e
+  -- excesso também impede a transição. O snapshot econômico permanece o mesmo.
+  AND NOT EXISTS(
+   SELECT 1 FROM public.partner_order_items i
+   LEFT JOIN public.ordens_servico os ON os.partner_order_item_id=i.id
+    AND os.partner_order_id=n.id AND os.origem='b2b'
+   LEFT JOIN public.entregas e ON e.ordem_servico_id=os.id AND e.partner_order_id=n.id
+    AND e.status::text='entregue' AND e.receivable_id IS NULL
+   WHERE i.order_id=n.id
+   GROUP BY i.id,i.quantidade
+   HAVING coalesce(sum(e.quantidade_entregue),0) IS DISTINCT FROM i.quantidade
+  )
+  -- Nenhuma entrega confirmada pode ficar fora dos itens imutáveis do pedido.
+  AND NOT EXISTS(
+   SELECT 1 FROM public.entregas e
+   JOIN public.ordens_servico os ON os.id=e.ordem_servico_id AND os.partner_order_id=n.id
+   LEFT JOIN public.partner_order_items i ON i.id=os.partner_order_item_id AND i.order_id=n.id
+   WHERE e.partner_order_id=n.id AND e.status::text='entregue' AND i.id IS NULL
+  )
+  ) IS TRUE;
 END;
 $$;
 REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders) FROM PUBLIC,anon,authenticated,service_role;
@@ -241,6 +261,23 @@ BEGIN
   AND EXISTS(SELECT 1 FROM public.produtos p WHERE p.id=i.product_id AND p.owner_organization_id=v_org AND p.ativo
    AND p.familia_catalogo IN ('quimico','fertilizante_adubo')) FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ITEM_DENIED' USING ERRCODE='42501';END IF;
+ -- O FOR SHARE do item é o último lock explícito antes do ticket/INSERT. Toda
+ -- autoridade e o escopo precisam ser observados novamente aqui: revogação de
+ -- papel, perfil, tenant, parceiro ou gate durante a espera não pode criar OS,
+ -- recibo, ticket ou efeito posterior. O replay continua reautorizado acima.
+ IF auth.uid() IS DISTINCT FROM v_uid OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF platform_private.stock_motor_actor('reserva') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE) THEN RAISE EXCEPTION 'B2B_RESALE_GATE_CLOSED' USING ERRCODE='42501';END IF;
+ IF NOT EXISTS(
+  SELECT 1 FROM public.partner_orders po
+  JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=v_org
+   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+  WHERE po.id=p_order_id AND po.status::text='aprovado'
+   AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+   AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+   AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+   AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+ ) THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'b2b_resale_os_create_v1',v_os);
  INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,
   volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)
