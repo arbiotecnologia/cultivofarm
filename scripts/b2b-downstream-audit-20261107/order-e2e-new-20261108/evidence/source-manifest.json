@@ -1896,7 +1896,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py",
-      "sha256": "c74c1918e76a91b5381aa159a2507336c867bf4d1e65c36085f414d1d2765d79"
+      "sha256": "2e7ea0da0b8977fe15c7fbae7a92902ee9ff0060dd62be5ae5d3dfc6814f316f"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py",
+      "sha256": "e94fccf3024864f7d5e04eefbdd4cd0d4871a5c55f8e6204efefcb159836de9c"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/rebuild.py",
