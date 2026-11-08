@@ -1,0 +1,2 @@
+import { defineConfig } from 'vitest/config';
+export default defineConfig({ test: { environment: 'node', include: ['scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/ui-candidate/*.test.ts'] } });
