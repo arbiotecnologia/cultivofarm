@@ -1,3 +1,9 @@
+## 08/11 16:03 — BLOCKER: isolamento por empresa nos planos comerciais
+- [ ] Reproduzir localmente a leitura FSF dos planos ARBio e auditar listagem/leitura direta, criação, versões, metadados, ativação, padrão, reordenação, atribuições, meios e matrizes; não executar escrita FSF nem alterar dados hospedados.
+- [ ] Preparar migração revisável com propriedade por tenant comprovada por `created_by`/perfil e atribuições, negando proveniência ambígua; comprador só vê versão publicada vinculada a ele. Preservar snapshots e histórico, sem inferir tenant pelo nome.
+- [ ] Testar antes/depois: ARBio próprio, FSF negado em leitura/escrita, revogação, `is_default` por tenant, versões e atribuições cruzadas; PRE/POST e rollback deny-only em PostgreSQL descartável.
+- [ ] Manter bloqueio de liberação até revisão independente e reteste JWT/RLS real; nenhum SQL hospedado, publicação ou efeito externo. Fila B3/E2E/defaults permanece registrada abaixo.
+
 ## 08/11 15:38 — Novo parceiro no piloto B3 e escolha obrigatória do meio
 - [x] Auditoria local do contrato confirmou: `required` só com `enforced` ou ID no array do piloto; fora dele, o fluxo legado explica R$ 9 e 08/12/2026 sem meio. O valor LIVE não foi consultado pelo agente e nenhum pedido foi enviado.
 - [x] Preparação manual escopada em `pilot-activation-5c4f35f8/`: preservar IDs atuais + UUID completo confirmado do novo parceiro, `pilot` com CAS fresco, nunca `enforced`; configuração financeira/Boleto não escolhe meio pelo comprador.
