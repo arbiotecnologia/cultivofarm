@@ -1,0 +1,11 @@
+{
+  "b4_sha256": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
+  "capture_sha256": "e1ac1e925f0f10f072910e66ffa183fd1fb3f2f1863061270188df64ad2dab88",
+  "outputs": {
+    "01-pre.sql.readonly": "323580db7a10582b05e7fd248aa65381e50fef253747c7463cd8b86273bc071e",
+    "02-install.sql.review": "6b05559ad6f10a504d0c7ff9d41a4e32471a25ef968a06ed16b8c2101adad186",
+    "03-post.sql.readonly": "337412b4e9d00a0296542de37d91a3f93e032f4344ac58e1b2d199f27fd35926",
+    "04-rollback-deny.sql.review": "432725403c4a1d4c0b764bfab0bbcc1a8a71bfbaa3316a04a64854478dff5f91"
+  },
+  "project_ref": "swzpzcwiasxmjutrmvkm"
+}
