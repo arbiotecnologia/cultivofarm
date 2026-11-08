@@ -12,7 +12,7 @@ DEPENDENCIES = [HELPER, 'platform_private.b2b_internal_commercial_actor()',
 
 
 def install(B, out):
-    out = Path(out) / 'os-endpoint'; out.mkdir()
+    out = Path(out) / 'os-endpoint'; out.mkdir(exist_ok=True)
     values = ','.join("('" + s + "')" for s in DEPENDENCIES)
     captured = json.loads(B.last(f"""SELECT jsonb_agg(jsonb_build_object(
       'signature',v.sig,'md5',md5(pg_get_functiondef(p.oid)),

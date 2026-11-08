@@ -43,14 +43,14 @@ def main():
   post=json.loads([x for x in B.sql('BEGIN;'+delta+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   released=json.loads([x for x in B.sql('BEGIN;'+delta+f'GRANT EXECUTE ON FUNCTION {C.G.RPC} TO authenticated;'+C.G.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   C.G.write(pre,post,released);B.sql((C.H/'install.sql.review').read_text())
-  confirmation_out=OUT/'delivery-confirmation';confirmation_out.mkdir()
+  confirmation_out=OUT/'delivery-confirmation';confirmation_out.mkdir(exist_ok=True)
   for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
    shutil.copyfile(C.H/name,confirmation_out/name)
   S=load('new_send',C.H/'send/assemble.py')
   pre=json.loads(B.last(S.STATE+'::text;'))
   post=json.loads([x for x in B.sql('BEGIN;'+S.candidate()+S.STATE+'::text;ROLLBACK;').splitlines() if x.startswith('{')][-1])
   S.write(pre,post);B.sql((C.H/'send/install.sql.review').read_text())
-  send_out=OUT/'delivery-send';send_out.mkdir()
+  send_out=OUT/'delivery-send';send_out.mkdir(exist_ok=True)
   for name in ('preflight.sql.review','install.sql.review','postflight.sql.review','rollback.sql.review'):
    shutil.copyfile(C.H/'send'/name,send_out/name)
   B.sql('GRANT EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) TO authenticated;')
