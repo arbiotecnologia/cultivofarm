@@ -1,37 +1,16 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-zp7twya9/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 224, in main
-    grouped=json.loads(B.last(group_resale(reserved,'resale-group-cancel-0001')))
-                       ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/new-order-e2e-zp7twya9/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
+  File "/tmp/new-order-e2e-00wvk0sj/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 226, in main
+    cancelled=json.loads(B.last(B.cancel(cancel_delivery,'resale-cancel-0001')))
+                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-00wvk0sj/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 61, in last
     return sql(statement).splitlines()[-1]
            ~~~^^^^^^^^^^^
-  File "/tmp/new-order-e2e-zp7twya9/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
+  File "/tmp/new-order-e2e-00wvk0sj/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 57, in sql
     return pg.sql(statement)
            ~~~~~~^^^^^^^^^^^
-  File "/tmp/new-order-e2e-zp7twya9/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+  File "/tmp/new-order-e2e-00wvk0sj/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
     assert r.returncode==0,r.stderr[-3000:]
            ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  DELIVERY_MUTATION_CLOSED
-CONTEXT:  PL/pgSQL function platform_private.delivery_mutation_guard_20261030() line 49 at RAISE
-SQL statement "INSERT INTO public.entregas (
-    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
-    lote_id, produto_id, quantidade_entregue, status, cliente_id,
-    data_saida, motorista, veiculo, partner_order_id,
-    origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
-  ) VALUES (
-    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
-    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
-    p_estoque_produto_id,
-    v_est.lote_id,
-    v_est.produto_id,
-    p_quantidade,
-    'separado'::public.status_entrega,
-    v_cliente_os,
-    nullif(p_dados->>'data_saida','')::date,
-    nullif(p_dados->>'motorista',''),
-    nullif(p_dados->>'veiculo',''), CASE WHEN v_origem='b2b' THEN v_os.partner_order_id ELSE NULL END,
-    v_est.origem_estoque,v_est.unidade_comercial,v_est.conteudo_por_unidade,v_est.unidade_conteudo,CASE WHEN v_est.origem_estoque='compra_produto_acabado_revenda' THEN p_quantidade*v_est.conteudo_por_unidade ELSE NULL END,v_est.embalagem_id,v_est.embalagem_versao
-  ) RETURNING id"
-PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 100 at SQL statement
-PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 112 at assignment
+AssertionError: ERROR:  DELIVERY_SCOPE_DENIED
+CONTEXT:  PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 8 at RAISE
 

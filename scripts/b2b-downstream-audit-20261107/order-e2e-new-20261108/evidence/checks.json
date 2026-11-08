@@ -22,7 +22,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "05c3f0ce-7910-4f45-8706-3f9d4fff1a5e"
+    "order_id": "b7d5c963-ce76-4e90-83ca-0ca83815eca0"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -39,7 +39,7 @@
   {
     "test": "approved resale order creates one ready OS without planning production or biological link; CAS replay conflict and buyer denial",
     "status": "PASS",
-    "os_id": "01c31f5e-6ffb-4b76-8de6-ae9bab9133fa"
+    "os_id": "24ad90d1-17c0-400e-95f8-f58cb18a47a7"
   },
   {
     "test": "fractional pack, mismatched partner/order and buyer reservation all fail without changing stock",
