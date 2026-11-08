@@ -1,9 +1,8 @@
 Traceback (most recent call last):
-  File "/tmp/new-order-e2e-gdr7icrp/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 177, in main
-    assert denied.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in denied.stderr,denied.stderr
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: ERROR:  42501: ESTQ_FEATURE_REQUIRED
-CONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 6 at RAISE
-PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 6 at assignment
+  File "/tmp/new-order-e2e-75cvfw2x/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 189, in main
+    assert denied.returncode!=0 and 'B2B_RESALE_ORDER_CONFLICT' in denied.stderr,denied.stderr
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  42501: B2B_RESALE_ORDER_SCOPE_DENIED
+CONTEXT:  PL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 20 at RAISE
 LOCATION:  exec_stmt_raise, pl_exec.c:3911
 

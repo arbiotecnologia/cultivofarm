@@ -22,7 +22,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "621849d7-dcbe-4001-bde2-f025ccc6bc2f"
+    "order_id": "6ab6d434-9c18-4218-8200-e587c76421f5"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
@@ -30,6 +30,10 @@
   },
   {
     "test": "synthetic accounting CAS promotion and canonical seller acceptance; biological production stays closed",
+    "status": "PASS"
+  },
+  {
+    "test": "resale candidate gate closed, no client EXECUTE and no direct ready OS bypass",
     "status": "PASS"
   },
   {
