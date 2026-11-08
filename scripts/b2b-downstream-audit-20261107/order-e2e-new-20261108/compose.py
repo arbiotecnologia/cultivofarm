@@ -366,6 +366,14 @@ def main():
   after_rollback=B.run_raw(resale_call(Q.UADM,'resale-after-rollback-0001'))
   assert after_rollback.returncode!=0 and 'B2B_RESALE_GATE_CLOSED' in after_rollback.stderr,after_rollback.stderr
   checks.append(dict(test='resale POST hashes ACLs closed gate and deny-only rollback preserve history without reopening writers',status='PASS',candidate_sha256=logistics['candidate_sha256']))
+  plans_before_rollback=B.last('SELECT count(*) FROM public.commercial_payment_plans;')
+  B.sql((plan_dir/'04-rollback-deny.sql.review').read_text())
+  denied_plan_read=Q.as_user(Q.UADM,"SELECT count(*) FROM public.rpc_admin_list_commercial_plans(NULL,'all',100,0);")
+  assert denied_plan_read.returncode!=0 and 'permission denied' in denied_plan_read.stderr,denied_plan_read.stderr
+  assert B.last('SELECT count(*) FROM public.commercial_payment_plans;')==plans_before_rollback
+  assert B.last("SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_payment_plans'::regclass AND conname='commercial_payment_plans_code_key';")=='0'
+  assert B.last("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='commercial_payment_plans' AND indexname='uq_cpp_tenant_code';")=='1'
+  checks.append(dict(test='same DB deny-only rollback closes plan readers preserves plans and never restores global code uniqueness',status='PASS'))
   R.assert_current(B,OUT,'real-baselines-post-rollback.json',ROOT)
   checks.append(dict(test='ten receivable triggers ACL downstream guard and registration fence unchanged after logistics POST rollback',status='PASS'))
  except Exception:
