@@ -1,0 +1,277 @@
+[map[definition:CREATE OR REPLACE FUNCTION public.rpc_admin_create_commercial_plan(p_payload jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_id uuid;
+BEGIN
+  IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  PERFORM public._cpp_validate_payload(p_payload);
+
+  INSERT INTO public.commercial_payment_plans (
+    name, code, description, plan_type, max_days, months_count, installment_count,
+    discount_percent, monthly_interest_percent, interest_type, requires_credit_approval,
+    requires_guarantee, requires_financial_approval, minimum_order_amount, pricing_mode,
+    active, sort_order, created_by, updated_by, valid_from, valid_until, version, version_reason
+  ) VALUES (
+    btrim(p_payload->>'name'), upper(btrim(p_payload->>'code')), nullif(btrim(coalesce(p_payload->>'description','')),''),
+    p_payload->>'plan_type', coalesce((p_payload->>'max_days')::integer,0),
+    coalesce((p_payload->>'months_count')::numeric,0), coalesce((p_payload->>'installment_count')::integer,1),
+    coalesce((p_payload->>'discount_percent')::numeric,0), coalesce((p_payload->>'monthly_interest_percent')::numeric,0),
+    coalesce(p_payload->>'interest_type','compound'), coalesce((p_payload->>'requires_credit_approval')::boolean,false),
+    coalesce((p_payload->>'requires_guarantee')::boolean,false), coalesce((p_payload->>'requires_financial_approval')::boolean,false),
+    nullif(p_payload->>'minimum_order_amount','')::numeric, coalesce(p_payload->>'pricing_mode','discount_from_base'),
+    coalesce((p_payload->>'active')::boolean,true), coalesce((p_payload->>'sort_order')::integer,0),
+    auth.uid(), auth.uid(), coalesce(nullif(p_payload->>'valid_from','')::timestamptz, now()),
+    nullif(p_payload->>'valid_until','')::timestamptz, 1, nullif(btrim(coalesce(p_payload->>'motivo','')),'')
+  ) RETURNING id INTO v_id;
+
+  UPDATE public.commercial_payment_plans SET root_plan_id = v_id WHERE id = v_id;
+  PERFORM public._cpp_audit('commercial_plan_created', v_id, NULL, p_payload, p_payload->>'motivo');
+  RETURN v_id;
+END
+$function$
+ signature:rpc_admin_create_commercial_plan(jsonb)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_admin_list_commercial_plans(p_search text DEFAULT NULL::text, p_status text DEFAULT 'all'::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0)
+ RETURNS TABLE(id uuid, code text, name text, description text, plan_type text, version integer, root_plan_id uuid, superseded_by_id uuid, valid_from timestamp with time zone, valid_until timestamp with time zone, is_default boolean, active boolean, sort_order integer, max_days integer, months_count numeric, installment_count integer, discount_percent numeric, monthly_interest_percent numeric, interest_type text, pricing_mode text, minimum_order_amount numeric, requires_credit_approval boolean, requires_guarantee boolean, requires_financial_approval boolean, is_referenced boolean, selectable boolean, total_count bigint)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_limit integer := least(greatest(coalesce(p_limit,20),1),100);
+        v_offset integer := greatest(coalesce(p_offset,0),0);
+BEGIN
+  IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  RETURN QUERY
+  WITH base AS (
+    SELECT p.* FROM public.commercial_payment_plans p
+    WHERE (p_search IS NULL OR btrim(p_search) = ''
+           OR p.name ILIKE '%'||btrim(p_search)||'%' OR p.code ILIKE '%'||btrim(p_search)||'%')
+      AND (coalesce(p_status,'all') = 'all'
+           OR (p_status = 'active' AND p.active)
+           OR (p_status = 'inactive' AND NOT p.active))
+  ), counted AS (SELECT count(*)::bigint c FROM base)
+  SELECT b.id, b.code, b.name, b.description, b.plan_type, b.version,
+         b.root_plan_id, b.superseded_by_id, b.valid_from, b.valid_until,
+         b.is_default, b.active, b.sort_order, b.max_days, b.months_count,
+         b.installment_count, b.discount_percent, b.monthly_interest_percent,
+         b.interest_type, b.pricing_mode, b.minimum_order_amount,
+         b.requires_credit_approval, b.requires_guarantee, b.requires_financial_approval,
+         public.fn_b2b_plan_referenced(b.id), public.fn_b2b_plan_selectable(b.id),
+         (SELECT c FROM counted)
+  FROM base b
+  ORDER BY b.sort_order ASC, b.code ASC, b.version DESC
+  LIMIT v_limit OFFSET v_offset;
+END
+$function$
+ signature:rpc_admin_list_commercial_plans(text,text,integer,integer)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_admin_reorder_commercial_plans(p_orders jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_item jsonb;
+BEGIN
+  IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  IF jsonb_typeof(p_orders) <> 'array' THEN RAISE EXCEPTION 'orders_payload_invalid'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('cpp_reorder'));
+
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_orders) LOOP
+    IF (v_item->>'sort_order')::integer < 0 THEN RAISE EXCEPTION 'sort_order_invalid'; END IF;
+    UPDATE public.commercial_payment_plans
+       SET sort_order = (v_item->>'sort_order')::integer, updated_by = auth.uid()
+     WHERE id = (v_item->>'id')::uuid;
+  END LOOP;
+
+  PERFORM public._cpp_audit('commercial_plan_reordered', NULL, NULL, jsonb_build_object('orders', p_orders), NULL);
+END
+$function$
+ signature:rpc_admin_reorder_commercial_plans(jsonb)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_admin_set_commercial_plan_active(p_plan_id uuid, p_active boolean, p_motivo text DEFAULT NULL::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_old public.commercial_payment_plans%ROWTYPE;
+BEGIN
+  IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF p_active AND v_old.superseded_by_id IS NOT NULL THEN RAISE EXCEPTION 'plan_superseded_cannot_activate'; END IF;
+
+  UPDATE public.commercial_payment_plans
+     SET active = p_active,
+         is_default = CASE WHEN p_active THEN is_default ELSE false END,
+         updated_by = auth.uid()
+   WHERE id = p_plan_id;
+
+  PERFORM public._cpp_audit(CASE WHEN p_active THEN 'commercial_plan_activated' ELSE 'commercial_plan_deactivated' END,
+    p_plan_id, to_jsonb(v_old), jsonb_build_object('active', p_active), p_motivo);
+END
+$function$
+ signature:rpc_admin_set_commercial_plan_active(uuid,boolean,text)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_admin_set_default_commercial_plan(p_plan_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_prev public.commercial_payment_plans%ROWTYPE;
+BEGIN
+  IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('cpp_default_plan'));
+  SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF NOT public.fn_b2b_plan_selectable(p_plan_id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;
+
+  SELECT * INTO v_prev FROM public.commercial_payment_plans
+   WHERE is_default AND id <> p_plan_id FOR UPDATE;
+
+  UPDATE public.commercial_payment_plans SET is_default = false, updated_by = auth.uid()
+   WHERE is_default AND id <> p_plan_id;
+  UPDATE public.commercial_payment_plans SET is_default = true, updated_by = auth.uid()
+   WHERE id = p_plan_id;
+
+  IF v_prev.id IS NOT NULL THEN
+    PERFORM public._cpp_audit(
+      'commercial_plan_unset_default',
+      v_prev.id,
+      jsonb_build_object('is_default', true, 'code', v_prev.code, 'name', v_prev.name),
+      jsonb_build_object('is_default', false, 'replaced_by_plan_id', p_plan_id),
+      'substituido_por_novo_plano_padrao');
+  END IF;
+
+  PERFORM public._cpp_audit(
+    'commercial_plan_set_default',
+    p_plan_id,
+    jsonb_build_object('is_default', v_old.is_default, 'code', v_old.code, 'name', v_old.name),
+    jsonb_build_object('is_default', true, 'previous_default_plan_id', v_prev.id),
+    NULL);
+END
+$function$
+ signature:rpc_admin_set_default_commercial_plan(uuid)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_admin_update_commercial_plan_metadata(p_plan_id uuid, p_name text DEFAULT NULL::text, p_description text DEFAULT NULL::text, p_sort_order integer DEFAULT NULL::integer)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_old public.commercial_payment_plans%ROWTYPE;
+BEGIN
+  IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF p_sort_order IS NOT NULL AND p_sort_order < 0 THEN RAISE EXCEPTION 'sort_order_invalid'; END IF;
+  IF p_name IS NOT NULL AND btrim(p_name) = '' THEN RAISE EXCEPTION 'plan_name_required'; END IF;
+
+  UPDATE public.commercial_payment_plans
+     SET name = coalesce(btrim(p_name), name),
+         description = coalesce(p_description, description),
+         sort_order = coalesce(p_sort_order, sort_order),
+         updated_by = auth.uid()
+   WHERE id = p_plan_id;
+
+  PERFORM public._cpp_audit('commercial_plan_metadata_updated', p_plan_id, to_jsonb(v_old),
+    jsonb_build_object('name', p_name, 'description', p_description, 'sort_order', p_sort_order), NULL);
+END
+$function$
+ signature:rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_admin_version_commercial_plan(p_plan_id uuid, p_payload jsonb, p_motivo text DEFAULT NULL::text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_old public.commercial_payment_plans%ROWTYPE; v_new_id uuid; v_next integer; v_code text;
+BEGIN
+  IF NOT public.fn_b2b_can_admin_plans() THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  PERFORM public._cpp_validate_payload(p_payload);
+
+  SELECT * INTO v_old FROM public.commercial_payment_plans WHERE id = p_plan_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF v_old.superseded_by_id IS NOT NULL THEN RAISE EXCEPTION 'plan_already_superseded'; END IF;
+
+  SELECT coalesce(max(version),0) + 1 INTO v_next
+    FROM public.commercial_payment_plans WHERE root_plan_id = coalesce(v_old.root_plan_id, v_old.id);
+  v_code := upper(btrim(coalesce(nullif(p_payload->>'code',''), v_old.code)));
+  IF v_code = v_old.code THEN v_code := v_code || '-V' || v_next; END IF;
+
+  INSERT INTO public.commercial_payment_plans (
+    name, code, description, plan_type, max_days, months_count, installment_count,
+    discount_percent, monthly_interest_percent, interest_type, requires_credit_approval,
+    requires_guarantee, requires_financial_approval, minimum_order_amount, pricing_mode,
+    active, sort_order, created_by, updated_by, valid_from, valid_until,
+    version, root_plan_id, version_reason
+  ) VALUES (
+    btrim(coalesce(nullif(p_payload->>'name',''), v_old.name)), v_code,
+    coalesce(nullif(btrim(coalesce(p_payload->>'description','')),''), v_old.description),
+    coalesce(nullif(p_payload->>'plan_type',''), v_old.plan_type),
+    coalesce((p_payload->>'max_days')::integer, v_old.max_days),
+    coalesce((p_payload->>'months_count')::numeric, v_old.months_count),
+    coalesce((p_payload->>'installment_count')::integer, v_old.installment_count),
+    coalesce((p_payload->>'discount_percent')::numeric, v_old.discount_percent),
+    coalesce((p_payload->>'monthly_interest_percent')::numeric, v_old.monthly_interest_percent),
+    coalesce(nullif(p_payload->>'interest_type',''), v_old.interest_type),
+    coalesce((p_payload->>'requires_credit_approval')::boolean, v_old.requires_credit_approval),
+    coalesce((p_payload->>'requires_guarantee')::boolean, v_old.requires_guarantee),
+    coalesce((p_payload->>'requires_financial_approval')::boolean, v_old.requires_financial_approval),
+    coalesce(nullif(p_payload->>'minimum_order_amount','')::numeric, v_old.minimum_order_amount),
+    coalesce(nullif(p_payload->>'pricing_mode',''), v_old.pricing_mode),
+    true, v_old.sort_order, auth.uid(), auth.uid(),
+    coalesce(nullif(p_payload->>'valid_from','')::timestamptz, now()),
+    nullif(p_payload->>'valid_until','')::timestamptz,
+    v_next, coalesce(v_old.root_plan_id, v_old.id), nullif(btrim(coalesce(p_motivo,'')),'')
+  ) RETURNING id INTO v_new_id;
+
+  UPDATE public.commercial_payment_plans
+     SET superseded_by_id = v_new_id, active = false, is_default = false,
+         valid_until = coalesce(valid_until, now()), updated_by = auth.uid()
+   WHERE id = p_plan_id;
+
+  PERFORM public._cpp_audit('commercial_plan_versioned', v_new_id, to_jsonb(v_old), p_payload || jsonb_build_object('version', v_next, 'previous_plan_id', p_plan_id), p_motivo);
+  RETURN v_new_id;
+END
+$function$
+ signature:rpc_admin_version_commercial_plan(uuid,jsonb,text)] map[definition:CREATE OR REPLACE FUNCTION public.rpc_b2b_list_selectable_payment_plans()
+ RETURNS TABLE(id uuid, code text, name text, description text, plan_type text, max_days integer, months_count numeric, installment_count integer, discount_percent numeric, monthly_interest_percent numeric, interest_type text, pricing_mode text, minimum_order_amount numeric, requires_credit_approval boolean, requires_guarantee boolean, requires_financial_approval boolean, is_default boolean, sort_order integer)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_admin boolean;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  v_admin := public.has_role(v_uid,'administrador'::app_role)
+          OR public.has_role(v_uid,'financeiro'::app_role)
+          OR public.has_role(v_uid,'gestor_comercial'::app_role);
+  IF NOT (v_admin OR public.has_role(v_uid,'parceiro_b2b'::app_role)) THEN
+    RAISE EXCEPTION 'not_authorized';
+  END IF;
+
+  RETURN QUERY
+  SELECT p.id, p.code, p.name, p.description, p.plan_type::text,
+         p.max_days, p.months_count, p.installment_count,
+         p.discount_percent, p.monthly_interest_percent,
+         p.interest_type::text, p.pricing_mode::text, p.minimum_order_amount,
+         p.requires_credit_approval, p.requires_guarantee, p.requires_financial_approval,
+         p.is_default, p.sort_order
+  FROM public.commercial_payment_plans p
+  WHERE p.active = true
+    AND p.superseded_by_id IS NULL
+    AND p.valid_from <= now()
+    AND (p.valid_until IS NULL OR p.valid_until > now())
+    AND (
+      v_admin
+      OR EXISTS (
+        SELECT 1
+          FROM public.commercial_payment_plan_assignments a
+          JOIN public.partner_users pu ON pu.partner_id = a.partner_id
+         WHERE a.plan_id = p.id
+           AND a.status = 'published'
+           AND a.buyer_scope = 'partner'
+           AND pu.user_id = v_uid
+           AND a.valid_from <= CURRENT_DATE
+           AND (a.valid_until IS NULL OR a.valid_until >= CURRENT_DATE)
+      )
+    )
+  ORDER BY p.sort_order, p.name;
+END
+$function$
+ signature:rpc_b2b_list_selectable_payment_plans()]]
