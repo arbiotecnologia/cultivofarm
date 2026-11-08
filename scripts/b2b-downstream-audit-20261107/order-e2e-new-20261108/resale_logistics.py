@@ -218,7 +218,7 @@ REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timest
             body = one(body, "os_tipo='manual' AND lote_id=l.id", "os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id", "send ledger origin")
         defs[sig]["new"] = body
 
-    candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"] for x in CHANGED) + "\n"
+    candidate = ddl + "\n\n" + "\n\n".join(defs[x]["new"].rstrip().rstrip(";") + ";" for x in CHANGED) + "\n"
     pre = ["-- Candidato B2B_RESALE_LOGISTICS_V1 INATIVO/NÃO APROVADO; somente composição local nova."]
     for sig in CHANGED:
         x = defs[sig]
