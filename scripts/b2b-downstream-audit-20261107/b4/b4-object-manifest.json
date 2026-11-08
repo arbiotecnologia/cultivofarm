@@ -563,7 +563,7 @@
         "table_schema": {
           "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#accounts_receivable",
           "owner": "postgres",
-          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "acl": "{anon=arwdm/postgres,authenticated=arwdm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
           "rls": true,
           "force_rls": false,
           "columns": [
@@ -939,6 +939,11 @@
           ],
           "triggers": [
             {
+              "name": "a00_delivery_no_downstream",
+              "definition": "CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()",
+              "enabled": "O"
+            },
+            {
               "acl": "{postgres=X/postgres,service_role=X/postgres}",
               "md5": "f470a25ba7e65b366c62ad3ac8aa3112",
               "body": "CREATE OR REPLACE FUNCTION public.d51_5_validate_financial_tenant_links()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_new jsonb := to_jsonb(NEW);\n  v_org uuid;\n  v_parent_id uuid;\nBEGIN\n  BEGIN\n    v_org := NULLIF(v_new->>'organization_id', '')::uuid;\n  EXCEPTION WHEN invalid_text_representation THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_INVALID' USING ERRCODE = '23514';\n  END;\n\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_receivable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'receivable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable ar WHERE ar.id = v_parent_id AND ar.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_payable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'payable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable ap WHERE ap.id = v_parent_id AND ap.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'receivable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable_installments ari WHERE ari.id = v_parent_id AND ari.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'payable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable_installments api WHERE api.id = v_parent_id AND api.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'financial_receipts' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n    v_parent_id := NULLIF(v_new->>'payment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.receivable_payments rp WHERE rp.id = v_parent_id AND rp.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
@@ -1023,7 +1028,7 @@
           "columns_md5": "48e56787eb471eac7dbb59d23173961f",
           "constraints_md5": "22342047ab90371922b30c3e17ed95e1",
           "indexes_md5": "524434083f330c8c1b66e1712dfb2e0e",
-          "triggers_md5": "cf5ee9c0d72818a3052f36d6b167a365"
+          "triggers_md5": "7c65f3e7fed5e102fd6c8b96bc9fe8e0"
         }
       },
       "candidate": {
@@ -1242,7 +1247,7 @@
       "baseline": {
         "source": "scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json#accounts_receivable",
         "owner": "postgres",
-        "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+        "acl": "{anon=arwdm/postgres,authenticated=arwdm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
         "rls": true,
         "force_rls": false,
         "columns": [
@@ -1618,6 +1623,11 @@
         ],
         "triggers": [
           {
+            "name": "a00_delivery_no_downstream",
+            "definition": "CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()",
+            "enabled": "O"
+          },
+          {
             "acl": "{postgres=X/postgres,service_role=X/postgres}",
             "md5": "f470a25ba7e65b366c62ad3ac8aa3112",
             "body": "CREATE OR REPLACE FUNCTION public.d51_5_validate_financial_tenant_links()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_new jsonb := to_jsonb(NEW);\n  v_org uuid;\n  v_parent_id uuid;\nBEGIN\n  BEGIN\n    v_org := NULLIF(v_new->>'organization_id', '')::uuid;\n  EXCEPTION WHEN invalid_text_representation THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_INVALID' USING ERRCODE = '23514';\n  END;\n\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_receivable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'receivable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable ar WHERE ar.id = v_parent_id AND ar.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_payable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'payable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable ap WHERE ap.id = v_parent_id AND ap.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'receivable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable_installments ari WHERE ari.id = v_parent_id AND ari.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'payable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable_installments api WHERE api.id = v_parent_id AND api.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'financial_receipts' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n    v_parent_id := NULLIF(v_new->>'payment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.receivable_payments rp WHERE rp.id = v_parent_id AND rp.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
@@ -1702,7 +1712,7 @@
         "columns_md5": "48e56787eb471eac7dbb59d23173961f",
         "constraints_md5": "22342047ab90371922b30c3e17ed95e1",
         "indexes_md5": "524434083f330c8c1b66e1712dfb2e0e",
-        "triggers_md5": "cf5ee9c0d72818a3052f36d6b167a365"
+        "triggers_md5": "7c65f3e7fed5e102fd6c8b96bc9fe8e0"
       },
       "candidate": {
         "table_acl": "UNCHANGED",
@@ -1811,7 +1821,7 @@
     "columns": "62e9a6d0710abab3dd0f1ce6db4005bd",
     "constraints": "09ce695b8adddd296478b570c5608125",
     "indexes": "53e7b38728aa3dcd5190a8287a166b12",
-    "triggers": "24c9dabea0eb679d1d3aff3f231d7b20"
+    "triggers": "c0bcb36555a47914814dda1c2f5c3ce3"
   },
   "operation_separation": {
     "installation_grants_operation": false,
