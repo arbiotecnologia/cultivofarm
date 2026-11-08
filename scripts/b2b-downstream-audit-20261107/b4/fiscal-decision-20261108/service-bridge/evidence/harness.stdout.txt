@@ -130,8 +130,7 @@ PASS ponte PRE confirma pins B4 e autorização capturada
 PASS ponte service-only instala com POST e ACL fechada
 PASS ponte POST íntegro
 PASS ponte não recebe EXECUTE de usuário autenticado
-FAIL ponte mantém dependência fiscal/contábil real fechada antes da costura local :: ERROR:  B2B_FISCAL_CONFIRMATION_UNPROVEN
-CONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 15 at RAISE
+PASS ponte mantém dependência fiscal/contábil real fechada antes da costura local
 PASS dependência negada não deixa documento/título
 PASS evento pendente é ignorado sem título
 PASS evento rejeitado é ignorado sem título
@@ -139,8 +138,14 @@ PASS pendente/rejeitado não criam documento ou recebível
 PASS autorização com falha pós-título aborta sem perder capacidade de retry
 PASS falha da autorização não deixa NF autorizada, documento ou título parcial
 PASS retentativa autorizada gera um recebível B4 pela NF
-FAIL título service-only não inventa ator humano e conserva vínculo NF :: 
+PASS título service-only não inventa ator humano e conserva vínculo NF
 PASS parcialidade service-only consome somente o restante do pedido
 PASS retentativa da NF autorizada é replay sem duplicação
 PASS duas chamadas service-only concorrentes preservam um único título
-FAIL execução sem exceção de harness :: TypeError('cannot unpack non-iterable NoneType object')
+FAIL NF com tenant divergente do pedido é negada :: ERROR:  B2B_FISCAL_ORDER_SCOPE_INVALID
+CONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 22 at RAISE
+
+PASS NF estrangeira não gera documento/título
+PASS origem manual sem ator continua fechada
+PASS rollback deny-only da ponte fecha callback e preserva histórico
+PASS rollback da ponte não reabre alocador nem exceção manual

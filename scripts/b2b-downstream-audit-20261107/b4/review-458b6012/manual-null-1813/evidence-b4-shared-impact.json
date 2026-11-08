@@ -26,8 +26,8 @@
     "pedido interno sintético",
     "writer integral antigo"
   ],
-  "passed": 142,
-  "total": 145,
+  "passed": 148,
+  "total": 149,
   "checks": [
     {
       "name": "boot B2/B3 com gatilhos reais",
@@ -559,8 +559,7 @@
     },
     {
       "name": "ponte mantém dependência fiscal/contábil real fechada antes da costura local",
-      "ok": false,
-      "detail": "ERROR:  B2B_FISCAL_CONFIRMATION_UNPROVEN\nCONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 15 at RAISE"
+      "ok": true
     },
     {
       "name": "dependência negada não deixa documento/título",
@@ -592,8 +591,7 @@
     },
     {
       "name": "título service-only não inventa ator humano e conserva vínculo NF",
-      "ok": false,
-      "detail": ""
+      "ok": true
     },
     {
       "name": "parcialidade service-only consome somente o restante do pedido",
@@ -608,9 +606,25 @@
       "ok": true
     },
     {
-      "name": "execução sem exceção de harness",
+      "name": "NF com tenant divergente do pedido é negada",
       "ok": false,
-      "detail": "TypeError('cannot unpack non-iterable NoneType object')"
+      "detail": "ERROR:  B2B_FISCAL_ORDER_SCOPE_INVALID\nCONTEXT:  PL/pgSQL function platform_private.b2b_fiscal_invoice_bridge_v1(uuid) line 22 at RAISE\n"
+    },
+    {
+      "name": "NF estrangeira não gera documento/título",
+      "ok": true
+    },
+    {
+      "name": "origem manual sem ator continua fechada",
+      "ok": true
+    },
+    {
+      "name": "rollback deny-only da ponte fecha callback e preserva histórico",
+      "ok": true
+    },
+    {
+      "name": "rollback da ponte não reabre alocador nem exceção manual",
+      "ok": true
     }
   ],
   "hosted": "NOT_RUN",
