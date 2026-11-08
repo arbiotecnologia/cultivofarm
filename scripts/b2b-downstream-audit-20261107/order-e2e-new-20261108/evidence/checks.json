@@ -22,7 +22,7 @@
   {
     "test": "new buyer canonical B3 packaging order with chosen condition, durable replay and committed recovery",
     "status": "PASS",
-    "order_id": "3de52ac2-2888-4da7-af24-1ab0a258e13e"
+    "order_id": "a10a61e7-8810-47cd-9467-8b3ff69f127b"
   },
   {
     "test": "accounting pending approval denied atomically before synthetic promotion",
