@@ -61,6 +61,10 @@ def main():
         check("duas NFs parciais não cobram além das alocações e do total econômico", count_text == "2" and Decimal(allocated_text) == Decimal(economic_text) and residual(recovery_order) == 0, totals)
 '''
     s = replace(s, anchor, addition)
+    s = replace(s, '        legacy_after_bridge = B3.u(398)',
+                '''        unlinked_customer = B3.u(376)
+        B3.psql(f"INSERT INTO public.clientes(id,organization_id) VALUES('{unlinked_customer}','{B3.A}') ON CONFLICT(id) DO NOTHING")
+        legacy_after_bridge = B3.u(398)''')
     s = replace(s, '        B3.psql(real_dependencies + ";")\n        bridge_rollback = bridge_file("04-rollback-deny.sql.review")',
                 '''        strict_rollback = strict_file("04-rollback-deny.sql.review")
         check("rollback estrito restaura somente negação e preserva títulos/alocações", strict_rollback.returncode == 0 and B3.psql("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure) LIKE '%B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN%'").stdout.strip() == "t", strict_rollback.stderr[-1200:])
