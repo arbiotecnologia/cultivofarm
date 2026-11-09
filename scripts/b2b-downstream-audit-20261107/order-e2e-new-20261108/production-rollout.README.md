@@ -26,7 +26,7 @@
 6. `50`/`51`/`52`: leitor e endpoint de OS com gate OFF.
 7. `60`/`61`/`62`: contenção obrigatória do piloto ARBio, ainda com ambos os gates OFF.
 
-Não existe script de ativação. `finished_product_gate_v1` e `b2b_resale_logistics_gate_v1` são somente chaves-mestras: a operação exige também concessões server-side exatas por ator, organização, operação e referências sintéticas, com validade e revogação. Outra organização e ator ARBio fora da allowlist permanecem negados.
+Não existe script de ativação. `finished_product_gate_v1` e `b2b_resale_logistics_gate_v1` são somente chaves-mestras: a operação exige também concessões server-side exatas por ator, organização, operação e referências sintéticas, com validade e revogação. A allowlist é privada, sem privilégios para PUBLIC/anon/authenticated/service_role; GUC ou claims do cliente não substituem sua autoridade. Outra organização com feature ON/papel válido e ator ARBio fora da allowlist permanecem negados. Procedimento manual ou documentação, isoladamente, não autoriza abrir qualquer gate global.
 
 ## Rollback deny-only
 

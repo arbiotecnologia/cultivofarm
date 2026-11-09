@@ -214,6 +214,8 @@ def main():
         'capture_functions_md5_verified': 20,
         'capture_triggers': len(capture['triggers']),
         'capture_relations': len(capture['relations']),
+        'relation_security_pins': len(current_scope.SECURITY_RELATIONS),
+        'relation_security_sha256': sha(current_scope.RELATION_SECURITY_PATH),
         'transcription_correction': 'COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; MD5 a4d47ccf5d116141ed46e9de9ea7eeaa',
         'composition_checks': len(checks),
         'partial_regressions': len(partial),
