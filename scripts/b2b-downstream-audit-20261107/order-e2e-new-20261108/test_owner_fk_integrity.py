@@ -152,9 +152,17 @@ def main():
         weight_before = next(row for row in before_reconcile["columns"]
                              if row["relation"] == "product_packagings" and row["name"] == "peso_liquido_kg")
         assert weight_before["type"] == "numeric", weight_before
+        shape_before = next(row for row in before_reconcile["columns"]
+                            if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
+        shape_expected = next(row for row in capture["columns"]
+                              if row["relation"] == "product_sale_units" and row["name"] == "forma_fisica")
+        assert shape_before["default"] is None and shape_expected["default"], shape_before
         B.sql("ALTER TABLE ONLY public.product_packagings ALTER COLUMN peso_liquido_kg TYPE numeric(12,3) USING peso_liquido_kg::numeric(12,3);")
-        report["fixture_column_reconciliation"] = {"relation": "product_packagings", "column": "peso_liquido_kg",
-                                                    "before": weight_before["type"], "after": "numeric(12,3)"}
+        B.sql(f"ALTER TABLE ONLY public.product_sale_units ALTER COLUMN forma_fisica SET DEFAULT {shape_expected['default']};")
+        report["fixture_column_reconciliation"] = [
+            {"relation": "product_packagings", "column": "peso_liquido_kg", "before": weight_before["type"], "after": "numeric(12,3)"},
+            {"relation": "product_sale_units", "column": "forma_fisica", "before": None, "after": shape_expected["default"]},
+        ]
         for table, name in TARGETS:
             assert B.last(f"""SELECT count(*) FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
               JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'
@@ -167,7 +175,9 @@ def main():
                         if any(actual_columns.get(key, {}).get(field) != expected_columns[key].get(field)
                                for field in ("type", "default", "notnull"))]
         extra_columns = sorted(set(actual_columns) - set(expected_columns))
-        assert not column_drift and not extra_columns, {"column_drift": column_drift, "extra_columns": extra_columns}
+        assert extra_columns == [("produtos", "oculto")], extra_columns
+        assert not column_drift, {"column_drift": column_drift}
+        report["capture_scope_extra_columns"] = extra_columns
         actual_constraints = {(row["relation"], row["name"]): row for row in reconciled["constraints"]}
         target_keys = {(table, name) for table, name in TARGETS}
         constraint_drift = []
@@ -281,6 +291,7 @@ def main():
             "synthetic_seams": [
                 "Auth/claims e papéis SQL somente no PostgreSQL descartável",
                 "product_packagings.peso_liquido_kg ajustado de numeric para numeric(12,3) somente no descartável",
+                "product_sale_units.forma_fisica recebe o default derivado capturado somente no descartável; produtos.oculto permanece fora do escopo do PRE",
                 "duas FKs removidas somente no descartável para reproduzir a captura real",
                 "órfãos temporários com triggers desabilitados somente na fixture e restaurados; writers finais com triggers habilitados",
                 "artefatos 00/11/12/20/21/22/32/93 executados apenas como composição local",
