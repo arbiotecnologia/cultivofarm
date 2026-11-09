@@ -4,7 +4,7 @@ At the hook point the harness has: B3 installed (real create_partner_order_condi
 respond_b2b_order_quote_secure, real partner_orders triggers), seller A activated pilot [P, PN] (version 2), seller F NOT activated.
 Declared seams of that harness stay (auth.uid by GUC, minimal roles/entitlements) - never hosted JWT/RLS proof.
 """
-import json, os, pathlib, subprocess
+import json, os, pathlib, re, subprocess
 
 PKG = pathlib.Path(__file__).resolve().parent
 
@@ -69,9 +69,12 @@ def run(ns):
     if os.environ.get("CCR2_LIVE_BODIES") == "1":
         import live_bodies
         f = work / "ccr2-live-bodies.sql"; f.write_text(live_bodies.sql()); f.chmod(0o644)
-        r = subprocess.run(SP.su() + ["psql", "-X", "-q", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1", "-f", str(f)], capture_output=True, text=True, timeout=120)
+        if os.environ.get("CCR2_PROBE") == "1":
+            f.write_text(re.sub(r"^(BEGIN|COMMIT);$", r"-- \\1", live_bodies.sql(), flags=re.M)); f.chmod(0o644)
+        r = subprocess.run(SP.su() + ["psql", "-X", "-q", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=%s" % ("0" if os.environ.get("CCR2_PROBE") == "1" else "1"), "-f", str(f)], capture_output=True, text=True, timeout=120)
+        if os.environ.get("CCR2_PROBE") == "1": r = subprocess.CompletedProcess(r.args, 9, r.stdout, "\n".join(l for l in r.stderr.splitlines() if "ERROR" in l))
         lv = {k: {"mirror": md5_of(k), "live": v} for k, v in live_bodies.LIVE.items()}
-        res["live_bodies"] = {"install_rc": r.returncode, "install_err": r.stderr[-1500:], "md5": lv, "seams": [x[0] for x in live_bodies.SEAMS]}
+        res["live_bodies"] = {"install_rc": r.returncode, "install_err": r.stderr[-6000:], "md5": lv, "seams": [x[0] for x in live_bodies.SEAMS]}
         check("CCR2 LIVE: corpos atuais (cc1f6cc) instalados no espelho", r.returncode == 0, r.stderr[-400:])
         check("CCR2 LIVE: md5 dos writers no espelho = LIVE informado", all(x["mirror"] == x["live"] for x in lv.values()), lv)
         pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "hook-results.json").write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
