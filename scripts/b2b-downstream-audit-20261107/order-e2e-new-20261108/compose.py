@@ -439,6 +439,11 @@ def main():
    # Não executar o guard SEND antigo: a contenção substituiu seus corpos. O
    # rollback composto abaixo mede o estado escopado atual e revoga send+confirm.
    confirmation_rollback_state=C.state()
+   # O estado agregado histórico não inclui esses dois schemas. Medir seus corpos
+   # atuais evita fallback de hash antigo tanto nos pins quanto nas triggers.
+   extra_functions=json.loads(B.last("""SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),coalesce(p.proacl::text,''),pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef)),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('private','cf_user_guards_v1');"""))
+   function_keys={(r[0],r[1],r[2]) for r in extra_functions}
+   confirmation_rollback_state['functions']=[r for r in confirmation_rollback_state['functions'] if (r[0],r[1],r[2]) not in function_keys]+extra_functions
    current_scope.write_final_confirmation_rollback(confirmation_out,send_out,confirmation_rollback_state,C.G.STATE)
    B.sql((confirmation_out/'rollback-composed.sql.review').read_text())
    closed=json.loads(B.last("""SELECT jsonb_build_object(
