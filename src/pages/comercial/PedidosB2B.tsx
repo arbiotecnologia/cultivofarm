@@ -49,7 +49,7 @@ import { orderItemQuantityLabel } from "@/lib/comercial/orderItemPresentation";
 import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
 import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialOwnerOrdersSection";
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
-import { usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
+import { PEDIDOS_B2B_DEFAULT_STATUS, usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
 import { useActiveTenantName } from "@/hooks/useActiveTenantName";
 import { ResaleOsAvailabilityPanel } from "@/components/comercial/ResaleOsAvailabilityPanel";
 
