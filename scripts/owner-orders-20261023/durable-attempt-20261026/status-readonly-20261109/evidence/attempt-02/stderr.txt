@@ -1,3 +1,5 @@
-  File "/dev-server/scripts/owner-orders-20261023/durable-attempt-20261026/status-readonly-20261109/test-status-pg.py", line 70
-    ok('two tabs prepare: exactly one reservation row, same key',not ea and not eb and jcount(fresh)==1 and ra['key']==rb['key'],(ra,rb,ea,eb))
-IndentationError: unexpected indent
+Traceback (most recent call last):
+  File "/dev-server/scripts/owner-orders-20261023/durable-attempt-20261026/status-readonly-20261109/test-status-pg.py", line 112, in <module>
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{env['ADMIN']}',revoke_reason='synthetic' WHERE user_id='{fresh}'; SET session_replication_role=origin;")
+                                                                                                                 ~~~^^^^^^^^^
+KeyError: 'ADMIN'

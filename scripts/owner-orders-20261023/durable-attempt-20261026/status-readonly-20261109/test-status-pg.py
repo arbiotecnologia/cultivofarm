@@ -66,7 +66,7 @@ if fresh:
  pa=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'tab-a',fresh);pb=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'tab-b',fresh)
  oa,ea=finish(pa);ob,eb=finish(pb)
  print('TABS',repr(oa[-400:]),repr(ob[-400:]),flush=True)
-ra=json.loads([l for l in oa.splitlines() if l.strip().startswith('{')][-1]);rb=json.loads([l for l in ob.splitlines() if l.strip().startswith('{')][-1])
+ ra=json.loads([l for l in oa.splitlines() if l.strip().startswith('{')][-1]);rb=json.loads([l for l in ob.splitlines() if l.strip().startswith('{')][-1])
  ok('two tabs prepare: exactly one reservation row, same key',not ea and not eb and jcount(fresh)==1 and ra['key']==rb['key'],(ra,rb,ea,eb))
  ok('two tabs prepare: exactly one sees reserved, the other sees uncertain (client with fresh expectation must refuse)',sorted([ra['state'],rb['state']])==['reserved','uncertain'],(ra['state'],rb['state']))
  K=ra['key']
