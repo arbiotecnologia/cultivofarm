@@ -4,7 +4,7 @@ At the hook point the harness has: B3 installed (real create_partner_order_condi
 respond_b2b_order_quote_secure, real partner_orders triggers), seller A activated pilot [P, PN] (version 2), seller F NOT activated.
 Declared seams of that harness stay (auth.uid by GUC, minimal roles/entitlements) - never hosted JWT/RLS proof.
 """
-import json, pathlib, subprocess
+import json, os, pathlib, subprocess
 
 PKG = pathlib.Path(__file__).resolve().parent
 
@@ -275,7 +275,8 @@ def run(ns):
     wp = {k: {"harness": md5_of(k), "live_reported": v} for k, v in LIVE.items()}
     for k, v in wp.items():
         v["equal"] = v["harness"] == v["live_reported"]
-        (work / ("writer-" + k.split("(")[0].split(".")[1] + ".harness.sql")).write_text(psql(f"SELECT pg_get_functiondef('{k}'::regprocedure)").stdout)
+        out_dir = pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)))
+        (out_dir / ("writer-" + k.split("(")[0].split(".")[1] + ".harness.sql")).write_text(psql(f"SELECT pg_get_functiondef('{k}'::regprocedure)").stdout)
     res["writer_pins"] = wp
     check("CCR2 pins dos writers usados registrados vs LIVE (divergência exige diff, não repin)", True, wp)
     check("CCR2 coerência global: todo snapshot casa parceiro/plano/empresa do pedido",
@@ -298,5 +299,6 @@ def run(ns):
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 reinstall após rollback", r.returncode == 0, r.stderr[-300:])
     r = runsql("82-ccr2-post.sql.readonly"); check("CCR2 POST após reinstall", r.returncode == 0 and "CCR2_POST_OK" in r.stderr, r.stderr[-300:])
     r = runsql("96-ccr2-rollback.sql.review"); check("CCR2 rollback final antes do rollback B3 do harness", r.returncode == 0, r.stderr[-300:])
+    pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "hook-results.json").write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
     if not (PKG / "pins.json").exists():
         (PKG / "pins.json").write_text(json.dumps(pins, indent=2) + "\n")

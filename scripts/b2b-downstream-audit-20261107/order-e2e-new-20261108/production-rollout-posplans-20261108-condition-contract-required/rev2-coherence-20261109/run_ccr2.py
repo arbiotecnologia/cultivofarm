@@ -5,7 +5,7 @@ The frozen packages are copied to a temporary mirror; only the mirror copy of te
 (hook call right before its B3 rollback section) and its evidence outputs are redirected into the mirror. Nothing under
 scripts/ except this package's evidence directory is written. No hosted connection.
 """
-import hashlib, json, pathlib, shutil, subprocess, sys, tempfile, time
+import hashlib, json, os, pathlib, shutil, subprocess, sys, tempfile, time
 
 PKG = pathlib.Path(__file__).resolve().parent
 ROOT = PKG.parents[4]
@@ -33,6 +33,7 @@ def main(attempt):
                                                       capture_output=True, text=True).stdout)
     t0 = time.time()
     try:
+        os.environ["CCR2_EVIDENCE"] = str(ev.resolve()); os.chmod(ev, 0o777)
         r = subprocess.run([sys.executable, str(t)], capture_output=True, text=True, timeout=580, cwd=str(mirror))
         rc, so, se = r.returncode, r.stdout, r.stderr
     except subprocess.TimeoutExpired as e:
