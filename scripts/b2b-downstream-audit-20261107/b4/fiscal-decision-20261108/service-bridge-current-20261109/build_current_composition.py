@@ -95,7 +95,7 @@ def main():
   bridge_before_md5=B.last("SELECT md5(pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure));")
   bridge_before_body=B.run_raw("SELECT pg_get_functiondef('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)'::regprocedure);").stdout.rstrip('\\n')
   (OUT/'bridge-before-audit-body.sql').write_text(bridge_before_body+'\\n')
-  (OUT/'bridge-before-audit-md5.json').write_text(json.dumps(dict(actual=bridge_before_md5,expected='34d90cf3fe03403a23d758cfd44e6d70'),indent=2)+'\\n')
+  (OUT/'bridge-before-audit-md5.json').write_text(json.dumps(dict(actual=bridge_before_md5,expected='8905212e276f6bb43be32423ee48abc8'),indent=2)+'\\n')
   bridge_audit_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'01-pre.sql.readonly').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'02-install.sql.review').read_text())
   bridge_audit_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'03-post.sql.readonly').read_text())
