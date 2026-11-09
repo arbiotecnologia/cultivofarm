@@ -1,0 +1,10 @@
+--- /dev-server/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py	2026-11-09 15:40:52.098062109 +0000
++++ /tmp/ccr2-mirror-44duxq4k/scripts/b2b-payment-condition-v1-rebase-20261106/test-local-pg.py	2026-11-09 15:51:51.528399067 +0000
+@@ -801,6 +801,7 @@
+         check("cotação LEGADA de F pronta para controle de rollback", jfq and jfq["status"] == "aguardando_cotacao", efq or jfq)
+         check("PB-001036/teste4 fora do escopo: nenhum pedido real no PG descartável", psql("SELECT count(*) FROM public.partner_orders WHERE numero='PB-001036'").stdout.strip() == "0")
+ 
++        import sys as _s; _s.path.insert(0, '/dev-server/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108-condition-contract-required/rev2-coherence-20261109'); import ccr2_hook; ccr2_hook.run(globals() | locals())
+         # ---------- rollback deny-only transacional ----------
+         files = write(fm["install"])
+         bad_rb = files["04-rollback-deny.sql.review"].replace(fm["install"]["read"], "0" * 32, 1)

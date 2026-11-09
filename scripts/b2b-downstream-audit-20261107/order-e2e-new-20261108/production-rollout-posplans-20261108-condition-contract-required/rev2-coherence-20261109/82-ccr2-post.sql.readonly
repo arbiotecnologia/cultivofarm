@@ -19,7 +19,7 @@ BEGIN
     THEN RAISE EXCEPTION 'CCR2_POST_FN %', v; END IF;
   END LOOP;
   IF n <> 5 THEN RAISE EXCEPTION 'CCR2_POST_FN_COUNT %', n; END IF;
-  SELECT string_agg(pg_get_triggerdef(t.oid) || '|' || t.tgenabled, E'\n' ORDER BY t.tgname) INTO v FROM pg_trigger t
+  SELECT string_agg(pg_get_triggerdef(t.oid) || '|' || t.tgenabled::text, E'\n' ORDER BY t.tgname) INTO v FROM pg_trigger t
    WHERE t.tgname IN ('b2b_payment_condition_required', 'b2b_condition_zz_coherence_upd', 'b2b_condition_zz_coherence_snap', 'b2b_condition_zz_coherence_quote');
   IF v IS DISTINCT FROM
      'CREATE CONSTRAINT TRIGGER b2b_condition_zz_coherence_quote AFTER INSERT ON platform_private.b2b_order_condition_quote_snapshots DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_condition_snapshot_coherence_trg()|O' || E'\n' ||

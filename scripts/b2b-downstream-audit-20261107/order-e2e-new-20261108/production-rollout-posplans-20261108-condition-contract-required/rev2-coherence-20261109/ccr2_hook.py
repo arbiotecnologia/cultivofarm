@@ -172,10 +172,10 @@ def run(ns):
         j, e = respond(UADM, jq["id"], [{"item_id": qi, "unit_price": 1000}])
         nq = psql(f"SELECT count(*) FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{jq['id']}'").stdout.strip()
         check("CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard", j is not None and nq == "1", e or j)
-        fails("CCR2 snapshot de resposta com versão divergente da escolha inicial negado",
+        fails("CCR2 snapshot de resposta com versão/meio (pix v1 existente) divergente da escolha inicial negado",
               tx(f"INSERT INTO public.partner_orders(id,partner_id,payment_plan_id,status) VALUES ('00000000-0000-0000-0000-00000000cc51','{PN}','{P3}','aguardando_cotacao');"
                  f"INSERT INTO platform_private.b2b_order_condition_snapshots SELECT '00000000-0000-0000-0000-00000000cc51',organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,quote,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,created_at,condition_version,condition_method FROM platform_private.b2b_order_condition_snapshots WHERE order_id='{jq['id']}';"
-                 f"INSERT INTO platform_private.b2b_order_condition_quote_snapshots SELECT '00000000-0000-0000-0000-00000000cc51',organization_id,partner_id,actor_id,'{PLQ}',choice,condition,request_hash,rows,principal,financed_interest,financed_total,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,condition_version,condition_method,created_at FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{jq['id']}';"),
+                 f"INSERT INTO platform_private.b2b_order_condition_quote_snapshots SELECT '00000000-0000-0000-0000-00000000cc51',organization_id,partner_id,actor_id,plan_id,choice,condition,request_hash,rows,principal,financed_interest,financed_total,payment_terms_id,cart_hash,payment_method_name,estimated,due_basis,estimated_reference_date,1,'pix',created_at FROM platform_private.b2b_order_condition_quote_snapshots WHERE order_id='{jq['id']}';"),
               "B2B_PAYMENT_CONDITION")
 
     # ---------- concurrency with real writers ----------
