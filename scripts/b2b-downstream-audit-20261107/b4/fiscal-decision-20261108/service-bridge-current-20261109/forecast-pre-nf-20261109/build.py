@@ -44,6 +44,13 @@ def main():
     terms = current["approve_b2b_payment_terms_secure"]["definition"]
     assert terms.count(scope_old) == 1
     scoped_terms = terms.replace(scope_old, scope_new)
+    lock_anchor = "  WHERE po.id = p_partner_order_id;"
+    assert scoped_terms.count(lock_anchor) == 1
+    scoped_terms = scoped_terms.replace(lock_anchor, "  WHERE po.id = p_partner_order_id FOR UPDATE;\n" + scope_new + " RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'financeiro') OR public.has_role(v_uid,'gestor_comercial')) THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501'; END IF;\n  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND (status IN ('cancelado','reprovado') OR c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')) THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVAL_UNAVAILABLE' USING ERRCODE='42501'; END IF;")
+    scoped_terms = scoped_terms.replace("   WHERE id = v_terms_id;", "   WHERE id = v_terms_id AND partner_order_id = p_partner_order_id;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_defined' USING ERRCODE='42501'; END IF;")
+    # Internal economics remain frozen: linked child approval metadata is already
+    # explicitly mutable under the captured child snapshot guard.
+    scoped_terms = scoped_terms.replace("   WHERE id = p_partner_order_id;", "   WHERE id = p_partner_order_id AND internal_origin_snapshot IS NULL AND c2_external_origin_snapshot IS NULL AND internal_economic_snapshot IS NULL;")
     terms_anchor = "  RETURN jsonb_build_object('success', true, 'status', 'approved');"
     assert scoped_terms.count(terms_anchor) == 1
     candidate_terms = scoped_terms.replace(terms_anchor, "  PERFORM platform_private.b2b_financial_forecast_after_approval_v1(p_partner_order_id,\n    public.fn_b2b_credit_exposure((SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_partner_order_id),0,NULL));\n" + terms_anchor)
@@ -118,9 +125,11 @@ DECLARE po public.partner_orders;org uuid;f platform_private.b2b_financial_forec
  schedule jsonb;items jsonb;reason text:=coalesce(p_credit->>'reason_code','');total numeric(14,2);
 BEGIN
  SELECT * INTO po FROM public.partner_orders WHERE id=p_order FOR UPDATE;
- IF NOT FOUND OR po.status<>'aprovado' OR po.approved_by IS NULL OR po.approved_at IS NULL THEN
-  RAISE EXCEPTION 'B2B_FORECAST_COMMERCIAL_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
- IF po.requires_financial_approval AND po.financial_approval_status IS DISTINCT FROM 'approved' THEN
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_FORECAST_COMMERCIAL_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
+ IF po.status<>'aprovado' OR po.approved_by IS NULL OR po.approved_at IS NULL THEN
+  RETURN jsonb_build_object('deferred',true,'reason','COMMERCIAL_APPROVAL_REQUIRED');END IF;
+ IF po.requires_financial_approval AND NOT EXISTS(SELECT 1 FROM public.partner_order_payment_terms t
+  WHERE t.id=po.payment_terms_id AND t.partner_order_id=po.id AND t.approval_status='approved' AND t.approved_by IS NOT NULL AND t.approved_at IS NOT NULL) THEN
   RETURN jsonb_build_object('deferred',true,'reason','PAYMENT_TERMS_APPROVAL_REQUIRED');END IF;
  IF po.payment_terms_id IS NULL OR coalesce(po.payment_condition_status,'') NOT IN ('defined','approved') THEN
   RAISE EXCEPTION 'B2B_FORECAST_CONDITION_UNPROVEN' USING ERRCODE='42501';END IF;
