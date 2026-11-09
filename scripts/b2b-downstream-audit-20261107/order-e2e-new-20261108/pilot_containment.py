@@ -321,4 +321,5 @@ REVOKE ALL ON FUNCTION public.rpc_finished_product_purchase_capability_v1(),publ
     (out / "post-metadata.json").write_text(json.dumps(post, indent=2) + "\n")
     manifest = {"status": "INACTIVE_REVIEW_ONLY_NOT_APPROVED", "hosted": False, "default_enabled": False, "master_switch_is_not_authority": True, "client_allowlist_access": False, "changed_functions": CHANGED, "new_functions": [ALLOW, DELIVERY], "candidate_sha256": hashlib.sha256(candidate.encode()).hexdigest()}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (out / "README.md").write_text(Path(__file__).with_name("pilot-containment.README.md").read_text())
     return out
