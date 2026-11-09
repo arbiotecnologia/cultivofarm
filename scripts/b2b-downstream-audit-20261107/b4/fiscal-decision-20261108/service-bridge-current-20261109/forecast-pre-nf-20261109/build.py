@@ -306,6 +306,7 @@ AS $$BEGIN RAISE EXCEPTION 'B2B_CREDIT_RECONCILIATION_ROLLED_BACK' USING ERRCODE
 BEGIN;
 SET LOCAL lock_timeout='3s';
 {approve};
+{credit_approval};
 {terms};
 {credit_rollback};
 REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC,anon,authenticated,service_role;
