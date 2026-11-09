@@ -154,7 +154,7 @@ def run(ns):
         if os.environ.get("CCR2_LIVE_EXACT7") == "1":
             import live_exact7
             ok7 = live_exact7.run(psql, check, md5_of, call, res, pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work))),
-                                  {"UB": UB, "UB2": UB2, "P": P, "PF": PF})
+                                  {"UB": UB, "UB2": UB2, "P": P, "PF": PF, "UADM": UADM})
             pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "hook-results.json").write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
             if not ok7:
                 raise SystemExit("CCR2_LIVE_EXACT7_STOP")
