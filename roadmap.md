@@ -1,3 +1,8 @@
+## 09/11 00:47 — Rollback final composto de ENVIO e confirmação
+- [ ] Reproduzir nos ramos logistics-only e integrado a inversão completa com contenção, logística, físico, ENVIO e confirmação. Cada um dos dois últimos rollbacks deve ser gerado dos pins exatos medidos após as reversões anteriores, deny-only e sem restaurar corpos antigos.
+- [ ] Exigir negação real como `authenticated` para ENVIO/confirmação após rollback; preservar histórico, ACLs, catálogo, planos e baseline de recebíveis/cadastro.
+- [ ] Copiar somente os artefatos da nova execução aprovada localmente para o repositório e verificar todos os hashes/origens. Gates OFF, contenção server-side obrigatória, sem hosted/publicação; prova real JWT/RLS/Storage/browser continua NOT_RUN.
+
 ## 09/11 00:37 — Complemento LIVE de RLS/FORCE RLS/owner/ACL
 - [x] Captura original preservada; complemento independente `live-current-relation-security-20261109.json` contém 18 relações, SHA256 `20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d`. PRE/POST exigem RLS, FORCE RLS, owner e ACL exatos: 17 públicas com RLS ON, privada `envase_insert_permits_v1` com RLS OFF, todas FORCE RLS OFF e nenhuma ACL ampliada.
 - [x] Attempt 94 preservou falha do rollback isolado de envio fora do recorte logístico; attempt 95 no recorte REVIEW_ONLY terminou `exit=0`: 39/39 checkpoints, 13/13 parciais, 15/15 endpoint, 30/30 contenção, UI 21/21 + 13/13 + 73/73 e typecheck 0. Rollback composto deny-only fechou gates/writers e preservou histórico.
