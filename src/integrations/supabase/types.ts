@@ -23195,6 +23195,10 @@ export type Database = {
         Args: { p_partner_id: string }
         Returns: number
       }
+      partner_order_attempt_status_v1: {
+        Args: { p_partner: string }
+        Returns: Json
+      }
       partner_order_has_production: {
         Args: { _order_id: string }
         Returns: boolean
