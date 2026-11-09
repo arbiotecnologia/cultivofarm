@@ -1,0 +1,975 @@
+-- REVIEW_ONLY_INACTIVE_NOT_APPROVED; integridade owner; nenhum hosted/cleanup/grant.
+BEGIN READ ONLY;
+SET LOCAL statement_timeout='20s';
+SELECT jsonb_build_object('contract','OWNER_FK_INTEGRITY_V1','product_packagings',jsonb_build_object(
+  'total',(SELECT count(*) FROM public.product_packagings),
+ 'owner_null',(SELECT count(*) FROM public.product_packagings WHERE owner_organization_id IS NULL),
+ 'orphan_owner',(SELECT count(*) FROM public.product_packagings child
+   LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
+   WHERE child.owner_organization_id IS NOT NULL AND parent.id IS NULL),
+ 'owner_product_mismatch',(SELECT count(*) FROM public.product_packagings child
+   JOIN public.produtos product ON product.id=child.product_id
+   WHERE product.owner_organization_id IS DISTINCT FROM child.owner_organization_id)),'product_sale_units',jsonb_build_object(
+  'total',(SELECT count(*) FROM public.product_sale_units),
+ 'owner_null',(SELECT count(*) FROM public.product_sale_units WHERE owner_organization_id IS NULL),
+ 'orphan_owner',(SELECT count(*) FROM public.product_sale_units child
+   LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
+   WHERE child.owner_organization_id IS NOT NULL AND parent.id IS NULL),
+ 'owner_product_mismatch',(SELECT count(*) FROM public.product_sale_units child
+   JOIN public.produtos product ON product.id=child.product_id
+   WHERE product.owner_organization_id IS DISTINCT FROM child.owner_organization_id))) AS owner_fk_integrity_audit;
+DO $$DECLARE actual jsonb;expected jsonb:=(SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest('{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}'::aclitem[]) AS acl_items(item));BEGIN
+ SELECT (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest(c.relacl) AS acl_items(item)) INTO actual FROM pg_class c WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='catalogo_volumes');
+ IF (SELECT r.rolname FROM pg_class c JOIN pg_roles r ON r.oid=c.relowner WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='catalogo_volumes')) IS DISTINCT FROM 'postgres'
+  OR actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.catalogo_volumes';END IF;
+END$$;
+DO $$DECLARE actual jsonb;expected jsonb:=(SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest('{postgres=arwdDxtm/postgres}'::aclitem[]) AS acl_items(item));BEGIN
+ SELECT (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest(c.relacl) AS acl_items(item)) INTO actual FROM pg_class c WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings');
+ IF (SELECT r.rolname FROM pg_class c JOIN pg_roles r ON r.oid=c.relowner WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings')) IS DISTINCT FROM 'postgres'
+  OR actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.product_packagings';END IF;
+END$$;
+DO $$DECLARE actual jsonb;expected jsonb:=(SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest('{postgres=arwdDxtm/postgres}'::aclitem[]) AS acl_items(item));BEGIN
+ SELECT (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest(c.relacl) AS acl_items(item)) INTO actual FROM pg_class c WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units');
+ IF (SELECT r.rolname FROM pg_class c JOIN pg_roles r ON r.oid=c.relowner WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units')) IS DISTINCT FROM 'postgres'
+  OR actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.product_sale_units';END IF;
+END$$;
+DO $$DECLARE actual jsonb;expected jsonb:=(SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest('{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}'::aclitem[]) AS acl_items(item));BEGIN
+ SELECT (SELECT coalesce(jsonb_agg(item::text ORDER BY item::text COLLATE "C"),'[]'::jsonb) FROM unnest(c.relacl) AS acl_items(item)) INTO actual FROM pg_class c WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='produtos');
+ IF (SELECT r.rolname FROM pg_class c JOIN pg_roles r ON r.oid=c.relowner WHERE c.oid=(SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='produtos')) IS DISTINCT FROM 'postgres'
+  OR actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.produtos';END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM 'gen_random_uuid()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='item_tipo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.item_tipo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='produto_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.produto_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='microrganismo_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.microrganismo_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='volume_ml'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.volume_ml';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='rotulo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.rotulo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='preco_brl'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM '0'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.preco_brl';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='moeda'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM '''BRL''::text'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.moeda';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='ativo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'boolean'
+  OR actual.column_default IS DISTINCT FROM 'true'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.ativo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='ordem'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'integer'
+  OR actual.column_default IS DISTINCT FROM '0'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.ordem';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='created_at'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'timestamp with time zone'
+  OR actual.column_default IS DISTINCT FROM 'now()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.created_at';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='updated_at'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'timestamp with time zone'
+  OR actual.column_default IS DISTINCT FROM 'now()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.updated_at';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='preco_litro_brl'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.preco_litro_brl';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='valor_dose_100ml_brl'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.valor_dose_100ml_brl';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='doses_por_volume'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.doses_por_volume';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='owner_organization_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.owner_organization_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND a.attname='medida'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM '''volume''::text'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT catalogo_volumes.medida';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='product_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.product_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='owner_organization_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.owner_organization_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='codigo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.codigo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='descricao'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.descricao';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='peso_liquido_kg'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric(12,3)'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.peso_liquido_kg';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='version'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'integer'
+  OR actual.column_default IS DISTINCT FROM '1'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.version';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='ativo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'boolean'
+  OR actual.column_default IS DISTINCT FROM 'true'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.ativo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='valid_from'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'timestamp with time zone'
+  OR actual.column_default IS DISTINCT FROM 'now()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.valid_from';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='valid_to'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'timestamp with time zone'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.valid_to';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND a.attname='created_by'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_packagings.created_by';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND a.attname='product_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_sale_units.product_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND a.attname='owner_organization_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_sale_units.owner_organization_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND a.attname='unidade_conteudo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_sale_units.unidade_conteudo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND a.attname='forma_fisica'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM '
+CASE
+    WHEN (unidade_conteudo = ANY (ARRAY[''kg''::text, ''g''::text])) THEN ''solido''::text
+    ELSE ''liquido''::text
+END'
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_sale_units.forma_fisica';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND a.attname='version'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'integer'
+  OR actual.column_default IS DISTINCT FROM '1'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_sale_units.version';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND a.attname='updated_at'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'timestamp with time zone'
+  OR actual.column_default IS DISTINCT FROM 'now()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_sale_units.updated_at';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND a.attname='updated_by'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT product_sale_units.updated_by';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM 'gen_random_uuid()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='nome'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.nome';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='tipo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'tipo_produto'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.tipo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='dose_ml_ha'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.dose_ml_ha';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='descricao'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.descricao';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='modo_acao'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.modo_acao';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='created_at'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'timestamp with time zone'
+  OR actual.column_default IS DISTINCT FROM 'now()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.created_at';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='updated_at'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'timestamp with time zone'
+  OR actual.column_default IS DISTINCT FROM 'now()'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.updated_at';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='codigo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.codigo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='funcao_completa'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.funcao_completa';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='modo_aplicacao'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.modo_aplicacao';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='valor_ha_brl'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric(10,2)'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.valor_ha_brl';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='versao_catalogo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM '''v1.2''::text'
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.versao_catalogo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='ativo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'boolean'
+  OR actual.column_default IS DISTINCT FROM 'true'
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.ativo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='e_insumo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'boolean'
+  OR actual.column_default IS DISTINCT FROM 'false'
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.e_insumo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='estoque_minimo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM '0'
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.estoque_minimo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='b2b_enabled'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'boolean'
+  OR actual.column_default IS DISTINCT FROM 'true'
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.b2b_enabled';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='valor_dose_brl'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.valor_dose_brl';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='valor_litro_brl'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'numeric'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.valor_litro_brl';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='familia_catalogo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.familia_catalogo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='classe_catalogo'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'text'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM false THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.classe_catalogo';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT * FROM (SELECT format_type(a.atttypid,a.atttypmod),pg_get_expr(d.adbin,d.adrelid),a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+ WHERE n.nspname='public' AND c.relname='produtos' AND a.attname='owner_organization_id'
+ AND a.attnum>0 AND NOT a.attisdropped) shape(type,column_default,is_not_null) INTO actual;
+ IF actual.type IS DISTINCT FROM 'uuid'
+  OR actual.column_default IS DISTINCT FROM NULL
+  OR actual.is_not_null IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_COLUMN_DRIFT produtos.owner_organization_id';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_item_ref';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((((item_tipo = ''produto''::text) AND (produto_id IS NOT NULL) AND (microrganismo_id IS NULL)) OR ((item_tipo = ''microrganismo''::text) AND (microrganismo_id IS NOT NULL) AND (produto_id IS NULL))))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_item_ref';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_item_tipo_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((item_tipo = ANY (ARRAY[''produto''::text, ''microrganismo''::text])))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_item_tipo_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_medida_shape';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((((medida = ''volume''::text) AND (volume_ml IS NOT NULL) AND (volume_ml > (0)::numeric)) OR ((medida = ''embalagem''::text) AND (volume_ml IS NULL) AND (item_tipo = ''produto''::text) AND (preco_brl = (0)::numeric) AND (rotulo IS NOT NULL) AND (btrim(rotulo) <> ''''::text))))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_medida_shape';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_microrganismo_id_fkey';
+ IF actual.definition IS DISTINCT FROM 'FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_microrganismo_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_owner_organization_id_fkey';
+ IF actual.definition IS DISTINCT FROM 'FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_owner_organization_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_pkey';
+ IF actual.definition IS DISTINCT FROM 'PRIMARY KEY (id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_pkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_preco_brl_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((preco_brl >= (0)::numeric))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_preco_brl_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_produto_id_fkey';
+ IF actual.definition IS DISTINCT FROM 'FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_produto_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='pp_codigo_version';
+ IF actual.definition IS DISTINCT FROM 'UNIQUE (product_id, codigo, version)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.pp_codigo_version';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='pp_presentation_link';
+ IF actual.definition IS DISTINCT FROM 'TRIGGER DEFERRABLE INITIALLY DEFERRED'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.pp_presentation_link';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='pp_window';
+ IF actual.definition IS DISTINCT FROM 'CHECK (((valid_to IS NULL) OR (valid_to >= valid_from)))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.pp_window';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_codigo_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((btrim(codigo) <> ''''::text))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.product_packagings_codigo_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_id_fkey';
+ IF actual.definition IS DISTINCT FROM 'FOREIGN KEY (id) REFERENCES catalogo_volumes(id) ON DELETE RESTRICT'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.product_packagings_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_peso_liquido_kg_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((peso_liquido_kg > (0)::numeric))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.product_packagings_peso_liquido_kg_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_pkey';
+ IF actual.definition IS DISTINCT FROM 'PRIMARY KEY (id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.product_packagings_pkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_product_id_fkey';
+ IF actual.definition IS DISTINCT FROM 'FOREIGN KEY (product_id) REFERENCES produtos(id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.product_packagings_product_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_version_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((version >= 1))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_packagings.product_packagings_version_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_pkey';
+ IF actual.definition IS DISTINCT FROM 'PRIMARY KEY (product_id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_sale_units.product_sale_units_pkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_product_id_fkey';
+ IF actual.definition IS DISTINCT FROM 'FOREIGN KEY (product_id) REFERENCES produtos(id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_sale_units.product_sale_units_product_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_unidade_conteudo_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((unidade_conteudo = ANY (ARRAY[''kg''::text, ''g''::text, ''ml''::text, ''l''::text])))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_sale_units.product_sale_units_unidade_conteudo_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_version_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK ((version >= 1))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT product_sale_units.product_sale_units_version_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='produtos' AND x.conname='produtos_familia_catalogo_check';
+ IF actual.definition IS DISTINCT FROM 'CHECK (((familia_catalogo IS NULL) OR (familia_catalogo = ANY (ARRAY[''biologico''::text, ''quimico''::text, ''fertilizante_adubo''::text]))))'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT produtos.produtos_familia_catalogo_check';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='produtos' AND x.conname='produtos_owner_organization_id_fkey';
+ IF actual.definition IS DISTINCT FROM 'FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT produtos.produtos_owner_organization_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE actual record;BEGIN
+ SELECT pg_get_constraintdef(x.oid) definition,x.convalidated validated INTO actual
+ FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname='public' AND c.relname='produtos' AND x.conname='produtos_pkey';
+ IF actual.definition IS DISTINCT FROM 'PRIMARY KEY (id)'
+  OR actual.validated IS DISTINCT FROM true THEN
+  RAISE EXCEPTION 'OWNER_FK_CONSTRAINT_DRIFT produtos.produtos_pkey';
+ END IF;
+END$$;
+DO $$BEGIN
+ IF EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
+  JOIN pg_namespace n ON n.oid=c.relnamespace
+  WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_owner_organization_id_fkey') THEN
+  RAISE EXCEPTION 'OWNER_FK_PRE_ALREADY_INSTALLED product_packagings.product_packagings_owner_organization_id_fkey';
+ END IF;
+END$$;
+DO $$BEGIN
+ IF EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
+  JOIN pg_namespace n ON n.oid=c.relnamespace
+  WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_owner_organization_id_fkey') THEN
+  RAISE EXCEPTION 'OWNER_FK_PRE_ALREADY_INSTALLED product_sale_units.product_sale_units_owner_organization_id_fkey';
+ END IF;
+END$$;
+DO $$DECLARE orphans bigint;BEGIN
+ SELECT count(*) INTO orphans FROM public.product_packagings child
+ LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
+ WHERE parent.id IS NULL;
+ IF orphans<>0 THEN
+  RAISE EXCEPTION 'OWNER_FK_ORPHANS_PRESENT public.product_packagings count=%',orphans USING ERRCODE='23503';
+ END IF;
+END$$;
+DO $$DECLARE orphans bigint;BEGIN
+ SELECT count(*) INTO orphans FROM public.product_sale_units child
+ LEFT JOIN public.organizations parent ON parent.id=child.owner_organization_id
+ WHERE parent.id IS NULL;
+ IF orphans<>0 THEN
+  RAISE EXCEPTION 'OWNER_FK_ORPHANS_PRESENT public.product_sale_units count=%',orphans USING ERRCODE='23503';
+ END IF;
+END$$;
+ROLLBACK;

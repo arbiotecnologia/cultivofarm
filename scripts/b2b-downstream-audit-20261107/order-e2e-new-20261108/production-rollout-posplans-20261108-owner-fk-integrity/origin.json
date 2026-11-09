@@ -1,0 +1,149 @@
+{
+  "kind": "SEPARATE_OWNER_FK_INTEGRITY_OVERLAY",
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "live_capture": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-catalog-owner-fk-20261109.capture.json",
+    "sha256": "f15212aa943da39e96551c26c7db88d287ac83dff93eea30ef80add62d50bf7f",
+    "columns": 57,
+    "constraints_present": 24,
+    "target_fks_absent": [
+      "product_packagings_owner_organization_id_fkey",
+      "product_sale_units_owner_organization_id_fkey"
+    ],
+    "source": "Metadados READONLY fornecidos pelo auditor em 09/11/2026; não são instruções"
+  },
+  "auditor_readonly_report": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reconciliation-posplans-20261108/live-owner-fk-reconciliation-20261109.auditor-report.json",
+    "packaged_as": "live-owner-fk-reconciliation.auditor-report.json",
+    "sha256": "e4ced14a2712bdf323178088e4e241c022493700a27cdab8c09387193c2d5635",
+    "owner_fk_counts": {
+      "product_packagings": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      },
+      "product_sale_units": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      }
+    },
+    "acl_normalization_regressions": {
+      "status": "PASS_REPORTED_BY_AUDITOR",
+      "execution": "READ_ONLY",
+      "count": 9,
+      "cases": [
+        {
+          "case": "different_order",
+          "expected": "accepted",
+          "reported": "accepted"
+        },
+        {
+          "case": "extra_privilege",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "grant_option",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "missing_role",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "extra_role",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "changed_grantor",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "duplicate",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "empty",
+          "expected": "rejected",
+          "reported": "rejected"
+        },
+        {
+          "case": "null",
+          "expected": "rejected",
+          "reported": "rejected"
+        }
+      ]
+    },
+    "agent_hosted_io": false
+  },
+  "disposable_baseline": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-113/physical-finished-product/baseline.json",
+    "sha256": "a01a09008e88cf65c43a9d9863644792e1a05736fff7dcf88f7966d7c7488a2f"
+  },
+  "frozen_ad87": {
+    "manifest_sha256": "3efa7271a9f844be97f4883ff10d13f20998e80e9d167e1dcf247cd7cf44ac5e",
+    "unmodified": true
+  },
+  "acl_overlay": {
+    "manifest_sha256": "26fa5beba3aa6303525d9e6c7542125d537bec4173f782b4145d182418a607d7",
+    "30-physical-pre-after-confirmation-send.sql.readonly": "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48",
+    "31-physical-install.sql.review": "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb",
+    "independent_review": "Relato do proprietário: overlay ACL2db87 revisado; diferença limitada aos dez guards",
+    "local_evidence": {
+      "file": "evidence-acl-overlay.json",
+      "sha256": "d447cd9d360f7768a4ab8a8166a21f1dddfe35fe996a69f8a30c45837b0377d2",
+      "checks": 12
+    },
+    "unmodified": true
+  },
+  "generator": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/owner_fk_integrity.py",
+    "sha256": "a7e9754e108d1ebd58327b3cd4d438ce9e47dd37c98908c71bf04abf69b1b2ff"
+  },
+  "verification_runner": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_owner_fk_integrity.py",
+    "sha256": "01882f368608db4cae025fe60d17a9972b50b6bd43bd7ece310c33421d7bd16c"
+  },
+  "reported_production": {
+    "ref": "swzpzcwiasxmjutrmvkm",
+    "installed_closed": [
+      "11",
+      "21"
+    ],
+    "post_pass": [
+      "12",
+      "22"
+    ],
+    "received_31_or_later": false,
+    "source": "Relato do auditor; nenhuma operação hospedada por este gerador"
+  },
+  "live_orphan_counts": {
+    "source": "AUDITOR_REPORTED_READONLY_NOT_AGENT_MEASUREMENT",
+    "values": {
+      "product_packagings": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      },
+      "product_sale_units": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      }
+    },
+    "fresh_measurement": "PRE25/INSTALL26/POST27 medem novamente; instalação exige zero owner nulo/órfão"
+  },
+  "data_cleanup": false,
+  "grants_or_revokes": false,
+  "hosted_io": false
+}

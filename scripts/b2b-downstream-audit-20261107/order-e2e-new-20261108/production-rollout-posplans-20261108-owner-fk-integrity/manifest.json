@@ -1,0 +1,94 @@
+{
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "kind": "SEPARATE_OWNER_FK_INTEGRITY_BEFORE_PRE30",
+  "contains": [
+    "25-owner-fk-pre.sql.readonly",
+    "26-owner-fk-install.sql.review",
+    "27-owner-fk-post.sql.readonly"
+  ],
+  "requires": "PRE25 zero órfãos; INSTALL26 revalida após locks; POST27 antes de PRE30/INSTALL31",
+  "target_fks": [
+    {
+      "relation": "product_packagings",
+      "name": "product_packagings_owner_organization_id_fkey",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)",
+      "validated": true
+    },
+    {
+      "relation": "product_sale_units",
+      "name": "product_sale_units_owner_organization_id_fkey",
+      "definition": "FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)",
+      "validated": true
+    }
+  ],
+  "acl_overlay_local_evidence": {
+    "file": "evidence-acl-overlay.json",
+    "sha256": "d447cd9d360f7768a4ab8a8166a21f1dddfe35fe996a69f8a30c45837b0377d2",
+    "checks": 12
+  },
+  "auditor_readonly_report": {
+    "file": "live-owner-fk-reconciliation.auditor-report.json",
+    "sha256": "e4ced14a2712bdf323178088e4e241c022493700a27cdab8c09387193c2d5635",
+    "owner_fk_counts": {
+      "product_packagings": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      },
+      "product_sale_units": {
+        "total": 1,
+        "owner_null": 0,
+        "orphan_owner": 0,
+        "owner_product_mismatch": 0
+      }
+    },
+    "acl_normalization_regressions": {
+      "status": "PASS_REPORTED_BY_AUDITOR",
+      "count": 9
+    }
+  },
+  "data_cleanup": false,
+  "ddl_outside_two_fk_additions": false,
+  "grants_or_revokes": false,
+  "local_verification": "PASS_DISPOSABLE_PG17_NOT_HOSTED",
+  "hosted_io": false,
+  "activation": false,
+  "publication": false,
+  "production_received_31_or_later": false,
+  "authenticated_real_proof": "NOT_RUN",
+  "files": {
+    "25-owner-fk-pre.sql.readonly": {
+      "sha256": "cdddc3e488f952c7971727997e0592a5760d23e7f7d2dfacb05ebacf3052f547",
+      "bytes": 61702
+    },
+    "26-owner-fk-install.sql.review": {
+      "sha256": "4c59f747b4255112e09a09768491f84ffae53e7f0f615b1213240a9eab02ffd9",
+      "bytes": 185841
+    },
+    "27-owner-fk-post.sql.readonly": {
+      "sha256": "df4656ed01f97002ec4a2b06369390f02a11d2318224763b50beab74cf522a06",
+      "bytes": 62160
+    },
+    "README.md": {
+      "sha256": "277d515cc8058902a26f573418295b88200b12f467a4d23ffd1e8b5471108eeb",
+      "bytes": 6835
+    },
+    "live-owner-fk-reconciliation.auditor-report.json": {
+      "sha256": "e4ced14a2712bdf323178088e4e241c022493700a27cdab8c09387193c2d5635",
+      "bytes": 1675
+    },
+    "evidence-acl-overlay.json": {
+      "sha256": "d447cd9d360f7768a4ab8a8166a21f1dddfe35fe996a69f8a30c45837b0377d2",
+      "bytes": 5942
+    },
+    "origin.json": {
+      "sha256": "d377551261ea8797e6ef54b85ff1d3ffa8600f0f59f9e3ba5fd781b0881a2718",
+      "bytes": 4969
+    },
+    "evidence-owner-fk.json": {
+      "sha256": "6c6bfa81d5d1799a94a8b0b538640bbd6c428b0babd9d3673aece74275c0b837",
+      "bytes": 17771
+    }
+  }
+}
