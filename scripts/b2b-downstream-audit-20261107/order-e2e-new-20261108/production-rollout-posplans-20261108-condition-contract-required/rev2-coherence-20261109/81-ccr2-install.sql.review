@@ -20,10 +20,10 @@ DECLARE o record; v_org uuid; s record; q record;
 BEGIN
   IF p_event NOT IN ('order_update','snapshot_insert','quote_insert') THEN RAISE EXCEPTION 'CCR2_EVENT' USING ERRCODE='22023'; END IF;
   -- Deferred: committed-to-be row, so insert-then-update cannot launder partner/plan.
-  SELECT po.id, po.partner_id, po.payment_plan_id, (po.xmin = pg_current_xact_id()::xid) AS same_tx INTO o FROM public.partner_orders po WHERE po.id = p_order_id;
+  SELECT po.id, po.partner_id, po.payment_plan_id, (po.created_at = now()) AS same_tx INTO o FROM public.partner_orders po WHERE po.id = p_order_id;
   IF NOT FOUND THEN RETURN; END IF;
   SELECT a.commercial_owner_organization_id INTO v_org FROM public.partner_accounts a WHERE a.id = o.partner_id;
-  SELECT x.organization_id, x.partner_id, x.plan_id, x.condition_version, x.condition_method, x.choice, x.condition, x.quote, x.payment_terms_id
+  SELECT x.organization_id, x.partner_id, x.plan_id, x.condition_version, x.condition_method, x.choice, x.condition, x.quote, x.payment_terms_id, (x.created_at = now()) AS snap_now
     INTO s FROM platform_private.b2b_order_condition_snapshots x WHERE x.order_id = o.id;
   IF FOUND THEN
     IF v_org IS NULL OR s.organization_id IS DISTINCT FROM v_org OR s.partner_id IS DISTINCT FROM o.partner_id
@@ -34,8 +34,8 @@ BEGIN
        -- economic link: non-quote snapshot must point at THIS order's own terms row
        OR (s.payment_terms_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.partner_order_payment_terms t WHERE t.id = s.payment_terms_id AND t.partner_order_id = o.id))
        OR (s.quote IS FALSE AND s.payment_terms_id IS NULL)
-       -- the initial snapshot is written by the writer in the order's own transaction; no later backfill
-       OR (p_event = 'snapshot_insert' AND o.same_tx IS NOT TRUE)
+       -- the initial snapshot is written by the writer in the order's own transaction (now() = transaction start, subtransaction-safe); no later backfill
+       OR (p_event = 'snapshot_insert' AND (o.same_tx IS NOT TRUE OR s.snap_now IS NOT TRUE))
        OR NOT EXISTS (SELECT 1 FROM platform_private.b2b_condition_versions v WHERE v.organization_id = s.organization_id AND v.plan_id = s.plan_id
                         AND v.version = s.condition_version AND v.method = s.condition_method)
     THEN RAISE EXCEPTION 'B2B_PAYMENT_CONDITION_SNAPSHOT_INCOHERENT' USING ERRCODE = 'P0001',

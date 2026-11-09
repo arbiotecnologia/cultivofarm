@@ -1,0 +1,14 @@
+282/285
+FAIL CCR2 82 POST_OK (owner/ACL/search_path/definer/gatilhos exatos) e: text || "char"
+LINE 1: SELECT string_agg(pg_get_triggerdef(t.oid) || '|' || t.tgena...
+                                                          ^
+HINT:  Could not choose a best candidate operator. You might need to add explicit type casts.
+QUERY:  SELECT string_agg(pg_get_triggerdef(t.oid) || '|' || t.tgenabled, E'\n' ORDER BY t.tgname)        FROM pg_trigger t
+   WHERE t.tgname IN ('b2b_payme
+FAIL CCR2 snapshot de resposta com versão divergente da escolha inicial negado ign key constraint "b2b_order_condition_quote_sna_organization_id_plan_id_cond_fkey"
+DETAIL:  Key (organization_id, plan_id, condition_version, condition_method)=(00000000-0000-0000-0000-000000000001, 00000000-0000-0000-0000-000000000072, 2, boleto) is not present in table "b2b_condition_versions".
+
+FAIL CCR2 POST após reinstall ' || t.tgenabled, E'\n' ORDER BY t.tgname)        FROM pg_trigger t
+   WHERE t.tgname IN ('b2b_payment_condition_required', 'b2b_condition_zz_coherence_upd', 'b2b_condition_zz_coherence_snap', 'b2b_condition_zz_coherence_quote')
+CONTEXT:  PL/pgSQL function inline_code_block line 19 at SQL statement
+

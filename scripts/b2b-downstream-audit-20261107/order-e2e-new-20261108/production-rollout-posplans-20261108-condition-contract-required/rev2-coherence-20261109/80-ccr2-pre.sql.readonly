@@ -40,7 +40,8 @@ BEGIN
      OR (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'partner_order_payment_terms'
         AND column_name IN ('id', 'partner_order_id') AND data_type = 'uuid') <> 2
      OR (SELECT count(*) FROM information_schema.columns WHERE table_schema = 'platform_private' AND table_name = 'b2b_order_condition_snapshots'
-        AND column_name IN ('quote', 'payment_terms_id')) <> 2
+        AND column_name IN ('quote', 'payment_terms_id', 'created_at')) <> 3
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'partner_orders' AND column_name = 'created_at')
   THEN RAISE EXCEPTION 'CCR2_PRE_COLUMNS'; END IF;
   RAISE NOTICE 'CCR2_PRE_OK';
 END $pre$;
