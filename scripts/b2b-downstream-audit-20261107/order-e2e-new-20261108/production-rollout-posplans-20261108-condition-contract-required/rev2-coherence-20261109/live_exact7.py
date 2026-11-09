@@ -37,7 +37,8 @@ def gate_sql():
     return t[a:b]
 
 
-def run(psql, check, md5_of, call_sql, res, out_dir, ids):
+def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
+    psql = lambda q: psql0(q, check=False)
     cap = capture()
     sigs = [x["sig"] for x in cap]
     pre = {}
@@ -85,7 +86,7 @@ def run(psql, check, md5_of, call_sql, res, out_dir, ids):
         check(f"CCR2 LIVE7 b2b_actor_scope negado ({name}): user_partner não resolve", j is not None and j.get("user_partner") is None, j or e)
 
     def authz(uid, partner, prefix=""):
-        r = psql(f"BEGIN;{prefix}SELECT set_config('request.jwt.claim.sub','{uid}',true) \\g /dev/null\nSELECT platform_private.c2_partner_order_attempt_authz('{uid}','{partner}')::text;ROLLBACK;")
+        r = psql(f"BEGIN;{prefix}SELECT set_config('request.jwt.claims', json_build_object('sub','{uid}','role','authenticated')::text, true) \\g /dev/null\nSELECT platform_private.c2_partner_order_attempt_authz('{uid}','{partner}')::text;ROLLBACK;")
         return r.returncode, (r.stderr or "").strip()[-300:]
     rc, e = authz(UB, P); res["live_exact7_behaviour"]["attempt_authz_own"] = [rc, e]
     check("CCR2 LIVE7 attempt_authz: comprador no próprio parceiro autorizado", rc == 0 and "ERROR" not in e, e)
