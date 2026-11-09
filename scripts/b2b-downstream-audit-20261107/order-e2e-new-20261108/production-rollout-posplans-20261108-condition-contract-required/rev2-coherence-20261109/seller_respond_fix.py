@@ -24,6 +24,12 @@ DEP_PINS = {"platform_private.b2b_owner_internal_partner_readable(uuid)": "fa72c
             "platform_private.b2b_phase1_partner_visible(uuid,boolean)": "915f516e605af7cc14584e2e762a2661"}
 
 
+# Fail-closed ref assertion: the operator must SET app.reviewed_ref after proving the connection is swzpzcwiasxmjutrmvkm.
+REF = ("DO $r$BEGIN IF current_setting('app.reviewed_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN"
+       " RAISE EXCEPTION 'RESPOND_FIX_REF_NOT_ASSERTED';END IF;END$r$;\n")
+MIRROR_REF = "SET app.reviewed_ref='swzpzcwiasxmjutrmvkm';\n"  # declared mirror seam only
+
+
 def _meta_sql(sig, md5, acl, tag):
     return (f"DO $c$DECLARE p oid:=to_regprocedure('{sig}');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '{md5}'"
             f" OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=p) IS DISTINCT FROM 'postgres'"
@@ -43,20 +49,20 @@ def build(psql, out_dir, order_visible_md5):
     pins = dict(DEP_PINS); pins["public.b2b_phase1_order_visible(uuid)"] = order_visible_md5
     deps = "\n".join(_meta_sql(k, v, None, "RESPOND_FIX_DEP_DRIFT") for k, v in pins.items())
     pre = ("-- READ ONLY. Abort unless the hosted body/owner/ACL equal the reviewed LIVE pins (ACL pinned from mirror: auditor must confirm).\n"
-           "BEGIN READ ONLY;\nDO $r$BEGIN IF current_setting('app.reviewed_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE NOTICE 'RESPOND_FIX_REF_NOT_ASSERTED (mirror)';END IF;END$r$;\n"
+           "BEGIN READ ONLY;\n" + REF
            + _meta_sql(SIG, LIVE_MD5, acl, "RESPOND_FIX_PRE_DRIFT") + "\n" + deps + "\nDO $o$BEGIN RAISE NOTICE 'RESPOND_FIX_PRE_OK';END$o$;\nROLLBACK;\n")
     return {"body": body, "new_body": new_body, "acl": acl, "pre": pre, "deps": deps}
 
 
 def finish(psql, built, out_dir):
     """Install in the mirror, derive the POST pin from the installed body, write the package files."""
-    install = ("BEGIN;\nSET LOCAL lock_timeout='5s';\nSET LOCAL statement_timeout='60s';\n" + _meta_sql(SIG, LIVE_MD5, built["acl"], "RESPOND_FIX_PRE_DRIFT") + "\n"
+    install = ("BEGIN;\nSET LOCAL lock_timeout='5s';\nSET LOCAL statement_timeout='60s';\n" + REF + _meta_sql(SIG, LIVE_MD5, built["acl"], "RESPOND_FIX_PRE_DRIFT") + "\n"
                + built["deps"] + "\n" + built["new_body"].rstrip("\n") + ";\nCOMMIT;\n")
-    r = psql(install)
+    r = psql(MIRROR_REF + install)
     new_md5 = psql(f"SELECT md5(pg_get_functiondef('{SIG}'::regprocedure))").stdout.strip()
     post = ("BEGIN READ ONLY;\n" + _meta_sql(SIG, new_md5, built["acl"], "RESPOND_FIX_POST_DRIFT") + "\n"
             "DO $o$BEGIN RAISE NOTICE 'RESPOND_FIX_POST_OK';END$o$;\nROLLBACK;\n")
-    rollback = ("BEGIN;\nSET LOCAL lock_timeout='5s';\n" + _meta_sql(SIG, new_md5, built["acl"], "RESPOND_FIX_ROLLBACK_DRIFT") + "\n"
+    rollback = ("BEGIN;\nSET LOCAL lock_timeout='5s';\n" + REF + _meta_sql(SIG, new_md5, built["acl"], "RESPOND_FIX_ROLLBACK_DRIFT") + "\n"
                 + built["body"].rstrip("\n") + ";\n" + _meta_sql(SIG, LIVE_MD5, built["acl"], "RESPOND_FIX_ROLLBACK_NOT_RESTORED") + "\nCOMMIT;\n")
     d = pathlib.Path(out_dir) / "seller-respond-fix"; d.mkdir(exist_ok=True)
     files = {"90-respond-fix-pre.sql.readonly": built["pre"], "91-respond-fix-install.sql.review": install,
@@ -68,4 +74,4 @@ def finish(psql, built, out_dir):
     (d / "respond.diff").write_text("".join(difflib.unified_diff(built["body"].splitlines(True), built["new_body"].splitlines(True), "respond.live-4926a99c.sql", "respond.candidate.sql")))
     sha = {k: hashlib.sha256((d / k).read_bytes()).hexdigest() for k in sorted(files) + ["respond.diff"]}
     return {"install_rc": r.returncode, "install_err": (r.stderr or "")[-500:], "new_md5": new_md5, "acl": built["acl"], "sha256": sha,
-            "post": post, "rollback": rollback}
+            "post": post, "rollback": MIRROR_REF + rollback}

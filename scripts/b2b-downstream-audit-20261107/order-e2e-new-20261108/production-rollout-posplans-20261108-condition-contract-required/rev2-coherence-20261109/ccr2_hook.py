@@ -275,7 +275,8 @@ def run(ns):
             check("CCR2 RESPOND LIVE: negativa não altera estado", qs(jq["id"]) == st0)
             ovm = md5_of("public.b2b_phase1_order_visible(uuid)")
             b = RF.build(psql, pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work))), ovm)
-            r = PQ(b["pre"]); check("CCR2 RESPOND FIX 90 PRE_OK", r.returncode == 0 and "RESPOND_FIX_PRE_OK" in r.stderr, r.stderr[-300:])
+            r = PQ(b["pre"]); check("CCR2 RESPOND FIX 90 PRE sem ref afirmado aborta (fail-closed)", r.returncode != 0 and "RESPOND_FIX_REF_NOT_ASSERTED" in r.stderr, r.stderr[-200:])
+            r = PQ(RF.MIRROR_REF + b["pre"]); check("CCR2 RESPOND FIX 90 PRE_OK", r.returncode == 0 and "RESPOND_FIX_PRE_OK" in r.stderr, r.stderr[-300:])
             RFIX = RF.finish(psql, b, pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work))))
             res["seller_respond"]["fix"] = {k: v for k, v in RFIX.items() if k not in ("post", "rollback")}
             check("CCR2 RESPOND FIX 91 install (candidato, só espelho)", RFIX["install_rc"] == 0, RFIX["install_err"])
