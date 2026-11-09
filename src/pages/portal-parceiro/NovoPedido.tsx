@@ -66,6 +66,7 @@ import { supplierLabel } from "@/lib/comercial/supplierName";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useCloseOrderAttempt } from "@/hooks/useCloseOrderAttempt";
 import { useOrderJournal } from '@/hooks/useOrderJournal';
+import { closeAttemptFeedback } from "@/lib/authz/closeAttemptFeedback";
 import { markOrderAttemptSending, orderAttemptFingerprint, prepareOrderAttempt, readOrderAttempt, settleOrderAttempt, subscribeOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
@@ -776,8 +777,9 @@ export default function NovoPedido() {
                 <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover(durableAttempt.journal??undefined)}>Iniciar nova tentativa</Button>
               </> : durableAttempt.journal?.state==='uncertain' ? <>
                 <span className="block">O resultado de uma tentativa de envio ainda não foi confirmado. Verifique antes de iniciar outro pedido.</span>
-                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar envio anterior</Button>
-                <Button size="sm" variant="outline" disabled={closeAttempt.pending || durableAttempt.pending} onClick={()=>void closeAttempt.close(partner?.id)}>Verificar e encerrar envio anterior</Button>
+                <span className="block text-xs text-muted-foreground">Se nenhum pedido aparece em Meus Pedidos, use "Verificar e encerrar envio anterior": o servidor confirma se houve pedido e só encerra a tentativa se não houver. Nenhum pedido é cancelado ou reenviado.</span>
+                <Button size="sm" disabled={closeAttempt.pending || durableAttempt.pending} onClick={()=>{void closeAttempt.close(partner?.id).then(r=>{const f=closeAttemptFeedback(r);(f.tone==='success'?toast.success:f.tone==='info'?toast.info:toast.error)(f.text);});}}>{closeAttempt.pending?'Verificando…':'Verificar e encerrar envio anterior'}</Button>
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Consultar situação novamente</Button>
               </> : <>
                 <span className="block">{durableAttempt.mode==='checking'?'Verificando disponibilidade para o pedido…':'Não foi possível verificar a continuidade do pedido. Nada foi liberado.'}</span>
                 {durableAttempt.mode!=='checking' && <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar novamente</Button>}
