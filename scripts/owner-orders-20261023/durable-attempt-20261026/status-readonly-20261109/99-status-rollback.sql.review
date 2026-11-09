@@ -3,8 +3,8 @@
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 DO $g$ BEGIN
- IF md5((SELECT prosrc FROM pg_proc WHERE oid = to_regprocedure('platform_private.c2_order_attempt_status_core(uuid)'))) IS DISTINCT FROM '__MD5_CORE__'
-  OR md5((SELECT prosrc FROM pg_proc WHERE oid = to_regprocedure('public.partner_order_attempt_status_v1(uuid)'))) IS DISTINCT FROM '__MD5_WRAP__'
+ IF md5((SELECT prosrc FROM pg_proc WHERE oid = to_regprocedure('platform_private.c2_order_attempt_status_core(uuid)'))) IS DISTINCT FROM 'cc5167a749b5bed25adb80ef3be8a289'
+  OR md5((SELECT prosrc FROM pg_proc WHERE oid = to_regprocedure('public.partner_order_attempt_status_v1(uuid)'))) IS DISTINCT FROM '6c25d70132420bc342bcfbefad427954'
  THEN RAISE EXCEPTION 'C2AS_ROLLBACK_PIN_DRIFT'; END IF;
 END $g$;
 DROP FUNCTION public.partner_order_attempt_status_v1(uuid);

@@ -124,7 +124,7 @@ ok('isolated technician denied',first(e).startswith('ERROR:  42501'),first(e))
 e=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE anon; SELECT public.partner_order_attempt_status_v1('{P}'); COMMIT;",ok=False)
 ok('anon denied (permission)', '42501' in e,first(e))
 # Rollback / reinstall.
-o=run((PKG/'99-status-rollback.sql.review').read_text().replace('__MD5_CORE__','0'*32))
+o=run((PKG/'99-status-rollback.sql.review').read_text().replace(pins['__MD5_CORE__'],'0'*32,1))
 ok('rollback with divergent pin aborts, objects kept','C2AS_ROLLBACK_PIN_DRIFT' in o and pg.sql("SELECT to_regprocedure('public.partner_order_attempt_status_v1(uuid)') IS NOT NULL")=='t')
 jb=jcount();cb=pg.sql('SELECT count(*) FROM platform_private.partner_order_idempotency_closures')
 o=run(pinned('99-status-rollback.sql.review'))
