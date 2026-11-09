@@ -1,0 +1,24 @@
+{
+  "purpose": "Leitura somente leitura em produção swzpzcwiasxmjutrmvkm: md5(pg_get_functiondef), owner e proacl. Sem escrita.",
+  "confirm_mirror_md5_from_older_repo_captures": {
+    "platform_private.assert_b2b_partner_scope(uuid,uuid)": "f86f43f9d9ad3ed97b840fcc02c79476",
+    "platform_private.b2b_commercial_context()": "2f1063f00281c4ca78dcebaab81a9446",
+    "platform_private.c2_producer_links(uuid,uuid)": "881cdf48a5b20df4d93e42ef1edf1bee",
+    "platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)": "2350b6535c4b6289f47c200c03000dfb"
+  },
+  "confirm_acl_for_seller_fix_pre": {
+    "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {"md5": "4926a99c3fa3086b34ff25bb4b4038bb", "acl_pinned_from_mirror": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"}
+  },
+  "still_mirror_bodies_without_live_md5": [
+    "platform_private.c2_internal_order_target_reason(uuid,uuid)",
+    "platform_private.b2b_internal_commercial_actor()",
+    "platform_private.c2p1_settings_allowed(uuid,boolean)",
+    "platform_private.h15_actor_organization()",
+    "platform_private.b2b_internal_origin_valid(jsonb)",
+    "platform_private.c2_external_origin_contract_valid(jsonb)",
+    "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)"
+  ],
+  "declared_seam_not_reconcilable_in_harness": {
+    "platform_private.entitlements_for_user(uuid)": {"live": "7f4ec7facaebbdf35444dd490fdebe56", "mirror": "96cee77def46bad306f05747db882529", "reason": "tabelas SaaS ausentes no harness"}
+  }
+}
