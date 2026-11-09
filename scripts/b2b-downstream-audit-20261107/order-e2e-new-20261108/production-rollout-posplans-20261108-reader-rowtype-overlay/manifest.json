@@ -1,0 +1,64 @@
+{
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "function": "public.rpc_b2b_resale_os_availability_v1(uuid)",
+  "live_body_md5_before": "d426e0758d03a143f8014cbb6590fb49",
+  "new_body_md5": "e9767fcbcbfb831b92ee7f1523b1262e",
+  "owner": "postgres",
+  "acl_preserved": "{postgres=X/postgres,authenticated=X/postgres}",
+  "grants_added": [],
+  "revokes_added": [],
+  "delta": {
+    "from": "SELECT * INTO v_order FROM public.partner_orders po\n  JOIN public.partner_accounts pa ON pa.id=po.partner_id",
+    "to": "SELECT po.* INTO v_order FROM public.partner_orders po\n  JOIN public.partner_accounts pa ON pa.id=po.partner_id",
+    "lines_changed": 1
+  },
+  "source": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/61-pilot-containment-install.sql.review",
+    "sha256": "1002c477ad794e0a87b6edf14564cee15b23d75041dca18443ee7152de8a486f"
+  },
+  "excludes_reinstall": [
+    "11",
+    "21",
+    "26",
+    "31",
+    "41",
+    "51",
+    "61"
+  ],
+  "supersedes_post_pin": "62 reader md5 d426... (POST62 rerun after 71 is expected to fail; use POST72)",
+  "local_verification": "PASS_DISPOSABLE_PG17_NOT_HOSTED",
+  "hosted_io": false,
+  "activation": false,
+  "publication": false,
+  "authenticated_real_proof": "NOT_RUN",
+  "generator": {
+    "path": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/reader_rowtype_overlay.py",
+    "sha256": "1b6de47757cddfd478f5bae14b82f85f801d0979ce65b8523dc09b433e6cb132"
+  },
+  "files": {
+    "70-reader-rowtype-pre.sql.readonly": {
+      "sha256": "6c9f008da9e69ae55d8016fcd4c94958be891e883cc8818a34b41cc2741d0c73",
+      "bytes": 1660
+    },
+    "71-reader-rowtype-install.sql.review": {
+      "sha256": "2b9651394c3b67566f66ab27512e9e929158a628ed2edb7b75b5bd8f57db20df",
+      "bytes": 7116
+    },
+    "72-reader-rowtype-post.sql.readonly": {
+      "sha256": "a7326c4ab17cef74aafeaa482e21a7f6f25c2b0b90cba87a6c7a76c4737f4f49",
+      "bytes": 1665
+    },
+    "95-reader-rowtype-rollback.sql.review": {
+      "sha256": "36cb425d812b07dd4a135bf0afcbe6370583ca1c90c026b4afd470cc989c2afe",
+      "bytes": 6672
+    },
+    "README.md": {
+      "sha256": "2264153f53a52d8a26cec0bc1782350d118136f46ced4c8073bc52f6e74c68e8",
+      "bytes": 1529
+    },
+    "evidence-reader-rowtype-overlay.json": {
+      "sha256": "8ca80f1c8b1f85274228bfc2d003898fe39f90419ea6cedff883a0da5c0337d3",
+      "bytes": 15398
+    }
+  }
+}

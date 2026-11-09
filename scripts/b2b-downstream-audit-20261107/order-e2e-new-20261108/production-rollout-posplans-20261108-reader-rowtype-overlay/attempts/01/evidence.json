@@ -1,0 +1,214 @@
+{
+  "status": "FAIL",
+  "kind": "DISPOSABLE_READER_ROWTYPE_OVERLAY_NOT_HOSTED",
+  "hosted": false,
+  "verification_runner_sha256": "25b81f9ee5ac7bfd3a937dd81a1e3780e1aefc015557f14666a418d766547dbd",
+  "checks": [
+    {
+      "name": "estado local equivalente ao relatado: 11/21/26/31/41/51/61 com POST PASS (produção: não reinstalar)",
+      "status": "PASS"
+    },
+    {
+      "name": "corpo vivo 61 reproduzido (md5 d426e075…, ACL real)",
+      "status": "PASS"
+    },
+    {
+      "name": "corpo vivo: caminho positivo devolve pedido/ator/tenant/item corretos (gate OFF)",
+      "status": "PASS",
+      "detail": {
+        "items": [
+          {
+            "os_id": null,
+            "order_item_id": "10000000-0000-4000-8000-000000009105",
+            "create_available": false
+          }
+        ],
+        "actor_id": "10000000-0000-4000-8000-000000000003",
+        "contract": "B2B_RESALE_OS_AVAILABILITY_V1",
+        "order_id": "10000000-0000-4000-8000-000000009103",
+        "available": false,
+        "organization_id": "10000000-0000-4000-8000-000000000001",
+        "observed_updated_at": "2026-11-09T15:10:18.984605+00:00"
+      }
+    },
+    {
+      "name": "corpo vivo: pedido de outro tenant negado",
+      "status": "PASS"
+    },
+    {
+      "name": "corpo vivo: strict_multi_assignment reproduz a fragilidade",
+      "status": "PASS"
+    }
+  ],
+  "raw": [
+    {
+      "case": "corpo vivo: pedido de outro tenant negado",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  42501: B2B_RESALE_ORDER_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_availability_v1(uuid) line 16 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "case": "corpo vivo: strict_multi_assignment reproduz a fragilidade",
+      "returncode": 3,
+      "stderr_tail": "ERROR:  42804: number of source and target fields in assignment does not match\nDETAIL:  strict_multi_assignment check of extra_errors is active.\nHINT:  Make sure the query returns the exact list of columns.\nCONTEXT:  PL/pgSQL function public.rpc_b2b_resale_os_availability_v1(uuid) line 9 at SQL statement\nLOCATION:  exec_move_row_from_fields, pl_exec.c:7171\n"
+    }
+  ],
+  "final_artifacts": [
+    {
+      "file": "70-reader-rowtype-pre.sql.readonly",
+      "package": "overlay",
+      "sha256": "6c9f008da9e69ae55d8016fcd4c94958be891e883cc8818a34b41cc2741d0c73",
+      "returncode": 0
+    },
+    {
+      "file": "71-reader-rowtype-install.sql.review",
+      "package": "overlay",
+      "sha256": "2b9651394c3b67566f66ab27512e9e929158a628ed2edb7b75b5bd8f57db20df",
+      "returncode": 0
+    },
+    {
+      "file": "72-reader-rowtype-post.sql.readonly",
+      "package": "overlay",
+      "sha256": "a7326c4ab17cef74aafeaa482e21a7f6f25c2b0b90cba87a6c7a76c4737f4f49",
+      "returncode": 0
+    }
+  ],
+  "supporting_artifacts": [
+    {
+      "file": "00-production-pre-posplans.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "returncode": 0
+    },
+    {
+      "file": "11-confirmation-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "returncode": 0
+    },
+    {
+      "file": "12-confirmation-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "returncode": 0
+    },
+    {
+      "file": "20-send-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "returncode": 0
+    },
+    {
+      "file": "21-send-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "returncode": 0
+    },
+    {
+      "file": "22-send-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "returncode": 0
+    },
+    {
+      "file": "25-owner-fk-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108-owner-fk-integrity",
+      "sha256": "cdddc3e488f952c7971727997e0592a5760d23e7f7d2dfacb05ebacf3052f547",
+      "returncode": 0
+    },
+    {
+      "file": "26-owner-fk-install.sql.review",
+      "package": "production-rollout-posplans-20261108-owner-fk-integrity",
+      "sha256": "4c59f747b4255112e09a09768491f84ffae53e7f0f615b1213240a9eab02ffd9",
+      "returncode": 0
+    },
+    {
+      "file": "27-owner-fk-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108-owner-fk-integrity",
+      "sha256": "df4656ed01f97002ec4a2b06369390f02a11d2318224763b50beab74cf522a06",
+      "returncode": 0
+    },
+    {
+      "file": "30-physical-pre-after-confirmation-send.sql.readonly",
+      "package": "production-rollout-posplans-20261108-acl-order-overlay",
+      "sha256": "bfc9718efe58008d6d6891d7e3464f5e032cd3d9628416daf5e0ef46828d0e48",
+      "returncode": 0
+    },
+    {
+      "file": "31-physical-install.sql.review",
+      "package": "production-rollout-posplans-20261108-acl-order-overlay",
+      "sha256": "3af1e8dd9fb80c1d1c37679ca926cdf64758f94755f260fcf9b2b5165b15aebb",
+      "returncode": 0
+    },
+    {
+      "file": "32-physical-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e",
+      "returncode": 0
+    },
+    {
+      "file": "40-logistics-pre-after-physical.sql.readonly",
+      "package": "production-rollout-posplans-20261108-logistics-acl-overlay",
+      "sha256": "604dd970604821ab2f28c01185f9405e6a7281359dacf62a0eb2c42b2c58ff41",
+      "returncode": 0
+    },
+    {
+      "file": "41-logistics-install.sql.review",
+      "package": "production-rollout-posplans-20261108-logistics-acl-overlay",
+      "sha256": "565c3a91aca8322d4f806aef95033706502890b489b068b5c5197f5dce6d5c9e",
+      "returncode": 0
+    },
+    {
+      "file": "42-logistics-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108-logistics-acl-overlay",
+      "sha256": "f53eee19a4796ae696105b5df08d400c76483942f1601ef1c57472aa47df5799",
+      "returncode": 0
+    },
+    {
+      "file": "50-endpoint-reader-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "07329a906191d729e4c62c1c77655c197c605b6a26d7a02ca6cdbe915b4421cf",
+      "returncode": 0
+    },
+    {
+      "file": "51-endpoint-reader-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb",
+      "returncode": 0
+    },
+    {
+      "file": "52-endpoint-reader-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "bff4207adda764c9a4d7df61f8239137eee983d6a00852c72c30986770fcef88",
+      "returncode": 0
+    },
+    {
+      "file": "60-pilot-containment-pre.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "439009f4ae8d87a24ced0584ca3bf24b132da1603de54fd6479c5b61e301eea0",
+      "returncode": 0
+    },
+    {
+      "file": "61-pilot-containment-install.sql.review",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "1002c477ad794e0a87b6edf14564cee15b23d75041dca18443ee7152de8a486f",
+      "returncode": 0
+    },
+    {
+      "file": "62-pilot-containment-post.sql.readonly",
+      "package": "production-rollout-posplans-20261108",
+      "sha256": "34d240d66e2b91a460e09c667260b424838487702f960154783ada1b6d9c7108",
+      "returncode": 0
+    }
+  ],
+  "authenticated_real_proof": "NOT_RUN",
+  "fixture": {
+    "actor": "10000000-0000-4000-8000-000000000003",
+    "tenant": "10000000-0000-4000-8000-000000000001",
+    "foreign_tenant": "10000000-0000-4000-8000-000000000002",
+    "order": "10000000-0000-4000-8000-000000009103",
+    "foreign_order": "10000000-0000-4000-8000-000000009104",
+    "item": "10000000-0000-4000-8000-000000009105"
+  },
+  "new_body_md5": "e9767fcbcbfb831b92ee7f1523b1262e",
+  "error": "Traceback (most recent call last):\n  File \"/tmp/rrt-mirror/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_reader_rowtype_overlay.py\", line 167, in main\n    assert \"SELECT po.* INTO v_order\" in B.last(f\"SELECT pg_get_functiondef(to_regprocedure('{SIG}'));\".replace(\"SELECT pg\", \"SELECT pg\"))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+}

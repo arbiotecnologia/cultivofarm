@@ -1,0 +1,135 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.9s
+CHECKPOINT sql_calls=100 elapsed=3.9s
+CHECKPOINT sql_calls=200 elapsed=5.9s
+CHECKPOINT sql_calls=300 elapsed=8.1s
+CHECKPOINT sql_calls=400 elapsed=10.1s
+CHECKPOINT sql_calls=500 elapsed=12.3s
+CHECKPOINT sql_calls=600 elapsed=14.2s
+CHECKPOINT sql_calls=700 elapsed=16.1s
+CHECKPOINT sql_calls=800 elapsed=17.9s
+CHECKPOINT sql_calls=900 elapsed=19.8s
+CHECKPOINT sql_calls=1000 elapsed=22.0s
+CHECKPOINT sql_calls=1100 elapsed=24.1s
+CHECKPOINT sql_calls=1200 elapsed=26.2s
+CHECKPOINT sql_calls=1300 elapsed=28.2s
+CHECKPOINT sql_calls=1400 elapsed=30.4s
+CHECKPOINT sql_calls=1500 elapsed=32.7s
+CHECKPOINT sql_calls=1600 elapsed=35.0s
+CHECKPOINT sql_calls=1700 elapsed=37.6s
+CHECKPOINT sql_calls=1800 elapsed=40.3s
+CHECKPOINT sql_calls=1900 elapsed=42.8s
+CHECKPOINT sql_calls=2000 elapsed=45.5s
+CHECKPOINT sql_calls=2100 elapsed=47.9s
+CHECKPOINT sql_calls=2200 elapsed=50.0s
+CHECKPOINT sql_calls=2300 elapsed=52.5s
+CHECKPOINT sql_calls=2400 elapsed=54.9s
+CHECKPOINT sql_calls=2500 elapsed=57.3s
+CHECKPOINT sql_calls=2600 elapsed=59.5s
+CHECKPOINT sql_calls=2700 elapsed=61.7s
+CHECKPOINT sql_calls=2800 elapsed=63.9s
+CHECKPOINT sql_calls=2900 elapsed=66.0s
+CHECKPOINT sql_calls=3000 elapsed=68.1s
+CHECKPOINT sql_calls=3100 elapsed=70.2s
+CHECKPOINT sql_calls=3200 elapsed=72.3s
+CHECKPOINT sql_calls=3300 elapsed=74.7s
+CHECKPOINT sql_calls=3400 elapsed=76.9s
+CHECKPOINT sql_calls=3500 elapsed=79.1s
+CHECKPOINT sql_calls=3600 elapsed=81.3s
+CHECKPOINT sql_calls=3700 elapsed=83.6s
+CHECKPOINT sql_calls=3800 elapsed=85.9s
+CHECKPOINT sql_calls=3900 elapsed=88.2s
+CHECKPOINT sql_calls=4000 elapsed=90.7s
+CHECKPOINT sql_calls=4100 elapsed=93.1s
+CHECKPOINT sql_calls=4200 elapsed=95.5s
+CHECKPOINT sql_calls=4300 elapsed=98.3s
+CHECKPOINT sql_calls=4400 elapsed=101.3s
+CHECKPOINT sql_calls=4500 elapsed=103.8s
+CHECKPOINT sql_calls=4600 elapsed=106.0s
+CHECKPOINT sql_calls=4700 elapsed=108.1s
+CHECKPOINT sql_calls=4800 elapsed=110.1s
+CHECKPOINT sql_calls=4900 elapsed=112.0s
+CHECKPOINT sql_calls=5000 elapsed=113.8s
+CHECKPOINT sql_calls=5100 elapsed=115.9s
+CHECKPOINT sql_calls=5200 elapsed=117.9s
+CHECKPOINT sql_calls=5300 elapsed=120.0s
+CHECKPOINT sql_calls=5400 elapsed=121.9s
+CHECKPOINT sql_calls=5500 elapsed=123.9s
+CHECKPOINT sql_calls=5600 elapsed=125.9s
+CHECKPOINT sql_calls=5700 elapsed=127.7s
+CHECKPOINT sql_calls=5800 elapsed=129.6s
+CHECKPOINT sql_calls=5900 elapsed=131.6s
+CHECKPOINT sql_calls=6000 elapsed=133.5s
+CHECKPOINT sql_calls=6100 elapsed=135.3s
+CHECKPOINT sql_calls=6200 elapsed=137.4s
+CHECKPOINT sql_calls=6300 elapsed=139.6s
+CHECKPOINT sql_calls=6400 elapsed=141.8s
+CHECKPOINT sql_calls=6500 elapsed=144.0s
+CHECKPOINT sql_calls=6600 elapsed=146.3s
+CHECKPOINT sql_calls=6700 elapsed=148.4s
+CHECKPOINT sql_calls=6800 elapsed=150.5s
+CHECKPOINT sql_calls=6900 elapsed=152.7s
+CHECKPOINT sql_calls=7000 elapsed=154.8s
+CHECKPOINT sql_calls=7100 elapsed=156.7s
+CHECKPOINT sql_calls=7200 elapsed=158.9s
+CHECKPOINT sql_calls=7300 elapsed=160.9s
+CHECKPOINT sql_calls=7400 elapsed=163.3s
+CHECKPOINT sql_calls=7500 elapsed=165.4s
+CHECKPOINT sql_calls=7600 elapsed=167.5s
+CHECKPOINT sql_calls=7700 elapsed=169.5s
+CHECKPOINT sql_calls=7800 elapsed=171.3s
+CHECKPOINT sql_calls=7900 elapsed=173.1s
+CHECKPOINT sql_calls=8000 elapsed=174.8s
+CHECKPOINT sql_calls=8100 elapsed=176.8s
+CHECKPOINT sql_calls=8200 elapsed=178.8s
+CHECKPOINT sql_calls=8300 elapsed=180.7s
+CHECKPOINT sql_calls=8400 elapsed=182.5s
+CHECKPOINT sql_calls=8500 elapsed=184.4s
+CHECKPOINT sql_calls=8600 elapsed=186.4s
+CHECKPOINT sql_calls=8700 elapsed=188.2s
+CHECKPOINT sql_calls=8800 elapsed=190.2s
+CHECKPOINT sql_calls=8900 elapsed=192.1s
+CHECKPOINT sql_calls=9000 elapsed=194.0s
+CHECKPOINT sql_calls=9100 elapsed=195.9s
+CHECKPOINT sql_calls=9200 elapsed=197.8s
+CHECKPOINT sql_calls=9300 elapsed=199.5s
+CHECKPOINT sql_calls=9400 elapsed=201.3s
+CHECKPOINT sql_calls=9500 elapsed=203.0s
+CHECKPOINT sql_calls=9600 elapsed=204.8s
+CHECKPOINT sql_calls=9700 elapsed=206.4s
+CHECKPOINT sql_calls=9800 elapsed=208.1s
+CHECKPOINT sql_calls=9900 elapsed=209.9s
+CHECKPOINT sql_calls=10000 elapsed=211.6s
+CHECKPOINT sql_calls=10100 elapsed=213.6s
+CHECKPOINT sql_calls=10200 elapsed=215.4s
+CHECKPOINT sql_calls=10300 elapsed=217.1s
+CHECKPOINT sql_calls=10400 elapsed=218.9s
+CHECKPOINT sql_calls=10500 elapsed=221.1s
+CHECKPOINT sql_calls=10600 elapsed=223.5s
+PASS reported applied composition including isolated install closure release restored without regeneration
+PASS all ten real downstream tables have EXISTING nonempty sentinels before envase
+PASS existing full-row downstream sentinels seeded in disposable fixture only
+PASS baseline LIVE integral: 20 corpos, 120 triggers, 17 ACLs e 4 dependências medidas
+PASS B3 corpo atual pinado: public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)
+PASS B3 corpo atual pinado: public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)
+PASS B3 corpo atual pinado: public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)
+PASS B3 corpo atual pinado: platform_private.b2b_partner_catalog_reader(uuid)
+PASS B3 corpo atual pinado: platform_private.h15_actor_organization()
+PASS B3 corpo atual pinado: public.fn_b2b_credit_exposure(uuid,numeric,uuid)
+PASS B3 01-pre.sql.readonly
+PASS B3 02-install.sql.review
+PASS B3 03-post.sql.readonly
+CHECKPOINT sql_calls=10700 elapsed=232.2s
+CHECKPOINT sql_calls=10800 elapsed=234.8s
+CHECKPOINT sql_calls=10900 elapsed=237.6s
+CHECKPOINT sql_calls=11000 elapsed=240.4s
+CHECKPOINT sql_calls=11100 elapsed=243.0s
+CHECKPOINT sql_calls=11200 elapsed=245.2s
+CHECKPOINT sql_calls=11300 elapsed=247.5s
+CHECKPOINT sql_calls=11400 elapsed=249.9s
+CHECKPOINT sql_calls=11500 elapsed=251.6s
+PASS estado local equivalente ao relatado: 11/21/26/31/41/51/61 com POST PASS (produção: não reinstalar)
+PASS corpo vivo 61 reproduzido (md5 d426e075…, ACL real)
+PASS corpo vivo: caminho positivo devolve pedido/ator/tenant/item corretos (gate OFF)
+PASS corpo vivo: pedido de outro tenant negado
+PASS corpo vivo: strict_multi_assignment reproduz a fragilidade
