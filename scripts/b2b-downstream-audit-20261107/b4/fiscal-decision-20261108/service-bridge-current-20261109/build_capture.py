@@ -64,11 +64,11 @@ def main():
                           "definition": row["body"], "definition_md5": row["md5"], "owner": row["owner"], "acl": row["acl"],
                           "prosecdef": "SECURITY DEFINER" in row["body"],
                           "proconfig": ['search_path=""'] if "SET search_path TO ''" in row["body"] else ["search_path=public"]})
-    seller_meta = next(x for x in hook["used_md5_mirror"] if x["sig"] == "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)")
     functions.append({
         "schema": "public", "proname": "respond_b2b_order_quote_secure", "args": "uuid,jsonb,date,integer,text",
-        "definition": seller, "definition_md5": md5(seller), "owner": seller_meta["owner"], "acl": seller_meta["acl"],
-        "prosecdef": seller_meta["prosecdef"], "proconfig": seller_meta["proconfig"],
+        "definition": seller, "definition_md5": md5(seller), "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "prosecdef": True, "proconfig": ["search_path=public"],
     })
     capture = {
         "kind": "AUDITOR_CAPTURE_RECONCILED_FROM_EXACT_LOCAL_SOURCES_NOT_A_NEW_HOSTED_READ",
