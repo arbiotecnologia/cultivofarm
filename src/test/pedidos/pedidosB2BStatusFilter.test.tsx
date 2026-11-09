@@ -14,7 +14,8 @@ const actor = (uid: string, org: string, epoch = 0, authzReady = true) => ({
   roles: ["comercial"], authzEpoch: epoch, authzReady, loading: false,
 });
 let observedSearch = "";
-const LocationProbe = () => { observedSearch = useLocation().search; return null; };
+let navigate: NavigateFunction;
+const LocationProbe = () => { observedSearch = useLocation().search; navigate = useNavigate(); return null; };
 const use = (initial = "/comercial/pedidos-b2b") => renderHook(
   () => usePedidosB2BStatusFilter(OPTS, DEF),
   { wrapper: ({ children }) => <MemoryRouter initialEntries={[initial]}><LocationProbe />{children}</MemoryRouter> },
