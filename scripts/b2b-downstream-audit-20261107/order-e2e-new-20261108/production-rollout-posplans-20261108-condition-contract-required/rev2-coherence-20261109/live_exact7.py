@@ -18,8 +18,8 @@ DEPS = ["platform_private.b2b_resale_delivery_order_valid_v1", "platform_private
 
 CAP06 = ROOT / "scripts/b2b-order-payment-terms-read-20261106/captured"
 # Real LIVE captures of 06/11 already in the repo; installed only where the mirror lacks the function name (never replacing a body).
-CAP06_FILES = ["public.is_valid_b2b_partner_user.0bb0dea0.live-20261106.sql", "public.b2b_phase1_partner_visible.6b3defc0.live-20261106.sql",
-               "platform_private.b2b_phase1_partner_visible.915f516e.live-20261106.sql",
+CAP06_FILES = ["public.is_valid_b2b_partner_user.0bb0dea0.live-20261106.sql", "platform_private.b2b_phase1_partner_visible.915f516e.live-20261106.sql",
+               "public.b2b_phase1_partner_visible.6b3defc0.live-20261106.sql",
                "platform_private.b2b_owner_internal_partner_readable.fa72ca18.live-20261106.sql",
                "platform_private.b2b_phase1_order_visible.8504f07f.live-20261106.sql"]
 
