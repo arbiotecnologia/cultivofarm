@@ -1,0 +1,18 @@
+{
+  "reported_at_utc": "2026-11-09T18:20:00Z",
+  "source": "OWNER_AUDITOR_REPORT_NOT_AGENT_HOSTED_VERIFICATION",
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "seller91": {
+    "status": "INSTALLED_BY_CONNECTOR_REPORTED_DO_NOT_REAPPLY",
+    "migration": "b2b_seller_quote_authorization_reviewed_20261109",
+    "post92": "PASS_REPORTED",
+    "respond_md5": "97bcdb9884b54adb3bd4aae4915e32d0"
+  },
+  "guard81": { "status": "ALREADY_INSTALLED_REPORTED_DO_NOT_REAPPLY", "post82": "PASS_REPORTED" },
+  "stock_logistics_gates": "OFF_REPORTED",
+  "fiscal": "DRAFT_REPORTED",
+  "pb001038": "PRESERVED_NO_NEW_ORDER_SENT_REPORTED",
+  "supersedes": "auditor-state-20261109-1813.json:seller91_pending",
+  "agent_hosted_actions": false,
+  "frontend_publish": false
+}

@@ -109,3 +109,22 @@ it('status que devolve "reserved" ou escopo de outro ator é contrato inválido'
  s.rpc.mockImplementationOnce(()=>ok({contract,key:webcrypto.randomUUID(),generation:1,state:'reserved',predecessors:[]}));
  await expect(readAttemptStatus(slot,P,yes)).rejects.toThrow('journal_status_invalid');
 });
+it('handler capturado antes da publicação de outra aba recusa o journal obsoleto',async()=>{
+ const h=mount();await waitFor(()=>expect(h.result.current.canSubmit).toBe(true));
+ const stale=h.result.current.takeDispatch;
+ reserve();rows[0].closed=true;
+ await act(async()=>{await readAttemptStatus(slot,P,yes);expect(stale()).toBeNull();});
+ expect(h.result.current.canSubmit).toBe(false);
+ expect(calls).not.toContain('recover_partner_order_attempt_v1');
+});
+it('releitura pendente bloqueia handler no mesmo tick e falha aposenta intenção',async()=>{
+ reserve();rows[0].closed=true;
+ const h=mount();await waitFor(()=>expect(h.result.current.journal?.state).toBe('closed'));
+ await act(async()=>{await h.result.current.recover(h.result.current.journal??undefined);});
+ expect(h.result.current.canSubmit).toBe(true);
+ const captured=h.result.current.takeDispatch;
+ statusError={code:'42501',message:'forbidden_partner'};
+ await act(async()=>{const pending=h.result.current.recover();expect(captured()).toBeNull();await pending;});
+ expect(h.result.current.mode).toBe('blocked');expect(h.result.current.canSubmit).toBe(false);
+ expect(h.result.current.takeDispatch()).toBeNull();expect(calls).not.toContain('recover_partner_order_attempt_v1');
+});
