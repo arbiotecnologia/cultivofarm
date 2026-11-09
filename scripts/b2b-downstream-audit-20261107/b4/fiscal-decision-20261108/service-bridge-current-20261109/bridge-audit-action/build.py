@@ -6,7 +6,7 @@ import json
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[5]
-SOURCE = ROOT / "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/02-install.sql.review"
+SOURCE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-136/bridge-before-audit-body.sql"
 BASELINE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/real-baselines.json"
 REF = "swzpzcwiasxmjutrmvkm"
 OLD = """ VALUES('fiscal_invoices',inv.id,'B2B_RECEIVABLE_RECONCILED',jsonb_build_object('receivable_id',inv.receivable_id),
