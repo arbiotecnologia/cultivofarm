@@ -73,6 +73,8 @@ def run(ns):
             "__MD5_OTRG__": md5_of("platform_private.b2b_condition_order_coherence_trg()"),
             "__MD5_STRG__": md5_of("platform_private.b2b_condition_snapshot_coherence_trg()")}
     res["pins"] = pins
+    frozen = json.loads((PKG / "pins.json").read_text()) if (PKG / "pins.json").exists() else None
+    check("CCR2 corpos instalados = pins congelados em 82/96", frozen is None or frozen == pins, (frozen, pins))
     check("CCR2 install não altera dados", counts() == before, (before, counts()))
     r = runsql("82-ccr2-post.sql.readonly"); check("CCR2 82 POST_OK (owner/ACL/search_path/definer/gatilhos exatos)", r.returncode == 0 and "CCR2_POST_OK" in r.stderr, r.stderr[-600:])
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 reexecução de 81 recusada", r.returncode != 0 and "CCR2_ALREADY_INSTALLED" in r.stderr, r.stderr[-200:])
@@ -225,7 +227,7 @@ def run(ns):
                "WHERE s.partner_id<>o.partner_id OR s.plan_id<>o.payment_plan_id OR s.organization_id<>a.commercial_owner_organization_id").stdout.strip() == "0")
 
     # ---------- rollback 96 + reinstall ----------
-    bad = (PKG / "96-ccr2-rollback.sql.review").read_text().replace("__MD5_CHECK__", "0" * 32)
+    bad = (PKG / "96-ccr2-rollback.sql.review").read_text().replace(pins["__MD5_CHECK__"], "0" * 32, 1)
     f = work / "ccr2-bad-rb.sql"; f.write_text(bad.replace("__MD5_OTRG__", pins["__MD5_OTRG__"]).replace("__MD5_STRG__", pins["__MD5_STRG__"])); f.chmod(0o644)
     r = subprocess.run(SP.su() + ["psql", "-X", "-q", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1", "-f", str(f)], capture_output=True, text=True)
     check("CCR2 rollback com pin divergente aborta sem remover nada", r.returncode != 0 and "CCR2_RB_PIN_DRIFT" in r.stderr
@@ -240,4 +242,5 @@ def run(ns):
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 reinstall após rollback", r.returncode == 0, r.stderr[-300:])
     r = runsql("82-ccr2-post.sql.readonly"); check("CCR2 POST após reinstall", r.returncode == 0 and "CCR2_POST_OK" in r.stderr, r.stderr[-300:])
     r = runsql("96-ccr2-rollback.sql.review"); check("CCR2 rollback final antes do rollback B3 do harness", r.returncode == 0, r.stderr[-300:])
-    (PKG / "pins.json").write_text(json.dumps(pins, indent=2) + "\n")
+    if not (PKG / "pins.json").exists():
+        (PKG / "pins.json").write_text(json.dumps(pins, indent=2) + "\n")
