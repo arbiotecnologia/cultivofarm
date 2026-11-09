@@ -5,14 +5,20 @@ import { pauseStateKey, readPauseState, writePauseState } from "@/lib/authz/paus
 
 /**
  * Preferência NÃO sensível (valor do filtro de status) de /comercial/pedidos-b2b,
- * retida em memória volátil (pauseRetainedState) por usuário+empresa+papéis.
+ * refletida na URL para sobreviver a reload e retida em memória volátil durante
+ * pausas de autorização. A retenção continua por usuário+empresa+papéis; uma
+ * troca de identidade não herda o status que estava no endereço.
  * Época de autorização fica fora da chave de propósito: renovação/revalidação
  * do mesmo ator não reseta o filtro. Dados, detalhes e queries continuam
  * cercados pelos gates/fences existentes. Logout/troca de identidade limpa
- * tudo via clearAllPauseStates (useAuth). Valor inválido cai no padrão.
+ * a memória via clearAllPauseStates (useAuth). Valor inválido cai no padrão.
  */
 export function usePedidosB2BStatusFilter(allowed: readonly string[], fallback: string) {
   const { user, profile, roles = [] } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get("status");
+  const queryValue = query && allowed.includes(query) ? query : null;
+  const previousIdentity = useRef<string | null>(null);
   const identityOk = !!user?.id && profile?.user_id === user.id && profile?.ativo === true && !!profile?.organization_id;
   const key = identityOk
     ? `${pauseStateKey({ userId: user!.id, organizationId: profile!.organization_id, roles, epoch: 0 })}:pedidos-b2b:status`
