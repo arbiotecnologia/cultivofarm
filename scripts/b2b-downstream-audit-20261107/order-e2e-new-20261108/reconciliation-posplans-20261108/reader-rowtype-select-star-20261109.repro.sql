@@ -1,0 +1,16 @@
+CREATE TABLE o(id uuid primary key, partner_id uuid, status text, updated_at timestamptz);
+CREATE TABLE a(id uuid primary key, owner uuid, ativo bool, status int);
+INSERT INTO a VALUES('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000f1',true,7),('00000000-0000-0000-0000-00000000000b','00000000-0000-0000-0000-0000000000f2',true,9);
+INSERT INTO o VALUES('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000000a','aprovado',now());
+CREATE FUNCTION r(p uuid, org uuid) RETURNS text LANGUAGE plpgsql AS $$DECLARE v o%ROWTYPE; BEGIN
+ SELECT * INTO v FROM o po JOIN a pa ON pa.id=po.partner_id WHERE po.id=p AND pa.owner=org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'SCOPE_DENIED'; END IF; RETURN v.id||'|'||v.status||'|'||v.partner_id; END$$;
+SELECT r('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000f1');
+SET plpgsql.extra_warnings='strict_multi_assignment';
+CREATE OR REPLACE FUNCTION r2(p uuid, org uuid) RETURNS text LANGUAGE plpgsql AS $$DECLARE v o%ROWTYPE; BEGIN
+ SELECT * INTO v FROM o po JOIN a pa ON pa.id=po.partner_id WHERE po.id=p AND pa.owner=org; RETURN v.status; END$$;
+SELECT r2('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000f1');
+SET plpgsql.extra_errors='strict_multi_assignment';
+SELECT r2('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000f1');
+RESET plpgsql.extra_errors;
+SELECT r('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-0000000000f2');

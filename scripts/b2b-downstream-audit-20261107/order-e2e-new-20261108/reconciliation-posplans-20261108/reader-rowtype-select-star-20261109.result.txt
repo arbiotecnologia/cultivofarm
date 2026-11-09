@@ -1,0 +1,29 @@
+CREATE TABLE
+CREATE TABLE
+INSERT 0 2
+INSERT 0 1
+CREATE FUNCTION
+                                         r                                          
+------------------------------------------------------------------------------------
+ 00000000-0000-0000-0000-000000000001|aprovado|00000000-0000-0000-0000-00000000000a
+(1 row)
+
+SET
+CREATE FUNCTION
+psql:t.sql:12: WARNING:  number of source and target fields in assignment does not match
+DETAIL:  strict_multi_assignment check of extra_warnings is active.
+HINT:  Make sure the query returns the exact list of columns.
+    r2    
+----------
+ aprovado
+(1 row)
+
+SET
+psql:t.sql:14: ERROR:  number of source and target fields in assignment does not match
+DETAIL:  strict_multi_assignment check of extra_errors is active.
+HINT:  Make sure the query returns the exact list of columns.
+CONTEXT:  PL/pgSQL function r2(uuid,uuid) line 2 at SQL statement
+RESET
+psql:t.sql:16: ERROR:  SCOPE_DENIED
+CONTEXT:  PL/pgSQL function r(uuid,uuid) line 3 at RAISE
+exit=0
