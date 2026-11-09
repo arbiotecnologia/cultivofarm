@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-ATKMYgUw/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 112, in main
+    Q=commercial.apply(B,load,ROOT,OUT)
+  File "/tmp/new-order-e2e-ATKMYgUw/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/commercial.py", line 9, in apply
+    M=load('new_b4_contract',root/'scripts/b2b-downstream-audit-20261107/b4/test-b4-b3.py')
+  File "/tmp/new-order-e2e-ATKMYgUw/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 13, in load
+    s=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+                                                                                          ~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-ATKMYgUw/project/scripts/b2b-downstream-audit-20261107/b4/test-b4-b3.py", line 25, in <module>
+    if json.loads(MONEY.read_text()).get("ref") != "swzpzcwiasxmjutrmvkm":
+                  ~~~~~~~~~~~~~~~^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/jy00n3jp5xj8s40n1fbldmkcr5n7avxc-python3-3.13.15/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/new-order-e2e-ATKMYgUw/project/scripts/financial-installments-initial-20261024/receivable-semantics-live-20261028.json'

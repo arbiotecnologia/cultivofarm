@@ -757,7 +757,8 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   receivable_id=blocked['invoice_receivable']
   forecast_after=json.loads(B.last(f"SELECT jsonb_build_object('state',state,'residual_amount',residual_amount,'version',version)::text FROM platform_private.b2b_financial_forecasts WHERE order_id='{order_id}';"))
   assert forecast_after['state']=='faturado_total' and float(forecast_after['residual_amount'])==0 and forecast_after['version']==9,forecast_after
-  credit_after=json.loads(B.last(B.T.actor(Q.UADM)+f"SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
+  credit_claims="'"+json.dumps(json.dumps({'sub':Q.UADM,'role':'authenticated','iat':1,'exp':4102444800})).replace("'","''")+"'"
+  credit_after=json.loads(B.last(f"RESET ROLE;SET request.jwt.claim.sub='{Q.UADM}';SET request.jwt.claims={credit_claims};SELECT public.fn_b2b_credit_exposure('{Q.P}',0,NULL);"))
   assert abs(float(credit_after['exposicao_atual'])-float(credit['exposicao_atual']))<0.01,(credit,credit_after)
   assert B.last(f"SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id='{invoice_id}';")=='1'
   (OUT/'forecast-post-nf.json').write_text(json.dumps(dict(forecast=forecast_after,credit_before=credit,credit_after=credit_after,one_title_for_invoice=True),indent=2)+'\n')

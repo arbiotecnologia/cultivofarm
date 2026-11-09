@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-yTX03ZL7/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 17, in main
+    B=load('new_finished',physical/'test_after.py').B
+      ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-yTX03ZL7/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 13, in load
+    s=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+                                                                                          ~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-yTX03ZL7/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_after.py", line 10, in <module>
+    spec.loader.exec_module(B)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-yTX03ZL7/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 35, in <module>
+    spec.loader.exec_module(C)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/new-order-e2e-yTX03ZL7/project/scripts/delivery-atomic-hardening-20261030/confirmation/test_pg.py", line 8, in <module>
+    sys.path.insert(0,str(S/'stock-envase-recovery-20261027'));import test_v2_pg as T
+                                                               ^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'test_v2_pg'

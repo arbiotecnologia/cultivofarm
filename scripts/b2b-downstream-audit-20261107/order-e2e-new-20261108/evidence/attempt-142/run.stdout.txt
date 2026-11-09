@@ -1,0 +1,3 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.5s
+NEW_PHYSICAL_BOOT_OK
