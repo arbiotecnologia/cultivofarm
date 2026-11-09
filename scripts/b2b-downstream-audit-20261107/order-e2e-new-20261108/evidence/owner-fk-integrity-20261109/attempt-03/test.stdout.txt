@@ -45,3 +45,7 @@ CHECKPOINT sql_calls=4200 elapsed=99.1s
 CHECKPOINT sql_calls=4300 elapsed=101.7s
 CHECKPOINT sql_calls=4400 elapsed=104.2s
 CHECKPOINT sql_calls=4500 elapsed=106.7s
+CHECKPOINT sql_calls=4600 elapsed=109.2s
+CHECKPOINT sql_calls=4700 elapsed=111.6s
+CHECKPOINT sql_calls=4800 elapsed=115.1s
+CHECKPOINT sql_calls=4900 elapsed=117.7s
