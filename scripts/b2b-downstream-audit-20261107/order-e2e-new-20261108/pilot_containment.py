@@ -249,11 +249,15 @@ def build_bodies(raw):
     body = defs[sig]["body"]
     old = "NOT EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled)"
     body = one(body, old,
-        "NOT platform_private.resale_pilot_allowed_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL)",
-        "purchase pilot", 2)
+        "NOT platform_private.resale_pilot_scope_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL)",
+        "purchase early scope", 2)
     body = body.replace("FINISHED_PRODUCT_GATE_CLOSED", "RESALE_PILOT_SCOPE_DENIED")
-    first = " IF NOT platform_private.resale_pilot_allowed_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN\n  RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';\n END IF;\n v_org:=platform_private.stock_motor_actor('entrada');"
+    first = " IF NOT platform_private.resale_pilot_scope_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN\n  RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';\n END IF;\n v_org:=platform_private.stock_motor_actor('entrada');"
     body = one(body, first, " v_org:=platform_private.stock_motor_actor('entrada');\n" + first.rsplit("\n v_org:=platform_private.stock_motor_actor('entrada');", 1)[0], "purchase actor before first scoped check")
+    body = one(body,
+        " INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_lote);",
+        " IF NOT platform_private.resale_pilot_allowed_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_lote);",
+        "purchase final authorization after catalog locks")
     defs[sig]["new"] = body
 
     sig = "public.rpc_finished_product_purchase_capability_v1()"
