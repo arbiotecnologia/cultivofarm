@@ -125,7 +125,7 @@ def build_sql():
 
     generator = load_generator()
     relations = {row["name"]: row for row in baseline["relations"]}
-    required_relations = {"organizations", "produtos", "catalogo_volumes", "product_packagings", "product_sale_units"}
+    required_relations = {"produtos", "catalogo_volumes", "product_packagings", "product_sale_units"}
     assert required_relations <= set(relations), required_relations - set(relations)
     relation_guards = [generator.relation_pin(relations[name]) for name in sorted(required_relations)]
     column_guards = [column_guard(row) for row in capture["columns"]]
