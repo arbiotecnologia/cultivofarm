@@ -1,3 +1,9 @@
+## 09/11 00:29 — Auditoria 1acbd542: pacote regenerado não estava no repositório
+- [x] Confirmado: `production-rollout-posplans-20261108/manifest.json` e `00-production-pre-posplans.sql.readonly` ainda são os artefatos antigos, com PRE SHA256 `5401300b1293e0e0bc55a6e388e30cf79e1ddd10f01103a2557e7d0ef62f9bdd`; não promover esse pacote.
+- [x] A cópia nomeada `attempt-91` contém `exit=1` e logs da tentativa 28; a execução raiz posterior tem 39/39 e `exit=0`, mas ainda usa a captura anterior à correção `ORIGEM_INVALIDA`. Nenhuma delas é pacote final da captura corrigida.
+- [ ] Isolar uma nova execução descartável com a captura corrigida, gerar PRE/POST/rollbacks escopados e contenção ARBio no pacote real do repositório, com README e mapa de origem; revalidar todos os hashes e a correspondência byte a byte antes de declarar o pacote revisável.
+- [ ] Manter o pacote antigo preservado como evidência superada. Sem SQL hospedado, instalação, ativação, publicação, efeitos fiscais/financeiros ou comunicação.
+
 ## 09/11 00:27 — Correção factual da transcrição LIVE
 - [x] `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDO` era somente erro de transcrição local; corrigido para `COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA` na PARTE 2 e na captura concatenada. Produção e captura original do auditor não foram tratadas como inconsistentes nem alteradas.
 - [x] Conferência local: 20/20 definições com MD5 igual ao declarado, incluindo `public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)` = `a4d47ccf5d116141ed46e9de9ea7eeaa`; concatenação PARTE 1 + PARTE 2 exata, com 120 triggers e 17 relações preservados.
