@@ -1,0 +1,177 @@
+{
+  "status": "PASS",
+  "scope": "exact final artifacts on fresh disposable PostgreSQL 17; synthetic schema/Auth only",
+  "hosted": false,
+  "package": "/tmp/final-rollout-attempt-113",
+  "runner_sha256": "3998af2101b23b79340388afefe726245b2346932830727adad4ff6f03df2a98",
+  "artifacts": [
+    {
+      "file": "00-production-pre-posplans.sql.readonly",
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616",
+      "returncode": 0
+    },
+    {
+      "file": "11-confirmation-install.sql.review",
+      "sha256": "809223b1b6b02041241f9d4bd5ad7c33635aab7bcad18f420a4ac944072163ae",
+      "returncode": 0
+    },
+    {
+      "file": "12-confirmation-post.sql.readonly",
+      "sha256": "e45c25b5bec99c6cb6d57b717ab82e9c97b2306966e984c9513adce42e01cd16",
+      "returncode": 0
+    },
+    {
+      "file": "20-send-pre.sql.readonly",
+      "sha256": "79a95847c6e3e824e6f205e4a643c597c2fd4882c661e389e7260d383400afd7",
+      "returncode": 0
+    },
+    {
+      "file": "21-send-install.sql.review",
+      "sha256": "394fcbf719ba56c3a1c663c376d1fbc6e6cc33ecd8b037d9f711c12a369dd9ef",
+      "returncode": 0
+    },
+    {
+      "file": "22-send-post.sql.readonly",
+      "sha256": "12bb897db3595f88177db3e4712dd7b7bb8232cd4c444e684a74e3ac413dff5f",
+      "returncode": 0
+    },
+    {
+      "file": "30-physical-pre-after-confirmation-send.sql.readonly",
+      "sha256": "607ff4ed23f662be2aec66a29c14019213899acc64dbabf414ff72069d18efbb",
+      "returncode": 0
+    },
+    {
+      "file": "31-physical-install.sql.review",
+      "sha256": "c6d42ee3cc84b6d1ed7506e5643820086479d0f10c457091ceb7c8612d031632",
+      "returncode": 0
+    },
+    {
+      "file": "32-physical-post.sql.readonly",
+      "sha256": "68baf979ce5690f76fec433d6a24b4a3abf2cf1fd8e5e3fe3a4e0a08098db11e",
+      "returncode": 0
+    },
+    {
+      "file": "40-logistics-pre-after-physical.sql.readonly",
+      "sha256": "a5ecac743777804ee2fbb65a29ec04c43e77df74cd7a23e46a682dc41399c97a",
+      "returncode": 0
+    },
+    {
+      "file": "41-logistics-install.sql.review",
+      "sha256": "56631263e6ebfe51e9f02822f72c98f895a728f762d3c0ef62c575e44ee7ec09",
+      "returncode": 0
+    },
+    {
+      "file": "42-logistics-post.sql.readonly",
+      "sha256": "e893bc9fe098029b0a1d4f997cfe8ed4e48074b89dddc3d1efaf1df6e98dc0ad",
+      "returncode": 0
+    },
+    {
+      "file": "50-endpoint-reader-pre.sql.readonly",
+      "sha256": "07329a906191d729e4c62c1c77655c197c605b6a26d7a02ca6cdbe915b4421cf",
+      "returncode": 0
+    },
+    {
+      "file": "51-endpoint-reader-install.sql.review",
+      "sha256": "617ee5279d9bcf3226c923b29767620707cb28a6c581cf01309db771960d00cb",
+      "returncode": 0
+    },
+    {
+      "file": "52-endpoint-reader-post.sql.readonly",
+      "sha256": "bff4207adda764c9a4d7df61f8239137eee983d6a00852c72c30986770fcef88",
+      "returncode": 0
+    },
+    {
+      "file": "60-pilot-containment-pre.sql.readonly",
+      "sha256": "439009f4ae8d87a24ced0584ca3bf24b132da1603de54fd6479c5b61e301eea0",
+      "returncode": 0
+    },
+    {
+      "file": "61-pilot-containment-install.sql.review",
+      "sha256": "1002c477ad794e0a87b6edf14564cee15b23d75041dca18443ee7152de8a486f",
+      "returncode": 0
+    },
+    {
+      "file": "62-pilot-containment-post.sql.readonly",
+      "sha256": "34d240d66e2b91a460e09c667260b424838487702f960154783ada1b6d9c7108",
+      "returncode": 0
+    },
+    {
+      "file": "89-pilot-containment-rollback-deny.sql.review",
+      "sha256": "a04eaf2da211f17fdbf19cba6e613a1bfce55e6a5593617adf8e0b2e0583bd15",
+      "returncode": 0
+    },
+    {
+      "file": "90-endpoint-reader-rollback-deny.sql.review",
+      "sha256": "2c70397082169b35840bf276d9da40e0a471d55d2374f11eeec6b22daa69ec40",
+      "returncode": 0
+    },
+    {
+      "file": "94-logistics-rollback-deny.sql.review",
+      "sha256": "bc03a15aeb273605cec9f550d15aa8f452203ed2ff56dbc9b24eeec2a2d7974a",
+      "returncode": 0
+    },
+    {
+      "file": "93-physical-rollback-deny.sql.review",
+      "sha256": "a02aa055b561fad022bea6c257a517aeac67ae2ae4a98b897ca7d97c20b1d72e",
+      "returncode": 0
+    },
+    {
+      "file": "92-send-rollback-deny.sql.review",
+      "sha256": "23a7364afd6a87c219da234aebeaac281ed3bc1c2c18601b6ddeb27055473974",
+      "returncode": 0
+    },
+    {
+      "file": "91-confirmation-rollback-deny.sql.review",
+      "sha256": "41d5a93b4e6a15bf5c4349a52afde807b26de65d01ffdb37e1619286f8375a85",
+      "returncode": 0
+    }
+  ],
+  "postgresql_version": "17.11",
+  "artifact_count": 24,
+  "authenticated_negative": {
+    "send": {
+      "returncode": 3,
+      "permission_denied": true
+    },
+    "confirmation": {
+      "returncode": 3,
+      "permission_denied": true
+    },
+    "os_writer": {
+      "returncode": 3,
+      "permission_denied": true
+    },
+    "os_reader": {
+      "returncode": 3,
+      "permission_denied": true
+    },
+    "purchase_writer": {
+      "returncode": 3,
+      "permission_denied": true
+    }
+  },
+  "closed": {
+    "os_writer": false,
+    "send_writer": false,
+    "physical_gate": false,
+    "confirm_writer": false,
+    "logistics_gate": false,
+    "purchase_writer": false
+  },
+  "relation_security_pins": 18,
+  "relation_security_preserved": true,
+  "history_before": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0
+  },
+  "history_after": {
+    "os": 8,
+    "movements": 0,
+    "deliveries": 0
+  },
+  "plans_before_md5": "b458383b94f648a7eb5bc28ec70d7457",
+  "plans_after_md5": "b458383b94f648a7eb5bc28ec70d7457",
+  "gates_activated": false,
+  "authenticated_real_proof": "NOT_RUN"
+}
