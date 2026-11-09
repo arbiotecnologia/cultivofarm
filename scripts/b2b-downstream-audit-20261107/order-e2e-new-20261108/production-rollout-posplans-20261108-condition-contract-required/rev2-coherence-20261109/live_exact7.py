@@ -62,6 +62,88 @@ CREATE TABLE IF NOT EXISTS platform_private.delivery_context_20261030(txid bigin
   action text NOT NULL, target uuid, consumed boolean DEFAULT false NOT NULL, item uuid, delivery uuid, mutation text);"""
 
 
+CAP23 = PKG / "live-exact-7" / "capture-23-20261109.json"
+S31 = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/31-physical-install.sql.review"
+S61 = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/61-pilot-containment-install.sql.review"
+# Real step-61 objects (installed in production, POST62 pins resale_pilot_delivery_scope_v1 = 2350b653…); copied verbatim by line range.
+S61_RANGES = [(22, 42), (44, 67), (112, 127)]
+S61_DELIVERY_SCOPE_POST = "2350b6535c4b6289f47c200c03000dfb"
+
+
+def capture23():
+    c = json.loads(CAP23.read_text())
+    for x in c:
+        if hashlib.md5(x["definition"].encode()).hexdigest() != x["md5"]:
+            raise SystemExit("LIVE23_CAPTURE_TAMPERED " + x["signature"])
+    return c
+
+
+def s61_sql():
+    L = S61.read_text().splitlines()
+    return "\n".join("\n".join(L[a - 1:b]) for a, b in S61_RANGES) + "\n"
+
+
+# Declared REDUCED seams so the verbatim LIVE bodies compile (all absent-only, empty, no grants):
+#  - finished_product_gate_v1 DDL verbatim from installed step 31 (row enabled=false);
+#  - estoque_produto(id) and entregas.estoque_produto_id referenced by step-61 delivery scope;
+#  - profiles.senha_provisoria (LIVE NOT NULL DEFAULT false), platform_org_admin_invites(user_id, access_operation_status,
+#    access_valid_after) read by platform_actor_access_ready; authz_tickets(txid,scope,target) read by has_ticket.
+SEAMS23 = """DO $s$ BEGIN
+ IF to_regclass('platform_private.finished_product_gate_v1') IS NULL THEN
+  CREATE TABLE platform_private.finished_product_gate_v1(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+  INSERT INTO platform_private.finished_product_gate_v1(singleton,enabled) VALUES(true,false);
+  REVOKE ALL ON platform_private.finished_product_gate_v1 FROM PUBLIC; END IF;
+ IF to_regclass('public.estoque_produto') IS NULL THEN CREATE TABLE public.estoque_produto(id uuid PRIMARY KEY DEFAULT gen_random_uuid()); REVOKE ALL ON public.estoque_produto FROM PUBLIC; END IF;
+ IF to_regclass('platform_private.authz_tickets') IS NULL THEN CREATE TABLE platform_private.authz_tickets(txid bigint NOT NULL, scope text NOT NULL, target uuid); REVOKE ALL ON platform_private.authz_tickets FROM PUBLIC; END IF;
+ IF to_regclass('public.platform_org_admin_invites') IS NULL THEN CREATE TABLE public.platform_org_admin_invites(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, access_operation_status text, access_valid_after timestamptz); REVOKE ALL ON public.platform_org_admin_invites FROM PUBLIC; END IF;
+END $s$;
+ALTER TABLE public.entregas ADD COLUMN IF NOT EXISTS estoque_produto_id uuid;
+ALTER TABLE public.platform_org_admin_invites ADD COLUMN IF NOT EXISTS access_operation_status text, ADD COLUMN IF NOT EXISTS access_valid_after timestamptz;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS senha_provisoria boolean NOT NULL DEFAULT false;"""
+
+
+def install23(psql, check, res, out_dir):
+    """Install the 23 bodies read in production on 09/11 verbatim, one transaction each, with the exact LIVE proacl."""
+    cap = capture23(); d = out_dir / "live-23"; d.mkdir(exist_ok=True)
+    r = psql("BEGIN;\n" + SEAMS23 + "\nCOMMIT;"); res["live23_seams"] = {"rc": r.returncode, "err": (r.stderr or "")[-800:]}
+    if psql("SELECT to_regprocedure('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)') IS NULL").stdout.strip() == "t":
+        r = psql("BEGIN;\n" + s61_sql() + "COMMIT;"); res["live23_s61"] = {"rc": r.returncode, "err": (r.stderr or "")[-800:]}
+    out = {}
+    for x in cap:
+        sig = x["signature"]
+        before = psql(f"SELECT CASE WHEN to_regprocedure('{sig}') IS NULL THEN '<<ABSENT>>' ELSE pg_get_functiondef('{sig}'::regprocedure) END").stdout.rstrip("\n")
+        (d / (sig.split("(")[0] + ".mirror-before.sql")).write_text(before + "\n")
+        mb = hashlib.md5((before + "\n").encode()).hexdigest() if before != "<<ABSENT>>" else None
+        sql = ["BEGIN;"]
+        if before != "<<ABSENT>>":
+            rt_m = psql(f"SELECT pg_get_function_result('{sig}'::regprocedure)").stdout.strip()
+            rt_l = re.search(r"\n RETURNS (.*)\n", x["definition"]).group(1)
+            ar_m = psql(f"SELECT pg_get_function_arguments('{sig}'::regprocedure)").stdout.strip()
+            ar_l = re.search(r"FUNCTION [^(]+\((.*?)\)\n", x["definition"]).group(1)
+            if rt_m != rt_l or ar_m != ar_l:
+                sql.append(f"DROP FUNCTION {sig};")  # no CASCADE: fails if anything depends on the old shape
+        sql.append(x["definition"].rstrip("\n") + ";")
+        sql.append(f"REVOKE ALL ON FUNCTION {sig} FROM PUBLIC, anon, authenticated, service_role;")
+        for g, p in re.findall(r"([a-z_]*)=([A-Za-z*]+)/", x["acl"].strip("{}")):
+            if g != "postgres" and "X" in p:
+                sql.append(f"GRANT EXECUTE ON FUNCTION {sig} TO {g or 'PUBLIC'};")
+        sql.append("COMMIT;")
+        r = psql("\n".join(sql))
+        post = psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure)), coalesce(proacl::text,'') FROM pg_proc WHERE oid=to_regprocedure('{sig}')").stdout.strip().split("|")
+        out[sig] = {"mirror_before": mb, "live": x["md5"], "mirror_after": post[0] if post and post[0] else None,
+                    "acl_live": x["acl"], "acl_after": post[1] if len(post) > 1 else None, "rc": r.returncode, "err": (r.stderr or "")[-400:]}
+    res["live23"] = out
+    bad = {k: v for k, v in out.items() if v["mirror_after"] != v["live"]}
+    check("CCR2 LIVE23: md5(pg_get_functiondef) dos 23 no espelho = captura produção 09/11", not bad, bad)
+    norm = lambda a: sorted(a.strip("{}").split(",")) if a else []
+    badacl = {k: (v["acl_after"], v["acl_live"]) for k, v in out.items() if norm(v["acl_after"]) != norm(v["acl_live"])}
+    check("CCR2 LIVE23: ACL (aclitems ordenados) dos 23 no espelho = ACL produção 09/11", not badacl, badacl)
+    dsc = psql("SELECT md5(pg_get_functiondef('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)'::regprocedure))").stdout.strip()
+    res["live23_s61_delivery_scope_md5"] = dsc
+    check("CCR2 LIVE23: resale_pilot_delivery_scope_v1 do repo (etapa 61) = pin POST62", dsc == S61_DELIVERY_SCOPE_POST, dsc)
+    return not bad
+
+
 def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     psql = lambda q: psql0(q, check=False)
     cap = capture()
