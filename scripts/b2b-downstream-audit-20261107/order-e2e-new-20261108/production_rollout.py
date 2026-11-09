@@ -319,6 +319,11 @@ def main():
         'previous_package': previous,
         'order': ['00 production PRE', '11/12 confirmation closed', '20/21/22 send closed', '30/31/32 physical OFF', '40/41/42 logistics OFF', '50/51/52 endpoint OFF', '60/61/62 ARBio containment OFF'],
         'rollback_order': ['89 pilot containment', '90 endpoint+reader', '94 logistics', '93 physical', '92 composed send measured after physical', '91 composed confirmation measured after send'],
+        'final_artifact_execution': {
+            'status': 'NOT_RUN_PENDING_TEMPORARY_STAGING' if pending_final else 'PASS',
+            'artifacts': 0 if pending_final else final_execution['artifact_count'],
+            'evidence_sha256': None if pending_final else sha(final_execution_path),
+        },
         'excluded': ['commercial plan reinstall/rollback', 'B4', 'fiscal bridge', 'NF/NFS-e', 'receivables', 'payments', 'communication', 'frontend publication', 'automatic gate activation'],
         'authenticated_real_proof': 'NOT_RUN',
         'files': files,

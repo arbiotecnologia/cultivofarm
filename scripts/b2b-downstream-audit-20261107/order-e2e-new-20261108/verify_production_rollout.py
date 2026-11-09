@@ -92,6 +92,8 @@ def main():
     assert summary['pilot_containment_checks'] == 30
     assert summary['positive_fiscal_receivable'] == 'NOT_RUN_OUT_OF_SCOPE'
     reverse = summary['full_reverse_rollback']
+    expected_checks = {'logistics-only': 40, 'integrated': 41}[reverse['branch']]
+    assert len(checks) == expected_checks, (reverse['branch'], len(checks), expected_checks)
     assert all(value is False for value in reverse['closed'].values())
     assert reverse['history_before'] == reverse['history_after']
     assert reverse['plans_before'] == reverse['plans_after']
