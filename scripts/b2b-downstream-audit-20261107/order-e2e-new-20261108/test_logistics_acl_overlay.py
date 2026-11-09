@@ -112,7 +112,7 @@ def main():
         B.sql("ALTER TABLE ONLY public.product_packagings ALTER COLUMN peso_liquido_kg TYPE numeric(12,3) USING peso_liquido_kg::numeric(12,3);")
         B.sql(f"""ALTER TABLE ONLY public.product_sale_units DROP COLUMN forma_fisica,
           ADD COLUMN forma_fisica text GENERATED ALWAYS AS ({shape['default']}) STORED;""")
-        assert B.last("""SELECT attgenerated||'|'||attidentity FROM pg_attribute
+        assert B.last("""SELECT attgenerated::text||'|'||attidentity::text FROM pg_attribute
           WHERE attrelid='public.product_sale_units'::regclass AND attname='forma_fisica';""") == "s|"
         B.sql("""SET session_replication_role=replica;
           UPDATE public.catalogo_volumes SET preco_brl=0
