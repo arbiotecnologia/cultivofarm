@@ -356,8 +356,8 @@ COMMIT;
     for name, text in files.items(): (H/name).write_text(text)
     manifest = {"project_ref":REF,"status":"REVIEW_ONLY_INACTIVE_NOT_APPROVED","phase":"FORECAST_AFTER_COMMERCIAL_AND_CREDIT_BEFORE_NF",
       "capture":str(CAPTURE5.relative_to(ROOT)),"capture_sha256":sha(CAPTURE5.read_text()),"live_approve_md5":OLD_APPROVE_MD5,
-      "live_payment_terms_md5":current["approve_b2b_payment_terms_secure"]["md5"],"live_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
-      "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_residual_credit_exposure_md5":new_credit_md5,
+      "live_payment_terms_md5":current["approve_b2b_payment_terms_secure"]["md5"],"live_credit_approval_md5":current["approve_b2b_credit"]["md5"],"live_credit_exposure_md5":current["fn_b2b_credit_exposure"]["md5"],
+      "after_forecast_approve_md5":new_approve_md5,"after_forecast_payment_terms_md5":new_terms_md5,"after_seller_scope_credit_approval_md5":new_credit_approval_md5,"after_residual_credit_exposure_md5":new_credit_md5,
       "rollback_credit_exposure_md5":credit_rollback_md5,"accounts_receivable_before_nf":False,"definitive_cardinality":"ONE_PER_AUTHORIZED_FISCAL_DOCUMENT",
       "forecast_additive_to_credit":False,"files":{n:sha(t) for n,t in files.items()},"hosted":False}
     (H/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
