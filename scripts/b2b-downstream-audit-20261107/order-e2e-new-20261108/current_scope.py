@@ -414,30 +414,51 @@ def rewrite_send(out: Path, state_expression: str) -> None:
     )
 
 
-def write_final_confirmation_rollback(confirmation_out: Path, send_out: Path, final_state: dict, state_expression: str) -> None:
-    confirmation_out, send_out = Path(confirmation_out), Path(send_out)
-    confirm_scope = json.loads((confirmation_out / "scope-post.json").read_text())
-    send_scope = json.loads((send_out / "scope-post.json").read_text())
+def _write_final_delivery_rollback(out: Path, stage: str, final_state: dict, state_expression: str) -> None:
+    """Pin the actually observed final state, then revoke only this stage's writer.
+
+    This generator runs after the later rollback stages have completed. It never
+    reuses the intermediate SEND/CONFIRM post-state and never restores a body.
+    """
+    out = Path(out)
+    assert stage in {"send", "confirmation"}
+    scope = json.loads((out / "scope-post.json").read_text())
     functions = _function_rows(final_state)
-    function_names = {row[0] for row in confirm_scope["functions"]} | {row[0] for row in send_scope["functions"]}
+    function_names = {row[0] for row in scope["functions"]}
+    missing_functions = function_names - functions.keys()
+    assert not missing_functions, f"FINAL_{stage.upper()}_FUNCTION_MEASUREMENT_MISSING:{sorted(missing_functions)}"
     relations = _relation_rows(final_state)
-    relation_names = {row[0] for row in confirm_scope["relations"] if row[0] in relations}
-    trigger_pins = {
-        row[0]: functions[row[0]][3] if row[0] in functions else row[1]
-        for row in send_scope["trigger_functions"]
-    }
+    relation_names = {row[0] for row in scope["relations"]}
+    missing_relations = relation_names - relations.keys()
+    assert not missing_relations, f"FINAL_{stage.upper()}_RELATION_MEASUREMENT_MISSING:{sorted(missing_relations)}"
+    trigger_names = {row[0] for row in scope["trigger_functions"]}
+    missing_trigger_functions = trigger_names - functions.keys()
+    assert not missing_trigger_functions, f"FINAL_{stage.upper()}_TRIGGER_MEASUREMENT_MISSING:{sorted(missing_trigger_functions)}"
     doc = {
         "functions": sorted((_function_doc(functions[key], key) for key in function_names), key=lambda row: row[0]),
-        "trigger_functions": sorted([[key, value] for key, value in trigger_pins.items()], key=lambda row: row[0]),
+        "trigger_functions": sorted([[key, functions[key][3]] for key in trigger_names], key=lambda row: row[0]),
         "relations": sorted((_relation_doc(relations[key], key) for key in relation_names), key=lambda row: row[0]),
         "triggers": _merged_triggers(final_state, functions),
         "structural": _structural(final_state),
     }
-    (confirmation_out / "rollback-scope.json").write_text(json.dumps(doc, indent=2) + "\n")
-    (confirmation_out / "rollback-composed.sql.review").write_text(
-        "BEGIN;\n" + _guard(doc, state_expression, "CONFIRM_COMPOSED_ROLLBACK")
-        + "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb),public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n"
+    if stage == "send":
+        label = "SEND_COMPOSED_ROLLBACK"
+        revoke = "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_enviar_manual_v1(uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;\n"
+    else:
+        label = "CONFIRM_COMPOSED_ROLLBACK"
+        revoke = "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_confirmar_manual_v1(uuid,timestamptz,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;\n"
+    (out / "rollback-scope.json").write_text(json.dumps(doc, indent=2) + "\n")
+    (out / "rollback-composed.sql.review").write_text(
+        "BEGIN;\n" + _guard(doc, state_expression, label) + revoke + "COMMIT;\n"
     )
+
+
+def write_final_send_rollback(send_out: Path, final_state: dict, state_expression: str) -> None:
+    _write_final_delivery_rollback(send_out, "send", final_state, state_expression)
+
+
+def write_final_confirmation_rollback(confirmation_out: Path, final_state: dict, state_expression: str) -> None:
+    _write_final_delivery_rollback(confirmation_out, "confirmation", final_state, state_expression)
 
 
 def initial_production_pre(evidence: Path, state_expression: str, plan_post: str) -> str:
