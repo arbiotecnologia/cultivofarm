@@ -222,6 +222,17 @@ def main():
             execute(FROZEN / n, supporting)
         ok("etapas congeladas 50-62 passam juntas sobre o overlay 40-42 (sem falha serial local)")
 
+        c = B.run_raw("RESET ROLE;SET ROLE authenticated;SELECT public.rpc_b2b_resale_os_create_v1(NULL,NULL,NULL,NULL);")
+        assert c.returncode != 0 and "42501" in c.stderr and "B2B_RESALE_ACTOR_DENIED" in c.stderr, c.stderr[-1500:]
+        ok("com 51/61 instalados, writer OS nega ator sintético sem contenção (42501 B2B_RESALE_ACTOR_DENIED)")
+
+        for n in ("89-pilot-containment-rollback-deny.sql.review", "90-endpoint-reader-rollback-deny.sql.review",
+                  "94-logistics-rollback-deny.sql.review", "93-physical-rollback-deny.sql.review",
+                  "92-send-rollback-deny.sql.review", "91-confirmation-rollback-deny.sql.review"):
+            execute(FROZEN / n, supporting)
+        assert acl() == REAL_ACL, "ROLLBACK_CHANGED_GUARD_ACL"
+        ok("rollbacks deny-only 89/90/94/93/92/91 passaram e preservaram a permissão service_role real")
+
         negatives = {}
         for label, call in {
             "send": "public.rpc_entrega_enviar_manual_v1(NULL,NULL,NULL)",
@@ -234,14 +245,8 @@ def main():
             c = B.run_raw(f"RESET ROLE;SET ROLE authenticated;SELECT {call};")
             assert c.returncode != 0 and "permission denied" in c.stderr, (label, c.stderr[-1500:])
             negatives[label] = "permission denied"
-        ok("cliente authenticated negado em writers, leitor e guard", negatives)
+        ok("após rollbacks, authenticated sem EXECUTE em writers, leitor e guard", negatives)
 
-        for n in ("89-pilot-containment-rollback-deny.sql.review", "90-endpoint-reader-rollback-deny.sql.review",
-                  "94-logistics-rollback-deny.sql.review", "93-physical-rollback-deny.sql.review",
-                  "92-send-rollback-deny.sql.review", "91-confirmation-rollback-deny.sql.review"):
-            execute(FROZEN / n, supporting)
-        assert acl() == REAL_ACL, "ROLLBACK_CHANGED_GUARD_ACL"
-        ok("rollbacks deny-only 89/90/94/93/92/91 passaram e preservaram a permissão service_role real")
 
         closed = json.loads(B.last("""SELECT jsonb_build_object(
           'logistics_gate',(SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton),
