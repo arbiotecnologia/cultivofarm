@@ -30,6 +30,8 @@ def main():
         check("nenhum título fiscal existe antes da confirmação", B3.psql("SELECT count(*) FROM public.accounts_receivable WHERE b2b_document_id IS NOT NULL").stdout.strip() == "0")
 
 """ + s[b:]
+    s = replace(s, "(organization_id,is_active,configuration_status,legal_name,cnpj,configuration_version)",
+                "(organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj,configuration_version)", count=2)
     s = replace(s, "SELECT '{B3.A}',true,'VALIDATED','AR BIO FIXTURE LOCAL','00000000000191',7", "SELECT '{B3.A}',true,'VALIDATED',now(),'AR BIO FIXTURE LOCAL','00000000000191',7")
     s = replace(s, "SELECT '{B3.F}',true,'VALIDATED','FSF FIXTURE LOCAL','00000000000191',1", "SELECT '{B3.F}',true,'VALIDATED',now(),'FSF FIXTURE LOCAL','00000000000191',1")
     s = replace(s, 'monetary = B3.psql(f"SELECT principal+financed_interest FROM platform_private.b2b_document_allocations WHERE document_id=\'{RECOVERY_DOC}\'").stdout.strip()',
