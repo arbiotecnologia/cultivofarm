@@ -473,7 +473,20 @@ def main():
    plans_after=json.loads(B.last("SELECT jsonb_build_object('count',count(*),'md5',md5(coalesce(jsonb_agg(to_jsonb(p) ORDER BY id)::text,'[]'))) FROM public.commercial_payment_plans p;"))
    assert history_after==history_before,(history_before,history_after)
    assert plans_after==plans_before,(plans_before,plans_after)
-   R.assert_current(B,OUT,f'real-baselines-post-full-rollback-{branch}.json',ROOT)
+   if branch=='logistics-only':
+    R.assert_current(B,OUT,f'real-baselines-post-full-rollback-{branch}.json',ROOT)
+   else:
+    # B4 deny-only mantém seus triggers adicionais. O oráculo integrado exige
+    # os dez originais byte a byte, não a ausência dos objetos B4 preservados.
+    current=R.snapshot(B);current_triggers={x['name']:x for x in current['receivable']['triggers']}
+    expected=json.loads((OUT/'real-baselines.json').read_text())['expected']
+    assert current['receivable']['acl_md5']==expected['acl_md5']
+    assert current['downstream_guard']['md5']==expected['guard_md5']
+    assert current['registration']['default_md5']==expected['registration_md5']
+    assert current['registration']['fence_md5']==expected['settings_fence_md5']
+    for trigger in original: assert current_triggers.get(trigger['name'])==trigger,trigger['name']
+    retained=sorted(set(current_triggers)-{x['name'] for x in original})
+    (OUT/f'real-baselines-post-full-rollback-{branch}.json').write_text(json.dumps({'status':'PASS','snapshot':current,'original_ten_triggers_preserved':True,'b4_additional_triggers_retained':retained,'hosted':False},indent=2)+'\n')
    B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
    result={
     'branch':branch,
