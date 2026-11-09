@@ -173,7 +173,15 @@
       "status": "PASS"
     },
     {
+      "test": "gate OFF confirmed while writer waits on grant lock denies final authorization without effects",
+      "status": "PASS"
+    },
+    {
       "test": "revoke waits on the same allowlist row after final authorization and confirms after writer commit",
+      "status": "PASS"
+    },
+    {
+      "test": "gate OFF waits for an already authorized writer and confirms only after its commit",
       "status": "PASS"
     },
     {

@@ -1,0 +1,170 @@
+{
+  "evidence_directory": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-110",
+  "scope": "PostgreSQL 17.11 descart\u00e1vel e testes locais; n\u00e3o \u00e9 prova JWT/RLS/Storage/hosted",
+  "source_manifest_sha256": "ddef1976ef6870206809c0c72aec3bca88833e58b7242ed3abe69f975f134700",
+  "source_files_revalidated": 2890,
+  "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
+  "independent_diff_sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a",
+  "capture_functions_md5_verified": 20,
+  "capture_triggers": 120,
+  "capture_relations": 17,
+  "relation_security_pins": 18,
+  "relation_security_sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d",
+  "transcription_correction": "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; MD5 a4d47ccf5d116141ed46e9de9ea7eeaa",
+  "composition_checks": 40,
+  "partial_regressions": 13,
+  "endpoint_reader_checks": 15,
+  "pilot_containment_checks": 33,
+  "pilot_candidate_sha256": "50f2b5d75ed4abbde0db50263695fd8e82f8eb78f5d039ae31c5446b54708c7a",
+  "frontend": {
+    "frontend-ui": {
+      "exitcode": 0,
+      "sha256": "d0ffaa136aea4b464f1564cb69c96f112a604bb9a788a4ec91dd843188969d8f",
+      "tests": 21
+    },
+    "frontend-candidate": {
+      "exitcode": 0,
+      "sha256": "c808f9034876b77cceaa70d5e5feb9c05d61758a3333eabee1fc30de3b040cb5",
+      "tests": 13
+    },
+    "frontend-os-compat": {
+      "exitcode": 0,
+      "sha256": "d3fa54d257d80e5c33378dac6be0cc7a06c606903ddb9fc79d2004682223c165",
+      "tests": 73
+    },
+    "typecheck": {
+      "exitcode": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "full_reverse_rollback": {
+    "branch": "logistics-only",
+    "closed": {
+      "os_writer": false,
+      "send_writer": false,
+      "physical_gate": false,
+      "confirm_writer": false,
+      "logistics_gate": false,
+      "purchase_writer": false
+    },
+    "history_before": {
+      "os": 22,
+      "movements": 53,
+      "deliveries": 15,
+      "resale_receipts": 12
+    },
+    "history_after": {
+      "os": 22,
+      "movements": 53,
+      "deliveries": 15,
+      "resale_receipts": 12
+    },
+    "plans_before": {
+      "md5": "29778412a25f8ad308a2a9c406bf7b6e",
+      "count": 9
+    },
+    "plans_after": {
+      "md5": "29778412a25f8ad308a2a9c406bf7b6e",
+      "count": 9
+    },
+    "current_catalog_preserved": true,
+    "real_baselines_preserved": true,
+    "composed_generators": [
+      "SEND_COMPOSED_ROLLBACK",
+      "CONFIRM_COMPOSED_ROLLBACK"
+    ],
+    "authenticated_negative": {
+      "send": {
+        "returncode": 3,
+        "permission_denied": true
+      },
+      "confirmation": {
+        "returncode": 3,
+        "permission_denied": true
+      }
+    },
+    "deny_only_no_body_restoration": true,
+    "allowed_candidate_trigger_function_deltas": [
+      [
+        "entregas",
+        "trg_entrega_sync_partner_order"
+      ],
+      [
+        "entregas",
+        "trg_validate_entrega_confirmacao"
+      ],
+      [
+        "entregas",
+        "zz_delivery_mutation_closed"
+      ],
+      [
+        "estoque_produto",
+        "a00_stock_p1_tenant_guard"
+      ],
+      [
+        "estoque_produto",
+        "a01_stock_final_permit"
+      ],
+      [
+        "estoque_produto",
+        "a01_stock_insert_permit"
+      ],
+      [
+        "estoque_produto",
+        "trg_validate_estoque_entrada"
+      ],
+      [
+        "lotes",
+        "aa_manual_lot_write_fence_v1"
+      ],
+      [
+        "lotes",
+        "trg_lab_lot_biological_only"
+      ],
+      [
+        "ordens_servico",
+        "aa_guard_separate_approval"
+      ],
+      [
+        "ordens_servico",
+        "trg_lab_os_biological_only"
+      ],
+      [
+        "ordens_servico",
+        "trg_sync_os_classica_downstream"
+      ],
+      [
+        "ordens_servico",
+        "zz_audit_separate_approval"
+      ]
+    ],
+    "allowed_candidate_function_deltas": [
+      "platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)",
+      "platform_private.envase_insert_final_v1()",
+      "platform_private.envase_insert_guard_v1()",
+      "platform_private.guard_manual_lot_write_v1()",
+      "platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)",
+      "platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)",
+      "platform_private.trg_lab_lot_biological_only()",
+      "public.fn_sync_os_classica_downstream()",
+      "public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)",
+      "public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)",
+      "public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)",
+      "public.validate_estoque_entrada()"
+    ],
+    "b4_fiscal": "NOT_RUN_OUT_OF_SCOPE"
+  },
+  "final_artifact_execution": {
+    "status": "PASS",
+    "artifacts": 24,
+    "evidence_sha256": "60ab51def01b86dd03fc6087832e4d7a65dbcf6087a131b18a87bdefbd59894c",
+    "postgresql_version": "17.11"
+  },
+  "b4_fiscal_scope": {
+    "status": "NOT_RUN_OUT_OF_SCOPE",
+    "reason": "B4_PRE_SHARED_BODY hist\u00f3rico preservado nas tentativas 7/8; nenhum PRE foi enfraquecido",
+    "positive_fiscal_receivable": "NOT_RUN_BLOCKED",
+    "hosted": false
+  },
+  "positive_fiscal_receivable": "NOT_RUN_OUT_OF_SCOPE"
+}

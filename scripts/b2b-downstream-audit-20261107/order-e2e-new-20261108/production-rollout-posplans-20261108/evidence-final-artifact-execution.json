@@ -2,7 +2,7 @@
   "status": "PASS",
   "scope": "exact final artifacts on fresh disposable PostgreSQL 17; synthetic schema/Auth only",
   "hosted": false,
-  "package": "/tmp/new-order-e2e-0gomvjwd/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108",
+  "package": "/tmp/final-rollout-attempt-113",
   "runner_sha256": "3998af2101b23b79340388afefe726245b2346932830727adad4ff6f03df2a98",
   "artifacts": [
     {
@@ -87,12 +87,12 @@
     },
     {
       "file": "61-pilot-containment-install.sql.review",
-      "sha256": "a9650b271a4d5d759f1976dfcde87082d9dc672e56ed00a28b6496bb9cb83b9a",
+      "sha256": "1002c477ad794e0a87b6edf14564cee15b23d75041dca18443ee7152de8a486f",
       "returncode": 0
     },
     {
       "file": "62-pilot-containment-post.sql.readonly",
-      "sha256": "040d6bae338fd29c831663b7a1e8dc1f507399362d121bc0e61c472d62ea2d84",
+      "sha256": "34d240d66e2b91a460e09c667260b424838487702f960154783ada1b6d9c7108",
       "returncode": 0
     },
     {
@@ -170,8 +170,8 @@
     "movements": 0,
     "deliveries": 0
   },
-  "plans_before_md5": "7f140ef706366c8434c0280a54d7eef5",
-  "plans_after_md5": "7f140ef706366c8434c0280a54d7eef5",
+  "plans_before_md5": "b458383b94f648a7eb5bc28ec70d7457",
+  "plans_after_md5": "b458383b94f648a7eb5bc28ec70d7457",
   "gates_activated": false,
   "authenticated_real_proof": "NOT_RUN"
 }
