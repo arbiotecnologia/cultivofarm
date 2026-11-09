@@ -1,0 +1,225 @@
+{
+  "passed": 41,
+  "total": 52,
+  "checks": [
+    {
+      "name": "CCR2 pins B3: mode/required_check MD5 = metadados B3 instalados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 80 PRE_OK no B3 instalado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 81 install",
+      "ok": true
+    },
+    {
+      "name": "CCR2 install não altera dados",
+      "ok": true
+    },
+    {
+      "name": "CCR2 82 POST_OK (owner/ACL/search_path/definer/gatilhos exatos)",
+      "ok": false,
+      "detail": "psql:/tmp/b2bcond-xa2jjwnf/ccr2-82-ccr2-post.sql.readonly:32: ERROR:  CCR2_POST_FN platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=\"\"|t\nCONTEXT:  PL/pgSQL function inline_code_block line 16 at RAISE\n"
+    },
+    {
+      "name": "CCR2 reexecução de 81 recusada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PRE após install recusa (já instalado)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 anon sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 authenticated sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 service_role sem EXECUTE nas funções novas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 cliente não chama o checker diretamente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 positivo: writer REAL de condição (parceiro P do piloto) cria pedido com snapshot coerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 positivo: novo parceiro PN (piloto ampliado) cria pedido com snapshot coerente",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot PN grava empresa A/parceiro/plano/versão/meio escolhidos",
+      "ok": true
+    },
+    {
+      "name": "CCR2 idempotência: replay da mesma chave devolve o mesmo pedido sem novo snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca de plano em pedido com snapshot negada (snapshot antigo não legitima)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca de parceiro (P->PN) em pedido com snapshot negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca para parceiro de outro tenant (F) negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca e volta no mesmo commit: estado final coerente é exigido (ida para plano sem condição negada)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pilha integrada (todos os gatilhos reais): troca de plano em pedido com snapshot não confirma",
+      "ok": true
+    },
+    {
+      "name": "CCR2 troca e volta ao plano original no mesmo commit: estado final coerente aceito",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot de outro pedido/parceiro inserido em pedido alheio negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 snapshot com versão/meio adulterados no JSON da escolha negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 nenhum pedido/snapshot forjado sobreviveu",
+      "ok": true
+    },
+    {
+      "name": "CCR2 pedido real intacto após negações integradas",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere em parceiro legado PO e move para PN do piloto no mesmo commit -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 lavagem: insere sem plano e atribui plano a parceiro do piloto -> negado",
+      "ok": true
+    },
+    {
+      "name": "CCR2 parceiro do piloto: writer legado REAL continua negado (B3) sem idempotência",
+      "ok": false,
+      "detail": "ERROR:  forbidden_partner\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 79 at RAISE\n"
+    },
+    {
+      "name": "CCR2 alcance: tenant F sem ativação segue contrato atual (sem bloqueio global)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 alcance: troca de plano em pedido legado de F sem ativação não é afetada pelo guard novo",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: update comum (sem troca de parceiro/plano) não dispara o guard",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: não pode ser movido para parceiro do piloto sem snapshot",
+      "ok": true
+    },
+    {
+      "name": "CCR2 fixture PB-001038-like (pedido legado sem snapshot de parceiro hoje no piloto) criada como linha histórica",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: atualização comum segue permitida (histórico preservado, sem backfill)",
+      "ok": true
+    },
+    {
+      "name": "CCR2 PB-001038-like: troca de plano sem snapshot negada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 legado histórico: backfill de snapshot fictício negado (escolha/condição de outro pedido)",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "CCR2 cotação: writer REAL cria cotação com snapshot (quote) para PN",
+      "ok": true
+    },
+    {
+      "name": "CCR2 resposta do vendedor REAL: snapshot econômico coerente aceito pelo guard",
+      "ok": false,
+      "detail": "ERROR:  B2B_INTERNAL_ORIGIN_DENIED\nCONTEXT:  PL/pgSQL function platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid) line 7 at RAISE\nSQL statement \"SELECT platform_private.b2b_internal_assert_origin((SELECT internal_origin_snapshot FROM public.partner_orders WHERE id=p_order_id),\n      (SELECT partner_id FROM public.partner_orders WHERE id=p_order_id),(SELECT cliente_id FROM public.partner_"
+    },
+    {
+      "name": "CCR2 snapshot de resposta com versão divergente da escolha inicial negado",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "CCR2 concorrência ativação: piloto ampliado durante create legado aberto -> commit negado (sem pedido/idempotência)",
+      "ok": false,
+      "detail": "('ERROR:  credit_limit_exceeded\\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 198 at RAISE\\n', '')"
+    },
+    {
+      "name": "CCR2 concorrência aposentadoria: create REAL e retire serializam; pedido (se criado) tem snapshot coerente, sem pedido parcial",
+      "ok": true
+    },
+    {
+      "name": "CCR2 após aposentadoria: parceiro required continua sem fallback legado",
+      "ok": false,
+      "detail": "ERROR:  credit_limit_exceeded\nCONTEXT:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 198 at RAISE\n"
+    },
+    {
+      "name": "CCR2 concorrência revogação: PN tem opção",
+      "ok": false,
+      "detail": "sem opção para PN"
+    },
+    {
+      "name": "CCR2 coerência global: todo snapshot casa parceiro/plano/empresa do pedido",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback com pin divergente aborta sem remover nada",
+      "ok": true
+    },
+    {
+      "name": "CCR2 96 rollback exato",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback preserva pedidos/snapshots/idempotência",
+      "ok": true
+    },
+    {
+      "name": "CCR2 rollback mantém guarda B3 de INSERT (sem reabrir legado)",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "CCR2 PRE volta a passar após rollback",
+      "ok": false,
+      "detail": "psql:/tmp/b2bcond-xa2jjwnf/ccr2-80-ccr2-pre.sql.readonly:42: ERROR:  CCR2_PRE_B3_TRIGGER_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 26 at RAISE\n"
+    },
+    {
+      "name": "CCR2 reinstall após rollback",
+      "ok": true
+    },
+    {
+      "name": "CCR2 POST após reinstall",
+      "ok": false,
+      "detail": "psql:/tmp/b2bcond-xa2jjwnf/ccr2-82-ccr2-post.sql.readonly:32: ERROR:  CCR2_POST_FN platform_private.b2b_condition_mode(uuid)|7830c32a4ae139d9ab7e377dd39c8df6|postgres|postgres=X/postgres|search_path=\"\"|t\nCONTEXT:  PL/pgSQL function inline_code_block line 16 at RAISE\n"
+    },
+    {
+      "name": "CCR2 rollback final antes do rollback B3 do harness",
+      "ok": true
+    }
+  ]
+}
