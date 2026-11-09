@@ -1,3 +1,8 @@
+## 09/11 20:47 — Revisão 8c8cf83: diagnóstico e fechamento fiscal estrito
+- [ ] Preservar strict-01 e cada tentativa com diretório próprio, stdout/stderr/exit e SQLSTATE/mensagem real; CLOSE_PENDING nunca é positivo.
+- [ ] Corrigir a ordem/imutabilidade do vínculo NF→recebível sem stub permissivo, sem enfraquecer ACL/gates/dez triggers e separando MD5 LIVE de hashes pós-B4 por fase.
+- [ ] Confirmar HOMOLOGATION/ambiente 2; executar composição completa com um título por NF, parciais/replay/revogação/concorrência e rollback deny-only. Sem hosted/publicação/envio/cobrança; UI aguarda reteste do auditor.
+
 ## 09/11 20:19 — UI74d2: intenção explícita de aprovações de crédito
 - [ ] Corrigir somente o link `FinanceiroB2B` → `/comercial/pedidos-b2b?status=aguardando_aprovacao_credito`: query válida deve selecionar crédito uma vez, sem persistir escolhas na URL; inválida/sem query volta a Todos, pausas do mesmo ator preservam, logout/tenant não herda e reload reseta.
 - [ ] Remover imports `useRef` não usados, testar clique/entrada válida, inválida, padrão, pausa, logout/tenant e recarga; depois conciliar a ponte fiscal pendente e entregar hashes/diff restrito. Sem SQL hospedado ou publicação.

@@ -584,6 +584,14 @@ def main():
   strict_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(strict_dir/'01-pre.sql.readonly').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(strict_dir/'02-install.sql.review').read_text())
   strict_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(strict_dir/'03-post.sql.readonly').read_text())
+  audit_dir=strict_dir/'bridge-audit-action'
+  bridge_audit_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'01-pre.sql.readonly').read_text())
+  B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'02-install.sql.review').read_text())
+  bridge_audit_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'03-post.sql.readonly').read_text())
+  h7_dir=strict_dir/'h7-receivable-link'
+  h7_pre=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'01-pre.sql.readonly').read_text())
+  B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'02-install.sql.review').read_text())
+  h7_post=B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'03-post.sql.readonly').read_text())
   legacy_denied=B.run_raw(B.T.actor(Q.UFIN)+f"SELECT public.generate_b2b_receivable_secure('{order_id}');")
   assert legacy_denied.returncode!=0 and 'B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED' in legacy_denied.stderr,legacy_denied.stderr
   assert B.last('SELECT count(*) FROM public.accounts_receivable;')==str(effect_baseline['receivables'])
@@ -713,12 +721,14 @@ CREATE TABLE IF NOT EXISTS public.fiscal_audit_log(id uuid PRIMARY KEY DEFAULT g
   (OUT/'integrated-b4-fiscal-bridge.json').write_text(json.dumps(dict(
    status='STRICT_FISCAL_CONFIRMED_TO_ONE_RECEIVABLE_REVIEW_ONLY',hosted=False,
    b4_pre=b4_pre,b4_post=b4_post,bridge_pre=bridge_pre,bridge_post=bridge_post,composed_post=composed_post,
-   strict_pre=strict_pre,strict_post=strict_post,seller91_md5='97bcdb9884b54adb3bd4aae4915e32d0',
+   strict_pre=strict_pre,strict_post=strict_post,bridge_audit_pre=bridge_audit_pre,bridge_audit_post=bridge_audit_post,h7_pre=h7_pre,h7_post=h7_post,seller91_md5='97bcdb9884b54adb3bd4aae4915e32d0',
    old_dependency_denial=dependency.stderr,legacy_writer_denial=legacy_denied.stderr,client_bridge_denial=client_bridge.stderr,
    original_ten_triggers_preserved=True,current_trigger_count=len(current_triggers),
    effect_baseline=effect_baseline,current_counts=current_counts,credit=credit,h13_confirmed=blocked,
    positive_fiscal_receivable=receivable_id,always_allow_substitution=False),indent=2)+'\n')
   checks.append(dict(test='same fresh DB executes Seller91 buyer seller logistics B4 strict bridge and positive confirmed fiscal receivable',status='PASS'))
+  B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(h7_dir/'04-rollback-deny.sql.review').read_text())
+  B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(audit_dir/'04-rollback-deny.sql.review').read_text())
   B.sql("SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(strict_dir/'04-rollback-deny.sql.review').read_text())
   assert 'B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN' in B.last("SELECT pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure);")
   B.sql("SET commercial_plans.review_project_ref='swzpzcwiasxmjutrmvkm';SET b2b_fiscal_bridge.review_project_ref='swzpzcwiasxmjutrmvkm';"+(composed_dir/'04-rollback-deny.sql.review').read_text())
