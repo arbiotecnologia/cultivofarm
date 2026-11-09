@@ -62,7 +62,7 @@ describe("filtro de status /comercial/pedidos-b2b", () => {
   });
 
   it("troca A -> B não herda (montado e remontado)", () => {
-    const h = renderHook(() => usePedidosB2BStatusFilter(OPTS, DEF));
+    const h = use();
     act(() => h.result.current[1]("all"));
     auth = actor("uB", "orgB");
     h.rerender();
