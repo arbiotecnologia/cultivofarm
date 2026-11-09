@@ -289,7 +289,6 @@ def run(ns):
                 res["seller_respond"]["neg_" + who] = en or jn
                 check(f"CCR2 RESPOND FIX: {who} continua negado sem alterar estado", jn is None and bool(en) and qs(jq["id"]) == st1, en or jn)
             st1 = qs(jq["id"])
-            jn, en = respond(UADM, jq["id"], [{"item_id": qi, "unit_price": 1000}], ) if False else (None, None)
             # admin A with an ACTIVE partner link (external link) must not use the owner path
             r = psql(f"BEGIN; INSERT INTO public.partner_users(user_id,partner_id,tenant_id) SELECT '{UADM}','{PN}',commercial_owner_organization_id FROM public.partner_accounts WHERE id='{PN}';"
                      f" SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claim.sub','{UADM}',true), set_config('request.jwt.claims', json_build_object('sub','{UADM}','role','authenticated')::text, true);"
