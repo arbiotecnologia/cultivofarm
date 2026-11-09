@@ -1,0 +1,8 @@
+{
+  "out": "/tmp/owner-fk-work-H8nbXg/package-second",
+  "pre25_sha256": "a5656d4fec8ce802904dba3a35e11f179f80d5fbe8b7a2ac5fb4eae0f538426a",
+  "install26_sha256": "bc2843fdb6a3feccfedeab97aa8c88abb807c5abb1c40c13ab736fe70098d976",
+  "post27_sha256": "c501d6bbbbb0323ee963aadaf3e7af4daf367bc70417492e58c179f3af8b2484",
+  "manifest_sha256": "58055017c5efd5facfec1b038b09d13f5ffad474367de42b392c098744cf475a",
+  "local_verification": "NOT_RUN_PENDING_TEMPORARY_STAGING"
+}
