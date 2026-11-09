@@ -270,10 +270,18 @@ SET LOCAL lock_timeout='3s';
 DO $$ BEGIN
  IF current_setting('b2b_forecast.review_project_ref',true) IS DISTINCT FROM '{REF}' THEN RAISE EXCEPTION 'B2B_FORECAST_REF_NOT_VERIFIED';END IF;
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{OLD_APPROVE_MD5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{current["approve_b2b_payment_terms_secure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_PRE_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{current["fn_b2b_credit_exposure"]["md5"]}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_PRE_DRIFT';END IF;
 END$$;
 {schema}
+{candidate_terms};
+{candidate_credit};
 {candidate_approve};
-DO $$ BEGIN IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;END$$;
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_terms_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_INSTALL_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{new_credit_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_INSTALL_POST_DRIFT';END IF;
+END$$;
 COMMIT;
 """
     rollback = f"""-- REVIEW ONLY deny-only; preserva previsões/eventos e restaura aprovação LIVE.
