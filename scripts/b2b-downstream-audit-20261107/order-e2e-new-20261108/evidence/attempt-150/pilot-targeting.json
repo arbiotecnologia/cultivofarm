@@ -1,0 +1,22 @@
+{
+  "activation": {
+    "contract": "B2B_PAYMENT_CONDITION_V1",
+    "activation": {
+      "mode": "pilot",
+      "version": 2,
+      "updated_at": "2026-11-09T22:38:16.285012+00:00",
+      "organization_id": "00000000-0000-0000-0000-000000000001",
+      "pilot_partner_ids": [
+        "00000000-0000-0000-0000-000000000011",
+        "00000000-0000-0000-0000-000000000100"
+      ]
+    }
+  },
+  "old_required": "required",
+  "new_required": "required",
+  "outside_pilot": "legacy",
+  "other_tenant": "legacy",
+  "legacy_denial": "ERROR:  P0001: B2B_PAYMENT_CONDITION_REQUIRED\nHINT:  Selecione uma condi\u00e7\u00e3o e um meio de pagamento permitidos pela empresa fornecedora (contrato B2B_PAYMENT_CONDITION_V1).\nCONTEXT:  PL/pgSQL function platform_private.b2b_condition_required_check() line 6 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "stale_cas": "ERROR:  PT409: payment_condition_activation_stale\nCONTEXT:  PL/pgSQL function public.b2b_payment_condition_activation_set(text,uuid[],integer) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+  "orders_for_denied_attempt": "0"
+}
