@@ -1,0 +1,19 @@
+{
+  "source": "auditor_report_relayed_by_owner",
+  "reported_at_utc": "2026-11-09T14:21:00Z",
+  "verified_by_agent_hosted": false,
+  "function": "platform_private.b2b_internal_order_snapshot_guard()",
+  "returns": "trigger", "security_definer": true, "search_path": "", "owner": "postgres",
+  "body_md5": "9cad2aaa995277b913f8b40816fea504",
+  "triggers": [{"name": "trg_00_b2b_internal_snapshot", "table": "public.partner_orders", "timing": "BEFORE INSERT OR UPDATE FOR EACH ROW", "tgenabled": "O"}],
+  "has_function_privilege": {"anon": false, "authenticated": false, "service_role": true},
+  "schema_usage_platform_private": {"anon": false, "authenticated": true},
+  "other_pins": "15/15 MD5/owner; 14 outras ACLs conferidas",
+  "production_state": {"31": "installed", "post32": "PASS", "gates": "OFF", "40_plus": "not_installed"},
+  "agent_static_review": {
+    "install41_header_preserved": "RETURNS trigger, plpgsql, SECURITY DEFINER, SET search_path TO ''",
+    "grant_revoke_on_guard_in_40_42_50_62_89_94": "none",
+    "trigger_drop_or_recreate": "none",
+    "acl_after_install41_post42_and_all_rollbacks": "{postgres=X/postgres,service_role=X/postgres} (evidência tentativa 06)"
+  }
+}
