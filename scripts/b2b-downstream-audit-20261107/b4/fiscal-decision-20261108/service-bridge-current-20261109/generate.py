@@ -98,8 +98,9 @@ def metadata_assert(code):
     acl = BASELINE["ACL"]
     trigger_md5 = BASELINE["TRIGGERS_MD5"]
     return f""" IF (SELECT coalesce(relacl::text,'') FROM pg_class WHERE oid='public.accounts_receivable'::regclass) IS DISTINCT FROM '{acl}' THEN RAISE EXCEPTION '{code}:ACL'; END IF;
- IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal)<>10 THEN RAISE EXCEPTION '{code}:TRIGGER_COUNT'; END IF;
- IF (SELECT md5(string_agg(tgname||'|'||pg_get_triggerdef(oid)||'|'||tgenabled,'^' ORDER BY tgname)) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal) IS DISTINCT FROM '{trigger_md5}' THEN RAISE EXCEPTION '{code}:TRIGGERS'; END IF;
+ IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal)<>14 THEN RAISE EXCEPTION '{code}:TRIGGER_COUNT_WITH_CANDIDATES'; END IF;
+ IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgname NOT IN ('zz_b2b_shared_credit_guard','a01_b2b_fiscal_title_fence','a01_b2b_fiscal_title_identity','b2b_fiscal_created_by_guard'))<>10 THEN RAISE EXCEPTION '{code}:TRIGGER_COUNT'; END IF;
+ IF (SELECT md5(string_agg(tgname||'|'||pg_get_triggerdef(oid)||'|'||tgenabled,'^' ORDER BY tgname)) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgname NOT IN ('zz_b2b_shared_credit_guard','a01_b2b_fiscal_title_fence','a01_b2b_fiscal_title_identity','b2b_fiscal_created_by_guard')) IS DISTINCT FROM '{trigger_md5}' THEN RAISE EXCEPTION '{code}:TRIGGERS'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='a00_delivery_no_downstream' AND tgenabled='O') THEN RAISE EXCEPTION '{code}:DELIVERY_DOWNSTREAM'; END IF;
  IF md5(pg_get_functiondef('platform_private.delivery_no_downstream_20261030()'::regprocedure)) IS DISTINCT FROM '{BASELINE['FUNCTION_MD5']}' THEN RAISE EXCEPTION '{code}:DELIVERY_BODY'; END IF;
 """
