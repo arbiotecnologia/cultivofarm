@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-_bdkbg0q/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 419, in main
+    pilot_results=PilotTests.run(B,Review70.Review,Q,A,choice,pilot_out)
+  File "/tmp/new-order-e2e-_bdkbg0q/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_pilot_containment.py", line 286, in run
+    assert gate_waited, (writer_out, writer_err, gate_out, gate_err)
+           ^^^^^^^^^^^
+AssertionError: ('', 'ERROR:  OS_APPROVAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function private.guard_os_separate_approval() line 10 at RAISE\nSQL statement "INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,\n  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)\n VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,\'media\',\'pronto_entrega\',\'produto\',p_order_id,p_order_item_id,\'b2b\')"\nPL/pgSQL function platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 56 at SQL statement\nPL/pgSQL function public.rpc_b2b_resale_os_create_v1(uuid,uuid,timestamp with time zone,text) line 37 at assignment\n', '', '')
