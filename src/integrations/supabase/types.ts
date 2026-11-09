@@ -25076,8 +25076,29 @@ export type Database = {
         Args: { p_entrega_id: string; p_payload: Json; p_request_key: string }
         Returns: Json
       }
+      rpc_entrega_confirmacao_capability_v1: {
+        Args: { p_entrega: string }
+        Returns: Json
+      }
+      rpc_entrega_confirmar_manual_v1: {
+        Args: {
+          p_entrega: string
+          p_observed: string
+          p_recebedor: Json
+          p_request_key: string
+        }
+        Returns: Json
+      }
       rpc_entrega_confirmar_v1: {
         Args: { p_entrega_id: string; p_opcoes?: Json; p_recebedor: Json }
+        Returns: Json
+      }
+      rpc_entrega_enviar_manual_v1: {
+        Args: { p_entrega: string; p_observed: string; p_request_key: string }
+        Returns: Json
+      }
+      rpc_entrega_envio_capability_v1: {
+        Args: { p_entrega: string }
         Returns: Json
       }
       rpc_entrega_formulario_gerar_v1: {
