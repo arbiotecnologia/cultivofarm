@@ -264,7 +264,7 @@ def build_bodies(raw):
     body = defs[sig]["body"]
     body = one(body,
         "v_available:=EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE);",
-        "v_available:=EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)\n  AND EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 a WHERE a.gate='finished_product' AND a.operation='purchase' AND a.actor_id=auth.uid() AND a.organization_id=v_org AND a.synthetic AND a.valid_from<=now() AND a.valid_until>now() AND a.revoked_at IS NULL);",
+        "v_available:=EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)\n  AND EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 a WHERE a.gate='finished_product' AND a.operation='purchase' AND a.actor_id=auth.uid() AND a.organization_id=v_org AND a.synthetic AND a.valid_from<=pg_catalog.clock_timestamp() AND a.valid_until>pg_catalog.clock_timestamp() AND a.revoked_at IS NULL);",
         "purchase capability scoped")
     defs[sig]["new"] = body
 
