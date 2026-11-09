@@ -1,0 +1,18 @@
+-- DENY-ONLY: restaura somente a negação B4 e fecha entrypoints; preserva histórico.
+BEGIN;
+DO $p$ BEGIN IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)) IS DISTINCT FROM '1d82731a24773ef9bfe2f356a43c7bbc' THEN RAISE EXCEPTION 'B2B_STRICT_ROLLBACK_DRIFT:platform_private.b2b_integration_dependencies()'; END IF;
+END $p$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN RAISE EXCEPTION 'B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN' USING ERRCODE='42501'; END $function$;
+REVOKE ALL ON FUNCTION platform_private.b2b_integration_dependencies() FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION platform_private.b2b_fiscal_invoice_bridge_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamptz,text,text,uuid),public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE EXECUTE ON FUNCTION public.generate_b2b_receivable_secure(uuid) FROM PUBLIC,anon,authenticated;
+ IF md5(pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)) IS DISTINCT FROM '605e722506de23bfd69c890c4123d4b6' THEN RAISE EXCEPTION 'B2B_STRICT_ROLLBACK_NOT_CLOSED:platform_private.b2b_integration_dependencies()'; END IF;
+COMMIT;

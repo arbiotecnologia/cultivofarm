@@ -1,0 +1,508 @@
+{
+  "kind": "AUDITOR_CAPTURE_RECONCILED_FROM_EXACT_LOCAL_SOURCES_NOT_A_NEW_HOSTED_READ",
+  "captured_at_reported": "2026-11-09T19:52:00Z",
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "source_note": "Sete corpos byte-identicos as fontes canonicas e MD5 confirmados pelo auditor; 101 pins da attempt37 com Seller91 substituido pelo corpo instalado. Nenhuma consulta hosted nesta geracao.",
+  "functions": [
+    {
+      "schema": "platform_private",
+      "proname": "b2b_resale_delivery_order_valid_v1",
+      "args": "entregas",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(e entregas)\n RETURNS boolean\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)\n  AND (e.status::text='separado' OR platform_private.resale_pilot_delivery_scope_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)\n  AND e.id IS NOT NULL AND e.organization_id IS NOT NULL AND e.partner_order_id IS NOT NULL\n  AND e.receivable_id IS NULL AND e.ordem_servico_id IS NOT NULL AND e.ordem_servico_onfarm_id IS NULL\n  AND e.cliente_id IS NULL AND EXISTS(\n   SELECT 1 FROM public.ordens_servico os\n   JOIN public.partner_orders po ON po.id=os.partner_order_id AND po.id=e.partner_order_id\n   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=os.organization_id\n    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL\n   WHERE os.id=e.ordem_servico_id AND os.organization_id=e.organization_id AND os.origem='b2b'\n    AND os.partner_order_item_id IS NOT NULL AND os.produto_id=e.produto_id AND os.microrganismo_id IS NULL\n    AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')\n    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE\n    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')\n    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE\n    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL\n  )) IS TRUE;\n$function$\n",
+      "definition_md5": "bd76345c3bceaa5e6203013920427df4",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "schema": "platform_private",
+      "proname": "b2b_resale_delivery_status_transition_valid_v1",
+      "args": "partner_orders,partner_orders",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(o partner_orders, n partner_orders)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n RETURN (\n  EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)\n  AND platform_private.b2b_internal_commercial_actor() IS TRUE\n  AND o.id=n.id AND o.status::text='aprovado' AND n.status::text='entregue'\n  AND o.ready_for_production IS FALSE AND n.ready_for_production IS FALSE\n  AND n.receivable_generated IS FALSE\n  AND (to_jsonb(n)-ARRAY['status','updated_at']) IS NOT DISTINCT FROM (to_jsonb(o)-ARRAY['status','updated_at'])\n  AND EXISTS(\n   SELECT 1 FROM platform_private.delivery_context_20261030 dc\n   JOIN public.entregas e ON e.id=dc.target AND e.partner_order_id=n.id\n   JOIN public.ordens_servico os ON os.id=e.ordem_servico_id AND os.partner_order_id=n.id\n   JOIN public.partner_accounts pa ON pa.id=n.partner_id\n    AND pa.commercial_owner_organization_id=dc.organization_id AND pa.commercial_owner_organization_id=os.organization_id\n   WHERE dc.txid=txid_current() AND dc.actor=auth.uid() AND dc.action='confirm' AND dc.mutation='done'\n    AND e.organization_id=dc.organization_id AND e.status::text='entregue' AND e.receivable_id IS NULL\n    AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS TRUE\n  )\n  AND NOT EXISTS(\n   SELECT 1 FROM public.entregas e JOIN public.ordens_servico os ON os.id=e.ordem_servico_id\n   WHERE os.partner_order_id=n.id AND e.status::text NOT IN ('entregue','cancelada')\n  )\n  -- TODOS os itens precisam ter exatamente sua quantidade confirmada. Uma OS ou\n  -- entrega de outro item nunca completa este item; canceladas não somam, e\n  -- excesso também impede a transição. O snapshot econômico permanece o mesmo.\n  AND NOT EXISTS(\n   SELECT 1 FROM public.partner_order_items i\n   LEFT JOIN public.ordens_servico os ON os.partner_order_item_id=i.id\n    AND os.partner_order_id=n.id AND os.origem='b2b'\n   LEFT JOIN public.entregas e ON e.ordem_servico_id=os.id AND e.partner_order_id=n.id\n    AND e.status::text='entregue' AND e.receivable_id IS NULL\n   WHERE i.order_id=n.id\n   GROUP BY i.id,i.quantidade\n   HAVING coalesce(sum(e.quantidade_entregue),0) IS DISTINCT FROM i.quantidade\n  )\n  -- Nenhuma entrega confirmada pode ficar fora dos itens imutáveis do pedido.\n  AND NOT EXISTS(\n   SELECT 1 FROM public.entregas e\n   JOIN public.ordens_servico os ON os.id=e.ordem_servico_id AND os.partner_order_id=n.id\n   LEFT JOIN public.partner_order_items i ON i.id=os.partner_order_item_id AND i.order_id=n.id\n   WHERE e.partner_order_id=n.id AND e.status::text='entregue' AND i.id IS NULL\n  )\n  ) IS TRUE;\nEND;\n$function$\n",
+      "definition_md5": "72d5d18157ffd837b89245bad19fc17e",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "schema": "public",
+      "proname": "cancel_b2b_receivable_secure",
+      "args": "uuid,text",
+      "definition": "CREATE OR REPLACE FUNCTION public.cancel_b2b_receivable_secure(p_partner_order_id uuid, p_motivo text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n IF auth.uid() IS NULL THEN RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='AUTHENTICATION_REQUIRED'; END IF;\n IF public.h15_actor_organization() IS NULL THEN RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ACTIVE_TENANT_REQUIRED'; END IF;\n RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='B2B_FINANCIAL_CONTRACT_UNAVAILABLE';\nEND $function$\n",
+      "definition_md5": "9935ddb807b0b3da89dfb7d18fea267e",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "schema": "public",
+      "proname": "generate_b2b_receivable_secure",
+      "args": "uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n\n  IF auth.uid() IS NULL THEN\n    IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (\n    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id\n      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;\n  IF NOT (pg_trigger_depth() > 0 or public.has_role(auth.uid(), 'administrador'::public.app_role)\n      or public.has_role(auth.uid(), 'gestor'::public.app_role)\n      or public.has_role(auth.uid(), 'financeiro'::public.app_role)) THEN\n    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';\n  END IF;\n IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;\n IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;\n  IF p_partner_order_id IS NULL THEN\n    RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';\n  END IF;\n\n  -- Canonical row-before-receipt order, matching approval and its billing trigger.\n  PERFORM 1 FROM public.partner_orders WHERE id=p_partner_order_id FOR UPDATE;\n\n  -- Serializa concorrencia real (clique duplo / chamadas simultaneas).\n  -- Chave unica bigint: assinatura pg_advisory_xact_lock(bigint).\n  PERFORM pg_advisory_xact_lock(\n    hashtextextended('b2b_receivable:' || p_partner_order_id::text, 0)\n  );\n\n  IF NOT public.fn_b2b_order_priceable(p_partner_order_id) THEN\n    RAISE EXCEPTION 'order_not_priceable_quote_required' USING ERRCODE='P0001';\n  END IF;\n\n  RETURN public.generate_b2b_receivable_secure_impl(p_partner_order_id);\nEND $function$\n",
+      "definition_md5": "c49cc7ccedbcb28cba9b816b7e47c521",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=public"
+      ]
+    },
+    {
+      "schema": "public",
+      "proname": "generate_b2b_receivable_secure_impl",
+      "args": "uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_order record;\n  v_partner record;\n  v_settings record;\n  v_terms record;\n  v_receivable_id uuid;\n  v_category_id uuid;\n  v_payment_method_id uuid;\n  v_existing uuid;\n  v_sch record;\n  v_ari_id uuid;\n  v_installments_json jsonb := '[]'::jsonb;\n  v_system_call boolean := (v_uid IS NULL);\n  v_gate jsonb;\n  v_fiscal jsonb;\n  v_uf text;\n  v_org uuid;\n  v_org_count integer; -- b2b_f1_financial_tenant\nBEGIN\n  IF NOT v_system_call THEN\n    IF NOT (has_role(v_uid,'administrador') OR has_role(v_uid,'financeiro') OR has_role(v_uid,'gestor') OR has_role(v_uid,'gestor_comercial')) THEN\n      INSERT INTO public.partner_order_audit_logs(order_id, usuario_id, acao, dados_novos)\n        VALUES (p_partner_order_id, v_uid, 'financeiro_permissao_negada', jsonb_build_object('motivo','sem permissão'));\n      RAISE EXCEPTION 'Sem permissão para gerar cobrança B2B';\n    END IF;\n  END IF;\n\n  SELECT * INTO v_order FROM public.partner_orders WHERE id = p_partner_order_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'Pedido não encontrado'; END IF;\n\n  -- Deterministic partner ownership, never caller-supplied organization.\n  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org\n    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;\n  -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.\n  IF v_org_count = 0 THEN\n    SELECT count(*), min(o.id::text)::uuid INTO v_org_count, v_org\n      FROM public.partner_accounts pa JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id\n     WHERE pa.id = v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL\n       AND o.ativo IS TRUE AND o.status = 'ativa';\n  END IF;\n  IF v_org_count <> 1 OR v_org IS NULL THEN\n    RAISE EXCEPTION 'B2B_FINANCIAL_TENANT_AMBIGUOUS' USING ERRCODE='42501';\n  END IF;\n  IF v_uid IS NOT NULL THEN\n    -- c2_ord_internal_scope: emissor interno é limitado por h15 = tenant do título (abaixo);\n    -- quem tem papel B2B externo continua passando pelo assert canônico.\n    IF public.has_role(v_uid,'parceiro_b2b'::app_role) OR public.has_role(v_uid,'parceiro_b2b_tecnico'::app_role) THEN\n      PERFORM platform_private.assert_b2b_partner_scope(v_uid,v_order.partner_id);\n    END IF;\n    IF NOT public.is_platform_superadmin(v_uid) AND public.h15_actor_organization() IS DISTINCT FROM v_org THEN\n      RAISE EXCEPTION 'B2B_FINANCIAL_TENANT_MISMATCH' USING ERRCODE='42501';\n    END IF;\n  END IF;\n\n  IF v_order.c2_external_origin_snapshot IS NOT NULL THEN\n    PERFORM platform_private.c2_external_origin_assert(v_order.c2_external_origin_snapshot,v_order.partner_id,v_order.cliente_id);\n    IF v_org::text IS DISTINCT FROM v_order.c2_external_origin_snapshot->>'creditor_organization_id' THEN RAISE EXCEPTION 'C2_EXTERNAL_CREDITOR_DRIFT' USING ERRCODE='42501'; END IF;\n  END IF;\n\n  -- GATE Fase C: elegibilidade server-side\n  v_gate := public.fn_b2b_order_billing_eligibility(p_partner_order_id);\n  IF NOT (v_gate->>'eligible')::boolean THEN\n    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)\n      VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_bloqueado_gate', v_gate);\n    RAISE EXCEPTION 'billing_not_eligible:%', v_gate->>'reason_code';\n  END IF;\n\n  -- H6C-001: condicao canonica vinculada ao pedido (nunca a mais recente).\n  SELECT * INTO v_terms FROM public.partner_order_payment_terms\n    WHERE id = NULLIF(v_gate->>'payment_terms_id','')::uuid\n      AND partner_order_id = p_partner_order_id;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_canonical'; END IF;\n\n  SELECT receivable_id INTO v_existing FROM public.partner_order_financial_links WHERE partner_order_id = p_partner_order_id;\n  IF v_existing IS NOT NULL THEN\n    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)\n      VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_duplicidade_bloqueada', jsonb_build_object('receivable_id', v_existing));\n    RETURN jsonb_build_object('receivable_id', v_existing, 'partner_order_id', p_partner_order_id, 'duplicado', true);\n  END IF;\n\n  SELECT * INTO v_partner FROM public.partner_accounts WHERE id = v_order.partner_id;\n  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = v_order.partner_id;\n  IF NOT FOUND THEN\n    -- c2_ord_p1_no_provision: only the existing P1 CAS RPC creates settings.\n    RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001';\n  END IF;\n\n  -- External manual billing must honor configured delivery prerequisite too.\n  IF v_order.c2_external_origin_snapshot IS NOT NULL AND v_settings.billing_trigger='na_entrega' AND v_order.status IS DISTINCT FROM 'entregue' THEN\n    RAISE EXCEPTION 'C2_EXTERNAL_DELIVERY_REQUIRED' USING ERRCODE='42501';\n  END IF;\n\n  v_uf := to_jsonb(v_partner) ->> 'uf';\n\n  -- Derivação fiscal (fail-closed; nunca NOT_REQUIRED silencioso)\n  v_fiscal := public.fn_fiscal_requirement_resolve(\n    'b2b_partner', 'venda_mercadoria', v_uf, 'partner_order', p_partner_order_id, CURRENT_DATE);\n\n  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos globais por desenho (sem organization_id, RLS is_financial_staff; sem DDL de tenant\n  -- no schema canônico); resolução estrita, sem fallback de tipo/inativo, falha explícita.\n  SELECT id INTO v_category_id FROM public.financial_categories\n   WHERE upper(btrim(type)) = 'RECEITA' AND active IS TRUE\n   ORDER BY created_at ASC, id ASC LIMIT 1;\n  IF v_category_id IS NULL THEN\n    RAISE EXCEPTION 'B2B_REVENUE_CATEGORY_NOT_CONFIGURED' USING ERRCODE='P0001';\n  END IF;\n  IF NULLIF(btrim(COALESCE(v_settings.default_payment_method,'')),'') IS NULL THEN\n    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';\n  END IF;\n  IF (SELECT count(*) FROM public.payment_methods pm\n       WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method))) <> 1 THEN\n    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';\n  END IF;\n  SELECT pm.id INTO v_payment_method_id FROM public.payment_methods pm\n   WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method));\n  IF v_partner.client_id IS NOT NULL AND NOT EXISTS (\n       SELECT 1 FROM public.clientes cl WHERE cl.id = v_partner.client_id AND cl.organization_id = v_org) THEN\n    RAISE EXCEPTION 'B2B_CUSTOMER_TENANT_MISMATCH' USING ERRCODE='42501';\n  END IF;\n\n  INSERT INTO public.accounts_receivable(\n    organization_id, origin_type, origin_id, customer_id, partner_id, description,\n    category_id, total_amount, issue_date, first_due_date, installment_count,\n    status, fiscal_invoice_required, fiscal_invoice_status,\n    fiscal_requirement_source, fiscal_policy_id, fiscal_exemption_id,\n    payment_method_id, notes, created_by\n  ) VALUES (\n    v_org, 'B2B_ORDER', p_partner_order_id,\n    NULLIF(v_partner.client_id, NULL), v_order.partner_id,\n    format('Pedido B2B %s - %s', v_order.numero, COALESCE(v_partner.nome_fantasia, v_partner.razao_social)),\n    v_category_id, v_terms.final_amount, CURRENT_DATE, v_terms.first_due_date, v_terms.installment_count,\n    'OPEN',\n    (v_fiscal->>'required')::boolean,\n    v_fiscal->>'status',\n    v_fiscal->>'source',\n    NULLIF(v_fiscal->>'policy_id','')::uuid,\n    NULLIF(v_fiscal->>'exemption_id','')::uuid,\n    v_payment_method_id,\n    format(E'Condição: %s (%s)\\nDesconto: %s%%  Juros: %s%% a.m. x %s meses\\nTabela: %s  Líquido: %s  Final: %s\\nFiscal: %s (%s)',\n           v_terms.plan_name_snapshot, v_terms.plan_code_snapshot,\n           v_terms.discount_percent_snapshot, v_terms.monthly_interest_percent_snapshot, v_terms.months_count_snapshot,\n           v_terms.table_amount, v_terms.net_amount_after_discount, v_terms.final_amount,\n           v_fiscal->>'status', v_fiscal->>'source'),\n    COALESCE(v_uid, v_order.created_by)\n  ) RETURNING id INTO v_receivable_id;\n\n  -- b2b_f1_fresh_title: no deletion; formal financial history protection preserved.\n\n  FOR v_sch IN\n    SELECT * FROM public.partner_order_payment_schedule\n     WHERE partner_order_id = p_partner_order_id AND payment_terms_id = v_terms.id\n     ORDER BY installment_number\n  LOOP\n    -- b2b_f1_reuse_installments: generic title trigger already created them.\n    IF (SELECT count(*) FROM public.accounts_receivable_installments\n         WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number\n           AND organization_id=v_org) <> 1 THEN\n      RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514';\n    END IF;\n    UPDATE public.accounts_receivable_installments\n       SET due_date=v_sch.due_date, original_amount=v_sch.amount,\n           interest_amount=COALESCE(v_sch.interest_amount,0), net_amount=v_sch.amount\n     WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number\n       AND organization_id=v_org\n     RETURNING id INTO v_ari_id;\n\n    UPDATE public.partner_order_payment_schedule\n       SET status = 'generated', receivable_installment_id = v_ari_id\n     WHERE id = v_sch.id;\n\n    v_installments_json := v_installments_json || jsonb_build_array(jsonb_build_object(\n      'installment_number', v_sch.installment_number,\n      'due_date', v_sch.due_date,\n      'amount', v_sch.amount\n    ));\n  END LOOP;\n\n  INSERT INTO public.partner_order_financial_links(\n    partner_order_id, partner_id, receivable_id, financial_status, billing_trigger, created_by\n  ) VALUES (\n    p_partner_order_id, v_order.partner_id, v_receivable_id, 'gerado', v_settings.billing_trigger, v_uid\n  );\n\n  UPDATE public.partner_orders SET\n    financial_status = 'gerado',\n    receivable_generated = true,\n    receivable_generated_at = now(),\n    receivable_generated_by = v_uid,\n    payment_due_date = v_terms.first_due_date,\n    payment_method = COALESCE(v_settings.default_payment_method,'pix')\n  WHERE id = p_partner_order_id;\n\n  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)\n  VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_gerado_com_plano',\n    jsonb_build_object(\n      'receivable_id', v_receivable_id,\n      'plan_code', v_terms.plan_code_snapshot,\n      'plan_name', v_terms.plan_name_snapshot,\n      'table_amount', v_terms.table_amount,\n      'discount_amount', v_terms.discount_amount,\n      'net_amount', v_terms.net_amount_after_discount,\n      'interest_amount', v_terms.financial_interest_amount,\n      'final_amount', v_terms.final_amount,\n      'first_due_date', v_terms.first_due_date,\n      'installment_count', v_terms.installment_count,\n      'fiscal', v_fiscal,\n      'gate', v_gate,\n      'installments', v_installments_json\n    ));\n\n  RETURN jsonb_build_object(\n    'receivable_id', v_receivable_id,\n    'partner_order_id', p_partner_order_id,\n    'valor', v_terms.final_amount,\n    'vencimento', v_terms.first_due_date,\n    'installment_count', v_terms.installment_count,\n    'fiscal_invoice_required', (v_fiscal->>'required')::boolean,\n    'fiscal_invoice_status', v_fiscal->>'status',\n    'fiscal_requirement_source', v_fiscal->>'source',\n    'status', 'OPEN'\n  );\nEND \n$function$\n",
+      "definition_md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=public"
+      ]
+    },
+    {
+      "schema": "public",
+      "proname": "tg_auto_b2b_receivable",
+      "args": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.tg_auto_b2b_receivable()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_settings record;\n  v_should boolean := false;\nBEGIN\n  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = NEW.partner_id AND active = true;\n  IF NOT FOUND OR NOT v_settings.auto_generate_receivable THEN RETURN NEW; END IF;\n  IF NEW.receivable_generated THEN RETURN NEW; END IF;\n\n  IF v_settings.billing_trigger = 'na_aprovacao' AND NEW.status = 'aprovado' AND OLD.status IS DISTINCT FROM 'aprovado' THEN\n    v_should := true;\n  ELSIF v_settings.billing_trigger = 'na_entrega' AND NEW.status = 'entregue' AND OLD.status IS DISTINCT FROM 'entregue' THEN\n    v_should := true;\n  ELSIF v_settings.billing_trigger = 'na_producao_finalizada' AND NEW.status = 'produzido' AND OLD.status IS DISTINCT FROM 'produzido' THEN\n    v_should := true;\n  END IF;\n\n  IF v_should THEN\n    BEGIN\n      PERFORM public.generate_b2b_receivable_secure(NEW.id);\n    EXCEPTION WHEN OTHERS THEN\n      -- c2_ord_atomic_approval: sem título, a aprovação não acontece (rollback do UPDATE).\n      IF v_settings.billing_trigger = 'na_aprovacao' THEN\n        RAISE EXCEPTION 'B2B_APPROVAL_BILLING_FAILED: %', SQLERRM USING ERRCODE='P0001';\n      END IF;\n      INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)\n      VALUES (NEW.id, NEW.partner_id, 'financeiro_auto_falhou', jsonb_build_object('erro', SQLERRM));\n    END;\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "definition_md5": "0f679538fe394924b140e54938a3bb9e",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=public"
+      ]
+    },
+    {
+      "schema": "public",
+      "proname": "tg_b2b_block_receivable_before_approval",
+      "args": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.tg_b2b_block_receivable_before_approval()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_status partner_order_status;\nBEGIN\n  IF NEW.partner_order_id IS NULL THEN RETURN NEW; END IF;\n  SELECT status INTO v_status FROM public.partner_orders WHERE id = NEW.partner_order_id;\n  IF v_status IS NULL THEN\n    RAISE EXCEPTION 'order_not_found';\n  END IF;\n  IF NOT public.fn_b2b_status_is_approved_or_later(v_status) THEN\n    RAISE EXCEPTION 'receivable_requires_approved_order: status=%', v_status\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+      "definition_md5": "9d559f2f04613704467cb488de0d842f",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=public"
+      ]
+    }
+  ],
+  "pins": [
+    {
+      "sig": "public._cpp_audit(text,uuid,jsonb,jsonb,text)",
+      "definition_md5": "a3cf9f39b41dd3f948c1018898800aac"
+    },
+    {
+      "sig": "public._cpp_validate_payload(jsonb)",
+      "definition_md5": "9cf317953d08689951689bd89606e0b7"
+    },
+    {
+      "sig": "public.audit_partner_order_payment_terms()",
+      "definition_md5": "96b68bec5b11f2a414f333c68a00d765"
+    },
+    {
+      "sig": "public.b2b_list_payment_condition_options_secure(uuid,uuid)",
+      "definition_md5": "8a7f29c199e77e653966ebdb8a4b3ed3"
+    },
+    {
+      "sig": "public.b2b_payment_condition_activation_set(text,uuid[],integer)",
+      "definition_md5": "9efe4e6eb5afe29d8e3d9f3ef7077863"
+    },
+    {
+      "sig": "public.b2b_payment_condition_assign(uuid,uuid,text,integer,boolean)",
+      "definition_md5": "f0d3ff51f5a4164da41db1a6ef262c8f"
+    },
+    {
+      "sig": "public.b2b_payment_condition_config_list()",
+      "definition_md5": "728b3b92bc4848873f6df85779585295"
+    },
+    {
+      "sig": "public.b2b_payment_condition_publish(uuid,text,uuid,uuid,integer,integer,numeric,integer)",
+      "definition_md5": "c6fbe15906c5d893ab80e962ee162b3c"
+    },
+    {
+      "sig": "public.b2b_payment_condition_retire(uuid,text,integer)",
+      "definition_md5": "a049478a9e2b74f315d6c5baf204efa1"
+    },
+    {
+      "sig": "public.b2b_phase1_order_visible(uuid)",
+      "definition_md5": "8812508716f279a88e3d5a31b15621d8"
+    },
+    {
+      "sig": "public.b2b_phase1_partner_visible(uuid,boolean)",
+      "definition_md5": "6b3defc01a66040146562c60ad224f03"
+    },
+    {
+      "sig": "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)",
+      "definition_md5": "e86385fefb25c68d9dd4d0fef6619f27"
+    },
+    {
+      "sig": "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "definition_md5": "fe82f5381d426136f2627803f3b0005d"
+    },
+    {
+      "sig": "public.fn_b2b_apply_interest(numeric,text,numeric,numeric)",
+      "definition_md5": "806e5d8789b08cd6790a10feaf95f26d"
+    },
+    {
+      "sig": "public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)",
+      "definition_md5": "e268d3d3a9857c3ec8cbc2bf1f6c2fd6"
+    },
+    {
+      "sig": "public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "definition_md5": "213ac31f3a30816ead75365b0d1fed18"
+    },
+    {
+      "sig": "public.fn_b2b_guard_credit_approval_fields()",
+      "definition_md5": "8902498ed09c4c5804b1749ee0c31cd7"
+    },
+    {
+      "sig": "public.fn_b2b_guard_order_items_immutable()",
+      "definition_md5": "bc1c4dca3a9f5a247a3c098dcbe1c06f"
+    },
+    {
+      "sig": "public.fn_b2b_plan_selectable(uuid,timestamp with time zone)",
+      "definition_md5": "4cb833a3eae76cbebce920f34cd5d5ce"
+    },
+    {
+      "sig": "public.fn_b2b_status_is_approved_or_later(partner_order_status)",
+      "definition_md5": "8fed429cd642c9eaa431f8bbfa320931"
+    },
+    {
+      "sig": "public.fn_b2b_status_is_operational(partner_order_status)",
+      "definition_md5": "1b397fd4f651c103e6eddcc3e140a86e"
+    },
+    {
+      "sig": "public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)",
+      "definition_md5": "507077a4a5d43f04022c8c7235aef6f3"
+    },
+    {
+      "sig": "public.get_partner_order_payment_condition_secure(uuid)",
+      "definition_md5": "7ffe3bbbefd040bab1b3ce1bce8069a7"
+    },
+    {
+      "sig": "public.get_partner_order_payment_terms_secure(uuid)",
+      "definition_md5": "efb3d18c65088d7d69471fc5aa9ac859"
+    },
+    {
+      "sig": "public.is_valid_b2b_partner_user(uuid,uuid)",
+      "definition_md5": "0bb0dea04be8ca84c66db7ca6329876c"
+    },
+    {
+      "sig": "public.partner_order_has_production(uuid)",
+      "definition_md5": "0cfac18049e90c5427ada9d11ab2c2c4"
+    },
+    {
+      "sig": "public.partner_orders_audit_trigger()",
+      "definition_md5": "df139ef01591892436854b7f8c82f2db"
+    },
+    {
+      "sig": "platform_private.assert_b2b_partner_scope(uuid,uuid)",
+      "definition_md5": "f86f43f9d9ad3ed97b840fcc02c79476"
+    },
+    {
+      "sig": "platform_private.b2b_actor_scope(uuid)",
+      "definition_md5": "c3f2997746f24bc2efd15db5c0ccc862"
+    },
+    {
+      "sig": "platform_private.b2b_choice(jsonb)",
+      "definition_md5": "a722bbdfc438010e78980783f8e31b62"
+    },
+    {
+      "sig": "platform_private.b2b_commercial_context()",
+      "definition_md5": "2f1063f00281c4ca78dcebaab81a9446"
+    },
+    {
+      "sig": "platform_private.b2b_condition_cfg_actor(boolean)",
+      "definition_md5": "2fcd43420f2cd0cc1b20736882f0ad09"
+    },
+    {
+      "sig": "platform_private.b2b_condition_hash(text,jsonb,jsonb,numeric)",
+      "definition_md5": "cf9beadc15956410772d602d3ddaa031"
+    },
+    {
+      "sig": "platform_private.b2b_condition_immutable()",
+      "definition_md5": "f9fb08f6004af2e256eaf4222c5cc2c6"
+    },
+    {
+      "sig": "platform_private.b2b_condition_mode(uuid)",
+      "definition_md5": "7830c32a4ae139d9ab7e377dd39c8df6"
+    },
+    {
+      "sig": "platform_private.b2b_condition_order_coherence_check(uuid,text)",
+      "definition_md5": "d5096452e22262d617384df0fdeffd17"
+    },
+    {
+      "sig": "platform_private.b2b_condition_order_coherence_trg()",
+      "definition_md5": "7f793a95047846b63cb514e5a8b1af11"
+    },
+    {
+      "sig": "platform_private.b2b_condition_required_check()",
+      "definition_md5": "236b821b0ca568c81a9667512dae5def"
+    },
+    {
+      "sig": "platform_private.b2b_condition_seller(uuid)",
+      "definition_md5": "bc4af2afb04c1a32962ae3400b0108d7"
+    },
+    {
+      "sig": "platform_private.b2b_condition_snapshot_coherence_trg()",
+      "definition_md5": "eb9e9179be9addb20ce09681956c6eda"
+    },
+    {
+      "sig": "platform_private.b2b_credit_checked(uuid,numeric,uuid)",
+      "definition_md5": "41e3b97aee5556fbdacbcec8f0dcf7f9"
+    },
+    {
+      "sig": "platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",
+      "definition_md5": "6bbb61aa5899b18d13ac55d4f76f45e1"
+    },
+    {
+      "sig": "platform_private.b2b_internal_child_snapshot_guard()",
+      "definition_md5": "f9fcfca4588854d927f7f9a1bdbe4de7"
+    },
+    {
+      "sig": "platform_private.b2b_internal_commercial_actor()",
+      "definition_md5": "6555396c4f8fe914177d2ccfc3891279"
+    },
+    {
+      "sig": "platform_private.b2b_internal_order_snapshot_guard()",
+      "definition_md5": "1c342be2cdaf7bf458a3cd1aa15e7ba5"
+    },
+    {
+      "sig": "platform_private.b2b_internal_origin_valid(jsonb)",
+      "definition_md5": "70a7c317765a4888b38e8bf277ded7d3"
+    },
+    {
+      "sig": "platform_private.b2b_owner_internal_partner_readable(uuid)",
+      "definition_md5": "fa72ca18fc673cb4a5ff4867e65137cd"
+    },
+    {
+      "sig": "platform_private.b2b_packaging_item_snapshot_guard()",
+      "definition_md5": "8428ab634e0380194a9503905e1b169e"
+    },
+    {
+      "sig": "platform_private.b2b_packaging_line(uuid,uuid,jsonb,date)",
+      "definition_md5": "c8fbde6ba0fba4ea5109b001077849f6"
+    },
+    {
+      "sig": "platform_private.b2b_packaging_lock(jsonb)",
+      "definition_md5": "2bae09cbb42267f4979cc243daa1922a"
+    },
+    {
+      "sig": "platform_private.b2b_partner_catalog_reader(uuid)",
+      "definition_md5": "bd985484b69c8fa6e63a920eff518369"
+    },
+    {
+      "sig": "platform_private.b2b_phase1_order_visible(uuid)",
+      "definition_md5": "8504f07fbc3a7975accf919f386d00eb"
+    },
+    {
+      "sig": "platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+      "definition_md5": "915f516e605af7cc14584e2e762a2661"
+    },
+    {
+      "sig": "platform_private.b2b_resale_delivery_order_valid_v1(entregas)",
+      "definition_md5": "bd76345c3bceaa5e6203013920427df4"
+    },
+    {
+      "sig": "platform_private.b2b_resale_delivery_status_transition_valid_v1(partner_orders,partner_orders)",
+      "definition_md5": "72d5d18157ffd837b89245bad19fc17e"
+    },
+    {
+      "sig": "platform_private.b2b_resolve_condition(uuid,uuid,jsonb,boolean)",
+      "definition_md5": "abbffddb1a3062fd7dabbf14c5af8822"
+    },
+    {
+      "sig": "platform_private.b2b_schedule(numeric,numeric,integer,date,integer)",
+      "definition_md5": "e8ef68b673bdffa71ad4d31ed535d9de"
+    },
+    {
+      "sig": "platform_private.c2_external_final_state_guard()",
+      "definition_md5": "3f1a5a6b11161bd8204293a8c64371e2"
+    },
+    {
+      "sig": "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",
+      "definition_md5": "999e5e9fd9887595e252523fb2142726"
+    },
+    {
+      "sig": "platform_private.c2_external_origin_contract_valid(jsonb)",
+      "definition_md5": "369fd07cd9c659b87941b9a3bf972868"
+    },
+    {
+      "sig": "platform_private.c2_partner_order_attempt_authz(uuid,uuid)",
+      "definition_md5": "e15d9fccd42c67caf51b15122a61270d"
+    },
+    {
+      "sig": "platform_private.c2p1_assignment_allowed(text,uuid,uuid)",
+      "definition_md5": "ecada72965cd1042fc1502b37864ab42"
+    },
+    {
+      "sig": "platform_private.c2p1_assignment_fence()",
+      "definition_md5": "fe958e7d52fb36faa77881933a808434"
+    },
+    {
+      "sig": "platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb)",
+      "definition_md5": "775c1540b15842d3ce0696e4a5d27f3b"
+    },
+    {
+      "sig": "platform_private.c2p1_internal_actor(app_role[])",
+      "definition_md5": "97bab97591a9f662bad7b1ccf837bfcd"
+    },
+    {
+      "sig": "platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)",
+      "definition_md5": "8212432313c52b2a12a1398ec40c814e"
+    },
+    {
+      "sig": "platform_private.c2p1_item_fence()",
+      "definition_md5": "c1c88697a57168ba49c30692e7a85046"
+    },
+    {
+      "sig": "platform_private.c2p1_rule_fence()",
+      "definition_md5": "4337496c5ece403ad072adcaee88faf2"
+    },
+    {
+      "sig": "platform_private.c2p1_settings_allowed(uuid,boolean)",
+      "definition_md5": "57baa5fd657952d9383ad0c422c1d028"
+    },
+    {
+      "sig": "platform_private.c2p1_snapshot_allowed(text,uuid,jsonb)",
+      "definition_md5": "8e6719d77fa0e6391f353e3ad5408f54"
+    },
+    {
+      "sig": "platform_private.commercial_plan_actor_organization()",
+      "definition_md5": "1256fcfcf607971ed7d8aff1210272c2"
+    },
+    {
+      "sig": "platform_private.commercial_plan_admin_allowed(uuid)",
+      "definition_md5": "c837aee86bd22018286bf8cf1ca38cf3"
+    },
+    {
+      "sig": "platform_private.commercial_plan_buyer_visible(uuid,uuid)",
+      "definition_md5": "b7397c945cbcfdaef83851ea18b17c5a"
+    },
+    {
+      "sig": "platform_private.commercial_plan_partner_visible(uuid,uuid)",
+      "definition_md5": "df00b1478d8214bc9a17d63d841b24c4"
+    },
+    {
+      "sig": "platform_private.commercial_plan_revalidate_actor(uuid)",
+      "definition_md5": "01a3360abff0d2dbc6193d238b6e2471"
+    },
+    {
+      "sig": "platform_private.commercial_plan_scope_allowed(uuid,text,uuid,uuid)",
+      "definition_md5": "e26e53b6e085f7339e7f2f7ec93922dc"
+    },
+    {
+      "sig": "platform_private.commercial_plan_target_organization(text,uuid,uuid)",
+      "definition_md5": "d0d7bd6da7d12e920bd09b9d8133a79a"
+    },
+    {
+      "sig": "platform_private.commercial_plan_tenant_guard()",
+      "definition_md5": "6fe3f8993c0fd97b17b36fbff2305218"
+    },
+    {
+      "sig": "platform_private.partner_order_items_catalog_tenant_guard()",
+      "definition_md5": "211a5c4db841fd3e5ce3859c6477c7ae"
+    },
+    {
+      "sig": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "definition_md5": "97bcdb9884b54adb3bd4aae4915e32d0"
+    },
+    {
+      "sig": "public.rpc_admin_create_commercial_plan(jsonb)",
+      "definition_md5": "6136f97079a2b445c949b047aac62108"
+    },
+    {
+      "sig": "public.rpc_admin_list_commercial_plans(text,text,integer,integer)",
+      "definition_md5": "c6672029349b7a312066341defb625ab"
+    },
+    {
+      "sig": "public.rpc_admin_reorder_commercial_plans(jsonb)",
+      "definition_md5": "0c6825b70cdc5650855784e4b39585d7"
+    },
+    {
+      "sig": "public.rpc_admin_set_commercial_plan_active(uuid,boolean,text)",
+      "definition_md5": "bf83cf4a8a35861b723bdcb278112697"
+    },
+    {
+      "sig": "public.rpc_admin_set_default_commercial_plan(uuid)",
+      "definition_md5": "0bf1ce6d0a62f06d962c5dcb8657f760"
+    },
+    {
+      "sig": "public.rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer)",
+      "definition_md5": "7bbfe461fdcc5da0d9fbaff3793d730d"
+    },
+    {
+      "sig": "public.rpc_admin_version_commercial_plan(uuid,jsonb,text)",
+      "definition_md5": "8e2cf62e686d9f0aa5d181a18f33df65"
+    },
+    {
+      "sig": "public.rpc_b2b_list_selectable_payment_plans()",
+      "definition_md5": "5bceeda188eee7525172eadeed17f7c0"
+    },
+    {
+      "sig": "public.simulate_b2b_payment_condition_secure(uuid,uuid,jsonb,jsonb)",
+      "definition_md5": "06ea0933992a05a0d2a7fb78c6881bcf"
+    },
+    {
+      "sig": "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)",
+      "definition_md5": "6e81e29397a9bd633f2fe6ec364d8cf3"
+    },
+    {
+      "sig": "public.tg_audit_partner_order_commercial()",
+      "definition_md5": "b537eb6807fbfc48b43b59d49ef7297a"
+    },
+    {
+      "sig": "public.tg_auto_b2b_receivable()",
+      "definition_md5": "0f679538fe394924b140e54938a3bb9e"
+    },
+    {
+      "sig": "public.tg_b2b_enforce_plan_selectable()",
+      "definition_md5": "3477a02b069c20ae3e1c832ecca6b1e7"
+    },
+    {
+      "sig": "public.tg_block_partner_order_delete()",
+      "definition_md5": "55b4f2fa662f1d14dbbb663cb475d6a6"
+    },
+    {
+      "sig": "public.tg_block_partner_order_edit_after_op()",
+      "definition_md5": "2884dea0a9efa9ab7badac6bd8b5e46c"
+    },
+    {
+      "sig": "public.tg_block_partner_order_items_after_op()",
+      "definition_md5": "6e7c1a8ac409cf64442396d48f73abb5"
+    },
+    {
+      "sig": "public.tg_partner_order_items_resolve_pending()",
+      "definition_md5": "2e80e713bc0fe3785e1008405a0d02a3"
+    },
+    {
+      "sig": "public.tg_partner_orders_credit_guard()",
+      "definition_md5": "b24a3c30910832e8b14456d912a67589"
+    },
+    {
+      "sig": "public.tg_partner_orders_require_items()",
+      "definition_md5": "2b756289555b287255876e635a516c9a"
+    },
+    {
+      "sig": "public.trg_partner_order_timeline()",
+      "definition_md5": "833de323eb590a831924d5a5fcb490bd"
+    },
+    {
+      "sig": "public.trg_partner_order_to_planning_fn()",
+      "definition_md5": "e5915037d03892fffc5d388595cba685"
+    }
+  ],
+  "seller91_executed_body": "respond.candidate.sql",
+  "seller91_executed_body_sha256": "5f1155e2782dfbfa0bbd2ba27447a2632fdc41000245402aeb9ddd6f394f5ea9",
+  "previous_attempt37_sha256": "06234f50927569a137615de6c9ae175af30b86bd272b65af953e2cd085fa3ea9"
+}
