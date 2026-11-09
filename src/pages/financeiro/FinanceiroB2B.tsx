@@ -24,7 +24,7 @@ import {
   useFinancialSettingsPartners,
   useFinancialSettingsMethods,
 } from "@/hooks/useB2BFinanceiro";
-import { brl, fmtDate } from "@/lib/financial/format";
+import { brl } from "@/lib/financial/format";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { activePaymentMethodValid, canConfigurePartnerSettings, emptyPartnerSettings, samePartnerSettings, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
