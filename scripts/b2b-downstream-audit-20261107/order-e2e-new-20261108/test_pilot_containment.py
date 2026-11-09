@@ -182,7 +182,7 @@ def run(B, Review, Q, A, choice, out):
         time.sleep(0.05)
     B.T.finish(holder, "COMMIT;")
     out, err = B.T.finish(worker)
-    assert "started_before_expiry" in out and "RESALE_PILOT_SCOPE_DENIED" in err, (out, err)
+    assert out.strip().splitlines()[0] == "t" and "RESALE_PILOT_SCOPE_DENIED" in err, (out, err)
     assert os_effects(expiring["id"]) == expiring_before
     ok("transaction begun before expiry and unlocked after expiry is denied at final authorization")
 
