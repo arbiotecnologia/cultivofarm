@@ -458,7 +458,7 @@ def main():
    assert history_after==history_before,(history_before,history_after)
    B.current_catalog.assert_current(B.last,CURRENT_CANDIDATE_TRIGGER_DELTAS,CURRENT_CANDIDATE_FUNCTION_DELTAS)
    (OUT/'full-logistics-rollback.json').write_text(json.dumps({'closed':closed,'history_before':history_before,'history_after':history_after,'current_catalog_preserved':True,'allowed_candidate_trigger_function_deltas':sorted(list(x) for x in CURRENT_CANDIDATE_TRIGGER_DELTAS),'allowed_candidate_function_deltas':sorted(CURRENT_CANDIDATE_FUNCTION_DELTAS),'b4_fiscal':'NOT_RUN_OUT_OF_SCOPE'},indent=2)+'\n')
-   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 17 ACLs; B4 fiscal NOT_RUN out of scope',status='PASS'))
+   checks.append(dict(test='reverse deny-only rollback closes logistics physical send confirmation and preserves history twenty LIVE bodies 120 triggers 18 relation security pins; B4 fiscal NOT_RUN out of scope',status='PASS'))
    return 0
 
   # feb815603: B4 reconciliado com TODAS as cinco dependências pós-planos.

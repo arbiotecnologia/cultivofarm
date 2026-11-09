@@ -31,6 +31,22 @@ assert len(DIFF["functions"]["removed"]) == 126
 assert len(DIFF["functions"]["added"]) == 232
 assert len(DIFF["relations"]["removed"]) == 9
 assert len(DIFF["relations"]["added"]) == 9
+assert RELATION_SECURITY["expected_ref"] == REF
+assert RELATION_SECURITY["hosted_io_by_agent"] is False
+assert len(RELATION_SECURITY["relations"]) == 18
+SECURITY_RELATIONS = {
+    f"{row['schema']}.{row['name']}": row
+    for row in RELATION_SECURITY["relations"]
+}
+assert len(SECURITY_RELATIONS) == 18
+assert {f"public.{row['table']}" for row in CAPTURE["relations"]} < set(SECURITY_RELATIONS)
+for row in CAPTURE["relations"]:
+    security = SECURITY_RELATIONS[f"public.{row['table']}"]
+    assert security["acl"] == row["acl"] and security["owner"] == row["owner"]
+    assert security["rls"] is True and security["force_rls"] is False
+private_security = SECURITY_RELATIONS["platform_private.envase_insert_permits_v1"]
+assert private_security["rls"] is False and private_security["force_rls"] is False
+assert private_security["acl"] == "{postgres=arwdDxtm/postgres}"
 
 
 def sha(path: Path) -> str:

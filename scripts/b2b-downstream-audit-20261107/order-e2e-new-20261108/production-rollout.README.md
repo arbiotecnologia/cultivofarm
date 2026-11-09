@@ -38,6 +38,7 @@ Não usar o antigo rollback isolado de envio: seus guards globais foram superado
 
 - `evidence-summary.json`: contagens e limites da execução.
 - `evidence-source-manifest.json`: hashes das fontes presentes no espelho do ensaio.
+- `evidence-live-relation-security.json`: complemento independente com os 18 pins de RLS/FORCE RLS/owner/ACL.
 - `artifact-sources.json`: origem e hash de cada artefato copiado ou insumo de cada arquivo gerado.
 - `manifest.json`: SHA256 e tamanho de todos os arquivos do pacote.
 - `verify_production_rollout.py`, na pasta pai, confere novamente arquivos, origens, captura e resultados sem conexão hospedada.

@@ -158,7 +158,7 @@ def main():
         }
 
     generated('00-production-pre-posplans.sql.readonly', initial, [
-        current_scope.CAPTURE_PATH, current_scope.DIFF_PATH,
+        current_scope.CAPTURE_PATH, current_scope.RELATION_SECURITY_PATH, current_scope.DIFF_PATH,
         delivery / 'scope-pre.json', delivery / 'state.sql.review',
         plan_post_path, H / 'current_scope.py',
     ])
