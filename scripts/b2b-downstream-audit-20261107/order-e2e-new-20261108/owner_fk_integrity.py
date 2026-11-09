@@ -177,6 +177,17 @@ def main():
         raise AssertionError("NON_TEMPORARY_PACKAGE_REQUIRES_FINAL_EVIDENCE")
     out.mkdir(parents=True, exist_ok=True)
     pre, install, post, capture = build_sql()
+    auditor_report = json.loads(AUDITOR_REPORT.read_text())
+    assert auditor_report["kind"] == "AUDITOR_REPORTED_READONLY_EVIDENCE"
+    assert auditor_report["project_ref"] == "swzpzcwiasxmjutrmvkm"
+    assert auditor_report["agent_hosted_io"] is False
+    assert set(auditor_report["owner_fk_counts"]) == {table for table, _name in TARGETS}
+    for counts in auditor_report["owner_fk_counts"].values():
+        assert counts["total"] == 1
+        assert counts["owner_null"] == counts["orphan_owner"] == counts["owner_product_mismatch"] == 0
+    acl_report = auditor_report["acl_normalization_regressions"]
+    assert acl_report["status"] == "PASS_REPORTED_BY_AUDITOR" and acl_report["execution"] == "READ_ONLY"
+    assert acl_report["count"] == len(acl_report["cases"]) == 9
     payloads = {PRE_NAME: pre, INSTALL_NAME: install, POST_NAME: post}
     for name, text in payloads.items():
         path = out / name
