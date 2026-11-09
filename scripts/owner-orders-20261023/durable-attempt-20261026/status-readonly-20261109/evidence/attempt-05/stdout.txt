@@ -89,3 +89,22 @@ TABS '{"sub": "00000000-0000-4000-8000-000000000103", "role": "authenticated", "
 PASS two tabs prepare: exactly one reservation row, same key
 PASS two tabs prepare: exactly one sees reserved, the other sees uncertain (client with fresh expectation must refuse)
 PASS after reservation, status reads uncertain (a real dispatch may exist)
+PASS status on held key times out bounded (55P03), no journal/closure change
+PASS lost response after commit: status shows committed with the same order
+PASS status after commit does not advance generation
+PASS replay after success returns the same order, no duplicate
+PASS explicit ACK advance reserves gen 2 (prepare path only)
+PASS close vs create race: exactly one of order or closure, status agrees
+PASS close vs create race: no deadlock
+PASS status waits behind writer lock of the current key
+PASS status after wait reads uncertain for undispatched reservation (never none)
+PASS status revocation test waits
+PASS revocation during status wait denies with canonical 42501 (cumulative gestor+técnico actor reaches forbidden_financial_terms), no state disclosed
+PASS other tenant denied before disclosure, no writes
+PASS isolated technician denied
+PASS anon denied (permission)
+PASS rollback with divergent pin aborts, objects kept
+PASS 99 rollback exact; journal/closures preserved; recover intact
+PASS PRE passes again after rollback
+PASS reinstall + POST after rollback
+C2AS_RESULT {"passed": 38, "total": 38}

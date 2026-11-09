@@ -9,7 +9,7 @@ import type { CatalogItemTipo } from "./usePartnerCatalog";
 import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
 import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
-import { prepareDurableOrder, recoverOrderJournal, type Journal } from '@/lib/authz/orderJournal';
+import { prepareDurableOrder, recoverOrderJournal, type Journal, type NextAttempt } from '@/lib/authz/orderJournal';
 import { orderLineFor } from "@/lib/comercial/packagingOrder";
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial" | "embalagem";
@@ -67,6 +67,8 @@ export interface CreateOrderInput {
   attempt_slot?: string | null;
   /** Volatile per-click expectation, never persisted or sent as authority. */
   journal_expected?: Journal;
+  /** Option A: no server key yet; the reservation is made by prepareDurableOrder right before dispatch. */
+  journal_next?: NextAttempt;
   current_payload?: () => boolean;
 }
 
@@ -128,7 +130,7 @@ export function useCreatePartnerOrder(supplierName?: string | null) {
       const releaseOwn = () => { if (!ownReleased) { ownReleased = true; if (slot) markOrderAttemptRejected(slot, input.idempotency_key); } };
       let durable: Awaited<ReturnType<typeof prepareDurableOrder>>;
       try {
-        durable = await prepareDurableOrder(journalSlot,input.partner_id,dispatchCurrent,orderAttemptFingerprint(input),input.journal_expected);
+        durable = await prepareDurableOrder(journalSlot,input.partner_id,dispatchCurrent,orderAttemptFingerprint(input),input.journal_expected,input.journal_next);
         if (!dispatchCurrent()) throw new Error('Contexto ou carrinho alterado.');
       } catch (e) { releaseOwn(); throw e; }
       // Durable mode: the local legacy key is never dispatched; the server journal

@@ -115,10 +115,41 @@ export async function recoverOrderJournal(slot: string, partner: string, current
  }
  await persistJournal(slot,j,current,advance); return j;
 }
-export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean, digest: string, expected?: Journal) {
+export const STATUS_REVISION = 'C2_ORDER_ATTEMPT_STATUS_V1';
+export type AttemptStatus = {kind:'not_installed'} | {kind:'none'} | {kind:'journal';journal:Journal};
+/**
+ * Option A: read-only status on mount. Never reserves, closes or advances.
+ * Only the exact PGRST202 naming this RPC means "not installed" (caller keeps pre-install recover);
+ * every other error fails closed. "none" is accepted only for the exact server-echoed actor/org/partner.
+ */
+export async function readAttemptStatus(slot: string, partner: string, current: () => boolean): Promise<AttemptStatus> {
+ const r=await rpc('partner_order_attempt_status_v1',{p_partner:partner},current);
+ if (r.error) {
+  if (r.error.code==='PGRST202' && r.error.message?.includes('partner_order_attempt_status_v1')) return {kind:'not_installed'};
+  throw Error('journal_status_unavailable');
+ }
+ const d=r.data as Record<string, unknown> | null;
+ if (d && d.contract===STATUS_REVISION) {
+  const actor=JSON.parse(slot) as string[];
+  if (d.state!=='none' || !Array.isArray(actor) || actor.length!==3 || d.actor_id!==actor[0] || d.organization_id!==actor[1] || d.partner_id!==partner || actor[2]!==partner) throw Error('journal_status_invalid');
+  return {kind:'none'};
+ }
+ const j=parseOrderJournal(d);
+ // Status never reserves: a "reserved" reply here is a contract violation.
+ if (j.state==='reserved') throw Error('journal_status_invalid');
+ await persistJournal(slot,j,current);
+ return {kind:'journal',journal:j};
+}
+/** Next attempt after status: reservation happens ONLY here, right before dispatch. */
+export type NextAttempt = { advance?: Journal };
+export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean, digest: string, expected?: Journal, next?: NextAttempt) {
  if (!await journalCapability(slot,partner,current)) return null;
- const j=await recoverOrderJournal(slot,partner,current);
+ if (expected && next) throw Error('journal_expectation_invalid');
+ const j=await recoverOrderJournal(slot,partner,current,next?.advance);
  if(expected && (j.key!==expected.key || j.generation!==expected.generation)) throw Error('journal_generation_changed');
+ // Fresh expectation: this call must be the one that reserved. Another tab/device reserving first
+ // yields "uncertain" for the same key and is refused (re-read status, explicit closure path).
+ if(next && j.state!=='reserved') throw Error('journal_generation_changed');
  if (!['reserved','uncertain'].includes(j.state)) throw Error('journal_previous_order_requires_confirmation');
  await persistJournal(slot,j,current,undefined,digest);
  return j;
