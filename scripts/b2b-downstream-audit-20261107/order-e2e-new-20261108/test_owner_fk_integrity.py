@@ -90,7 +90,7 @@ def main():
         os.environ["PATH"] = str(pg17) + ":" + os.environ["PATH"]
         restored = B.restore.restore()
         assert not any(restored.values()), restored
-        B.C.prepare_checkpoint(Path("/tmp/owner-fk-confirmation-checkpoint.sql"))
+        B.C.prepare_checkpoint(OUT.parent / "owner-fk-confirmation-checkpoint.sql")
         B.current_catalog.apply(B.run_raw, B.last, B.ok, B.T.A)
         commercial = load("owner_fk_commercial", H / "commercial.py")
         work = OUT.parent / "commercial-work"
