@@ -1,8 +1,8 @@
 {
-  "evidence_directory": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-95",
+  "evidence_directory": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-103",
   "scope": "PostgreSQL 17.11 descart\u00e1vel e testes locais; n\u00e3o \u00e9 prova JWT/RLS/Storage/hosted",
-  "source_manifest_sha256": "bfde08eec7c782c0670219d163538a80903342428c68e9db4d98eee05ef3e9aa",
-  "source_files_revalidated": 2885,
+  "source_manifest_sha256": "92cae3e4d3146685c5d07942a0a159143d765a6c08ca24c02c8cf8fc0ed2f904",
+  "source_files_revalidated": 2888,
   "capture_sha256": "8a53b1443ed789c76115b9ef16807ae835e1e0bda888d50e6f1606197792a6ac",
   "independent_diff_sha256": "8af0e9df54e8802a6e6ebd2e9072a84799cbe72d2956b4bd2992a4526571ce6a",
   "capture_functions_md5_verified": 20,
@@ -11,7 +11,7 @@
   "relation_security_pins": 18,
   "relation_security_sha256": "20a514091f0ab4301cd11f67d530e1a17b94c4a7e1fea17196f100dca51f712d",
   "transcription_correction": "COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA; MD5 a4d47ccf5d116141ed46e9de9ea7eeaa",
-  "composition_checks": 39,
+  "composition_checks": 40,
   "partial_regressions": 13,
   "endpoint_reader_checks": 15,
   "pilot_containment_checks": 30,
@@ -19,17 +19,17 @@
   "frontend": {
     "frontend-ui": {
       "exitcode": 0,
-      "sha256": "467ad5e54bd2f107e629686108de1e9d43fac48e6dc99aef759924596c919b01",
+      "sha256": "2fa936bf02e9b35c8ffa829fecb9f172829603e67652d0f1023269dc49ab37ee",
       "tests": 21
     },
     "frontend-candidate": {
       "exitcode": 0,
-      "sha256": "1c85e19d80f30838fe6f71f215fd7085bdc00e0c27045037387f0b1ea53d141f",
+      "sha256": "5f439b153eca13e041eb02156fbf0d13b942846a78d6e630251d44e05be2985b",
       "tests": 13
     },
     "frontend-os-compat": {
       "exitcode": 0,
-      "sha256": "9caa333901f5924dbcf7fd2291255363f2993a5e28374d5b5e7656d6cd7fc04d",
+      "sha256": "030e6669462acfb59f209e701e13773991416bae7f8ce46f3544bc7e6bd1b567",
       "tests": 73
     },
     "typecheck": {
@@ -38,6 +38,7 @@
     }
   },
   "full_reverse_rollback": {
+    "branch": "logistics-only",
     "closed": {
       "os_writer": false,
       "send_writer": false,
@@ -58,7 +59,31 @@
       "deliveries": 15,
       "resale_receipts": 11
     },
+    "plans_before": {
+      "md5": "12502960f5090e178635e924e7194bd9",
+      "count": 9
+    },
+    "plans_after": {
+      "md5": "12502960f5090e178635e924e7194bd9",
+      "count": 9
+    },
     "current_catalog_preserved": true,
+    "real_baselines_preserved": true,
+    "composed_generators": [
+      "SEND_COMPOSED_ROLLBACK",
+      "CONFIRM_COMPOSED_ROLLBACK"
+    ],
+    "authenticated_negative": {
+      "send": {
+        "returncode": 3,
+        "permission_denied": true
+      },
+      "confirmation": {
+        "returncode": 3,
+        "permission_denied": true
+      }
+    },
+    "deny_only_no_body_restoration": true,
     "allowed_candidate_trigger_function_deltas": [
       [
         "entregas",
@@ -128,6 +153,12 @@
       "public.validate_estoque_entrada()"
     ],
     "b4_fiscal": "NOT_RUN_OUT_OF_SCOPE"
+  },
+  "final_artifact_execution": {
+    "status": "PASS",
+    "artifacts": 24,
+    "evidence_sha256": "2161da4fc96e09bbf7a181f2655e30f1024e7bfa4d106eebbcdb3c86192c70ef",
+    "postgresql_version": "17.11"
   },
   "b4_fiscal_scope": {
     "status": "NOT_RUN_OUT_OF_SCOPE",
