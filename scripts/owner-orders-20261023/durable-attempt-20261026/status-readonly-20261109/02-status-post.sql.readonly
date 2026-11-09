@@ -1,0 +1,15 @@
+DO $post$
+DECLARE r record;
+BEGIN
+ FOR r IN SELECT * FROM (VALUES
+  ('platform_private.c2_order_attempt_status_core(uuid)','cc5167a749b5bed25adb80ef3be8a289',true,ARRAY['search_path=""','lock_timeout=5s']),
+  ('public.partner_order_attempt_status_v1(uuid)','6c25d70132420bc342bcfbefad427954',false,ARRAY['search_path=""'])) v(sig,md5,definer,cfg) LOOP
+  IF NOT EXISTS (SELECT 1 FROM pg_proc p WHERE p.oid = to_regprocedure(r.sig) AND md5(p.prosrc) = r.md5
+     AND pg_get_userbyid(p.proowner) = 'postgres' AND p.prosecdef = r.definer
+     AND p.proacl::text = '{postgres=X/postgres,authenticated=X/postgres}' AND p.proconfig = r.cfg) THEN
+   RAISE EXCEPTION 'C2AS_POST_DRIFT %', r.sig; END IF;
+ END LOOP;
+ IF md5((SELECT prosrc FROM pg_proc WHERE oid = to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'))) IS DISTINCT FROM '191fc04882f27eaa95df242c030a966c'
+  THEN RAISE EXCEPTION 'C2AS_POST_RECOVER_CHANGED'; END IF;
+END $post$;
+SELECT 'C2AS_POST_OK' AS result;

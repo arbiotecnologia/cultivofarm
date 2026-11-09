@@ -1,3 +1,4 @@
+// Pré-instalação do status somente leitura (Opção A): PGRST202 exato mantém o recover na montagem.
 import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { act, renderHook } from '@testing-library/react';
@@ -9,7 +10,7 @@ const A='11111111-1111-4111-8111-111111111111', O='22222222-2222-4222-8222-22222
 const K='44444444-4444-4444-8444-444444444444', ID='55555555-5555-4555-8555-555555555555';
 const state=vi.hoisted(()=>({actor:'11111111-1111-4111-8111-111111111111',org:'22222222-2222-4222-8222-222222222222',ready:true,rpc:vi.fn()}));
 vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:state.actor},profile:{user_id:state.actor,organization_id:state.org,ativo:true,senha_provisoria:false},roles:['parceiro_b2b'],loading:false,authzReady:true,authzEpoch:0,checkAuthzAccess:()=>state.ready})}));
-vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:(...args:unknown[])=>state.rpc(...args),from:()=>({select:()=>({eq:()=>({maybeSingle:()=>Promise.resolve({data:null,error:null})})})})}}));
+vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:(...args:unknown[])=>args[0]==='partner_order_attempt_status_v1'?Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find the function public.partner_order_attempt_status_v1'}}):state.rpc(...args),from:()=>({select:()=>({eq:()=>({maybeSingle:()=>Promise.resolve({data:null,error:null})})})})}}));
 vi.mock('sonner',()=>({toast:{success:vi.fn(),error:vi.fn(),warning:vi.fn(),info:vi.fn()}}));
 import { useCreatePartnerOrder } from '@/hooks/useCreatePartnerOrder';
 import { useOrderJournal } from '@/hooks/useOrderJournal';

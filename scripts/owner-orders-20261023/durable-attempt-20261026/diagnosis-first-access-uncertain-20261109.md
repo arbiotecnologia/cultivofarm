@@ -20,3 +20,6 @@ Status: DIAGNOSIS_ONLY. Sem SQL hospedado, sem mudança de servidor, storage ou 
 - Opção A: leitor somente leitura `partner_order_attempt_status_v1`, sem INSERT, usado na montagem. A reserva passa a ocorrer só em `prepareDurableOrder`, imediatamente antes do envio.
 - Opção B: marcador server-side de despacho, gravado sob o mesmo lock `b2b_idem` pelo writer de criação antes de qualquer efeito. O recover responde `reserved` enquanto não houver marcador, e `uncertain` só depois dele.
 - Ambas preservam CAS, cadeia de predecessores, closure atômico e o lock compartilhado com o create. Exigem PG descartável com concorrência real antes de revisão.
+
+## Decisão do proprietário (09/11/2026 15:55): Opção A
+Pacote separado `status-readonly-20261109/` (REVIEW_ONLY, não aplicado). Ver README lá.

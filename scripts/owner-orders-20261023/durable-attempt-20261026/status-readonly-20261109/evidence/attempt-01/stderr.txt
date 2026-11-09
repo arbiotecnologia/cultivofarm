@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/owner-orders-20261023/durable-attempt-20261026/status-readonly-20261109/test-status-pg.py", line 69, in <module>
+    ok('two tabs prepare: exactly one reservation row, same key',not ea and not eb and jcount(fresh)==1 and ra['key']==rb['key'],(ra,rb,ea,eb))
+                                                                                                            ~~^^^^^^^
+KeyError: 'key'

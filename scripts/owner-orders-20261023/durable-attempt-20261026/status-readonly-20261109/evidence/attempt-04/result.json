@@ -1,0 +1,203 @@
+{
+ "pg": "PostgreSQL 17.11 on x86_64-pc-linux-gnu, compiled by clang version 21.1.8, 64-bit",
+ "pins": {
+  "__MD5_CORE__": "cc5167a749b5bed25adb80ef3be8a289",
+  "__MD5_WRAP__": "6c25d70132420bc342bcfbefad427954"
+ },
+ "passed": 38,
+ "total": 38,
+ "checks": [
+  {
+   "name": "00 PRE_OK on installed durable journal (candidate pins)",
+   "ok": true,
+   "detail": "C2AS_PRE_OK\n"
+  },
+  {
+   "name": "01 install",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "installed bodies = frozen pins (if frozen)",
+   "ok": true,
+   "detail": "(None, {'__MD5_CORE__': 'cc5167a749b5bed25adb80ef3be8a289', '__MD5_WRAP__': '6c25d70132420bc342bcfbefad427954'})"
+  },
+  {
+   "name": "02 POST_OK",
+   "ok": true,
+   "detail": "C2AS_POST_OK\n"
+  },
+  {
+   "name": "PRE after install refuses (already present)",
+   "ok": true,
+   "detail": "ERROR:  P0001: C2AS_PRE_ALREADY_PRESENT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+   "name": "re-install refused",
+   "ok": true,
+   "detail": "ERROR:  P0001: C2AS_INSTALL_PRECONDITION\nCONTEXT:  PL/pgSQL function inline_code_block line 5 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+  },
+  {
+   "name": "anon without EXECUTE on status",
+   "ok": true,
+   "detail": "f"
+  },
+  {
+   "name": "service_role without EXECUTE on status",
+   "ok": true,
+   "detail": "f"
+  },
+  {
+   "name": "PUBLIC without EXECUTE on status",
+   "ok": true,
+   "detail": "f"
+  },
+  {
+   "name": "no grant option on status functions",
+   "ok": true,
+   "detail": "f"
+  },
+  {
+   "name": "existing registered key without receipt reads uncertain; repeated status writes nothing",
+   "ok": true,
+   "detail": "{'key': 'aaa51e24-ee6f-4838-a65c-5e6522a8b27c', 'state': 'uncertain', 'contract': 'C2_ORDER_JOURNAL_V1', 'generation': 6, 'predecessors': [{'key': '10000000-0000-4000-8000-000000000002', 'state': 'committed', 'numero': 'PB-000002', 'order_id': 'f6e444c8-4572-4b83-9189-ca904c92c7a2', 'generation': 1}, {'key': '5dfde0b4-3453-4285-9dd8-774fe77b3ba6', 'state': 'committed', 'numero': 'PB-000004', 'order_id': '526b4ab0-56bb-4a84-b681-7401ad930cac', 'generation': 2}, {'key': '4c736372-2149-41e0-a8a1-358c337318d7', 'state': 'committed', 'numero': 'PB-000005', 'order_id': '8492cd4e-4122-460f-89f6-cbbe1"
+  },
+  {
+   "name": "status = recover view for existing key (same key/generation/state family)",
+   "ok": true,
+   "detail": "({'key': 'aaa51e24-ee6f-4838-a65c-5e6522a8b27c', 'state': 'uncertain', 'contract': 'C2_ORDER_JOURNAL_V1', 'generation': 6, 'predecessors': [{'key': '10000000-0000-4000-8000-000000000002', 'state': 'committed', 'numero': 'PB-000002', 'order_id': 'f6e444c8-4572-4b83-9189-ca904c92c7a2', 'generation': 1}, {'key': '5dfde0b4-3453-4285-9dd8-774fe77b3ba6', 'state': 'committed', 'numero': 'PB-000004', 'order_id': '526b4ab0-56bb-4a84-b681-7401ad930cac', 'generation': 2}, {'key': '4c736372-2149-41e0-a8a1-358c337318d7', 'state': 'committed', 'numero': 'PB-000005', 'order_id': '8492cd4e-4122-460f-89f6-cbbe"
+  },
+  {
+   "name": "old uncertain is never auto-closed by status",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "fresh authorised actor available in fixture (cumulative gestor+técnico GT)",
+   "ok": true,
+   "detail": "00000000-0000-4000-8000-000000000103"
+  },
+  {
+   "name": "first access: status none, NO reservation",
+   "ok": true,
+   "detail": "{'state': 'none', 'actor_id': '00000000-0000-4000-8000-000000000103', 'contract': 'C2_ORDER_ATTEMPT_STATUS_V1', 'partner_id': '00000000-0000-4000-8000-000000000003', 'organization_id': '00000000-0000-4000-8000-000000000001'}"
+  },
+  {
+   "name": "reload without dispatch: still none, still no journal row (fixes false uncertain)",
+   "ok": true,
+   "detail": "{'state': 'none', 'actor_id': '00000000-0000-4000-8000-000000000103', 'contract': 'C2_ORDER_ATTEMPT_STATUS_V1', 'partner_id': '00000000-0000-4000-8000-000000000003', 'organization_id': '00000000-0000-4000-8000-000000000001'}"
+  },
+  {
+   "name": "status none echoes server actor/org/partner scope",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "two tabs prepare: exactly one reservation row, same key",
+   "ok": true,
+   "detail": "({'key': '2041d3a3-f556-4297-a4c6-3df925d84f56', 'state': 'reserved', 'contract': 'C2_ORDER_JOURNAL_V1', 'generation': 1, 'predecessors': []}, {'key': '2041d3a3-f556-4297-a4c6-3df925d84f56', 'state': 'uncertain', 'contract': 'C2_ORDER_JOURNAL_V1', 'generation': 1, 'predecessors': []}, '', '')"
+  },
+  {
+   "name": "two tabs prepare: exactly one sees reserved, the other sees uncertain (client with fresh expectation must refuse)",
+   "ok": true,
+   "detail": "('reserved', 'uncertain')"
+  },
+  {
+   "name": "after reservation, status reads uncertain (a real dispatch may exist)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "status on held key times out bounded (55P03), no journal/closure change",
+   "ok": true,
+   "detail": "ERROR:  55P03: canceling statement due to lock timeout"
+  },
+  {
+   "name": "lost response after commit: status shows committed with the same order",
+   "ok": true,
+   "detail": "{'key': '2041d3a3-f556-4297-a4c6-3df925d84f56', 'state': 'committed', 'numero': 'PB-000007', 'contract': 'C2_ORDER_JOURNAL_V1', 'order_id': '251fb57c-16d3-41f1-9c69-4d6f51e2dceb', 'generation': 1, 'predecessors': []}"
+  },
+  {
+   "name": "status after commit does not advance generation",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "replay after success returns the same order, no duplicate",
+   "ok": true,
+   "detail": "({'id': '251fb57c-16d3-41f1-9c69-4d6f51e2dceb', 'total': 180.0, 'numero': 'PB-000007', 'status': 'em_analise_comercial', 'subtotal': 180.0, 'cart_hash': '3d477d0f59779bcfca424edda933988b59a5b12659279099b1aa98a5dd282f11', 'final_amount': 180.0, 'pricing_mode': 'discount_from_base', 'table_amount': 180.0, 'desconto_total': 0.0, 'quote_required': False, 'discount_amount': 0.0, 'idempotency_key': '2041d3a3-f556-4297-a4c6-3df925d84f56', 'payment_terms_id': '8852d2f9-0bd3-4634-99a2-0d54e630bf0f', 'credit_reason_code': 'NO_LIMIT_DEFINED', 'credit_block_reason': None, 'financial_approval_status': 'not"
+  },
+  {
+   "name": "explicit ACK advance reserves gen 2 (prepare path only)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "close vs create race: exactly one of order or closure, status agrees",
+   "ok": true,
+   "detail": "(0, '1', 'closed', 'T:  PL/pgSQL function create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) line 97 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n', '')"
+  },
+  {
+   "name": "close vs create race: no deadlock",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "status waits behind writer lock of the current key",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "status after wait reads uncertain for undispatched reservation (never none)",
+   "ok": true,
+   "detail": "('state\": \"committed\", \"numero\": \"PB-000007\", \"order_id\": \"251fb57c-16d3-41f1-9c69-4d6f51e2dceb\", \"generation\": 1}, {\"key\": \"045c7b96-bcfd-4271-a7c2-0cdfba0cb312\", \"state\": \"closed\", \"generation\": 2}]}\\n', '')"
+  },
+  {
+   "name": "status revocation test waits",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "revocation during status wait denies with canonical 42501 (cumulative gestor+técnico actor reaches forbidden_financial_terms), no state disclosed",
+   "ok": true,
+   "detail": "ERROR:  42501: forbidden_financial_terms"
+  },
+  {
+   "name": "other tenant denied before disclosure, no writes",
+   "ok": true,
+   "detail": "ERROR:  42501: C2_INTERNAL_TARGET_DENIED:target_outside_portfolio"
+  },
+  {
+   "name": "isolated technician denied",
+   "ok": true,
+   "detail": "ERROR:  42501: forbidden_financial_terms"
+  },
+  {
+   "name": "anon denied (permission)",
+   "ok": true,
+   "detail": "ERROR:  42501: permission denied for function partner_order_attempt_status_v1"
+  },
+  {
+   "name": "rollback with divergent pin aborts, objects kept",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "99 rollback exact; journal/closures preserved; recover intact",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "PRE passes again after rollback",
+   "ok": true,
+   "detail": "C2AS_PRE_OK\n"
+  },
+  {
+   "name": "reinstall + POST after rollback",
+   "ok": true,
+   "detail": "('', 'C2AS_POST_OK\\n')"
+  }
+ ],
+ "base_harness_checks": 26,
+ "scope": "disposable PG + captured durable journal chain + synthetic Auth; NOT hosted JWT/RLS/PostgREST proof"
+}

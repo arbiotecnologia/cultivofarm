@@ -1,0 +1,28 @@
+-- PRE (read only). Fails closed unless the installed durable journal matches the reviewed pins
+-- and the status RPC is still absent. Auditor must run against swzpzcwiasxmjutrmvkm only.
+DO $pre$
+DECLARE r record;
+BEGIN
+ IF current_setting('server_version_num')::int < 150000 THEN RAISE EXCEPTION 'C2AS_PRE_VERSION'; END IF;
+ IF to_regclass('platform_private.partner_order_attempt_journal') IS NULL
+  OR to_regclass('platform_private.partner_order_idempotency_closures') IS NULL
+  OR to_regclass('public.partner_order_idempotency') IS NULL THEN RAISE EXCEPTION 'C2AS_PRE_JOURNAL_ABSENT'; END IF;
+ IF to_regprocedure('platform_private.c2_order_attempt_status_core(uuid)') IS NOT NULL
+  OR to_regprocedure('public.partner_order_attempt_status_v1(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'C2AS_PRE_ALREADY_PRESENT'; END IF;
+ FOR r IN SELECT * FROM (VALUES
+  ('platform_private.c2_attempt_scope_lock(uuid,uuid)','8e6d6191d2821ec6e8d0ba07f4d8190c','{postgres=X/postgres}',true),
+  ('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)','191fc04882f27eaa95df242c030a966c','{postgres=X/postgres,authenticated=X/postgres}',true),
+  ('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)','f5aa40591cfc0f436f579f20ce2f563a','{postgres=X/postgres,authenticated=X/postgres}',false),
+  ('platform_private.c2_order_journal_capability(uuid)','f6d227ad7beaee697df0319911f847eb','{postgres=X/postgres,authenticated=X/postgres}',true),
+  ('public.partner_order_journal_capability_v1(uuid)','6ca96c9dbdc55adfc21bcc9d3aafebdb','{postgres=X/postgres,authenticated=X/postgres}',false),
+  ('platform_private.c2_close_partner_order_attempt_core(uuid,text)','4d7a7a49b27ab78fd33a6cdac75833c5',NULL,true)
+ ) v(sig,md5,acl,definer) LOOP
+  IF NOT EXISTS (SELECT 1 FROM pg_proc p WHERE p.oid = to_regprocedure(r.sig) AND md5(p.prosrc) = r.md5
+     AND pg_get_userbyid(p.proowner) = 'postgres' AND p.prosecdef = r.definer
+     AND (r.acl IS NULL OR p.proacl::text = r.acl)) THEN
+   RAISE EXCEPTION 'C2AS_PRE_PIN_DRIFT %', r.sig; END IF;
+ END LOOP;
+ IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'c2_partner_order_attempt_authz' AND pronamespace = 'platform_private'::regnamespace)
+  THEN RAISE EXCEPTION 'C2AS_PRE_AUTHZ_ABSENT'; END IF;
+END $pre$;
+SELECT 'C2AS_PRE_OK' AS result;
