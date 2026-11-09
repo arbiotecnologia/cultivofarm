@@ -257,6 +257,39 @@ def run(B, Review, Q, A, choice, out):
     assert B.last(f"SELECT revoked_at IS NOT NULL FROM platform_private.resale_pilot_allowlist_v1 WHERE id='{after_grant}';") == "t"
     ok("revoke waits on the same allowlist row after final authorization and confirms after writer commit")
 
+    # Once final authorization has locked both grant and master gate, gate OFF
+    # must serialize behind the writer instead of revoking authority mid-write.
+    gate_after = R.make_order([Q.S(1)], "pilot-gate-off-after-final")
+    gate_after_item = gate_after["items"][0]
+    grant("b2b_resale", "os_create", Q.UADM, Q.A, Q.P, gate_after["id"], gate_after_item["id"], gate_after_item["product_id"])
+    gate_barrier_key = f"pilot-gate-after-final-{run_id}"
+    B.sql(f"""CREATE FUNCTION platform_private.local_pilot_gate_after_auth_barrier_v1() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $barrier$
+      BEGIN IF NEW.scope='b2b_resale_os_create_v1' THEN PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('{gate_barrier_key}',0)); END IF; RETURN NEW; END;
+      $barrier$;
+      CREATE TRIGGER zz_local_pilot_gate_after_auth BEFORE INSERT ON platform_private.authz_tickets FOR EACH ROW EXECUTE FUNCTION platform_private.local_pilot_gate_after_auth_barrier_v1();""")
+    holder = B.T.session(f"BEGIN;SELECT pg_advisory_xact_lock(hashtextextended('{gate_barrier_key}',0));")
+    time.sleep(0.1)
+    worker = B.T.session(R.os_create_sql(gate_after["id"], gate_after_item["id"], gate_after["accepted"]["updated_at"], f"pilot-gate-after-{run_id}"))
+    B.T.wait()
+    gate_writer = B.T.session("UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
+    gate_deadline = time.monotonic() + 1
+    gate_waited = False
+    while time.monotonic() < gate_deadline:
+        gate_waited = B.last("SELECT count(*)>0 FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false%';") == "t"
+        if gate_waited:
+            break
+        time.sleep(0.05)
+    B.T.finish(holder, "COMMIT;")
+    writer_out, writer_err = B.T.finish(worker)
+    gate_out, gate_err = B.T.finish(gate_writer)
+    B.sql("DROP TRIGGER zz_local_pilot_gate_after_auth ON platform_private.authz_tickets;DROP FUNCTION platform_private.local_pilot_gate_after_auth_barrier_v1();")
+    assert gate_waited, (writer_out, writer_err, gate_out, gate_err)
+    assert not writer_err and json.loads(writer_out.strip().splitlines()[-1])["ok"] is True, (writer_out, writer_err)
+    assert not gate_err, (gate_out, gate_err)
+    assert B.last("SELECT enabled FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton;") == "f"
+    ok("gate OFF waits for an already authorized writer and confirms only after its commit")
+    B.sql("UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=true WHERE singleton;")
+
     B.sql("UPDATE platform_private.finished_product_gate_v1 SET enabled=false WHERE singleton;UPDATE platform_private.b2b_resale_logistics_gate_v1 SET enabled=false WHERE singleton;")
     deny("master switch OFF remains fail closed even with valid grants", create)
     ok("allowlist and receipts retained after gates OFF", B.last("SELECT count(*)>=10 FROM platform_private.resale_pilot_allowlist_v1;") == "t")
