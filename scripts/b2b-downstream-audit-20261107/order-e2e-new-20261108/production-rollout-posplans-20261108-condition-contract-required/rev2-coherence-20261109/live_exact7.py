@@ -157,10 +157,13 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     deps_pre = {n: psql(f"SELECT count(*) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() for n in DEPS}
     # Declared FIXTURE seam: LIVE is_valid_b2b_partner_user requires pu.valid_from<=now(); the mirror backfill left it NULL on the
     # synthetic links. Set it to a past instant (no link added/removed, revoked_at untouched).
-    FIX = "UPDATE public.partner_users SET valid_from=now()-interval '1 day' WHERE valid_from IS NULL;"
+    # LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now() (auditor 09/11). Synthetic rows created before this
+    # column existed in the mirror get now() (their creation instant in this run); then the LIVE constraint/default is applied.
+    FIX = ("UPDATE public.partner_users SET valid_from=now() WHERE valid_from IS NULL;"
+           " ALTER TABLE public.partner_users ALTER COLUMN valid_from SET DEFAULT now(), ALTER COLUMN valid_from SET NOT NULL;")
     sql = ["BEGIN;", LOGISTICS_SEAM, FIX]
     res["live_exact7_seams"] = ["REDUCED logistics schema seam (empty ordens_servico/entregas if absent) + delivery_context_20261030 DDL from real_triggers.py",
-                                "Auth: request.jwt.claims set by harness (not hosted JWT)", "FIXTURE: partner_users.valid_from NULL -> now()-1d (synthetic rows only)"]
+                                "Auth: request.jwt.claims set by harness (not hosted JWT)", "FIXTURE: partner_users.valid_from = LIVE shape timestamptz NOT NULL DEFAULT now() (NULL synthetic rows -> now())"]
     if psql(f"SELECT to_regclass('{GATE}') IS NULL").stdout.strip() == "t":
         sql.append(gate_sql())
     res["live_exact7_cap06_installed"] = []
@@ -211,6 +214,10 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
           {k: v for k, v in md.items() if v["mirror"] != v["live"]})
     res["live_exact7_deps_md5_unconfirmed"] = {n + "(...)": psql(f"SELECT md5(pg_get_functiondef(p.oid)) FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'").stdout.strip() for n in DEPS}
     check("CCR2 LIVE7: gate logístico permanece fechado (enabled=false)", psql(f"SELECT bool_and(NOT enabled) FROM {GATE}").stdout.strip() == "t")
+    check("CCR2 LIVE7: gate logístico enabled count = 0 (como produção)", psql(f"SELECT count(*) FILTER (WHERE enabled) FROM {GATE}").stdout.strip() == "0")
+    check("CCR2 LIVE: partner_users.valid_from timestamptz NOT NULL DEFAULT now()",
+          psql("SELECT format_type(atttypid,atttypmod)||'|'||attnotnull||'|'||pg_get_expr(d.adbin,d.adrelid) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE attrelid='public.partner_users'::regclass AND attname='valid_from'").stdout.strip() == "timestamp with time zone|t|now()")
+    install23(psql, check, res, out_dir)
 
     UB, P, PF, UB2 = ids["UB"], ids["P"], ids["PF"], ids["UB2"]
     def scope(prefix=""):
@@ -234,7 +241,7 @@ def run(psql0, check, md5_of, call_sql, res, out_dir, ids):
     rc, e = authz(UB, PF); res["live_exact7_behaviour"]["attempt_authz_cross_tenant"] = [rc, e]
     check("CCR2 LIVE7 attempt_authz: parceiro de outra empresa negado", "ERROR" in e, e)
     rc, e = authz(UB, P, f"UPDATE public.partner_users SET revoked_at=now() WHERE user_id='{UB}';"); res["live_exact7_behaviour"]["attempt_authz_revoked"] = [rc, e]
-    check("CCR2 LIVE7 attempt_authz: vínculo revogado negado [depende de get_user_partner_id/c2_order_actor_scope sem captura LIVE]", "ERROR" in e, e)
+    check("CCR2 LIVE7 attempt_authz: vínculo revogado negado (get_user_partner_id/c2_order_actor_scope LIVE 09/11)", "ERROR" in e, e)
     r = psql("SELECT count(*) FILTER (WHERE platform_private.b2b_resale_delivery_status_transition_valid_v1(o, (jsonb_populate_record(o, jsonb_build_object('status','entregue'))))) FROM public.partner_orders o")
     check("CCR2 LIVE7 transição de entrega de revenda falsa com gate OFF para todos os pedidos", r.returncode == 0 and r.stdout.strip() == "0", (r.stdout, r.stderr[-200:]))
     r = psql(f"BEGIN; SELECT set_config('request.jwt.claim.sub','{ids['UADM']}',true), set_config('request.jwt.claims', json_build_object('sub','{ids['UADM']}')::text, true); UPDATE public.partner_orders SET status='em_producao' WHERE id=(SELECT id FROM public.partner_orders WHERE platform_private.c2_external_origin_contract_valid(c2_external_origin_snapshot) IS TRUE AND status::text NOT IN ('cancelado','reprovado') LIMIT 1); ROLLBACK;")
