@@ -1,2 +1,9 @@
-bash: line 3: su: command not found
-exit=127
+PASS legacy_on_configured_plan_denied
+PASS condition_writer_with_snapshot_allowed
+PASS quote_snapshot_allowed
+PASS unapproved_version_legacy_allowed
+PASS retired_version_legacy_allowed
+PASS other_seller_unconfigured_allowed
+PASS null_plan_allowed
+FAIL update_cannot_launder_insert
+exit=1
