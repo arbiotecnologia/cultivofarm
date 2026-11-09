@@ -1,3 +1,9 @@
+## 09/11 19:52 — Reconciliação Seller91 e ponte fiscal com corpos atuais
+- [ ] Incorporar a captura autorizada de 101 pinagens e seis corpos atuais; corrigir o manifesto/espelho para executar Seller91 MD5 `97bcdb9884b54adb3bd4aae4915e32d0`, sem apenas declarar overlay nem reaplicar SQL hospedado.
+- [ ] Reconciliar legado `tg_auto_b2b_receivable` com B4/ponte, preservando ACL, dez gatilhos, `a00_delivery_no_downstream`, snapshots, histórico e contenções.
+- [ ] Desenvolver/testar em PostgreSQL descartável a confirmação fiscal `104/100` → recebível, replay/retransmissão, concorrência, parciais, divergências, revogação, PRE/POST e rollback deny-only, sem stub permissivo nem requisito de título único por pedido.
+- [ ] Entregar pacote REVIEW_ONLY inativo, evidências e lacunas exatas. Sem publicação, SQL hospedado, emissão, envios, cobranças ou alteração da contabilidade de produção; UI de 27 testes permanece não publicada.
+
 ## 09/11 19:34 — Complemento PB-001039, legado de recebíveis e padrão Todos
 - [x] Registrar relato de prova autenticada em produção, sem executá-la: promoção UI de PB-001039 HTTP 403 `C2_ACCOUNTING_PENDING`; hash `8127886e51e0327e880fe6102a106833`, `updated_at=2026-11-09T18:32:29.585832Z`, `audit_count=6` iguais antes/depois e `receivable=false`. Negação esperada, sem alteração do pedido ou contabilidade fictícia.
 - [x] Reconciliação LIVE relatada: `generate_b2b_receivable_secure(uuid)` MD5 `c49cc7ccedbcb28cba9b816b7e47c521`, implementação `1bdac7fae6d702fb42d3a30539e9c9c3`, `tg_auto_b2b_receivable` `0f679538fe394924b140e54938a3bb9e` ainda contém `na_aprovacao`/`na_entrega`/`na_producao_finalizada`, estado O; dez triggers em `accounts_receivable`, incluindo `a00_delivery_no_downstream` O. É legado sob contenção, não ponte fiscal instalada.

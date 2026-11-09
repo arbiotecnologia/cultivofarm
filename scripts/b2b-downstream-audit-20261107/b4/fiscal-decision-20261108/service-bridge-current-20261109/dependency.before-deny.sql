@@ -1,0 +1,7 @@
+CREATE OR REPLACE FUNCTION platform_private.b2b_integration_dependencies()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN RAISE EXCEPTION 'B2B_FISCAL_ATTESTATION_ACCOUNTING_UNPROVEN' USING ERRCODE='42501'; END $function$;

@@ -1,0 +1,1234 @@
+
+CREATE TABLE platform_private.b2b_resale_logistics_gate_v1(
+ singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),enabled boolean NOT NULL DEFAULT false);
+INSERT INTO platform_private.b2b_resale_logistics_gate_v1(singleton,enabled) VALUES(true,false);
+ALTER TABLE platform_private.b2b_resale_logistics_gate_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.b2b_resale_logistics_gate_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE TABLE platform_private.b2b_resale_os_requests_v1(
+ request_key text NOT NULL,actor uuid NOT NULL,organization_id uuid NOT NULL,
+ order_id uuid NOT NULL,order_item_id uuid NOT NULL UNIQUE,fingerprint text NOT NULL,result jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(actor,organization_id,request_key));
+ALTER TABLE platform_private.b2b_resale_os_requests_v1 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.b2b_resale_os_requests_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE UNIQUE INDEX b2b_resale_os_item_unique_v1 ON public.ordens_servico(partner_order_item_id)
+ WHERE origem='b2b' AND partner_order_item_id IS NOT NULL;
+
+CREATE FUNCTION platform_private.b2b_resale_os_valid_v1(o public.ordens_servico)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
+  AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
+  AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
+  AND o.fazenda_id IS NULL AND o.talhao_id IS NULL AND o.volume_total_ml IS NULL AND o.area_hectares IS NULL
+  AND EXISTS(
+   SELECT 1 FROM public.partner_orders po
+   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=o.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   JOIN public.partner_order_items i ON i.id=o.partner_order_item_id AND i.order_id=po.id
+   JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=o.organization_id
+    AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+   WHERE po.id=o.partner_order_id AND po.status::text='aprovado' AND po.ready_for_production IS FALSE
+    AND po.receivable_generated IS FALSE AND po.payment_condition_status='defined'
+    AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+    AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
+    AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+    AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+    AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+    AND ((i.packaging_unidade_conteudo_snapshot IN ('kg','g') AND i.packaging_peso_liquido_kg_snapshot>0)
+      OR (i.packaging_unidade_conteudo_snapshot IN ('l','ml') AND i.packaging_peso_liquido_kg_snapshot IS NULL))
+  )) IS TRUE;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_valid_v1(public.ordens_servico) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_resale_os_operational_valid_v1(o public.ordens_servico)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
+  AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
+  AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
+  AND o.fazenda_id IS NULL AND o.talhao_id IS NULL AND o.volume_total_ml IS NULL AND o.area_hectares IS NULL
+  AND EXISTS(
+   SELECT 1 FROM public.partner_orders po
+    JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=o.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   JOIN public.partner_order_items i ON i.id=o.partner_order_item_id AND i.order_id=po.id
+   JOIN public.produtos p ON p.id=i.product_id AND p.owner_organization_id=o.organization_id
+    AND p.ativo IS TRUE AND p.familia_catalogo IN ('quimico','fertilizante_adubo')
+   WHERE po.id=o.partner_order_id AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+    AND i.product_id=o.produto_id AND i.microrganismo_id IS NULL
+    AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade) AND i.unidade_medida='unidade'
+    AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+    AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+    AND ((i.packaging_unidade_conteudo_snapshot IN ('kg','g') AND i.packaging_peso_liquido_kg_snapshot>0)
+      OR (i.packaging_unidade_conteudo_snapshot IN ('l','ml') AND i.packaging_peso_liquido_kg_snapshot IS NULL))
+  )) IS TRUE;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_operational_valid_v1(public.ordens_servico) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_resale_delivery_lineage_valid_v1(s public.estoque_produto,e public.entregas,l public.lotes)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS TRUE
+  AND e.partner_order_id IS NOT NULL AND e.cliente_id IS NULL
+  AND s.reservado_para_os_id=e.ordem_servico_id AND s.reservado_para_os_tipo='b2b'
+  AND s.reservado_para_partner_order_id=e.partner_order_id AND s.reservado_para_cliente_id IS NULL
+  AND EXISTS(
+   SELECT 1 FROM public.ordens_servico os
+   JOIN public.partner_orders po ON po.id=os.partner_order_id AND po.id=e.partner_order_id
+   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=os.organization_id
+   WHERE os.id=e.ordem_servico_id AND os.organization_id=e.organization_id AND os.origem='b2b'
+    AND os.partner_order_item_id IS NOT NULL AND os.produto_id=e.produto_id AND os.microrganismo_id IS NULL
+    AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+    AND s.reservado_para_partner_id=po.partner_id
+    AND EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.id=os.partner_order_item_id AND i.order_id=po.id
+      AND i.product_id=os.produto_id AND i.microrganismo_id IS NULL AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade)
+      AND i.packaging_id_snapshot=s.embalagem_id AND i.packaging_version_snapshot=s.embalagem_versao)
+  )) IS TRUE;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_lineage_valid_v1(public.estoque_produto,public.entregas,public.lotes) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(e public.entregas)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND e.id IS NOT NULL AND e.organization_id IS NOT NULL AND e.partner_order_id IS NOT NULL
+  AND e.receivable_id IS NULL AND e.ordem_servico_id IS NOT NULL AND e.ordem_servico_onfarm_id IS NULL
+  AND e.cliente_id IS NULL AND EXISTS(
+   SELECT 1 FROM public.ordens_servico os
+   JOIN public.partner_orders po ON po.id=os.partner_order_id AND po.id=e.partner_order_id
+   JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=os.organization_id
+    AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   WHERE os.id=e.ordem_servico_id AND os.organization_id=e.organization_id AND os.origem='b2b'
+    AND os.partner_order_item_id IS NOT NULL AND os.produto_id=e.produto_id AND os.microrganismo_id IS NULL
+    AND po.status::text IN ('aprovado','aguardando_entrega','em_separacao','enviado','entregue','faturado')
+    AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+    AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+    AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+  )) IS TRUE;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(public.entregas) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(o public.partner_orders,n public.partner_orders)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ RETURN (
+  EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+  AND platform_private.b2b_internal_commercial_actor() IS TRUE
+  AND o.id=n.id AND o.status::text='aprovado' AND n.status::text='entregue'
+  AND o.ready_for_production IS FALSE AND n.ready_for_production IS FALSE
+  AND n.receivable_generated IS FALSE
+  AND (to_jsonb(n)-ARRAY['status','updated_at']) IS NOT DISTINCT FROM (to_jsonb(o)-ARRAY['status','updated_at'])
+  AND EXISTS(
+   SELECT 1 FROM platform_private.delivery_context_20261030 dc
+   JOIN public.entregas e ON e.id=dc.target AND e.partner_order_id=n.id
+   JOIN public.ordens_servico os ON os.id=e.ordem_servico_id AND os.partner_order_id=n.id
+   JOIN public.partner_accounts pa ON pa.id=n.partner_id
+    AND pa.commercial_owner_organization_id=dc.organization_id AND pa.commercial_owner_organization_id=os.organization_id
+   WHERE dc.txid=txid_current() AND dc.actor=auth.uid() AND dc.action='confirm' AND dc.mutation='done'
+    AND e.organization_id=dc.organization_id AND e.status::text='entregue' AND e.receivable_id IS NULL
+    AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS TRUE
+  )
+  AND NOT EXISTS(
+   SELECT 1 FROM public.entregas e JOIN public.ordens_servico os ON os.id=e.ordem_servico_id
+   WHERE os.partner_order_id=n.id AND e.status::text NOT IN ('entregue','cancelada')
+  )
+  -- TODOS os itens precisam ter exatamente sua quantidade confirmada. Uma OS ou
+  -- entrega de outro item nunca completa este item; canceladas não somam, e
+  -- excesso também impede a transição. O snapshot econômico permanece o mesmo.
+  AND NOT EXISTS(
+   SELECT 1 FROM public.partner_order_items i
+   LEFT JOIN public.ordens_servico os ON os.partner_order_item_id=i.id
+    AND os.partner_order_id=n.id AND os.origem='b2b'
+   LEFT JOIN public.entregas e ON e.ordem_servico_id=os.id AND e.partner_order_id=n.id
+    AND e.status::text='entregue' AND e.receivable_id IS NULL
+   WHERE i.order_id=n.id
+   GROUP BY i.id,i.quantidade
+   HAVING coalesce(sum(e.quantidade_entregue),0) IS DISTINCT FROM i.quantidade
+  )
+  -- Nenhuma entrega confirmada pode ficar fora dos itens imutáveis do pedido.
+  AND NOT EXISTS(
+   SELECT 1 FROM public.entregas e
+   JOIN public.ordens_servico os ON os.id=e.ordem_servico_id AND os.partner_order_id=n.id
+   LEFT JOIN public.partner_order_items i ON i.id=os.partner_order_item_id AND i.order_id=n.id
+   WHERE e.partner_order_id=n.id AND e.status::text='entregue' AND i.id IS NULL
+  )
+  ) IS TRUE;
+END;
+$$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_delivery_status_transition_valid_v1(public.partner_orders,public.partner_orders) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.b2b_resale_os_create_v1(
+ p_order_id uuid,p_order_item_id uuid,p_expected_updated_at timestamptz,p_request_key text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $resale$
+DECLARE v_uid uuid:=auth.uid();v_org uuid;v_order public.partner_orders%ROWTYPE;
+ v_item public.partner_order_items%ROWTYPE;v_prev platform_private.b2b_resale_os_requests_v1%ROWTYPE;
+ v_os uuid:=gen_random_uuid();v_fp text;v_result jsonb;
+BEGIN
+ IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_ACTOR_DENIED' USING ERRCODE='42501';END IF;
+ v_org:=platform_private.stock_motor_actor('reserva');
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'B2B_RESALE_GATE_CLOSED' USING ERRCODE='42501';END IF;
+ IF p_order_id IS NULL OR p_order_item_id IS NULL OR p_expected_updated_at IS NULL OR p_request_key IS NULL
+  OR length(btrim(p_request_key))<8 OR length(p_request_key)>128 THEN RAISE EXCEPTION 'B2B_RESALE_REQUEST_INVALID' USING ERRCODE='22023';END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_request:'||p_request_key,0));
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_item:'||p_order_item_id::text,0));
+ v_org:=platform_private.stock_motor_actor('reserva');
+ IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled) THEN RAISE EXCEPTION 'B2B_RESALE_GATE_CLOSED' USING ERRCODE='42501';END IF;
+ SELECT * INTO v_order FROM public.partner_orders po WHERE po.id=p_order_id
+  AND EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=po.partner_id AND pa.commercial_owner_organization_id=v_org AND pa.ativo AND pa.deleted_at IS NULL)
+  AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+  AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL AND po.ready_for_production IS FALSE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+ v_fp:=encode(extensions.digest(jsonb_build_object('contract','B2B_RESALE_OS_V1','actor',v_uid,'org',v_org,'order',p_order_id,'item',p_order_item_id,'observed',p_expected_updated_at)::text,'sha256'),'hex');
+ SELECT * INTO v_prev FROM platform_private.b2b_resale_os_requests_v1 WHERE actor=v_uid AND organization_id=v_org AND request_key=p_request_key;
+ IF FOUND THEN
+  IF v_prev.fingerprint IS DISTINCT FROM v_fp OR v_prev.order_id IS DISTINCT FROM p_order_id OR v_prev.order_item_id IS DISTINCT FROM p_order_item_id THEN RAISE EXCEPTION 'B2B_RESALE_REPLAY_CONFLICT' USING ERRCODE='PT409';END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ SELECT * INTO v_order FROM public.partner_orders WHERE id=p_order_id FOR UPDATE;
+ IF v_order.status::text IS DISTINCT FROM 'aprovado' OR v_order.updated_at IS DISTINCT FROM p_expected_updated_at
+  OR v_order.receivable_generated IS TRUE OR v_order.payment_condition_status IS DISTINCT FROM 'defined'
+  OR v_order.financial_approval_status IN ('pending','rejected') THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_CONFLICT' USING ERRCODE='PT409';END IF;
+ SELECT * INTO v_item FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id
+  AND i.product_id IS NOT NULL AND i.microrganismo_id IS NULL AND i.quantidade>0 AND i.quantidade=trunc(i.quantidade)
+  AND i.unidade_medida='unidade' AND i.packaging_id_snapshot IS NOT NULL AND i.packaging_version_snapshot>0
+  AND i.packaging_unidade_conteudo_snapshot IN ('kg','g','l','ml')
+  AND EXISTS(SELECT 1 FROM public.produtos p WHERE p.id=i.product_id AND p.owner_organization_id=v_org AND p.ativo
+   AND p.familia_catalogo IN ('quimico','fertilizante_adubo')) FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ITEM_DENIED' USING ERRCODE='42501';END IF;
+ -- O FOR SHARE do item é o último lock explícito antes do ticket/INSERT. Toda
+ -- autoridade e o escopo precisam ser observados novamente aqui: revogação de
+ -- papel, perfil, tenant, parceiro ou gate durante a espera não pode criar OS,
+ -- recibo, ticket ou efeito posterior. O replay continua reautorizado acima.
+ IF auth.uid() IS DISTINCT FROM v_uid OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF platform_private.stock_motor_actor('reserva') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE) THEN RAISE EXCEPTION 'B2B_RESALE_GATE_CLOSED' USING ERRCODE='42501';END IF;
+ IF NOT EXISTS(
+  SELECT 1 FROM public.partner_orders po
+  JOIN public.partner_accounts pa ON pa.id=po.partner_id AND pa.commercial_owner_organization_id=v_org
+   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+  WHERE po.id=p_order_id AND po.status::text='aprovado'
+   AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
+   AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
+   AND po.ready_for_production IS FALSE AND po.receivable_generated IS FALSE
+   AND po.payment_condition_status='defined' AND po.financial_approval_status NOT IN ('pending','rejected')
+ ) THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
+ INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'b2b_resale_os_create_v1',v_os);
+ INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,microrganismo_id,
+  volume_total_ml,area_hectares,prioridade,status,tipo_item,partner_order_id,partner_order_item_id,origem)
+ VALUES(v_os,v_org,NULL,NULL,NULL,v_item.product_id,NULL,NULL,NULL,'media','pronto_entrega','produto',p_order_id,p_order_item_id,'b2b');
+ DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='b2b_resale_os_create_v1' AND target=v_os;
+ v_result:=jsonb_build_object('ok',true,'replay',false,'contract','B2B_RESALE_OS_V1','os_id',v_os,'order_id',p_order_id,'order_item_id',p_order_item_id);
+ INSERT INTO platform_private.b2b_resale_os_requests_v1(request_key,actor,organization_id,order_id,order_item_id,fingerprint,result)
+ VALUES(p_request_key,v_uid,v_org,p_order_id,p_order_item_id,v_fp,v_result);
+ RETURN v_result;
+EXCEPTION WHEN OTHERS THEN
+ DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='b2b_resale_os_create_v1';
+ RAISE;
+END;$resale$;
+REVOKE ALL ON FUNCTION platform_private.b2b_resale_os_create_v1(uuid,uuid,timestamptz,text) FROM PUBLIC,anon,authenticated,service_role;
+
+
+CREATE OR REPLACE FUNCTION private.guard_os_separate_approval()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_origin text; v_org uuid;
+BEGIN
+ IF TG_OP='INSERT' THEN
+ IF EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='b2b_resale_os_create_v1' AND t.target=NEW.id)
+  AND platform_private.b2b_resale_os_valid_v1(NEW) IS TRUE THEN RETURN NEW;END IF;
+ -- Criação normal exclusivamente aberta, inclusive pelo serviço/DEFINER.
+ -- NULL e qualquer estado avançado não podem saltar a aprovação humana.
+ -- Sem whitelist service_role, flags GUC ou reparo de históricos.
+ IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+ END IF;
+ IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;
+ v_origin:=CASE TG_TABLE_NAME WHEN 'ordens_servico' THEN 'manual' WHEN 'ordens_servico_onfarm' THEN 'onfarm' END;
+ IF TG_WHEN='BEFORE' THEN
+ -- Um único UPDATE não pode substituir a identidade/referências e aprovar o estado anterior.
+ IF (to_jsonb(NEW)-ARRAY['status','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at']) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ v_org:=private.assert_os_approval_scope(OLD.id,v_origin);
+ RETURN NEW;
+ END IF;
+ IF OLD.status::text='aberta' THEN
+ v_org:=private.assert_os_approval_scope(NEW.id,v_origin);
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)
+ SELECT NEW.id,v_origin,pp.id,'aberta','aprovada','aprovar_os',auth.uid(),jsonb_build_object(
+ 'organization_id',v_org,'before',jsonb_build_object('status',OLD.status,'volume',OLD.volume_total_ml,'data_os',to_jsonb(OLD)->'data_programada'),
+ 'after',jsonb_build_object('status',NEW.status,'volume',NEW.volume_total_ml,'data_os',to_jsonb(NEW)->'data_programada'),
+ 'programacao',jsonb_build_object('id',pp.id,'status',pp.status,'data',pp.data_programada,'volume',pp.volume_necessario),
+ 'actor',auth.uid(),'at',clock_timestamp(),'manufacturing_started',false,'commercial_completed',false)::text
+ FROM public.programacao_producao pp WHERE pp.ordem_servico_id=NEW.id OR pp.ordem_servico_onfarm_id=NEW.id;
+ END IF;
+ RETURN NEW;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.trg_lab_os_biological_only()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+  IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM platform_private.authz_tickets t WHERE t.txid=txid_current() AND t.scope='b2b_resale_os_create_v1' AND t.target=NEW.id)
+   AND platform_private.b2b_resale_os_valid_v1(NEW) IS TRUE THEN RETURN NEW;END IF;
+  IF TG_OP='UPDATE' AND NEW.produto_id IS NOT DISTINCT FROM OLD.produto_id
+    AND NEW.microrganismo_id IS NOT DISTINCT FROM OLD.microrganismo_id THEN RETURN NEW; END IF;
+  PERFORM platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id);
+  RETURN NEW;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.stock_motor_refs(p_item uuid, p_lote uuid, p_org uuid, p jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ DECLARE v_os uuid:=nullif(p->>'os_id','')::uuid; v_tipo text:=p->>'os_tipo'; v_cliente uuid:=nullif(p->>'cliente_id','')::uuid;
+ v_partner uuid:=nullif(p->>'partner_id','')::uuid; v_order uuid:=nullif(p->>'partner_order_id','')::uuid;
+ v_ref uuid:=nullif(p->>'referencia_id','')::uuid; v_rt text:=p->>'referencia_tipo'; v_origin uuid:=nullif(p->>'movimentacao_origem_id','')::uuid;
+ v_os_cliente uuid; v_os_order uuid; v_resale boolean:=false;
+BEGIN
+ IF v_tipo='b2b' AND v_order IS NOT NULL AND v_os IS NOT NULL AND platform_private.b2b_internal_commercial_actor() IS TRUE THEN
+  SELECT platform_private.b2b_resale_os_valid_v1(o) INTO v_resale FROM public.ordens_servico o WHERE o.id=v_os AND o.organization_id=p_org;
+ END IF;
+ v_resale:=coalesce(v_resale,false);
+ IF v_cliente IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=v_cliente AND c.organization_id=p_org) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_partner IS NOT NULL AND NOT v_resale AND NOT coalesce(public.b2b_phase1_partner_visible(v_partner,false),false) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_order IS NOT NULL AND NOT v_resale AND NOT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=v_order AND o.partner_id=v_partner AND public.b2b_phase1_order_visible(o.id)) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_os IS NOT NULL THEN
+  IF v_tipo IN ('manual','b2b') THEN
+   SELECT o.cliente_id,o.partner_order_id INTO v_os_cliente,v_os_order FROM public.ordens_servico o WHERE o.id=v_os AND o.organization_id=p_org;
+   IF NOT FOUND THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+   IF v_tipo='b2b' AND (v_order IS NULL OR v_os_order IS DISTINCT FROM v_order OR v_cliente IS NOT NULL) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+   IF v_tipo='manual' AND (v_os_order IS NOT NULL OR v_partner IS NOT NULL OR v_order IS NOT NULL) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  ELSIF v_tipo IN ('onfarm','on_farm') THEN
+   SELECT o.cliente_id INTO v_os_cliente FROM public.ordens_servico_onfarm o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=v_os AND c.organization_id=p_org;
+   IF NOT FOUND OR v_partner IS NOT NULL OR v_order IS NOT NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  ELSE RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+  IF v_cliente IS NOT NULL AND v_cliente IS DISTINCT FROM v_os_cliente THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ END IF;
+ IF v_origin IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes m WHERE m.id=v_origin AND m.estoque_produto_id=p_item AND m.lote_id=p_lote AND public.stock_p1_movement_owned(m.estoque_produto_id,m.lote_id)) THEN RAISE EXCEPTION 'ESTQ_ESTORNO_ORIGEM_INVALIDA' USING ERRCODE='42501'; END IF;
+ -- Only proven existing guard semantics. Unsupported literals fail even without an ID.
+ IF v_rt IS NOT NULL AND v_rt NOT IN ('entrega','ordem_servico','manual','sistema') THEN RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+ IF v_rt IN ('manual','sistema') AND v_ref IS NOT NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+ IF v_ref IS NOT NULL AND v_rt IS NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_UNSUPPORTED' USING ERRCODE='42501'; END IF;
+ IF v_rt IN ('entrega','ordem_servico') AND v_ref IS NULL THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_rt='ordem_servico' AND (v_os IS NULL OR v_ref IS DISTINCT FROM v_os OR v_tipo NOT IN ('manual','b2b','onfarm','on_farm')) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_rt='entrega' AND NOT EXISTS(SELECT 1 FROM public.entregas e WHERE e.id=v_ref AND e.organization_id=p_org AND e.estoque_produto_id=p_item AND (e.lote_id IS NULL OR e.lote_id=p_lote) AND (v_cliente IS NULL OR e.cliente_id=v_cliente) AND (v_os IS NULL OR (v_tipo IN ('manual','b2b') AND e.ordem_servico_id=v_os) OR (v_tipo IN ('onfarm','on_farm') AND e.ordem_servico_onfarm_id=v_os))) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.stock_p1_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+ v_org uuid := public.h15_actor_organization();
+ v_ref uuid;
+ v_lote public.lotes%ROWTYPE;
+ v_resale boolean:=false;
+BEGIN
+ IF TG_OP IN ('INSERT','UPDATE') AND NEW.reservado_para_os_id IS NOT NULL AND NEW.reservado_para_os_tipo='b2b'
+  AND NEW.reservado_para_partner_id IS NOT NULL AND NEW.reservado_para_partner_order_id IS NOT NULL
+  AND platform_private.b2b_internal_commercial_actor() IS TRUE THEN
+  SELECT platform_private.b2b_resale_os_valid_v1(o) INTO v_resale
+   FROM public.ordens_servico o
+   WHERE o.id=NEW.reservado_para_os_id AND o.organization_id=v_org
+    AND o.partner_order_id=NEW.reservado_para_partner_order_id
+    AND EXISTS(SELECT 1 FROM public.partner_orders po WHERE po.id=o.partner_order_id AND po.partner_id=NEW.reservado_para_partner_id);
+ END IF;
+ v_resale:=coalesce(v_resale,false);
+ IF auth.uid() IS NULL OR v_org IS NULL THEN
+  RAISE EXCEPTION 'ESTQ_TENANT_FORBIDDEN' USING ERRCODE='42501';
+ END IF;
+ IF TG_OP IN ('UPDATE','DELETE') AND NOT platform_private.stock_p1_lote_owned(OLD.lote_id) THEN
+  RAISE EXCEPTION 'ESTQ_TENANT_FORBIDDEN' USING ERRCODE='42501';
+ END IF;
+ IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+ IF NOT platform_private.stock_p1_lote_owned(NEW.lote_id) THEN
+  RAISE EXCEPTION 'ESTQ_TENANT_FORBIDDEN' USING ERRCODE='42501';
+ END IF;
+ SELECT * INTO v_lote FROM public.lotes WHERE id=NEW.lote_id;
+ -- Explicit lote ownership is required; parent references never assign ownership.
+ IF v_lote.programacao_id IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM public.programacao_producao p
+   WHERE p.id=v_lote.programacao_id AND p.organization_id=v_org
+ ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NEW.envase_id IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM public.envase e WHERE e.id=NEW.envase_id
+   AND e.lote_id=NEW.lote_id AND e.organization_id=v_org
+ ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NEW.reservado_para_cliente_id IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM public.clientes c WHERE c.id=NEW.reservado_para_cliente_id AND c.organization_id=v_org
+ ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NEW.reservado_para_partner_id IS NOT NULL AND NOT v_resale AND NOT coalesce(public.b2b_phase1_partner_visible(NEW.reservado_para_partner_id,false),false) THEN
+  RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501';
+ END IF;
+ IF NEW.reservado_para_partner_order_id IS NOT NULL AND NOT v_resale AND NOT EXISTS (
+  SELECT 1 FROM public.partner_orders o WHERE o.id=NEW.reservado_para_partner_order_id
+    AND o.partner_id=NEW.reservado_para_partner_id
+    AND public.b2b_phase1_order_visible(o.id)
+ ) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NEW.reservado_para_os_id IS NOT NULL THEN
+  IF NEW.reservado_para_os_tipo IN ('onfarm','on_farm') THEN
+   SELECT c.organization_id INTO v_ref FROM public.ordens_servico_onfarm o
+    JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=NEW.reservado_para_os_id;
+  ELSIF NEW.reservado_para_os_tipo IN ('manual','b2b') THEN
+   SELECT o.organization_id INTO v_ref FROM public.ordens_servico o WHERE o.id=NEW.reservado_para_os_id;
+  ELSE
+   RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF v_ref IS DISTINCT FROM v_org THEN
+   RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+ END IF;
+ RETURN NEW;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_mutation_guard_20261030()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE c platform_private.delivery_context_20261030%ROWTYPE; v_org uuid;
+ v_proof text[]:=ARRAY['comprovante_status','assinatura_tipo','recebedor_nome','recebedor_documento','recebedor_cargo','recebedor_telefone','comprovante_anexado_em','comprovante_anexado_por','assinatura_digital_capturada_em','assinatura_digital_capturada_por','comprovante_id','formulario_gerado_em','formulario_gerado_por','validation_token','validation_hash','updated_at'];
+BEGIN
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO c FROM platform_private.delivery_context_20261030
+ WHERE txid=pg_catalog.txid_current() AND actor=auth.uid();
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ IF c.action='send' THEN
+  v_org:=platform_private.delivery_confirm_actor_v1();
+  IF TG_OP='UPDATE' AND c.mutation='send' AND c.organization_id=v_org AND OLD.organization_id=v_org AND OLD.id=c.target AND NEW.id=c.target AND OLD.status::text='separado' AND NEW.status::text='em_rota' AND (to_jsonb(NEW)-ARRAY['status','updated_at'])=(to_jsonb(OLD)-ARRAY['status','updated_at']) THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;RETURN NEW;END IF;
+  RAISE EXCEPTION 'DELIVERY_SEND_MUTATION_DENIED' USING ERRCODE='42501';
+ END IF;
+  IF c.action='confirm' THEN
+  v_org:=platform_private.delivery_confirm_actor_v1();
+  IF TG_OP='UPDATE' AND c.mutation='confirm' AND c.organization_id=v_org AND NEW.id=c.target AND OLD.id=c.target
+   AND NEW.organization_id=OLD.organization_id AND OLD.organization_id=v_org AND OLD.status::text IN ('separado','em_rota') AND NEW.status::text='entregue'
+   AND NEW.confirmado_por=auth.uid() AND NEW.recebimento_confirmado_por=auth.uid()
+   AND (to_jsonb(NEW)-ARRAY['status','entregue_em','recebido_por_nome','recebido_por_cargo','recebido_por_documento','observacoes_confirmacao','confirmado_por','recebimento_confirmado_em','recebimento_confirmado_por','comprovante_status','updated_at'])
+    IS NOT DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','entregue_em','recebido_por_nome','recebido_por_cargo','recebido_por_documento','observacoes_confirmacao','confirmado_por','recebimento_confirmado_em','recebimento_confirmado_por','comprovante_status','updated_at'])
+  THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid; RETURN NEW; END IF;
+  RAISE EXCEPTION 'DELIVERY_CONFIRM_MUTATION_DENIED' USING ERRCODE='42501';
+ END IF;
+ IF c.action='proof_recover' THEN
+  v_org:=platform_private.delivery_confirm_actor_v1();
+  PERFORM platform_private.delivery_proof_recheck_20261030(OLD.id,v_org,'sign');
+  IF TG_OP='UPDATE' AND c.mutation='recover_hash' AND c.organization_id=v_org AND OLD.id=c.target AND NEW.id=c.target
+   AND OLD.status::text IN ('separado','em_rota') AND NEW.status=OLD.status
+   AND (to_jsonb(NEW)-ARRAY['validation_hash','updated_at']) IS NOT DISTINCT FROM (to_jsonb(OLD)-ARRAY['validation_hash','updated_at'])
+  THEN UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid; RETURN NEW; END IF;
+  RAISE EXCEPTION 'DELIVERY_PROOF_LEGACY_RECOVERY_DENIED' USING ERRCODE='42501';
+ END IF;
+ IF c.action='proof' THEN
+  v_org:=platform_private.delivery_proof_actor_20261030();
+  IF TG_OP='UPDATE' AND c.mutation='proof' AND c.organization_id=v_org AND NEW.id=c.target AND OLD.id=c.target
+  AND OLD.organization_id=v_org AND NEW.organization_id=v_org
+  AND (NEW.partner_order_id IS NULL OR platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS TRUE)
+  AND OLD.ordem_servico_onfarm_id IS NULL AND NEW.ordem_servico_onfarm_id IS NULL
+  AND NEW.status=OLD.status AND NEW.receivable_id IS NOT DISTINCT FROM OLD.receivable_id
+  AND (pg_catalog.to_jsonb(NEW)-v_proof) IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-v_proof) THEN
+   UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
+   RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501';
+ END IF;
+ v_org:=platform_private.delivery_actor_20261030(c.action);
+ IF c.organization_id IS DISTINCT FROM v_org OR NEW.organization_id IS DISTINCT FROM v_org
+ OR (NEW.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(NEW) IS NOT TRUE) OR NEW.receivable_id IS NOT NULL OR NEW.ordem_servico_onfarm_id IS NOT NULL
+ THEN RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ IF c.action='group' AND TG_OP='INSERT' AND c.mutation='create' AND c.delivery IS NULL
+ AND NEW.ordem_servico_id=c.target AND NEW.estoque_produto_id=c.item AND NEW.status::text='separado' THEN
+  UPDATE platform_private.delivery_context_20261030 SET delivery=NEW.id,mutation='decorate' WHERE txid=c.txid;
+ ELSIF c.action='group' AND TG_OP='UPDATE' AND c.mutation='decorate' AND NEW.id=c.delivery
+ AND OLD.id=c.delivery AND NEW.ordem_servico_id=c.target AND NEW.estoque_produto_id=c.item
+ AND NEW.organization_id=OLD.organization_id AND NEW.status=OLD.status THEN
+  UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
+ ELSIF c.action='cancel' AND TG_OP='UPDATE' AND c.mutation='cancel' AND NEW.id=c.target AND OLD.id=c.target
+ AND OLD.organization_id=v_org AND NEW.status::text='cancelada' AND NEW.financial_status='CANCELED'
+ AND (pg_catalog.to_jsonb(NEW)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status'])
+ IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status']) THEN
+  UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
+ ELSE RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_proof_row_ok_20261030(p_e entregas, p_org uuid, p_action text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_uid uuid:=auth.uid(); BEGIN
+ IF p_e.id IS NULL OR p_e.organization_id IS DISTINCT FROM p_org OR p_e.ordem_servico_onfarm_id IS NOT NULL THEN RETURN false; END IF;
+ IF p_e.partner_order_id IS NULL THEN
+  IF p_e.cliente_id IS NULL OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=p_e.cliente_id AND organization_id=p_org) THEN RETURN false; END IF;
+ ELSIF platform_private.b2b_resale_delivery_order_valid_v1(p_e) IS NOT TRUE THEN RETURN false;
+ END IF;
+ IF p_action='generate' THEN
+  IF p_e.status::text NOT IN ('separado','em_rota','entregue') THEN RETURN false; END IF;
+ ELSIF p_e.status::text NOT IN ('separado','em_rota') THEN RETURN false; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=v_uid AND role IN ('administrador','gestor','administrativo','producao','operador_onfarm'))
+ AND NOT (p_e.cliente_id = ANY(public.get_cliente_ids_for_user(v_uid))) THEN RETURN false; END IF;
+ RETURN true;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_confirm_recheck_v1(p_id uuid, p_org uuid)
+ RETURNS entregas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE e public.entregas; BEGIN
+ IF platform_private.delivery_confirm_actor_v1() IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO e FROM public.entregas WHERE id=p_id AND organization_id=p_org;
+ IF NOT FOUND OR e.ordem_servico_id IS NULL OR e.ordem_servico_onfarm_id IS NOT NULL OR e.receivable_id IS NOT NULL OR e.os_faturamento_base_id IS NOT NULL
+ OR (e.partner_order_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id WHERE o.id=e.ordem_servico_id AND o.organization_id=p_org AND c.organization_id=p_org AND o.cliente_id=e.cliente_id AND o.origem='agronomica' AND o.partner_order_id IS NULL))
+ OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(e) IS NOT TRUE)
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=e.ordem_servico_id)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN e;
+END $function$;
+
+CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_v1(p_entrega_id uuid, p_motivo text, p_observed timestamp with time zone)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE v_org uuid; v_actor uuid:=auth.uid(); v_e public.entregas%ROWTYPE; v_s public.estoque_produto%ROWTYPE;
+ v_m public.estoque_movimentacoes%ROWTYPE; v_result jsonb; v_key text; v_fp text; v_prev platform_private.delivery_requests_20261030%ROWTYPE;
+BEGIN
+ v_org:=platform_private.delivery_actor_20261030('cancel');
+ IF p_entrega_id IS NULL OR p_motivo IS NULL OR length(btrim(p_motivo))=0 OR p_observed IS NULL THEN RAISE EXCEPTION 'DELIVERY_CANCEL_INVALID' USING ERRCODE='22023'; END IF;
+ SELECT * INTO v_e FROM public.entregas WHERE id=p_entrega_id AND organization_id=v_org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('entrega_cancelar:'||p_entrega_id::text));
+ IF platform_private.delivery_actor_20261030('cancel') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ SELECT * INTO v_e FROM public.entregas WHERE id=p_entrega_id AND organization_id=v_org FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF platform_private.delivery_actor_20261030('cancel') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ IF v_e.ordem_servico_onfarm_id IS NOT NULL OR v_e.receivable_id IS NOT NULL OR v_e.status::text='entregue'
+ OR (v_e.partner_order_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='agronomica' AND partner_order_id IS NULL))
+ OR (v_e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_order_valid_v1(v_e) IS NOT TRUE)
+ THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;
+ v_key:='cancel:'||p_entrega_id::text; v_fp:=md5(jsonb_build_array(v_actor,v_org,p_entrega_id,btrim(p_motivo),p_observed)::text);
+ SELECT * INTO v_s FROM public.estoque_produto WHERE id=v_e.estoque_produto_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_STOCK_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.stock_motor_item(v_s.id,'cancelamento_reserva',jsonb_build_object('referencia_tipo','entrega','referencia_id',v_e.id));
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ IF v_e.partner_order_id IS NULL THEN PERFORM 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='agronomica' AND partner_order_id IS NULL AND cliente_id=v_e.cliente_id FOR UPDATE;
+ ELSE PERFORM 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='b2b' AND partner_order_id=v_e.partner_order_id AND cliente_id IS NULL FOR UPDATE;
+ END IF;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;
+ IF v_e.cliente_id IS NOT NULL THEN PERFORM 1 FROM public.clientes WHERE id=v_e.cliente_id AND organization_id=v_org FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ END IF;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=v_key AND actor=v_actor AND organization_id=v_org AND action='cancel';
+ IF FOUND THEN
+  IF v_prev.actor IS DISTINCT FROM v_actor OR v_prev.organization_id IS DISTINCT FROM v_org OR v_prev.fingerprint IS DISTINCT FROM v_fp OR v_prev.action IS DISTINCT FROM 'cancel' OR v_e.status::text<>'cancelada' THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF v_e.updated_at IS DISTINCT FROM p_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF v_e.status::text NOT IN ('separado','em_rota') OR v_s.reservado_para_os_id IS DISTINCT FROM v_e.ordem_servico_id OR v_s.reservado_para_os_tipo IS DISTINCT FROM (CASE WHEN v_e.partner_order_id IS NULL THEN 'manual' ELSE 'b2b' END)
+ OR (v_e.partner_order_id IS NOT NULL AND (v_s.reservado_para_cliente_id IS NOT NULL OR v_s.reservado_para_partner_order_id IS DISTINCT FROM v_e.partner_order_id OR v_s.reservado_para_partner_id IS DISTINCT FROM (SELECT partner_id FROM public.partner_orders WHERE id=v_e.partner_order_id))) THEN RAISE EXCEPTION 'DELIVERY_CANCEL_STATE_CONFLICT' USING ERRCODE='PT409'; END IF;
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target) VALUES(pg_catalog.txid_current(),v_actor,v_org,'cancel',v_e.id);
+ IF (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=v_s.id AND referencia_tipo='entrega' AND referencia_id=v_e.id AND acao='expedicao')<>1 THEN RAISE EXCEPTION 'DELIVERY_CANCEL_LEDGER_UNPROVEN' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO v_m FROM public.estoque_movimentacoes WHERE estoque_produto_id=v_s.id AND referencia_tipo='entrega' AND referencia_id=v_e.id AND acao='expedicao' FOR UPDATE;
+ v_result:=public.rpc_estoque_operar_v1('estorno_expedicao',v_s.id,NULL,'delivery-cancel-exp:'||v_e.id::text,jsonb_build_object('referencia_tipo','entrega','referencia_id',v_e.id,'movimentacao_origem_id',v_m.id,'motivo',btrim(p_motivo)));
+ IF v_result->>'ok' IS DISTINCT FROM 'true' OR v_result->>'replay' IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ SELECT * INTO v_s FROM public.estoque_produto WHERE id=v_e.estoque_produto_id;
+ IF v_s.status::text<>'reservado' OR v_s.quantidade_reservada IS DISTINCT FROM v_e.quantidade_entregue THEN RAISE EXCEPTION 'DELIVERY_CANCEL_BALANCE_CONFLICT' USING ERRCODE='PT409'; END IF;
+ v_result:=public.rpc_estoque_operar_v1('cancelamento_reserva',v_s.id,v_s.quantidade_reservada,'delivery-cancel-res:'||v_e.id::text,jsonb_build_object('referencia_tipo','entrega','referencia_id',v_e.id,'motivo',btrim(p_motivo)));
+ IF v_result->>'ok' IS DISTINCT FROM 'true' OR v_result->>'replay' IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ UPDATE platform_private.delivery_context_20261030 SET mutation='cancel' WHERE txid=pg_catalog.txid_current();
+ UPDATE public.entregas SET status='cancelada',motivo_cancelamento=btrim(p_motivo) WHERE id=v_e.id AND organization_id=v_org;
+ IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current() AND consumed) THEN RAISE EXCEPTION 'DELIVERY_CANCEL_TICKET_INVALID' USING ERRCODE='42501'; END IF;
+ v_result:=jsonb_build_object('success',true,'replay',false,'organization_id',v_org,'entrega_id',v_e.id,'estoque_estornado',true,'reserva_liberada',true);
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(v_key,v_actor,v_org,'cancel',v_fp,v_result);
+ DELETE FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current();
+ RETURN v_result;
+END $function$;
+
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_itens jsonb, p_request_key text, p_dados jsonb, p_os_observed timestamp with time zone)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE v_org uuid; v_actor uuid:=auth.uid(); v_os public.ordens_servico%ROWTYPE;
+ v_item jsonb; v_id uuid; v_qty numeric; v_items jsonb:='[]'; v_fp text;
+ v_prev platform_private.delivery_requests_20261030%ROWTYPE; v_batch jsonb; v_call jsonb;
+ v_row public.estoque_produto%ROWTYPE; v_free jsonb:='[]'; v_fi integer:=0; v_dk text; v_dv text;
+ v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid; v_partner uuid;
+BEGIN
+ v_org:=platform_private.delivery_actor_20261030('group');
+ IF p_origem NOT IN ('manual','b2b') OR p_os_id IS NULL THEN RAISE EXCEPTION 'DELIVERY_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;
+ IF p_os_observed IS NULL THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_REQUIRED' USING ERRCODE='22023'; END IF;
+ IF p_request_key IS NULL OR length(btrim(p_request_key))<8 OR length(p_request_key)>128 THEN RAISE EXCEPTION 'DELIVERY_REQUEST_INVALID' USING ERRCODE='22023'; END IF;
+ IF p_dados IS NULL OR jsonb_typeof(p_dados)<>'object' OR EXISTS(SELECT 1 FROM jsonb_each(p_dados) WHERE key NOT IN ('data_saida','motorista','veiculo','tipo_entrega','endereco_origem',
+   'motorista_telefone','motorista_documento','veiculo_placa','veiculo_tipo','hora_saida_prevista','data_chegada_prevista','hora_chegada_prevista',
+   'destinatario_nome','destinatario_telefone','destinatario_whatsapp','endereco_logradouro','endereco_numero','endereco_complemento',
+   'endereco_bairro','endereco_cidade','endereco_uf','endereco_cep','endereco_referencia') OR jsonb_typeof(value) NOT IN ('string','null')
+   OR (jsonb_typeof(value)='string' AND length(value#>>'{}')>300)) THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+ FOR v_dk IN SELECT key FROM jsonb_each_text(p_dados) WHERE nullif(value,'') IS NOT NULL LOOP
+  v_dv:=p_dados->>v_dk;
+  IF v_dk IN ('data_saida','data_chegada_prevista') THEN
+   IF v_dv !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+   BEGIN IF to_char(v_dv::date,'YYYY-MM-DD')<>v_dv THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+   EXCEPTION WHEN datetime_field_overflow OR invalid_datetime_format THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END;
+  ELSIF v_dk IN ('hora_saida_prevista','hora_chegada_prevista') THEN
+   IF v_dv !~ '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+  ELSIF v_dk='tipo_entrega' AND v_dv NOT IN ('motorista','retirada') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk='endereco_origem' AND v_dv NOT IN ('cadastro','personalizado') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF btrim(v_dv)='' OR v_dv ~ '[[:cntrl:]]' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  END IF;
+ END LOOP;
+ IF p_itens IS NULL OR jsonb_typeof(p_itens)<>'array' THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+ IF jsonb_array_length(p_itens)=0 OR jsonb_array_length(p_itens)>100 THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+ SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org;
+ IF NOT FOUND OR (p_origem='manual' AND (v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica')) OR (p_origem='b2b' AND platform_private.b2b_resale_os_operational_valid_v1(v_os) IS NOT TRUE) THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ v_original_client:=v_os.cliente_id;
+ FOR v_item IN SELECT value FROM jsonb_array_elements(p_itens) LOOP
+  IF jsonb_typeof(v_item)<>'object' OR NOT(v_item ? 'item_id' AND v_item ? 'quantidade' AND v_item ? 'observed_updated_at') OR v_item->>'observed_updated_at' IS NULL OR EXISTS(SELECT 1 FROM jsonb_each(v_item) WHERE key NOT IN ('item_id','quantidade','observed_updated_at')) THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+  v_id:=(v_item->>'item_id')::uuid; v_qty:=(v_item->>'quantidade')::numeric;
+  IF v_id IS NULL OR v_qty IS NULL OR v_qty<=0 OR v_qty::text IN ('NaN','Infinity','-Infinity') OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_items) WHERE value->>'item_id'=v_id::text) THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+  v_items:=v_items||jsonb_build_array(jsonb_build_object('item_id',v_id,'quantidade',v_qty,'observed_updated_at',(v_item->>'observed_updated_at')::timestamptz));
+ END LOOP;
+ SELECT jsonb_agg(value ORDER BY value->>'item_id') INTO v_items FROM jsonb_array_elements(v_items);
+ v_fp:=md5(jsonb_build_object('actor',v_actor,'org',v_org,'os',p_os_id,'observed',p_os_observed,'origin',p_origem,'items',v_items,'data',p_dados)::text);
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('delivery_request:'||jsonb_build_array(v_org,v_actor,'group',p_request_key)::text,0));
+ IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ -- Canonical global gate is acquired BEFORE every OS/stock row lock.
+ PERFORM platform_private.delivery_gate_20261030(v_org,'group');
+ SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org FOR UPDATE;
+ IF NOT FOUND OR (p_origem='manual' AND (v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica')) OR (p_origem='b2b' AND platform_private.b2b_resale_os_operational_valid_v1(v_os) IS NOT TRUE) THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=p_request_key AND actor=v_actor AND organization_id=v_org AND action='group';
+ IF FOUND THEN
+  IF v_prev.fingerprint IS DISTINCT FROM v_fp THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  -- Reference scope still binds the replay: client unchanged during the wait, still in tenant, and every receipt
+  -- delivery belongs to this tenant/OS/client. Only the fresh-dispatch CAS/status/stock state is not required.
+  IF v_os.cliente_id IS DISTINCT FROM v_original_client OR (p_origem='manual' AND NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org))
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_prev.result->'itens') i LEFT JOIN public.entregas e ON e.id=(i.value->>'entrega_id')::uuid
+   WHERE e.id IS NULL OR e.organization_id IS DISTINCT FROM v_org OR e.ordem_servico_id IS DISTINCT FROM p_os_id OR e.cliente_id IS DISTINCT FROM v_os.cliente_id OR e.partner_order_id IS DISTINCT FROM (CASE WHEN p_origem='b2b' THEN v_os.partner_order_id ELSE NULL END))
+  THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ SELECT partner_id INTO v_partner FROM public.partner_orders WHERE id=v_os.partner_order_id;
+ IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF p_origem='manual' THEN PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ ELSIF v_os.cliente_id IS NOT NULL OR v_partner IS NULL THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
+  v_id:=(v_item->>'item_id')::uuid;
+  SELECT * INTO v_row FROM public.estoque_produto WHERE id=v_id FOR UPDATE;
+  IF v_row.status::text='reservado' THEN
+   IF (p_origem='manual' AND (v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'manual'
+      OR v_row.reservado_para_cliente_id IS DISTINCT FROM v_os.cliente_id OR v_row.reservado_para_partner_id IS NOT NULL
+      OR v_row.reservado_para_partner_order_id IS NOT NULL OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
+      OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric))
+     OR (p_origem='b2b' AND (v_row.reservado_para_os_id IS DISTINCT FROM p_os_id OR v_row.reservado_para_os_tipo IS DISTINCT FROM 'b2b'
+      OR v_row.reservado_para_cliente_id IS NOT NULL OR v_row.reservado_para_partner_id IS DISTINCT FROM v_partner
+      OR v_row.reservado_para_partner_order_id IS DISTINCT FROM v_os.partner_order_id OR v_row.quantidade_reservada IS DISTINCT FROM v_row.quantidade
+      OR v_row.quantidade IS DISTINCT FROM (v_item->>'quantidade')::numeric))
+     THEN RAISE EXCEPTION 'DELIVERY_RESERVATION_NOT_OWNED' USING ERRCODE='PT409'; END IF;
+   PERFORM platform_private.stock_motor_item(v_id,'expedicao',jsonb_build_object('os_id',p_os_id,'os_tipo',p_origem,'cliente_id',v_os.cliente_id,'partner_id',v_partner,'partner_order_id',v_os.partner_order_id));
+  ELSIF v_row.status::text='disponivel' THEN
+   PERFORM platform_private.stock_motor_item(v_id,'reserva',jsonb_build_object('os_id',p_os_id,'os_tipo',p_origem,'cliente_id',v_os.cliente_id,'partner_id',v_partner,'partner_order_id',v_os.partner_order_id));
+   v_free:=v_free||jsonb_build_array(v_item-'observed_updated_at');
+  ELSE RAISE EXCEPTION 'DELIVERY_STOCK_UNAVAILABLE' USING ERRCODE='PT409'; END IF;
+  IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ END LOOP;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'group');
+ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=p_request_key AND actor=v_actor AND organization_id=v_org AND action='group';
+ IF FOUND THEN
+  IF v_prev.actor IS DISTINCT FROM v_actor OR v_prev.organization_id IS DISTINCT FROM v_org OR v_prev.action IS DISTINCT FROM 'group' OR v_prev.fingerprint IS DISTINCT FROM v_fp THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF v_os.updated_at IS DISTINCT FROM p_os_observed OR v_os.status::text<>'pronto_entrega' THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
+  SELECT updated_at INTO v_current FROM public.estoque_produto WHERE id=(v_item->>'item_id')::uuid;
+  IF v_current IS DISTINCT FROM (v_item->>'observed_updated_at')::timestamptz THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=p_os_id AND status::text<>'cancelada' AND estoque_produto_id IN (SELECT (value->>'item_id')::uuid FROM jsonb_array_elements(v_items))) THEN RAISE EXCEPTION 'DELIVERY_EXISTING_UNOWNED' USING ERRCODE='PT409'; END IF;
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target) VALUES(pg_catalog.txid_current(),v_actor,v_org,'group',p_os_id);
+ IF jsonb_array_length(v_free)>0 THEN
+ v_batch:=public.rpc_estoque_reservar_v1(p_os_id,p_origem,v_free,'delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text),CASE WHEN p_origem='b2b' THEN jsonb_build_object('partner_id',v_partner,'partner_order_id',v_os.partner_order_id) ELSE jsonb_build_object('cliente_id',v_os.cliente_id) END);
+ IF v_batch->>'ok' IS DISTINCT FROM 'true' OR v_batch->>'replay' IS DISTINCT FROM 'false' OR jsonb_array_length(v_batch->'itens')<>jsonb_array_length(v_free) THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.stock_batch_requests WHERE request_key='delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text) AND result=v_batch) THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ END IF;
+ FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
+  IF v_free @> jsonb_build_array(jsonb_build_object('item_id',v_item->'item_id')) THEN
+   v_reserved:=(v_batch->'itens'->>v_fi)::uuid; v_fi:=v_fi+1;
+  ELSE v_reserved:=(v_item->>'item_id')::uuid; END IF;
+  v_qty:=(v_item->>'quantidade')::numeric;
+  IF v_reserved IS NULL THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  PERFORM platform_private.delivery_gate_20261030(v_org,'group');
+  UPDATE platform_private.delivery_context_20261030 SET item=v_reserved,delivery=NULL,mutation='create' WHERE txid=pg_catalog.txid_current();
+  v_call:=public.rpc_cockpit_criar_entrega_v1(p_os_id,p_origem,v_reserved,v_qty,p_dados||CASE WHEN p_origem='b2b' THEN '{}'::jsonb ELSE jsonb_build_object('cliente_id',v_os.cliente_id) END);
+  IF v_call->>'success' IS DISTINCT FROM 'true' OR v_call->>'replay' IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'DELIVERY_CREATE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  v_ent:=(v_call->>'entrega_id')::uuid;
+  IF v_ent IS NULL OR NOT EXISTS(SELECT 1 FROM public.entregas WHERE id=v_ent AND organization_id=v_org AND ordem_servico_id=p_os_id AND estoque_produto_id=v_reserved AND quantidade_entregue=v_qty AND receivable_id IS NULL AND partner_order_id IS NOT DISTINCT FROM (CASE WHEN p_origem='b2b' THEN v_os.partner_order_id ELSE NULL END)) THEN RAISE EXCEPTION 'DELIVERY_CREATE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  v_call:=public.rpc_estoque_operar_v1('expedicao',v_reserved,v_qty,'delivery-exp:'||md5(jsonb_build_array(v_actor,v_org,p_request_key,v_index)::text),jsonb_build_object('referencia_tipo','entrega','referencia_id',v_ent,'os_id',p_os_id,'os_tipo',p_origem,'cliente_id',v_os.cliente_id,'partner_id',v_partner,'partner_order_id',v_os.partner_order_id));
+  IF v_call->>'ok' IS DISTINCT FROM 'true' OR v_call->>'replay' IS DISTINCT FROM 'false' OR NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE id=(v_call->>'movimentacao_id')::uuid AND estoque_produto_id=v_reserved AND referencia_id=v_ent AND referencia_tipo='entrega' AND acao='expedicao' AND usuario_id=v_actor) THEN RAISE EXCEPTION 'DELIVERY_MOVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  PERFORM platform_private.delivery_gate_20261030(v_org,'group');
+  v_result:=v_result||jsonb_build_array(jsonb_build_object('entrega_id',v_ent,'estoque_produto_id',v_reserved,'movimentacao_id',v_call->>'movimentacao_id'));
+  v_index:=v_index+1;
+ END LOOP;
+ v_call:=jsonb_build_object('success',true,'replay',false,'organization_id',v_org,'os_id',p_os_id,'itens',v_result);
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_request_key,v_actor,v_org,'group',v_fp,v_call);
+ DELETE FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current();
+ RETURN v_call;
+END $function$;
+
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_est public.estoque_produto%ROWTYPE;
+  v_existente record;
+  v_id uuid;
+  v_cliente_os uuid;
+  v_os public.ordens_servico%ROWTYPE;
+BEGIN
+  v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
+
+  IF p_os_id IS NULL OR p_estoque_produto_id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS';
+  END IF;
+  IF coalesce(p_quantidade, 0) <= 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_INVALIDA';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_criar_entrega:' || p_os_id::text || ':' || p_estoque_produto_id::text));
+
+  SELECT * INTO v_est
+  FROM public.estoque_produto
+  WHERE id = p_estoque_produto_id
+  FOR UPDATE;
+
+  IF v_est.id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO';
+  END IF;
+
+  IF v_origem = 'onfarm' THEN
+    SELECT cliente_id INTO v_cliente_os
+    FROM public.ordens_servico_onfarm
+    WHERE id = p_os_id;
+  ELSE
+    SELECT * INTO v_os FROM public.ordens_servico WHERE id = p_os_id;
+    v_cliente_os:=v_os.cliente_id;
+  END IF;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_OS_NAO_ENCONTRADA';
+  END IF;
+  IF v_origem='b2b' AND platform_private.b2b_resale_os_valid_v1(v_os) IS NOT TRUE THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+
+  IF v_est.status::text NOT IN ('reservado', 'expedido') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_STATUS_ESTOQUE_INVALIDO';
+  END IF;
+  IF v_est.reservado_para_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';
+  END IF;
+  IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';
+  END IF;
+  IF p_quantidade > coalesce(v_est.quantidade, 0) THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
+  END IF;
+  IF v_origem='b2b' AND (v_est.reservado_para_partner_order_id IS DISTINCT FROM v_os.partner_order_id OR v_est.reservado_para_partner_id IS DISTINCT FROM (SELECT partner_id FROM public.partner_orders WHERE id=v_os.partner_order_id)) THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_PARCEIRO' USING ERRCODE='42501';END IF;
+  IF v_est.reservado_para_cliente_id IS NOT NULL
+     AND v_est.reservado_para_cliente_id IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+  IF nullif(p_dados->>'cliente_id','') IS NOT NULL
+     AND nullif(p_dados->>'cliente_id','')::uuid IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+
+  SELECT e.id, e.status::text AS status INTO v_existente
+  FROM public.entregas e
+  WHERE e.estoque_produto_id = p_estoque_produto_id
+    AND e.status::text <> 'cancelada'
+    AND (
+      (v_origem = 'onfarm' AND e.ordem_servico_onfarm_id = p_os_id)
+      OR (v_origem <> 'onfarm' AND e.ordem_servico_id = p_os_id)
+    )
+  ORDER BY e.created_at DESC
+  LIMIT 1;
+
+  IF v_existente.id IS NOT NULL THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_existente.id, 'status', v_existente.status, 'message', 'Entrega ja registrada para este item da OS.');
+  END IF;
+
+
+  IF coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista') NOT IN ('motorista','retirada') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_MODALIDADE_INVALIDA';
+  END IF;
+  IF coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro') NOT IN ('cadastro','personalizado') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA';
+  END IF;
+  IF v_est.quantidade IS NULL OR v_est.quantidade <= 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
+  END IF;
+  IF v_est.origem_estoque IS NOT NULL THEN
+    IF platform_private.finished_product_stock_valid_v1(v_est) IS NOT TRUE THEN
+      RAISE EXCEPTION 'FINISHED_PRODUCT_STOCK_CONTRACT_DENIED' USING ERRCODE='23514';
+    END IF;
+  ELSIF v_est.volume_total IS NULL OR v_est.volume_total <= 0 OR v_est.volume_total::text IN ('NaN','Infinity','-Infinity') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
+  END IF;
+
+  INSERT INTO public.entregas (
+    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
+    lote_id, produto_id, quantidade_entregue, status, cliente_id,
+    data_saida, motorista, veiculo, partner_order_id,
+    origem_estoque,unidade_comercial,conteudo_por_unidade,unidade_conteudo,quantidade_conteudo,embalagem_id,embalagem_versao
+  ) VALUES (
+    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
+    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
+    p_estoque_produto_id,
+    v_est.lote_id,
+    v_est.produto_id,
+    p_quantidade,
+    'separado'::public.status_entrega,
+    v_cliente_os,
+    nullif(p_dados->>'data_saida','')::date,
+    nullif(p_dados->>'motorista',''),
+    nullif(p_dados->>'veiculo',''), CASE WHEN v_origem='b2b' THEN v_os.partner_order_id ELSE NULL END,
+    v_est.origem_estoque,v_est.unidade_comercial,v_est.conteudo_por_unidade,v_est.unidade_conteudo,CASE WHEN v_est.origem_estoque='compra_produto_acabado_revenda' THEN p_quantidade*v_est.conteudo_por_unidade ELSE NULL END,v_est.embalagem_id,v_est.embalagem_versao
+  ) RETURNING id INTO v_id;
+
+
+  -- Only newly created delivery: preserve replay semantics and never overwrite existing history.
+  UPDATE public.entregas SET
+    volume_entregue_ml = CASE WHEN v_est.origem_estoque='compra_produto_acabado_revenda' AND v_est.unidade_conteudo IN ('kg','g') THEN NULL ELSE round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6) END,
+    tipo_entrega = coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista'),
+    endereco_origem = coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro'),
+    grupo_entrega_id = nullif(p_dados->>'grupo_entrega_id','')::uuid,
+    hora_saida_prevista = nullif(p_dados->>'hora_saida_prevista','')::time,
+    data_chegada_prevista = nullif(p_dados->>'data_chegada_prevista','')::date,
+    hora_chegada_prevista = nullif(p_dados->>'hora_chegada_prevista','')::time,
+    motorista_telefone = nullif(p_dados->>'motorista_telefone',''),
+    motorista_documento = nullif(p_dados->>'motorista_documento',''),
+    veiculo_placa = nullif(p_dados->>'veiculo_placa',''),
+    veiculo_tipo = nullif(p_dados->>'veiculo_tipo',''),
+    destinatario_nome = nullif(p_dados->>'destinatario_nome',''),
+    destinatario_telefone = nullif(p_dados->>'destinatario_telefone',''),
+    destinatario_whatsapp = nullif(p_dados->>'destinatario_whatsapp',''),
+    endereco_logradouro = nullif(p_dados->>'endereco_logradouro',''),
+    endereco_numero = nullif(p_dados->>'endereco_numero',''),
+    endereco_complemento = nullif(p_dados->>'endereco_complemento',''),
+    endereco_bairro = nullif(p_dados->>'endereco_bairro',''),
+    endereco_cidade = nullif(p_dados->>'endereco_cidade',''),
+    endereco_uf = nullif(p_dados->>'endereco_uf',''),
+    endereco_cep = nullif(p_dados->>'endereco_cep',''),
+    endereco_referencia = nullif(p_dados->>'endereco_referencia','')
+  WHERE id = v_id;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, etapa_nova, acao, usuario_id, observacao)
+  VALUES
+    (p_os_id, v_origem, 'entrega_criada', 'criar_entrega_v1', v_uid,
+     format('Entrega %s criada (motor transacional).', v_id));
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'entrega_id', v_id, 'status', 'separado', 'message', 'Entrega registrada. Confirme a entrega para concluir a OS.');
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_confirm_apply_v1(p_entrega uuid, p_observed timestamp with time zone, p_key text, p_recebedor jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE org uuid; v_actor uuid:=auth.uid(); e public.entregas; initial public.entregas; s public.estoque_produto; l public.lotes; pp public.programacao_producao; c public.entrega_comprovantes; prev platform_private.delivery_requests_20261030;
+ fp text; result jsonb; ack jsonb; pend int; total numeric; reserved numeric; finalizada boolean:=false; os_status text; p jsonb; k text; v jsonb; path text; image jsonb; proof_image jsonb;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
+ org:=platform_private.delivery_confirm_actor_v1();
+ IF p_entrega IS NULL OR p_observed IS NULL OR p_key IS NULL OR p_key !~ '^[A-Za-z0-9:_-]{8,128}$' OR p_recebedor IS NULL OR jsonb_typeof(p_recebedor)<>'object' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_INVALID' USING ERRCODE='22023'; END IF;
+ p:='{}';
+ FOR k,v IN SELECT * FROM jsonb_each(p_recebedor) LOOP
+  IF k NOT IN ('nome','cargo','documento','observacoes') OR jsonb_typeof(v) NOT IN ('string','null') OR length(coalesce(v#>>'{}',''))>(CASE WHEN k='observacoes' THEN 1000 ELSE 255 END) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_INVALID' USING ERRCODE='22023'; END IF;
+  p:=p||jsonb_build_object(k,nullif(btrim(v#>>'{}'),''));
+ END LOOP;
+ IF nullif(p->>'nome','') IS NULL THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_RECEIVER_REQUIRED' USING ERRCODE='22023'; END IF;
+ initial:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ fp:=encode(extensions.digest(jsonb_build_array(v_actor,org,p_entrega,p_observed,p)::text,'sha256'),'hex');
+ PERFORM pg_advisory_xact_lock(hashtextextended('delivery_confirm:'||jsonb_build_array(v_actor,org,p_key)::text,0));
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.organizations WHERE id=org AND ativo FOR SHARE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF initial.partner_order_id IS NOT NULL THEN
+  PERFORM 1 FROM public.partner_orders WHERE id=initial.partner_order_id FOR UPDATE;
+  PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ END IF;
+ PERFORM 1 FROM public.ordens_servico WHERE id=initial.ordem_servico_id AND organization_id=org FOR UPDATE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.entregas WHERE id=p_entrega AND organization_id=org FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF e.status::text='cancelada' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF e.ordem_servico_id IS DISTINCT FROM initial.ordem_servico_id OR e.estoque_produto_id IS DISTINCT FROM initial.estoque_produto_id OR e.cliente_id IS DISTINCT FROM initial.cliente_id OR e.lote_id IS DISTINCT FROM initial.lote_id OR e.partner_order_id IS DISTINCT FROM initial.partner_order_id THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ROOT_CHANGED' USING ERRCODE='42501'; END IF;
+ IF e.cliente_id IS NOT NULL THEN PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE; END IF;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO s FROM public.estoque_produto WHERE id=e.estoque_produto_id FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO l FROM public.lotes WHERE id=s.lote_id AND organization_id=org FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO pp FROM public.programacao_producao WHERE id=l.programacao_id AND organization_id=org FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF s.id IS NULL OR l.id IS NULL OR e.lote_id IS DISTINCT FROM l.id
+ OR s.produto_id IS DISTINCT FROM l.produto_id OR e.produto_id IS DISTINCT FROM l.produto_id
+ OR (s.origem_estoque IS NULL AND (pp.id IS NULL OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL OR pp.produto_id IS DISTINCT FROM l.produto_id))
+ OR (s.origem_estoque IS NOT NULL AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS NOT TRUE)
+ OR (e.partner_order_id IS NULL AND (s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL))
+ OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_lineage_valid_v1(s,e,l) IS NOT TRUE)
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.entrega_comprovantes WHERE id=e.comprovante_id FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ c:=platform_private.delivery_confirm_proof_v1(e);
+ path:=CASE WHEN c.assinatura_tipo='digital_tela' THEN c.assinatura_digital_png_path ELSE c.arquivo_path END;
+ IF path IS NOT NULL THEN
+  PERFORM 1 FROM storage.objects WHERE bucket_id='entrega-documentos' AND name=path FOR SHARE;
+  e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org); c:=platform_private.delivery_confirm_proof_v1(e);
+ END IF;
+ SELECT * INTO prev FROM platform_private.delivery_requests_20261030 WHERE organization_id=org AND actor=v_actor AND action='confirm' AND request_key=p_key;
+ IF FOUND THEN
+  SELECT status::text INTO os_status FROM public.ordens_servico WHERE id=e.ordem_servico_id;
+  IF (os_status NOT IN ('entregue','finalizada') AND NOT (e.partner_order_id IS NOT NULL AND os_status='pronto_entrega')) OR s.status::text<>'expedido' OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
+   OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue AND os_id=e.ordem_servico_id AND os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id)<>1
+   OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('entrega','estorno_expedicao','devolucao')) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_STATE_DENIED' USING ERRCODE='42501'; END IF;
+  IF prev.fingerprint IS DISTINCT FROM fp OR e.status::text<>'entregue' OR c.status<>'confirmado' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  RETURN prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF e.status::text='entregue' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LEGACY_REVIEW_REQUIRED' USING ERRCODE='PT409'; END IF;
+ IF e.status::text NOT IN ('separado','em_rota') OR e.updated_at IS DISTINCT FROM p_observed THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ SELECT status::text INTO os_status FROM public.ordens_servico WHERE id=e.ordem_servico_id;
+ IF os_status NOT IN ('pronto_entrega','entregue') OR s.status::text<>'expedido' OR e.quantidade_entregue IS NULL OR e.quantidade_entregue<=0 OR e.quantidade_entregue::text IN ('NaN','Infinity','-Infinity')
+ OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
+ THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_STATE_CONFLICT' USING ERRCODE='PT409'; END IF;
+ -- Expedition was already performed by the reviewed group motor. Do not repeat it.
+ IF (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND quantidade=e.quantidade_entregue AND os_id=e.ordem_servico_id AND os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id)<>1
+ OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('estorno_expedicao','entrega','devolucao')) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_LEDGER_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id ORDER BY id FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ -- Sob o lock do pedido, medir cobertura antes de qualquer confirmação.
+ IF e.partner_order_id IS NOT NULL AND EXISTS(
+  SELECT 1 FROM public.ordens_servico target_os
+  JOIN public.partner_order_items i ON i.id=target_os.partner_order_item_id AND i.order_id=e.partner_order_id
+  WHERE target_os.id=e.ordem_servico_id AND
+   coalesce((SELECT sum(d.quantidade_entregue) FROM public.entregas d
+    JOIN public.ordens_servico other_os ON other_os.id=d.ordem_servico_id
+    WHERE other_os.partner_order_item_id=i.id AND d.partner_order_id=e.partner_order_id
+     AND d.status::text='entregue' AND d.id<>e.id),0)+e.quantidade_entregue>i.quantidade
+ ) THEN RAISE EXCEPTION 'B2B_RESALE_OVERDELIVERY' USING ERRCODE='PT409'; END IF;
+ image:=to_jsonb(e)||jsonb_build_object('status','entregue','entregue_em',now(),'recebido_por_nome',p->>'nome','recebido_por_cargo',coalesce(p->>'cargo',e.recebido_por_cargo),'recebido_por_documento',coalesce(p->>'documento',e.recebido_por_documento),'observacoes_confirmacao',coalesce(p->>'observacoes',e.observacoes_confirmacao),'confirmado_por',v_actor,'recebimento_confirmado_em',now(),'recebimento_confirmado_por',v_actor,'comprovante_status','confirmado','updated_at',now());
+ proof_image:=to_jsonb(c)||jsonb_build_object('status','confirmado','confirmado_por',v_actor,'confirmado_em',now(),'updated_at',now());
+ INSERT INTO platform_private.delivery_confirm_permits_v1(txid,actor,organization_id,target,proof,old_delivery,new_delivery,old_proof,new_proof) VALUES(txid_current(),v_actor,org,e.id,c.id,to_jsonb(e),image,to_jsonb(c),proof_image);
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation) VALUES(txid_current(),v_actor,org,'confirm',e.id,'confirm');
+ UPDATE public.entrega_comprovantes SET status='confirmado',confirmado_por=v_actor,confirmado_em=now(),updated_at=now() WHERE id=c.id;
+ c:=platform_private.delivery_confirm_proof_v1(e);
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ UPDATE public.entregas SET status='entregue',entregue_em=now(),recebido_por_nome=p->>'nome',recebido_por_cargo=coalesce(p->>'cargo',recebido_por_cargo),recebido_por_documento=coalesce(p->>'documento',recebido_por_documento),observacoes_confirmacao=coalesce(p->>'observacoes',observacoes_confirmacao),confirmado_por=v_actor,
+ recebimento_confirmado_em=now(),recebimento_confirmado_por=v_actor,comprovante_status='confirmado' WHERE id=e.id AND updated_at=p_observed;
+ IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND mutation='done') THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
+ IF e.partner_order_id IS NULL OR EXISTS(
+  SELECT 1 FROM public.ordens_servico target_os
+  JOIN public.partner_order_items i ON i.id=target_os.partner_order_item_id AND i.order_id=e.partner_order_id
+  WHERE target_os.id=e.ordem_servico_id AND i.quantidade=(
+   SELECT coalesce(sum(d.quantidade_entregue),0) FROM public.entregas d
+   WHERE d.ordem_servico_id=target_os.id AND d.partner_order_id=e.partner_order_id AND d.status::text='entregue')
+ ) THEN
+ ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','enviar_entrega',NULL);
+ IF ack->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id) IS DISTINCT FROM 'entregue' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_ADVANCE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ END IF;
+ -- Coverage is independently measured per programming/product in canonical millilitres.
+ -- Cancelled deliveries and reversed reservations never cover outstanding demand.
+ PERFORM 1 FROM public.programacao_producao WHERE ordem_servico_id=e.ordem_servico_id ORDER BY id FOR SHARE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT count(*) INTO pend FROM public.entregas WHERE ordem_servico_id=e.ordem_servico_id AND status::text NOT IN ('entregue','cancelada');
+ IF pend=0 AND EXISTS(SELECT 1 FROM public.programacao_producao WHERE ordem_servico_id=e.ordem_servico_id)
+ AND NOT EXISTS(
+  SELECT 1 FROM public.programacao_producao demand WHERE demand.ordem_servico_id=e.ordem_servico_id AND (
+   demand.organization_id IS DISTINCT FROM org OR demand.produto_id IS NULL OR demand.volume_necessario IS NULL OR demand.volume_necessario<=0 OR demand.volume_necessario::text IN ('NaN','Infinity','-Infinity')
+   OR coalesce((SELECT sum(st.volume_total*1000) FROM public.entregas delivered JOIN public.estoque_produto st ON st.id=delivered.estoque_produto_id JOIN public.lotes lot ON lot.id=st.lote_id
+    WHERE delivered.ordem_servico_id=e.ordem_servico_id AND delivered.organization_id=org AND delivered.status::text='entregue' AND lot.programacao_id=demand.id AND lot.organization_id=org
+    AND lot.produto_id=demand.produto_id AND st.produto_id=demand.produto_id AND delivered.produto_id=demand.produto_id AND delivered.lote_id=lot.id
+    AND st.status::text='expedido' AND st.reservado_para_os_id=e.ordem_servico_id AND st.reservado_para_os_tipo='manual'
+    AND st.quantidade=delivered.quantidade_entregue AND st.quantidade_reservada=delivered.quantidade_entregue AND st.volume_total>0 AND st.volume_total::text NOT IN ('NaN','Infinity','-Infinity')
+    AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes m WHERE m.estoque_produto_id=st.id AND m.referencia_id=delivered.id AND m.acao IN ('estorno_expedicao','devolucao','entrega'))),0)<demand.volume_necessario)) THEN
+  ack:=public._rpc_avancar_esteira_laboratorio_internal(e.ordem_servico_id,'manual','finalizar_os',NULL);
+  IF ack->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id) IS DISTINCT FROM 'finalizada' THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_FINALIZE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  finalizada:=true;
+ END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ result:=jsonb_build_object('success',true,'action','confirm','replay',false,'actor_id',v_actor,'organization_id',org,'entrega_id',e.id,'os_id',e.ordem_servico_id,'comprovante_id',c.id,'status','entregue','os_status',(SELECT status::text FROM public.ordens_servico WHERE id=e.ordem_servico_id),'finalizada',finalizada,'updated_at',(SELECT updated_at FROM public.entregas WHERE id=e.id));
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_key,v_actor,org,'confirm',fp,result);
+ IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current() AND delivery_consumed AND proof_consumed) THEN RAISE EXCEPTION 'DELIVERY_CONFIRM_EXACT_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
+ DELETE FROM platform_private.delivery_confirm_permits_v1 WHERE txid=txid_current();
+ DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();
+ RETURN result;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_send_apply_v1(p_entrega uuid, p_observed timestamp with time zone, p_key text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE org uuid; v_actor uuid:=auth.uid(); e public.entregas; initial public.entregas; s public.estoque_produto; l public.lotes; pp public.programacao_producao; c public.entrega_comprovantes; prev platform_private.delivery_requests_20261030;
+ fp text; result jsonb; ack jsonb; pend int; total numeric; reserved numeric; finalizada boolean:=false; os_status text; p jsonb; k text; v jsonb; path text; image jsonb; proof_image jsonb;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'DELIVERY_SEND_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
+ org:=platform_private.delivery_confirm_actor_v1();
+ IF p_entrega IS NULL OR p_observed IS NULL OR NOT isfinite(p_observed) OR p_key IS NULL OR p_key !~ '^[A-Za-z0-9:_-]{8,128}$' THEN RAISE EXCEPTION 'DELIVERY_SEND_INVALID' USING ERRCODE='22023'; END IF;
+ p:='{}';
+ initial:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ fp:=encode(extensions.digest(jsonb_build_array(v_actor,org,p_entrega,p_observed,p)::text,'sha256'),'hex');
+ PERFORM pg_advisory_xact_lock(hashtextextended('delivery_send:'||jsonb_build_array(v_actor,org,p_key)::text,0));
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SEND_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.organizations WHERE id=org AND ativo FOR SHARE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.ordens_servico WHERE id=initial.ordem_servico_id AND organization_id=org FOR UPDATE;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ PERFORM 1 FROM public.entregas WHERE id=p_entrega AND organization_id=org FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF e.status::text='cancelada' THEN RAISE EXCEPTION 'DELIVERY_SEND_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF e.ordem_servico_id IS DISTINCT FROM initial.ordem_servico_id OR e.estoque_produto_id IS DISTINCT FROM initial.estoque_produto_id OR e.cliente_id IS DISTINCT FROM initial.cliente_id OR e.lote_id IS DISTINCT FROM initial.lote_id OR e.partner_order_id IS DISTINCT FROM initial.partner_order_id THEN RAISE EXCEPTION 'DELIVERY_SEND_ROOT_CHANGED' USING ERRCODE='42501'; END IF;
+ IF e.cliente_id IS NOT NULL THEN PERFORM 1 FROM public.clientes WHERE id=e.cliente_id AND organization_id=org FOR SHARE; END IF;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO s FROM public.estoque_produto WHERE id=e.estoque_produto_id FOR UPDATE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO l FROM public.lotes WHERE id=s.lote_id AND organization_id=org FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO pp FROM public.programacao_producao WHERE id=l.programacao_id AND organization_id=org FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ IF s.id IS NULL OR l.id IS NULL OR e.lote_id IS DISTINCT FROM l.id
+ OR s.produto_id IS DISTINCT FROM l.produto_id OR e.produto_id IS DISTINCT FROM l.produto_id
+ OR (s.origem_estoque IS NULL AND (pp.id IS NULL OR pp.ordem_servico_id IS DISTINCT FROM e.ordem_servico_id OR pp.ordem_servico_onfarm_id IS NOT NULL OR pp.produto_id IS DISTINCT FROM l.produto_id))
+ OR (s.origem_estoque IS NOT NULL AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS NOT TRUE)
+ OR (e.partner_order_id IS NULL AND (s.reservado_para_os_id IS DISTINCT FROM e.ordem_servico_id OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM e.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL))
+ OR (e.partner_order_id IS NOT NULL AND platform_private.b2b_resale_delivery_lineage_valid_v1(s,e,l) IS NOT TRUE)
+ THEN RAISE EXCEPTION 'DELIVERY_SEND_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+
+ IF s.status::text<>'expedido' OR s.quantidade IS DISTINCT FROM e.quantidade_entregue OR s.quantidade_reservada IS DISTINCT FROM e.quantidade_entregue
+ OR (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_tipo='entrega' AND referencia_id=e.id AND acao='expedicao' AND os_id=e.ordem_servico_id AND os_tipo=CASE WHEN e.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END AND lote_id=l.id AND quantidade=e.quantidade_entregue)<>1
+ OR EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id AND acao IN ('estorno_expedicao','entrega','devolucao'))
+ OR NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=e.ordem_servico_id AND organization_id=org AND status::text IN ('pronto_entrega','entregue')) THEN RAISE EXCEPTION 'DELIVERY_SEND_STATE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=s.id AND referencia_id=e.id ORDER BY id FOR SHARE;
+ e:=platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ SELECT * INTO prev FROM platform_private.delivery_requests_20261030 WHERE organization_id=org AND actor=v_actor AND action='send' AND request_key=p_key;
+ IF FOUND THEN
+  IF prev.fingerprint IS DISTINCT FROM fp OR e.status::text<>'em_rota' THEN RAISE EXCEPTION 'DELIVERY_SEND_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  RETURN prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF e.status::text<>'separado' OR e.updated_at IS DISTINCT FROM p_observed THEN RAISE EXCEPTION 'DELIVERY_SEND_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ image:=to_jsonb(e)||jsonb_build_object('status','em_rota','updated_at',now());
+ INSERT INTO platform_private.delivery_send_permits_v1 VALUES(txid_current(),v_actor,org,e.id,to_jsonb(e),image,false);
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target,mutation) VALUES(txid_current(),v_actor,org,'send',e.id,'send');
+ UPDATE public.entregas SET status='em_rota' WHERE id=e.id AND updated_at=p_observed RETURNING * INTO e;
+ IF e.id IS NULL OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_send_permits_v1 WHERE txid=txid_current() AND consumed) OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=txid_current() AND mutation='done') THEN RAISE EXCEPTION 'DELIVERY_SEND_PERMIT_UNUSED' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.delivery_confirm_recheck_v1(p_entrega,org);
+ result:=jsonb_build_object('success',true,'action','send','replay',false,'actor_id',v_actor,'organization_id',org,'entrega_id',e.id,'os_id',e.ordem_servico_id,'status','em_rota','updated_at',e.updated_at);
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_key,v_actor,org,'send',fp,result);
+ DELETE FROM platform_private.delivery_send_permits_v1 WHERE txid=txid_current();DELETE FROM platform_private.delivery_context_20261030 WHERE txid=txid_current();RETURN result;
+ END $function$;
+
+CREATE OR REPLACE FUNCTION public.trg_entrega_sync_partner_order_fn()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_partner_order_id uuid;
+  v_total int; v_delivered int; v_order public.partner_orders; v_terminal public.partner_orders;
+BEGIN
+  SELECT os.partner_order_id INTO v_partner_order_id
+    FROM public.ordens_servico os WHERE os.id = COALESCE(NEW.ordem_servico_id, OLD.ordem_servico_id);
+  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;
+  IF EXISTS(SELECT 1 FROM public.ordens_servico os WHERE os.id=NEW.ordem_servico_id
+    AND os.origem='b2b' AND os.partner_order_id=v_partner_order_id)
+   AND EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE) THEN
+   SELECT * INTO v_order FROM public.partner_orders WHERE id=v_partner_order_id FOR UPDATE;
+   -- A entrega parcial já foi validada pelo permit; não tentar terminal cedo.
+   IF v_order.status::text='entregue' THEN RETURN NEW; END IF;
+   v_terminal:=jsonb_populate_record(v_order,jsonb_build_object('status','entregue'));
+   IF platform_private.b2b_resale_delivery_status_transition_valid_v1(v_order,v_terminal) IS NOT TRUE THEN RETURN NEW; END IF;
+   -- O gatilho canônico do pedido registra o evento terminal uma vez.
+   -- Revenda não escreve planejamento de fabricação nem duplica timeline.
+   UPDATE public.partner_orders SET status='entregue',updated_at=now()
+    WHERE id=v_partner_order_id AND status='aprovado';
+   RETURN NEW;
+  END IF;
+
+  SELECT COUNT(*), COUNT(*) FILTER (WHERE e.status = 'entregue')
+    INTO v_total, v_delivered
+    FROM public.entregas e
+    JOIN public.ordens_servico os ON os.id = e.ordem_servico_id
+   WHERE os.partner_order_id = v_partner_order_id AND e.status <> 'cancelada';
+
+  IF v_total > 0 AND v_delivered = v_total THEN
+    UPDATE public.partner_orders SET status = 'entregue', updated_at = now()
+      WHERE id = v_partner_order_id AND status <> 'entregue';
+    UPDATE public.production_planning SET status = 'entregue', updated_at = now()
+      WHERE partner_order_id = v_partner_order_id;
+    INSERT INTO public.production_timeline_events (partner_order_id, event_type, meta)
+    VALUES (v_partner_order_id, 'entrega_realizada', jsonb_build_object('total', v_total));
+  END IF;
+  RETURN NEW;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.delivery_order_transition_guard_20261030()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF NEW.status IS DISTINCT FROM OLD.status AND EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current())
+  AND (TG_TABLE_SCHEMA IS DISTINCT FROM 'public' OR TG_TABLE_NAME IS DISTINCT FROM 'partner_orders' OR platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN
+  RAISE EXCEPTION 'DELIVERY_B2B_TRANSITION_CLOSED' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $function$;
+
+CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE org uuid; uid uuid:=auth.uid(); cs public.company_fiscal_settings; candidate_count integer; economic jsonb; terms public.partner_order_payment_terms; items jsonb; schedule jsonb;
+BEGIN
+
+ -- Explicit external proof; NULL internal origin alone never authorizes a legacy order.
+ IF TG_OP='INSERT' AND platform_private.has_ticket('c2_external_order_create',NEW.partner_id) THEN
+  IF NEW.c2_external_origin_snapshot IS NOT NULL OR NEW.internal_origin_snapshot IS NOT NULL OR NEW.internal_economic_snapshot IS NOT NULL
+  THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;
+  IF NOT platform_private.c2_owner_order_create_allowed(uid,NEW.partner_id) OR NEW.created_by IS DISTINCT FROM uid
+  THEN RAISE EXCEPTION 'C2_EXTERNAL_CREATE_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT p.commercial_owner_organization_id,p.client_id INTO org,NEW.cliente_id FROM public.partner_accounts p WHERE p.id=NEW.partner_id FOR SHARE;
+  SELECT count(*) INTO candidate_count FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active;
+  IF candidate_count>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+  IF candidate_count=1 THEN SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE; END IF;
+  IF candidate_count=1 AND cs.configuration_status='VALIDATED' AND cs.accounting_validated_at IS NOT NULL AND nullif(btrim(cs.legal_name),'') IS NOT NULL AND nullif(btrim(cs.cnpj),'') IS NOT NULL THEN
+    NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_ORIGIN_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'issuer_organization_id',org,'company_settings_id',cs.id,'company_configuration_version',cs.configuration_version,'issuer_legal_name',cs.legal_name,'issuer_cnpj',cs.cnpj,'actor_user_id',uid,'partner_id',NEW.partner_id);
+  ELSE
+   -- C2_ACCOUNTING_PENDING_V1: honest non-fiscal request; no issuer identity/attestation is copied or invented.
+   NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'actor_user_id',uid,'partner_id',NEW.partner_id,'issuer_state',CASE WHEN candidate_count=0 THEN 'NOT_CONFIGURED' ELSE coalesce(cs.configuration_status,'UNKNOWN') END,'company_settings_id',cs.id,'accounting_validated',false);
+  END IF;
+  PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);
+  IF NEW.ready_for_production OR NEW.status NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito') THEN RAISE EXCEPTION 'C2_EXTERNAL_INITIAL_STATE_DENIED' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ IF TG_OP='INSERT' AND NEW.c2_external_origin_snapshot IS NOT NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND (OLD.c2_external_origin_snapshot IS NOT NULL OR NEW.c2_external_origin_snapshot IS NOT NULL) THEN
+  IF (NEW.c2_external_origin_snapshot IS DISTINCT FROM OLD.c2_external_origin_snapshot AND NOT platform_private.c2_accounting_promotion_ok(OLD.c2_external_origin_snapshot,NEW.c2_external_origin_snapshot,NEW.id)) OR NEW.internal_origin_snapshot IS DISTINCT FROM OLD.internal_origin_snapshot OR NEW.internal_economic_snapshot IS DISTINCT FROM OLD.internal_economic_snapshot
+  THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_IMMUTABLE' USING ERRCODE='42501'; END IF;
+  PERFORM platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id);
+  PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);
+  IF NEW.partner_id IS DISTINCT FROM OLD.partner_id OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id OR NEW.created_by IS DISTINCT FROM OLD.created_by THEN RAISE EXCEPTION 'B2B_INTERNAL_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+  IF NEW.ready_for_production OR (public.fn_b2b_status_is_operational(NEW.status) AND platform_private.b2b_resale_delivery_status_transition_valid_v1(OLD,NEW) IS NOT TRUE) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+  IF NEW.status IS DISTINCT FROM OLD.status AND OLD.status IN ('cancelado','reprovado') THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMINAL_STATUS' USING ERRCODE='42501'; END IF;
+  IF OLD.internal_economic_snapshot IS NOT NULL AND (to_jsonb(NEW)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes','payment_due_date','payment_method']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes','payment_due_date','payment_method']) THEN RAISE EXCEPTION 'B2B_INTERNAL_ECONOMICS_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF NEW.status='aprovado' AND OLD.status IS DISTINCT FROM NEW.status THEN
+  IF NOT (public.has_role(uid,'administrador'::public.app_role) OR public.has_role(uid,'gestor_comercial'::public.app_role)) OR OLD.status NOT IN ('em_analise_comercial','solicitado','rascunho') OR NEW.payment_condition_status IS DISTINCT FROM 'defined' THEN RAISE EXCEPTION 'B2B_INTERNAL_APPROVAL_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT * INTO terms FROM public.partner_order_payment_terms t WHERE t.id=NEW.payment_terms_id AND t.partner_order_id=NEW.id FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMS_REQUIRED' USING ERRCODE='42501'; END IF;
+  IF NEW.total IS NULL OR NEW.total::text IN ('NaN','Infinity','-Infinity') OR NEW.total<0 OR terms.final_amount IS DISTINCT FROM NEW.total OR NEW.desconto_total<0 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id) OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.quantidade IS NULL OR i.quantidade<=0 OR i.quantidade::text IN ('NaN','Infinity','-Infinity') OR i.preco_unitario IS NULL OR i.preco_unitario<0 OR i.preco_unitario::text IN ('NaN','Infinity','-Infinity') OR i.desconto_percentual IS NULL OR i.desconto_percentual<0 OR i.desconto_percentual>100 OR i.desconto_percentual::text IN ('NaN','Infinity','-Infinity'))) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;
+  SELECT jsonb_agg(to_jsonb(i)-ARRAY['created_at'] ORDER BY i.id) INTO items FROM public.partner_order_items i WHERE i.order_id=NEW.id;
+  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id) INTO schedule FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id;
+  IF schedule IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_REQUIRED' USING ERRCODE='22023'; END IF;
+ IF NEW.subtotal IS NULL OR NEW.desconto_total IS NULL OR NEW.subtotal::text IN ('NaN','Infinity','-Infinity') OR NEW.desconto_total::text IN ('NaN','Infinity','-Infinity') OR NEW.subtotal<0 OR NEW.desconto_total<0 OR NEW.desconto_total>NEW.subtotal OR terms.discount_percent_snapshot IS NULL OR terms.discount_percent_snapshot::text IN ('NaN','Infinity','-Infinity') OR terms.discount_percent_snapshot<0 OR terms.discount_percent_snapshot>100 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.subtotal IS NULL OR i.subtotal<0 OR i.subtotal::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT round(sum(i.subtotal),2) FROM public.partner_order_items i WHERE i.order_id=NEW.id) IS DISTINCT FROM round(terms.net_amount_after_discount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND (s.payment_terms_id IS DISTINCT FROM terms.id OR s.installment_number<=0 OR s.due_date IS NULL OR s.amount IS NULL OR s.principal_amount IS NULL OR s.interest_amount IS NULL OR s.amount<0 OR s.principal_amount<0 OR s.interest_amount<0 OR s.amount::text IN ('NaN','Infinity','-Infinity') OR s.principal_amount::text IN ('NaN','Infinity','-Infinity') OR s.interest_amount::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT count(DISTINCT s.installment_number) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT round(sum(s.amount),2) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM round(terms.final_amount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_INVALID' USING ERRCODE='22023'; END IF;
+  economic:=jsonb_build_object('schema_version','1','origin',OLD.c2_external_origin_snapshot,'items',items,'terms',to_jsonb(terms)-ARRAY['updated_at','approval_status','approved_by','approved_at','approval_notes'],'schedule',schedule,'subtotal',NEW.subtotal,'discount',NEW.desconto_total,'total',NEW.total,'sealed_by',uid);
+  NEW.internal_economic_snapshot:=economic;
+
+ END IF;
+ RETURN NEW;
+ END IF;
+ IF TG_OP='INSERT' THEN
+  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  org:=public.h15_actor_organization();
+  IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+  -- No client/CNPJ/organizations.partner_account_id inference. All caller snapshots rejected.
+  IF NEW.internal_origin_snapshot IS NOT NULL OR NEW.internal_economic_snapshot IS NOT NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;
+  SELECT count(*) INTO candidate_count FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE;
+  IF candidate_count<>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+  SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE FOR SHARE;
+  IF cs.configuration_status IS DISTINCT FROM 'VALIDATED' OR cs.accounting_validated_at IS NULL OR nullif(btrim(cs.legal_name),'') IS NULL OR nullif(btrim(cs.cnpj),'') IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_NOT_VALIDATED' USING ERRCODE='42501'; END IF;
+  NEW.internal_origin_snapshot:=jsonb_build_object('schema_version','1','organization_id',org,'creditor_organization_id',org,'issuer_organization_id',org,'company_settings_id',cs.id,'company_configuration_version',cs.configuration_version,'issuer_legal_name',cs.legal_name,'issuer_cnpj',cs.cnpj,'actor_user_id',uid,'partner_id',NEW.partner_id);
+  PERFORM platform_private.b2b_internal_assert_origin(NEW.internal_origin_snapshot,NEW.partner_id,NEW.cliente_id);
+  IF NEW.ready_for_production IS TRUE THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF NEW.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN RAISE EXCEPTION 'B2B_INTERNAL_INITIAL_STATUS_DENIED' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ IF NEW.internal_origin_snapshot IS DISTINCT FROM OLD.internal_origin_snapshot OR NEW.internal_economic_snapshot IS DISTINCT FROM OLD.internal_economic_snapshot THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF OLD.internal_origin_snapshot IS NULL THEN
+  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN RAISE EXCEPTION 'B2B_INTERNAL_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ PERFORM platform_private.b2b_internal_assert_origin(OLD.internal_origin_snapshot,OLD.partner_id,OLD.cliente_id);
+ IF NEW.partner_id IS DISTINCT FROM OLD.partner_id OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id OR NEW.created_by IS DISTINCT FROM OLD.created_by THEN RAISE EXCEPTION 'B2B_INTERNAL_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF OLD.internal_economic_snapshot IS NOT NULL AND (to_jsonb(NEW)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','ready_for_production','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','ready_for_production','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes']) THEN RAISE EXCEPTION 'B2B_INTERNAL_ECONOMICS_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF NEW.status IS DISTINCT FROM OLD.status AND OLD.status IN ('cancelado','reprovado') THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMINAL_STATUS' USING ERRCODE='42501'; END IF;
+ IF NEW.ready_for_production IS TRUE THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF NEW.ready_for_production IS TRUE AND NEW.status<>'aprovado' THEN RAISE EXCEPTION 'B2B_INTERNAL_UNSEALED_OPERATION' USING ERRCODE='42501'; END IF; IF NEW.status='aprovado' AND OLD.status IS DISTINCT FROM NEW.status THEN
+  IF NOT (public.has_role(uid,'administrador'::public.app_role) OR public.has_role(uid,'gestor_comercial'::public.app_role)) OR OLD.status NOT IN ('em_analise_comercial','solicitado','rascunho') OR NEW.payment_condition_status IS DISTINCT FROM 'defined' THEN RAISE EXCEPTION 'B2B_INTERNAL_APPROVAL_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT * INTO terms FROM public.partner_order_payment_terms t WHERE t.id=NEW.payment_terms_id AND t.partner_order_id=NEW.id FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMS_REQUIRED' USING ERRCODE='42501'; END IF;
+  IF NEW.total IS NULL OR NEW.total::text IN ('NaN','Infinity','-Infinity') OR NEW.total<0 OR terms.final_amount IS DISTINCT FROM NEW.total OR NEW.desconto_total<0 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id) OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.quantidade IS NULL OR i.quantidade<=0 OR i.quantidade::text IN ('NaN','Infinity','-Infinity') OR i.preco_unitario IS NULL OR i.preco_unitario<0 OR i.preco_unitario::text IN ('NaN','Infinity','-Infinity') OR i.desconto_percentual IS NULL OR i.desconto_percentual<0 OR i.desconto_percentual>100 OR i.desconto_percentual::text IN ('NaN','Infinity','-Infinity'))) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;
+  SELECT jsonb_agg(to_jsonb(i)-ARRAY['created_at'] ORDER BY i.id) INTO items FROM public.partner_order_items i WHERE i.order_id=NEW.id;
+  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id) INTO schedule FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id;
+  IF schedule IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_REQUIRED' USING ERRCODE='22023'; END IF;
+ IF NEW.subtotal IS NULL OR NEW.desconto_total IS NULL OR NEW.subtotal::text IN ('NaN','Infinity','-Infinity') OR NEW.desconto_total::text IN ('NaN','Infinity','-Infinity') OR NEW.subtotal<0 OR NEW.desconto_total<0 OR NEW.desconto_total>NEW.subtotal OR terms.discount_percent_snapshot IS NULL OR terms.discount_percent_snapshot::text IN ('NaN','Infinity','-Infinity') OR terms.discount_percent_snapshot<0 OR terms.discount_percent_snapshot>100 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.subtotal IS NULL OR i.subtotal<0 OR i.subtotal::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT round(sum(i.subtotal),2) FROM public.partner_order_items i WHERE i.order_id=NEW.id) IS DISTINCT FROM round(terms.net_amount_after_discount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND (s.payment_terms_id IS DISTINCT FROM terms.id OR s.installment_number<=0 OR s.due_date IS NULL OR s.amount IS NULL OR s.principal_amount IS NULL OR s.interest_amount IS NULL OR s.amount<0 OR s.principal_amount<0 OR s.interest_amount<0 OR s.amount::text IN ('NaN','Infinity','-Infinity') OR s.principal_amount::text IN ('NaN','Infinity','-Infinity') OR s.interest_amount::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT count(DISTINCT s.installment_number) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT round(sum(s.amount),2) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM round(terms.final_amount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_INVALID' USING ERRCODE='22023'; END IF;
+  economic:=jsonb_build_object('schema_version','1','origin',OLD.internal_origin_snapshot,'items',items,'terms',to_jsonb(terms)-ARRAY['updated_at','approval_status','approved_by','approved_at','approval_notes'],'schedule',schedule,'subtotal',NEW.subtotal,'discount',NEW.desconto_total,'total',NEW.total,'sealed_by',uid);
+  NEW.internal_economic_snapshot:=economic;
+ ELSIF NEW.status IS DISTINCT FROM OLD.status AND public.fn_b2b_status_is_operational(NEW.status) AND OLD.internal_economic_snapshot IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_UNSEALED_OPERATION' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $function$;

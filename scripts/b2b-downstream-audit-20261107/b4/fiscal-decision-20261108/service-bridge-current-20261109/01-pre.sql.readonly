@@ -1,0 +1,19 @@
+-- READ ONLY: exige B4+ponte e legado já reconciliado pelo B4.
+BEGIN READ ONLY;
+DO $p$ BEGIN
+ IF current_setting('b2b_fiscal_bridge.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'B2B_FISCAL_REF_NOT_VERIFIED'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_integration_dependencies()'::regprocedure)) IS DISTINCT FROM '605e722506de23bfd69c890c4123d4b6' THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:platform_private.b2b_integration_dependencies()'; END IF;
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'c49cc7ccedbcb28cba9b816b7e47c521' THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:public.generate_b2b_receivable_secure(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure)) IS DISTINCT FROM '3a4ca7fcd75f9fd3a183b6917fe05cd2' THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:public.generate_b2b_receivable_secure_impl(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure)) IS DISTINCT FROM 'd179755ea3701a723338d08283d42fe5' THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:public.tg_auto_b2b_receivable()'; END IF;
+ IF md5(pg_get_functiondef('public.cancel_b2b_receivable_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '9935ddb807b0b3da89dfb7d18fea267e' THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:public.cancel_b2b_receivable_secure(uuid,text)'; END IF;
+ IF (SELECT array_agg(x::text ORDER BY x::text) FROM pg_class c CROSS JOIN LATERAL unnest(coalesce(c.relacl,acldefault('r',c.relowner))) x WHERE c.oid='public.accounts_receivable'::regclass) IS DISTINCT FROM (SELECT array_agg(x::text ORDER BY x::text) FROM unnest('{anon=arwdm/postgres,authenticated=arwdm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}'::aclitem[]) x) THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:ACL'; END IF;
+ IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal)<>14 THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:TRIGGER_COUNT_WITH_CANDIDATES'; END IF;
+ IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgname NOT IN ('zz_b2b_shared_credit_guard','a01_b2b_fiscal_title_fence','a01_b2b_fiscal_title_identity','b2b_fiscal_created_by_guard'))<>10 THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:TRIGGER_COUNT'; END IF;
+ IF (SELECT md5(string_agg(tgname||'|'||pg_get_triggerdef(oid)||'|'||tgenabled::text,'^' ORDER BY tgname)) FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND NOT tgisinternal AND tgname NOT IN ('zz_b2b_shared_credit_guard','a01_b2b_fiscal_title_fence','a01_b2b_fiscal_title_identity','b2b_fiscal_created_by_guard')) IS DISTINCT FROM '7c65f3e7fed5e102fd6c8b96bc9fe8e0' THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:TRIGGERS'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='a00_delivery_no_downstream' AND tgenabled='O') THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:DELIVERY_DOWNSTREAM'; END IF;
+ IF md5(pg_get_functiondef('platform_private.delivery_no_downstream_20261030()'::regprocedure)) IS DISTINCT FROM '95e0e5a84ef511cd72d7807351f61cf4' THEN RAISE EXCEPTION 'B2B_STRICT_PRE_DRIFT:DELIVERY_BODY'; END IF;
+ IF to_regprocedure('platform_private.b2b_fiscal_invoice_bridge_v1(uuid)') IS NULL OR NOT has_function_privilege('service_role','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.b2b_fiscal_invoice_bridge_v1(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_STRICT_PRE_BRIDGE_ACL'; END IF;
+ IF (SELECT count(*) FROM pg_class WHERE oid IN ('platform_private.b2b_fiscal_service_permits'::regclass,'platform_private.b2b_fiscal_invoice_snapshots'::regclass) AND NOT relrowsecurity)<>0 THEN RAISE EXCEPTION 'B2B_STRICT_PRE_RLS'; END IF;
+END $p$;
+ROLLBACK;

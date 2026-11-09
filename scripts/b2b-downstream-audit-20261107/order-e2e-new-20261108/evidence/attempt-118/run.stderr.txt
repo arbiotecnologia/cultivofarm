@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-6i278n59/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 674, in main
+    close_debug=B.rows("SELECT error_code,error_detail FROM platform_private.fiscal_close_pending ORDER BY created_at DESC LIMIT 3;")
+                ^^^^^^
+AttributeError: module 'finished_before' has no attribute 'rows'

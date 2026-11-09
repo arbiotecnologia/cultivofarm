@@ -1,0 +1,172 @@
+{
+  "total_checks": 33,
+  "passed": 33,
+  "failed": 0,
+  "checks": [
+    {
+      "test": "manifesto contém exatamente 101 pins",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "respond executado é Seller91 97bc",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "respond 97bc está nos pins de metadata",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "hash atual generate_b2b_receivable_secure",
+      "status": "PASS",
+      "detail": "c49cc7ccedbcb28cba9b816b7e47c521"
+    },
+    {
+      "test": "hash atual generate_b2b_receivable_secure_impl",
+      "status": "PASS",
+      "detail": "1bdac7fae6d702fb42d3a30539e9c9c3"
+    },
+    {
+      "test": "hash atual tg_auto_b2b_receivable",
+      "status": "PASS",
+      "detail": "0f679538fe394924b140e54938a3bb9e"
+    },
+    {
+      "test": "hash atual tg_b2b_block_receivable_before_approval",
+      "status": "PASS",
+      "detail": "9d559f2f04613704467cb488de0d842f"
+    },
+    {
+      "test": "hash atual b2b_resale_delivery_order_valid_v1",
+      "status": "PASS",
+      "detail": "bd76345c3bceaa5e6203013920427df4"
+    },
+    {
+      "test": "hash atual b2b_resale_delivery_status_transition_valid_v1",
+      "status": "PASS",
+      "detail": "72d5d18157ffd837b89245bad19fc17e"
+    },
+    {
+      "test": "captura declara origem auditor, não leitura hosted",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém b2b_fiscal_service_permits",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém B2B_FISCAL_CONFIRMATION_UNPROVEN",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém B2B_FISCAL_DOCUMENT_NOT_PROVEN",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém B2B_FISCAL_SNAPSHOT_NOT_PROVEN",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém B2B_FISCAL_ACCOUNTING_OR_TENANT_UNPROVEN",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém B2B_FISCAL_SNAPSHOT_DIVERGENCE",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém environment='HOMOLOGATION'",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém coalesce(x.protocol_c_stat,x.c_stat) IN ('100','150')",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência estrita contém r.signed_path IS NOT NULL",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "dependência não contém SELECT $$",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "rollback restaura negação, não liberação",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "PRE exige writer legado negado",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "ponte anterior permanece byte a byte",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "test": "hash B4 histórico é apenas referência, não prova do B4 atual",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "bateria estrita 09 tem 124/124",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "bateria estrita 09 não contém stub permissivo",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "bateria estrita 09 rollback preserva histórico",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "bateria estrita 09 continua review-only",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "exit code estrito 09 é zero",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "stderr estrito 09 vazio",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "composição instala Seller91 antes do pedido",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "composição exige ponte estrita e callback positivo",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "test": "composição não usa dependência always-allow",
+      "status": "PASS",
+      "detail": ""
+    }
+  ]
+}

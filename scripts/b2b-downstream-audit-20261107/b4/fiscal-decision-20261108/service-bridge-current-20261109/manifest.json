@@ -1,0 +1,24 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "status": "REVIEW_ONLY_INACTIVE_NOT_APPROVED",
+  "stage": "AFTER_B4_AND_SERVICE_BRIDGE_BEFORE_ANY_FISCAL_CALLBACK",
+  "capture_sha256": "d35d572fcfaf535310959fde36c5db500014646b32e04884f0c6c642395a2128",
+  "capture_pins": 101,
+  "seller91_md5": "97bcdb9884b54adb3bd4aae4915e32d0",
+  "b4_sha256": "7dde7f07bca49f6d89ca995f1b6eacfdbb84b0694565e2a4121b1a7bec4dc59f",
+  "bridge_sha256": "5db2c160fd3a99bb847fe20a1d9764cbfed82d5cd80915be0eceb94eadfb9964",
+  "old_dependency_md5": "605e722506de23bfd69c890c4123d4b6",
+  "candidate_dependency_md5": "1d82731a24773ef9bfe2f356a43c7bbc",
+  "legacy_b4": {
+    "platform_private.b2b_integration_dependencies()": "605e722506de23bfd69c890c4123d4b6",
+    "public.generate_b2b_receivable_secure(uuid)": "c49cc7ccedbcb28cba9b816b7e47c521",
+    "public.generate_b2b_receivable_secure_impl(uuid)": "3a4ca7fcd75f9fd3a183b6917fe05cd2",
+    "public.tg_auto_b2b_receivable()": "d179755ea3701a723338d08283d42fe5",
+    "public.cancel_b2b_receivable_secure(uuid,text)": "9935ddb807b0b3da89dfb7d18fea267e"
+  },
+  "receivable_acl_md5": "93490607307bc83e36605d2c0e7dc4ec",
+  "receivable_triggers_md5": "7c65f3e7fed5e102fd6c8b96bc9fe8e0",
+  "cardinality": "ONE_TITLE_PER_CONFIRMED_FISCAL_DOCUMENT; MULTIPLE_PARTIAL_DOCUMENTS_ALLOWED; NO_UNIQUE_TITLE_PER_ORDER_REQUIREMENT",
+  "always_allow_substitution": false,
+  "hosted": false
+}

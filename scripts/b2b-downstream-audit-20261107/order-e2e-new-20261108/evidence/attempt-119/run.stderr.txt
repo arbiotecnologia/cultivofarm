@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-4tjhvko_/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose_current.py", line 674, in main
+    close_debug=json.loads(B.last("SELECT coalesce(json_agg(json_build_object('error_code',error_code,'error_detail',error_detail)),'[]'::json) FROM (SELECT error_code,error_detail FROM platform_private.fiscal_close_pending ORDER BY created_at DESC LIMIT 3) q;"))
+                           ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-4tjhvko_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 60, in last
+    return sql(statement).splitlines()[-1]
+           ~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-4tjhvko_/project/scripts/b2b-downstream-audit-20261107/physical/finished-product/test_pg.py", line 56, in sql
+    return pg.sql(statement)
+           ~~~~~~^^^^^^^^^^^
+  File "/tmp/new-order-e2e-4tjhvko_/project/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  column "error_detail" does not exist
+LINE 1: ...rror_detail)),'[]'::json) FROM (SELECT error_code,error_deta...
+                                                             ^
+
