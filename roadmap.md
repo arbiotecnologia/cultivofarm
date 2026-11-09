@@ -1,3 +1,8 @@
+## 09/11 00:37 — Complemento LIVE de RLS/FORCE RLS/owner/ACL
+- [ ] Incorporar a captura independente de 18 relações sem alterar a captura original; PRE/POST devem exigir RLS, FORCE RLS, owner e ACL exatos, sem ampliar grants ou remover proteção.
+- [ ] Repetir ensaio limpo e rollback deny-only, regenerar pacote rastreável e conferir os 18 pins independentemente. Contenção do piloto deve permanecer server-side por ator/org/operação/referências/validade/revogação; documentação isolada não abre gate global.
+- [ ] Sem SQL hospedado, ativação ou publicação; revisão independente e prova autenticada real permanecem NOT_RUN.
+
 ## 09/11 00:29 — Auditoria 1acbd542: pacote regenerado não estava no repositório
 - [x] Confirmado: `production-rollout-posplans-20261108/manifest.json` e `00-production-pre-posplans.sql.readonly` ainda são os artefatos antigos, com PRE SHA256 `5401300b1293e0e0bc55a6e388e30cf79e1ddd10f01103a2557e7d0ef62f9bdd`; não promover esse pacote.
 - [x] A cópia nomeada `attempt-91` contém `exit=1` e logs da tentativa 28; a execução raiz posterior tem 39/39 e `exit=0`, mas ainda usa a captura anterior à correção `ORIGEM_INVALIDA`. Nenhuma delas é pacote final da captura corrigida.
