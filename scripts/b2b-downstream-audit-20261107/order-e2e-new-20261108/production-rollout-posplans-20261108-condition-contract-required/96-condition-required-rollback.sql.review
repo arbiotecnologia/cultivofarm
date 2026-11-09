@@ -1,0 +1,5 @@
+-- REVIEW ONLY. Restores the pre-81 state (legacy create allowed on configured plans). No data touched.
+BEGIN;
+DROP TRIGGER IF EXISTS trg_zz_b2b_condition_contract_required ON public.partner_orders;
+DROP FUNCTION IF EXISTS platform_private.b2b_condition_contract_required_guard();
+COMMIT;
