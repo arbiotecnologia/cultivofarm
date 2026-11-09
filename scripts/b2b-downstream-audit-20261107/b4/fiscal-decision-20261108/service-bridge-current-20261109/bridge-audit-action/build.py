@@ -7,7 +7,7 @@ import json
 H = Path(__file__).resolve().parent
 ROOT = H.parents[5]
 SOURCE = ROOT / "scripts/b2b-downstream-audit-20261107/b4/fiscal-decision-20261108/service-bridge/02-install.sql.review"
-BASELINE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-126/real-baselines.json"
+BASELINE = ROOT / "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/evidence/attempt-125/real-baselines.json"
 REF = "swzpzcwiasxmjutrmvkm"
 OLD = """ VALUES('fiscal_invoices',inv.id,'B2B_RECEIVABLE_RECONCILED',jsonb_build_object('receivable_id',inv.receivable_id),
    jsonb_build_object('receivable_id',result->>'receivable_id','document_id',inv.id,'replayed',result->>'replayed','source_digest',digest),NULL);"""
@@ -32,6 +32,10 @@ def main():
     original = source[start:end].replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1)
     assert original.count(OLD) == 1
     candidate = original.replace(OLD, NEW)
+    allocation_anchor = " result:=platform_private.b2b_allocate_document(inv.id);\n UPDATE public.fiscal_invoices"
+    allocation_replacement = " result:=platform_private.b2b_allocate_document(inv.id);\n PERFORM platform_private.b2b_financial_forecast_reconcile_fiscal_v1(inv.id,(result->>'receivable_id')::uuid);\n UPDATE public.fiscal_invoices"
+    assert candidate.count(allocation_anchor) == 1
+    candidate = candidate.replace(allocation_anchor, allocation_replacement)
     old_md5, new_md5 = md5(original), md5(candidate)
     pre = f"""-- REVIEW ONLY READ ONLY; ponte pós-B4 antes do delta de auditoria.
 BEGIN READ ONLY;
