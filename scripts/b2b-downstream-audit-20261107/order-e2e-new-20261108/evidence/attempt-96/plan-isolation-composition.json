@@ -1,0 +1,9 @@
+{
+  "pre": "8|5|2|1",
+  "post": "8|5|3",
+  "arbio_plan_visible": true,
+  "fsf_arbio_plan_visible": false,
+  "fsf_write_denied": "ERROR:  P0001: plan_not_found\nCONTEXT:  PL/pgSQL function rpc_admin_update_commercial_plan_metadata(uuid,text,text,integer) line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "shared_code_plan_id": "e6001595-b005-4c68-80d5-0c12110dbcd8",
+  "shared_code_invisible_to_arbio": true
+}

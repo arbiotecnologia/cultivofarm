@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/tmp/new-order-e2e-5pd6whu3/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 496, in main
+    run_final_delivery_rollback('logistics-only')
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-5pd6whu3/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/compose.py", line 449, in run_final_delivery_rollback
+    current_scope.write_final_send_rollback(send_out,send_state,S.STATE)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-5pd6whu3/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/current_scope.py", line 457, in write_final_send_rollback
+    _write_final_delivery_rollback(send_out, "send", final_state, state_expression)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/new-order-e2e-5pd6whu3/project/scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/current_scope.py", line 433, in _write_final_delivery_rollback
+    assert not missing_relations, f"FINAL_{stage.upper()}_RELATION_MEASUREMENT_MISSING:{sorted(missing_relations)}"
+           ^^^^^^^^^^^^^^^^^^^^^
+AssertionError: FINAL_SEND_RELATION_MEASUREMENT_MISSING:['platform_private.delivery_send_permits_v1', 'public.catalogo_volumes', 'public.microrganismos', 'public.partner_order_items', 'public.product_packagings', 'public.product_sale_units', 'public.produtos']
