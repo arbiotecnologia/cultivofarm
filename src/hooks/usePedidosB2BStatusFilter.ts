@@ -23,18 +23,38 @@ export function usePedidosB2BStatusFilter(allowed: readonly string[], fallback: 
   const key = identityOk
     ? `${pauseStateKey({ userId: user!.id, organizationId: profile!.organization_id, roles, epoch: 0 })}:pedidos-b2b:status`
     : null;
-  const read = (k: string | null) => {
+  const read = (k: string | null, preferQuery: boolean) => {
+    if (preferQuery && queryValue) return queryValue;
     const v = k ? readPauseState<string>(k) : null;
     return typeof v === "string" && allowed.includes(v) ? v : fallback;
   };
-  const [state, setState] = useState(() => ({ key, value: read(key) }));
+  // Só a primeira identidade resolvida nesta montagem pode adotar o status da URL.
+  // Depois de A→B/logout, o efeito abaixo substitui o parâmetro pelo valor de B.
+  const mayAdoptQuery = key !== null && previousIdentity.current === null;
+  const [state, setState] = useState(() => ({ key, value: read(key, true) }));
+  if (key) previousIdentity.current = key;
   // Troca de identidade/empresa/papéis com a página montada: sem herança.
-  const current = state.key === key ? state : { key, value: read(key) };
+  const current = state.key === key ? state : { key, value: read(key, mayAdoptQuery) };
   if (current !== state) setState(current);
+  useEffect(() => {
+    if (!key || queryValue === current.value) return;
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set("status", current.value);
+      return next;
+    }, { replace: true });
+  }, [key, current.value, queryValue, setSearchParams]);
   const setValue = useCallback((next: string) => {
     const v = allowed.includes(next) ? next : fallback;
     setState({ key, value: v });
-    if (key) writePauseState(key, v);
-  }, [key, allowed, fallback]);
+    if (key) {
+      writePauseState(key, v);
+      setSearchParams((previous) => {
+        const params = new URLSearchParams(previous);
+        params.set("status", v);
+        return params;
+      }, { replace: true });
+    }
+  }, [key, allowed, fallback, setSearchParams]);
   return [current.value, setValue] as const;
 }
