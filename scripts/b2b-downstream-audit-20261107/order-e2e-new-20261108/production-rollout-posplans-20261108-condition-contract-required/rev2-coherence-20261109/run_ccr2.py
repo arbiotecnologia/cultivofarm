@@ -28,6 +28,9 @@ def main(attempt, live=False, probe=False):
     s = t.read_text()
     assert s.count(MARK) == 1
     s = s.replace(MARK, f"        import sys as _s; _s.path.insert(0, {str(PKG)!r}); import ccr2_hook; ccr2_hook.run(globals() | locals())\n" + MARK)
+    if live:
+        sys.path.insert(0, str(PKG)); import tenant_fixture
+        s = tenant_fixture.apply(s)
     t.write_text(s)
     (mirror / "patch.diff").write_text(subprocess.run(["diff", "-u", str(ROOT / "scripts" / DIRS[0] / "test-local-pg.py"), str(t)],
                                                       capture_output=True, text=True).stdout)
