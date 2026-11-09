@@ -176,9 +176,9 @@ def main():
   choice=Q.ch('boleto',2,30)
   data,error=Q.sim(Q.UB,Q.P3,[Q.S(2)],choice);assert data is not None,error""")
     s = edit(s, "  data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error",
-                "  data,error=Q.create(Q.UB,Q.PLD,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error")
+                "  data,error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice);assert data is not None,error")
     s = edit(s, "  replay,replay_error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice)",
-                "  replay,replay_error=Q.create(Q.UB,Q.PLD,[Q.S(2)],data['cart_hash'],journal['key'],choice)")
+                "  replay,replay_error=Q.create(Q.UB,Q.P3,[Q.S(2)],data['cart_hash'],journal['key'],choice)")
     s = edit(s, "  forecast_post=B.sql(\"SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';\"+(forecast_dir/'03-post.sql.readonly').read_text())",
                 "  forecast_post=B.sql(\"SET b2b_forecast.review_project_ref='swzpzcwiasxmjutrmvkm';\"+(forecast_dir/'03-post.sql.readonly').read_text())\n  forecast_extra=load('forecast_residual_scenario',forecast_dir.parent/'forecast_residual_scenario.py')")
     s = edit(s, "  assert accepted['status']=='aprovado' and accepted['internal_economic_snapshot'] is not None,accepted\n  assert accepted['ready_for_production'] is False,'external resale must not open biological production'",
