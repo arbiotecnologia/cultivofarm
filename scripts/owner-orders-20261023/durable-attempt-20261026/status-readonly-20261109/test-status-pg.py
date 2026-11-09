@@ -9,8 +9,8 @@ exec(compile(src[:cut],str(D/'test-local.py'),'exec'),env)
 pg,val,create,jwt,P,hA,G,T=[env[k] for k in ('pg','val','create','jwt','P','hA','G','T')]
 error,first,start,finish,holding,release,waiting,count=[env[k] for k in ('error','first','start','finish','holding','release','waiting','count')]
 CH=[]
-ADMIN=env.get('ADMIN') or env['G0']['ADMIN']
-ADMIN_B=env.get('ADMIN_B') or env['G0']['ADMIN_B']
+ADMIN=env['env']['ADMIN']
+ADMIN_B=env['env']['ADMIN_B']
 def ok(name,cond,detail=''):
  CH.append({'name':name,'ok':bool(cond),'detail':str(detail)[:600]});print(('PASS ' if cond else 'FAIL ')+name,flush=True)
 def jcount(u=None):
@@ -52,7 +52,8 @@ if s1['state']=='uncertain':
 # Fresh actor: pick a synthetic actor authorised for P that has no journal and no legacy receipt.
 fresh=None
 for k in ('GB','GT','PR'):
- u=env.get(k)
+ u0=env['env'].get(k)
+ u=u0
  if not u:continue
  try:
   s=status(u)
@@ -132,7 +133,7 @@ o=run(pre);ok('PRE passes again after rollback','C2AS_PRE_OK' in o,o[-200:])
 o=run((PKG/'01-status-install.sql.review').read_text());o2=run(post)
 ok('reinstall + POST after rollback','C2AS_POST_OK' in o2,(o[-150:],o2[-150:]))
 out={'pg':pg.sql('SELECT version()'),'pins':pins,'passed':sum(c['ok'] for c in CH),'total':len(CH),'checks':CH,
- 'base_harness_checks':len(env['G0']['checks']) if 'G0' in env else None,
+ 'base_harness_checks':env.get('base'),
  'scope':'disposable PG + captured durable journal chain + synthetic Auth; NOT hosted JWT/RLS/PostgREST proof'}
 print('C2AS_RESULT',json.dumps({'passed':out['passed'],'total':out['total']}),flush=True)
 Path(sys.argv[1]).write_text(json.dumps(out,indent=1,ensure_ascii=False)+'\n')

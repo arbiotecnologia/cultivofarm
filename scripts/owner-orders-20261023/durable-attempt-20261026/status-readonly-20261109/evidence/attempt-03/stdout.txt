@@ -62,3 +62,49 @@ PASS technician singleton denied, no writes
 PASS dispatch guard preserves canonical invalid-input classification
 PASS dispatch guard preserves canonical invalid-input classification
 PASS old/downgraded arbitrary key refused, no order
+==== C2_ORDER_ATTEMPT_STATUS_V1 ====
+PASS 00 PRE_OK on installed durable journal (candidate pins)
+PASS 01 install
+PASS installed bodies = frozen pins (if frozen)
+POSTOUT C2AS_POST_OK
+
+PASS 02 POST_OK
+PASS PRE after install refuses (already present)
+PASS re-install refused
+PASS anon without EXECUTE on status
+PASS service_role without EXECUTE on status
+PASS PUBLIC without EXECUTE on status
+PASS no grant option on status functions
+PASS existing registered key without receipt reads uncertain; repeated status writes nothing
+PASS status = recover view for existing key (same key/generation/state family)
+PASS old uncertain is never auto-closed by status
+probe GB ERROR:  forbidden_partner
+CONTEXT:  PL/pgSQL function platform_private.assert_b2b_partner_scope(uuid,uuid) line 18 at RAISE
+SQL statement "SELECT platform_priva
+PASS fresh authorised actor available in fixture
+PASS first access: status none, NO reservation
+PASS reload without dispatch: still none, still no journal row (fixes false uncertain)
+PASS status none echoes server actor/org/partner scope
+TABS '{"sub": "00000000-0000-4000-8000-000000000103", "role": "authenticated", "iat": 1794240324}\n{"key": "32929a27-3387-4fb9-bbf7-b1f1e5cde0ce", "state": "reserved", "contract": "C2_ORDER_JOURNAL_V1", "generation": 1, "predecessors": []}\n' '{"sub": "00000000-0000-4000-8000-000000000103", "role": "authenticated", "iat": 1794240324}\n{"key": "32929a27-3387-4fb9-bbf7-b1f1e5cde0ce", "state": "uncertain", "contract": "C2_ORDER_JOURNAL_V1", "generation": 1, "predecessors": []}\n'
+PASS two tabs prepare: exactly one reservation row, same key
+PASS two tabs prepare: exactly one sees reserved, the other sees uncertain (client with fresh expectation must refuse)
+PASS after reservation, status reads uncertain (a real dispatch may exist)
+PASS status on held key times out bounded (55P03), no journal/closure change
+PASS lost response after commit: status shows committed with the same order
+PASS status after commit does not advance generation
+PASS replay after success returns the same order, no duplicate
+PASS explicit ACK advance reserves gen 2 (prepare path only)
+PASS close vs create race: exactly one of order or closure, status agrees
+PASS close vs create race: no deadlock
+PASS status waits behind writer lock of the current key
+PASS status after wait reads uncertain for undispatched reservation (never none)
+PASS status revocation test waits
+FAIL revocation during status wait denies, no state disclosed
+PASS other tenant denied before disclosure, no writes
+PASS isolated technician denied
+PASS anon denied (permission)
+PASS rollback with divergent pin aborts, objects kept
+PASS 99 rollback exact; journal/closures preserved; recover intact
+PASS PRE passes again after rollback
+PASS reinstall + POST after rollback
+C2AS_RESULT {"passed": 37, "total": 38}
