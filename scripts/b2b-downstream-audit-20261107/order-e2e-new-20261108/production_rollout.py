@@ -249,7 +249,7 @@ def main():
         'hosted_io': False,
         'default_enabled': False,
         'evidence_directory': rel(E),
-        'baseline': 'POSPLANOS + captura LIVE corrigida + diff independente; escopo estrito, sem migração ampla nem reinstalação de planos',
+        'baseline': 'POSPLANOS + captura LIVE corrigida + 18 pins RLS/FORCE RLS/owner/ACL + diff independente; escopo estrito, sem migração ampla nem reinstalação de planos',
         'scope_metadata': scope_metadata,
         'current_catalog_evidence': {
             'pre': sha(E / 'current-catalog-baseline.json'),

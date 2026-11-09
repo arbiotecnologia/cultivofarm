@@ -299,7 +299,9 @@ def _pair(pre_state: dict, post_state: dict, initial: bool = True) -> tuple[dict
     pre_doc_relations = sorted((_relation_doc(current_relations[key], key) for key in required_relations), key=lambda row: row[0])
     for name in capture_relations:
         post = post_relations.get(name, current_relations[name])
-        assert _acl(post[1]) == _acl(capture_relations[name]["acl"]) and post[4] == capture_relations[name]["owner"], f"CANDIDATE_PUBLIC_ACL_DRIFT:{name}"
+        captured = capture_relations[name]
+        assert _acl(post[1]) == _acl(captured["acl"]) and post[4] == captured["owner"], f"CANDIDATE_RELATION_ACL_DRIFT:{name}"
+        assert post[2] is captured["rls"] and post[3] is captured["force_rls"], f"CANDIDATE_RELATION_RLS_DRIFT:{name}"
     post_doc_relations = sorted(
         (_relation_doc(post_relations[key] if key in post_relations else current_relations[key], key) for key in required_relations | added_relations),
         key=lambda row: row[0],

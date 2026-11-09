@@ -15,6 +15,7 @@ O PRE agregado anterior `5401300b…` não foi promovido. O pacote antigo foi pr
 
 ## Execuções desta correção
 
+- **Complemento 00:37:** nova execução limpa e pacote posterior são obrigatórios antes de promover os 18 pins; attempt 93 permanece evidência histórica anterior ao complemento, não evidência desta revisão.
 - **Attempt 92:** falha preservada antes dos candidatos. A baseline histórica ainda exigia `ORIGEM_INVALIDO`; nenhum PRE foi enfraquecido para contornar a falha.
 - **Attempt 93:** `exit=0`, **39/39 checkpoints**, **13/13** regressões parciais, **15/15** endpoint/leitor e **30/30** testes da contenção ARBio.
 - UI integrada **21/21**, candidata **13/13**, compatibilidade OS **73/73** e typecheck `exit=0` repetidos na mesma tentativa de evidência. A primeira invocação da suíte candidata sem sua configuração específica foi preservada como falha de descoberta e repetida com o config correto.
