@@ -164,7 +164,7 @@ def main():
         new_md5 = md5()
         report["new_body_md5"] = new_md5
         assert acl() == ACL and B.last(f"SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=to_regprocedure('{SIG}');") == "postgres"
-        assert "SELECT po.* INTO v_order" in B.last(f"SELECT pg_get_functiondef(to_regprocedure('{SIG}'));".replace("SELECT pg", "SELECT pg"))
+        assert B.last(f"SELECT position('SELECT po.* INTO v_order' IN pg_get_functiondef(to_regprocedure('{SIG}')))>0 AND position('SELECT * INTO' IN pg_get_functiondef(to_regprocedure('{SIG}')))=0;") == "t"
         ok("70/71/72 passaram; owner/ACL preservados, sem GRANT/REVOKE", {"new_md5": new_md5})
         after = positive("overlay: caminho positivo idêntico")
         assert {k: v for k, v in after.items()} == before, (before, after)
