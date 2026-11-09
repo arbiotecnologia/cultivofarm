@@ -257,6 +257,8 @@ ROLLBACK;
 BEGIN READ ONLY;
 DO $$ BEGIN
  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '{new_approve_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_APPROVE_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.approve_b2b_payment_terms_secure(uuid,text)'::regprocedure)) IS DISTINCT FROM '{new_terms_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_TERMS_POST_DRIFT';END IF;
+ IF md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) IS DISTINCT FROM '{new_credit_md5}' THEN RAISE EXCEPTION 'B2B_FORECAST_CREDIT_POST_DRIFT';END IF;
  IF (SELECT count(*) FROM pg_class WHERE oid IN ('platform_private.b2b_financial_forecasts'::regclass,'platform_private.b2b_financial_forecast_events'::regclass) AND NOT relrowsecurity)<>0 THEN RAISE EXCEPTION 'B2B_FORECAST_RLS_MISSING';END IF;
  IF has_function_privilege('anon','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') OR NOT has_function_privilege('authenticated','public.get_b2b_financial_forecast_secure(uuid)','EXECUTE') THEN RAISE EXCEPTION 'B2B_FORECAST_READER_ACL_INVALID';END IF;
 END$$;
