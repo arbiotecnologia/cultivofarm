@@ -1,0 +1,17 @@
+{
+  "live_bodies": {
+    "install_rc": 3,
+    "install_err": "psql:/tmp/b2bcond-nt0xznnv/ccr2-live-bodies.sql:7: ERROR:  column p.created_by does not exist\nLINE 1: ...ent_plans p JOIN public.profiles pr ON pr.user_id=p.created_...\n                                                             ^\n",
+    "md5": {
+      "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+        "mirror": "c34e740473afb7a365d362db854069cb",
+        "live": "fe82f5381d426136f2627803f3b0005d"
+      },
+      "public.create_partner_order_condition_secure(uuid,text,jsonb,date,uuid,text,text,jsonb)": {
+        "mirror": "e86385fefb25c68d9dd4d0fef6619f27",
+        "live": "e86385fefb25c68d9dd4d0fef6619f27"
+      }
+    },
+    "seams": []
+  }
+}

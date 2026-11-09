@@ -66,6 +66,17 @@ def run(ns):
           (md5_of("platform_private.b2b_condition_mode(uuid)"), md5_of("platform_private.b2b_condition_required_check()")))
 
 
+    if os.environ.get("CCR2_LIVE_BODIES") == "1":
+        import live_bodies
+        f = work / "ccr2-live-bodies.sql"; f.write_text(live_bodies.sql()); f.chmod(0o644)
+        r = subprocess.run(SP.su() + ["psql", "-X", "-q", "-h", SP.SOCK[0], "-p", SP.PORT, "-U", "postgres", "-d", "t", "-v", "ON_ERROR_STOP=1", "-f", str(f)], capture_output=True, text=True, timeout=120)
+        lv = {k: {"mirror": md5_of(k), "live": v} for k, v in live_bodies.LIVE.items()}
+        res["live_bodies"] = {"install_rc": r.returncode, "install_err": r.stderr[-1500:], "md5": lv, "seams": [x[0] for x in live_bodies.SEAMS]}
+        check("CCR2 LIVE: corpos atuais (cc1f6cc) instalados no espelho", r.returncode == 0, r.stderr[-400:])
+        check("CCR2 LIVE: md5 dos writers no espelho = LIVE informado", all(x["mirror"] == x["live"] for x in lv.values()), lv)
+        pathlib.Path(os.environ.get("CCR2_EVIDENCE", str(work)), "hook-results.json").write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
+        if os.environ.get("CCR2_PROBE") == "1" or r.returncode != 0:
+            raise SystemExit("CCR2_LIVE_BODIES_STOP rc=%s" % r.returncode)
     r = runsql("80-ccr2-pre.sql.readonly"); check("CCR2 80 PRE_OK no B3 instalado", r.returncode == 0 and "CCR2_PRE_OK" in r.stderr, r.stderr[-400:])
     before = counts()
     r = runsql("81-ccr2-install.sql.review"); check("CCR2 81 install", r.returncode == 0, r.stderr[-600:])
