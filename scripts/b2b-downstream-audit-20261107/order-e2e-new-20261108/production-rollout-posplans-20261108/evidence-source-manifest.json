@@ -2132,7 +2132,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/pilot_containment.py",
-      "sha256": "7b6be6424084fc5c90bef8942143e1ae9febc9de4536f1775e2d6387bb2c7ee8"
+      "sha256": "a5ff450eb8440ac8987fabee31a77fecd77c64e56a8c37bdaca598e8c8f80bbf"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-2154/00-production-pre-posplans.sql.readonly",
@@ -2220,7 +2220,7 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/00-production-pre-posplans.sql.readonly",
-      "sha256": "f07b1fdacdff5d5e2adcf43795308c23bc0b66a9b3ffc0f5963343aeb0fc14fd"
+      "sha256": "00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/11-confirmation-install.sql.review",
@@ -2299,8 +2299,12 @@
       "sha256": "2c70397082169b35840bf276d9da40e0a471d55d2374f11eeec6b22daa69ec40"
     },
     {
-      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/91-confirmation-send-rollback-deny.sql.review",
-      "sha256": "6cbefa173b26fb0dc57d8d6dabab26f098ce6186be4c486f4f87bb0b96145a36"
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/91-confirmation-rollback-deny.sql.review",
+      "sha256": "46f407613558bccf48726e6cf9eeca9bfa39e60c7d24b214b2753d657f7451fc"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/92-send-rollback-deny.sql.review",
+      "sha256": "fee528f4ee46f38db524a848d162484d2029c14759816a1724a340859d4ba190"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/93-physical-rollback-deny.sql.review",
@@ -2312,11 +2316,15 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/artifact-sources.json",
-      "sha256": "2b5d3a4f1a1b890711854ebb797130b54fd40e159283ef0f6613ddbd89016365"
+      "sha256": "550cc7e20169e958decfaeda13cb564e95784ad101d46cf9a753d09948066a02"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-checks.json",
-      "sha256": "5ef2e342dec2d8ff76e51a7e6e93f7903b72346497a88f2d1bf47fd29593caac"
+      "sha256": "1545d9fd8bb0965bad8818017837723a31d7a1522501435b33d7af67f2f5f245"
+    },
+    {
+      "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-final-artifact-execution.json",
+      "sha256": "2161da4fc96e09bbf7a181f2655e30f1024e7bfa4d106eebbcdb3c86192c70ef"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-live-catalog-guards.json",
@@ -2336,19 +2344,19 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-source-manifest.json",
-      "sha256": "bfde08eec7c782c0670219d163538a80903342428c68e9db4d98eee05ef3e9aa"
+      "sha256": "92cae3e4d3146685c5d07942a0a159143d765a6c08ca24c02c8cf8fc0ed2f904"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/evidence-summary.json",
-      "sha256": "8c396c6ce2e1c7c1f720e56a785774b0ad3bffa0a15c2e6cfea5ea12c94052f6"
+      "sha256": "1e13201b89895cc686c7be7941760a44e92993d0bd8f8731201e383f60f5fcba"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production-rollout-posplans-20261108/manifest.json",
-      "sha256": "bd09de0106bc47ea60a888883a8d9f4c1bb5ed1eca4a3d520e8e686154248693"
+      "sha256": "addf01d436399b348ecc1ea07ca9eb6a75b2ffc5d1c8164b8fa2274b9b14163b"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/production_rollout.py",
-      "sha256": "7cd5a09f498f08caf1ce7085eb90558dab18dec44cf589f5e2eb58084844eea8"
+      "sha256": "11f36d44a2c2a2b43cff64f714a63bbea6ab057fb76617cc3e45f863b6784443"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/real_baselines.py",
@@ -2404,11 +2412,11 @@
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/test_pilot_containment.py",
-      "sha256": "e2a5eb58c81fa5449de4a0066c8a7400cd791193efed240a24735ded0c42999c"
+      "sha256": "7c9740f2951c6dc9105319c5ed9b760cc2f453fe1ce6615b02cf04f56a060ce7"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/order-e2e-new-20261108/verify_production_rollout.py",
-      "sha256": "3de0b6d1529aed91114e202ccf5059cbf79de9db9e2f0310e2ec061f82c0b087"
+      "sha256": "07b1d22678923449aa30f36758b69173038970c5b615e04d14e4bbf1455b1eaf"
     },
     {
       "file": "scripts/b2b-downstream-audit-20261107/physical/composition-fixes.json",

@@ -1,5 +1,5 @@
 BEGIN;SET LOCAL lock_timeout='3s';
-DO $$BEGIN IF to_regclass('platform_private.resale_pilot_allowlist_v1') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'PILOT_CONTAINMENT_ALREADY_EXISTS'; END IF;END$$;
+DO $$BEGIN IF to_regclass('platform_private.resale_pilot_allowlist_v1') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid)') IS NOT NULL OR to_regprocedure('platform_private.resale_pilot_delivery_allowed_v1(text,text,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'PILOT_CONTAINMENT_ALREADY_EXISTS'; END IF;END$$;
 DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '9484dd33aeab3831bccc9ceb83f1823d' OR (SELECT pg_get_userbyid(pr.proowner) FROM pg_proc pr WHERE pr.oid=p) IS DISTINCT FROM 'postgres' OR coalesce((SELECT pr.proacl::text FROM pg_proc pr WHERE pr.oid=p),'') IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'PILOT_PRE_DRIFT platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)';END IF;END$$;
 DO $$DECLARE p oid:=to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '4efa75ed88514e7e016d68e6eb4b141e' OR (SELECT pg_get_userbyid(pr.proowner) FROM pg_proc pr WHERE pr.oid=p) IS DISTINCT FROM 'postgres' OR coalesce((SELECT pr.proacl::text FROM pg_proc pr WHERE pr.oid=p),'') IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'PILOT_PRE_DRIFT platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)';END IF;END$$;
 DO $$DECLARE p oid:=to_regprocedure('public.rpc_finished_product_purchase_capability_v1()');BEGIN IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0b9c8685ede899ef1809b551440db8a9' OR (SELECT pg_get_userbyid(pr.proowner) FROM pg_proc pr WHERE pr.oid=p) IS DISTINCT FROM 'postgres' OR coalesce((SELECT pr.proacl::text FROM pg_proc pr WHERE pr.oid=p),'') IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'PILOT_PRE_DRIFT public.rpc_finished_product_purchase_capability_v1()';END IF;END$$;
@@ -41,10 +41,10 @@ CREATE TABLE platform_private.resale_pilot_allowlist_v1(
 ALTER TABLE platform_private.resale_pilot_allowlist_v1 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON platform_private.resale_pilot_allowlist_v1 FROM PUBLIC,anon,authenticated,service_role;
 
-CREATE FUNCTION platform_private.resale_pilot_allowed_v1(
+CREATE FUNCTION platform_private.resale_pilot_scope_v1(
  p_gate text,p_operation text,p_actor uuid,p_org uuid,p_partner uuid,p_order uuid,
  p_item uuid,p_product uuid,p_stock uuid,p_delivery uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$
  SELECT (
   (CASE p_gate
     WHEN 'finished_product' THEN EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
@@ -55,7 +55,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
    SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 a
    WHERE a.gate=p_gate AND (p_operation IS NULL OR a.operation=p_operation)
     AND a.actor_id=p_actor AND a.organization_id=p_org AND a.synthetic IS TRUE
-    AND a.valid_from<=now() AND a.valid_until>now() AND a.revoked_at IS NULL
+    AND a.valid_from<=pg_catalog.clock_timestamp() AND a.valid_until>pg_catalog.clock_timestamp() AND a.revoked_at IS NULL
     AND a.partner_id IS NOT DISTINCT FROM p_partner
     AND a.order_id IS NOT DISTINCT FROM p_order
     AND a.order_item_id IS NOT DISTINCT FROM p_item
@@ -64,11 +64,61 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
     AND a.delivery_id IS NOT DISTINCT FROM p_delivery
   )) IS TRUE;
 $$;
+REVOKE ALL ON FUNCTION platform_private.resale_pilot_scope_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.resale_pilot_allowed_v1(
+ p_gate text,p_operation text,p_actor uuid,p_org uuid,p_partner uuid,p_order uuid,
+ p_item uuid,p_product uuid,p_stock uuid,p_delivery uuid)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_grant record;
+BEGIN
+ IF NOT (CASE p_gate
+   WHEN 'finished_product' THEN EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
+   WHEN 'b2b_resale' THEN EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
+   ELSE false END) OR p_actor IS NULL OR p_org IS NULL THEN RETURN false; END IF;
+ -- A autorização final serializa com UPDATE/revogação na MESMA linha. O tempo é
+ -- medido somente DEPOIS da espera do lock: now() não pode manter grant expirado.
+ FOR v_grant IN
+  SELECT a.* FROM platform_private.resale_pilot_allowlist_v1 a
+  WHERE a.gate=p_gate AND (p_operation IS NULL OR a.operation=p_operation)
+   AND a.actor_id=p_actor AND a.organization_id=p_org
+   AND a.partner_id IS NOT DISTINCT FROM p_partner
+   AND a.order_id IS NOT DISTINCT FROM p_order
+   AND a.order_item_id IS NOT DISTINCT FROM p_item
+   AND a.product_id IS NOT DISTINCT FROM p_product
+   AND a.stock_id IS NOT DISTINCT FROM p_stock
+   AND a.delivery_id IS NOT DISTINCT FROM p_delivery
+  ORDER BY a.id FOR UPDATE
+ LOOP
+  IF v_grant.synthetic IS TRUE AND v_grant.revoked_at IS NULL
+   AND v_grant.valid_from<=pg_catalog.clock_timestamp()
+   AND v_grant.valid_until>pg_catalog.clock_timestamp() THEN RETURN true; END IF;
+ END LOOP;
+ RETURN false;
+END;
+$$;
 REVOKE ALL ON FUNCTION platform_private.resale_pilot_allowed_v1(text,text,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.resale_pilot_delivery_scope_v1(
+ p_gate text,p_operation text,p_actor uuid,p_org uuid,p_delivery uuid)
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+ SELECT EXISTS(
+  SELECT 1 FROM public.entregas e
+  JOIN public.estoque_produto s ON s.id=e.estoque_produto_id
+  LEFT JOIN public.ordens_servico os ON os.id=e.ordem_servico_id
+  LEFT JOIN public.partner_orders po ON po.id=e.partner_order_id
+  WHERE e.id=p_delivery AND e.organization_id=p_org
+   AND ((p_gate='finished_product' AND e.partner_order_id IS NULL)
+     OR (p_gate='b2b_resale' AND e.partner_order_id IS NOT NULL))
+   AND platform_private.resale_pilot_scope_v1(p_gate,p_operation,p_actor,p_org,
+    po.partner_id,e.partner_order_id,os.partner_order_item_id,e.produto_id,s.id,e.id) IS TRUE
+ );
+$$;
+REVOKE ALL ON FUNCTION platform_private.resale_pilot_delivery_scope_v1(text,text,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE FUNCTION platform_private.resale_pilot_delivery_allowed_v1(
  p_gate text,p_operation text,p_actor uuid,p_org uuid,p_delivery uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path='' AS $$
  SELECT EXISTS(
   SELECT 1 FROM public.entregas e
   JOIN public.estoque_produto s ON s.id=e.estoque_produto_id
@@ -86,10 +136,10 @@ REVOKE ALL ON FUNCTION platform_private.resale_pilot_delivery_allowed_v1(text,te
 CREATE OR REPLACE FUNCTION platform_private.finished_product_delivery_valid_v1(s estoque_produto, e entregas, l lotes)
  RETURNS boolean
  LANGUAGE sql
- STABLE SECURITY DEFINER
+ VOLATILE SECURITY DEFINER
  SET search_path TO ''
 AS $function$
- SELECT ((e.status::text='separado' OR e.partner_order_id IS NOT NULL OR e.origem_estoque IS NULL OR platform_private.resale_pilot_delivery_allowed_v1('finished_product',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)
+ SELECT ((e.status::text='separado' OR e.partner_order_id IS NOT NULL OR e.origem_estoque IS NULL OR platform_private.resale_pilot_delivery_scope_v1('finished_product',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)
   AND platform_private.finished_product_stock_valid_v1(s) IS TRUE AND l.id IS NOT NULL AND l.programacao_id IS NULL
   AND e.origem_estoque=s.origem_estoque AND e.unidade_comercial IS NOT NULL AND e.unidade_comercial=s.unidade_comercial
   AND e.conteudo_por_unidade IS NOT NULL AND e.conteudo_por_unidade=s.conteudo_por_unidade
@@ -118,7 +168,7 @@ DECLARE
  v_unit text; v_content numeric; v_version integer; v_total numeric; v_volume_total numeric; v_ctx jsonb;
 BEGIN
  v_org:=platform_private.stock_motor_actor('entrada');
- IF NOT platform_private.resale_pilot_allowed_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN
+ IF NOT platform_private.resale_pilot_scope_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN
   RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';
  END IF;
  IF p_produto_id IS NULL OR p_embalagem_id IS NULL OR nullif(btrim(coalesce(p_lote_fornecedor,'')),'') IS NULL
@@ -137,7 +187,7 @@ BEGIN
  v_fp:=encode(extensions.digest(jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','product',p_produto_id,'packaging',p_embalagem_id,'supplier_lot',btrim(p_lote_fornecedor),'quantity',p_quantidade,'purchase',btrim(p_compra_referencia),'supplier',btrim(p_fornecedor_nome),'validity',p_validade)::text,'sha256'),'hex');
  PERFORM pg_advisory_xact_lock(hashtext('finished_product_purchase:'||p_idempotency_key));
  v_org:=platform_private.stock_motor_actor('entrada');
- IF NOT platform_private.resale_pilot_allowed_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN
+ IF NOT platform_private.resale_pilot_scope_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN
   RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';
  END IF;
  SELECT * INTO v_prev FROM public.estoque_movimentacoes WHERE idempotency_key=p_idempotency_key LIMIT 1;
@@ -189,6 +239,7 @@ BEGIN
  v_org:=platform_private.stock_motor_actor('entrada');
  v_total:=p_quantidade*v_content;
  v_volume_total:=CASE WHEN v_unit IN ('kg','g') THEN NULL WHEN v_unit='l' THEN v_total ELSE v_total/1000 END;
+ IF NOT platform_private.resale_pilot_allowed_v1('finished_product','purchase',v_uid,v_org,NULL,NULL,NULL,p_produto_id,NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'finished_product_purchase_entry_v1',v_lote);
  INSERT INTO public.lotes(id,codigo_lote,produto_id,programacao_id,volume_produzido,status,organization_id,observacoes_tecnicas)
  -- Código interno globalmente único vem do UUID servidor; lote externo permanece nos snapshots/ledger.
@@ -233,17 +284,17 @@ BEGIN
   RETURN jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','available',false,'reason','ACTOR_DENIED');
  END;
  v_available:=EXISTS(SELECT 1 FROM platform_private.finished_product_gate_v1 WHERE singleton AND enabled IS TRUE)
-  AND EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 a WHERE a.gate='finished_product' AND a.operation='purchase' AND a.actor_id=auth.uid() AND a.organization_id=v_org AND a.synthetic AND a.valid_from<=now() AND a.valid_until>now() AND a.revoked_at IS NULL);
+  AND EXISTS(SELECT 1 FROM platform_private.resale_pilot_allowlist_v1 a WHERE a.gate='finished_product' AND a.operation='purchase' AND a.actor_id=auth.uid() AND a.organization_id=v_org AND a.synthetic AND a.valid_from<=pg_catalog.clock_timestamp() AND a.valid_until>pg_catalog.clock_timestamp() AND a.revoked_at IS NULL);
  RETURN jsonb_build_object('contract','FINISHED_PRODUCT_PURCHASE_V1','available',v_available);
 END $function$;
 
 CREATE OR REPLACE FUNCTION platform_private.b2b_resale_os_valid_v1(o ordens_servico)
  RETURNS boolean
  LANGUAGE sql
- STABLE SECURITY DEFINER
+ VOLATILE SECURITY DEFINER
  SET search_path TO ''
 AS $function$
- SELECT (platform_private.resale_pilot_allowed_v1('b2b_resale',NULL,auth.uid(),o.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=o.partner_order_id),o.partner_order_id,o.partner_order_item_id,o.produto_id,NULL,NULL)
+ SELECT (platform_private.resale_pilot_scope_v1('b2b_resale',NULL,auth.uid(),o.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=o.partner_order_id),o.partner_order_id,o.partner_order_item_id,o.produto_id,NULL,NULL)
   AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
   AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
   AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
@@ -272,10 +323,10 @@ $function$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_resale_os_operational_valid_v1(o ordens_servico)
  RETURNS boolean
  LANGUAGE sql
- STABLE SECURITY DEFINER
+ VOLATILE SECURITY DEFINER
  SET search_path TO ''
 AS $function$
- SELECT (platform_private.resale_pilot_allowed_v1('b2b_resale',NULL,auth.uid(),o.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=o.partner_order_id),o.partner_order_id,o.partner_order_item_id,o.produto_id,NULL,NULL)
+ SELECT (platform_private.resale_pilot_scope_v1('b2b_resale',NULL,auth.uid(),o.organization_id,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=o.partner_order_id),o.partner_order_id,o.partner_order_item_id,o.produto_id,NULL,NULL)
   AND o.id IS NOT NULL AND o.origem='b2b' AND o.status::text='pronto_entrega'
   AND o.organization_id IS NOT NULL AND o.partner_order_id IS NOT NULL AND o.partner_order_item_id IS NOT NULL
   AND o.produto_id IS NOT NULL AND o.microrganismo_id IS NULL AND o.cliente_id IS NULL
@@ -304,10 +355,10 @@ $function$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_resale_delivery_lineage_valid_v1(s estoque_produto, e entregas, l lotes)
  RETURNS boolean
  LANGUAGE sql
- STABLE SECURITY DEFINER
+ VOLATILE SECURITY DEFINER
  SET search_path TO ''
 AS $function$
- SELECT (platform_private.resale_pilot_delivery_allowed_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id)
+ SELECT (platform_private.resale_pilot_delivery_scope_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id)
   AND platform_private.finished_product_delivery_valid_v1(s,e,l) IS TRUE
   AND e.partner_order_id IS NOT NULL AND e.cliente_id IS NULL
   AND s.reservado_para_os_id=e.ordem_servico_id AND s.reservado_para_os_tipo='b2b'
@@ -332,11 +383,11 @@ $function$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_resale_delivery_order_valid_v1(e entregas)
  RETURNS boolean
  LANGUAGE sql
- STABLE SECURITY DEFINER
+ VOLATILE SECURITY DEFINER
  SET search_path TO ''
 AS $function$
  SELECT (EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE)
-  AND (e.status::text='separado' OR platform_private.resale_pilot_delivery_allowed_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)
+  AND (e.status::text='separado' OR platform_private.resale_pilot_delivery_scope_v1('b2b_resale',NULL,auth.uid(),e.organization_id,e.id) IS TRUE)
   AND e.id IS NOT NULL AND e.organization_id IS NOT NULL AND e.partner_order_id IS NOT NULL
   AND e.receivable_id IS NULL AND e.ordem_servico_id IS NOT NULL AND e.ordem_servico_onfarm_id IS NULL
   AND e.cliente_id IS NULL AND EXISTS(
@@ -367,14 +418,14 @@ DECLARE v_uid uuid:=auth.uid();v_org uuid;v_order public.partner_orders%ROWTYPE;
 BEGIN
  IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_ACTOR_DENIED' USING ERRCODE='42501';END IF;
  v_org:=platform_private.stock_motor_actor('reserva');
- IF NOT platform_private.resale_pilot_allowed_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+ IF NOT platform_private.resale_pilot_scope_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';END IF;
  IF p_order_id IS NULL OR p_order_item_id IS NULL OR p_expected_updated_at IS NULL OR p_request_key IS NULL
   OR length(btrim(p_request_key))<8 OR length(p_request_key)>128 THEN RAISE EXCEPTION 'B2B_RESALE_REQUEST_INVALID' USING ERRCODE='22023';END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_request:'||p_request_key,0));
  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_resale_os_item:'||p_order_item_id::text,0));
  v_org:=platform_private.stock_motor_actor('reserva');
  IF platform_private.b2b_internal_commercial_actor() IS NOT TRUE THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501';END IF;
- IF NOT platform_private.resale_pilot_allowed_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';END IF;
+ IF NOT platform_private.resale_pilot_scope_v1('b2b_resale','os_create',v_uid,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=p_order_id),p_order_id,p_order_item_id,(SELECT i.product_id FROM public.partner_order_items i WHERE i.id=p_order_item_id AND i.order_id=p_order_id),NULL,NULL) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501';END IF;
  SELECT * INTO v_order FROM public.partner_orders po WHERE po.id=p_order_id
   AND EXISTS(SELECT 1 FROM public.partner_accounts pa WHERE pa.id=po.partner_id AND pa.commercial_owner_organization_id=v_org AND pa.ativo AND pa.deleted_at IS NULL)
   AND platform_private.c2_external_origin_contract_valid(po.c2_external_origin_snapshot) IS TRUE
@@ -431,7 +482,7 @@ END;$function$;
 CREATE OR REPLACE FUNCTION public.rpc_b2b_resale_os_availability_v1(p_order_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
- STABLE SECURITY DEFINER
+ VOLATILE SECURITY DEFINER
  SET search_path TO ''
  SET lock_timeout TO '3s'
 AS $function$
@@ -450,7 +501,7 @@ BEGIN
    AND po.internal_economic_snapshot IS NOT NULL AND po.internal_origin_snapshot IS NULL
    AND po.ready_for_production IS FALSE;
  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_RESALE_ORDER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
- SELECT platform_private.resale_pilot_allowed_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) INTO gate_open;
+ SELECT platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) INTO gate_open;
  IF EXISTS(SELECT 1 FROM platform_private.b2b_resale_logistics_gate_v1 WHERE singleton AND enabled IS TRUE) AND gate_open IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  SELECT count(*) INTO duplicate_os FROM (
    SELECT i.id FROM public.partner_order_items i
@@ -480,7 +531,7 @@ BEGIN
  LEFT JOIN public.ordens_servico os ON os.partner_order_id=p_order_id
   AND os.partner_order_item_id=i.id AND os.origem='b2b'
  WHERE i.order_id=p_order_id;
- IF platform_private.resale_pilot_allowed_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) IS DISTINCT FROM gate_open THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ IF platform_private.resale_pilot_scope_v1('b2b_resale','read',actor,org,v_order.partner_id,p_order_id,NULL,NULL,NULL,NULL) IS DISTINCT FROM gate_open THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
  IF auth.uid() IS DISTINCT FROM actor OR platform_private.b2b_internal_commercial_actor() IS NOT TRUE
  OR platform_private.stock_motor_actor('reserva') IS DISTINCT FROM org
  THEN RAISE EXCEPTION 'B2B_RESALE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
@@ -712,8 +763,8 @@ BEGIN
  IF EXISTS(
   SELECT 1 FROM jsonb_array_elements(p_itens) x
   JOIN public.estoque_produto s ON s.id=(x.value->>'item_id')::uuid
-  WHERE (p_origem='b2b' AND platform_private.resale_pilot_allowed_v1('b2b_resale','delivery_create',v_actor,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=v_os.partner_order_id),v_os.partner_order_id,v_os.partner_order_item_id,s.produto_id,s.id,NULL) IS NOT TRUE)
-    OR (p_origem='manual' AND s.origem_estoque IS NOT NULL AND platform_private.resale_pilot_allowed_v1('finished_product','delivery_create',v_actor,v_org,NULL,NULL,NULL,s.produto_id,s.id,NULL) IS NOT TRUE)
+  WHERE (p_origem='b2b' AND platform_private.resale_pilot_scope_v1('b2b_resale','delivery_create',v_actor,v_org,(SELECT po.partner_id FROM public.partner_orders po WHERE po.id=v_os.partner_order_id),v_os.partner_order_id,v_os.partner_order_item_id,s.produto_id,s.id,NULL) IS NOT TRUE)
+    OR (p_origem='manual' AND s.origem_estoque IS NOT NULL AND platform_private.resale_pilot_scope_v1('finished_product','delivery_create',v_actor,v_org,NULL,NULL,NULL,s.produto_id,s.id,NULL) IS NOT TRUE)
  ) THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  v_original_client:=v_os.cliente_id;
  FOR v_item IN SELECT value FROM jsonb_array_elements(p_itens) LOOP
@@ -1453,7 +1504,7 @@ DECLARE v_org uuid; v_e public.entregas%ROWTYPE; BEGIN
  IF p_action NOT IN ('generate','sign','attach') OR p_entrega_id IS NULL THEN RAISE EXCEPTION 'DELIVERY_PROOF_INVALID: action' USING ERRCODE='22023'; END IF;
  SELECT * INTO v_e FROM public.entregas WHERE id=p_entrega_id AND organization_id=v_org;
  IF NOT FOUND OR NOT platform_private.delivery_proof_row_ok_20261030(v_e,v_org,p_action) THEN RAISE EXCEPTION 'DELIVERY_PROOF_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
- IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_allowed_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',auth.uid(),v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF (v_e.partner_order_id IS NOT NULL OR v_e.origem_estoque IS NOT NULL) AND platform_private.resale_pilot_delivery_scope_v1(CASE WHEN v_e.partner_order_id IS NULL THEN 'finished_product' ELSE 'b2b_resale' END,'proof',auth.uid(),v_org,v_e.id) IS NOT TRUE THEN RAISE EXCEPTION 'RESALE_PILOT_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  IF p_action<>'generate' AND EXISTS(SELECT 1 FROM public.entrega_comprovantes WHERE id=v_e.comprovante_id AND status='confirmado') THEN
   RAISE EXCEPTION 'DELIVERY_PROOF_CLOSED' USING ERRCODE='PT409'; END IF;
  RETURN pg_catalog.jsonb_build_object('allowed',true,'entrega_id',v_e.id,'action',p_action);

@@ -99,7 +99,7 @@ def main():
     pilot_checks = json.loads((pilot / 'checks.json').read_text())
     assert len(partial) == 13 and all(row['status'] == 'PASS' for row in partial)
     assert len(endpoint) == 15 and all(row['status'] == 'PASS' for row in endpoint)
-    assert len(pilot_checks['checks']) == 30 and all(row['status'] == 'PASS' for row in pilot_checks['checks'])
+    assert len(pilot_checks['checks']) == 33 and all(row['status'] == 'PASS' for row in pilot_checks['checks'])
     pilot_manifest = json.loads((pilot / 'manifest.json').read_text())
     assert pilot_manifest['hosted'] is False and pilot_manifest['default_enabled'] is False
     assert pilot_manifest['candidate_sha256'] == sha(pilot / 'candidate.sql.review')

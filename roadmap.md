@@ -1,7 +1,8 @@
 ## 09/11 01:34 — Revisão de concorrência da contenção do piloto
-- [ ] Reproduzir e corrigir no gerador o uso de `now()` na autorização final e a ausência de lock compartilhado entre concessão/revogação e writers, preservando leituras e demais mecanismos.
-- [ ] Executar em PostgreSQL 17 descartável transação iniciada antes do vencimento e bloqueada até depois dele, revogação confirmada antes da autorização final e revogação concorrente após autorização; exigir negação/serialização sem efeitos parciais.
-- [ ] Regenerar o pacote REVIEW_ONLY, executar os arquivos finais exatos com rollback, conferir hashes/manifesto e manter produção, publicação, ativação e prova JWT/RLS/Storage/browser fora do escopo.
+- [x] Reproduzido no candidato antigo e corrigido no gerador: autorização final usa `clock_timestamp()` após `FOR UPDATE` na concessão; pré-checagens/leituras não retêm o lock e revogação compartilha a mesma linha dos writers.
+- [x] Attempt 110 `exit=0` no ramo logistics-only: 40/40 checkpoints e 33/33 contenção, incluindo transação iniciada antes do vencimento e liberada depois dele, revogação antes da autorização final e revogação que aguarda writer já autorizado; UI 21/21 + 13/13 + 73/73 e typecheck 0.
+- [x] Complemento independente do PRE incorporado sem alterar a correção: `)))-'functions'` presente e `));)-'functions'` ausente. Os 24 arquivos finais exatos passaram no PostgreSQL 17.11 com `returncode=0`, reversão completa, cinco negações `authenticated`, 18 pins preservados, histórico/planos estáveis e gates OFF.
+- [x] Pacote REVIEW_ONLY promovido com 38/38 arquivos/origens/hashes verificados: PRE SHA256 `00f726d4dbc254aaa59bce376ab7b53f2985d1a1b80c1160df0e1cc830501616`, manifesto `fada53acecf2b3fb32459a4f484854476c91f3395b6cecad37d056917ff3d6fa`, evidência final `60ab51def01b86dd03fc6087832e4d7a65dbcf6087a131b18a87bdefbd59894c`. Sem hosted, ativação, publicação, fiscal, cobrança ou comunicação; JWT/RLS/Storage/browser reais continuam NOT_RUN.
 
 ## 09/11 01:13 — Bloqueio SQLSTATE 42601 no PRE final e execução dos artefatos promovidos
 - [x] Gerador corrigido com regressão 4/4: remove somente o terminador externo da consulta `SELECT` antes de embuti-la na subtração JSONB e rejeita qualquer outro ponto-e-vírgula. Todos os PRE/INSTALL/POST/ROLLBACK afetados foram regenerados sem alterar pins de segurança ou reabrir writers.

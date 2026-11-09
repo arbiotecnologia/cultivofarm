@@ -1,0 +1,241 @@
+BEGIN READ ONLY;
+-- Candidato INATIVO; composição local capturada; LIVE deve ser conferida pelo auditor.
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)');BEGIN
+ IF p IS NULL THEN RAISE EXCEPTION 'FINISHED_PRE_DEPENDENCY_MISSING platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)';END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM '1ef94d9d9c7aa95fd1e7e6366564f81a' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.delivery_confirm_apply_v1(uuid,timestamptz,text,jsonb)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '41ce8f4c7e887241153752b6bd4b9268' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.delivery_send_apply_v1(uuid,timestamptz,text)');BEGIN
+ IF p IS NULL THEN RAISE EXCEPTION 'FINISHED_PRE_DEPENDENCY_MISSING platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
+ IF md5(pg_get_functiondef(p)) IS DISTINCT FROM '3a4a13bd87a0d6050fcec38847c6196c' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.delivery_send_apply_v1(uuid,timestamptz,text)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.envase_insert_final_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '7837c5852e37159d826875babf9da228' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_final_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.envase_insert_final_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.envase_insert_final_v1()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.envase_insert_guard_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'c150d00c4e0258ddcf4f7e2f86f53170' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.envase_insert_guard_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.envase_insert_guard_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.envase_insert_guard_v1()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.guard_manual_lot_write_v1()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '4eab765e76ca79f16a7dd481887496d9' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.guard_manual_lot_write_v1()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.guard_manual_lot_write_v1()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.guard_manual_lot_write_v1()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.trg_lab_lot_biological_only()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '58abf38671745d272abeb923ee866083' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.trg_lab_lot_biological_only()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.trg_lab_lot_biological_only()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.trg_lab_lot_biological_only()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.fn_sync_os_classica_downstream()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '06e64b76968f91e19f03b24363ac610a' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.fn_sync_os_classica_downstream()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '9d62ba2fa4fad1b6e5d5ac67045d2e98' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'a4d47ccf5d116141ed46e9de9ea7eeaa' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('public.validate_estoque_entrada()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '9e24938a8d716a02ba023c9fb7ce24e9' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT public.validate_estoque_entrada()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT public.validate_estoque_entrada()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT public.validate_estoque_entrada()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.entregas_catalog_tenant_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '86711a2f96fee0a3d0f9c02b55c55bcd' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.entregas_catalog_tenant_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.entregas_catalog_tenant_guard()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.entregas_catalog_tenant_guard()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.estoque_produto_catalog_tenant_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '874c9ca8b5b4e307cf995a0197f98efc' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.estoque_produto_catalog_tenant_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.estoque_produto_catalog_tenant_guard()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.estoque_produto_catalog_tenant_guard()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.lotes_catalog_tenant_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '0fc1d2741a73a92ade8e558e3dd58c20' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.lotes_catalog_tenant_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.lotes_catalog_tenant_guard()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.lotes_catalog_tenant_guard()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.ordens_servico_catalog_tenant_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '8abd58791e7e27336b07e648cdef35e7' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.ordens_servico_catalog_tenant_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.ordens_servico_catalog_tenant_guard()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.ordens_servico_catalog_tenant_guard()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.produto_etiquetas_catalog_tenant_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM 'd53f9827e3b5504e632fffe9949fa8c4' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.produto_etiquetas_catalog_tenant_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.produto_etiquetas_catalog_tenant_guard()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.produto_etiquetas_catalog_tenant_guard()';END IF;
+END$$;
+
+DO $$DECLARE p oid:=to_regprocedure('platform_private.programacao_producao_catalog_tenant_guard()');BEGIN
+ IF p IS NULL OR md5(pg_get_functiondef(p)) IS DISTINCT FROM '2e25fe68cf66a79fbc1d2eecee8b20e9' THEN RAISE EXCEPTION 'FINISHED_PRE_FUNCTION_DRIFT platform_private.programacao_producao_catalog_tenant_guard()';END IF;
+ IF (SELECT r.rolname FROM pg_proc x JOIN pg_roles r ON r.oid=x.proowner WHERE x.oid=p) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'FINISHED_PRE_OWNER_DRIFT platform_private.programacao_producao_catalog_tenant_guard()';END IF;
+ IF (SELECT coalesce(x.proacl::text,'') FROM pg_proc x WHERE x.oid=p) IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_ACL_DRIFT platform_private.programacao_producao_catalog_tenant_guard()';END IF;
+END$$;
+
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='entregas' AND t.tgname='a000_entregas_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_entregas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.entregas_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.entregas.a000_entregas_catalog_tenant_guard';END IF;
+END$$;
+
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='estoque_produto' AND t.tgname='a000_estoque_produto_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_estoque_produto_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.estoque_produto_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.estoque_produto.a000_estoque_produto_catalog_tenant_guard';END IF;
+END$$;
+
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='lotes' AND t.tgname='a000_lotes_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_lotes_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.lotes_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.lotes.a000_lotes_catalog_tenant_guard';END IF;
+END$$;
+
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='ordens_servico' AND t.tgname='a000_ordens_servico_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_ordens_servico_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.ordens_servico_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.ordens_servico.a000_ordens_servico_catalog_tenant_guard';END IF;
+END$$;
+
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='produto_etiquetas' AND t.tgname='a000_produto_etiquetas_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_produto_etiquetas_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.produto_etiquetas FOR EACH ROW EXECUTE FUNCTION platform_private.produto_etiquetas_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.produto_etiquetas.a000_produto_etiquetas_catalog_tenant_guard';END IF;
+END$$;
+
+DO $$DECLARE d text;e text;ty smallint;BEGIN
+ SELECT pg_get_triggerdef(t.oid),t.tgenabled::text,t.tgtype INTO d,e,ty FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND c.relname='programacao_producao' AND t.tgname='a000_programacao_producao_catalog_tenant_guard';
+ IF NOT FOUND OR d IS DISTINCT FROM 'CREATE TRIGGER a000_programacao_producao_catalog_tenant_guard BEFORE INSERT OR UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.programacao_producao_catalog_tenant_guard()' OR e IS DISTINCT FROM 'O' OR ty IS DISTINCT FROM 23 THEN RAISE EXCEPTION 'FINISHED_TRIGGER_DRIFT public.programacao_producao.a000_programacao_producao_catalog_tenant_guard';END IF;
+END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='platform_private' AND c.relname='authz_tickets') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='platform_private' AND c.relname='authz_tickets') IS DISTINCT FROM '{postgres=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT platform_private.authz_tickets';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='catalogo_volumes') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='catalogo_volumes') IS DISTINCT FROM '{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.catalogo_volumes';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='entregas') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='entregas') IS DISTINCT FROM '{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.entregas';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='estoque_movimentacoes') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='estoque_movimentacoes') IS DISTINCT FROM '{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.estoque_movimentacoes';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='estoque_produto') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='estoque_produto') IS DISTINCT FROM '{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.estoque_produto';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='lotes') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='lotes') IS DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.lotes';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='microrganismos') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='microrganismos') IS DISTINCT FROM '{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.microrganismos';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='product_packagings') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings') IS DISTINCT FROM '{postgres=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.product_packagings';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='product_sale_units') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units') IS DISTINCT FROM '{postgres=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.product_sale_units';END IF;END$$;
+
+DO $$BEGIN IF (SELECT r.rolname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='public' AND c.relname='produtos') IS DISTINCT FROM 'postgres' OR (SELECT coalesce(c.relacl::text,'') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='produtos') IS DISTINCT FROM '{postgres=arwdDxtm/postgres,authenticated=r/postgres,service_role=arwdDxtm/postgres}' THEN RAISE EXCEPTION 'FINISHED_PRE_RELATION_DRIFT public.produtos';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='catalogo_volumes' AND column_name='medida' AND data_type='text' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT catalogo_volumes.medida';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='catalogo_volumes' AND column_name='owner_organization_id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT catalogo_volumes.owner_organization_id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='catalogo_volumes' AND column_name='volume_ml' AND data_type='numeric' AND is_nullable='YES') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT catalogo_volumes.volume_ml';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='microrganismos' AND column_name='owner_organization_id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT microrganismos.owner_organization_id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='ativo' AND data_type='boolean' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.ativo';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='codigo' AND data_type='text' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.codigo';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='created_by' AND data_type='uuid' AND is_nullable='YES') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.created_by';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='descricao' AND data_type='text' AND is_nullable='YES') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.descricao';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='owner_organization_id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.owner_organization_id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='peso_liquido_kg' AND data_type='numeric' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.peso_liquido_kg';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='product_id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.product_id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='valid_from' AND data_type='timestamp with time zone' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.valid_from';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='valid_to' AND data_type='timestamp with time zone' AND is_nullable='YES') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.valid_to';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_packagings' AND column_name='version' AND data_type='integer' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_packagings.version';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_sale_units' AND column_name='forma_fisica' AND data_type='text' AND is_nullable='YES') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_sale_units.forma_fisica';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_sale_units' AND column_name='owner_organization_id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_sale_units.owner_organization_id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_sale_units' AND column_name='product_id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_sale_units.product_id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_sale_units' AND column_name='unidade_conteudo' AND data_type='text' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_sale_units.unidade_conteudo';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_sale_units' AND column_name='updated_at' AND data_type='timestamp with time zone' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_sale_units.updated_at';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_sale_units' AND column_name='updated_by' AND data_type='uuid' AND is_nullable='YES') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_sale_units.updated_by';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_sale_units' AND column_name='version' AND data_type='integer' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT product_sale_units.version';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='produtos' AND column_name='owner_organization_id' AND data_type='uuid' AND is_nullable='NO') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_COLUMN_DRIFT produtos.owner_organization_id';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='catalogo_volumes' AND x.conname='catalogo_volumes_owner_organization_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT catalogo_volumes.catalogo_volumes_owner_organization_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='microrganismos' AND x.conname='microrganismos_owner_organization_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT microrganismos.microrganismos_owner_organization_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='pp_codigo_version' AND pg_get_constraintdef(x.oid)='UNIQUE (product_id, codigo, version)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.pp_codigo_version';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='pp_presentation_link' AND pg_get_constraintdef(x.oid)='TRIGGER DEFERRABLE INITIALLY DEFERRED') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.pp_presentation_link';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='pp_window' AND pg_get_constraintdef(x.oid)='CHECK (((valid_to IS NULL) OR (valid_to >= valid_from)))') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.pp_window';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_codigo_check' AND pg_get_constraintdef(x.oid)='CHECK ((btrim(codigo) <> ''''::text))') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_codigo_check';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (id) REFERENCES catalogo_volumes(id) ON DELETE RESTRICT') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_owner_organization_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_owner_organization_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_peso_liquido_kg_check' AND pg_get_constraintdef(x.oid)='CHECK ((peso_liquido_kg > (0)::numeric))') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_peso_liquido_kg_check';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_pkey' AND pg_get_constraintdef(x.oid)='PRIMARY KEY (id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_pkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_product_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (product_id) REFERENCES produtos(id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_product_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_packagings' AND x.conname='product_packagings_version_check' AND pg_get_constraintdef(x.oid)='CHECK ((version >= 1))') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_packagings.product_packagings_version_check';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_owner_organization_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_sale_units.product_sale_units_owner_organization_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_pkey' AND pg_get_constraintdef(x.oid)='PRIMARY KEY (product_id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_sale_units.product_sale_units_pkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_product_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (product_id) REFERENCES produtos(id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_sale_units.product_sale_units_product_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_unidade_conteudo_check' AND pg_get_constraintdef(x.oid)='CHECK ((unidade_conteudo = ANY (ARRAY[''kg''::text, ''g''::text, ''ml''::text, ''l''::text])))') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_sale_units.product_sale_units_unidade_conteudo_check';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='product_sale_units' AND x.conname='product_sale_units_version_check' AND pg_get_constraintdef(x.oid)='CHECK ((version >= 1))') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT product_sale_units.product_sale_units_version_check';END IF;END$$;
+
+DO $$BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='produtos' AND x.conname='produtos_owner_organization_id_fkey' AND pg_get_constraintdef(x.oid)='FOREIGN KEY (owner_organization_id) REFERENCES organizations(id)') THEN RAISE EXCEPTION 'FINISHED_PRE_CATALOG_CONSTRAINT_DRIFT produtos.produtos_owner_organization_id_fkey';END IF;END$$;
+
+DO $$BEGIN IF to_regclass('platform_private.finished_product_gate_v1') IS NOT NULL OR to_regprocedure('platform_private.finished_product_stock_valid_v1(public.estoque_produto)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_delivery_valid_v1(public.estoque_produto,public.entregas,public.lotes)') IS NOT NULL OR to_regprocedure('platform_private.finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL OR to_regprocedure('public.rpc_finished_product_purchase_capability_v1()') IS NOT NULL OR to_regprocedure('public.rpc_finished_product_purchase_entry_v1(uuid,uuid,text,numeric,text,text,text,date)') IS NOT NULL THEN RAISE EXCEPTION 'FINISHED_PRE_OBJECT_ALREADY_EXISTS';END IF;END$$;
+ROLLBACK;
