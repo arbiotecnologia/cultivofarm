@@ -20,7 +20,7 @@ def fn(path, name):
 # Reduced-harness schema seams: columns/objects that exist in LIVE (see cc1f6cc captures) but not in the B3 mirror.
 # Columns only add structure; no grant, no data beyond deterministic backfill of the mirror's own synthetic rows.
 # Other cc1f6cc bodies exercised by 81 tests; LIVE md5 not supplied by the auditor -> reported for comparison, never treated as pinned.
-OTHER = ["public.respond_b2b_order_quote_secure(uuid,text,text,date,text,uuid,uuid)"]
+OTHER = "AUTO"
 
 SEAMS = [
  ("clientes.status_cliente", "ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS status_cliente text NOT NULL DEFAULT 'ativo';"),
@@ -60,3 +60,7 @@ def sql():
     s = s[:a] + "-- [mirror] PRE pin block of cc1f6cc skipped: it pins hosted B3-era bodies; verified separately by LIVE md5 after install\n" + s[b:]
     seam = "\n".join(x[1] for x in SEAMS)
     return s.replace("BEGIN;\n", "BEGIN;\n" + seam + "\n", 1)
+
+
+def other_names():
+    return sorted({n.split(".")[1] for n in re.findall(r"CREATE OR REPLACE FUNCTION ([a-z_.0-9]+)\(", SRC.read_text())})
