@@ -1,0 +1,5 @@
+{
+  "wrapper_denied": "ERROR:  42501: B2B_AUTHORIZED_FISCAL_DOCUMENT_REQUIRED\nCONTEXT:  PL/pgSQL function public.generate_b2b_receivable_secure_impl(uuid) line 1 at RAISE\nPL/pgSQL function generate_b2b_receivable_secure(uuid) line 34 at RETURN\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+  "receivables": 1,
+  "approval_delivery_production_trigger": "B4_NO_OP_MD5_d179755ea3701a723338d08283d42fe5"
+}
